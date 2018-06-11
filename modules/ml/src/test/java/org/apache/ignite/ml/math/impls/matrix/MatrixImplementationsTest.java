@@ -33,7 +33,6 @@ import org.apache.ignite.ml.math.exceptions.RowIndexException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.RandomVector;
 import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 import org.junit.Test;
 
@@ -101,8 +100,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
 
-            if (!readOnly(m))
-                fillMatrix(m);
+            fillMatrix(m);
 
             cp = m.copy();
 
@@ -112,11 +110,11 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testHaveLikeVector() throws InstantiationException, IllegalAccessException {
+    public void testHaveLikeVector() {
         for (Class<? extends Matrix> key : likeVectorTypesMap().keySet()) {
             Class<? extends Vector> val = likeVectorTypesMap().get(key);
 
-            if (val == null && !ignore(key))
+            if (val == null)
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
         }
     }
@@ -209,9 +207,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testPlus() {
         consumeSampleMatrix((m, desc) -> {
-            if (readOnly(m))
-                return;
-
             double[][] data = fillAndReturn(m);
 
             double plusVal = Math.random();
@@ -265,9 +260,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testTimes() {
         consumeSampleMatrix((m, desc) -> {
-            if (readOnly(m))
-                return;
-
             double[][] data = fillAndReturn(m);
 
             double timeVal = Math.random();
@@ -390,99 +382,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testDeterminant() {
-        consumeSampleMatrix((m, desc) -> {
-            if (m.rowSize() != m.columnSize())
-                return;
-
-            if (ignore(m.getClass()))
-                return;
-
-            double[][] doubles = fillIntAndReturn(m);
-
-            if (m.rowSize() == 1) {
-                assertEquals("Unexpected value " + desc, m.determinant(), doubles[0][0], 0d);
-
-                return;
-            }
-
-            if (m.rowSize() == 2) {
-                double det = doubles[0][0] * doubles[1][1] - doubles[0][1] * doubles[1][0];
-                assertEquals("Unexpected value " + desc, m.determinant(), det, 0d);
-
-                return;
-            }
-
-            if (m.rowSize() > 512)
-                return; // IMPL NOTE if row size >= 30000 it takes unacceptably long for normal test run.
-
-            Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
-
-            diagMtx.assign(0);
-            for (int i = 0; i < m.rowSize(); i++)
-                diagMtx.set(i, i, m.get(i, i));
-
-            double det = 1;
-
-            for (int i = 0; i < diagMtx.rowSize(); i++)
-                det *= diagMtx.get(i, i);
-
-            try {
-                assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
-            }
-            catch (Exception e) {
-                System.out.println(desc);
-                throw e;
-            }
-        });
-    }
-
-    /** */
-    @Test
-    public void testInverse() {
-        consumeSampleMatrix((m, desc) -> {
-            if (m.rowSize() != m.columnSize())
-                return;
-
-            if (ignore(m.getClass()))
-                return;
-
-            if (m.rowSize() > 256)
-                return; // IMPL NOTE this is for quicker test run.
-
-            fillNonSingularMatrix(m);
-
-            assertTrue("Unexpected zero determinant " + desc, Math.abs(m.determinant()) > 0d);
-
-            Matrix inverse = m.inverse();
-
-            Matrix mult = m.times(inverse);
-
-            final double delta = 0.001d;
-
-            assertEquals("Unexpected determinant " + desc, 1d, mult.determinant(), delta);
-
-            assertEquals("Unexpected top left value " + desc, 1d, mult.get(0, 0), delta);
-
-            if (m.rowSize() == 1)
-                return;
-
-            assertEquals("Unexpected center value " + desc,
-                1d, mult.get(m.rowSize() / 2, m.rowSize() / 2), delta);
-
-            assertEquals("Unexpected bottom right value " + desc,
-                1d, mult.get(m.rowSize() - 1, m.rowSize() - 1), delta);
-
-            assertEquals("Unexpected top right value " + desc,
-                0d, mult.get(0, m.rowSize() - 1), delta);
-
-            assertEquals("Unexpected bottom left value " + desc,
-                0d, mult.get(m.rowSize() - 1, 0), delta);
-        });
-    }
-
-    /** */
-    @Test
     public void testMap() {
         consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
@@ -525,8 +424,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testViewRow() {
         consumeSampleMatrix((m, desc) -> {
-            if (!readOnly(m))
-                fillMatrix(m);
+            fillMatrix(m);
 
             for (int i = 0; i < m.rowSize(); i++) {
                 Vector vector = m.viewRow(i);
@@ -543,8 +441,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testViewCol() {
         consumeSampleMatrix((m, desc) -> {
-            if (!readOnly(m))
-                fillMatrix(m);
+            fillMatrix(m);
 
             for (int i = 0; i < m.columnSize(); i++) {
                 Vector vector = m.viewColumn(i);
@@ -655,8 +552,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testGetElement() {
         consumeSampleMatrix((m, desc) -> {
-            if (!(readOnly(m)))
-                fillMatrix(m);
+            fillMatrix(m);
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++) {
@@ -679,17 +575,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                         e.set(newVal);
                     }
                     catch (UnsupportedOperationException uoe) {
-                        if (!(readOnly(m)))
-                            throw uoe;
-
-                        expECaught = true;
-                    }
-
-                    if (readOnly(m)) {
-                        if (!expECaught)
-                            fail("Expected exception was not caught for " + details);
-
-                        continue;
+                        throw uoe;
                     }
 
                     assertEquals("Unexpected value set for " + details, newVal, m.get(i, j), 0d);
@@ -701,8 +587,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testGetX() {
         consumeSampleMatrix((m, desc) -> {
-            if (!(readOnly(m)))
-                fillMatrix(m);
+            fillMatrix(m);
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
@@ -727,9 +612,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testSwapRows() {
         consumeSampleMatrix((m, desc) -> {
-            if (readOnly(m))
-                return;
-
             double[][] doubles = fillAndReturn(m);
 
             final int swap_i = m.rowSize() == 1 ? 0 : 1;
@@ -756,9 +638,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testSwapColumns() {
         consumeSampleMatrix((m, desc) -> {
-            if (readOnly(m))
-                return;
-
             double[][] doubles = fillAndReturn(m);
 
             final int swap_i = m.columnSize() == 1 ? 0 : 1;
@@ -861,8 +740,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testDensity() {
         consumeSampleMatrix((m, desc) -> {
-            if (!readOnly(m))
-                fillMatrix(m);
+            fillMatrix(m);
 
             assertTrue("Unexpected density with threshold 0 for " + desc, m.density(0.0));
 
@@ -874,8 +752,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testMaxAbsRowSumNorm() {
         consumeSampleMatrix((m, desc) -> {
-            if (!readOnly(m))
-                fillMatrix(m);
+            fillMatrix(m);
 
             assertEquals("Unexpected value for " + desc,
                 maxAbsRowSumNorm(m), m.maxAbsRowSumNorm(), 0d);
@@ -930,10 +807,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testGetRowCol() {
         consumeSampleMatrix((m, desc) -> {
-            if (!(m instanceof RandomMatrix))
-                for (int i = 0; i < m.rowSize(); i++)
-                    for (int j = 0; j < m.columnSize(); j++)
-                        m.setX(i, j, i + j);
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    m.setX(i, j, i + j);
 
             for (int i = 0; i < m.rowSize(); i++)
                 assertNotNull("Unexpected value for " + desc + " at row " + i, m.getRow(i));
@@ -1024,27 +900,15 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
-    private boolean readOnly(Matrix m) {
-        return m instanceof RandomMatrix;
-    }
-
-    /** */
     private double[][] fillIntAndReturn(Matrix m) {
         double[][] data = new double[m.rowSize()][m.columnSize()];
 
-        if (readOnly(m)) {
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    data[i][j] = m.get(i, j);
+        for (int i = 0; i < m.rowSize(); i++)
+            for (int j = 0; j < m.columnSize(); j++)
+                data[i][j] = i * m.rowSize() + j + 1;
 
-        }
-        else {
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    data[i][j] = i * m.rowSize() + j + 1;
+        m.assign(data);
 
-            m.assign(data);
-        }
         return data;
     }
 
@@ -1052,19 +916,11 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     private double[][] fillAndReturn(Matrix m) {
         double[][] data = new double[m.rowSize()][m.columnSize()];
 
-        if (readOnly(m)) {
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    data[i][j] = m.get(i, j);
+        for (int i = 0; i < m.rowSize(); i++)
+            for (int j = 0; j < m.columnSize(); j++)
+                data[i][j] = -0.5d + Math.random();
 
-        }
-        else {
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    data[i][j] = -0.5d + Math.random();
-
-            m.assign(data);
-        }
+        m.assign(data);
         return data;
     }
 
@@ -1088,8 +944,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** Ignore test for given matrix type. */
     private boolean ignore(Class<? extends Matrix> clazz) {
-        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class,
-            MatrixView.class, FunctionMatrix.class, TransposedMatrixView.class);
+        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(MatrixView.class);
 
         for (Class<? extends Matrix> ignoredClass : ignoredClasses)
             if (ignoredClass.isAssignableFrom(clazz))
@@ -1112,10 +967,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         return new LinkedHashMap<Class<? extends Matrix>, Class<? extends Vector>>() {{
             put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapVector.class);
             put(DenseLocalOffHeapMatrix.class, DenseLocalOffHeapVector.class);
-            put(RandomMatrix.class, RandomVector.class);
             put(SparseLocalOnHeapMatrix.class, SparseLocalVector.class);
-            put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapVector.class);
-            put(DiagonalMatrix.class, DenseLocalOnHeapVector.class); // IMPL NOTE per fixture
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }
@@ -1125,11 +977,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         return new LinkedHashMap<Class<? extends Matrix>, Class<? extends Matrix>>() {{
             put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapMatrix.class, DenseLocalOffHeapMatrix.class);
-            put(RandomMatrix.class, RandomMatrix.class);
             put(SparseLocalOnHeapMatrix.class, SparseLocalOnHeapMatrix.class);
-            put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapMatrix.class);
-            put(DiagonalMatrix.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
-            put(FunctionMatrix.class, FunctionMatrix.class);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }

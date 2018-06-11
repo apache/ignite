@@ -95,11 +95,6 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache2.put("key2", 4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -121,6 +116,34 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
                 assertEquals(++cnt, rs.getInt(1));
 
             assertEquals(2, cnt);
+        }
+        finally {
+            if (conn != null)
+                conn.close();
+        }
+    }
+
+    /**
+     * Verifies that <code>select count(*)</code> behaves correctly in
+     * {@link org.apache.ignite.cache.CacheMode#LOCAL} mode.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCountAll() throws Exception {
+        Properties cfg = new Properties();
+
+        cfg.setProperty(PROP_NODE_ID, grid(0).localNode().id().toString());
+
+        Connection conn = null;
+
+        try {
+            conn = DriverManager.getConnection(BASE_URL, cfg);
+
+            ResultSet rs = conn.createStatement().executeQuery("select count(*) from Integer");
+
+            assertTrue(rs.next());
+
+            assertEquals(2L, rs.getLong(1));
         }
         finally {
             if (conn != null)

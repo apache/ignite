@@ -33,6 +33,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
@@ -42,21 +44,29 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
@@ -66,6 +76,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
+import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
@@ -102,6 +113,18 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /** */
     private final AtomicLong diagFutId = new AtomicLong();
 
+    /** */
+    private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
+
+    /** */
+    private final JdkMarshaller marsh = new JdkMarshaller();
+
+    /** */
+    private DiscoveryMetricsProvider metricsProvider;
+
+    /** */
+    private boolean sndMetrics;
+
     /**
      * @param ctx Kernal context.
      */
@@ -111,6 +134,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
         notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true));
 
         cluster = new IgniteClusterImpl(ctx);
+
+        sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
     }
 
     /**
@@ -120,33 +145,31 @@ public class ClusterProcessor extends GridProcessorAdapter {
         return getBoolean(IGNITE_DIAGNOSTIC_ENABLED, true);
     }
 
-    /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
-
     /**
      * @throws IgniteCheckedException If failed.
      */
     public void initDiagnosticListeners() throws IgniteCheckedException {
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-                @Override public void onEvent(Event evt) {
-                    assert evt instanceof DiscoveryEvent;
-                    assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
+                assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                    UUID nodeId = discoEvt.eventNode().id();
+                UUID nodeId = discoEvt.eventNode().id();
 
-                    ConcurrentHashMap<Long, InternalDiagnosticFuture> futs = diagnosticFutMap.get();
+                ConcurrentHashMap<Long, InternalDiagnosticFuture> futs = diagnosticFutMap.get();
 
-                    if (futs != null) {
-                        for (InternalDiagnosticFuture fut : futs.values()) {
-                            if (fut.nodeId.equals(nodeId))
-                                fut.onDone(new IgniteDiagnosticInfo("Target node failed: " + nodeId));
-                        }
+                if (futs != null) {
+                    for (InternalDiagnosticFuture fut : futs.values()) {
+                        if (fut.nodeId.equals(nodeId))
+                            fut.onDone(new IgniteDiagnosticInfo("Target node failed: " + nodeId));
                     }
                 }
-            },
-            EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+                allNodesMetrics.remove(nodeId);
+            }
+        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -233,6 +256,17 @@ public class ClusterProcessor extends GridProcessorAdapter {
                     U.warn(diagnosticLog, "Received unexpected message: " + msg);
             }
         });
+
+        if (sndMetrics) {
+            ctx.io().addMessageListener(TOPIC_METRICS, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof ClusterMetricsUpdateMessage)
+                        processMetricsUpdateMessage(nodeId, (ClusterMetricsUpdateMessage)msg);
+                    else
+                        U.warn(log, "Received unexpected message for TOPIC_METRICS: " + msg);
+                }
+            });
+        }
     }
 
     /**
@@ -296,7 +330,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
         }
     }
 
-
     /**
      * @param vals collection to seek through.
      */
@@ -334,6 +367,14 @@ public class ClusterProcessor extends GridProcessorAdapter {
                     log.debug("Failed to create GridUpdateNotifier: " + e);
             }
         }
+
+        if (sndMetrics) {
+            metricsProvider = ctx.discovery().createMetricsProvider();
+
+            long updateFreq = ctx.config().getMetricsUpdateFrequency();
+
+            ctx.timeout().addTimeoutObject(new MetricsUpdateTimeoutObject(updateFreq));
+        }
     }
 
     /** {@inheritDoc} */
@@ -349,6 +390,133 @@ public class ClusterProcessor extends GridProcessorAdapter {
         // exception on start.
         if (ctx.io() != null)
             ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
+    }
+
+    /**
+     * @param sndNodeId Sender node ID.
+     * @param msg Message.
+     */
+    private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
+        byte[] nodeMetrics = msg.nodeMetrics();
+
+        if (nodeMetrics != null) {
+            assert msg.allNodesMetrics() == null;
+
+            allNodesMetrics.put(sndNodeId, nodeMetrics);
+
+            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, nodeMetrics);
+        }
+        else {
+            Map<UUID, byte[]> allNodesMetrics = msg.allNodesMetrics();
+
+            assert allNodesMetrics != null;
+
+            DiscoCache discoCache = ctx.discovery().discoCache();
+
+            for (Map.Entry<UUID, byte[]> e : allNodesMetrics.entrySet()) {
+                if (!ctx.localNodeId().equals(e.getKey()))
+                    updateNodeMetrics(discoCache, e.getKey(), e.getValue());
+            }
+        }
+    }
+
+    /**
+     * @param discoCache Discovery data cache.
+     * @param nodeId Node ID.
+     * @param metricsBytes Marshalled metrics.
+     */
+    private void updateNodeMetrics(DiscoCache discoCache, UUID nodeId, byte[] metricsBytes) {
+        ClusterNode node = discoCache.node(nodeId);
+
+        if (node == null || !discoCache.alive(nodeId))
+            return;
+
+        try {
+            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.config().getMarshaller(), metricsBytes, null);
+
+            assert node instanceof IgniteClusterNode : node;
+
+            IgniteClusterNode node0 = (IgniteClusterNode)node;
+
+            node0.setMetrics(ClusterMetricsSnapshot.deserialize(metrics.metrics(), 0));
+            node0.setCacheMetrics(metrics.cacheMetrics());
+
+            ctx.discovery().metricsUpdateEvent(discoCache, node0);
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Failed to unmarshal node metrics: " + e);
+        }
+    }
+
+    /**
+     *
+     */
+    private void updateMetrics() {
+        if (ctx.isStopping() || ctx.clientDisconnected())
+            return;
+
+        ClusterNode oldest = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+
+        if (oldest == null)
+            return;
+
+        if (ctx.localNodeId().equals(oldest.id())) {
+            IgniteClusterNode locNode = (IgniteClusterNode)ctx.discovery().localNode();
+
+            locNode.setMetrics(metricsProvider.metrics());
+            locNode.setCacheMetrics(metricsProvider.cacheMetrics());
+
+            ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
+
+            try {
+                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+
+                allNodesMetrics.put(ctx.localNodeId(), metricsBytes);
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Failed to marshal local node metrics: " + e, e);
+            }
+
+            ctx.discovery().metricsUpdateEvent(ctx.discovery().discoCache(), locNode);
+
+            Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
+
+            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(new HashMap<>(allNodesMetrics));
+
+            for (ClusterNode node : allNodes) {
+                if (ctx.localNodeId().equals(node.id()) || !ctx.discovery().alive(node.id()))
+                    continue;
+
+                try {
+                    ctx.io().sendToGridTopic(node, TOPIC_METRICS, msg, GridIoPolicy.SYSTEM_POOL);
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send metrics update, node failed: " + e);
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Failed to send metrics update: " + e, e);
+                }
+            }
+        }
+        else {
+            ClusterNodeMetrics metrics = new ClusterNodeMetrics(metricsProvider.metrics(), metricsProvider.cacheMetrics());
+
+            try {
+                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+
+                ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsBytes);
+
+                ctx.io().sendToGridTopic(oldest, TOPIC_METRICS, msg, GridIoPolicy.SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send metrics update to oldest, node failed: " + e);
+            }
+            catch (IgniteCheckedException e) {
+                LT.warn(log, e, "Failed to send metrics update to oldest: " + e, false, false);
+            }
+        }
     }
 
     /**
@@ -569,6 +737,53 @@ public class ClusterProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(InternalDiagnosticFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private class MetricsUpdateTimeoutObject implements GridTimeoutObject, Runnable {
+        /** */
+        private final IgniteUuid id = IgniteUuid.randomUuid();
+
+        /** */
+        private long endTime;
+
+        /** */
+        private final long timeout;
+
+        /**
+         * @param timeout Timeout.
+         */
+        MetricsUpdateTimeoutObject(long timeout) {
+            this.timeout = timeout;
+
+            endTime = U.currentTimeMillis() + timeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid timeoutId() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long endTime() {
+            return endTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            updateMetrics();
+
+            endTime = U.currentTimeMillis() + timeout;
+
+            ctx.timeout().addTimeoutObject(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            ctx.getSystemExecutorService().execute(this);
         }
     }
 }

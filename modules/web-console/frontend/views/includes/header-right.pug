@@ -14,13 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-demo-toggle(ng-controller='demoController')
+.wch-demo-toggle(ng-if='!$root.user.becomeUsed' ng-controller='demoController')
     button.btn-ignite.btn-ignite--success(
         ng-if='!IgniteDemoMode'
         ng-click='startDemo()'
     ) Start Demo
 
-ignite-cluster-select.wch-nav-item(ng-if='!IgniteDemoMode')
+web-console-header-extension
 
 .wch-nav-item(ignite-userbar)
     div(

@@ -71,7 +71,7 @@ public class SqlParserUtils {
     }
 
     /**
-     * Skip commr or right parenthesis.
+     * Skip comma or right parenthesis.
      *
      * @param lex Lexer.
      * @return {@code True} if right parenthesis is found.
@@ -123,6 +123,28 @@ public class SqlParserUtils {
     }
 
     /**
+     * Parse boolean parameter value based on presence of tokens 1, 0, ON, OFF. Not that this is not
+     * and is not intended to be routine for parsing a boolean literal from TRUE/FALSE.
+     * @param lex Lexer.
+     * @return Boolean parameter value.
+     */
+    public static boolean parseBoolean(SqlLexer lex) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.token()) {
+                case SqlKeyword.ON:
+                case "1":
+                    return true;
+
+                case SqlKeyword.OFF:
+                case "0":
+                    return false;
+            }
+        }
+
+        throw errorUnexpectedToken(lex, SqlKeyword.ON, SqlKeyword.OFF, "1", "0");
+    }
+
+    /**
      * Process name.
      *
      * @param lex Lexer.
@@ -130,10 +152,38 @@ public class SqlParserUtils {
      * @return Name.
      */
     public static String parseIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isVaildIdentifier(lex))
+        if (lex.shift() && isValidIdentifier(lex))
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[identifier]", additionalExpTokens);
+    }
+
+    /**
+     * Process name.
+     *
+     * @param lex Lexer.
+     * @param additionalExpTokens Additional expected tokens in case of error.
+     * @return Name.
+     */
+    public static String parseUsername(SqlLexer lex, String... additionalExpTokens) {
+        if (lex.shift() && isValidIdentifier(lex))
+            return lex.token();
+
+        throw errorUnexpectedToken(lex, "[username identifier]", additionalExpTokens);
+    }
+
+    /**
+     * Process name.
+     *
+     * @param lex Lexer.
+     * @param additionalExpTokens Additional expected tokens in case of error.
+     * @return Name.
+     */
+    public static String parseString(SqlLexer lex, String... additionalExpTokens) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING)
+            return lex.token();
+
+        throw errorUnexpectedToken(lex, "[string]", additionalExpTokens);
     }
 
     /**
@@ -144,7 +194,7 @@ public class SqlParserUtils {
      * @return Qualified name.
      */
     public static SqlQualifiedName parseQualifiedIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isVaildIdentifier(lex)) {
+        if (lex.shift() && isValidIdentifier(lex)) {
             SqlQualifiedName res = new SqlQualifiedName();
 
             String first = lex.token();
@@ -171,7 +221,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isVaildIdentifier(SqlLexerToken token) {
+    public static boolean isValidIdentifier(SqlLexerToken token) {
         switch (token.tokenType()) {
             case DEFAULT:
                 char c = token.tokenFirstChar();

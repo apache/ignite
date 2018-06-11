@@ -17,12 +17,17 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 // Fire me up!
+
+const Express = require('express');
 
 module.exports = {
     implements: 'api-server',
-    inject: ['require(fs)', 'require(path)', 'require(express)', 'settings', 'configure', 'routes'],
-    factory(fs, path, Express, settings, configure, routes) {
+    inject: ['settings', 'configure', 'routes'],
+    factory(settings, configure, routes) {
         /**
          * Connected agents manager.
          */
@@ -55,12 +60,11 @@ module.exports = {
                 }
 
                 // Catch 404 and forward to error handler.
-                app.use((req, res, next) => {
-                    const err = new Error('Not Found: ' + req.originalUrl);
+                app.use((req, res) => {
+                    if (req.xhr)
+                        return res.status(404).send({ error: 'Not Found: ' + req.originalUrl });
 
-                    err.status = 404;
-
-                    next(err);
+                    return res.sendStatus(404);
                 });
 
                 // Production error handler: no stacktraces leaked to user.

@@ -20,12 +20,22 @@ package org.apache.ignite.ml;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
-import org.apache.ignite.ml.clustering.KMeansModel;
-import org.apache.ignite.ml.math.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.junit.After;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
+import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNModelFormat;
+import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,47 +44,146 @@ import org.junit.Test;
  */
 public class LocalModelsTest {
     /** */
-    private String mdlFilePath = "model.mlmod";
-
-    /**
-     *
-     */
-    @After
-    public void cleanUp() throws IOException {
-        Files.deleteIfExists(Paths.get(mdlFilePath));
-    }
-
-    /**
-     *
-     */
     @Test
-    public void importExportKMeansModelTest() {
-        Path mdlPath = Paths.get(mdlFilePath);
+    public void importExportKMeansModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            KMeansModel mdl = getClusterModel();
 
-        KMeansModel mdl = getClusterModel();
+            Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
 
-        Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
-        mdl.saveModel(exporter, mdlFilePath);
+            mdl.saveModel(exporter, mdlFilePath);
 
-        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
+            KMeansModelFormat load = exporter.load(mdlFilePath);
 
-        KMeansModelFormat load = exporter.load(mdlFilePath);
-        KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+            Assert.assertNotNull(load);
 
-        Assert.assertTrue("", mdl.equals(importedMdl));
+            KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
+    public void importExportLinearRegressionModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            LinearRegressionModel model = new LinearRegressionModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<LinearRegressionModel, String> exporter = new FileExporter<>();
+            model.saveModel(exporter, mdlFilePath);
+
+            LinearRegressionModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", model, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    @Test
+    public void importExportSVMBinaryClassificationModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    @Test
+    public void importExportSVMMulticlassClassificationModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{2, 3}), 4);
+            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{3, 4}), 5);
+
+            SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
+            mdl.add(1, binaryMdl1);
+            mdl.add(2, binaryMdl2);
+            mdl.add(3, binaryMdl3);
+
+            Exporter<SVMLinearMultiClassClassificationModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    private void executeModelTest(Function<String, Void> code) throws IOException {
+        Path mdlPath = Files.createTempFile(null, null);
+
+        Assert.assertNotNull(mdlPath);
+
+        try {
+            String mdlFilePath = mdlPath.toAbsolutePath().toString();
+
+            Assert.assertTrue(String.format("File %s not found.", mdlFilePath), Files.exists(mdlPath));
+
+            code.apply(mdlFilePath);
+        }
+        finally {
+            Files.deleteIfExists(mdlPath);
+        }
+    }
+
+    /** */
     private KMeansModel getClusterModel() {
-        KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(0, new double[] {1.0, 1959, 325100});
+        data.put(1, new double[] {1.0, 1960, 373200});
 
-        double[] v1 = new double[] {1959, 325100};
-        double[] v2 = new double[] {1960, 373200};
+        KMeansTrainer trainer = new KMeansTrainer()
+            .withK(1);
 
-        DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
+        KMeansModel knnMdl = trainer.fit(
+            new LocalDatasetBuilder<>(data, 2),
+            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> v[2]
+        );
 
-        return clusterer.cluster(points, 1);
+        return knnMdl;
+    }
+
+    /** */
+    @Test
+    public void importExportKNNModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            KNNClassificationModel mdl = new KNNClassificationModel(null)
+                .withK(3)
+                .withDistanceMeasure(new EuclideanDistance())
+                .withStrategy(KNNStrategy.SIMPLE);
+
+            Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            KNNModelFormat load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+
+            KNNClassificationModel importedMdl = new KNNClassificationModel(null)
+                .withK(load.getK())
+                .withDistanceMeasure(load.getDistanceMeasure())
+                .withStrategy(load.getStgy());
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
     }
 }

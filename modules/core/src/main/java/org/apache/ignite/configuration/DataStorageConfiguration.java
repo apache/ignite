@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOF
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -47,12 +48,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  *     <property name="dataStorageConfiguration">
  *         <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
- *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
+ *             <property name="systemCacheInitialSize" value="#{100L * 1024 * 1024}"/>
  *
  *             <property name="defaultDataRegionConfiguration">
  *                 <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                     <property name="name" value="default_data_region"/>
- *                     <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                     <property name="initialSize" value="#{5L * 1024 * 1024 * 1024}"/>
  *                 </bean>
  *             </property>
  *         </bean>
@@ -77,10 +78,10 @@ public class DataStorageConfiguration implements Serializable {
         DFLT_DATA_REGION_INITIAL_SIZE);
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40 * 1024 * 1024;
+    private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
 
     /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
+    private static final long DFLT_SYS_REG_MAX_SIZE = 100L * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
@@ -119,10 +120,13 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** Default wal mode. */
-    public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
+    public static final WALMode DFLT_WAL_MODE = WALMode.LOG_ONLY;
 
     /** Default thread local buffer size. */
     public static final int DFLT_TLB_SIZE = 128 * 1024;
+
+    /** Default thread local buffer size. */
+    public static final int DFLT_WAL_BUFF_SIZE = DFLT_WAL_SEGMENT_SIZE / 4;
 
     /** Default Wal flush frequency. */
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
@@ -148,11 +152,11 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction enabled. */
     public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
 
-    /** Size of a memory chunk reserved for system cache initially. */
-    private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
+    /** Initial size of a memory chunk reserved for system cache. */
+    private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
-    /** Maximum size of system cache. */
-    private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
+    /** Maximum size of a memory chunk reserved for system cache. */
+    private long sysRegionMaxSize = DFLT_SYS_REG_MAX_SIZE;
 
     /** Memory page size. */
     private int pageSize;
@@ -205,6 +209,9 @@ public class DataStorageConfiguration implements Serializable {
     /** WAl thread local buffer size. */
     private int walTlbSize = DFLT_TLB_SIZE;
 
+    /** WAl buffer size. */
+    private int walBuffSize;
+
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
 
@@ -217,9 +224,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Always write full pages. */
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
-    /** Factory to provide I/O interface for files */
+    /** Factory to provide I/O interface for data storage files */
     private FileIOFactory fileIOFactory =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
@@ -230,7 +237,7 @@ public class DataStorageConfiguration implements Serializable {
      * rate-based metrics when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      */
-    private int metricsSubIntervalCount = DFLT_SUB_INTERVALS;
+    private int metricsSubIntervalCnt = DFLT_SUB_INTERVALS;
 
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
@@ -263,14 +270,14 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets initial size of a data region reserved for system cache.
      *
-     * Default value is {@link #DFLT_SYS_CACHE_INIT_SIZE}
+     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}
      *
      * @param sysRegionInitSize Size in bytes.
      *
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
-        A.ensure(sysCacheMaxSize > 0, "System region initial size can not be less zero.");
+        A.ensure(sysRegionInitSize > 0, "System region initial size can not be less zero.");
 
         this.sysRegionInitSize = sysRegionInitSize;
 
@@ -283,21 +290,23 @@ public class DataStorageConfiguration implements Serializable {
      * @return Size in bytes.
      */
     public long getSystemRegionMaxSize() {
-        return sysCacheMaxSize;
+        return sysRegionMaxSize;
     }
 
     /**
      * Sets maximum data region size reserved for system cache. The total size should not be less than 10 MB
      * due to internal data structures overhead.
      *
-     * @param sysCacheMaxSize Maximum size in bytes for system cache data region.
+     * Default value is {@link #DFLT_SYS_REG_MAX_SIZE}.
+     *
+     * @param sysRegionMaxSize Maximum size in bytes for system cache data region.
      *
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setSystemRegionMaxSize(long sysCacheMaxSize) {
-        A.ensure(sysCacheMaxSize > 0, "System cache max size can not be less zero.");
+    public DataStorageConfiguration setSystemRegionMaxSize(long sysRegionMaxSize) {
+        A.ensure(sysRegionMaxSize > 0, "System region max size can not be less zero.");
 
-        this.sysCacheMaxSize = sysCacheMaxSize;
+        this.sysRegionMaxSize = sysRegionMaxSize;
 
         return this;
     }
@@ -521,16 +530,20 @@ public class DataStorageConfiguration implements Serializable {
      * @return WAL segment size.
      */
     public int getWalSegmentSize() {
-        return walSegmentSize <= 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
+        return walSegmentSize == 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
     }
 
     /**
      * Sets size of a WAL segment.
+     * If value is not set (or zero), {@link #DFLT_WAL_SEGMENT_SIZE} will be used.
      *
-     * @param walSegmentSize WAL segment size. 64 MB is used by default.  Maximum value is 2Gb
-     * @return {@code this} for chaining.
+     * @param walSegmentSize WAL segment size. Value must be between 512Kb and 2Gb.
+     * @return {@code This} for chaining.
      */
     public DataStorageConfiguration setWalSegmentSize(int walSegmentSize) {
+        if (walSegmentSize != 0)
+            A.ensure(walSegmentSize >= 512 * 1024, "WAL segment size must be between 512Kb and 2Gb.");
+
         this.walSegmentSize = walSegmentSize;
 
         return this;
@@ -648,7 +661,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return The number of sub-intervals for history tracking.
      */
     public int getMetricsSubIntervalCount() {
-        return metricsSubIntervalCount;
+        return metricsSubIntervalCnt;
     }
 
     /**
@@ -657,7 +670,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
      */
     public DataStorageConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
-        this.metricsSubIntervalCount = metricsSubIntervalCnt;
+        this.metricsSubIntervalCnt = metricsSubIntervalCnt;
 
         return this;
     }
@@ -679,6 +692,9 @@ public class DataStorageConfiguration implements Serializable {
      * @param walMode Wal mode.
      */
     public DataStorageConfiguration setWalMode(WALMode walMode) {
+        if (walMode == WALMode.DEFAULT)
+            walMode = WALMode.FSYNC;
+
         this.walMode = walMode;
 
         return this;
@@ -707,6 +723,25 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
+     *
+     * @return WAL buffer size.
+     */
+    public int getWalBufferSize() {
+        return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
+    }
+
+    /**
+     * @param walBuffSize WAL buffer size.
+     */
+    public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
+        this.walBuffSize = walBuffSize;
+
+        return this;
+    }
+
+    /**
      *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
      *  all other WAL modes.
      *
@@ -729,7 +764,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property that allows to trade latency for throughput in {@link WALMode#DEFAULT} mode.
+     * Property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
@@ -739,7 +774,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets property that allows to trade latency for throughput in {@link WALMode#DEFAULT} mode.
+     * Sets property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
@@ -798,7 +833,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Factory to provide implementation of FileIO interface
-     * which is used for any file read/write operations
+     * which is used for data storage files read/write operations
      *
      * @return File I/O factory
      */
@@ -808,7 +843,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets factory to provide implementation of FileIO interface
-     * which is used for any file read/write operations
+     * which is used for data storage files read/write operations
      *
      * @param fileIOFactory File I/O factory
      */
@@ -819,7 +854,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case
+     * <b>Note:</b> setting this value with {@link WALMode#FSYNC} may generate file size overhead for WAL segments in case
      * grid is used rarely.
      *
      * @param walAutoArchiveAfterInactivity time in millis to run auto archiving segment (even if incomplete) after last
@@ -876,5 +911,10 @@ public class DataStorageConfiguration implements Serializable {
         this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataStorageConfiguration.class, this);
     }
 }

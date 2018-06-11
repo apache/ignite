@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -37,16 +37,16 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" /c:"version .1\.8\..*" > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -73,8 +73,7 @@ goto checkIgniteHome2
 :checkIgniteHome3
 if exist "%IGNITE_HOME%\config" goto checkIgniteHome4
     echo %0, ERROR: Ignite installation folder is not found or IGNITE_HOME environment variable is not valid.
-    echo Please create IGNITE_HOME environment variable pointing to location of
-    echo Ignite installation folder.
+    echo Please create IGNITE_HOME environment variable pointing to location of Ignite installation folder.
     goto error_finish
 
 :checkIgniteHome4

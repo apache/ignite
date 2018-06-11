@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+import {ListEditableColsController} from './cols.directive';
+
 /** @returns {ng.IDirective} */
 export default function() {
     return {
         require: '?^listEditableCols',
-        /** @param {PcListEditableColsController} ctrl */
+        /** @param {ListEditableColsController} ctrl */
         link(scope, el, attr, ctrl) {
             if (!ctrl || !ctrl.colDefs.length)
                 return;
@@ -33,7 +35,7 @@ export default function() {
                 el.addClass(ctrl.rowClass);
 
             ctrl.colDefs.forEach(({ cellClass }, index) => {
-                children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : [cellClass]));
+                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
             });
         }
     };

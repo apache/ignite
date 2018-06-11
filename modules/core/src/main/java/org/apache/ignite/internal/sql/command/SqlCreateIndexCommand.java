@@ -21,7 +21,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
-import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,11 +37,13 @@ import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
+import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
@@ -65,6 +66,12 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** Spatial index flag. */
     private boolean spatial;
+
+    /**
+     * Parallelism level. <code>parallel=0</code> means that a default number
+     * of cores will be used during index creation (e.g. 25% of available cores).
+     */
+    private int parallel;
 
     /** Columns. */
     @GridToStringInclude
@@ -106,6 +113,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
      */
     public boolean ifNotExists() {
         return ifNotExists;
+    }
+
+    /**
+     * @return Parallelism level.
+     */
+    public int parallel() {
+        return parallel;
     }
 
     /**
@@ -154,13 +168,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
         parseColumnList(lex);
 
-        parseInlineSize(lex);
+        parseIndexProperties(lex);
 
         return this;
     }
 
     /**
-     * Pasrse index name.
+     * Parse index name.
      *
      * @param lex Lexer.
      * @return Index name.
@@ -172,25 +186,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return parseIdentifier(lex, IF);
     }
 
-    /**
-     * Parses inline size option if exists.
-     *
-     * @param lex Lexer.
-     */
-    private void parseInlineSize(SqlLexer lex) {
-        SqlLexerToken nextTok = lex.lookAhead();
-
-        if (matchesKeyword(nextTok, INLINE_SIZE)) {
-            lex.shift();
-
-            int stmtInlineSize = SqlParserUtils.parseInt(lex);
-
-            if (stmtInlineSize < 0)
-                throw error(lex, "Inline size should be positive: " + stmtInlineSize);
-
-            inlineSize = stmtInlineSize;
-        }
-    }
 
     /**
      * @param lex Lexer.
@@ -240,6 +235,62 @@ public class SqlCreateIndexCommand implements SqlCommand {
             throw error(lex, "Column already defined: " + col.name());
 
         cols.add(col);
+    }
+
+    /**
+     * Parses CREATE INDEX command properties.
+     *
+     * @param lex Lexer.
+     */
+    private void parseIndexProperties(SqlLexer lex) {
+        Set<String> foundProps = new HashSet<>();
+
+        while (true) {
+            SqlLexerToken token = lex.lookAhead();
+
+            if (token.tokenType() != SqlLexerTokenType.DEFAULT)
+                break;
+
+            switch (token.token()) {
+                case PARALLEL:
+                    parallel = getIntProperty(lex, PARALLEL, foundProps);
+
+                    if (parallel < 0)
+                        throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + parallel);
+
+                    break;
+
+                case INLINE_SIZE:
+                    inlineSize = getIntProperty(lex, INLINE_SIZE, foundProps);
+
+                    if (inlineSize < 0)
+                        throw error(lex, "Illegal " + INLINE_SIZE +
+                            " value. Should be positive: " + inlineSize);
+
+                    break;
+
+                default:
+                    return;
+            }
+        }
+    }
+
+    /**
+     * Parses <code>Integer</code> property by its keyword.
+     * @param lex Lexer.
+     * @param keyword Keyword.
+     * @param foundProps Set of properties to check if one has already been found in SQL clause.
+     * @return parsed value;
+     */
+    private Integer getIntProperty(SqlLexer lex, String keyword, Set<String> foundProps) {
+        if (foundProps.contains(keyword))
+            throw error(lex, "Only one " + keyword + " clause may be specified.");
+
+        foundProps.add(keyword);
+
+        lex.shift();
+
+        return parseInt(lex);
     }
 
     /** {@inheritDoc} */

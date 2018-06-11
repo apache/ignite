@@ -20,7 +20,9 @@
 const fs = require('fs');
 const path = require('path');
 
-require('app-module-path').addPath(path.join(__dirname, 'node_modules'));
+const appPath = require('app-module-path');
+appPath.addPath(__dirname);
+appPath.addPath(path.join(__dirname, 'node_modules'));
 
 const _ = require('lodash');
 const getos = require('getos');
@@ -106,11 +108,13 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
  * @param dbConnectionUri Mongo connection url.
  * @param group Migrations group.
  * @param migrationsPath Migrations path.
+ * @param collectionName Name of collection where migrations write info about applied scripts.
  */
-const migrate = (dbConnectionUri, group, migrationsPath) => {
+const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
     const migrator = new MigrateMongoose({
         migrationsPath,
         dbConnectionUri,
+        collectionName,
         autosync: true
     });
 
@@ -144,7 +148,7 @@ injector.log.debug = () => {};
 Promise.all([injector('settings'), injector('mongo')])
     .then(([{mongoUrl}]) => {
         return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'))
-            .then(() => migrate(mongoUrl, 'Ignite Modules', path.join(igniteModules, 'migrations')));
+            .then(() => migrate(mongoUrl, 'Ignite Modules', path.join(igniteModules, 'migrations'), 'migrationsModules'));
     })
     .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
     .then(init)

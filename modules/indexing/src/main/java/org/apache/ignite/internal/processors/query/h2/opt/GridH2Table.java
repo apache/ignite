@@ -21,7 +21,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,6 +38,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -53,10 +58,9 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
@@ -91,13 +95,13 @@ public class GridH2Table extends TableBase {
     private boolean destroyed;
 
     /** */
-    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
 
     /** */
     private IndexColumn affKeyCol;
 
     /** */
-    private final LongAdder8 size = new LongAdder8();
+    private final LongAdder size = new LongAdder();
 
     /** */
     private final H2RowFactory rowFactory;
@@ -288,7 +292,16 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            l.lockInterruptibly();
+            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
+                l.lockInterruptibly();
+            else {
+                for (;;) {
+                    if (l.tryLock(200, TimeUnit.MILLISECONDS))
+                        break;
+                    else
+                        Thread.yield();
+                }
+            }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -456,8 +469,6 @@ public class GridH2Table extends TableBase {
 
                     replaced = prevRow0 != null;
                 }
-
-                assert (replaced && prevRow0 != null) || (!replaced && prevRow0 == null) : "Replaced: " + replaced;
 
                 if (!replaced)
                     size.increment();
@@ -931,6 +942,68 @@ public class GridH2Table extends TableBase {
             setColumns(newCols);
 
             desc.refreshMetadataFromTypeDescriptor();
+
+            setModified();
+        }
+        finally {
+            unlock(true);
+        }
+    }
+
+    /**
+     *
+     * @param cols
+     * @param ifExists
+     */
+    public void dropColumns(List<String> cols, boolean ifExists) {
+        assert !ifExists || cols.size() == 1;
+
+        lock(true);
+
+        try {
+            int size = columns.length;
+
+            for (String name : cols) {
+                if (!doesColumnExist(name)) {
+                    if (ifExists && cols.size() == 1)
+                        return;
+                    else
+                        throw new IgniteSQLException("Column does not exist [tblName=" + getName() +
+                            ", colName=" + name + ']');
+                }
+
+                size --;
+            }
+
+            assert size > DEFAULT_COLUMNS_COUNT;
+
+            Column[] newCols = new Column[size];
+
+            int dst = 0;
+
+            for (int i = 0; i < columns.length; i++) {
+                Column column = columns[i];
+
+                for (String name : cols) {
+                    if (F.eq(name, column.getName())) {
+                        column = null;
+
+                        break;
+                    }
+                }
+
+                if (column != null)
+                    newCols[dst++] = column;
+            }
+
+            setColumns(newCols);
+
+            desc.refreshMetadataFromTypeDescriptor();
+
+            for (Index idx : getIndexes()) {
+                if (idx instanceof GridH2IndexBase)
+                    ((GridH2IndexBase)idx).refreshColumnIds();
+            }
 
             setModified();
         }

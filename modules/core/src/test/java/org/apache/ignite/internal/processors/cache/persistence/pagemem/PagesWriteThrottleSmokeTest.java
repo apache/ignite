@@ -20,13 +20,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -53,7 +53,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -77,8 +76,8 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(400 * 1024 * 1024)
-                .setCheckpointPageBufferSize(200 * 1000 * 1000)
+                .setMaxSize(400L * 1024 * 1024)
+                .setCheckpointPageBufferSize(200L * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
@@ -229,6 +228,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         private final int v2;
 
         /** */
+        @SuppressWarnings("unused")
         private byte[] payload = new byte[400 + ThreadLocalRandom.current().nextInt(20)];
 
         /**
@@ -269,11 +269,12 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     * @throws Exception If failed.
      */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
+    private void deleteWorkFiles() throws Exception {
+        cleanPersistenceDir();
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
     }
 
     /**
@@ -315,6 +316,11 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                         LockSupport.parkNanos(5_000_000);
 
                     delegate.write(buf, off, len);
+                }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

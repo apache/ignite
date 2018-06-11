@@ -18,9 +18,11 @@
 namespace Apache.Ignite.Benchmarks.Interop
 {
     using System.Collections.Generic;
+    using System.Net;
     using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
 
     /// <summary>
     /// Base class for all platform benchmarks.
@@ -117,5 +119,24 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// Payload.
         /// </summary>
         public int Payload { get; set; }
+
+        /// <summary>
+        /// Gets the client.
+        /// </summary>
+        protected IIgniteClient GetClient()
+        {
+            return Ignition.StartClient(GetClientConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration
+            {
+                Host = IPAddress.Loopback.ToString()
+            };
+        }
     }
 }

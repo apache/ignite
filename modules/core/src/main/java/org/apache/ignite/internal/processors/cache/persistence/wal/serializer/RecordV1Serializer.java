@@ -29,20 +29,25 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 
 /**
  * Record V1 serializer.
@@ -68,7 +73,7 @@ public class RecordV1Serializer implements RecordSerializer {
     public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
 
     /** Skip CRC calculation/check flag */
-    public static boolean SKIP_CRC = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
+    public static boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /** V1 data serializer. */
     private final RecordDataV1Serializer dataSerializer;
@@ -107,7 +112,13 @@ public class RecordV1Serializer implements RecordSerializer {
 
         /** {@inheritDoc} */
         @Override public int sizeWithHeaders(WALRecord record) throws IgniteCheckedException {
-            return dataSerializer.size(record) + REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
+            int recordSize = dataSerializer.size(record);
+
+            int recordSizeWithType = recordSize + REC_TYPE_SIZE;
+
+            // Why this condition here, see SWITCH_SEGMENT_RECORD doc.
+            return record.type() != SWITCH_SEGMENT_RECORD ?
+                recordSizeWithType + FILE_WAL_POINTER_SIZE + CRC_SIZE : recordSizeWithType;
         }
 
         /** {@inheritDoc} */
@@ -125,8 +136,10 @@ public class RecordV1Serializer implements RecordSerializer {
 
             final WALRecord rec = dataSerializer.readRecord(recType, in);
 
+            rec.position(ptr);
+
             if (recordFilter != null && !recordFilter.apply(rec.type(), ptr))
-                return new FilteredRecord();
+                return FilteredRecord.INSTANCE;
             else if (marshalledMode) {
                 ByteBuffer buf = heapTlb.get();
 
@@ -136,8 +149,6 @@ public class RecordV1Serializer implements RecordSerializer {
                     heapTlb.set(buf = ByteBuffer.allocate(recordSize * 3 / 2).order(ByteOrder.nativeOrder()));
                 else
                     buf.clear();
-
-                rec.position(ptr);
 
                 writeRecord(rec, buf);
 
@@ -152,15 +163,19 @@ public class RecordV1Serializer implements RecordSerializer {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeWithHeaders(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
+        @Override public void writeWithHeaders(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
             // Write record type.
-            putRecordType(buf, record);
+            putRecordType(buf, rec);
+
+            // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
+            if (rec.type() == SWITCH_SEGMENT_RECORD)
+                return;
 
             // Write record file position.
-            putPositionOfRecord(buf, record);
+            putPositionOfRecord(buf, rec);
 
             // Write record data.
-            dataSerializer.writeRecord(record, buf);
+            dataSerializer.writeRecord(rec, buf);
         }
     };
 
@@ -172,8 +187,13 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param skipPositionCheck Skip position check mode.
      * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
      */
-    public RecordV1Serializer(RecordDataV1Serializer dataSerializer, boolean writePointer,
-        boolean marshalledMode, boolean skipPositionCheck, IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
+    public RecordV1Serializer(
+        RecordDataV1Serializer dataSerializer,
+        boolean writePointer,
+        boolean marshalledMode,
+        boolean skipPositionCheck,
+        IgniteBiPredicate<RecordType, WALPointer> recordFilter
+    ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.recordFilter = recordFilter;
@@ -193,8 +213,8 @@ public class RecordV1Serializer implements RecordSerializer {
 
     /** {@inheritDoc} */
     @SuppressWarnings("CastConflictsWithInstanceof")
-    @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        writeWithCrc(record, buf, recordIO);
+    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        writeWithCrc(rec, buf, recordIO);
     }
 
     /** {@inheritDoc} */
@@ -219,35 +239,92 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
+     * Reads stored record from provided {@code io}.
+     * NOTE: Method mutates position of {@code io}.
+     *
+     * @param io I/O interface for file.
+     * @param expectedIdx Expected WAL segment index for readable record.
+     * @return Instance of {@link SegmentHeader} extracted from the file.
+     * @throws IgniteCheckedException If failed to read serializer version.
+     */
+    public static SegmentHeader readSegmentHeader(FileIO io, long expectedIdx)
+        throws IgniteCheckedException, IOException {
+        try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
+            FileInput in = new FileInput(io, buf);
+
+            in.ensure(HEADER_RECORD_SIZE);
+
+            int recordType = in.readUnsignedByte();
+
+            if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
+                throw new SegmentEofException("Reached logical end of the segment", null);
+
+            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
+
+            if (type != WALRecord.RecordType.HEADER_RECORD)
+                throw new IOException("Can't read serializer version", null);
+
+            // Read file pointer.
+            FileWALPointer ptr = readPosition(in);
+
+            if (expectedIdx != ptr.index())
+                throw new SegmentEofException("Reached logical end of the segment by pointer", null);
+
+            assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
+
+            long hdrMagicNum = in.readLong();
+
+            boolean compacted;
+
+            if (hdrMagicNum == HeaderRecord.REGULAR_MAGIC)
+                compacted = false;
+            else if (hdrMagicNum == HeaderRecord.COMPACTED_MAGIC)
+                compacted = true;
+            else {
+                throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.REGULAR_MAGIC) +
+                    ", actual=" + U.hexLong(hdrMagicNum) + ']');
+            }
+
+            // Read serializer version.
+            int ver = in.readInt();
+
+            // Read and skip CRC.
+            in.readInt();
+
+            return new SegmentHeader(ver, compacted);
+        }
+    }
+
+    /**
      * @param in Data input to read pointer from.
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
     public static FileWALPointer readPosition(DataInput in) throws IOException {
         long idx = in.readLong();
-        int fileOffset = in.readInt();
+        int fileOff = in.readInt();
 
-        return new FileWALPointer(idx, fileOffset, 0);
+        return new FileWALPointer(idx, fileOff, 0);
     }
 
     /**
      * Writes record file position to given {@code buf}.
      *
      * @param buf Buffer to write record file position.
-     * @param record WAL record.
+     * @param rec WAL record.
      */
-    public static void putPositionOfRecord(ByteBuffer buf, WALRecord record) {
-        putPosition(buf, (FileWALPointer) record.position());
+    private static void putPositionOfRecord(ByteBuffer buf, WALRecord rec) {
+        putPosition(buf, (FileWALPointer)rec.position());
     }
 
     /**
      * Writes record type to given {@code buf}.
      *
      * @param buf Buffer to write record type.
-     * @param record WAL record.
+     * @param rec WAL record.
      */
-    public static void putRecordType(ByteBuffer buf, WALRecord record) {
-        buf.put((byte)(record.type().ordinal() + 1));
+    static void putRecordType(ByteBuffer buf, WALRecord rec) {
+        buf.put((byte)(rec.type().ordinal() + 1));
     }
 
     /**
@@ -258,7 +335,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws IgniteCheckedException If logical end of segment is reached.
      * @throws IOException In case of I/O problems.
      */
-    public static RecordType readRecordType(DataInput in) throws IgniteCheckedException, IOException {
+    static RecordType readRecordType(DataInput in) throws IgniteCheckedException, IOException {
         int type = in.readUnsignedByte();
 
         if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
@@ -282,10 +359,10 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws EOFException In case of end of file.
      * @throws IgniteCheckedException If it's unable to read record.
      */
-    public static WALRecord readWithCrc(FileInput in0, WALPointer expPtr, RecordIO reader) throws EOFException, IgniteCheckedException {
+    static WALRecord readWithCrc(FileInput in0, WALPointer expPtr, RecordIO reader) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (FileInput.Crc32CheckingFileInput in = in0.startRead(SKIP_CRC)) {
+        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);
@@ -307,19 +384,25 @@ public class RecordV1Serializer implements RecordSerializer {
     /**
      * Writes record with calculated CRC to buffer {@code buf}.
      *
-     * @param record WAL record.
+     * @param rec WAL record.
      * @param buf Buffer to write.
      * @param writer Record write I/O interface.
      * @throws IgniteCheckedException If it's unable to write record.
      */
-    public static void writeWithCrc(WALRecord record, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
-        assert record.size() >= 0 && buf.remaining() >= record.size() : record.size();
+    static void writeWithCrc(WALRecord rec, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
+        assert rec.size() >= 0 && buf.remaining() >= rec.size() : rec.size();
+
+        boolean switchSegmentRec = rec.type() == RecordType.SWITCH_SEGMENT_RECORD;
 
         int startPos = buf.position();
 
-        writer.writeWithHeaders(record, buf);
+        writer.writeWithHeaders(rec, buf);
 
-        if (!SKIP_CRC) {
+        // No need calculate and write CRC for SWITCH_SEGMENT_RECORD.
+        if (switchSegmentRec)
+            return;
+
+        if (!skipCrc) {
             int curPos = buf.position();
 
             buf.position(startPos);

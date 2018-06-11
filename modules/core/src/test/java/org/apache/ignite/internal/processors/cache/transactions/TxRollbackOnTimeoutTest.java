@@ -18,24 +18,35 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -44,8 +55,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
+import static java.lang.Thread.sleep;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -55,6 +68,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests an ability to eagerly rollback timed out transactions.
  */
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
+    /** */
+    private static final long DURATION = 60 * 1000L;
+
     /** */
     private static final long TX_MIN_TIMEOUT = 1;
 
@@ -72,6 +88,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         boolean client = "client".equals(igniteInstanceName);
 
@@ -370,6 +388,280 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                 for (int op = 0; op < 4; op++)
                     testSimple0(concurrency, isolation, op);
             }
+    }
+
+    /**
+     * Test timeouts with random values and different tx configurations.
+     */
+    public void testRandomMixedTxConfigurations() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8509");
+
+        final Ignite client = startClient();
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final long seed = System.currentTimeMillis();
+
+        final Random r = new Random(seed);
+
+        log.info("Using seed: " + seed);
+
+        final int threadsCnt = Runtime.getRuntime().availableProcessors() * 2;
+
+        for (int k = 0; k < threadsCnt; k++)
+            grid(0).cache(CACHE_NAME).put(k, (long)0);
+
+        final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
+        final TransactionIsolation[] TI_VALS = TransactionIsolation.values();
+
+        final LongAdder cntr0 = new LongAdder();
+        final LongAdder cntr1 = new LongAdder();
+        final LongAdder cntr2 = new LongAdder();
+        final LongAdder cntr3 = new LongAdder();
+
+        final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                while (!stop.get()) {
+                    int nodeId = r.nextInt(GRID_CNT + 1);
+
+                    Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
+
+                    TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
+                    TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
+
+                    int k = r.nextInt(threadsCnt);
+
+                    long timeout = r.nextInt(200) + 50;
+
+                    // Roughly 50% of transactions should time out.
+                    try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, 1)) {
+                        cntr0.add(1);
+
+                        final Long v = (Long)node.cache(CACHE_NAME).get(k);
+
+                        assertNotNull("Expecting not null value: " + tx, v);
+
+                        final int delay = r.nextInt(400);
+
+                        if (delay > 0)
+                            sleep(delay);
+
+                        node.cache(CACHE_NAME).put(k, v + 1);
+
+                        tx.commit();
+
+                        cntr1.add(1);
+                    }
+                    catch (TransactionTimeoutException e) {
+                        cntr2.add(1);
+                    }
+                    catch (CacheException e) {
+                        assertEquals(TransactionTimeoutException.class, X.getCause(e).getClass());
+
+                        cntr2.add(1);
+                    }
+                    catch (Exception e) {
+                        cntr3.add(1);
+                    }
+                }
+            }
+        }, threadsCnt, "tx-async-thread");
+
+        sleep(DURATION);
+
+        stop.set(true);
+
+        fut.get(10_000);
+
+        log.info("Tx test stats: started=" + cntr0.sum() +
+            ", completed=" + cntr1.sum() +
+            ", failed=" + cntr3.sum() +
+            ", timedOut=" + cntr2.sum());
+
+        assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() +
+            cntr3.sum());
+    }
+
+    /**
+     * Tests timeout on DHT primary node for all tx configurations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTimeoutOnPrimaryDHTNode() throws Exception {
+        final ClusterNode n0 = grid(0).affinity(CACHE_NAME).mapKeyToNode(0);
+
+        final Ignite prim = G.ignite(n0.id());
+
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values())
+                testTimeoutOnPrimaryDhtNode0(prim, concurrency, isolation);
+        }
+    }
+
+    /**
+     *
+     */
+    public void testLockRelease() throws Exception {
+        final Ignite client = startClient();
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        final int threadCnt = Runtime.getRuntime().availableProcessors() * 2;
+
+        final CountDownLatch readStartLatch = new CountDownLatch(1);
+
+        final CountDownLatch commitLatch = new CountDownLatch(threadCnt - 1);
+
+        final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                final int idx0 = idx.getAndIncrement();
+
+                if (idx0 == 0) {
+                    try(final Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                        client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+
+                        readStartLatch.countDown();
+
+                        U.awaitQuiet(commitLatch);
+
+                        tx.commit();
+                    }
+                }
+                else {
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 300, 1)) {
+                        U.awaitQuiet(readStartLatch);
+
+                        client.cache(CACHE_NAME).get(0); // Lock acquisition is queued.
+                    }
+                    catch (CacheException e) {
+                        assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
+                    }
+
+                    commitLatch.countDown();
+                }
+            }
+        }, threadCnt, "tx-async");
+
+        fut.get();
+
+        Thread.sleep(500);
+
+        assertEquals(0, client.cache(CACHE_NAME).get(0));
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final IgniteInternalFuture<?> f = ig.context().cache().context().
+                partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
+
+            assertTrue("Unexpected incomplete future", f.isDone());
+        }
+
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyRead() throws Exception {
+        testEnlistMany(false);
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyWrite() throws Exception {
+        testEnlistMany(true);
+    }
+
+    /**
+     *
+     */
+    private void testEnlistMany(boolean write) throws Exception {
+        final Ignite client = startClient();
+
+        Map<Integer, Integer> entries = new HashMap<>();
+
+        for (int i = 0; i < 1000000; i++)
+            entries.put(i, i);
+
+        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
+            if (write)
+                client.cache(CACHE_NAME).putAll(entries);
+            else
+                client.cache(CACHE_NAME).getAll(entries.keySet());
+
+            tx.commit();
+        }
+        catch (Throwable t) {
+            assertTrue(X.hasCause(t, TransactionTimeoutException.class));
+        }
+
+        assertEquals(0, client.cache(CACHE_NAME).size());
+    }
+
+    /**
+     *
+     * @param prim Primary node.
+     * @param conc Concurrency.
+     * @param isolation Isolation.
+
+     * @throws Exception If failed.
+     */
+    private void testTimeoutOnPrimaryDhtNode0(final Ignite prim, final TransactionConcurrency conc,
+        final TransactionIsolation isolation)
+        throws Exception {
+
+        log.info("concurrency=" + conc + ", isolation=" + isolation);
+
+        // Force timeout on primary DHT node by blocking DHT prepare response.
+        toggleBlocking(GridDhtTxPrepareResponse.class, prim, true);
+
+        final int val = 0;
+
+        try {
+            multithreaded(new Runnable() {
+                @Override public void run() {
+                    try (Transaction txOpt = prim.transactions().txStart(conc, isolation, 300, 1)) {
+
+                        prim.cache(CACHE_NAME).put(val, val);
+
+                        txOpt.commit();
+                    }
+                }
+            }, 1, "tx-async-thread");
+
+            fail();
+        }
+        catch (TransactionTimeoutException e) {
+            // Expected.
+        }
+
+        toggleBlocking(GridDhtTxPrepareResponse.class, prim, false);
+
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(GRID_CNT + 1, 0);
+
+        for (Ignite ignite : G.allGrids())
+            ((IgniteEx)ignite).context().cache().context().partitionReleaseFuture(topVer).get(10_000);
+    }
+
+    /**
+     * @param cls Message class.
+     * @param nodeToBlock Node to block.
+     * @param block Block.
+     */
+    private void toggleBlocking(Class<? extends Message> cls, Ignite nodeToBlock, boolean block) {
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite == nodeToBlock)
+                continue;
+
+            final TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+            if (block)
+                spi.blockMessages(cls, nodeToBlock.name());
+            else
+                spi.stopBlock(true);
+        }
     }
 
     /**

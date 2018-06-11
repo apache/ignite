@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
@@ -111,6 +112,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getSize() {
         return cache.clusterMetrics().getSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return cache.clusterMetrics().getCacheSize();
     }
 
     /** {@inheritDoc} */
@@ -404,6 +410,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return cache.clusterMetrics().getRebalanceClearingPartitionsLeft();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isValidForReading() {
         return cache.clusterMetrics().isValidForReading();
     }
@@ -411,5 +422,25 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public boolean isValidForWriting() {
         return cache.clusterMetrics().isValidForWriting();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), true);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), false);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

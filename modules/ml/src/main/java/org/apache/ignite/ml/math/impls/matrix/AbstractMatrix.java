@@ -31,7 +31,6 @@ import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.decompositions.LUDecomposition;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.ColumnIndexException;
 import org.apache.ignite.ml.math.exceptions.RowIndexException;
@@ -581,29 +580,6 @@ public abstract class AbstractMatrix implements Matrix {
         return sto.rowSize();
     }
 
-    /** {@inheritDoc} */
-    @Override public double determinant() {
-        //TODO: IGNITE-5799, This decomposition should be cached
-        LUDecomposition dec = new LUDecomposition(this);
-        double res = dec.determinant();
-        dec.destroy();
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix inverse() {
-        if (rowSize() != columnSize())
-            throw new CardinalityException(rowSize(), columnSize());
-
-        //TODO: IGNITE-5799, This decomposition should be cached
-        LUDecomposition dec = new LUDecomposition(this);
-
-        Matrix res = dec.solve(likeIdentity());
-        dec.destroy();
-
-        return res;
-    }
-
     /** */
     protected Matrix likeIdentity() {
         int n = rowSize();
@@ -995,5 +971,10 @@ public abstract class AbstractMatrix implements Matrix {
             maxAmountOfCols = Math.max(maxAmountOfCols, data[i].length);
 
         return maxAmountOfCols;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Matrix [rows=" + rowSize() + ", cols=" + columnSize() + "]";
     }
 }

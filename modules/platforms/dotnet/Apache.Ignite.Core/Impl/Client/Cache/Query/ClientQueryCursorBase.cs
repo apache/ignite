@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// <summary>
     /// Client query cursor base.
     /// </summary>
-    internal abstract class ClientQueryCursorBase<T> : QueryCursorBase<T>
+    internal class ClientQueryCursorBase<T> : QueryCursorBase<T>
     {
         /** Ignite. */
         private readonly IgniteClient _ignite;
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
         /// <param name="readFunc">Read func.</param>
-        protected ClientQueryCursorBase(IgniteClient ignite, long cursorId, bool keepBinary, 
+        public ClientQueryCursorBase(IgniteClient ignite, long cursorId, bool keepBinary, 
             IBinaryStream initialBatchStream, ClientOp getPageOp, Func<BinaryReader, T> readFunc) 
             : base(ignite.Marshaller, keepBinary, readFunc, initialBatchStream)
         {

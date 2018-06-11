@@ -55,6 +55,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [Obsolete("Deprecated, null for thin client.")]
         public IIgnite Ignite
         {
             get { return CacheQueryProvider.Ignite; }

@@ -66,6 +66,11 @@ public interface AffinityAssignment {
     public HashSet<UUID> getIds(int part);
 
     /**
+     * @return Nodes having parimary and backup assignments.
+     */
+    public Set<ClusterNode> nodes();
+
+    /**
      * @return Nodes having primary partitions assignments.
      */
     public Set<ClusterNode> primaryPartitionNodes();

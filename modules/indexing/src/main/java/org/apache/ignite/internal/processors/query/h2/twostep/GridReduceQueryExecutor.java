@@ -99,7 +99,6 @@ import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -134,7 +133,7 @@ public class GridReduceQueryExecutor {
     private final AtomicLong qryIdGen;
 
     /** */
-    private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
 
     /** Contexts of running DML requests. */
     private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap<>();
@@ -400,7 +399,7 @@ public class GridReduceQueryExecutor {
 
         // Explicit partitions mapping is not applicable to replicated cache.
         if (cctx.isReplicated()) {
-            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).primaryPartitionNodes())
+            for (ClusterNode clusterNode : cctx.affinity().assignment(topVer).nodes())
                 mapping.put(clusterNode, null);
 
             return mapping;
@@ -453,6 +452,21 @@ public class GridReduceQueryExecutor {
         List<Integer> cacheIds, int[] parts) {
         GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
 
+        // If the first cache is not partitioned, find it (if it's present) and move it to index 0.
+        if (!cctx.isPartitioned()) {
+            for (int cacheId = 1; cacheId < cacheIds.size(); cacheId++) {
+                GridCacheContext<?, ?> currCctx = cacheContext(cacheIds.get(cacheId));
+
+                if (currCctx.isPartitioned()) {
+                    Collections.swap(cacheIds, 0, cacheId);
+
+                    cctx = currCctx;
+
+                    break;
+                }
+            }
+        }
+
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
 
         Set<ClusterNode> nodes = map.keySet();
@@ -478,35 +492,27 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(extraNodes))
                 throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
 
-            if (isReplicatedOnly && extraCctx.isReplicated()) {
-                nodes.retainAll(extraNodes);
+            boolean disjoint;
 
-                if (map.isEmpty()) {
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
+            if (extraCctx.isReplicated()) {
+                if (isReplicatedOnly) {
+                    nodes.retainAll(extraNodes);
+
+                    disjoint = map.isEmpty();
                 }
-            }
-            else if (!isReplicatedOnly && extraCctx.isReplicated()) {
-                if (!extraNodes.containsAll(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
-            }
-            else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
-                if (!extraNodes.equals(nodes))
-                    if (isPreloadingActive(cacheIds))
-                        return null; // Retry.
-                    else
-                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                            ", cache2=" + extraCacheName + "]");
+                else
+                    disjoint = !extraNodes.containsAll(nodes);
             }
             else
-                throw new IllegalStateException();
+                disjoint = !extraNodes.equals(nodes);
+
+            if (disjoint) {
+                if (isPreloadingActive(cacheIds))
+                    return null; // Retry.
+                else
+                    throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                        ", cache2=" + extraCacheName + "]");
+            }
         }
 
         return map;
@@ -752,7 +758,7 @@ public class GridReduceQueryExecutor {
                             if (wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
 
-                            throw new CacheException("Failed to run map query remotely.", err);
+                            throw new CacheException("Failed to run map query remotely." + err.getMessage(), err);
                         }
 
                         if (state instanceof AffinityTopologyVersion) {

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,9 +35,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -47,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -83,9 +84,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private boolean testSpi;
 
     /** */
-    private boolean testDiscoSpi;
-
-    /** */
     private boolean testReconnectSpi;
 
     /** */
@@ -102,8 +100,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             spi.setJoinTimeout(2 * 60_000);
         }
-        else if (testDiscoSpi)
-            cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -120,13 +116,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
-        memCfg.setPageSize(1024);
+        memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(10 * 1024 * 1024)
+            .setMaxSize(300L * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(10 * 1024 * 1024)
+            .setMaxSize(300L * 1024 * 1024)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -218,14 +214,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         for (int i = 0; i < srvs + clients; i++)
-            assertFalse(ignite(i).active());
+            assertFalse(ignite(i).cluster().active());
 
-        ignite(activateFrom).active(false); // Should be no-op.
+        ignite(activateFrom).cluster().active(false); // Should be no-op.
 
-        ignite(activateFrom).active(true);
+        ignite(activateFrom).cluster().active(true);
 
         for (int i = 0; i < srvs + clients; i++)
-            assertTrue(ignite(i).active());
+            assertTrue(ignite(i).cluster().active());
 
         for (int i = 0; i < srvs + clients; i++) {
             for (int c = 0; c < 2; c++)
@@ -306,16 +302,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private void joinWhileActivate1(final boolean startClient, final boolean withNewCache) throws Exception {
         IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(2, 0, 0, false);
 
-        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                client = startClient;
+        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync((Callable<Void>)() -> {
+            client = startClient;
 
-                ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
+            ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
 
-                startGrid(2);
+            startGrid(2);
 
-                return null;
-            }
+            return null;
         });
 
         TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite(1));
@@ -374,7 +368,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         int minorVer = 1;
 
         if (initiallyActive && persistenceEnabled()) {
-            ignite(0).active(true);
+            ignite(0).cluster().active(true);
 
             minorVer++;
         }
@@ -394,11 +388,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             blockExchangeSingleMessage(spi, STATE_CHANGE_TOP_VER);
         }
 
-        IgniteInternalFuture<?> stateChangeFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                ignite(stateChangeFrom).active(!initiallyActive);
-            }
-        });
+        IgniteInternalFuture<?> stateChangeFut = GridTestUtils.runAsync(() ->
+            ignite(stateChangeFrom).cluster().active(!initiallyActive)
+        );
 
         for (TestRecordingCommunicationSpi spi : spis)
             spi.waitForBlocked();
@@ -415,17 +407,15 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param topVer Exchange topology version.
      */
     private void blockExchangeSingleMessage(TestRecordingCommunicationSpi spi, final AffinityTopologyVersion topVer) {
-        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
-                if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage pMsg = (GridDhtPartitionsSingleMessage)msg;
+        spi.blockMessages((IgniteBiPredicate<ClusterNode, Message>)(clusterNode, msg) -> {
+            if (msg instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage pMsg = (GridDhtPartitionsSingleMessage)msg;
 
-                    if (pMsg.exchangeId() != null && pMsg.exchangeId().topologyVersion().equals(topVer))
-                        return true;
-                }
-
-                return false;
+                if (pMsg.exchangeId() != null && pMsg.exchangeId().topologyVersion().equals(topVer))
+                    return true;
             }
+
+            return false;
         });
     }
 
@@ -458,16 +448,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private void joinWhileDeactivate1(final boolean startClient, final boolean withNewCache) throws Exception {
         IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(2, 0, 0, true);
 
-        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                client = startClient;
+        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync((Callable<Void>)() -> {
+            client = startClient;
 
-                ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
+            ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
 
-                startGrid(2);
+            startGrid(2);
 
-                return null;
-            }
+            return null;
         });
 
         TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite(1));
@@ -479,7 +467,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         checkNoCaches(3);
 
-        ignite(2).active(true);
+        ignite(2).cluster().active(true);
 
         for (int c = 0; c < 2; c++)
             checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
@@ -527,30 +515,26 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             final CyclicBarrier b = new CyclicBarrier(START_NODES + 1);
 
-            IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    b.await();
+            IgniteInternalFuture<Void> fut1 = GridTestUtils.runAsync(() -> {
+                b.await();
 
-                    Thread.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
+                U.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
 
-                    ignite(0).active(true);
+                ignite(0).cluster().active(true);
 
-                    return null;
-                }
+                return null;
             });
 
             final AtomicInteger nodeIdx = new AtomicInteger(3);
 
-            IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    int idx = nodeIdx.getAndIncrement();
+            IgniteInternalFuture<Long> fut2 = GridTestUtils.runMultiThreadedAsync((Callable<Void>)() -> {
+                int idx = nodeIdx.getAndIncrement();
 
-                    b.await();
+                b.await();
 
-                    startGrid(idx);
+                startGrid(idx);
 
-                    return null;
-                }
+                return null;
             }, START_NODES, "start-node");
 
             fut1.get();
@@ -617,19 +601,19 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         if (persistenceEnabled())
-            ignite(deactivateFrom).active(true);
+            ignite(deactivateFrom).cluster().active(true);
 
-        ignite(deactivateFrom).active(true); // Should be no-op.
+        ignite(deactivateFrom).cluster().active(true); // Should be no-op.
 
         checkCaches(srvs + clients, CACHES);
 
         for (int i = 0; i < srvs + clients; i++)
-            assertTrue(ignite(i).active());
+            assertTrue(ignite(i).cluster().active());
 
-        ignite(deactivateFrom).active(false);
+        ignite(deactivateFrom).cluster().active(false);
 
         for (int i = 0; i < srvs + clients; i++)
-            assertFalse(ignite(i).active());
+            assertFalse(ignite(i).cluster().active());
 
         checkNoCaches(srvs + clients);
 
@@ -646,12 +630,12 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         checkNoCaches(srvs + clients + 2);
 
         for (int i = 0; i < srvs + clients + 2; i++)
-            assertFalse(ignite(i).active());
+            assertFalse(ignite(i).cluster().active());
 
-        ignite(deactivateFrom).active(true);
+        ignite(deactivateFrom).cluster().active(true);
 
         for (int i = 0; i < srvs + clients + 2; i++) {
-            assertTrue(ignite(i).active());
+            assertTrue(ignite(i).cluster().active());
 
             checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
         }
@@ -693,7 +677,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         if (persistenceEnabled())
-            ignite(0).active(true);
+            ignite(0).cluster().active(true);
 
         Ignite srv = ignite(0);
         Ignite client = ignite(SRVS);
@@ -739,7 +723,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         checkNoCaches(SRVS + CLIENTS);
 
-        ignite(0).active(true);
+        ignite(0).cluster().active(true);
 
         checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
@@ -784,14 +768,18 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
         if (persistenceEnabled())
-            ignite(0).active(true);
+            ignite(0).cluster().active(true);
 
         checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
         checkCaches1(SRVS + CLIENTS);
+
+        // Wait for late affinity assignment to finish.
+        grid(0).context().cache().context().exchange().affinityReadyFuture(
+            new AffinityTopologyVersion(SRVS + CLIENTS, 1)).get();
 
         final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(SRVS + CLIENTS + 1, 1);
 
@@ -799,35 +787,29 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         final AtomicReference<IgniteInternalFuture> stateFut = new AtomicReference<>();
 
-        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, new Runnable() {
-            @Override public void run() {
-                if (transition) {
-                    blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
+        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, () -> {
+            if (transition) {
+                blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
 
-                    stateFut.set(GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            srv.active(false);
-                        }
-                    }, "deactivate"));
+                stateFut.set(GridTestUtils.runAsync(() -> srv.cluster().active(false),
+                    "deactivate"));
 
-                    try {
-                        U.sleep(500);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    U.sleep(500);
                 }
-                else
-                    srv.active(false);
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+            else
+                srv.cluster().active(false);
         });
-
-        checkCache(client, CACHE_NAME_PREFIX + 0, false);
 
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            // Public API method would block forever because we blocked the exchange message.
+            assertFalse(client.context().state().publicApiActiveState(false));
 
             spi1.waitForBlocked();
 
@@ -838,11 +820,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         checkNoCaches(SRVS + CLIENTS);
 
-        ignite(0).active(true);
+        ignite(0).cluster().active(true);
 
         checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
-        assertTrue(client.active());
+        assertTrue(client.cluster().active());
 
         checkCaches1(SRVS + CLIENTS);
 
@@ -889,7 +871,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
         checkNoCaches(SRVS + CLIENTS);
 
@@ -899,35 +881,28 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         final AtomicReference<IgniteInternalFuture> stateFut = new AtomicReference<>();
 
-        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, new Runnable() {
-            @Override public void run() {
-                if (transition) {
-                    blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
+        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, () -> {
+            if (transition) {
+                blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
 
-                    stateFut.set(GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            srv.active(true);
-                        }
-                    }, "activate"));
+                stateFut.set(GridTestUtils.runAsync(() -> srv.cluster().active(true),
+                    "activate"));
 
-                    try {
-                        U.sleep(500);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    U.sleep(500);
                 }
-                else
-                    srv.active(true);
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+            else
+                srv.cluster().active(true);
         });
-
-        checkCache(client, CACHE_NAME_PREFIX + 0, !transition);
 
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            assertTrue(client.context().state().clusterState().transition());
 
             spi1.waitForBlocked();
 
@@ -990,7 +965,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         checkRecordedMessages(false);
 
-        ignite(0).active(true);
+        ignite(0).cluster().active(true);
 
         checkCaches1(SRVS + CLIENTS);
 
@@ -1034,12 +1009,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         client = false;
 
         // Start one more node while transition is in progress.
-        IgniteInternalFuture startFut = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(8);
+        IgniteInternalFuture<Void> startFut = GridTestUtils.runAsync(() -> {
+            startGrid(8);
 
-                return null;
-            }
+            return null;
         }, "start-node");
 
         U.sleep(500);
@@ -1062,7 +1035,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (!activate) {
             checkNoCaches(9);
 
-            ignite(0).active(true);
+            ignite(0).cluster().active(true);
         }
 
         checkCaches1(9);
@@ -1093,19 +1066,16 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         client = false;
 
         // Start more nodes while transition is in progress.
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(8);
+        IgniteInternalFuture<Void> startFut1 = GridTestUtils.runAsync(() -> {
+            startGrid(8);
 
-                return null;
-            }
+            return null;
         }, "start-node1");
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(9);
 
-                return null;
-            }
+        IgniteInternalFuture<Void> startFut2 = GridTestUtils.runAsync(() -> {
+            startGrid(9);
+
+            return null;
         }, "start-node2");
 
         U.sleep(500);
@@ -1133,7 +1103,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (!activate) {
             checkNoCaches(10);
 
-            ignite(0).active(true);
+            ignite(0).cluster().active(true);
         }
 
         checkCaches1(10);
@@ -1158,7 +1128,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void stateChangeFailover3(boolean activate) throws Exception {
-        testDiscoSpi = true;
+        testReconnectSpi = true;
 
         startNodesAndBlockStatusChange(4, 0, 0, !activate);
 
@@ -1184,7 +1154,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         // Stop all nodes participating in state change and not allow last node to finish exchange.
         for (int i = 0; i < 4; i++)
-            ((TestTcpDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
+            ((IgniteDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
 
         for (int i = 0; i < 4; i++)
             stopGrid(getTestIgniteInstanceName(i), true, false);
@@ -1274,8 +1244,12 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param node Node.
      * @param exp {@code True} if expect that cache is started on node.
      */
-    void checkCache(Ignite node, String cacheName, boolean exp) {
-        GridCacheAdapter cache = ((IgniteKernal)node).context().cache().internalCache(cacheName);
+    void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
+        ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();
+
+        ((IgniteEx)node).context().state().publicApiActiveState(true);
+
+        GridCacheAdapter cache = ((IgniteEx)node).context().cache().internalCache(cacheName);
 
         if (exp)
             assertNotNull("Cache not found [cache=" + cacheName + ", node=" + node.name() + ']', cache);
@@ -1288,7 +1262,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
-            GridCacheProcessor cache = ((IgniteKernal)ignite(i)).context().cache();
+            grid(i).context().state().publicApiActiveState(true);
+
+            GridCacheProcessor cache = ((IgniteEx)ignite(i)).context().cache();
 
             assertTrue(cache.caches().isEmpty());
             assertTrue(cache.internalCaches().isEmpty());

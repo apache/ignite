@@ -705,6 +705,14 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="qry">SQL fields query.</param>
         /// <returns>Cursor.</returns>
+        IFieldsQueryCursor Query(SqlFieldsQuery qry);
+
+        /// <summary>
+        /// Queries separate entry fields.
+        /// </summary>
+        /// <param name="qry">SQL fields query.</param>
+        /// <returns>Cursor.</returns>
+        [Obsolete("Use Query(SqlFieldsQuery qry) instead.")]
         IQueryCursor<IList> QueryFields(SqlFieldsQuery qry);
 
         /// <summary>
@@ -899,5 +907,16 @@ namespace Apache.Ignite.Core.Cache
         /// and <see cref="IIgnite.ResetLostPartitions(IEnumerable{string})"/>.
         /// </summary>
         ICollection<int> GetLostPartitions();
+
+        /// <summary>
+        /// Gets query metrics.
+        /// </summary>
+        /// <returns>Query metrics.</returns>
+        IQueryMetrics GetQueryMetrics();
+
+        /// <summary>
+        /// Reset query metrics.
+        /// </summary>
+        void ResetQueryMetrics();
     }
 }

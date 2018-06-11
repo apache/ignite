@@ -57,7 +57,7 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
-        return ((H2Tree)tree).getRowFactory().getRow(link);
+        return ((H2Tree)tree).createRowFromLink(link);
     }
 
     /** {@inheritDoc} */

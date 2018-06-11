@@ -72,15 +72,16 @@ import org.h2.value.DataType;
 /**
  * Tests for CREATE/DROP TABLE.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
-    private final static int CLIENT = 2;
+    private static final int CLIENT = 2;
 
     /** */
-    private final static String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
+    private static final String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
 
     /** */
-    private final static String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
+    private static final String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
 
     /** Data region name. */
     public static final String DATA_REGION_NAME = "my_data_region";
@@ -88,7 +89,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Bad data region name. */
     public static final String DATA_REGION_NAME_BAD = "my_data_region_bad";
 
+    /** Cache with backups. */
+    private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
+
+    /** Number of backups for backup test. */
+    private static final int DFLT_BACKUPS = 2;
+
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -98,16 +106,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         client().addCacheConfiguration(cacheConfiguration());
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME + "_async")
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
+
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -120,6 +124,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
 
         super.afterTest();
     }
@@ -491,8 +496,34 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
      */
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) {
+        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) throws SQLException {
         doTestCreateTable(tplCacheName, cacheGrp, cacheMode, writeSyncMode, false, additionalParams);
+    }
+
+    /**
+     * Test backups propagation.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testBackups() throws Exception {
+        String cacheName = "BackupTestCache";
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + "\"");
+
+        CacheConfiguration ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(DFLT_BACKUPS, ccfg.getBackups());
+
+        execute("DROP TABLE PUBLIC.\"BackupTest\"");
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + ", backups=1\"");
+
+        ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(1, ccfg.getBackups());
     }
 
     /**
@@ -506,7 +537,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
      */
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, boolean useLegacyCacheGrpParamName, String... additionalParams) {
+        CacheWriteSynchronizationMode writeSyncMode, boolean useLegacyCacheGrpParamName, String... additionalParams)
+        throws SQLException {
         String cacheGrpParamName = useLegacyCacheGrpParamName ? "cacheGroup" : "cache_group";
 
         String sql = "CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
@@ -547,30 +579,48 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (writeSyncMode != null)
                 assertEquals(writeSyncMode, cacheDesc.cacheConfiguration().getWriteSynchronizationMode());
 
-            QueryTypeDescriptorImpl desc = typeExisting(node, cacheName, "Person");
+            List<String> colNames = new ArrayList<>(5);
 
-            assertEquals(Object.class, desc.keyClass());
-            assertEquals(Object.class, desc.valueClass());
+            List<Class<?>> colTypes = new ArrayList<>(5);
 
-            assertTrue(desc.valueTypeName(), desc.valueTypeName().contains("Person"));
+            List<String> pkColNames = new ArrayList<>(2);
 
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("KEY"));
+            try (Connection c = connect(node)) {
+                try (ResultSet rs = c.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "Person", null)) {
+                    for (int j = 0; j < 5; j++) {
+                        assertTrue(rs.next());
 
-            assertEquals(
-                F.asList("id", "city", "name", "surname", "age"),
-                new ArrayList<>(desc.fields().keySet())
-            );
+                        colNames.add(rs.getString("COLUMN_NAME"));
 
-            assertProperty(desc, "id", Integer.class, true);
-            assertProperty(desc, "city", String.class, true);
-            assertProperty(desc, "name", String.class, false);
-            assertProperty(desc, "surname", String.class, false);
-            assertProperty(desc, "age", Integer.class, false);
+                        try {
+                            colTypes.add(Class.forName(DataType.getTypeClassName(DataType
+                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")))));
+                        }
+                        catch (ClassNotFoundException e) {
+                            throw new AssertionError(e);
+                        }
+                    }
 
-            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("PUBLIC", "Person");
+                    assertFalse(rs.next());
+                }
 
-            assertNotNull(tbl);
+                try (ResultSet rs = c.getMetaData().getPrimaryKeys(null, QueryUtils.DFLT_SCHEMA, "Person")) {
+                    for (int j = 0; j < 2; j++) {
+                        assertTrue(rs.next());
+
+                        pkColNames.add(rs.getString("COLUMN_NAME"));
+                    }
+
+                    assertFalse(rs.next());
+                }
+            }
+
+            assertEqualsCollections(F.asList("id", "city", "name", "surname", "age"), colNames);
+
+            assertEqualsCollections(F.<Class<?>>asList(Integer.class, String.class, String.class, String.class,
+                Integer.class), colTypes);
+
+            assertEqualsCollections(F.asList("id", "city"), pkColNames);
         }
     }
 
@@ -661,6 +711,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "Table already exists: Person");
+    }
+
+    /**
+     * Test that attempting to use a non-existing column name for the primary key when {@code CREATE TABLE}
+     * yields an error.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithWrongColumnNameAsKey() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                    ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"c_ity\")) WITH " +
+                    "\"template=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "PRIMARY KEY column is not defined: c_ity");
     }
 
     /**
@@ -872,11 +939,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             personId2cityCode.put(i, cityCode);
 
-            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
+            queryProcessor(client()).querySqlFields(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
                 "\"city\") values (?, ?)").setArgs(i, cityName), true).getAll();
         }
 
-        List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
+        List<List<?>> res = queryProcessor(client()).querySqlFields(new SqlFieldsQuery("select \"id\", " +
             "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\" where c.\"name\" " +
             "is not null"), true).getAll();
 
@@ -1536,7 +1603,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param sql Statement.
      */
     private List<List<?>> execute(Ignite node, String sql) {
-        return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 
     /**
@@ -1545,7 +1612,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param sql Statement.
      */
     private List<List<?>> executeLocal(GridCacheContext cctx, String sql) {
-        return queryProcessor(cctx.grid()).querySqlFields(cctx, new SqlFieldsQuery(sql).setLocal(true), true).getAll();
+        return queryProcessor(cctx.grid()).querySqlFields(new SqlFieldsQuery(sql).setLocal(true), true).getAll();
     }
 
     /**

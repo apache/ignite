@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
+
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import Worker from 'worker!./decompress.worker';
+import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
@@ -28,7 +31,9 @@ const State = {
     CONNECTED: 'CONNECTED'
 };
 
+const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
 
 class ConnectionState {
     constructor(cluster) {
@@ -38,13 +43,27 @@ class ConnectionState {
         this.state = State.DISCONNECTED;
     }
 
+    updateCluster(cluster) {
+        this.cluster = cluster;
+        this.cluster.connected = !!_.find(this.clusters, {id: this.cluster.id});
+
+        return cluster;
+    }
+
     update(demo, count, clusters) {
+        _.forEach(clusters, (cluster) => {
+            cluster.name = cluster.id;
+        });
+
         this.clusters = clusters;
+
+        if (_.isEmpty(this.clusters))
+            this.cluster = null;
 
         if (_.isNil(this.cluster))
             this.cluster = _.head(clusters);
 
-        if (_.nonNil(this.cluster))
+        if (nonNil(this.cluster))
             this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
 
         if (count === 0)
@@ -56,7 +75,7 @@ class ConnectionState {
     }
 
     useConnectedCluster() {
-        if (_.nonEmpty(this.clusters) && !this.cluster.connected) {
+        if (nonEmpty(this.clusters) && !this.cluster.connected) {
             this.cluster = _.head(this.clusters);
 
             this.cluster.connected = true;
@@ -101,7 +120,13 @@ export default class IgniteAgentManager {
 
         this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
 
-        this.clusterVersion = '2.1.0';
+        let prevCluster;
+
+        this.currentCluster$ = this.connectionSbj
+            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
+            .do(({ cluster }) => prevCluster = cluster);
+
+        this.clusterVersion = '2.4.0';
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
@@ -121,14 +146,14 @@ export default class IgniteAgentManager {
         return this.$root.IgniteDemoMode;
     }
 
-    available(sinceVersion) {
-        return this.Version.since(this.clusterVersion, sinceVersion);
+    available(...sinceVersion) {
+        return this.Version.since(this.clusterVersion, ...sinceVersion);
     }
 
     connect() {
         const self = this;
 
-        if (_.nonNil(self.socket))
+        if (nonNil(self.socket))
             return;
 
         self.socket = self.socketFactory();
@@ -142,6 +167,7 @@ export default class IgniteAgentManager {
         };
 
         self.socket.on('connect_error', onDisconnect);
+
         self.socket.on('disconnect', onDisconnect);
 
         self.socket.on('agents:stat', ({clusters, count}) => {
@@ -152,6 +178,8 @@ export default class IgniteAgentManager {
             self.connectionSbj.next(conn);
         });
 
+        self.socket.on('cluster:changed', (cluster) => this.updateCluster(cluster));
+
         self.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
     }
 
@@ -161,6 +189,31 @@ export default class IgniteAgentManager {
         } catch (ignore) {
             // No-op.
         }
+    }
+
+    updateCluster(newCluster) {
+        const state = this.connectionSbj.getValue();
+
+        const oldCluster = _.find(state.clusters, (cluster) => cluster.id === newCluster.id);
+
+        if (!_.isNil(oldCluster)) {
+            oldCluster.nids = newCluster.nids;
+            oldCluster.addresses = newCluster.addresses;
+            oldCluster.clusterVersion = newCluster.clusterVersion;
+            oldCluster.active = newCluster.active;
+
+            this.connectionSbj.next(state);
+        }
+    }
+
+    switchCluster(cluster) {
+        const state = this.connectionSbj.getValue();
+
+        state.updateCluster(cluster);
+
+        this.connectionSbj.next(state);
+
+        this.saveToStorage(cluster);
     }
 
     /**
@@ -212,6 +265,8 @@ export default class IgniteAgentManager {
 
         self.connectionSbj.next(conn);
 
+        this.modalSubscription && this.modalSubscription.unsubscribe();
+
         self.modalSubscription = this.connectionSbj.subscribe({
             next: ({state}) => {
                 switch (state) {
@@ -251,6 +306,8 @@ export default class IgniteAgentManager {
         conn.useConnectedCluster();
 
         self.connectionSbj.next(conn);
+
+        this.modalSubscription && this.modalSubscription.unsubscribe();
 
         self.modalSubscription = this.connectionSbj.subscribe({
             next: ({state}) => {
@@ -502,15 +559,19 @@ export default class IgniteAgentManager {
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {int} pageSz
      * @param {Boolean} lazy query flag.
+     * @param {Boolean} collocated Collocated query.
      * @returns {Promise}
      */
-    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
-        if (this.available('2.0.0')) {
-            const task = this.available(...LAZY_QUERY_SINCE) ?
-                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
-                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
+    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy, collocated) {
+        if (this.available(IGNITE_2_0)) {
+            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz];
 
-            return task.then(({error, result}) => {
+            if (this.available(...COLLOCATED_QUERY_SINCE))
+                args = [...args, lazy, collocated];
+            else if (this.available(...LAZY_QUERY_SINCE))
+                args = [...args, lazy];
+
+            return this.visorTask('querySqlX2', nid, ...args).then(({error, result}) => {
                 if (_.isEmpty(error))
                     return result;
 
@@ -545,7 +606,7 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryNextPage(nid, queryId, pageSize) {
-        if (this.available('2.0.0'))
+        if (this.available(IGNITE_2_0))
             return this.visorTask('queryFetchX2', nid, queryId, pageSize);
 
         return this.visorTask('queryFetch', nid, queryId, pageSize);
@@ -560,9 +621,10 @@ export default class IgniteAgentManager {
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {Boolean} lazy query flag.
+     * @param {Boolean} collocated Collocated query.
      * @returns {Promise}
      */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy) {
+    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated) {
         // Page size for query.
         const pageSz = 1024;
 
@@ -580,7 +642,7 @@ export default class IgniteAgentManager {
                 });
         };
 
-        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy)
+        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy, collocated)
             .then(fetchResult);
     }
 
@@ -590,7 +652,7 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryClose(nid, queryId) {
-        if (this.available('2.0.0')) {
+        if (this.available(IGNITE_2_0)) {
             return this.visorTask('queryCloseX2', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
                 nid + '=' + queryId);
         }
@@ -610,7 +672,7 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
-        if (this.available('2.0.0')) {
+        if (this.available(IGNITE_2_0)) {
             return this.visorTask('queryScanX2', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
                 .then(({error, result}) => {
                     if (_.isEmpty(error))
@@ -633,7 +695,6 @@ export default class IgniteAgentManager {
     }
 
     /**
-     /**
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
      * @param {String} filter Filter text.
@@ -663,5 +724,18 @@ export default class IgniteAgentManager {
 
         return this.queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSz)
             .then(fetchResult);
+    }
+
+    /**
+     * Change cluster active state.
+     *
+     * @returns {Promise}
+     */
+    toggleClusterState() {
+        const state = this.connectionSbj.getValue();
+        const active = !state.cluster.active;
+
+        return this.visorTask('toggleClusterState', null, active)
+            .then(() => state.updateCluster(Object.assign(state.cluster, { active })));
     }
 }

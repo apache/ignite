@@ -2029,7 +2029,7 @@ select new {
 // is equal to 3 minutes per derived class used by the base class +
 // 3 minutes per member of a derived class used by the base class.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Class shouldn't be too deep in inheritance tree</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Class shouldn't be too deep in inheritance tree</Name>
         
 warnif count > 0 from t in JustMyCode.Types 
 where t.IsClass
@@ -2478,7 +2478,7 @@ select new {
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Avoid the Singleton pattern</Name>
 warnif count > 0
 from t in Application.Types
-where !t.IsStatic && !t.IsAbstract && (t.IsClass || t.IsStructure) && t.Name != "Jvm"
+where !t.IsStatic && !t.IsAbstract && (t.IsClass || t.IsStructure) && t.Name != "Jvm" && t.Name != "JvmDll"
 
 // All ctors of a singleton are private
 where t.Constructors.Where(ctor => !ctor.IsPrivate).Count() == 0

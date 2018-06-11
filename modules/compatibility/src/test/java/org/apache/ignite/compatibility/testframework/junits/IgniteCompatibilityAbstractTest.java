@@ -19,15 +19,17 @@ package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -120,7 +123,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      * stored via Maven.
      *
      * @param igniteInstanceName Instance name.
-     * @param ver Ignite version.
+     * @param ver Ignite version. Dots separated, 3-digit version.
      * @param cfgClo IgniteInClosure for post-configuration.
      * @param clo IgniteInClosure for actions on started Ignite.
      * @return Started grid.
@@ -163,30 +166,36 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                         filteredJvmArgs.add(arg);
                 }
 
-                URLClassLoader ldr = (URLClassLoader)CLASS_LOADER;
+                final Collection<Dependency> dependencies = getDependencies(ver);
+
+                Set<String> excluded = dependencies.stream().map(Dependency::localPathTemplate).collect(Collectors.toSet());
 
                 StringBuilder pathBuilder = new StringBuilder();
 
-                String corePathTemplate = "modules/core/target/classes";
-                String coreTestsPathTemplate = "modules/core/target/test-classes";
-
-                for (URL url : ldr.getURLs()) {
+                for (URL url : CompatibilityTestsUtils.classLoaderUrls(CLASS_LOADER)) {
                     String path = url.getPath();
 
-                    if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))
+                    if (excluded.stream().noneMatch(path::contains))
                         pathBuilder.append(path).append(File.pathSeparator);
                 }
 
-                String pathToArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver);
+                for (Dependency dependency : dependencies) {
+                    final String artifactVer = dependency.version() != null ? dependency.version() : ver;
+                    final String grpName = dependency.groupName() != null ? dependency.groupName() : "org.apache.ignite";
 
-                pathBuilder.append(pathToArtifact).append(File.pathSeparator);
+                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(grpName, dependency.artifactName(),
+                        artifactVer, dependency.classifier());
 
-                String pathToTestsArtifact = MavenUtils.getPathToIgniteCoreArtifact(ver, "tests");
-
-                pathBuilder.append(pathToTestsArtifact).append(File.pathSeparator);
+                    pathBuilder.append(pathToArtifact).append(File.pathSeparator);
+                }
 
                 filteredJvmArgs.add("-cp");
                 filteredJvmArgs.add(pathBuilder.toString());
+
+                final Collection<String> jvmParms = getJvmParams();
+
+                if (jvmParms != null)
+                    filteredJvmArgs.addAll(jvmParms);
 
                 return filteredJvmArgs;
             }
@@ -201,7 +210,11 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
 
-            assert nodeJoinedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) : "Node has not joined [id=" + nodeId + "]";
+            final long nodeJoinTimeout = getNodeJoinTimeout();
+            final boolean joined = nodeJoinedLatch.await(nodeJoinTimeout, TimeUnit.MILLISECONDS);
+
+            assertTrue("Node has not joined [id=" + nodeId + "]/" +
+                "or does not completed its startup during timeout: " + nodeJoinTimeout + " ms.", joined);
 
             log.removeListener(nodeId);
         }
@@ -210,6 +223,36 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             rmJvmInstance = ignite;
 
         return ignite;
+    }
+
+    /**
+     * Total amount of milliseconds.
+     *
+     * @return timeout in ms.
+     */
+    protected long getNodeJoinTimeout() {
+        return NODE_JOIN_TIMEOUT;
+    }
+
+    /**
+     * @return list of actual module dependencies from pom.xml
+     */
+    @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
+        final Collection<Dependency> dependencies = new ArrayList<>();
+
+        dependencies.add(new Dependency("core", "ignite-core"));
+        dependencies.add(new Dependency("core", "ignite-core", true));
+
+        return dependencies;
+    }
+
+    /**
+     * Allows to setup JVM arguments for standalone JVM
+     *
+     * @return additional JVM arguments
+     */
+    protected Collection<String> getJvmParams() {
+        return new ArrayList<>();
     }
 
     /** {@inheritDoc} */
