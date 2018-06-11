@@ -17,9 +17,9 @@ from connection import Connection
 from api import cache_create, cache_get, cache_put, cache_get_names, hashcode
 
 
-def test_put_get():
+def test_put_get(ignite_host, ignite_port):
     conn = Connection()
-    conn.connect('localhost', 10900)
+    conn.connect(ignite_host, ignite_port)
 
     result = cache_create(conn, 'my_bucket')
 
@@ -33,9 +33,9 @@ def test_put_get():
     conn.close()
 
 
-def test_get_names():
+def test_get_names(ignite_host, ignite_port):
     conn = Connection()
-    conn.connect('localhost', 10900)
+    conn.connect(ignite_host, ignite_port)
 
     result = cache_create(conn, 'my_bucket')
 

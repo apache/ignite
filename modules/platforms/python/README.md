@@ -24,4 +24,11 @@ Then just run
 
 `$ pytest`
 
-*NB!* Some tests require Apache Ignite node running on localhost:10900.
+*NB!* Some tests require Apache Ignite node running on localhost:10800.
+To override the default parameters, use command line options
+`--ignite-host` and `--ignite-port`:
+
+`$ pytest --ignite-host=example.com --ignite-port=19840`
+
+You can use each of these options multiple times. All combinations
+of given host and port will be tested.
