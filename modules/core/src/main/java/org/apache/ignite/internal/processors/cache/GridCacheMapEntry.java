@@ -4313,10 +4313,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         lock.unlock();
     }
         
+    /**
+     * This method would obtain read lock for continuous query listener setup. This
+     * is to prevent race condition between entry update and continuous query setup.
+     * You should make sure you obtain this read lock first before locking the entry
+     * in order to ensure that the entry update is completed and existing continuous
+     * query notified before the next cache listener update
+     */
     private void lockListenerReadLock() {
         listenerLock.lock();
     }        
     
+    /**
+     * unlock the listener read lock
+     * 
+     * @see #lockListenerReadLock()
+     */
     private void unlockListenerReadLock() {
         listenerLock.unlock();
     }
