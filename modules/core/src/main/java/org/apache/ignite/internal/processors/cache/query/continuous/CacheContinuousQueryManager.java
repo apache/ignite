@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import static javax.cache.event.EventType.CREATED;
+import static javax.cache.event.EventType.EXPIRED;
+import static javax.cache.event.EventType.REMOVED;
+import static javax.cache.event.EventType.UPDATED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -28,12 +35,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -46,6 +52,7 @@ import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -79,14 +86,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static javax.cache.event.EventType.CREATED;
-import static javax.cache.event.EventType.EXPIRED;
-import static javax.cache.event.EventType.REMOVED;
-import static javax.cache.event.EventType.UPDATED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
  * Continuous queries manager.
