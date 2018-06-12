@@ -43,6 +43,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
+import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -54,10 +56,7 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -452,13 +451,56 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryFuture<T> execute(@Nullable Object... args) {
-        return execute0(null, args);
+    @Override public GridCloseableIterator<T> execute(@Nullable Object... args) {
+        return execute00(null, args);
     }
 
-    /** {@inheritDoc} */
-    @Override public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
+    @Override public <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         return execute0(rmtReducer, args);
+    }
+
+    @Override public <R> GridCloseableIterator<T> execute00(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
+        GridCloseableIteratorAdapter<T> iiiit = new GridCloseableIteratorAdapter<T>() {
+
+            private T cur;
+
+            CacheQueryFuture fut0 = execute0(null);
+
+            @Override protected T onNext() throws IgniteCheckedException {
+                if (!onHasNext())
+                    throw new NoSuchElementException();
+
+                T e = cur;
+
+                cur = null;
+
+                return e;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+
+                fut0.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
+
+                        if (fut0.error() != null)
+                            System.err.println("!!!222 need to refactor " + fut0.error());
+
+                        if (X.hasCause(fut0.error(), ClusterTopologyCheckedException.class)) {
+                            System.err.println("!!! need to refactor " + fut0.error());
+                            fut0 = execute0(null);
+                        }
+                    }
+                });
+
+                return cur != null || (cur = (T)fut0.next()) != null;
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                fut0.cancel();
+            }
+        };
+
+        return iiiit;
     }
 
     /** {@inheritDoc} */
@@ -484,6 +526,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         try {
             nodes = nodes();
+
+            System.err.println("nodes size: " + nodes.size());
         }
         catch (IgniteCheckedException e) {
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);

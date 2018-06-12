@@ -58,13 +58,11 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @param fut Query to iterate.
      * @param convert Cache iterator converter.
      * @param <T> Type for the iterator.
-     * @param onInitErr Init fail callback closure.
      * @return Iterator over the cache.
      */
     public <T> WeakReferenceCloseableIterator<T> iterator(final CacheQueryFuture<V> fut,
-                                                          CacheIteratorConverter<T, V> convert,
-                                                          IgniteOutClosure<CacheQueryFuture<V>> onInitErr) {
-        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert, onInitErr);
+                                                          CacheIteratorConverter<T, V> convert) {
+        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert);
 
         AutoCloseable old = refs.put(it.weakReference(), fut);
 
@@ -165,23 +163,16 @@ public class CacheWeakQueryIteratorsHolder<V> {
         /** Current item. */
         private T cur;
 
-        /** Initialization error call back. */
-        private IgniteOutClosure<CacheQueryFuture<V>> initErr;
-
         /**
          * @param fut GridCacheQueryFuture to iterate.
-         * @param onInitErr Init fail callback closure.
          * @param convert Converter.
          */
-        WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert,
-                                IgniteOutClosure<CacheQueryFuture<V>> onInitErr) {
+        WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
             this.fut = fut;
 
             this.weakRef = new WeakReference<>(this, refQueue);
 
             this.convert = convert;
-
-            this.initErr = onInitErr;
         }
 
         /** {@inheritDoc} */
@@ -256,17 +247,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
             if (!init) {
                 V futNext;
 
-                try {
                     futNext = fut.next();
-                } catch (CacheException e) {
-                    fut = initErr.apply();
-
-                    AutoCloseable old = refs.put(weakRef, fut);
-
-                    assert old != null;
-
-                    futNext = fut.next();
-                }
 
                 next = futNext != null ? convert.convert(futNext) : null;
 
@@ -316,6 +297,10 @@ public class CacheWeakQueryIteratorsHolder<V> {
             }
             catch (NoSuchElementException e){
                 clearWeakReference();
+
+                throw e;
+            } catch (CacheException e) {
+                System.err.print("!!!111");
 
                 throw e;
             }
