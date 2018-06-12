@@ -1,5 +1,5 @@
 =================
-Basic information
+Basic Information
 =================
 
 What it is?
