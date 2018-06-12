@@ -10,6 +10,7 @@ Welcome to Apache Ignite binary client Python API documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   readme
 
 
 Indices and tables
