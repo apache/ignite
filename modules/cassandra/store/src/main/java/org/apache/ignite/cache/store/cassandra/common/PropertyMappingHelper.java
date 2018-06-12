@@ -46,8 +46,8 @@ public class PropertyMappingHelper {
         put(String.class, TypeHandlerHelper.getInstanceFromClass(StringTypeHandler.class));
         put(Integer.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
         put(int.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
-        put(Short.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
-        put(short.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
+        put(Short.class, TypeHandlerHelper.getInstanceFromClass(ShortTypeHandler.class));
+        put(short.class, TypeHandlerHelper.getInstanceFromClass(ShortTypeHandler.class));
         put(Long.class, TypeHandlerHelper.getInstanceFromClass(LongTypeHandler.class));
         put(long.class, TypeHandlerHelper.getInstanceFromClass(LongTypeHandler.class));
         put(Double.class, TypeHandlerHelper.getInstanceFromClass(DoubleTypeHandler.class));
