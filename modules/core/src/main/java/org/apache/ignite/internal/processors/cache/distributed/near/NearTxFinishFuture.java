@@ -31,6 +31,11 @@ public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalT
     boolean commit();
 
     /**
+     * @return Transaction.
+     */
+    GridNearTxLocal tx();
+
+    /**
      *
      * @param commit Commit flag.
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.

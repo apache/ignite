@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -49,30 +46,33 @@ public class VacuumScheduler extends GridWorker {
 
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-        try {
-            U.sleep(interval); // initial delay
+        U.sleep(interval); // initial delay
 
-            while (!isCancelled()) {
-                long nextScheduledTime = U.currentTimeMillis() + interval;
+        while (!isCancelled()) {
+            long nextScheduledTime = U.currentTimeMillis() + interval;
 
-                if (log.isDebugEnabled())
-                    log.debug("Vacuum started by scheduler.");
+            if (log.isDebugEnabled())
+                log.debug("Vacuum started by scheduler.");
 
+            try {
                 ctx.coordinators().runVacuum().get();
-
-                long delay = nextScheduledTime - U.currentTimeMillis();
-
-                if (delay > 0)
-                    U.sleep(delay);
             }
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Error occurred during scheduled vacuum process.", e);
+            catch (IgniteInterruptedCheckedException e) {
+                throw e;
+            }
+            catch (Throwable e) {
+                U.error(log, "Error occurred during scheduled vacuum process.", e);
 
-            ctx.coordinators().setVacuumError(e);
+                ctx.coordinators().setVacuumError(e);
+
+                if (e instanceof Error)
+                    throw (Error) e;
+            }
+
+            long delay = nextScheduledTime - U.currentTimeMillis();
+
+            if (delay > 0)
+                U.sleep(delay);
         }
     }
 }

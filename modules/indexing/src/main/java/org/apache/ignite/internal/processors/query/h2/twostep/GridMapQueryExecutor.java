@@ -494,7 +494,7 @@ public class GridMapQueryExecutor {
                         txReq.taskNameHash());
                 }
                 else {
-                    tx = MvccUtils.activeTx(ctx, txReq.version());
+                    tx = MvccUtils.tx(ctx, txReq.version());
 
                     assert tx != null;
                 }
@@ -852,7 +852,7 @@ public class GridMapQueryExecutor {
 
                     if (forUpdate) {
                         if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
-                            if (removeMapping = tx.empty())
+                            if (removeMapping = tx.empty() && !tx.queryEnlisted())
                                 tx.rollbackAsync().get();
                         }
                     }

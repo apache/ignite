@@ -43,7 +43,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -89,6 +88,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
  */
 @SuppressWarnings("serial") public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifecycleListener {
     /** */
-    public static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0);
+    private static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0);
 
     /** */
     private static final BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>> CONC =
@@ -129,6 +129,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
             return res;
         }
     };
+
+    /** */
+    private final Object mux = new Object();
 
     /** */
     private volatile MvccCoordinator curCrd;
@@ -179,10 +182,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private TxLog txLog;
 
     /** */
-    private BlockingQueue<VacuumTask> cleanupQueue;
+    private List<GridWorker> vacuumWorkers;
 
     /** */
-    private List<GridWorker> vacuumWorkers;
+    private BlockingQueue<VacuumTask> cleanupQueue;
 
     /** For tests only. */
     private volatile Throwable vacuumError;
@@ -881,50 +884,73 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      */
     private void startVacuum() {
         if (!ctx.clientNode() && mvccEnabled(ctx)) {
-            assert vacuumWorkers == null;
-            assert cleanupQueue == null;
+            synchronized (mux) {
+                if (vacuumWorkers == null) {
+                    assert cleanupQueue == null;
 
-            cleanupQueue = new LinkedBlockingQueue<>();
+                    cleanupQueue = new LinkedBlockingQueue<>();
 
-            vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCnt() + 1);
+                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCnt() + 1);
 
-            vacuumWorkers.add(new VacuumScheduler(ctx, log));
+                    vacuumWorkers.add(new VacuumScheduler(ctx, log));
 
-            for (int i = 0; i < ctx.config().getMvccVacuumThreadCnt(); i++) {
-                vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
+                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCnt(); i++) {
+                        vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
+                    }
+
+                    for (GridWorker worker : vacuumWorkers) {
+                        new IgniteThread(worker).start();
+                    }
+
+                    return;
+                }
             }
 
-            for (GridWorker worker : vacuumWorkers) {
-                new IgniteThread(worker).start();
-            }
+            U.warn(log, "Attempting to start active vacuum.");
         }
     }
 
     /**
      * Stops vacuum worker and scheduler.
      */
-    private void stopVacuum() {
+    public void stopVacuum() {
         if (!ctx.clientNode() && mvccEnabled(ctx)) {
-            if (vacuumWorkers != null) {
-                // Stop vacuum workers.
-                U.cancel(vacuumWorkers);
-                U.join(vacuumWorkers, log);
+            List<GridWorker> workers;
+            BlockingQueue<VacuumTask> queue;
+
+            synchronized (mux) {
+                workers = vacuumWorkers;
+                queue = cleanupQueue;
 
                 vacuumWorkers = null;
-
-                if (!cleanupQueue.isEmpty()) {
-                    NodeStoppingException ex = new NodeStoppingException("Operation has been cancelled (node is stopping).");
-
-                    for (VacuumTask task : cleanupQueue) {
-                        task.onDone(ex);
-                    }
-                }
-
                 cleanupQueue = null;
             }
-            else
+
+            if (workers == null) {
                 U.warn(log, "Attempting to stop inactive vacuum.");
+
+                return;
+            }
+
+            assert queue != null;
+
+            // Stop vacuum workers outside mutex to prevent deadlocks.
+            U.cancel(workers);
+            U.join(workers, log);
+
+            if (!queue.isEmpty()) {
+                IgniteCheckedException ex = vacuumCancelledException();
+
+                for (VacuumTask task : queue) {
+                    task.onDone(ex);
+                }
+            }
         }
+    }
+
+    /** */
+    @NotNull private IgniteCheckedException vacuumCancelledException() {
+        return new IgniteCheckedException("Operation has been cancelled.");
     }
 
     /**
@@ -1339,65 +1365,65 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private void continueRunVacuum(GridCompoundIdentityFuture<VacuumMetrics> res, MvccSnapshot snapshot) {
         ackTxCommit(currentCoordinator().nodeId(), snapshot, null)
             .listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture fut) {
-                if (fut.error() != null)
-                    res.onDone(fut.error());
-                else if (snapshot.cleanupVersion() <= MVCC_COUNTER_NA)
-                    res.onDone(new VacuumMetrics(), null);
-                else
-                    try {
-                        if (log.isDebugEnabled())
-                            log.debug("Started vacuum with cleanup version=" + snapshot.cleanupVersion() + '.');
+                @Override public void apply(IgniteInternalFuture fut) {
+                    if (fut.error() != null)
+                        res.onDone(fut.error());
+                    else if (snapshot.cleanupVersion() <= MVCC_COUNTER_NA)
+                        res.onDone(new VacuumMetrics());
+                    else {
+                        try {
+                            if (log.isDebugEnabled())
+                                log.debug("Started vacuum with cleanup version=" + snapshot.cleanupVersion() + '.');
 
-                        for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
-                            if (Thread.currentThread().isInterrupted())
-                                break;
+                            synchronized (mux) {
+                                if (cleanupQueue == null) {
+                                    res.onDone(vacuumCancelledException());
 
-                            if (!grp.userCache() || !grp.mvccEnabled())
-                                continue;
+                                    return;
+                                }
 
-                            List<GridDhtLocalPartition> parts = grp.topology().localPartitions();
+                                for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
+                                    if (grp.mvccEnabled()) {
+                                        for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
+                                            VacuumTask task = new VacuumTask(snapshot, part);
 
-                            if (parts.isEmpty())
-                                continue;
+                                            cleanupQueue.offer(task);
 
-                            for (GridDhtLocalPartition part : parts) {
-                                VacuumTask task = new VacuumTask(snapshot, part);
-
-                                cleanupQueue.offer(task);
-
-                                res.add(task);
-                            }
-                        }
-
-                        res.markInitialized();
-
-                        res.listen(new CI1<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture fut) {
-                                try {
-                                    fut.get();
-
-                                    assert currentCoordinator().coordinatorVersion() == snapshot.coordinatorVersion();
-
-                                    if (U.assertionsEnabled()) {
-                                        for (long key : waitTxFuts.keySet()) {
-                                            assert key > snapshot.cleanupVersion();
+                                            res.add(task);
                                         }
                                     }
-
-                                    txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Cannot truncate Tx log.", e);
                                 }
                             }
-                        });
+
+                            res.markInitialized();
+
+                            res.listen(new CI1<IgniteInternalFuture>() {
+                                @Override public void apply(IgniteInternalFuture fut) {
+                                    try {
+                                        fut.get();
+
+                                        assert currentCoordinator().coordinatorVersion() == snapshot.coordinatorVersion();
+
+                                        if (U.assertionsEnabled()) {
+                                            for (long key : waitTxFuts.keySet()) {
+                                                assert key > snapshot.cleanupVersion();
+                                            }
+                                        }
+
+                                        txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        U.error(log, "Cannot truncate Tx log due to vacuum error.", e);
+                                    }
+                                }
+                            });
+                        }
+                        catch (Throwable e) {
+                            completeWithException(res, e);
+                        }
                     }
-                    catch (Throwable e) {
-                        completeWithException(res, e);
-                    }
-            }
-        });
+                }
+            });
     }
 
     /** */

@@ -565,7 +565,7 @@ public class MvccUtils {
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
      */
-    @Nullable private static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
+    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -592,32 +592,6 @@ public class MvccUtils {
         return tx;
     }
 
-    /**
-     * @param ctx Grid kernal context.
-     * @param txId Transaction ID.
-     * @return Currently started active user transaction, or {@code null} if none started.
-     */
-    @Nullable public static GridNearTxLocal activeTx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
-        GridNearTxLocal tx = tx(ctx, txId);
-
-        if (tx != null && tx.state() != TransactionState.ACTIVE) {
-            tx.setRollbackOnly();
-
-            throw new IgniteSQLException("Failed to get active transaction. Transaction has been completed: [tx=" + tx + "]",
-                IgniteQueryErrorCode.TRANSACTION_COMPLETED);
-        }
-
-        return tx;
-    }
-
-    /**
-     * @param ctx Grid kernal context.
-     * @return Currently started active user transaction, or {@code null} if none started.
-     * @throws IgniteSQLException If failed.
-     */
-    @Nullable public static GridNearTxLocal activeTx(GridKernalContext ctx) throws IgniteSQLException {
-        return activeTx(ctx, null);
-    }
 
     /**
      * @param ctx Grid kernal context.
@@ -698,7 +672,7 @@ public class MvccUtils {
     @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
-        GridNearTxLocal tx = activeTx(cctx.kernalContext(), null);
+        GridNearTxLocal tx = tx(cctx.kernalContext());
 
         if (tx == null && startTx)
             tx = txStart(cctx, 0);

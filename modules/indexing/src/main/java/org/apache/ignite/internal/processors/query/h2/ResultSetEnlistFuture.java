@@ -89,14 +89,6 @@ public final class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFut
         return new ResultSetEnlistFutureResult(cnt, null);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void processEntry(GridDhtCacheEntry entry, GridCacheOperation op,
-        GridCacheUpdateTxResult updRes, CacheObject val) throws IgniteCheckedException {
-        synchronized (tx) {
-            super.processEntry(entry, op, updRes, val);
-        }
-    }
-
     @Override public GridCacheOperation operation() {
         return GridCacheOperation.READ;
     }

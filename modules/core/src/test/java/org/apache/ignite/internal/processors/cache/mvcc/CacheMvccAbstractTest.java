@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -149,8 +150,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         cfg.setMvccEnabled(true);
 
-        cfg.setMvccVacuumTimeInterval(100);
-
         if (disableScheduledVacuum)
             cfg.setMvccVacuumTimeInterval(Integer.MAX_VALUE);
 
@@ -214,9 +213,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            verifyCoordinatorInternalState();
-
             verifyOldVersionsCleaned();
+
+            verifyCoordinatorInternalState();
         }
         finally {
             stopAllGrids();
@@ -1014,8 +1013,27 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             stop.set(true);
 
-            writeFut.get();
-            readFut.get();
+            Exception ex = null;
+
+            try {
+                writeFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                ex = e;
+            }
+
+            try {
+                readFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                if (ex != null)
+                    ex.addSuppressed(e);
+                else
+                    ex = e;
+            }
+
+            if (ex != null)
+                throw ex;
         }
         finally {
             stop.set(true);
@@ -1054,26 +1072,23 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
 
-            final Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
-
-            // Rollback on coordinator happens asynchronously.
-            // We have to wait until all pending messages are processed.
-            GridTestUtils.waitForCondition(activeTxs::isEmpty, TX_TIMEOUT);
-
-            assertTrue("Txs on node [node=" + node.name() + ", txs=" + activeTxs.toString() + ']',
-                activeTxs.isEmpty());
-
-            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotFuts");
-
-            assertTrue(cntrFuts.isEmpty());
-
-            Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
-
-            assertTrue(ackFuts.isEmpty());
-
             Throwable vacuumError = crd.getVacuumError();
 
             assertNull(X.getFullStackTrace(vacuumError), vacuumError);
+
+            crd.stopVacuum(); // to prevent new futures creation.
+
+            Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
+            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotFuts");
+            Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
+
+            GridAbsPredicate cond = () -> activeTxs.isEmpty() && cntrFuts.isEmpty() && ackFuts.isEmpty();
+
+            GridTestUtils.waitForCondition(cond, TX_TIMEOUT);
+
+            assertTrue("activeTxs: " + activeTxs,  activeTxs.isEmpty());
+            assertTrue(cntrFuts.isEmpty());
+            assertTrue(ackFuts.isEmpty());
 
             checkActiveQueriesCleanup(node);
         }

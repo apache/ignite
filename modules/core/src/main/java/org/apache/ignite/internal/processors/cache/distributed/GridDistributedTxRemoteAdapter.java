@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -492,29 +492,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         batchStoreCommit(writeMap().values());
 
                         try {
-                            boolean first = true;
-                            boolean qryEnlisted = false;
-
                             // Node that for near transactions we grab all entries.
                             for (IgniteTxEntry txEntry : entries) {
                                 GridCacheContext cacheCtx = txEntry.context();
-
-                                if (txState().mvccEnabled(cctx)) {
-                                    if (first) {
-                                        qryEnlisted = txEntry.queryEnlisted();
-
-                                        first = false;
-                                    }
-                                    else if (qryEnlisted != txEntry.queryEnlisted())
-                                        throw new IgniteCheckedException("Cannot mix DML operations and native cache " +
-                                            "updates in the same transaction. Operation is unsupported at the moment");
-
-                                    if (qryEnlisted) {
-                                        assert txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == DELETE;
-
-                                        continue;  // we have already stored entry values;
-                                    }
-                                }
 
                                 boolean replicate = cacheCtx.isDrEnabled();
 

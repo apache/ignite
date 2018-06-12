@@ -42,11 +42,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -55,7 +55,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -555,23 +554,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         if (ptr0 != null)
             walPtr = ptr0;
 
-        IgniteTxEntry txEntry = tx.addEntry(op,
-            val,
-            null,
-            null,
-            entry,
-            null,
-            CU.empty0(),
-            false,
-            -1L,
-            -1L,
-            null,
-            true,
-            true,
-            false);
-
-        txEntry.queryEnlisted(true);
-        txEntry.markValid();
+        tx.queryEnlisted(true);
 
         cnt++;
 
@@ -587,8 +570,22 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      * @param val Value.
      */
     private void addToBatch(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
-        for (ClusterNode node : backupNodes(key)) {
+        List<ClusterNode> backups = backupNodes(key);
+
+        if (F.isEmpty(backups))
+            return;
+
+        Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
+
+        for (ClusterNode node : backups) {
             assert !node.isLocal();
+
+            GridDistributedTxMapping mapping = m.get(node.id());
+
+            if (mapping == null)
+                m.put(node.id(), mapping = new GridDistributedTxMapping(node));
+
+            mapping.markQueryUpdate();
 
             if (skipNearNodeUpdates && node.id().equals(nearNodeId)) {
                 if (!txStarted(node))
@@ -740,7 +737,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) :
             "localNode = " + cctx.localNodeId() + ", dhtNodes = " + dhtNodes;
 
-        if (dhtNodes.size() <= 1)
+        if (dhtNodes.size() == 1)
             return Collections.emptyList();
 
         return dhtNodes.subList(1, dhtNodes.size());

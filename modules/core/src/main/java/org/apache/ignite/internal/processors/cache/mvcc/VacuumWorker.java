@@ -23,7 +23,6 @@ import java.util.concurrent.BlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -76,13 +75,14 @@ public class VacuumWorker extends GridWorker {
             try {
                 task.onDone(processPartition(task));
             }
-            catch (IgniteCheckedException e) {
-                task.onDone(e);
+            catch (IgniteInterruptedCheckedException e) {
+                throw e; // Cancelled.
             }
-            catch (RuntimeException | Error e) {
+            catch (Throwable e) {
                 task.onDone(e);
 
-                throw e;
+                if (e instanceof Error)
+                    throw (Error) e;
             }
         }
     }
@@ -121,7 +121,7 @@ public class VacuumWorker extends GridWorker {
 
             while (cursor.next()) {
                 if (isCancelled())
-                    throw new IgniteFutureCancelledCheckedException("Future was cancelled.");
+                    throw new IgniteInterruptedCheckedException("Operation has been cancelled.");
 
                 MvccDataRow row = (MvccDataRow)cursor.get();
 

@@ -154,6 +154,15 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
 
         assert added : this;
 
+        try {
+            tx.addActiveCache(cctx, false);
+        }
+        catch (IgniteCheckedException e) {
+            onDone(e);
+
+            return;
+        }
+
         if (timeoutObj != null)
             cctx.time().addTimeoutObject(timeoutObj);
 

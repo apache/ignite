@@ -1803,8 +1803,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             beforePut(cacheCtx, false, true);
 
-            addActiveCache(cacheCtx, false);
-
             return updateAsync(new GridNearTxQueryEnlistFuture(
                 cacheCtx,
                 this,
@@ -3508,71 +3506,50 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * @return Transaction commit future.
-     */
-    private NearTxFinishFuture commitFuture() {
-        GridNearTxFinishFuture fut = new GridNearTxFinishFuture<>(cctx, this, true);
-
-        return txState.mvccEnabled(cctx) ? new GridNearTxFinishAndAckFuture(fut) : fut;
-    }
-
-    /**
      * @return Finish future.
      */
     public IgniteInternalFuture<IgniteInternalTx> commitNearTxLocalAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
-        NearTxFinishFuture fut = finishFut;
+        final NearTxFinishFuture fut, fut0 = finishFut; boolean fastFinish;
 
-        if (fut != null)
-            return chainFinishFuture(fut, true, true, false);
-
-        if (fastFinish()) {
-            GridNearTxFastFinishFuture fut0;
-
-            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, true)))
-                return chainFinishFuture(finishFut, true, true, false);
-
-            fut0.finish(true, false, false);
-
-            return fut0;
-        }
-
-        final NearTxFinishFuture fut0;
-
-        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = commitFuture()))
+        if (fut0 != null || !FINISH_FUT_UPD.compareAndSet(this, null, fut = finishFuture(fastFinish = fastFinish(), true)))
             return chainFinishFuture(finishFut, true, true, false);
 
-        final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
+        if (!fastFinish) {
+            final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
-        prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                try {
-                    // Make sure that here are no exceptions.
-                    prepareFut.get();
+            prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
+                    try {
+                        // Make sure that here are no exceptions.
+                        prepareFut.get();
 
-                    fut0.finish(true, true, false);
+                        fut.finish(true, true, false);
+                    }
+                    catch (Error | RuntimeException e) {
+                        COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+
+                        fut.finish(false, true, false);
+
+                        throw e;
+                    }
+                    catch (IgniteCheckedException e) {
+                        COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+
+                        if (!(e instanceof NodeStoppingException))
+                            fut.finish(false, true, true);
+                        else
+                            fut.onNodeStop(e);
+                    }
                 }
-                catch (Error | RuntimeException e) {
-                    COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+            });
+        }
+        else
+            fut.finish(true, false, false);
 
-                    fut0.finish(false, true, false);
-
-                    throw e;
-                }
-                catch (IgniteCheckedException e) {
-                    COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
-
-                    if (!(e instanceof NodeStoppingException))
-                        fut0.finish(false, true, true);
-                    else
-                        fut0.onNodeStop(e);
-                }
-            }
-        });
-
-        return fut0;
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -3611,65 +3588,74 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
 
-        NearTxFinishFuture fut = finishFut;
+        final NearTxFinishFuture fut, fut0 = finishFut; boolean fastFinish;
 
-        if (fut != null)
+        if (fut0 != null)
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        // Enable fast finish only from tx thread.
-        if (clearThreadMap && fastFinish()) {
-            GridNearTxFastFinishFuture fut0;
-
-            if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
-                return chainFinishFuture(finishFut, false, true, onTimeout);
-
-            rollbackFuture(fut0);
-
-            fut0.finish(false, onTimeout, onTimeout);
-
-            return fut0;
-        }
-
-        final GridNearTxFinishFuture fut0;
-
-        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, false)))
+        if (!FINISH_FUT_UPD.compareAndSet(this, null, fut = finishFuture(fastFinish = clearThreadMap && fastFinish(), false)))
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        rollbackFuture(fut0);
+        rollbackFuture(fut);
 
-        IgniteInternalFuture<?> prepFut = this.prepFut;
+        if (!fastFinish) {
+            IgniteInternalFuture<?> prepFut = this.prepFut;
 
-        if (prepFut == null || prepFut.isDone()) {
-            try {
-                // Check for errors in prepare future.
-                if (prepFut != null)
-                    prepFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
-            }
-
-            fut0.finish(false, clearThreadMap, onTimeout);
-        }
-        else {
-            prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    try {
-                        // Check for errors in prepare future.
-                        f.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
-                    }
-
-                    fut0.finish(false, clearThreadMap, onTimeout);
+            if (prepFut == null || prepFut.isDone()) {
+                try {
+                    // Check for errors in prepare future.
+                    if (prepFut != null)
+                        prepFut.get();
                 }
-            });
-        }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
+                }
 
-        return fut0;
+                fut.finish(false, clearThreadMap, onTimeout);
+            }
+            else {
+                prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> f) {
+                        try {
+                            // Check for errors in prepare future.
+                            f.get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
+                        }
+
+                        fut.finish(false, clearThreadMap, onTimeout);
+                    }
+                });
+            }
+        }
+        else
+            fut.finish(false, onTimeout, onTimeout);
+
+        return fut;
+    }
+
+    /**
+     * @return Transaction commit future.
+     * @param fast {@code True} in case of fast finish.
+     * @param commit {@code True} if commit.
+     */
+    private NearTxFinishFuture finishFuture(boolean fast, boolean commit) {
+        NearTxFinishFuture fut = fast ? new GridNearTxFastFinishFuture(this, commit) :
+            new GridNearTxFinishFuture<>(cctx, this, commit);
+
+        if (!txState.mvccEnabled(cctx))
+            return fut;
+
+        if (commit)
+            return txState.mvccEnabled(cctx) ? new GridNearTxFinishAndAckFuture(fut) : fut;
+
+        if (mvccQueryTracker() != null || mvccInfo != null)
+            fut.listen(new AckCoordinatorOnRollback(this));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -3753,8 +3739,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private boolean fastFinish() {
         return writeMap().isEmpty()
             && ((optimistic() && !serializable()) || readMap().isEmpty())
-            && (!mappings.single() && F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty())
-            && mvccInfo == null; // TODO IGNITE-8445
+            && (!mappings.single() && F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());
     }
 
     /**

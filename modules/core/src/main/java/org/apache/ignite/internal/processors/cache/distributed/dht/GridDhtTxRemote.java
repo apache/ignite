@@ -412,25 +412,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                 if (op != DELETE)
                     val = vals.get(i);
 
-                IgniteTxKey txKey = ctx.txKey(key);
-
-                addWrite(
-                    ctx,
-                    op,
-                    txKey,
-                    null,
-                    null,
-                    GridCacheUtils.TTL_ETERNAL,
-                    false,
-                    false);
-
-                IgniteTxEntry txEntry = entry(txKey);
-
-                assert txEntry != null;
-
-                txEntry.markValid();
-                txEntry.queryEnlisted(true);
-
                 GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
 
                 GridCacheUpdateTxResult updRes;

@@ -52,6 +52,11 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         return commit;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridNearTxLocal tx() {
+        return tx;
+    }
+
     /**
      * @param clearThreadMap {@code True} if need remove tx from thread map.
      */

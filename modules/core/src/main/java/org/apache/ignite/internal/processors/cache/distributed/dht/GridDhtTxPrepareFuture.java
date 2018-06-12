@@ -348,7 +348,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private void onEntriesLocked() {
         ret = new GridCacheReturn(null, tx.localResult(), true, null, true);
 
-        for (IgniteTxEntry writeEntry : writes()) {
+        for (IgniteTxEntry writeEntry : req.writes()) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
 
             assert txEntry != null : writeEntry;
@@ -614,7 +614,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        readyLocks(writes());
+        readyLocks(req.writes());
 
         if (tx.serializable() && tx.optimistic())
             readyLocks(req.reads());
@@ -918,7 +918,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
         // Interceptor on near node needs old values to execute callbacks.
-        Collection<IgniteTxEntry> writes = writes();
+        Collection<IgniteTxEntry> writes = req.writes();
 
         if (!F.isEmpty(writes)) {
             for (IgniteTxEntry e : writes) {
@@ -1032,7 +1032,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void prepare(GridNearTxPrepareRequest req) {
         assert req != null;
 
-        if (tx.empty()) {
+        if (tx.empty() && !req.queryUpdate()) {
             tx.setRollbackOnly();
 
             onDone((GridNearTxPrepareResponse)null);
@@ -1215,7 +1215,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         boolean skipInit = false;
 
         try {
-            Collection<IgniteTxEntry> writes = writes();
+            Collection<IgniteTxEntry> writes = req.writes();
 
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1326,13 +1326,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
     }
 
-    /**
-     * @return Write entries.
-     */
-    private Collection<IgniteTxEntry> writes() {
-        return F.<IgniteTxEntry>concat(false, req.writes(), F.view(tx.writeEntries(), CU.FILTER_ENLISTED_ENTRY));
-    }
-
     /** {@inheritDoc} */
     @Override public void onResponse(UUID crdId, MvccSnapshot res) {
         tx.mvccInfo(new MvccTxInfo(crdId, res));
@@ -1373,7 +1366,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
-            assert !dhtMapping.empty();
+            assert !dhtMapping.empty() || dhtMapping.queryUpdate();
 
             ClusterNode n = dhtMapping.primary();
 
@@ -1385,7 +1378,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<IgniteTxEntry> dhtWrites = dhtMapping.writes();
 
-            if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
+            if (!dhtMapping.queryUpdate() && F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                 continue;
 
             if (tx.remainingTime() == -1)
@@ -1415,6 +1408,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.storeWriteThrough(),
                 retVal,
                 mvccInfo);
+
+            req.queryUpdate(dhtMapping.queryUpdate());
 
             int idx = 0;
 

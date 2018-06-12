@@ -31,12 +31,12 @@ import org.apache.ignite.lang.IgniteInClosure;
  */
 public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteInternalTx> implements NearTxFinishFuture {
     /** */
-    private final GridNearTxFinishFuture finishFut;
+    private final NearTxFinishFuture finishFut;
 
     /**
      * @param finishFut Finish future.
      */
-    GridNearTxFinishAndAckFuture(GridNearTxFinishFuture finishFut) {
+    GridNearTxFinishAndAckFuture(NearTxFinishFuture finishFut) {
         this.finishFut = finishFut;
     }
 
@@ -46,13 +46,18 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     }
 
     /** {@inheritDoc} */
+    @Override public GridNearTxLocal tx() {
+        return finishFut.tx();
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
         finishFut.finish(commit, clearThreadMap, onTimeout);
 
         if (finishFut.commit()) {
-            finishFut.listen(new IgniteInClosure<GridNearTxFinishFuture>() {
-                @Override public void apply(final GridNearTxFinishFuture fut) {
+            finishFut.listen((IgniteInClosure)new IgniteInClosure<NearTxFinishFuture>() {
+                @Override public void apply(final NearTxFinishFuture fut) {
                     GridNearTxLocal tx = fut.tx();
 
                     IgniteInternalFuture<Void> ackFut = null;
@@ -62,9 +67,9 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
                     MvccTxInfo mvccInfo = tx.mvccInfo();
 
                     if (qryTracker != null)
-                        ackFut = qryTracker.onTxDone(mvccInfo, fut.context(), true);
+                        ackFut = qryTracker.onTxDone(mvccInfo, tx.context(), true);
                     else if (mvccInfo != null) {
-                        ackFut = fut.context().coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(),
+                        ackFut = tx.context().coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(),
                             mvccInfo.snapshot(),
                             null);
                     }

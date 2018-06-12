@@ -420,9 +420,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        if (!commit && (tx.mvccQueryTracker() != null || tx.mvccInfo() != null))
-            listen(new AckCoordinatorOnRollback());
-
         if (!commit && !clearThreadMap)
             tryRollbackAsync(onTimeout); // Asynchronous rollback.
         else
@@ -1242,24 +1239,4 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
     }
 
-    /** */
-    private class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteInternalTx>> {
-        /** */
-        private static final long serialVersionUID = 8172699207968328284L;
-
-        /** {@inheritDoc} */
-        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> future) throws IgniteCheckedException {
-            assert future.isDone();
-
-            MvccQueryTracker qryTracker = tx.mvccQueryTracker();
-            MvccTxInfo mvccInfo = tx.mvccInfo();
-
-            assert qryTracker != null || mvccInfo != null;
-
-            if (qryTracker != null)
-                qryTracker.onTxDone(mvccInfo, cctx, false);
-            else
-                cctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), null);
-        }
-    }
 }

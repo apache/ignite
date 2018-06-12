@@ -330,17 +330,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Write filter. */
-    public static final IgnitePredicate FILTER_ENLISTED_ENTRY = new P1<IgniteTxEntry>() {
-        @Override public boolean apply(IgniteTxEntry e) {
-            return e.queryEnlisted();
-        }
-
-        @Override public String toString() {
-            return "FILTER_ENLISTED_ENTRY";
-        }
-    };
-
     /** Query mapped filter. */
     public static final IgnitePredicate<GridDistributedTxMapping> FILTER_QUERY_MAPPING = new P1<GridDistributedTxMapping>() {
 

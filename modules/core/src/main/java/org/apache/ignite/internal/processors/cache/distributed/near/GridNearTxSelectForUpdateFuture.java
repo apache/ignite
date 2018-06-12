@@ -36,10 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -48,8 +44,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -327,11 +323,19 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
      */
     private void doInit(@Nullable AffinityTopologyVersion topVer, Collection<ClusterNode> nodes, boolean loc) {
         assert !loc || (topVer == null && nodes.size() == 1 && nodes.iterator().next().isLocal());
+        if (initialized())
+            throw new IllegalStateException("SELECT FOR UPDATE future has been initialized already.");
 
         tx.init();
 
-        if (initialized())
-            throw new IllegalStateException("SELECT FOR UPDATE future has been initialized already.");
+        if (timeout < 0) {
+            // Time is out.
+            onDone(timeoutException());
+
+            return;
+        }
+        else if (timeout > 0)
+            timeoutObj = new LockTimeoutObject();
 
         if (!tx.updateLockFuture(null, this)) {
             onDone(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
@@ -339,15 +343,21 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
             return;
         }
 
-        if (timeout > 0) {
-            timeoutObj = new GridNearTxSelectForUpdateFuture.LockTimeoutObject();
-
-            cctx.time().addTimeoutObject(timeoutObj);
-        }
-
         boolean added = cctx.mvcc().addFuture(this);
 
         assert added : this;
+
+        try {
+            tx.addActiveCache(cctx, false);
+        }
+        catch (IgniteCheckedException e) {
+            onDone(e);
+
+            return;
+        }
+
+        if (timeoutObj != null)
+            cctx.time().addTimeoutObject(timeoutObj);
 
         this.topVer = topVer;
 
@@ -355,6 +365,14 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
             map(n);
 
         markInitialized();
+    }
+
+    /**
+     * @return Timeout exception.
+     */
+    @NotNull private IgniteTxTimeoutCheckedException timeoutException() {
+        return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+            "transaction [timeout=" + timeout + ", tx=" + tx + ']');
     }
 
     /**
@@ -429,8 +447,7 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            onDone(new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onDone(timeoutException());
         }
 
         /** {@inheritDoc} */

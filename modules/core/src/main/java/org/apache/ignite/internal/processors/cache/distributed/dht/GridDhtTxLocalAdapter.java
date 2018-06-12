@@ -96,6 +96,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     protected boolean explicitLock;
 
+    /** */
+    private volatile boolean queryEnlisted;
+
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
 
@@ -214,6 +217,21 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public void explicitLock(boolean explicitLock) {
         this.explicitLock = explicitLock;
+    }
+
+    /**
+     * @return {@code True} if there are entries, enlisted by query.
+     */
+    public boolean queryEnlisted() {
+        return queryEnlisted;
+    }
+
+    /**
+     *
+     * @param queryEnlisted Whwthwr thwrw arw entries6 enlisted by query.
+     */
+    public void queryEnlisted(boolean queryEnlisted) {
+        this.queryEnlisted = queryEnlisted;
     }
 
     /**
