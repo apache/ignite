@@ -22,12 +22,11 @@ import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
  * Class for set of labeled vectors.
  */
-public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
+public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
@@ -68,6 +67,15 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
         super(rowSize, colSize, featureNames, isDistributed);
 
         initializeDataWithLabeledVectors();
+    }
+
+    /**
+     * Creates new Labeled Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     */
+    public LabeledDataset(Row[] data) {
+        super(data);
     }
 
     /** */
@@ -191,10 +199,22 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
 
     /** */
     public static Vector emptyVector(int size, boolean isDistributed) {
-
-        if(isDistributed)
-            return new SparseDistributedVector(size);
-        else
             return new DenseLocalOnHeapVector(size);
+    }
+
+    /** Makes copy with new Label objects and old features and Metadata objects. */
+    public LabeledDataset copy(){
+        LabeledDataset res = new LabeledDataset(this.data, this.colSize);
+        res.isDistributed = this.isDistributed;
+        res.meta = this.meta;
+        for (int i = 0; i < rowSize; i++)
+            res.setLabel(i, this.label(i));
+
+        return res;
+    }
+
+    /** Closes LabeledDataset. */
+    @Override public void close() throws Exception {
+
     }
 }

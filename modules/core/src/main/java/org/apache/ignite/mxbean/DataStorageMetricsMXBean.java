@@ -45,6 +45,30 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @Override long getWalBuffPollSpinsRate();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Total size in bytes for storage wal files.")
+    @Override long getWalTotalSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Time of the last WAL segment rollover.")
+    @Override long getWalLastRollOverTime();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total checkpoint time from last restart.")
+    @Override long getCheckpointTotalTime();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Used checkpoint buffer size in pages.")
+    @Override long getUsedCheckpointBufferPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Used checkpoint buffer size in bytes.")
+    @Override long getUsedCheckpointBufferSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total size in bytes for checkpoint buffer.")
+    @Override  long getCheckpointBufferSize();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Duration of the last checkpoint in milliseconds.")
     @Override long getLastCheckpointDuration();
 
@@ -75,6 +99,34 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Number of pages copied to a temporary checkpoint buffer during the last checkpoint.")
     @Override long getLastCheckpointCopiedOnWritePagesNumber();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total dirty pages for the next checkpoint.")
+    @Override long getDirtyPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The number of read pages from last restart.")
+    @Override long getPagesRead();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The number of written pages from last restart.")
+    @Override long getPagesWritten();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The number of replaced pages from last restart.")
+    @Override long getPagesReplaced();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total offheap size in bytes.")
+    @Override long getOffHeapSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total used offheap size in bytes.")
+    @Override long getOffheapUsedSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total size of memory allocated in bytes.")
+    @Override long getTotalAllocatedSize();
 
     /**
      * Enables persistence metrics collection on an Apache Ignite node.

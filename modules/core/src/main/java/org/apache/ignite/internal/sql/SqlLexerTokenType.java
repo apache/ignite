@@ -29,6 +29,9 @@ public enum SqlLexerTokenType {
     /** Quoted phrase. */
     QUOTED,
 
+    /** Quoted string constant. */
+    STRING,
+
     /** Minus sign. */
     MINUS('-'),
 

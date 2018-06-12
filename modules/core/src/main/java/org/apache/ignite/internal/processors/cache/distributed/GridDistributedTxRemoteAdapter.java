@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -116,6 +116,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** */
     @GridToStringInclude
     protected IgniteTxRemoteState txState;
+
+    /** {@code True} if tx should skip adding itself to completed version map on finish. */
+    private boolean skipCompletedVers;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -228,8 +231,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key)
-        throws GridCacheFilterFailedException
-    {
+        throws GridCacheFilterFailedException {
         assert false : "Method peek can only be called on user transaction: " + this;
 
         throw new IllegalStateException("Method peek can only be called on user transaction: " + this);
@@ -732,21 +734,21 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     }
                                 }
                                 catch (Throwable ex) {
-                                    boolean nodeStopping = X.hasCause(ex, NodeStoppingException.class);
+                                    boolean hasIOIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
                                     // In case of error, we still make the best effort to commit,
                                     // as there is no way to rollback at this point.
                                     err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                         "(all transaction entries will be invalidated): " + CU.txString(this), ex);
 
-                                    if (nodeStopping) {
+                                    if (hasIOIssue) {
                                         U.warn(log, "Failed to commit transaction, node is stopping [tx=" + this +
                                             ", err=" + ex + ']');
                                     }
                                     else
                                         U.error(log, "Commit failed.", err);
 
-                                    uncommit(nodeStopping);
+                                    uncommit(hasIOIssue);
 
                                     state(UNKNOWN);
 
@@ -759,7 +761,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 cctx.wal().log(new DataRecord(dataEntries));
 
                             if (ptr != null && !cctx.tm().logTxRecords())
-                                cctx.wal().fsync(ptr);
+                                cctx.wal().flush(ptr, false);
                         }
                         catch (StorageException e) {
                             throw new IgniteCheckedException("Failed to log transaction record " +
@@ -869,7 +871,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this, false);
+                cctx.tm().rollbackTx(this, false, skipCompletedVers);
 
                 state(ROLLED_BACK);
             }
@@ -899,6 +901,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /**
+     * @return {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public boolean skipCompletedVersions() {
+        return skipCompletedVers;
+    }
+
+    /**
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public void skipCompletedVersions(boolean skipCompletedVers) {
+        this.skipCompletedVers = skipCompletedVers;
+    }
+
+    /**
      * Adds explicit version if there is one.
      *
      * @param e Transaction entry.
@@ -925,4 +941,5 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxRemoteAdapter.class, this, "super", super.toString());
     }
+
 }

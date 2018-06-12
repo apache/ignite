@@ -17,6 +17,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
@@ -30,6 +33,13 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
         IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+
+        //Integrity test with reduced count of pages.
+        suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
+
+        suite.addTestSuite(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(IgniteNativeIoWalFlushFsyncSelfTest.class);
 
         return suite;
     }

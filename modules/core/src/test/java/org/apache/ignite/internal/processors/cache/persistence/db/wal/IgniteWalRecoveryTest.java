@@ -143,8 +143,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(1024 * 1024 * 1024);
-        memPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        memPlcCfg.setInitialSize(1024L * 1024 * 1024);
+        memPlcCfg.setMaxSize(1024L * 1024 * 1024);
         memPlcCfg.setPersistenceEnabled(true);
 
         dbCfg.setDefaultDataRegionConfiguration(memPlcCfg);
@@ -179,7 +179,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         cacheName = "partitioned";
     }
@@ -190,7 +190,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         logOnly = false;
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**

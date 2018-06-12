@@ -20,7 +20,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -34,7 +33,7 @@ public class IgniteStableBaselineBinObjFieldsQuerySelfTest extends IgniteBinaryO
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
@@ -44,14 +43,14 @@ public class IgniteStableBaselineBinObjFieldsQuerySelfTest extends IgniteBinaryO
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         initExtClassLoader();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(GRID_CNT + 1);
 
@@ -66,13 +65,13 @@ public class IgniteStableBaselineBinObjFieldsQuerySelfTest extends IgniteBinaryO
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

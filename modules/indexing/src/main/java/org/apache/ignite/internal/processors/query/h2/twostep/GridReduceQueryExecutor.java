@@ -99,7 +99,6 @@ import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -134,7 +133,7 @@ public class GridReduceQueryExecutor {
     private final AtomicLong qryIdGen;
 
     /** */
-    private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
 
     /** Contexts of running DML requests. */
     private final ConcurrentMap<Long, DistributedUpdateRun> updRuns = new ConcurrentHashMap<>();
@@ -452,6 +451,21 @@ public class GridReduceQueryExecutor {
     private Map<ClusterNode, IntArray> stableDataNodes(boolean isReplicatedOnly, AffinityTopologyVersion topVer,
         List<Integer> cacheIds, int[] parts) {
         GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
+
+        // If the first cache is not partitioned, find it (if it's present) and move it to index 0.
+        if (!cctx.isPartitioned()) {
+            for (int cacheId = 1; cacheId < cacheIds.size(); cacheId++) {
+                GridCacheContext<?, ?> currCctx = cacheContext(cacheIds.get(cacheId));
+
+                if (currCctx.isPartitioned()) {
+                    Collections.swap(cacheIds, 0, cacheId);
+
+                    cctx = currCctx;
+
+                    break;
+                }
+            }
+        }
 
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
 

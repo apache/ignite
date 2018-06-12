@@ -37,7 +37,9 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTe
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
+import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 
 /**
  * Cache tests using indexing.
@@ -77,6 +79,10 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
 
         suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
+
+        suite.addTestSuite(IgniteDataStreamerTest.class);
+
+        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
 
         return suite;
     }

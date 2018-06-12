@@ -29,9 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseString;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatches;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
@@ -52,8 +54,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
     /** File format. */
     private BulkLoadFormat inputFormat;
 
-    /** Batch size (size of portion of a file sent in each sub-request). */
-    private Integer batchSize;
+    /** Packet size (size of portion of a file sent in each sub-request). */
+    private Integer packetSize;
 
     /**
      * Parses the command.
@@ -83,7 +85,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        locFileName = parseIdentifier(lex);
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.STRING)
+            throw errorUnexpectedToken(lex.lookAhead(), "[file name: string]");
+
+        lex.shift();
+
+        locFileName = lex.token();
     }
 
     /**
@@ -144,6 +151,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
                 fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
                 fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
+                parseCsvOptions(lex, fmt);
+
                 inputFormat = fmt;
 
                 break;
@@ -155,6 +164,31 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     /**
+     * Parses CSV format options.
+     *
+     * @param lex The lexer.
+     * @param format CSV format object to configure.
+     */
+    private void parseCsvOptions(SqlLexer lex, BulkLoadCsvFormat format) {
+        while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.lookAhead().token()) {
+                case SqlKeyword.CHARSET: {
+                    lex.shift();
+
+                    String charsetName = parseString(lex);
+
+                    format.inputCharsetName(charsetName);
+
+                    break;
+                }
+
+                default:
+                    return;
+            }
+        }
+    }
+
+    /**
      * Parses the optional parameters.
      *
      * @param lex The lexer.
@@ -162,15 +196,15 @@ public class SqlBulkLoadCommand implements SqlCommand {
     private void parseParameters(SqlLexer lex) {
         while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.lookAhead().token()) {
-                case SqlKeyword.BATCH_SIZE:
+                case SqlKeyword.PACKET_SIZE:
                     lex.shift();
 
-                    int sz = parseInt(lex);
+                    int size = parseInt(lex);
 
-                    if (!BulkLoadAckClientParameters.isValidBatchSize(sz))
-                        throw error(lex, BulkLoadAckClientParameters.batchSizeErrorMsg(sz));
+                    if (!BulkLoadAckClientParameters.isValidPacketSize(size))
+                        throw error(lex, BulkLoadAckClientParameters.packetSizeErrorMesssage(size));
 
-                    batchSize = sz;
+                    packetSize = size;
 
                     break;
 
@@ -235,6 +269,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      *
      * @return The list of columns.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public List<String> columns() {
         return cols;
     }
@@ -249,21 +284,21 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     /**
-     * Returns the batch size.
+     * Returns the packet size.
      *
-     * @return The batch size.
+     * @return The packet size.
      */
-    public Integer batchSize() {
-        return batchSize;
+    public Integer packetSize() {
+        return packetSize;
     }
 
     /**
-     * Sets the batch size.
+     * Sets the packet size.
      *
-     * @param batchSize The batch size.
+     * @param packetSize The packet size.
      */
-    public void batchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public void packetSize(int packetSize) {
+        this.packetSize = packetSize;
     }
 
     /** {@inheritDoc} */

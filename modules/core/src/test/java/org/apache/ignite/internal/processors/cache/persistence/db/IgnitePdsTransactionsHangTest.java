@@ -47,7 +47,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -59,10 +58,10 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Page cache size. */
-    private static final int PAGE_CACHE_SIZE = 512;
+    private static final long PAGE_CACHE_SIZE = 512L * 1024 * 1024;
 
     /** Page size. */
-    private static final Integer PAGE_SIZE = 16;
+    private static final int PAGE_SIZE = 16 * 1024;
 
     /** Cache name. */
     private static final String CACHE_NAME = "IgnitePdsTransactionsHangTest";
@@ -89,12 +88,12 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -125,8 +124,8 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
-        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE);
+        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE);
         memPlcCfg.setPersistenceEnabled(true);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
@@ -134,7 +133,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
         memCfg.setWalHistorySize(1);
         memCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
-        memCfg.setPageSize(PAGE_SIZE * 1024);
+        memCfg.setPageSize(PAGE_SIZE);
 
         cfg.setDataStorageConfiguration(memCfg);
 

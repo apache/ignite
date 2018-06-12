@@ -19,13 +19,18 @@
     $index-column-width: 46px;
     $remove-column-width: 36px;
 
-    margin-top: 10px;
+    margin-left: 10px;
     margin-right: $remove-column-width;
-    margin-left: $index-column-width;
+    transition: 0.2s opacity;
+
+    &__multiple-cols {
+        margin-left: $index-column-width;
+    }
 
     .ignite-form-field__label {
-        margin-left: 0;
-        margin-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+        float: none;
     }
 
     [ignite-icon='info'] {
@@ -45,7 +50,8 @@
         }
     }
 
-    .list-editable-cols__header-cell {
-        padding-bottom: 5px;
+    &[disabled] {
+        opacity: 0.5;
+        cursor: default;
     }
 }

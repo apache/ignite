@@ -56,7 +56,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         startGrid(config(SRV_1, false, filterOnCrd));
         startGrid(config(SRV_2, false, false));
@@ -65,13 +65,6 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
         Ignite cli = startGrid(config(CLI, true, false));
 
         cli.cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        deleteWorkFiles();
     }
 
     /**

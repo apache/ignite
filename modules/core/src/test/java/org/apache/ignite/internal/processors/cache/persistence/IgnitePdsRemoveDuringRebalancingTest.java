@@ -63,9 +63,8 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(100 * 1024 * 1024)
-                    .setPersistenceEnabled(true)
-                    .setSwapPath(DFLT_STORE_DIR))
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(1024)
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
@@ -84,7 +83,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
@@ -93,7 +92,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         G.stopAll(true);
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }

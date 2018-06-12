@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -81,9 +82,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
 
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
-        CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
+        CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
             (upstream, upstreamSize) -> upstreamSize,
-            (upstream, upstreamSize, ctx) -> null
+            (upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
 
         assertTrue("Before computation all partitions should not be reserved",
@@ -133,9 +134,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
 
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
-        CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
+        CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
             (upstream, upstreamSize) -> upstreamSize,
-            (upstream, upstreamSize, ctx) -> null
+            (upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
 
         assertTrue("Before computation all partitions should not be reserved",
@@ -205,7 +206,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         long checkingStartTs = System.currentTimeMillis();
 
         while (!flag && (System.currentTimeMillis() - checkingStartTs) < 30_000) {
-            LockSupport.parkNanos(200 * 1000 * 1000);
+            LockSupport.parkNanos(200L * 1000 * 1000);
             flag = true;
 
             for (String cacheName : cacheNames) {
@@ -289,9 +290,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
                         builder.append("\t\t")
                             .append(String.format("| %3d  |", partition.id()))
                             .append(String.format(" %7s  |", partition.state()))
-                            .append(String.format(" %7s  |", partition.reload()))
                             .append(String.format(" %13s  |", partition.reservations()))
-                            .append(String.format(" %18s  |", partition.shouldBeRenting()))
                             .append(String.format(" %8s  |", partition.primary(instanceState.topVer)))
                             .append(String.format(" %16d  |", partition.dataStore().fullSize()))
                             .append("\n");

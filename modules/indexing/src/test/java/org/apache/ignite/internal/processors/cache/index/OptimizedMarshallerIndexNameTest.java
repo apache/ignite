@@ -65,7 +65,7 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(300 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(300L * 1024 * 1024).setPersistenceEnabled(true))
             .setStoragePath(workSubdir() + "/db")
             .setWalArchivePath(workSubdir() + "/db/wal/archive")
             .setWalPath(workSubdir() + "/db/wal")
@@ -101,17 +101,10 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), workSubdir(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), workSubdir(), true));
 
         startGrid(getTestIgniteInstanceName());
         grid().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**

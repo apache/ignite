@@ -68,7 +68,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
+                    .setPersistenceEnabled(true).setMaxSize(10L * 1024 * 1024)
 
             ).setWalMode(WALMode.LOG_ONLY)
         );
@@ -80,14 +80,14 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(false);
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /**

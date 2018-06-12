@@ -24,7 +24,7 @@ namespace ignite
     {
         namespace ssl
         {
-            SslMode::T SslMode::FromString(const std::string& val, T dflt)
+            SslMode::Type SslMode::FromString(const std::string& val, Type dflt)
             {
                 std::string lowerVal = common::ToLower(val);
 
@@ -37,6 +37,22 @@ namespace ignite
                     return SslMode::REQUIRE;
 
                 return dflt;
+            }
+
+            std::string SslMode::ToString(Type val)
+            {
+                switch (val)
+                {
+                    case SslMode::DISABLE:
+                        return "disable";
+
+                    case SslMode::REQUIRE:
+                        return "require";
+
+                    case SslMode::UNKNOWN:
+                    default:
+                        return "unknown";
+                }
             }
         }
     }

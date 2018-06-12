@@ -36,7 +36,9 @@ import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolic
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDataStreamerTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMetricTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionPagesRecyclingAndReusingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
@@ -90,6 +92,10 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
 
         suite.addTest(new TestSuite(PageEvictionMultinodeMixedRegionsTest.class));
+
+        suite.addTest(new TestSuite(PageEvictionMetricTest.class));
+
+        suite.addTest(new TestSuite(PageEvictionPagesRecyclingAndReusingTest.class));
 
         return suite;
     }

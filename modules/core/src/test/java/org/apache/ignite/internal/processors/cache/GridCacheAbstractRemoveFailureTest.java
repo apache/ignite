@@ -54,7 +54,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -118,11 +118,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -218,7 +214,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         final AtomicLong errCntr = new AtomicLong();
 
         // Expected values in cache.
-        final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap8<>();
+        final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap<>();
 
         final AtomicReference<CyclicBarrier> cmp = new AtomicReference<>();
 

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.util.worker.GridWorkerListenerAdapter;
 import org.apache.ignite.thread.IgniteThread;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.newSetFromMap;
 
@@ -41,7 +41,7 @@ public class HadoopExecutorService {
     private final LinkedBlockingQueue<Callable<?>> queue;
 
     /** */
-    private final Collection<GridWorker> workers = newSetFromMap(new ConcurrentHashMap8<GridWorker, Boolean>());
+    private final Collection<GridWorker> workers = newSetFromMap(new ConcurrentHashMap<GridWorker, Boolean>());
 
     /** */
     private final AtomicInteger active = new AtomicInteger();

@@ -83,8 +83,8 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
+        cleanPersistenceDir();
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
     }
 
     /** {@inheritDoc} */

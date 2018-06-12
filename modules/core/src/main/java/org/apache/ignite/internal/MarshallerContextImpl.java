@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,7 +57,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
@@ -156,7 +156,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private void initializeCaches() {
-        allCaches.add(new CombinedMap(new ConcurrentHashMap8<Integer, MappedName>(), sysTypesMap));
+        allCaches.add(new CombinedMap(new ConcurrentHashMap<Integer, MappedName>(), sysTypesMap));
     }
 
     /** */
@@ -185,12 +185,21 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param platformId Platform id.
      * @param marshallerMappings All marshaller mappings for given platformId.
+     * @throws IgniteCheckedException In case of failure to process incoming marshaller mappings.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings) {
+    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings)
+        throws IgniteCheckedException
+    {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet())
-            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
+        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
+            int typeId = e.getKey();
+            String clsName = e.getValue().className();
+
+            platformCache.put(typeId, new MappedName(clsName, true));
+
+            fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+        }
     }
 
     /**
@@ -469,12 +478,12 @@ public class MarshallerContextImpl implements MarshallerContext {
                 map = allCaches.get(platformId);
 
                 if (map == null) {
-                    map = new ConcurrentHashMap8<>();
+                    map = new ConcurrentHashMap<>();
                     allCaches.set(platformId, map);
                 }
             }
             else {
-                map = new ConcurrentHashMap8<>();
+                map = new ConcurrentHashMap<>();
 
                 putAtIndex(map, allCaches, platformId, size);
             }

@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -284,7 +287,6 @@ public class DynamicCacheDescriptor {
         this.rcvdFromVer = rcvdFromVer;
     }
 
-
     /**
      * @return Start topology version or {@code null} if cache configured statically.
      */
@@ -344,6 +346,47 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             schema.finish(msg);
         }
+    }
+
+    /**
+     * Make schema patch for this cache.
+     *
+     * @param target Query entity list which current schema should be expanded to.
+     * @return Patch which contains operations for expanding schema of this cache.
+     * @see QuerySchemaPatch
+     */
+    public QuerySchemaPatch makeSchemaPatch(Collection<QueryEntity> target) {
+        synchronized (schemaMux) {
+            return schema.makePatch(target);
+        }
+    }
+
+    /**
+     * Apply query schema patch for changing current schema.
+     *
+     * @param patch patch to apply.
+     * @return {@code true} if applying was success and {@code false} otherwise.
+     */
+    public boolean applySchemaPatch(QuerySchemaPatch patch) {
+        synchronized (schemaMux) {
+            return schema.applyPatch(patch);
+        }
+    }
+
+    /**
+     * Form a {@link StoredCacheData} with all data to correctly restore cache params when its configuration is read
+     * from page store. Essentially, this method takes from {@link DynamicCacheDescriptor} all that's needed to start
+     * cache correctly, leaving out everything else.
+     */
+    public StoredCacheData toStoredData() {
+        assert schema != null;
+
+        StoredCacheData res = new StoredCacheData(cacheConfiguration());
+
+        res.queryEntities(schema().entities());
+        res.sql(sql());
+
+        return res;
     }
 
     /** {@inheritDoc} */

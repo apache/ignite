@@ -24,13 +24,8 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
-import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
-import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
@@ -94,15 +89,6 @@ public class MatrixUtil {
     }
 
     /**
-     * Check if a given matrix is distributed.
-     *
-     * @param matrix Matrix for like.
-     */
-    private static boolean isDistributed(Matrix matrix) {
-        return matrix instanceof SparseDistributedMatrix || matrix instanceof SparseBlockDistributedMatrix;
-    }
-
-    /**
      * Create the like vector with read-only matrices support.
      *
      * @param matrix Matrix for like.
@@ -143,8 +129,7 @@ public class MatrixUtil {
 
     /** */
     private static boolean isCopyLikeSupport(Matrix matrix) {
-        return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
-            matrix instanceof PivotedMatrixView;
+        return matrix instanceof MatrixView;
     }
 
     /** */

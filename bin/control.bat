@@ -104,7 +104,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\build-classpath.bat"
-set CP=%IGNITE_LIBS%
+set CP=%IGNITE_LIBS%;%IGNITE_HOME%\libs\optional\ignite-zookeeper\*
 
 ::
 :: Process 'restart'.
@@ -159,8 +159,7 @@ if %ERRORLEVEL% equ 0 (
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 ::
-:: set JVM_OPTS=%JVM_OPTS% -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m
-:: set JVM_OPTS=%JVM_OPTS% -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60
+:: set JVM_OPTS=%JVM_OPTS% -XX:+UseG1GC
 
 ::
 :: Uncomment if you get StackOverflowError.

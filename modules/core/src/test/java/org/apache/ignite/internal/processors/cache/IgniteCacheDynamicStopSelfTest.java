@@ -41,13 +41,6 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
         startGrids(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
