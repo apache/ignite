@@ -13,14 +13,69 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Set of functions to manipulate caches.
+
+Ignite `cache` can be viewed as a named entity designed to store key-value
+pairs. Each cache is split transparently between different Ignite partitions.
+
+The choice of `cache` term is due to historical reasons. (Ignite initially had
+only non-persistent storage tier.)
+"""
+
 import ctypes
 
 from connection import Connection
 from constants import *
 from datatypes import string_class, string_object
+from datatypes.cache_config import cache_config_struct
 from queries import QueryHeader, ResponseHeader
 from queries.op_codes import *
 from .result import APIResult
+
+
+def cache_get_configuration(
+    conn: Connection, hash_code: int, flags: int=0
+) -> APIResult:
+    """
+    Gets configuration for the given cache.
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param flags: Ignite documentation is unclear on this subject,
+    :return: API result data object. Result value is OrderedDict with
+     the cache configuration parameters.
+    """
+    query_class = type(
+        'QueryClass',
+        (QueryHeader,),
+        {
+            '_pack_': 1,
+            '_fields_': [
+                ('hash_code', ctypes.c_int),
+                ('flags', ctypes.c_byte),
+            ],
+        },
+    )
+    query = query_class()
+    query.op_code = OP_CACHE_GET_CONFIGURATION
+    query.hash_code = hash_code
+    query.flags = flags
+    conn.send(query)
+
+    buffer = conn.recv(ctypes.sizeof(ResponseHeader))
+    response_header = ResponseHeader.from_buffer_copy(buffer)
+    result = APIResult(status=response_header.status_code)
+
+    if result.status == 0:
+        cache_config_class, buffer_fragment = cache_config_struct.parse(conn)
+        cache_config = cache_config_class.from_buffer_copy(buffer_fragment)
+        result.value = cache_config_struct.to_python(cache_config)
+    else:
+        error_msg = string_object(conn)
+        result.message = error_msg.get_attribute()
+    return result
 
 
 def cache_get_names(conn: Connection) -> APIResult:
@@ -117,7 +172,7 @@ def cache_get_or_create(conn: Connection, name: str) -> APIResult:
     return result
 
 
-def cache_destroy(conn: Connection, hash_code: int):
+def cache_destroy(conn: Connection, hash_code: int) -> APIResult:
     """
     Destroys cache with a given name.
 

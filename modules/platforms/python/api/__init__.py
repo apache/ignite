@@ -39,6 +39,7 @@ from .cache_config import (
     cache_create,
     cache_get_or_create,
     cache_destroy,
+    cache_get_configuration,
     cache_get_names,
 )
 from .key_value import cache_get, cache_put

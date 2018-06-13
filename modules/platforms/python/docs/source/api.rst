@@ -33,4 +33,12 @@ api.result module
     :undoc-members:
     :show-inheritance:
 
+api.sql module
+--------------
+
+.. automodule:: api.sql
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
