@@ -131,7 +131,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
                 }
             });
 
-            Future<?> fut = serv.submit(new Runnable() {
+            Future<?> checkFut = serv.submit(new Runnable() {
                 @Override public void run()  {
                     while (!loaded.get()) {
                         if (impl.getTotalAllocatedPages() >= pagesToLoad)
@@ -141,7 +141,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
                             Thread.sleep(500L);
                         }
                         catch (InterruptedException e) {
-                            e.printStackTrace();
+                            BenchmarkUtils.error("Was interrupted while waiting before next check.", e);
                         }
                     }
                 }
@@ -161,17 +161,18 @@ public class Loader implements IgniteClosure<Integer, Integer> {
                 }
             }
             catch (Exception e){
-                e.printStackTrace();
+                BenchmarkUtils.error("Failed to load data.", e);
             }
 
             try {
-                fut.get();
+                checkFut.get();
             }
             catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                BenchmarkUtils.error("Failed to check loading.", e);
             }
-
-            serv.shutdown();
+            finally {
+                serv.shutdown();
+            }
 
             impl.disableMetrics();
 
@@ -180,7 +181,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
             BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
         }
         catch (IgniteCheckedException e) {
-            e.printStackTrace();
+            BenchmarkUtils.error("Failed to load data.", e);
         }
 
         return cnt;
