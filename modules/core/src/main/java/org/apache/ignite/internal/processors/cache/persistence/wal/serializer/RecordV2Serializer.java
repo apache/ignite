@@ -115,6 +115,9 @@ public class RecordV2Serializer implements RecordSerializer {
 
             FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck);
 
+            if (recType == null)
+                throw new IOException("Unknown record type: " + recType);
+
             if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
