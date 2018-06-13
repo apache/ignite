@@ -3297,13 +3297,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                 }
-
-                unparkWaiters(Long.MAX_VALUE);
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
+                unparkWaiters(Long.MAX_VALUE);
+
                 if (err == null && !shutdown)
                     err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 

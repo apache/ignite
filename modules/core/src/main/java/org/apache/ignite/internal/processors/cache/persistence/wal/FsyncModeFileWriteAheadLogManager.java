@@ -266,9 +266,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
 
-    /** Environment failure. */
-    private volatile Throwable envFailed;
-
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
      * See {@link DataStorageConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
@@ -2542,7 +2539,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             lock.lock();
 
             try {
-                while (written < expWritten && envFailed == null)
+                while (written < expWritten && !cctx.kernalContext().invalid())
                     U.awaitQuiet(writeComplete);
             }
             finally {
@@ -2858,7 +2855,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             try {
                 WALRecord rec = head.get();
 
-                if (envFailed == null) {
+                if (!cctx.kernalContext().invalid()) {
                     assert rec instanceof FakeRecord : "Expected head FakeRecord, actual head "
                     + (rec != null ? rec.getClass().getSimpleName() : "null");
 
