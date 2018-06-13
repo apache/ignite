@@ -419,10 +419,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                int hdrVer = cctx.name().contains(DataStructureType.SET.name() + "_" + name + "@") ?
-                    GridCacheSetHeader.V2 : GridCacheSetHeader.V1;
-
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, hdrVer);
+                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated,
+                    cctx.name().contains(DataStructureType.SET.name() + "_" + name + "@"));
 
                 GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 

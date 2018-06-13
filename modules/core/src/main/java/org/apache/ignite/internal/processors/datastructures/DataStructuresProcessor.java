@@ -119,7 +119,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
     // TODO Set current snapshot version before merge.
-    private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
+    private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
+        IgniteProductVersion.fromString("2.5.0");
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -1564,7 +1565,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
                 hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
-                if (hdr != null && (hdr.collocated() || hdr.version() == GridCacheSetHeader.V1))
+                if (hdr != null && !hdr.separatedCache())
                     cctx.dataStructures().removeSetData(hdr.id());
             }
         };

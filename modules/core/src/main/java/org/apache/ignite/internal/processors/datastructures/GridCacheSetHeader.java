@@ -31,12 +31,6 @@ import org.apache.ignite.lang.IgniteUuid;
  * Cache set header.
  */
 public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
-    /** Initial implementation. Collocated and non-collocated IgniteSet versions uses shared cache. */
-    public static final int V1 = 1;
-
-    /** Non-collocated version of IgniteSet uses separate cache. */
-    public static final int V2 = 2;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,8 +40,8 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /** */
     private boolean collocated;
 
-    /** */
-    private int ver = V1;
+    /** {@code True} If this version of IgniteSet uses separated cache. */
+    private boolean separatedCache;
 
     /**
      * Required by {@link Externalizable}.
@@ -59,12 +53,14 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /**
      * @param id Set UUID.
      * @param collocated Collocation flag.
-     * @param ver Header version.
+     * @param separatedCache {@code True} If this version of IgniteSet uses separated cache.
      */
-    public GridCacheSetHeader(IgniteUuid id, boolean collocated, int ver) {
+    public GridCacheSetHeader(IgniteUuid id, boolean collocated, boolean separatedCache) {
+        assert !(separatedCache && collocated);
+
         this.id = id;
         this.collocated = collocated;
-        this.ver = ver;
+        this.separatedCache = separatedCache;
     }
 
     /**
@@ -82,17 +78,17 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @return Header version.
+     * @return {@code True} If this version uses separated cache.
      */
-    public int version() {
-        return ver;
+    public boolean separatedCache() {
+        return separatedCache;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         out.writeBoolean(collocated);
-        out.writeInt(ver);
+        out.writeBoolean(separatedCache);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +96,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
         try {
             id = U.readGridUuid(in);
             collocated = in.readBoolean();
-            ver = in.readInt();
+            separatedCache = in.readBoolean();
         }
         catch (EOFException ignore) {
             // No-op.

@@ -60,7 +60,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader.V2;
 
 /**
  * Cache set implementation.
@@ -120,7 +119,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         this.setKey = new GridCacheSetHeaderKey(name);
         this.log = ctx.logger(GridCacheSetImpl.class);
         this.hdrPart = ctx.affinity().partition(setKey);
-        this.separatedCache = (!collocated && hdr.version() == V2);
+        this.separatedCache = hdr.separatedCache();
     }
 
     /** {@inheritDoc} */
