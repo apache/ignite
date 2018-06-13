@@ -232,6 +232,11 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     * @param log Logger.
+     */
+    public abstract void dumpRingStructure(IgniteLogger log);
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */

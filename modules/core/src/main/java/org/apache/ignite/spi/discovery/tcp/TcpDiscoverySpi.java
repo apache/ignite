@@ -2506,5 +2506,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         @Override public void checkRingLatency(int maxHops) {
             TcpDiscoverySpi.this.impl.checkRingLatency(maxHops);
         }
+
+        @Override
+        public long getCurrentTopologyVersion() {
+            return TcpDiscoverySpi.this.ignite.cluster().topologyVersion();
+        }
+
+        @Override
+        public void dumpRingStructure() {
+            impl.dumpRingStructure(log);
+        }
     }
 }

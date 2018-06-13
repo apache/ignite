@@ -281,4 +281,8 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
         }
     )
     public void checkRingLatency(int maxHops);
+
+    public long getCurrentTopologyVersion();
+
+    public void dumpRingStructure();
 }

@@ -225,6 +225,20 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.quietAndInfo(log, b.toString());
     }
 
+    /**
+     *
+     * @param log Logger.
+     */
+    @Override
+    public void dumpRingStructure(IgniteLogger log) {
+        ClusterNode[] serverNodes = getRemoteNodes().stream()
+                .filter(node -> !node.isClient())
+                .sorted((o1, o2) -> (int)(o1.order() - o2.order()))
+                .toArray(ClusterNode[]::new);
+
+        U.quietAndInfo(log, Arrays.toString(serverNodes));
+    }
+
     /** {@inheritDoc} */
     @Override public String getSpiState() {
 
