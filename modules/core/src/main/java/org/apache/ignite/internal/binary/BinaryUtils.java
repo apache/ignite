@@ -2192,6 +2192,10 @@ public class BinaryUtils {
             if (Externalizable.class.isAssignableFrom(c))
                 return true;
     
+            if (Enum.class.isAssignableFrom(c)) {
+            	return false;
+            }
+            
             if (hasCustomSerializationMethod(c, "writeObject", ObjectOutputStream.class)
                     || hasCustomSerializationMethod(c, "readObject", ObjectInputStream.class))
                 return true;
