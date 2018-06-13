@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -33,7 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -70,6 +71,9 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private boolean forceServerMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -96,6 +100,8 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
             cfg.setCacheConfiguration(ccfgs);
         }
+        else
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(forceServerMode);
 
         cfg.setClientMode(client);
 
@@ -147,13 +153,52 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that in case of exchange history exhaustion
+     * (refer to javadoc at {@link #testClientReconnectOnExchangeHistoryExhaustion()} for more info about it)
+     * clients with forceServerMode=true flag don't try to reconnect to the cluster and stop.
+     *
+     * @throws Exception If failed
+     */
+    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
+
+        try {
+            startGrids(SRV_CNT);
+
+            client = true;
+
+            forceServerMode = true;
+
+            int clientNodes = 10;
+
+            try {
+                startGridsMultiThreaded(SRV_CNT, clientNodes);
+            }
+            catch (IgniteCheckedException e) {
+                //Ignored: it is expected to get exception here
+            }
+
+            awaitPartitionMapExchange();
+
+            int topSize = G.allGrids().size();
+
+            assertTrue("Actual size: " + topSize, topSize < SRV_CNT + clientNodes);
+
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE);
+        }
+    }
+
+    /**
      * Verifies basic cache operations from all clients.
      */
     private void verifyCacheOperationsOnClients() {
         for (int i = SRV_CNT; i < SRV_CNT + CLIENTS_CNT; i++) {
             IgniteEx cl = grid(i);
 
-            assertTrue(cl.localNode().isClient());
+            if (!forceServerMode)
+                assertTrue(cl.localNode().isClient());
 
             for (int j = 0; j < CACHES; j++) {
                 IgniteCache<Object, Object> cache = cl.cache("cache-" + j);

@@ -34,7 +34,5 @@ public class IgniteNeedReconnectException extends IgniteCheckedException {
      */
     public IgniteNeedReconnectException(ClusterNode node, @Nullable Throwable cause) {
         super("Node need try to reconnect [nodeId=" + node.id() + ']', cause);
-
-        assert node.isClient() : node;
     }
 }

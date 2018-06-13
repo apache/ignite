@@ -1105,7 +1105,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         comp.onKernalStart(active);
                     }
                     catch (IgniteNeedReconnectException e) {
-                        assert ctx.discovery().reconnectSupported();
+                        ClusterNode locNode = ctx.discovery().localNode();
+
+                        assert CU.clientNode(locNode);
+
+                        if (!locNode.isClient())
+                            throw new IgniteCheckedException("Client node in forceServerMode " +
+                                "is not allowed to reconnect to the cluster and will be stopped.");
 
                         if (log.isDebugEnabled())
                             log.debug("Failed to start node components on node start, will wait for reconnect: " + e);
