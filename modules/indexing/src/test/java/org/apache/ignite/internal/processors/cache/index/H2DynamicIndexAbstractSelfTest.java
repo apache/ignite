@@ -51,13 +51,6 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

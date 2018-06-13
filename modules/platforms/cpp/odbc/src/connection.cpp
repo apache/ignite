@@ -115,10 +115,12 @@ namespace ignite
 
             parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
 
-            std::string dsn = config.GetDsn();
+            if (config.IsDsnSet())
+            {
+                std::string dsn = config.GetDsn();
 
-            if (!dsn.empty())
                 ReadDsnConfiguration(dsn.c_str(), config);
+            }
 
             return InternalEstablish(config);
         }
@@ -526,6 +528,15 @@ namespace ignite
 
                     if (valueLen)
                         *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = SQL_AUTOCOMMIT_ON;
 
                     break;
                 }

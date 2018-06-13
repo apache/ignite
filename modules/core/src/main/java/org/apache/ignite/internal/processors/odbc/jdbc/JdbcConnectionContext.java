@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * JDBC Connection Context.
  */
-public class JdbcConnectionContext implements ClientListenerConnectionContext {
+public class JdbcConnectionContext extends ClientListenerAbstractConnectionContext {
     /** Version 2.1.0. */
     private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
@@ -59,9 +59,6 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
-
-    /** Context. */
-    private final GridKernalContext ctx;
 
     /** Session. */
     private final GridNioSession ses;
@@ -92,13 +89,15 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
     /**
      * Constructor.
+     *
      * @param ctx Kernal Context.
      * @param ses Session.
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, int maxCursors) {
-        this.ctx = ctx;
+        super(ctx);
+
         this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -151,27 +150,21 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
                 }
             }
 
+            String user = null;
+            String passwd = null;
+
             try {
                 if (reader.available() > 0) {
-                    String user = reader.readString();
-                    String passwd = reader.readString();
-
-                    if (F.isEmpty(user) && ctx.authentication().enabled())
-                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
-
-                    actx = ctx.authentication().authenticate(user, passwd);
-
-                    if (actx == null)
-                        throw new IgniteCheckedException("Unknown authentication error");
+                    user = reader.readString();
+                    passwd = reader.readString();
                 }
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
-        }
 
-        if (ctx.authentication().enabled() && actx == null)
-            throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+            actx = authenticate(user, passwd);
+        }
 
         parser = new JdbcMessageParser(ctx);
 

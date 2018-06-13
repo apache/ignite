@@ -135,6 +135,9 @@ public class CacheGroupContext {
     /** */
     private final DataRegion dataRegion;
 
+    /** Persistence enabled flag. */
+    private final boolean persistenceEnabled;
+
     /** */
     private final CacheObjectContext cacheObjCtx;
 
@@ -163,8 +166,8 @@ public class CacheGroupContext {
     private volatile boolean globalWalEnabled;
 
     /**
-     * @param grpId Group ID.
      * @param ctx Context.
+     * @param grpId Group ID.
      * @param rcvdFrom Node ID cache group was received from.
      * @param cacheType Cache type.
      * @param ccfg Cache configuration.
@@ -174,6 +177,7 @@ public class CacheGroupContext {
      * @param freeList Free list.
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
+     * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
      */
     CacheGroupContext(
@@ -188,7 +192,9 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walEnabled) {
+        boolean persistenceEnabled,
+        boolean walEnabled
+    ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -205,6 +211,7 @@ public class CacheGroupContext {
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
         this.globalWalEnabled = walEnabled;
+        this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
 
         persistGlobalWalState(walEnabled);
@@ -946,7 +953,7 @@ public class CacheGroupContext {
      * @return Persistence enabled flag.
      */
     public boolean persistenceEnabled() {
-        return dataRegion != null && dataRegion.config().isPersistenceEnabled();
+        return persistenceEnabled;
     }
 
     /**

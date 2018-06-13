@@ -201,7 +201,7 @@ public class HadoopPopularWordsTest {
         // replaces it with the calculated value based on input split size option.
         if ("local".equals(cfg.get("mapred.job.tracker", "local"))) {
             // Split job into tasks using 32MB split size.
-            FileInputFormat.setMinInputSplitSize(jobCfg, 32 * 1024 * 1024);
+            FileInputFormat.setMinInputSplitSize(jobCfg, 32L * 1024 * 1024);
             FileInputFormat.setMaxInputSplitSize(jobCfg, Long.MAX_VALUE);
         }
 

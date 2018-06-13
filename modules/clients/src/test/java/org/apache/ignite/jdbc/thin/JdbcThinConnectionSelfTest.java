@@ -126,11 +126,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -2032,18 +2027,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 return null;
             }
         }, SQLException.class, "Failed to SSL connect to server");
-    }
-
-    /**
-     */
-    public void testAuthenticateDisableOnServerClientTryAuthenticate()  {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?user=test&password=test");
-
-                return null;
-            }
-        }, SQLException.class, "Can not perform the operation because the authentication is not enabled for the cluster");
     }
 
     /**

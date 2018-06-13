@@ -167,6 +167,29 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
+    public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
+        try {
+            File cacheWorkDir = cacheWorkDir(cacheConfiguration);
+
+            if(!cacheWorkDir.exists())
+                return;
+
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cacheWorkDir.toPath(),
+                new DirectoryStream.Filter<Path>() {
+                    @Override public boolean accept(Path entry) throws IOException {
+                        return entry.toFile().getName().endsWith(FILE_SUFFIX);
+                    }
+                })) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop0(boolean cancel) {
         if (log.isDebugEnabled())
             log.debug("Stopping page store manager.");
