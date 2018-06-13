@@ -274,7 +274,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
             seg0.write(bytes, 0, tailSize);
 
-            seg0.force(true);
+            seg0.force();
 
             seg0.close();
         }
