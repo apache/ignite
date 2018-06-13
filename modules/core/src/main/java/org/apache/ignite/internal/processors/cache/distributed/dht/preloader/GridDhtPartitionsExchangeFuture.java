@@ -524,6 +524,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return {@code True} if there are caches to start.
+     */
+    public boolean hasCachesToStart() {
+        return exchActions != null && !exchActions.cacheStartRequests().isEmpty();
+    }
+
+    /**
      * @return First event discovery event.
      *
      */
@@ -1156,11 +1163,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         partHistReserved = cctx.database().reserveHistoryForExchange();
 
-        // On first phase we wait for finishing all local tx updates, atomic updates and lock releases.
-        waitPartitionRelease(1);
+        boolean distributed = true;
+
+        // Do not perform distributed partition release in case of cluster activation or caches start.
+        if (activateCluster() || hasCachesToStart())
+            distributed = false;
+
+        // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
+        waitPartitionRelease(distributed);
 
         // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
-        waitPartitionRelease(2);
+        waitPartitionRelease(false);
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
@@ -1265,15 +1278,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * For the exact list of the objects being awaited for see
      * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
      *
-     * @param phase Phase of partition release.
+     * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      *
      * @throws IgniteCheckedException If failed.
      */
-    private void waitPartitionRelease(int phase) throws IgniteCheckedException {
+    private void waitPartitionRelease(boolean distributed) throws IgniteCheckedException {
         Latch releaseLatch = null;
 
-        // Wait for other nodes only on first phase.
-        if (phase == 1)
+        if (distributed)
             releaseLatch = cctx.exchange().latch().getOrCreate("exchange", initialVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
@@ -2621,7 +2633,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            validatePartitionsState();
+            // Don't validate partitions state in case of caches start.
+            boolean skipValidation = hasCachesToStart();
+
+            if (!skipValidation)
+                validatePartitionsState();
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;

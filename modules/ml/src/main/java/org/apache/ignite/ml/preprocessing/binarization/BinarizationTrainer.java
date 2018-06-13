@@ -17,14 +17,9 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPartitionData;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 
 /**
  * Trainer of the binarization preprocessor.

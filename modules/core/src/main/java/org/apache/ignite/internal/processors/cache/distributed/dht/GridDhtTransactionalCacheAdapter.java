@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -1194,6 +1195,20 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to rollback the transaction: " + tx, ex);
                 }
+            }
+
+            try {
+                GridNearLockResponse res = createLockReply(nearNode,
+                    Collections.emptyList(),
+                    req,
+                    tx,
+                    tx != null ? tx.xidVersion() : req.version(),
+                    e);
+
+                sendLockReply(nearNode, null, req, res);
+            }
+            catch (Exception ex) {
+                U.error(log, "Failed to send response for request message: " + req, ex);
             }
 
             return new GridDhtFinishedFuture<>(
