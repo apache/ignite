@@ -63,6 +63,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
             UpstreamEntry<K, V> entry = upstreamData.next();
 
             features[ptr] = featureExtractor.apply(entry.getKey(), entry.getValue());
+
             labels[ptr] = lbExtractor.apply(entry.getKey(), entry.getValue());
 
             ptr++;
