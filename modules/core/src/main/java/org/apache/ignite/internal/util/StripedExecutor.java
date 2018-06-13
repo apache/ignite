@@ -50,19 +50,18 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT;
+
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
     /** */
-    public static final String WAIT_TIMEOUT_MS_PROP = "IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT_MS";
-
-    /** */
     public static final int DFLT_WAIT_TIMEOUT_MS = 10_000;
 
     /** */
     private static final long WAIT_TIMEOUT_NS =
-        IgniteSystemProperties.getLong(WAIT_TIMEOUT_MS_PROP, DFLT_WAIT_TIMEOUT_MS) * 1000;
+        IgniteSystemProperties.getLong(IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT, DFLT_WAIT_TIMEOUT_MS) * 1000;
 
     /** Stripes. */
     private final Stripe[] stripes;

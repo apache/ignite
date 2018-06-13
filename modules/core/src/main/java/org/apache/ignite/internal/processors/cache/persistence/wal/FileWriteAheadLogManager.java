@@ -123,6 +123,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_WORKERS_WAIT_TIMEOUT;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -138,9 +139,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
-    /** */
-    public static final String WAIT_TIMEOUT_PROP = "IGNITE_WAL_WAIT_TIMEOUT_MS";
-
     /** */
     public static final int DFLT_WAIT_TIMEOUT = 10_000;
 
@@ -1602,7 +1600,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
 
-            long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
+            long waitTimeoutMs = IgniteSystemProperties.getLong(IGNITE_WAL_WORKERS_WAIT_TIMEOUT, DFLT_WAIT_TIMEOUT);
 
             Throwable err = null;
 
@@ -3273,7 +3271,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            long waitTimeoutNs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT) * 1000;
+            long waitTimeoutNs = IgniteSystemProperties.getLong(IGNITE_WAL_WORKERS_WAIT_TIMEOUT, DFLT_WAIT_TIMEOUT)
+                * 1000;
 
             Throwable err = null;
 

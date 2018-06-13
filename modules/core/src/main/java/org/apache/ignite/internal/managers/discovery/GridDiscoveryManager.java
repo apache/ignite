@@ -140,6 +140,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
@@ -2636,9 +2637,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** */
-        private static final String POLL_TIMEOUT_PROP = "IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT_MS";
-
-        /** */
         private static final int DFLT_POLL_TIMEOUT = 10_000;
 
         /** */
@@ -2658,7 +2656,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private boolean nodeSegFired;
 
         /** */
-        private final long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_POLL_TIMEOUT);
+        private final long pollTimeoutMs = IgniteSystemProperties.getLong(IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT,
+            DFLT_POLL_TIMEOUT);
 
         /** */
         private long lastOnIdleTs = U.currentTimeMillis();
