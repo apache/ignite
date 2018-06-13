@@ -51,6 +51,7 @@ public class SqlMetaViewProcessor {
         log.info("Starting meta views processor");
 
         Connection c = idx.connectionForSchema(SCHEMA_NAME);
+
         try {
             registeredViews.clear();
 
