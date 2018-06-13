@@ -292,4 +292,11 @@ public class SBLimitedLength extends GridStringBuilder {
             return res.toString();
         }
     }
+
+    /**
+     * @return {@code True} - if buffer limit is reached.
+     */
+    public boolean isOverflowed() {
+        return lenLimit.overflowed(this);
+    }
 }

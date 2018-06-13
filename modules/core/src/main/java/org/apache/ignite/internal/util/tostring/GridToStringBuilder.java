@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +39,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +48,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
 
 /**
  * Provides auto-generation framework for {@code toString()} output.
+ * <p>
+ * In case of recursion, repeatable objects will be shown as "ClassName@hash".
+ * But fields will be printed only for the first entry to prevent recursion.
  * <p>
  * Default exclusion policy (can be overridden with {@link GridToStringInclude}
  * annotation):
@@ -84,6 +86,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  */
 public class GridToStringBuilder {
     /** */
+    private static final Object[] EMPTY_ARRAY = new Object[0];
+
+    /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
     /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
@@ -112,6 +117,12 @@ public class GridToStringBuilder {
         }
     };
 
+    /** Contains objects currently printing in the string builder. */
+    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
+        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+            return new IdentityHashMap<>();
+        }
+    };
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -886,62 +897,213 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Print value with length limitation
+     * Print value with length limitation.
+     *
      * @param buf buffer to print to.
      * @param val value to print, can be {@code null}.
      */
     private static void toString(SBLimitedLength buf, Object val) {
-        if (val == null)
-            buf.a("null");
-        else
-            toString(buf, val.getClass(), val);
+        toString(buf, null, val);
     }
 
     /**
-     * Print value with length limitation
+     * Print value with length limitation.
+     *
      * @param buf buffer to print to.
-     * @param valClass value class.
-     * @param val value to print
+     * @param cls value class.
+     * @param val value to print.
      */
-    private static void toString(SBLimitedLength buf, Class<?> valClass, Object val) {
-        if (valClass.isArray())
-            buf.a(arrayToString(valClass, val));
-        else {
-            int overflow = 0;
-            char bracket = ' ';
+    @SuppressWarnings({"unchecked"})
+    private static void toString(SBLimitedLength buf, Class<?> cls, Object val) {
+        if (val == null) {
+            buf.a("null");
 
-            if (val instanceof Collection && ((Collection)val).size() > COLLECTION_LIMIT) {
-                overflow = ((Collection)val).size() - COLLECTION_LIMIT;
-                bracket = ']';
-                val = F.retain((Collection) val, true, COLLECTION_LIMIT);
-            }
-            else if (val instanceof Map && ((Map)val).size() > COLLECTION_LIMIT) {
-                Map<Object, Object> tmp = U.newHashMap(COLLECTION_LIMIT);
+            return;
+        }
 
-                overflow = ((Map)val).size() - COLLECTION_LIMIT;
+        if (cls == null)
+            cls = val.getClass();
 
-                bracket= '}';
+        boolean isCol = val instanceof Collection;
+        boolean isMap = val instanceof Map;
 
-                int cntr = 0;
-
-                for (Object o : ((Map)val).entrySet()) {
-                    Map.Entry e = (Map.Entry)o;
-
-                    tmp.put(e.getKey(), e.getValue());
-
-                    if (++cntr >= COLLECTION_LIMIT)
-                        break;
-                }
-
-                val = tmp;
-            }
-
+        if (cls.isPrimitive() || isJdkClass(cls) && !cls.isArray() && !isCol && !isMap) {
             buf.a(val);
 
-            if (overflow > 0) {
-                buf.d(buf.length() - 1);
-                buf.a("... and ").a(overflow).a(" more").a(bracket);
-            }
+            return;
+        }
+
+        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+
+        if (handleRecursion(buf, val, svdObjs))
+            return;
+
+        svdObjs.put(val, buf.length());
+
+        try {
+            if (cls.isArray())
+                addArray(buf, cls, val);
+            else if (isCol)
+                addCollection(buf, (Collection) val);
+            else if (isMap)
+                addMap(buf, (Map<?, ?>) val);
+            else
+                toStringImpl0((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0);
+        }
+        finally {
+            svdObjs.remove(val);
+        }
+    }
+
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if given class is from JDK, which means possibility to call {@code Object.toString()}.
+     */
+    private static boolean isJdkClass(Class cls) {
+        return cls.getName().startsWith("com.oracle.") || cls.getName().startsWith("com.sun.") ||
+            cls.getName().startsWith("java.") || cls.getName().startsWith("javax.") ||
+            cls.getName().startsWith("jdk.") || cls.getName().startsWith("sun.");
+    }
+
+    /**
+     * Writes object to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param arrType Type of the array.
+     * @param obj Array object.
+     */
+    private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
+        if (arrType.getComponentType().isPrimitive()) {
+            buf.a(arrayToString(arrType, obj));
+
+            return;
+        }
+
+        Object[] arr = (Object[]) obj;
+
+        buf.a(arrType.getSimpleName()).a(" [");
+
+        for (int i = 0; i < arr.length; i++) {
+            toString(buf, arr[i]);
+
+            if (i == COLLECTION_LIMIT - 1 || i == arr.length - 1)
+                break;
+
+            buf.a(", ");
+        }
+
+        handleOverflow(buf, arr.length);
+
+        buf.a(']');
+    }
+
+    /**
+     * Writes collection to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param col Collection object.
+     */
+    private static void addCollection(SBLimitedLength buf, Collection col) {
+        buf.a(col.getClass().getSimpleName()).a(" [");
+
+        int cnt = 0;
+
+        for (Object obj : col) {
+            toString(buf, obj);
+
+            if (++cnt == COLLECTION_LIMIT || cnt == col.size())
+                break;
+
+            buf.a(", ");
+        }
+
+        handleOverflow(buf, col.size());
+
+        buf.a(']');
+    }
+
+    /**
+     * Writes map to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param map Map object.
+     */
+    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map) {
+        buf.a(map.getClass().getSimpleName()).a(" {");
+
+        int cnt = 0;
+
+        for (Map.Entry<K, V> e : map.entrySet()) {
+            toString(buf, e.getKey());
+
+            buf.a('=');
+
+            toString(buf, e.getValue());
+
+            if (++cnt == COLLECTION_LIMIT || cnt == map.size())
+                break;
+
+            buf.a(", ");
+        }
+
+        handleOverflow(buf, map.size());
+
+        buf.a('}');
+    }
+
+    /**
+     * Writes overflow message to buffer if needed.
+     *
+     * @param buf String builder buffer.
+     * @param size Size to compare with limit.
+     */
+    private static void handleOverflow(SBLimitedLength buf, int size) {
+        int overflow = size - COLLECTION_LIMIT;
+
+        if (overflow > 0)
+            buf.a("... and ").a(overflow).a(" more");
+    }
+
+    /**
+     * Creates an uniformed string presentation for the given object.
+     *
+     * @param cls Class of the object.
+     * @param buf String builder buffer.
+     * @param obj Object for which to get string presentation.
+     * @param addNames Names of additional values to be included.
+     * @param addVals Additional values to be included.
+     * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
+     * @param addLen How many additional values will be included.
+     * @return String presentation of the given object.
+     * @param <T> Type of object.
+     */
+    private static <T> String toStringImpl(
+        Class<T> cls,
+        SBLimitedLength buf,
+        T obj,
+        Object[] addNames,
+        Object[] addVals,
+        @Nullable boolean[] addSens,
+        int addLen) {
+        assert cls != null;
+        assert buf != null;
+        assert obj != null;
+        assert addNames != null;
+        assert addVals != null;
+        assert addNames.length == addVals.length;
+        assert addLen <= addNames.length;
+
+        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+
+        buf.setLength(0);
+
+        svdObjs.put(obj, buf.length());
+
+        try {
+            return toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
+        }
+        finally {
+            svdObjs.remove(obj);
         }
     }
 
@@ -959,28 +1121,19 @@ public class GridToStringBuilder {
      * @param <T> Type of object.
      */
     @SuppressWarnings({"unchecked"})
-    private static <T> String toStringImpl(
+    private static <T> String toStringImpl0(
         Class<T> cls,
         SBLimitedLength buf,
         T obj,
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen) {
-        assert cls != null;
-        assert buf != null;
-        assert obj != null;
-        assert addNames != null;
-        assert addVals != null;
-        assert addNames.length == addVals.length;
-        assert addLen <= addNames.length;
-
+        int addLen
+    ) {
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
             assert cd != null;
-
-            buf.setLength(0);
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -1840,5 +1993,55 @@ public class GridToStringBuilder {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Checks that object is already saved.
+     * In positive case this method inserts hash to the saved object entry (if needed) and name@hash for current entry.
+     * Further toString operations are not needed for current object.
+     *
+     * @param buf String builder buffer.
+     * @param obj Object.
+     * @param svdObjs Map with saved objects to handle recursion.
+     * @return {@code True} if object is already saved and name@hash was added to buffer.
+     * {@code False} if it wasn't saved previously and it should be saved.
+     */
+    private static boolean handleRecursion(SBLimitedLength buf, Object obj, IdentityHashMap<Object, Integer> svdObjs) {
+        Integer pos = svdObjs.get(obj);
+
+        if (pos == null)
+            return false;
+
+        String name = obj.getClass().getSimpleName();
+        String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
+        String savedName = name + hash;
+
+        if (!buf.isOverflowed() && buf.impl().indexOf(savedName, pos) != pos) {
+            buf.i(pos + name.length(), hash);
+
+            incValues(svdObjs, obj, hash.length());
+        }
+
+        buf.a(savedName);
+
+        return true;
+    }
+
+    /**
+     * Increment positions of already presented objects afterward given object.
+     *
+     * @param svdObjs Map with objects already presented in the buffer.
+     * @param obj Object.
+     * @param hashLen Length of the object's hash.
+     */
+    private static void incValues(IdentityHashMap<Object, Integer> svdObjs, Object obj, int hashLen) {
+        Integer baseline = svdObjs.get(obj);
+
+        for (IdentityHashMap.Entry<Object, Integer> entry : svdObjs.entrySet()) {
+            Integer pos = entry.getValue();
+
+            if (pos > baseline)
+                entry.setValue(pos + hashLen);
+        }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.tostring;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,6 +31,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -72,32 +74,113 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testToStringCheckSimpleRecursionPrevention() throws Exception {
+    public void testToStringCheckSimpleListRecursionPrevention() throws Exception {
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
 
         list2.add(list1);
         list1.add(list2);
 
-
-        GridToStringBuilder.toString(ArrayList.class, list1);
-        GridToStringBuilder.toString(ArrayList.class, list2);
+        info(GridToStringBuilder.toString(ArrayList.class, list1));
+        info(GridToStringBuilder.toString(ArrayList.class, list2));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testToStringCheckAdvancedRecursionPrevention() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-602");
+    public void testToStringCheckSimpleMapRecursionPrevention() throws Exception {
+        HashMap<Object, Object> map1 = new HashMap<>();
+        HashMap<Object, Object> map2 = new HashMap<>();
 
+        map1.put("2", map2);
+        map2.put("1", map1);
+
+        info(GridToStringBuilder.toString(HashMap.class, map1));
+        info(GridToStringBuilder.toString(HashMap.class, map2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringCheckListAdvancedRecursionPrevention() throws Exception {
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
 
         list2.add(list1);
         list1.add(list2);
 
-        GridToStringBuilder.toString(ArrayList.class, list1, "name", list2);
-        GridToStringBuilder.toString(ArrayList.class, list2, "name", list1);
+        info(GridToStringBuilder.toString(ArrayList.class, list1, "name", list2));
+        info(GridToStringBuilder.toString(ArrayList.class, list2, "name", list1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringCheckMapAdvancedRecursionPrevention() throws Exception {
+        HashMap<Object, Object> map1 = new HashMap<>();
+        HashMap<Object, Object> map2 = new HashMap<>();
+
+        map1.put("2", map2);
+        map2.put("1", map1);
+
+        info(GridToStringBuilder.toString(HashMap.class, map1, "name", map2));
+        info(GridToStringBuilder.toString(HashMap.class, map2, "name", map1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringCheckObjectRecursionPrevention() throws Exception {
+        Node n1 = new Node();
+        Node n2 = new Node();
+        Node n3 = new Node();
+        Node n4 = new Node();
+
+        n1.name = "n1";
+        n2.name = "n2";
+        n3.name = "n3";
+        n4.name = "n4";
+
+        n1.next = n2;
+        n2.next = n3;
+        n3.next = n4;
+        n4.next = n3;
+
+        n1.nodes = new Node[4];
+        n2.nodes = n1.nodes;
+        n3.nodes = n1.nodes;
+        n4.nodes = n1.nodes;
+
+        n1.nodes[0] = n1;
+        n1.nodes[1] = n2;
+        n1.nodes[2] = n3;
+        n1.nodes[3] = n4;
+
+
+        info(n1.toString());
+        info(n2.toString());
+        info(n3.toString());
+        info(n4.toString());
+    }
+
+    /** */
+    private static class Node {
+        /** */
+        @GridToStringInclude
+        String name;
+
+        /** */
+        @GridToStringInclude
+        Node next;
+
+        /** */
+        @GridToStringInclude
+        Node[] nodes;
+
+        /** {@inheritDoc}*/
+        @Override public String toString() {
+            return GridToStringBuilder.toString(Node.class, this);
+        }
     }
 
     /**
@@ -137,6 +220,33 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         Arrays.fill(arrOf, v);
         T[] arr = Arrays.copyOf(arrOf, limit);
 
+        checkArrayOverflow(arrOf, arr, limit);
+    }
+
+    /**
+     * Test array print.
+     *
+     * @throws Exception if failed.
+     */
+    public void testArrLimitWithRecursion() throws Exception {
+        int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
+
+        ArrayList[] arrOf = new ArrayList[limit + 1];
+        Arrays.fill(arrOf, new ArrayList());
+        ArrayList[] arr = Arrays.copyOf(arrOf, limit);
+
+        arrOf[0].add(arrOf);
+        arr[0].add(arr);
+
+        checkArrayOverflow(arrOf, arr, limit);
+    }
+
+    /**
+     * @param arrOf Array.
+     * @param arr Array copy.
+     * @param limit Array limit.
+     */
+    private void checkArrayOverflow(Object[] arrOf, Object[] arr, int limit) {
         String arrStr = GridToStringBuilder.arrayToString(arr.getClass(), arr);
         String arrOfStr = GridToStringBuilder.arrayToString(arrOf.getClass(), arrOf);
 
@@ -144,7 +254,11 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         StringBuilder resultSB = new StringBuilder(arrStr);
             resultSB.deleteCharAt(resultSB.length()-1);
             resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
-            arrStr = resultSB.toString();
+
+        arrStr = resultSB.toString();
+
+        info(arrOfStr);
+        info(arrStr);
 
         assertTrue("Collection limit error in array of type " + arrOf.getClass().getName()
             + " error, normal arr: <" + arrStr + ">, overflowed arr: <" + arrOfStr + ">", arrStr.equals(arrOfStr));
@@ -228,18 +342,57 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             strMap.put("k" + i, "v");
             strList.add("e");
         }
-        String testClassStr = GridToStringBuilder.toString(TestClass1.class, testClass);
 
-        strMap.put("kz", "v"); // important to add last element in TreeMap here
-        strList.add("e");
+        checkColAndMap(testClass);
+    }
 
-        String testClassStrOf = GridToStringBuilder.toString(TestClass1.class, testClass);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringColAndMapLimitWithRecursion() throws Exception {
+        int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
+        Map strMap = new TreeMap<>();
+        List strList = new ArrayList<>(U.capacity(limit+1));
 
-        String testClassStrOfR = testClassStrOf.replaceAll("... and 1 more","");
+        TestClass1 testClass = new TestClass1();
+        testClass.strMap = strMap;
+        testClass.strListIncl = strList;
 
-        assertTrue("Collection limit error in Map or List, normal: <" + testClassStr + ">, overflowed: <"
-            +"testClassStrOf", testClassStr.length() == testClassStrOfR.length());
+        Map m = new TreeMap();
+        m.put("m", strMap);
+        List l = new ArrayList();
+        l.add(strList);
 
+        strMap.put("k0", m);
+        strList.add(l);
+
+        for (int i = 1; i < limit; i++) {
+            strMap.put("k" + i, "v");
+            strList.add("e");
+        }
+
+        checkColAndMap(testClass);
+    }
+
+    /**
+     * @param testCls Class with collection and map included in toString().
+     */
+    private void checkColAndMap(TestClass1 testCls) {
+        String testClsStr = GridToStringBuilder.toString(TestClass1.class, testCls);
+
+        testCls.strMap.put("kz", "v"); // important to add last element in TreeMap here
+        testCls.strListIncl.add("e");
+
+        String testClsStrOf = GridToStringBuilder.toString(TestClass1.class, testCls);
+
+        String testClsStrOfR = testClsStrOf.replaceAll("... and 1 more","");
+
+        info(testClsStr);
+        info(testClsStrOf);
+        info(testClsStrOfR);
+
+        assertTrue("Collection limit error in Map or List, normal: <" + testClsStr + ">, overflowed: <"
+            + testClsStrOf + ">", testClsStr.length() == testClsStrOfR.length());
     }
 
     /**
