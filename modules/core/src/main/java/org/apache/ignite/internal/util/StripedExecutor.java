@@ -35,11 +35,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
@@ -87,7 +87,7 @@ public class StripedExecutor implements ExecutorService {
         String igniteInstanceName,
         String poolName,
         final IgniteLogger log,
-        Consumer<Throwable> errHnd,
+        IgniteInClosure<Throwable> errHnd,
         GridWorkerListener gridWorkerLsnr,
         GridWorkerIdlenessHandler idleHnd
     ) {
@@ -109,7 +109,7 @@ public class StripedExecutor implements ExecutorService {
         String igniteInstanceName,
         String poolName,
         final IgniteLogger log,
-        Consumer<Throwable> errHnd,
+        IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
         GridWorkerIdlenessHandler idleHnd
@@ -159,8 +159,7 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     * Checks starvation in striped pool. Maybe too verbose
-     * but this is needed to faster debug possible issues.
+     * Checks starvation in striped pool. Maybe too verbose but this is needed to faster debug possible issues.
      */
     public void checkStarvation() {
         for (int i = 0; i < stripes.length; i++) {
@@ -445,9 +444,6 @@ public class StripedExecutor implements ExecutorService {
         private final String igniteInstanceName;
 
         /** */
-        private final String poolName;
-
-        /** */
         protected final int idx;
 
         /** */
@@ -466,7 +462,7 @@ public class StripedExecutor implements ExecutorService {
         protected Thread thread;
 
         /** Critical failure handler. */
-        private Consumer<Throwable> errHnd;
+        private IgniteInClosure<Throwable> errHnd;
 
         /** */
         private long lastOnIdleTs = U.currentTimeMillis();
@@ -485,7 +481,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
@@ -493,7 +489,6 @@ public class StripedExecutor implements ExecutorService {
                 DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
 
             this.igniteInstanceName = igniteInstanceName;
-            this.poolName = poolName;
             this.idx = idx;
             this.log = log;
             this.errHnd = errHnd;
@@ -571,22 +566,20 @@ public class StripedExecutor implements ExecutorService {
                     }
                 }
                 catch (InterruptedException ignored) {
-                    stopping = true;
-
                     Thread.currentThread().interrupt();
 
-                    return;
+                    break;
                 }
                 catch (Throwable e) {
                     if (e instanceof OutOfMemoryError)
-                        errHnd.accept(e);
+                        errHnd.apply(e);
 
                     U.error(log, "Failed to execute runnable.", e);
                 }
             }
 
             if (!stopping) {
-                errHnd.accept(new IllegalStateException("Thread " + Thread.currentThread().getName() +
+                errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
                     " is terminated unexpectedly"));
             }
         }
@@ -653,7 +646,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
@@ -675,7 +668,7 @@ public class StripedExecutor implements ExecutorService {
             int idx,
             IgniteLogger log,
             Stripe[] others,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
@@ -700,22 +693,22 @@ public class StripedExecutor implements ExecutorService {
             parked = true;
 
             try {
-                for (;;) {
+                for (; ; ) {
                     r = queue.poll();
 
                     if (r != null)
                         return r;
 
-                    if(others != null) {
+                    if (others != null) {
                         int len = others.length;
                         int init = ThreadLocalRandom.current().nextInt(len);
                         int cur = init;
 
                         while (true) {
-                            if(cur != idx) {
-                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
+                            if (cur != idx) {
+                                Deque<Runnable> queue = (Deque<Runnable>)((StripeConcurrentQueue)others[cur]).queue;
 
-                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
+                                if (queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
                                     return r;
                             }
 
@@ -744,9 +737,9 @@ public class StripedExecutor implements ExecutorService {
             if (parked)
                 LockSupport.unpark(thread);
 
-            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
+            if (others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
                 for (Stripe other : others) {
-                    if(((StripeConcurrentQueue)other).parked)
+                    if (((StripeConcurrentQueue)other).parked)
                         LockSupport.unpark(other.thread);
                 }
             }
@@ -789,7 +782,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
@@ -808,7 +801,7 @@ public class StripedExecutor implements ExecutorService {
 
             long startedAt = U.currentTimeMillis();
 
-            for (;;) {
+            for (; ; ) {
                 Runnable r = queue.poll();
 
                 if (r != null)
@@ -864,7 +857,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
@@ -883,7 +876,8 @@ public class StripedExecutor implements ExecutorService {
 
             do {
                 updateHeartbeat();
-            } while ((r = queue.poll(WAIT_TIMEOUT_NS, TimeUnit.NANOSECONDS)) == null);
+            }
+            while ((r = queue.poll(WAIT_TIMEOUT_NS, TimeUnit.NANOSECONDS)) == null);
 
             return r;
         }

@@ -158,7 +158,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
-import static org.apache.ignite.internal.util.worker.GridWorker.DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -2222,9 +2221,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker(igniteInstanceName);
+        commWorker = new CommunicationWorker(igniteInstanceName, log);
 
-        commWorker.start();
+        new IgniteSpiThread(igniteInstanceName, commWorker.name(), log) {
+            @Override protected void body() {
+                commWorker.run();
+            }
+        }.start();
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -2394,8 +2397,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     .messageQueueSizeListener(queueSizeMonitor)
                     .readWriteSelectorsAssign(usePairedConnections);
 
-                if (ignite instanceof IgniteEx)
-                    builder.workerListener(((IgniteEx)ignite).context().workersRegistry());
+                if (ignite instanceof IgniteEx) {
+                    IgniteEx igniteEx = (IgniteEx)ignite;
+
+                    builder.workerListener(igniteEx.context().workersRegistry());
+                    builder.idlenessHandler(igniteEx.context().workersRegistry());
+                }
 
                 GridNioServer<Message> srvr = builder.build();
 
@@ -2498,8 +2505,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(commWorker);
-        U.join(commWorker, log);
+        if (commWorker != null) {
+            U.interrupt(commWorker.runner());
+            U.join(commWorker.runner(), log);
+        }
 
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
@@ -2720,8 +2729,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
                 while (retry);
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSpiException("Failed to send message to remote node: " + node, e);
+            catch (Throwable t) {
+                log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+
+                if (t instanceof Error)
+                    throw (Error)t;
+
+                if (t instanceof RuntimeException)
+                    throw (RuntimeException)t;
+
+                throw new IgniteSpiException("Failed to send message to remote node: " + node, t);
             }
             finally {
                 if (client != null && removeNodeClient(node.id(), client))
@@ -3254,6 +3271,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);
+
+                        // Ensure the session is closed.
+                        GridNioSession ses = recoveryDesc.session();
+
+                        if (ses != null) {
+                            while(ses.closeTime() == 0)
+                                ses.close();
+                        }
 
                         return null;
                     }
@@ -3846,7 +3871,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(commWorker);
+        if (commWorker != null)
+            U.interrupt(commWorker.runner());
 
         U.join(commWorker, log);
 
@@ -4080,6 +4106,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         buf.put((byte)((type >> 8) & 0xFF));
     }
 
+    private static WorkersRegistry getWorkersRegistry(Ignite ignite) {
+        return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
+    }
+
     /**
      *
      */
@@ -4206,44 +4236,32 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /**
      *
      */
-    private class CommunicationWorker extends IgniteSpiThread {
+    private class CommunicationWorker extends GridWorker {
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
-
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
 
         /** */
         private long lastOnIdleTs = U.currentTimeMillis();
 
         /**
          * @param igniteInstanceName Ignite instance name.
+         * @param log Logger.
          */
-        private CommunicationWorker(String igniteInstanceName) {
-            super(igniteInstanceName, "tcp-comm-worker", log);
-
-            WorkersRegistry workerRegistry = ignite instanceof IgniteEx
-                ? ((IgniteEx)ignite).context().workersRegistry()
-                : null;
-
-            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry, workerRegistry,
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
-                @Override protected void body() throws InterruptedException {
-                    workerBody();
-                }
-            };
+        private CommunicationWorker(String igniteInstanceName, IgniteLogger log) {
+            super(igniteInstanceName, "tcp-comm-worker", log, getWorkersRegistry(ignite), getWorkersRegistry(ignite),
+                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
         }
 
         /** */
-        private void workerBody() throws InterruptedException {
+        @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
             Throwable err = null;
 
             try {
-                while (!isInterrupted()) {
-                    worker.updateHeartbeat();
+                while (!runner().isInterrupted()) {
+                    updateHeartbeat();
 
                     long millisToWait = idleConnTimeout;
 
@@ -4255,10 +4273,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         disconnectData = q.poll(Math.min(millisToWait, 5000), TimeUnit.MILLISECONDS);
 
                         if (disconnectData == null)
-                            worker.updateHeartbeat();
+                            updateHeartbeat();
 
-                        if (U.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
-                            worker.onIdle();
+                        if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                            onIdle();
 
                             lastOnIdleTs = U.currentTimeMillis();
                         }
@@ -4289,11 +4307,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() {
-            worker.run();
         }
 
         /**

@@ -97,7 +97,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
+import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -112,7 +114,6 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
@@ -165,7 +166,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_CO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.internal.util.worker.GridWorker.DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -310,7 +310,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public int boundPort() throws IgniteSpiException {
         if (tcpSrvr == null)
-            tcpSrvr = new TcpServer();
+            tcpSrvr = new TcpServer(log);
 
         return tcpSrvr.port;
     }
@@ -342,18 +342,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         fromAddrs.clear();
         noResAddrs.clear();
 
-        msgWorker = new RingMessageWorker();
-        msgWorker.start();
+        msgWorker = new RingMessageWorker(log);
+
+        new MessageWorkerThread(msgWorker, log).start();
 
         if (tcpSrvr == null)
-            tcpSrvr = new TcpServer();
+            tcpSrvr = new TcpServer(log);
 
         spi.initLocalNode(tcpSrvr.port, true);
 
         locNode = spi.locNode;
 
         // Start TCP server thread after local node is initialized.
-        tcpSrvr.start();
+        new TcpServerThread(tcpSrvr, log).start();
 
         ring.localNode(locNode);
 
@@ -417,7 +418,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        if (msgWorker != null && msgWorker.isAlive() && !disconnect) {
+        if (msgWorker != null && msgWorker.runner() != null && msgWorker.runner().isAlive() && !disconnect) {
             // Send node left message only if it is final stop.
             msgWorker.addMessage(new TcpDiscoveryNodeLeftMessage(locNode.id()));
 
@@ -451,8 +452,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        U.interrupt(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null) {
+            U.interrupt(tcpSrvr.runner());
+            U.join(tcpSrvr.runner(), log);
+        }
 
         tcpSrvr = null;
 
@@ -468,12 +471,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
 
-        U.interrupt(msgWorker);
-        U.join(msgWorker, log);
+        if (msgWorker != null) {
+            U.interrupt(msgWorker.runner());
+            U.join(msgWorker.runner(), log);
+        }
 
         for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
-            U.interrupt(clientWorker);
-            U.join(clientWorker, log);
+            if (clientWorker != null) {
+                U.interrupt(clientWorker.runner());
+                U.join(clientWorker.runner(), log);
+            }
         }
 
         clientMsgWorkers.clear();
@@ -1662,8 +1669,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        U.interrupt(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null) {
+            U.interrupt(tcpSrvr.runner());
+            U.join(tcpSrvr.runner(), log);
+        }
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -1677,13 +1686,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tmp);
         U.joinThreads(tmp, log);
 
-        U.interrupt(msgWorker);
-        U.join(msgWorker, log);
+        if (msgWorker != null) {
+            U.interrupt(msgWorker.runner());
+            U.join(msgWorker.runner(), log);
+        }
 
         for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
-            U.interrupt(msgWorker);
-
-            U.join(msgWorker, log);
+            if (msgWorker != null) {
+                U.interrupt(msgWorker.runner());
+                U.join(msgWorker.runner(), log);
+            }
         }
 
         U.interrupt(statsPrinter);
@@ -1709,10 +1721,36 @@ class ServerImpl extends TcpDiscoveryImpl {
             threads.addAll(readers);
         }
 
-        threads.addAll(clientMsgWorkers.values());
-        threads.add(tcpSrvr);
+        for (ClientMessageWorker wrk : clientMsgWorkers.values()) {
+            Thread t = wrk.runner();
+
+            assert t instanceof IgniteSpiThread;
+
+            threads.add((IgniteSpiThread)t);
+        }
+
+        TcpServer tcpSrvr0 = tcpSrvr;
+
+        if (tcpSrvr0 != null) {
+            Thread tcpServerThread = tcpSrvr0.runner();
+
+            if (tcpServerThread != null) {
+                assert tcpServerThread instanceof IgniteSpiThread;
+
+                threads.add((IgniteSpiThread)tcpServerThread);
+            }
+        }
+
         threads.add(ipFinderCleaner);
-        threads.add(msgWorker);
+
+        Thread msgWorkerThread = msgWorker.runner();
+
+        if (msgWorkerThread != null) {
+            assert msgWorkerThread instanceof IgniteSpiThread;
+
+            threads.add((IgniteSpiThread)msgWorkerThread);
+        }
+
         threads.add(statsPrinter);
 
         threads.removeAll(Collections.<IgniteSpiThread>singleton(null));
@@ -1778,7 +1816,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             b.append("Internal threads: ").append(U.nl());
 
-            b.append("    Message worker: ").append(threadStatus(msgWorker)).append(U.nl());
+            b.append("    Message worker: ").append(threadStatus(msgWorker.runner())).append(U.nl());
 
             b.append("    IP finder cleaner: ").append(threadStatus(ipFinderCleaner)).append(U.nl());
             b.append("    Stats printer: ").append(threadStatus(statsPrinter)).append(U.nl());
@@ -2097,6 +2135,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         finally {
             SecurityUtils.restoreDefaultSerializeVersion();
         }
+    }
+
+    /** */
+    private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
+        return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
     }
 
     /**
@@ -2536,9 +2579,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Message worker thread for messages processing.
+     * Message worker for discovery messages processing.
      */
-    private class RingMessageWorker extends MessageWorkerAdapter<TcpDiscoveryAbstractMessage> implements IgniteDiscoveryThread {
+    private class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** Next node. */
         @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
         private TcpDiscoveryNode next;
@@ -2582,35 +2625,23 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
-
         /** */
         private long lastOnIdleTs = U.currentTimeMillis();
 
         /**
+         * @param log Logger.
          */
-        RingMessageWorker() {
-            super("tcp-disco-msg-worker", 10);
+        private RingMessageWorker(IgniteLogger log) {
+            super("tcp-disco-msg-worker", log, 10,
+                getWorkerRegistry(spi), getWorkerRegistry(spi));
 
             initConnectionCheckFrequency();
 
-            WorkersRegistry workerRegistry = spi.ignite() instanceof IgniteEx
-                ? ((IgniteEx)spi.ignite()).context().workersRegistry()
-                : null;
-
-            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry, workerRegistry,
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
-                @Override protected void body() throws InterruptedException {
-                    workerBody();
-                }
-            };
-
             setBeforeEachPollAction(() -> {
-                worker.updateHeartbeat();
+                updateHeartbeat();
 
-                if (U.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
-                    worker.onIdle();
+                if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                    onIdle();
 
                     lastOnIdleTs = U.currentTimeMillis();
                 }
@@ -2646,7 +2677,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        private void workerBody() throws InterruptedException {
+        protected void body() throws InterruptedException {
             Throwable err = null;
 
             try {
@@ -2691,7 +2722,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             finally {
                 if (spi.ignite() instanceof IgniteEx) {
                     if (err == null && !spi.isNodeStopping0())
-                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+                        err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
@@ -2705,10 +2736,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() {
-            worker.run();
-        }
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
@@ -4252,9 +4279,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                    dataPacket.joiningNodeClient(msg.client());
-
                     assert dataPacket != null : msg;
+
+                    dataPacket.joiningNodeClient(msg.client());
 
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
@@ -4893,8 +4920,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!msg.force()) { // ClientMessageWorker will stop after sending force fail message.
                         ClientMessageWorker worker = clientMsgWorkers.remove(failedNode.id());
 
-                        if (worker != null)
-                            worker.interrupt();
+                        if (worker != null && worker.runner() != null)
+                            worker.runner().interrupt();
                     }
                 }
 
@@ -5609,13 +5636,43 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** Thread that executes {@link TcpServer}'s code. */
+    private class TcpServerThread extends IgniteSpiThread {
+        /** */
+        private final TcpServer worker;
+
+        /**
+         * @param worker Worker to be executed by this thread.
+         * @param log Logger.
+         */
+        private TcpServerThread(TcpServer worker, IgniteLogger log) {
+            super(worker.igniteInstanceName(), worker.name(), log);
+
+            setPriority(spi.threadPri);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            worker.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void interrupt() {
+            super.interrupt();
+
+            worker.onInterruption();
+        }
+    }
+
     /**
-     * Thread that accepts incoming TCP connections.
+     * Worker that accepts incoming TCP connections.
      * <p>
      * Tcp server will call provided closure when accepts incoming connection.
      * From that moment server is no more responsible for the socket.
      */
-    private class TcpServer extends IgniteSpiThread {
+    private class TcpServer extends GridWorker {
         /** */
         private static final String ACCEPT_TIMEOUT_PROP = "IGNITE_TCP_ACCEPT_SO_TIMEOUT";
 
@@ -5628,18 +5685,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Port to listen. */
         private int port;
 
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
-
         /**
-         * Constructor.
-         *
+         * @param log Logger.
          * @throws IgniteSpiException In case of error.
          */
-        TcpServer() throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log);
-
-            setPriority(spi.threadPri);
+        TcpServer(IgniteLogger log) throws IgniteSpiException {
+            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi), getWorkerRegistry(spi),
+                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -5663,17 +5715,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ']');
                     }
 
-                    WorkersRegistry workerRegistry = spi.ignite() instanceof IgniteEx
-                        ? ((IgniteEx)spi.ignite()).context().workersRegistry()
-                        : null;
-
-                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry, workerRegistry,
-                        DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
-                        @Override protected void body() {
-                            workerBody();
-                        }
-                    };
-
                     return;
                 }
                 catch (IOException e) {
@@ -5693,7 +5734,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        private void workerBody() {
+        @Override protected void body() {
             Throwable err = null;
 
             try {
@@ -5705,16 +5746,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 long lastOnIdleTs = U.currentTimeMillis();
 
-                while (!isInterrupted()) {
-                    worker.updateHeartbeat();
+                while (!runner().isInterrupted()) {
+                    updateHeartbeat();
 
                     try {
                         sock = srvrSock.accept();
                     }
                     catch (SocketTimeoutException ignored) {
-                        worker.updateHeartbeat();
+                        updateHeartbeat();
 
-                        worker.onIdle();
+                        onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
 
@@ -5742,7 +5783,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
 
                     if (U.currentTimeMillis() - lastOnIdleTs > acceptTimeoutMs) {
-                        worker.onIdle();
+                        onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
                     }
@@ -5754,7 +5795,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 onException("Failed to accept TCP connection.", e);
 
-                if (!isInterrupted()) {
+                if (!runner().isInterrupted()) {
                     err = e;
 
                     if (U.isMacInvalidArgumentError(e))
@@ -5771,7 +5812,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             finally {
                 if (spi.ignite() instanceof IgniteEx) {
                     if (err == null && !spi.isNodeStopping0())
-                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+                        err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
@@ -5787,15 +5828,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() {
-            worker.run();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            super.interrupt();
-
+        /** */
+        public void onInterruption() {
             U.close(srvrSock, log);
         }
     }
@@ -5967,7 +6001,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (req.client()) {
-                        ClientMessageWorker clientMsgWrk0 = new ClientMessageWorker(sock, nodeId);
+                        ClientMessageWorker clientMsgWrk0 = new ClientMessageWorker(sock, nodeId, log);
 
                         while (true) {
                             ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
@@ -5975,13 +6009,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (old == null)
                                 break;
 
-                            if (old.isInterrupted()) {
+                            if (old.isDone() || (old.runner() != null && old.runner().isInterrupted())) {
                                 clientMsgWorkers.remove(nodeId, old);
 
                                 continue;
                             }
 
-                            old.join(500);
+                            if (old.runner() != null)
+                                old.runner().join(500);
 
                             old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
 
@@ -6113,8 +6148,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (state == CONNECTED) {
                                 spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
-                                    clientMsgWrk.start();
+                                if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone())
+                                    new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
 
                                 processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
 
@@ -6355,7 +6390,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     clientMsgWorkers.remove(nodeId, clientMsgWrk);
 
-                    U.interrupt(clientMsgWrk);
+                    U.interrupt(clientMsgWrk.runner());
                 }
 
                 U.closeQuiet(sock);
@@ -6501,10 +6536,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 msg.responded(true);
 
-                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW) {
+                if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone()) {
                     clientMsgWrk.clientVersion(U.productVersion(msg.node()));
 
-                    clientMsgWrk.start();
+                    new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
                 }
 
                 msgWorker.addMessage(msg);
@@ -6601,9 +6636,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /**
-     */
-    private class ClientMessageWorker extends MessageWorkerAdapter<T2<TcpDiscoveryAbstractMessage, byte[]>> {
+    /** */
+    private class ClientMessageWorker extends MessageWorker<T2<TcpDiscoveryAbstractMessage, byte[]>> {
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -6622,9 +6656,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param sock Socket.
          * @param clientNodeId Node ID.
+         * @param log Logger.
          */
-        protected ClientMessageWorker(Socket sock, UUID clientNodeId) throws IOException {
-            super("tcp-disco-client-message-worker", 2000);
+        private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
+            super("tcp-disco-client-message-worker", log, 2000, null, null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
@@ -6742,7 +6777,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!success) {
                     clientMsgWorkers.remove(clientNodeId, this);
 
-                    U.interrupt(this);
+                    U.interrupt(runner());
 
                     U.closeQuiet(sock);
                 }
@@ -6823,24 +6858,80 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void cleanup() {
-            super.cleanup();
-
+        @Override protected void tearDown() {
             pingResult(false);
 
             U.closeQuiet(sock);
         }
     }
 
+    /** */
+    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread {
+        /** */
+        private final MessageWorker worker;
+
+        /** {@inheritDoc} */
+        private MessageWorkerThreadWithCleanup(MessageWorker<T> worker, IgniteLogger log) {
+            super(worker, log);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void cleanup() {
+            super.cleanup();
+
+            worker.tearDown();
+        }
+    }
+
     /**
-     * Base class for message workers.
+     * Slightly modified {@link IgniteSpiThread} intended to use with message workers.
      */
-    protected abstract class MessageWorkerAdapter<T> extends IgniteSpiThread {
+    private class MessageWorkerThread extends IgniteSpiThread {
+        /**
+         * Backed interrupted flag, once set, it is not affected by further {@link Thread#interrupted()} calls.
+         */
+        private volatile boolean interrupted;
+
+        /** */
+        private final GridWorker worker;
+
+        /** {@inheritDoc} */
+        private MessageWorkerThread(GridWorker worker, IgniteLogger log) {
+            super(worker.igniteInstanceName(), worker.name(), log);
+
+            this.worker = worker;
+
+            setPriority(spi.threadPri);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            worker.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void interrupt() {
+            interrupted = true;
+
+            super.interrupt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInterrupted() {
+            return interrupted || super.isInterrupted();
+        }
+    }
+
+    /**
+     * Superclass for all message workers.
+     *
+     * @param <T> Message type.
+     */
+    private abstract class MessageWorker<T> extends GridWorker {
         /** Message queue. */
         protected final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
-
-        /** Backed interrupted flag. */
-        private volatile boolean interrupted;
 
         /** Polling timeout. */
         private final long pollingTimeout;
@@ -6849,15 +6940,22 @@ class ServerImpl extends TcpDiscoveryImpl {
         private Runnable beforeEachPoll;
 
         /**
-         * @param name Thread name.
+         * @param name Worker name.
+         * @param log Logger.
          * @param pollingTimeout Messages polling timeout.
+         * @param lsnr Listener for life-cycle events.
+         * @param idleHnd Idleness handler.
          */
-        protected MessageWorkerAdapter(String name, long pollingTimeout) {
-            super(spi.ignite().name(), name, log);
+        protected MessageWorker(
+            String name,
+            IgniteLogger log,
+            long pollingTimeout,
+            @Nullable GridWorkerListener lsnr,
+            @Nullable GridWorkerIdlenessHandler idleHnd
+        ) {
+            super(spi.ignite().name(), name, log, lsnr, idleHnd, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
 
             this.pollingTimeout = pollingTimeout;
-
-            setPriority(spi.threadPri);
         }
 
         /**
@@ -6872,7 +6970,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (log.isDebugEnabled())
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
-            while (!isInterrupted()) {
+            while (!runner().isInterrupted()) {
                 if (beforeEachPoll != null)
                     beforeEachPoll.run();
 
@@ -6885,26 +6983,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            interrupted = true;
-
-            super.interrupt();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isInterrupted() {
-            return interrupted || super.isInterrupted();
-        }
-
         /**
-         * @return Current queue size.
+         * @return Current message queue size.
          */
         int queueSize() {
             return queue.size();
         }
 
         /**
+         * Processes succeeding message.
+         *
          * @param msg Message.
          */
         protected abstract void processMessage(T msg);
@@ -6913,6 +7001,13 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Called when there is no message to process giving ability to perform other activity.
          */
         protected void noMessageLoop() {
+            // No-op.
+        }
+
+        /**
+         * Actions to be done before worker termination.
+         */
+        protected void tearDown() {
             // No-op.
         }
     }

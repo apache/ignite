@@ -2158,6 +2158,9 @@ public class GridNioServer<T> {
                         }
                         else
                             updateHeartbeat();
+
+                        if (!closed && !isCancelled && Thread.interrupted())
+                            throw new InterruptedException();
                     }
                     finally {
                         select = false;
@@ -3665,7 +3668,7 @@ public class GridNioServer<T> {
         /** */
         private boolean readWriteSelectorsAssign;
 
-        /** */
+        /** Worker lifecycle listener to be used by server's worker threads. */
         private GridWorkerListener workerListener;
 
         /** */
