@@ -2056,6 +2056,31 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Method is called on coordinator in situation when initial ExchangeFuture created on client join event was preempted
+     * from exchange history because of IGNITE_EXCHANGE_HISTORY_SIZE property.
+     *
+     * @param node Client node that should try to reconnect to the cluster.
+     * @param msg Single message received from the client which didn't find original ExchangeFuture.
+     */
+    public void forceClientReconnect(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
+        Exception e = new IgniteNeedReconnectException(node, null);
+
+        changeGlobalStateExceptions.put(node.id(), e);
+
+        onDone(null, e);
+
+        GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true, false);
+
+        fullMsg.setErrorsMap(changeGlobalStateExceptions);
+
+        FinishState finishState0 = new FinishState(cctx.localNodeId(),
+            initialVersion(),
+            fullMsg);
+
+        sendAllPartitionsToNode(finishState0, msg, node.id());
+    }
+
+    /**
      * Processing of received single message. Actual processing in future may be delayed if init method was not
      * completed, see {@link #initDone()}
      *
@@ -3153,6 +3178,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 return;
                             }
                             else {
+                                if (!F.isEmpty(msg.getErrorsMap())) {
+                                    Exception e = msg.getErrorsMap().get(cctx.localNodeId());
+
+                                    assert e != null : msg.getErrorsMap();
+
+                                    onDone(e);
+
+                                    return;
+                                }
+
                                 AffinityTopologyVersion resVer = msg.resultTopologyVersion() != null ? msg.resultTopologyVersion() : initialVersion();
 
                                 if (log.isInfoEnabled()) {
@@ -3775,8 +3810,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if local node should try reconnect in case of error.
      */
     public boolean reconnectOnError(Throwable e) {
-        return X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class) &&
-            cctx.discovery().reconnectSupported();
+        return (e instanceof IgniteNeedReconnectException
+            || X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class))
+            && cctx.discovery().reconnectSupported();
     }
 
     /** {@inheritDoc} */
