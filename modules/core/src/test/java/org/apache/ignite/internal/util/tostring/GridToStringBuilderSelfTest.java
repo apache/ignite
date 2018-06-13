@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -171,24 +171,17 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         info(expN4);
         info(GridToStringBuilder.toString("Test", "Appended vals", n1));
 
-        for (int i = 0; i < 10; i++) {
-            CountDownLatch latch = new CountDownLatch(4);
+        CyclicBarrier bar = new CyclicBarrier(4);
 
-            IgniteInternalFuture<String> fut1 = GridTestUtils.runAsync(new LatchCallable(latch, n1));
-            IgniteInternalFuture<String> fut2 = GridTestUtils.runAsync(new LatchCallable(latch, n2));
-            IgniteInternalFuture<String> fut3 = GridTestUtils.runAsync(new LatchCallable(latch, n3));
-            IgniteInternalFuture<String> fut4 = GridTestUtils.runAsync(new LatchCallable(latch, n4));
+        IgniteInternalFuture<String> fut1 = GridTestUtils.runAsync(new BarrierCallable(bar, n1, expN1));
+        IgniteInternalFuture<String> fut2 = GridTestUtils.runAsync(new BarrierCallable(bar, n2, expN2));
+        IgniteInternalFuture<String> fut3 = GridTestUtils.runAsync(new BarrierCallable(bar, n3, expN3));
+        IgniteInternalFuture<String> fut4 = GridTestUtils.runAsync(new BarrierCallable(bar, n4, expN4));
 
-            String actN1 = fut1.get(3_000);
-            String actN2 = fut2.get(3_000);
-            String actN3 = fut3.get(3_000);
-            String actN4 = fut4.get(3_000);
-
-            assertEquals(expN1, actN1);
-            assertEquals(expN2, actN2);
-            assertEquals(expN3, actN3);
-            assertEquals(expN4, actN4);
-        }
+        fut1.get(3_000);
+        fut2.get(3_000);
+        fut3.get(3_000);
+        fut4.get(3_000);
     }
 
     /**
@@ -216,26 +209,32 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * Test class.
      */
-    private static class LatchCallable implements Callable<String> {
+    private static class BarrierCallable implements Callable<String> {
         /** */
-        CountDownLatch latch;
+        CyclicBarrier bar;
 
         /** */
         Object obj;
 
+        /** Expected value of {@code toString()} method. */
+        String exp;
+
         /** */
-        private LatchCallable(CountDownLatch latch, Object obj) {
-            this.latch = latch;
+        private BarrierCallable(CyclicBarrier bar, Object obj, String exp) {
+            this.bar = bar;
             this.obj = obj;
+            this.exp = exp;
         }
 
         /** {@inheritDoc} */
         @Override public String call() throws Exception {
-            latch.countDown();
+            for (int i = 0; i < 10; i++) {
+                bar.await();
 
-            latch.await();
+                assertEquals(exp, obj.toString());
+            }
 
-            return obj.toString();
+            return null;
         }
     }
 
