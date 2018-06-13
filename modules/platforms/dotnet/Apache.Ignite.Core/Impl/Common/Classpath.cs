@@ -132,7 +132,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cp">Classpath builder.</param>
         private static void AppendTestClasses0(string path, StringBuilder cp)
         {
-            if (path.EndsWith("rest-http", StringComparison.OrdinalIgnoreCase))
+            if (path.EndsWith("rest-http", StringComparison.OrdinalIgnoreCase) || 
+                path.EndsWith("compatibility", StringComparison.OrdinalIgnoreCase))
                 return;
 
             var dir = Path.Combine(path, "target", "classes");
