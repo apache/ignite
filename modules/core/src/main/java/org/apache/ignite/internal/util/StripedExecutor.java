@@ -159,7 +159,8 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     * Checks starvation in striped pool. Maybe too verbose but this is needed to faster debug possible issues.
+     * Checks starvation in striped pool. Maybe too verbose
+     * but this is needed to faster debug possible issues.
      */
     public void checkStarvation() {
         for (int i = 0; i < stripes.length; i++) {
@@ -693,22 +694,22 @@ public class StripedExecutor implements ExecutorService {
             parked = true;
 
             try {
-                for (; ; ) {
+                for (;;) {
                     r = queue.poll();
 
                     if (r != null)
                         return r;
 
-                    if (others != null) {
+                    if(others != null) {
                         int len = others.length;
                         int init = ThreadLocalRandom.current().nextInt(len);
                         int cur = init;
 
                         while (true) {
-                            if (cur != idx) {
-                                Deque<Runnable> queue = (Deque<Runnable>)((StripeConcurrentQueue)others[cur]).queue;
+                            if(cur != idx) {
+                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
 
-                                if (queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
+                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
                                     return r;
                             }
 
@@ -737,9 +738,9 @@ public class StripedExecutor implements ExecutorService {
             if (parked)
                 LockSupport.unpark(thread);
 
-            if (others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
+            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
                 for (Stripe other : others) {
-                    if (((StripeConcurrentQueue)other).parked)
+                    if(((StripeConcurrentQueue)other).parked)
                         LockSupport.unpark(other.thread);
                 }
             }
@@ -801,7 +802,7 @@ public class StripedExecutor implements ExecutorService {
 
             long startedAt = U.currentTimeMillis();
 
-            for (; ; ) {
+            for (;;) {
                 Runnable r = queue.poll();
 
                 if (r != null)
