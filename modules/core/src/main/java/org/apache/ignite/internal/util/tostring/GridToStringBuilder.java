@@ -832,9 +832,6 @@ public class GridToStringBuilder {
         if (cls == null)
             cls = val.getClass();
 
-        boolean isCol = val instanceof Collection;
-        boolean isMap = val instanceof Map;
-
         if (cls.isPrimitive()) {
             buf.a(val);
 
@@ -851,9 +848,9 @@ public class GridToStringBuilder {
         try {
             if (cls.isArray())
                 addArray(buf, cls, val);
-            else if (isCol)
+            else if (val instanceof Collection)
                 addCollection(buf, (Collection) val);
-            else if (isMap)
+            else if (val instanceof Map)
                 addMap(buf, (Map<?, ?>) val);
             else
                 buf.a(val);
@@ -864,7 +861,7 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Writes object to buffer.
+     * Writes array to buffer.
      *
      * @param buf String builder buffer.
      * @param arrType Type of the array.
