@@ -2879,7 +2879,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             lock.lock();
 
             try {
-                while (fileIO != null)
+                while (fileIO != null && !cctx.kernalContext().invalid())
                     U.awaitQuiet(nextSegment);
             }
             finally {

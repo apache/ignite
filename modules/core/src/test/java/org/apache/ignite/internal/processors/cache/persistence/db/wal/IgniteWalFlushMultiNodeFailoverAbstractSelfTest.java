@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -49,6 +50,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -62,7 +64,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     private static final String TEST_CACHE = "testCache";
 
     /** */
-    private static final int ITRS = 1000;
+    private static final int ITRS = 2000;
 
     /** */
     private AtomicBoolean canFail = new AtomicBoolean();
@@ -120,6 +122,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         CacheConfiguration cacheCfg = new CacheConfiguration(TEST_CACHE)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setBackups(1)
+                .setRebalanceMode(CacheRebalanceMode.SYNC)
                 .setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -172,6 +175,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                         TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
                     cache.put(i, "testValue" + i);
 
+                    log.warning("Cache put is done.");
+
                     tx.commit();
 
                     break;
@@ -189,16 +194,22 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     setFileIOFactory(grid(gridCount()).context().cache().context().wal());
 
+                    log.warning("I/O factory is set.");
+
                     grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
 
                     waitForRebalancing();
-                } catch (Exception expected) {
+                } catch (Throwable expected) {
+                    log.warning("Some error", expected);
                     // There can be any exception. Do nothing.
                 }
             }
 
-            if (i == ITRS / 2)
+            if (i == ITRS / 2) {
                 canFail.set(true);
+
+                log.warning("Fail I/O files.");
+            }
         }
 
         // We should await successful stop of node.
@@ -262,10 +273,14 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
+                AtomicInteger writeAttempts = new AtomicInteger(2);
+
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (fail != null && fail.get())
                         throw new IOException("No space left on device");
+
+                    System.err.println("Write " + srcBuf.remaining() + " " + fail);
 
                     return super.write(srcBuf);
                 }

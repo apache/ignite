@@ -3453,6 +3453,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
 
                 do {
+                    log.warning("Perform write " + buf.remaining());
+
                     hdl.fileIO.write(buf);
                 }
                 while (buf.hasRemaining());
