@@ -277,7 +277,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private FileIOFactory ioFactory;
+    private volatile FileIOFactory ioFactory;
 
     /** Next WAL segment archived monitor. Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedMonitor archivedMonitor = new SegmentArchivedMonitor();
