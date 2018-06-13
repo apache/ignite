@@ -146,6 +146,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .directMode(false)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
                             .workerListener(ctx.workersRegistry())
+                            .idlenessHandler(ctx.workersRegistry())
                             .build();
 
                         srv0.start();
