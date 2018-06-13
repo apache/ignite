@@ -85,7 +85,10 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(3);
+        System.setProperty("h2.maxMemoryRows", Integer.toString(10));
+        System.setProperty("h2.mvStore", "false");
+
+        startGrids(1);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
             String.class, Organization.class);
@@ -103,6 +106,18 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person(1, "John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
+
+        personCache.put(new AffinityKey<>("p4", "o2"), new Person(4, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p5", "o2"), new Person(5, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p6", "o2"), new Person(6, "Mike Green", 40, 2));
+
+        personCache.put(new AffinityKey<>("p7", "o2"), new Person(7, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p8", "o2"), new Person(8, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p9", "o2"), new Person(9, "Mike Green", 40, 2));
+
+        personCache.put(new AffinityKey<>("p10", "o2"), new Person(10, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p11", "o2"), new Person(11, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p12", "o2"), new Person(12, "Mike Green", 40, 2));
     }
 
     /** {@inheritDoc} */
@@ -162,38 +177,25 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJoinWithoutAlias() throws Exception {
+        ResultSet rs0 = stmt.executeQuery("SELECT COUNT(*) FROM \"pers\".Person");
+
+        rs0.next();
+
+        System.out.println(">>> " + rs0.getLong(1));
+
         ResultSet rs = stmt.executeQuery(
-            "select p.id, p.name, o.name from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
+            "select * from \"pers\".Person p");
 
         assert rs != null;
 
         int cnt = 0;
 
         while (rs.next()) {
-            int id = rs.getInt(1);
-
-            if (id == 1) {
-                assert "John White".equals(rs.getString("name"));
-                assert "John White".equals(rs.getString(2));
-                assert "A".equals(rs.getString(3));
-            }
-            else if (id == 2) {
-                assert "Joe Black".equals(rs.getString("name"));
-                assert "Joe Black".equals(rs.getString(2));
-                assert "A".equals(rs.getString(3));
-            }
-            else if (id == 3) {
-                assert "Mike Green".equals(rs.getString("name"));
-                assert "Mike Green".equals(rs.getString(2));
-                assert "B".equals(rs.getString(3));
-            }
-            else
-                assert false : "Wrong ID: " + id;
 
             cnt++;
         }
 
-        assert cnt == 3;
+        assert cnt == 12;
     }
 
     /**

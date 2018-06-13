@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.result.Row;
 import org.h2.result.RowFactory;
+import org.h2.result.RowImpl;
 import org.h2.value.Value;
 
 /**
@@ -57,7 +58,9 @@ public class GridH2PlainRowFactory extends RowFactory {
 
     /** {@inheritDoc} */
     @Override public Row createRow(Value[] data, int memory) {
-        return create(data);
+        return new RowImpl(data, memory);
+
+        //return create(data);
     }
 
     /**
@@ -66,6 +69,9 @@ public class GridH2PlainRowFactory extends RowFactory {
     private static final class RowKey extends GridH2SearchRowAdapter {
         /** */
         private Value key;
+
+        /** Key. */
+        private long key0;
 
         /**
          * @param key Key.
@@ -77,6 +83,16 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public int getColumnCount() {
             return 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getKey() {
+            return key0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setKey(long key) {
+            this.key0 = key;
         }
 
         /** {@inheritDoc} */
@@ -107,6 +123,9 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** */
         private Value v2;
 
+        /** Key. */
+        private long key;
+
         /**
          * @param v1 First value.
          * @param v2 Second value.
@@ -119,6 +138,16 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public int getColumnCount() {
             return 2;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getKey() {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setKey(long key) {
+            this.key = key;
         }
 
         /** {@inheritDoc} */
@@ -147,6 +176,9 @@ public class GridH2PlainRowFactory extends RowFactory {
      * Simple array based row.
      */
     private static final class RowSimple extends GridH2SearchRowAdapter {
+        /** Key. */
+        private long key;
+
         /** */
         @GridToStringInclude
         private Value[] vals;
@@ -161,6 +193,16 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public int getColumnCount() {
             return vals.length;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getKey() {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setKey(long key) {
+            this.key = key;
         }
 
         /** {@inheritDoc} */

@@ -265,7 +265,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ConcurrentMap<String, H2Schema> schemas = new ConcurrentHashMap<>();
 
     /** */
-    private String dbUrl = "jdbc:h2:mem:";
+    private String dbUrl = "jdbc:h2:file:C:/Personal/h2data/sample";
 
     /** */
     private final ConcurrentMap<Thread, Connection> conns = new ConcurrentHashMap<>();
@@ -2517,7 +2517,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
-        dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
+        dbUrl = "jdbc:h2:file:C:/Personal/h2data/" + dbName + DB_OPTIONS;
+//        dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
         org.h2.Driver.load();
 
