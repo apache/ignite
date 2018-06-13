@@ -612,13 +612,11 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         CollectionConfiguration colCfg = collectionConfiguration();
 
         IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg);
-
         IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg);
 
         assertEquals(getQueueCache(queue1), getQueueCache(queue2));
 
         queue1.close();
-
         queue2.close();
     }
 
@@ -636,13 +634,11 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
             colCfg2.setAtomicityMode(ATOMIC);
 
         IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
-
         IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
 
         assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
 
         queue1.close();
-
         queue2.close();
     }
 

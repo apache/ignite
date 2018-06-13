@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -46,9 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructureType;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -816,13 +814,13 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
-        boolean sharedCacheMode = sharedCacheMode(set0);
+        boolean separatedCacheMode = separatedCacheMode(set0);
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            if (!sharedCacheMode) {
-                assertNull("Internal cache should be destroyed in non-shared cache mode: " + cctx.name(), cache);
+            if (separatedCacheMode) {
+                assertNull("Cache " + cctx.name() + " was not destroyed.", cache);
 
                 continue;
             }
@@ -1048,10 +1046,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        if (sharedCacheMode(set4))
-            assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
-        else
+        if (separatedCacheMode(set4))
             assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
+        else
+            assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
 
         assertTrue(cctx(set1).groupId() == cctx(set3).groupId());
         assertTrue(cctx(set3).groupId() == cctx(set4).groupId());
@@ -1071,10 +1069,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        if (sharedCacheMode(set8))
-            assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());
-        else
+        if (separatedCacheMode(set8))
             assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
+        else
+            assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());
 
         assertTrue(cctx(set3).cacheId() != cctx(set7).cacheId());
         assertTrue(cctx(set3).groupId() == cctx(set7).groupId());
@@ -1095,8 +1093,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assertTrue(cctx(set3).groupId() != cctx(set11).groupId());
 
-        for (Closeable set : new Closeable[]{set1, set2, set3, set4, set5, set6, set7, set8, set9, set10, set11})
-            set.close();
+        Stream.of(set1, set2, set3, set4, set5, set6, set7, set8, set9, set10, set11).forEach(IgniteSet::close);
     }
 
     /**

@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -132,7 +131,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @param queue Ignite queue.
      * @return Cache context.
      */
-    protected GridCacheContext cctx(IgniteQueue queue) {
+    protected static GridCacheContext cctx(IgniteQueue queue) {
         return GridTestUtils.getFieldValue(queue, "cctx");
     }
 
@@ -140,7 +139,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @param set Ignite set.
      * @return Cache context.
      */
-    protected GridCacheContext cctx(IgniteSet set) {
+    protected static GridCacheContext cctx(IgniteSet set) {
         if (set instanceof GridCacheSetProxy)
             return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
         else
@@ -150,14 +149,14 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
     /**
      * @param set Ignite set.
-     * @return {@code True} if this instance of IgniteSet is using shared cache.
+     * @return {@code True} if this instance of IgniteSet is using separated cache.
      */
-    protected boolean sharedCacheMode(IgniteSet set) {
+    protected boolean separatedCacheMode(IgniteSet set) {
         IgniteSet impl = set;
 
         if (set instanceof GridCacheSetProxy)
             impl = ((GridCacheSetProxy)set).delegate();
 
-        return !(Boolean)GridTestUtils.getFieldValue(impl, "separatedCache");
+        return GridTestUtils.getFieldValue(impl, "separatedCache");
     }
 }
