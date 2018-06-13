@@ -54,10 +54,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -134,6 +136,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -146,6 +149,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2060,14 +2064,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = U.currentTimeMillis();
         int applied = 0;
+
         WALPointer lastRead = null;
+
+        AtomicBoolean apply0 = new AtomicBoolean(apply);
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
+                IgniteBiTuple<WALPointer, WALRecord> tup = next(it, apply0::get);
+
+                if (tup == null)
+                    break;
 
                 WALRecord rec = tup.get2();
 
@@ -2082,7 +2092,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
                                 ", pos=" + tup.get1() + ']');
 
-                            apply = false;
+                            apply0.set(false);
                         }
                         else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
                             U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
@@ -2091,7 +2101,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PAGE_RECORD:
-                        if (apply) {
+                        if (apply0.get()) {
                             PageSnapshot pageRec = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
@@ -2174,7 +2184,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     default:
-                        if (apply && rec instanceof PageDeltaRecord) {
+                        if (apply0.get() && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
                             int grpId = r.groupId();
@@ -2216,7 +2226,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
 
         if (status.needRestoreMemory()) {
-            if (apply)
+            if (apply0.get())
                 throw new StorageException("Failed to restore memory state (checkpoint marker is present " +
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastRead + "]");
@@ -2349,7 +2359,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+                IgniteBiTuple<WALPointer, WALRecord> next = next(it, () -> Boolean.FALSE);
+
+                if (next == null)
+                    break;
 
                 WALRecord rec = next.get2();
 
@@ -4305,6 +4318,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             return fail;
+        }
+    }
+
+    /**
+     * Method for wrap it.next() call.
+     *
+     * @param it WalIterator.
+     * @param failed CRC failure handler. True if CRC fail should throws as exception.
+     * False if it last corrupted  record.
+     * @return Tuple of WalPointer and WalRecord.
+     * @throws IgniteCheckedException If exception is not handled.
+     */
+    private IgniteBiTuple<WALPointer, WALRecord> next(
+        WALIterator it,
+        Supplier<Boolean> failed
+    ) throws IgniteCheckedException {
+        try {
+            return it.nextX();
+        }
+        catch (IgniteCheckedException e) {
+            if (X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
+                if (failed.get())
+                    throw e;
+                else
+                    return null;
+            }
+
+            throw e;
         }
     }
 
