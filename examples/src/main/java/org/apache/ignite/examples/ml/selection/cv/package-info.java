@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Imputer preprocessor.
+ * ML cross validation examples.
  */
-package org.apache.ignite.ml.preprocessing.imputer;
+package org.apache.ignite.examples.ml.selection.cv;

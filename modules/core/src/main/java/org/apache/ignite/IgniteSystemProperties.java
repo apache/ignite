@@ -892,6 +892,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
+
+    /**
      * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.
      * Partitions sizes may differs on nodes when Expiry Policy is in use and it is ok due to lazy entry eviction mechanics.
      *
@@ -901,6 +907,13 @@ public final class IgniteSystemProperties {
      * Default is {@code false}.
      */
     public static final String IGNITE_SKIP_PARTITION_SIZE_VALIDATION = "IGNITE_SKIP_PARTITION_SIZE_VALIDATION";
+
+    /**
+     * Enables threads dumping on critical node failure.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
      * Enforces singleton.

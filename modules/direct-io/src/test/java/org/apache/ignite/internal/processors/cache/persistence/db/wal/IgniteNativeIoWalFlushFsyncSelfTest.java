@@ -14,14 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-package org.apache.ignite.ml.preprocessing.imputer;
+/**
+ * Native IO version of test
+ */
+public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
+    /** {@inheritDoc} */
+    @Override public void testFailAfterStart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8742");
 
-/** This enum contains settings for imputer preprocessor. */
-public enum ImputingStrategy {
-    /** The default strategy. If this strategy is chosen, then replace missing values using the mean for the numeric features along the axis. */
-    MEAN,
-
-    /** If this strategy is chosen, then replace missing using the most frequent value along the axis. */
-    MOST_FREQUENT
+        super.testFailAfterStart();
+    }
 }

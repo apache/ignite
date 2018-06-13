@@ -15,33 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.ml.selection.score.util;
 
-import javax.cache.CacheException;
+import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 
 /**
- * Exception thrown when atomic operation timeout occurs.
+ * Closeable iterable that supplies pairs of truth and predictions (abstraction that hides a difference between querying
+ * data from Ignite cache and from local Map).
+ *
+ * @param <L> Type of a label (truth or prediction).
  */
-public class CacheAtomicUpdateTimeoutException extends CacheException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public CacheAtomicUpdateTimeoutException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public CacheAtomicUpdateTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+public interface TruthWithPredictionCursor<L> extends Iterable<TruthWithPrediction<L>>, AutoCloseable {
 }

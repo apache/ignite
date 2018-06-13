@@ -15,44 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.normalization;
+package org.apache.ignite.ml.selection.score;
 
 /**
- * Partition data used in normalization preprocessor.
+ * Pair of truth value and predicated by model.
  *
- * @see NormalizationTrainer
- * @see NormalizationPreprocessor
+ * @param <L> Type of a label (truth or prediction).
  */
-public class NormalizationPartitionData implements AutoCloseable {
-    /** Minimal values. */
-    private final double[] min;
+public class TruthWithPrediction<L> {
+    /** Truth value. */
+    private final L truth;
 
-    /** Maximum values. */
-    private final double[] max;
+    /** Predicted value. */
+    private final L prediction;
 
     /**
-     * Constructs a new instance of normalization partition data.
+     * Constructs a new instance of truth with prediction.
      *
-     * @param min Minimal values.
-     * @param max Maximum values.
+     * @param truth Truth value.
+     * @param prediction Predicted value.
      */
-    public NormalizationPartitionData(double[] min, double[] max) {
-        this.min = min;
-        this.max = max;
+    public TruthWithPrediction(L truth, L prediction) {
+        this.truth = truth;
+        this.prediction = prediction;
     }
 
     /** */
-    public double[] getMin() {
-        return min;
+    public L getTruth() {
+        return truth;
     }
 
     /** */
-    public double[] getMax() {
-        return max;
-    }
-
-    /** */
-    @Override public void close() {
-        // Do nothing, GC will clean up.
+    public L getPrediction() {
+        return prediction;
     }
 }
