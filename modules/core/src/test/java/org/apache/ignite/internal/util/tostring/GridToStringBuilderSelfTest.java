@@ -162,7 +162,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         info(GridToStringBuilder.toString("Test", "Appended vals", n1));
     }
 
-    /** */
+    /**
+     * Test class.
+     */
     private static class Node {
         /** */
         @GridToStringInclude
@@ -176,7 +178,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         @GridToStringInclude
         Node[] nodes;
 
-        /** {@inheritDoc}*/
+        /** {@inheritDoc} */
         @Override public String toString() {
             return GridToStringBuilder.toString(Node.class, this);
         }

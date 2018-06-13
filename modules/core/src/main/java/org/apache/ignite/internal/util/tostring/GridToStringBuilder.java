@@ -97,7 +97,7 @@ public class GridToStringBuilder {
     private static final int COLLECTION_LIMIT =
         IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
-    /** Every thread have its own string builder. */
+    /** Every thread has its own string builder. */
     private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {
         @Override protected SBLimitedLength initialValue() {
             SBLimitedLength sb = new SBLimitedLength(256);
