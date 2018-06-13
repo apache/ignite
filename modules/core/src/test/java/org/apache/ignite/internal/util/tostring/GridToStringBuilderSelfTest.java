@@ -25,12 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
+
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -155,11 +160,35 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         n1.nodes[2] = n3;
         n1.nodes[3] = n4;
 
-        info(n1.toString());
-        info(n2.toString());
-        info(n3.toString());
-        info(n4.toString());
+        String expN1 = n1.toString();
+        String expN2 = n2.toString();
+        String expN3 = n3.toString();
+        String expN4 = n4.toString();
+
+        info(expN1);
+        info(expN2);
+        info(expN3);
+        info(expN4);
         info(GridToStringBuilder.toString("Test", "Appended vals", n1));
+
+        for (int i = 0; i < 10; i++) {
+            CountDownLatch latch = new CountDownLatch(4);
+
+            IgniteInternalFuture<String> fut1 = GridTestUtils.runAsync(new LatchCallable(latch, n1));
+            IgniteInternalFuture<String> fut2 = GridTestUtils.runAsync(new LatchCallable(latch, n2));
+            IgniteInternalFuture<String> fut3 = GridTestUtils.runAsync(new LatchCallable(latch, n3));
+            IgniteInternalFuture<String> fut4 = GridTestUtils.runAsync(new LatchCallable(latch, n4));
+
+            String actN1 = fut1.get(3_000);
+            String actN2 = fut2.get(3_000);
+            String actN3 = fut3.get(3_000);
+            String actN4 = fut4.get(3_000);
+
+            assertEquals(expN1, actN1);
+            assertEquals(expN2, actN2);
+            assertEquals(expN3, actN3);
+            assertEquals(expN4, actN4);
+        }
     }
 
     /**
@@ -181,6 +210,32 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return GridToStringBuilder.toString(Node.class, this);
+        }
+    }
+
+    /**
+     * Test class.
+     */
+    private static class LatchCallable implements Callable<String> {
+        /** */
+        CountDownLatch latch;
+
+        /** */
+        Object obj;
+
+        /** */
+        private LatchCallable(CountDownLatch latch, Object obj) {
+            this.latch = latch;
+            this.obj = obj;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String call() throws Exception {
+            latch.countDown();
+
+            latch.await();
+
+            return obj.toString();
         }
     }
 
