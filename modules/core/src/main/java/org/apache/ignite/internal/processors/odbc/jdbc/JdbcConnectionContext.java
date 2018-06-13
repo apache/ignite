@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -146,7 +145,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                     nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
                 }
                 catch (IllegalArgumentException e) {
-                    throw new IgniteSQLException("Invalid nested transactions handling mode: " + nestedTxModeName);
+                    throw new IgniteCheckedException("Invalid nested transactions handling mode: " + nestedTxModeName);
                 }
             }
 

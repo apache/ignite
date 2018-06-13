@@ -1703,7 +1703,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean lazy,
         MvccQueryTracker mvccTracker) {
         assert !qry.mvccEnabled() || !F.isEmpty(qry.cacheIds());
-        assert qry.mvccEnabled() || mvccTracker == null;
 
         try {
             final MvccQueryTracker tracker = mvccTracker == null && qry.mvccEnabled() ?
