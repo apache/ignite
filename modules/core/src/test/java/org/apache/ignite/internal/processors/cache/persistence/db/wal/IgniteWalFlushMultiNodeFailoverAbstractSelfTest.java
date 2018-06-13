@@ -262,11 +262,9 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
-                int writeAttempts = 2;
-
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (--writeAttempts <= 0 && fail != null && fail.get())
+                    if (fail != null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
