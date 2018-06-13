@@ -2409,9 +2409,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Write serializer version to current handle.
          * NOTE: Method mutates {@code fileIO} position, written and lastFsyncPos fields.
          *
-         * @throws IgniteCheckedException If fail to write serializer version.
+         * @throws IOException If fail to write serializer version.
          */
-        public void writeSerializerVersion() throws IgniteCheckedException {
+        public void writeSerializerVersion() throws IOException {
             try {
                 assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
                     fileIO.position();
@@ -2424,7 +2424,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 head.set(new FakeRecord(new FileWALPointer(idx, (int)updatedPosition, 0), false));
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Unable to write serializer version for segment " + idx, e);
+                throw new IOException("Unable to write serializer version for segment " + idx, e);
             }
         }
 
