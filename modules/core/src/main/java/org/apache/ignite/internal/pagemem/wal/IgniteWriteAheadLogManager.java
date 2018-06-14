@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -104,9 +106,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      *
      * @param low Pointer since which WAL will be truncated. If null, WAL will be truncated from the oldest segment.
      * @param high Pointer for which it is safe to clear the log.
+     * @param names Names of deleted WAL segments (fillable)
      * @return Number of deleted WAL segments.
      */
-    public int truncate(WALPointer low, WALPointer high);
+    public int truncate(WALPointer low, WALPointer high, @Nullable Collection<String> names);
 
     /**
      * Gives a hint to WAL manager to compact WAL until given pointer (exclusively).

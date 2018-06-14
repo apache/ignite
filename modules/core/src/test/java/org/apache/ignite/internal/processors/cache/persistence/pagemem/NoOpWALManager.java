@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -77,7 +78,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer low, WALPointer high) {
+    @Override public int truncate(WALPointer low, WALPointer high, final Collection<String> names) {
         return 0;
     }
 

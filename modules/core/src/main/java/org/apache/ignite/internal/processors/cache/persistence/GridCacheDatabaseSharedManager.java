@@ -3283,12 +3283,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (printCheckpointStats) {
                         if (log.isInfoEnabled())
                             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                                    "walSegmentsCleared=%d, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
+                                    "walSegmentsCleared=%d, walSegmentNamesCleared=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
                                 chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                                 chp.pagesSize,
                                 chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
                                 chp.walFilesDeleted,
+                                chp.walNamesDeleted,
                                 tracker.markDuration(),
                                 tracker.pagesWriteDuration(),
                                 tracker.fsyncDuration(),
@@ -3952,6 +3953,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Number of deleted WAL files. */
         private int walFilesDeleted;
 
+        /** Names of deleted WAL files. */
+        private List<String> walNamesDeleted;
+
         /** */
         private final int pagesSize;
 
@@ -4247,6 +4251,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void onCheckpointFinished(Checkpoint chp) {
             int deleted = 0;
+            final List<String> walNames = new ArrayList<>();
 
             boolean dropWal = persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE;
 
@@ -4265,8 +4270,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 boolean fail = removeCheckpointFiles(cpEntry);
 
                 if (!fail) {
-                    if (dropWal)
-                        deleted += cctx.wal().truncate(null, cpEntry.checkpointMark());
+                    if (dropWal) {
+                        final ArrayList<String> names0 = new ArrayList<>();
+                        deleted += cctx.wal().truncate(null, cpEntry.checkpointMark(), names0);
+                        walNames.addAll(names0);
+                    }
 
                     histMap.remove(entry.getKey());
                 }
@@ -4275,6 +4283,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             chp.walFilesDeleted = deleted;
+            chp.walNamesDeleted = walNames;
 
             if (!chp.cpPages.isEmpty())
                 cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
