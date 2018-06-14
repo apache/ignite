@@ -485,7 +485,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 grpsWithoutIdx.add(grpId);
 
             FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(
-                pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration(), log);
+                pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration());
 
             FilePageStore idxStore =
             pageStoreFactory.createPageStore(
@@ -942,8 +942,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public void setPageStoreFileIOFactories(final FileIOFactory pageStoreFileIoFactory,
         final FileIOFactory pageStoreV1FileIoFactory) {
-        this.pageStoreFileIoFactory = new TimeMeasureFileIOFactory(pageStoreFileIoFactory);
-        this.pageStoreV1FileIoFactory = new TimeMeasureFileIOFactory(pageStoreV1FileIoFactory);
+        this.pageStoreFileIoFactory = pageStoreFileIoFactory;
+        this.pageStoreV1FileIoFactory = pageStoreV1FileIoFactory;
     }
 
     /**
@@ -976,27 +976,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
-        }
-    }
-
-    private static class TimeMeasureFileIOFactory implements FileIOFactory {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        private final FileIOFactory delegate;
-
-        public TimeMeasureFileIOFactory(FileIOFactory delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public FileIO create(File file) throws IOException {
-            return new TimeMeasureFileIO(file, delegate.create(file));
-        }
-
-        @Override
-        public FileIO create(File file, OpenOption... modes) throws IOException {
-            return new TimeMeasureFileIO(file, delegate.create(file, modes));
         }
     }
 }

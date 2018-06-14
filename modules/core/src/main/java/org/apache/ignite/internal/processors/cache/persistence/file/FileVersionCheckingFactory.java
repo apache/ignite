@@ -51,8 +51,6 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     /** Memory configuration. */
     private final DataStorageConfiguration memCfg;
 
-    private final IgniteLogger log;
-
     /**
      * @param fileIOFactory File IO factory.
      * @param fileIOFactoryStoreV1 File IO factory for V1 page store and for version checking.
@@ -61,13 +59,12 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     public FileVersionCheckingFactory(
         FileIOFactory fileIOFactory,
         FileIOFactory fileIOFactoryStoreV1,
-        DataStorageConfiguration memCfg,
-        IgniteLogger log)
+        DataStorageConfiguration memCfg
+    )
     {
         this.fileIOFactory = fileIOFactory;
         this.fileIOFactoryStoreV1 = fileIOFactoryStoreV1;
         this.memCfg = memCfg;
-        this.log = log;
     }
 
     /**
@@ -75,7 +72,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param memCfg Memory configuration.
      */
     public FileVersionCheckingFactory(FileIOFactory fileIOFactory, DataStorageConfiguration memCfg) {
-        this(fileIOFactory, fileIOFactory, memCfg, null);
+        this(fileIOFactory, fileIOFactory, memCfg);
     }
 
     /** {@inheritDoc} */

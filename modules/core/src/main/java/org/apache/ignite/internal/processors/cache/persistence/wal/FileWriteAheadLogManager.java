@@ -3453,8 +3453,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
 
                 do {
-                    log.warning("Perform write " + buf.remaining());
-
                     hdl.fileIO.write(buf);
                 }
                 while (buf.hasRemaining());
@@ -3466,7 +3464,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
-                StorageException se = new StorageException("Unable to write", e);
+                StorageException se = new StorageException("Failed to write buffer.", e);
 
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 

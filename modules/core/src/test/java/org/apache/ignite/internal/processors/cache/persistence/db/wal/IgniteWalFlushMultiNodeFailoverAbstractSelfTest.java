@@ -175,12 +175,11 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                         TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
                     cache.put(i, "testValue" + i);
 
-                    log.warning("Cache put is done.");
-
                     tx.commit();
 
                     break;
-                } catch (Exception expected) {
+                }
+                catch (Exception expected) {
                     // Expected exception.
                 }
             }
@@ -194,22 +193,17 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     setFileIOFactory(grid(gridCount()).context().cache().context().wal());
 
-                    log.warning("I/O factory is set.");
-
                     grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
 
                     waitForRebalancing();
-                } catch (Throwable expected) {
-                    log.warning("Some error", expected);
+                }
+                catch (Throwable expected) {
                     // There can be any exception. Do nothing.
                 }
             }
 
-            if (i == ITRS / 2) {
+            if (i == ITRS / 2)
                 canFail.set(true);
-
-                log.warning("Fail I/O files.");
-            }
         }
 
         // We should await successful stop of node.
@@ -273,14 +267,10 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
-                AtomicInteger writeAttempts = new AtomicInteger(2);
-
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (fail != null && fail.get())
                         throw new IOException("No space left on device");
-
-                    System.err.println("Write " + srcBuf.remaining() + " " + fail);
 
                     return super.write(srcBuf);
                 }
