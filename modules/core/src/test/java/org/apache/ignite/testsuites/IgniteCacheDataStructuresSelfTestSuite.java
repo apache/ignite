@@ -92,7 +92,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < 100; i++) {
             suite.addTest(new TestSuite(IgnitePartitionedSemaphoreSelfTest.class));
             suite.addTest(new TestSuite(IgniteDataStructureUniqueNameTest.class));
         }
