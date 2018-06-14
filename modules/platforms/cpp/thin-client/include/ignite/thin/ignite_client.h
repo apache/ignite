@@ -79,7 +79,7 @@ namespace ignite
             {
                 return cache::CacheClient<K, V>(InternalGetCache(name));
             }
-    
+
             /**
              * Get or create cache.
              *
@@ -91,7 +91,7 @@ namespace ignite
             {
                 return cache::CacheClient<K, V>(InternalGetOrCreateCache(name));
             }
-    
+
             /**
              * Create cache.
              *
@@ -118,7 +118,7 @@ namespace ignite
              * @param cacheNames Cache names. Output parameter.
              */
             void GetCacheNames(std::vector<std::string>& cacheNames);
-    
+
         private:
             /**
              * Get cache.
@@ -128,7 +128,7 @@ namespace ignite
              * @return Cache.
              */
             SP_Void InternalGetCache(const char* name);
-    
+
             /**
              * Get or create cache.
              * Internal call.
@@ -137,7 +137,7 @@ namespace ignite
              * @return Cache.
              */
             SP_Void InternalGetOrCreateCache(const char* name);
-    
+
             /**
              * Create cache.
              * Internal call.
