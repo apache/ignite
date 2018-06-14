@@ -23,13 +23,10 @@ The choice of `cache` term is due to historical reasons. (Ignite initially had
 only non-persistent storage tier.)
 """
 
-import ctypes
-
 from connection import Connection
-from constants import *
 from datatypes.cache_config import cache_config_struct
 from datatypes.primitive import Int, Byte
-from datatypes.strings import PString
+from datatypes.strings import PString, PStringArray
 from queries.op_codes import *
 from queries import Query, Response
 from .result import APIResult
@@ -183,30 +180,30 @@ def cache_destroy(conn: Connection, hash_code: int) -> APIResult:
     return result
 
 
-# def cache_get_names(conn: Connection) -> APIResult:
-#     """
-#     Gets existing cache names.
-#
-#     :param conn: connection to Ignite server,
-#     :return: API result data object. Contains zero status and a list of cache
-#      names, non-zero status and an error description otherwise.
-#     """
-#     query = QueryHeader()
-#     query.op_code = OP_CACHE_GET_NAMES
-#     conn.send(query)
-#     buffer = conn.recv(ctypes.sizeof(ResponseHeader))
-#     response_header = ResponseHeader.from_buffer_copy(buffer)
-#     result = APIResult(status=response_header.status_code)
-#     if result.status == 0:
-#         cache_count = int.from_bytes(
-#             conn.recv(ctypes.sizeof(ctypes.c_int)),
-#             byteorder=PROTOCOL_BYTE_ORDER
-#         )
-#         result.value = []
-#         for i in range(cache_count):
-#             cache_name = string_object(conn)
-#             result.value.append(cache_name.get_attribute())
-#     else:
-#         error_msg = string_object(conn)
-#         result.message = error_msg.get_attribute()
-#     return result
+def cache_get_names(conn: Connection) -> APIResult:
+    """
+    Gets existing cache names.
+
+    :param conn: connection to Ignite server,
+    :return: API result data object. Contains zero status and a list of cache
+     names, non-zero status and an error description otherwise.
+    """
+
+    query_struct = CacheGetNamesQuery()
+
+    _, send_buffer = query_struct.from_python()
+    conn.send(send_buffer)
+
+    response_struct = Response([
+        ('cache_names', PStringArray),
+    ])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = response.error_message
+    result.value = response_struct.to_python(response)['cache_names']
+    return result

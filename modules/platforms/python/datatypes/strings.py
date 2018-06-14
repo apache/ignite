@@ -61,7 +61,9 @@ class PString:
     @staticmethod
     def to_python(ctype_object):
         length = getattr(ctype_object, 'length', None)
-        if length:
+        if length is None:
+            return None
+        elif length > 0:
             return ctype_object.data.decode(PROTOCOL_STRING_ENCODING)
         else:
             return ''
@@ -80,3 +82,81 @@ class PString:
         data_object.length = length
         data_object.data = value
         return bytes(data_object)
+
+
+class PStringArray:
+
+    @classmethod
+    def build_header_class(cls):
+        return type(
+            cls.__name__+'Header',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                ],
+            }
+        )
+
+    @classmethod
+    def parse(cls, conn: Connection):
+        header_class = cls.build_header_class()
+        buffer = conn.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+        fields = []
+        for i in range(header.length):
+            c_type, buffer_fragment = PString.parse(conn)
+            buffer += buffer_fragment
+            fields.append(('element_{}'.format(i), c_type))
+
+        final_class = type(
+            cls.__name__,
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': fields,
+            }
+        )
+        return final_class, buffer
+
+    @classmethod
+    def to_python(cls, ctype_object):
+        result = []
+        for i in range(ctype_object.length):
+            result.append(
+                PString.to_python(
+                    getattr(ctype_object, 'element_{}'.format(i))
+                )
+            )
+        return result
+
+    @classmethod
+    def from_python(cls, value):
+        header_class = cls.build_header_class()
+        header = header_class()
+        if hasattr(header, 'type_code'):
+            header.type_code = TC_STRING_ARRAY
+        header.length = len(value)
+        buffer = bytes(header)
+
+        for string in value:
+            buffer += PString.from_python(string)
+        return buffer
+
+
+class PStringArrayObject(PStringArray):
+
+    @classmethod
+    def build_header_class(cls):
+        return type(
+            cls.__name__+'Header',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('type_code', ctypes.c_byte),
+                    ('length', ctypes.c_int),
+                ],
+            }
+        )

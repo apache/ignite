@@ -37,6 +37,7 @@ modules for you.
 
 from .cache_config import (
     cache_create,
+    cache_get_names,
     cache_get_or_create,
     cache_destroy,
     cache_get_configuration,

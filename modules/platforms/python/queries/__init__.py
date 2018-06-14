@@ -34,7 +34,7 @@ from .op_codes import *
 @attr.s
 class Query:
     op_code = None
-    following = attr.ib(type=list)
+    following = attr.ib(type=list, default=[])
 
     @classmethod
     def build_c_type(cls):
@@ -51,7 +51,9 @@ class Query:
             },
         )
 
-    def from_python(self, values: dict):
+    def from_python(self, values: dict=None):
+        if values is None:
+            values = {}
         buffer = b''
 
         header_class = self.build_c_type()
