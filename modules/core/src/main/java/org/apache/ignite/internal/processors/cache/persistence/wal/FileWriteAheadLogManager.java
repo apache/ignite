@@ -2147,8 +2147,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         int bytesRead;
                         while ((bytesRead = zis.read(arr)) > 0)
                             if (io.write(arr, 0, bytesRead) < bytesRead) {
-                                failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, null), new StopNodeFailureHandler());
-                                throw new IgniteCheckedException("Can't extend file: " + unzipTmp.getName());
+                                final IgniteCheckedException ex = new IgniteCheckedException("Failed to extend file: " +
+                                    unzipTmp.getName() + ". Probably disk is too busy, please check your device.");
+                                if (failureProcessor != null)
+                                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex), new StopNodeFailureHandler());
+                                throw ex;
                             }
                     }
 
