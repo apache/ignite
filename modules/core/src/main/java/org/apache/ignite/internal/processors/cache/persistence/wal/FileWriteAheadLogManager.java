@@ -1398,7 +1398,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             file.getName() + ". Probably disk is too busy, please check your device.");
 
                         if (failureProcessor != null)
-                            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex), new StopNodeFailureHandler());
+                            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
 
                         throw ex;
                     }
@@ -2159,7 +2159,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                     unzipTmp.getName() + ". Probably disk is too busy, please check your device.");
 
                                 if (failureProcessor != null)
-                                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex), new StopNodeFailureHandler());
+                                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
 
                                 throw ex;
                             }
