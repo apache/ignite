@@ -485,7 +485,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        CacheOperationContext opCtx = new CacheOperationContext(false, subjId, false, null, false, null, false, false);
+        CacheOperationContext opCtx = new CacheOperationContext(false, subjId, false, null, false, null, false, true);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -497,14 +497,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
-        CacheOperationContext opCtx = new CacheOperationContext(true, null, false, null, false, null, false, false);
+        CacheOperationContext opCtx = new CacheOperationContext(true, null, false, null, false, null, false, true);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
-        CacheOperationContext opCtx = new CacheOperationContext(false, null, true, null, false, null, false, false);
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, true, null, false, null, false, true);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
@@ -518,14 +518,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         assert !CU.isUtilityCache(ctx.name());
 
-        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc, false, null, false, false);
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc, false, null, false, true);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public final IgniteInternalCache<K, V> withNoRetries() {
-        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, null, true, null, false, false);
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, null, true, null, false, true);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }

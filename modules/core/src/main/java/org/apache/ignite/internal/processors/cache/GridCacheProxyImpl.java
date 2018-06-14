@@ -237,7 +237,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
         return new GridCacheProxyImpl<>(ctx, delegate,
             opCtx != null ? opCtx.forSubjectId(subjId) :
-                new CacheOperationContext(false, subjId, false, null, false, null, false, false));
+                new CacheOperationContext(false, subjId, false, null, false, null, false, true));
     }
 
     /** {@inheritDoc} */
@@ -250,7 +250,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
             return new GridCacheProxyImpl<>(ctx, delegate,
                 opCtx != null ? opCtx.setSkipStore(skipStore) :
-                    new CacheOperationContext(true, null, false, null, false, null, false, false));
+                    new CacheOperationContext(true, null, false, null, false, null, false, true));
         }
         finally {
             gate.leave(prev);
@@ -266,7 +266,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
             (GridCacheAdapter<K1, V1>)delegate,
             opCtx != null ? opCtx.keepBinary() :
-                new CacheOperationContext(false, null, true, null, false, null, false, false));
+                new CacheOperationContext(false, null, true, null, false, null, false, true));
     }
 
     /** {@inheritDoc} */
@@ -1557,7 +1557,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         try {
             return new GridCacheProxyImpl<>(ctx, delegate,
                 opCtx != null ? opCtx.withExpiryPolicy(plc) :
-                    new CacheOperationContext(false, null, false, plc, false, null, false, false));
+                    new CacheOperationContext(false, null, false, plc, false, null, false, true));
         }
         finally {
             gate.leave(prev);
@@ -1570,7 +1570,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return new GridCacheProxyImpl<>(ctx, delegate,
-                new CacheOperationContext(false, null, false, null, true, null, false, false));
+                new CacheOperationContext(false, null, false, null, true, null, false, true));
         }
         finally {
             gate.leave(prev);
