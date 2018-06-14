@@ -20,7 +20,5 @@ import uuid
 import pytest
 
 from constants import *
-from datatypes import data_object
 from datatypes.type_codes import *
 from datatypes.class_configs import array_types, vararray_types
-

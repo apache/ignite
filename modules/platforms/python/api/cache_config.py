@@ -91,7 +91,7 @@ def cache_get_configuration(
     )
     if hasattr(response, 'error_message'):
         result.message = response.error_message
-    result.value = response_struct.to_python(response)
+    result.value = response_struct.to_python(response)['cache_config']
     return result
 
 
