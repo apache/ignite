@@ -4235,9 +4235,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
-
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param log Logger.
