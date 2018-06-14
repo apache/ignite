@@ -2102,9 +2102,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
     private class FileDecompressor extends GridWorker {
-        /** Current thread stopping advice. */
-        private volatile boolean stopped;
-
         /** Decompression futures. */
         private Map<Long, GridFutureAdapter<Void>> decompressionFutures = new HashMap<>();
 
@@ -2124,13 +2121,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            while (!Thread.currentThread().isInterrupted() && !stopped) {
+            while (!isCancelled()) {
                 long segmentToDecompress = -1L;
 
                 try {
                     segmentToDecompress = segmentsQueue.take();
 
-                    if (stopped)
+                    if (isCancelled())
                         break;
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
@@ -2165,7 +2162,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    if (!stopped && segmentToDecompress != -1L) {
+                    if (!isCancelled() && segmentToDecompress != -1L) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + "]", t);
 
@@ -2205,13 +2202,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
-                stopped = true;
+                U.cancel(this);
 
                 // Put fake -1 to wake thread from queue.take()
                 segmentsQueue.put(-1L);
             }
 
-            U.join(runner());
+            U.join(this, log);
         }
     }
 
@@ -3209,9 +3206,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** File force. */
         private static final long FILE_FORCE = -3L;
 
-        /** Shutdown. */
-        private volatile boolean shutdown;
-
         /** Err. */
         private volatile Throwable err;
 
@@ -3234,9 +3228,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             Throwable err = null;
 
             try {
-                while (!shutdown && !Thread.currentThread().isInterrupted()) {
+                while (!isCancelled()) {
                     while (waiters.isEmpty()) {
-                        if (!shutdown)
+                        if (!isCancelled())
                             LockSupport.park();
                         else {
                             unparkWaiters(Long.MAX_VALUE);
@@ -3311,7 +3305,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 err = t;
             }
             finally {
-                if (err == null && !shutdown)
+                if (err == null && !isCancelled())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -3325,7 +3319,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Shutdowns thread.
          */
         public void shutdown() throws IgniteInterruptedCheckedException {
-            shutdown = true;
+            U.cancel(this);
 
             LockSupport.unpark(runner());
 

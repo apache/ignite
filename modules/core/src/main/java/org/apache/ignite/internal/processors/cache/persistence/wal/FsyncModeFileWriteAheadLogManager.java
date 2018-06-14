@@ -1916,9 +1916,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
     private class FileDecompressor extends GridWorker {
-        /** Current thread stopping advice. */
-        private volatile boolean stopped;
-
         /** Decompression futures. */
         private Map<Long, GridFutureAdapter<Void>> decompressionFutures = new HashMap<>();
 
@@ -1938,13 +1935,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            while (!Thread.currentThread().isInterrupted() && !stopped) {
+            while (!isCancelled()) {
                 long segmentToDecompress = -1L;
 
                 try {
                     segmentToDecompress = segmentsQueue.take();
 
-                    if (stopped)
+                    if (isCancelled())
                         break;
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
@@ -1979,7 +1976,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    if (!stopped && segmentToDecompress != -1L) {
+                    if (!isCancelled() && segmentToDecompress != -1L) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + ']', t);
 
@@ -2017,15 +2014,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /**
          * @throws IgniteInterruptedCheckedException If failed to wait for thread shutdown.
          */
-        private void shutdown() throws IgniteInterruptedCheckedException {
+        private void shutdown() {
             synchronized (this) {
-                stopped = true;
+                U.cancel(this);
 
                 // Put fake -1 to wake thread from queue.take()
                 segmentsQueue.put(-1L);
             }
 
-            U.join(runner());
+            U.join(this, log);
         }
     }
 
