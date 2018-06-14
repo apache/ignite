@@ -2132,6 +2132,7 @@ public class GridNioServer<T> {
                                 processSelectedKeysOptimized(selectedKeys.flip());
                         }
 
+                        // select() call above doesn't throw on interruption; checking it here to propagate timely.
                         if (!closed && !isCancelled && Thread.interrupted())
                             throw new InterruptedException();
                     }
