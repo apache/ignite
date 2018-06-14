@@ -104,10 +104,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -376,12 +378,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             lastTruncatedArchiveIdx = tup == null ? -1 : tup.get1() - 1;
 
-            archiver = new FileArchiver(tup == null ? -1 : tup.get2());
+            archiver = new FileArchiver(tup == null ? -1 : tup.get2(), log);
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
 
-                decompressor = new FileDecompressor();
+                decompressor = new FileDecompressor(log);
             }
 
             if (mode != WALMode.NONE) {
@@ -455,13 +457,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (!cctx.kernalContext().clientNode()) {
             assert archiver != null;
 
-            archiver.start();
+            new IgniteThread(archiver).start();
 
             if (compressor != null)
                 compressor.start();
 
             if (decompressor != null)
-                decompressor.start();
+                new IgniteThread(decompressor).start();
         }
     }
 
@@ -1317,7 +1319,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
      * </ul>
      */
-    private class FileArchiver extends Thread {
+    private class FileArchiver extends GridWorker {
         /** Exception which occurred during initial creation of files or during archiving WAL segment */
         private IgniteCheckedException cleanException;
 
@@ -1348,8 +1350,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /**
          *
          */
-        private FileArchiver(long lastAbsArchivedIdx) {
-            super("wal-file-archiver%" + cctx.igniteInstanceName());
+        private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
         }
@@ -1371,7 +1374,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 notifyAll();
             }
 
-            U.join(this);
+            U.join(runner());
         }
 
         /**
@@ -1422,7 +1425,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override protected void body() {
             try {
                 allocateRemainingFiles();
             }
@@ -1471,7 +1474,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         while (locked.containsKey(toArchive) && !stopped)
                             wait();
 
-                        // Then increase counter to allow rollover on clean working file
                         changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
                         notifyAll();
@@ -1491,7 +1493,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
             finally {
                 if (err == null && !stopped)
-                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
@@ -1913,7 +1915,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /**
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
-    private class FileDecompressor extends Thread {
+    private class FileDecompressor extends GridWorker {
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1927,14 +1929,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         private byte[] arr = new byte[tlbSize];
 
         /**
-         *
+         * @param log Logger.
          */
-        FileDecompressor() {
-            super("wal-file-decompressor%" + cctx.igniteInstanceName());
+        FileDecompressor(IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-file-decompressor%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override protected void body() {
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 long segmentToDecompress = -1L;
 
@@ -1949,7 +1952,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
                     try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
-                        FileIO io = ioFactory.create(unzipTmp)) {
+                         FileIO io = ioFactory.create(unzipTmp)) {
                         zis.getNextEntry();
 
                         int bytesRead;
@@ -2022,7 +2025,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 segmentsQueue.put(-1L);
             }
 
-            U.join(this);
+            U.join(runner());
         }
     }
 
