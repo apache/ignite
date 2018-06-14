@@ -42,57 +42,57 @@ public class IgniteLocalSemaphoreSelfTest extends IgniteSemaphoreAbstractSelfTes
         return 1;
     }
 
-    /** {@inheritDoc} */
-    @Override public void testSemaphore() throws Exception {
-        // Test main functionality.
-        IgniteSemaphore semaphore = grid(0).semaphore("semaphore", -2, false, true);
-
-        assertNotNull(semaphore);
-
-        assertEquals(-2, semaphore.availablePermits());
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    IgniteSemaphore semaphore = grid(0).semaphore("semaphore", -2, false, true);
-
-                    assert semaphore != null && semaphore.availablePermits() == -2;
-
-                    info("Thread is going to wait on semaphore: " + Thread.currentThread().getName());
-
-                    assert semaphore.tryAcquire(1, 1, MINUTES);
-
-                    info("Thread is again runnable: " + Thread.currentThread().getName());
-
-                    semaphore.release();
-
-                    return null;
-                }
-            },
-            THREADS_CNT,
-            "test-thread"
-        );
-
-        Thread.sleep(3000);
-
-        assert semaphore.availablePermits() == -2;
-
-        semaphore.release(2);
-
-        assert semaphore.availablePermits() == 0;
-
-        semaphore.release();
-
-        // Ensure there are no hangs.
-        fut.get();
-
-        // Test operations on removed latch.
-        IgniteSemaphore semaphore0 = grid(0).semaphore("semaphore", 0, false, false);
-
-        assertNotNull(semaphore0);
-
-        semaphore0.close();
-
-        checkRemovedSemaphore(semaphore0);
-    }
+//    /** {@inheritDoc} */
+//    @Override public void testSemaphore() throws Exception {
+//        // Test main functionality.
+//        IgniteSemaphore semaphore = grid(0).semaphore("semaphore", -2, false, true);
+//
+//        assertNotNull(semaphore);
+//
+//        assertEquals(-2, semaphore.availablePermits());
+//
+//        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+//            new Callable<Object>() {
+//                @Nullable @Override public Object call() throws Exception {
+//                    IgniteSemaphore semaphore = grid(0).semaphore("semaphore", -2, false, true);
+//
+//                    assert semaphore != null && semaphore.availablePermits() == -2;
+//
+//                    info("Thread is going to wait on semaphore: " + Thread.currentThread().getName());
+//
+//                    assert semaphore.tryAcquire(1, 1, MINUTES);
+//
+//                    info("Thread is again runnable: " + Thread.currentThread().getName());
+//
+//                    semaphore.release();
+//
+//                    return null;
+//                }
+//            },
+//            THREADS_CNT,
+//            "test-thread"
+//        );
+//
+//        Thread.sleep(3000);
+//
+//        assert semaphore.availablePermits() == -2;
+//
+//        semaphore.release(2);
+//
+//        assert semaphore.availablePermits() == 0;
+//
+//        semaphore.release();
+//
+//        // Ensure there are no hangs.
+//        fut.get();
+//
+//        // Test operations on removed latch.
+//        IgniteSemaphore semaphore0 = grid(0).semaphore("semaphore", 0, false, false);
+//
+//        assertNotNull(semaphore0);
+//
+//        semaphore0.close();
+//
+//        checkRemovedSemaphore(semaphore0);
+//    }
 }
