@@ -98,7 +98,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
 
         assertSqlError("ALTER TABLE IGNITE.NODES DROP COLUMN ID");
 
-        assertSqlError("ALTER TABLE IGNITE.NODES RENAME COLUMN KD TO C");
+        assertSqlError("ALTER TABLE IGNITE.NODES RENAME COLUMN ID TO C");
 
         assertSqlError("CREATE INDEX IDX ON IGNITE.NODES(ID)");
 
@@ -204,5 +204,15 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
 
         // Check quick-count.
         assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.NODES").get(0).get(0));
+
+        // Check joins
+        assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 " +
+            "JOIN IGNITE.NODES N2 ON N1.ID = N2.ID JOIN IGNITE.NODES N3 ON N2.ID = N3.ID WHERE N3.IS_LOCAL = true")
+            .get(0).get(0));
+
+        // Check sub-query
+        assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 " +
+            "WHERE NOT EXISTS (SELECT 1 FROM IGNITE.NODES N2 WHERE N2.ID = N1.ID AND N2.IS_LOCAL = false)")
+            .get(0).get(0));
     }
 }
