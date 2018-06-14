@@ -18,16 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
