@@ -1396,8 +1396,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite) {
                         final IgniteCheckedException ex = new IgniteCheckedException("Failed to extend WAL segment file: " +
                             file.getName() + ". Probably disk is too busy, please check your device.");
+
                         if (failureProcessor != null)
                             failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex), new StopNodeFailureHandler());
+
                         throw ex;
                     }
 
@@ -2155,8 +2157,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             if (io.write(arr, 0, bytesRead) < bytesRead) {
                                 final IgniteCheckedException ex = new IgniteCheckedException("Failed to extend file: " +
                                     unzipTmp.getName() + ". Probably disk is too busy, please check your device.");
+
                                 if (failureProcessor != null)
                                     failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex), new StopNodeFailureHandler());
+
                                 throw ex;
                             }
                     }
