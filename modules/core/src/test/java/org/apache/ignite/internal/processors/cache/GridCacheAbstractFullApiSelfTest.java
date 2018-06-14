@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -276,7 +277,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
      */
-    public void _testInvokeAllMultithreaded() throws Exception {
+    public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
@@ -288,6 +289,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return;
 
         final Set<String> keys = Collections.singleton("myKey");
+
+        Ignite ignite = ignite(0);
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -6262,17 +6265,23 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
     }
 
+    public static AtomicBoolean multipleInvocations = new AtomicBoolean(false);
+
     /**
      *
      */
     private static class IncrementEntryProcessor implements EntryProcessor<String, Integer, String>, Serializable {
         /** {@inheritDoc} */
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            //assert multipleInvocations.compareAndSet(false, true);
+
             assertNotNull(e.getKey());
 
             Integer old = e.getValue();
 
             e.setValue(old == null ? 1 : old + 1);
+
+//            multipleInvocations.
 
             return String.valueOf(old);
         }
