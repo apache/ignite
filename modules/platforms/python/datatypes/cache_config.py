@@ -15,7 +15,6 @@
 
 from collections import OrderedDict
 import ctypes
-from inspect import isclass
 
 import attr
 
@@ -24,28 +23,15 @@ from constants import *
 from .type_codes import *
 from .null import null_class
 
-
-def is_ctype_type(some_class: type):
-    return (
-        isclass(some_class)
-        and issubclass(some_class, (ctypes._SimpleCData, ctypes.Structure))
-    )
+from .primitive import *
 
 
 class PString:
     """ Pascal-style string: `c_int` counter, followed by count*bytes. """
 
     @staticmethod
-    def parse(conn: Connection):
-        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
-        # String or Null
-        if tc_type == TC_NULL:
-            return null_class(), tc_type
-
-        buffer = tc_type + conn.recv(ctypes.sizeof(ctypes.c_int))
-        length = int.from_bytes(buffer[1:], byteorder=PROTOCOL_BYTE_ORDER)
-
-        data_type = type(
+    def build_c_type(length: int):
+        return type(
             'String',
             (ctypes.LittleEndianStructure,),
             {
@@ -57,6 +43,18 @@ class PString:
                 ],
             },
         )
+
+    @staticmethod
+    def parse(conn: Connection):
+        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
+        # String or Null
+        if tc_type == TC_NULL:
+            return null_class(), tc_type
+
+        buffer = tc_type + conn.recv(ctypes.sizeof(ctypes.c_int))
+        length = int.from_bytes(buffer[1:], byteorder=PROTOCOL_BYTE_ORDER)
+
+        data_type = PString.build_c_type(length)
         buffer += conn.recv(ctypes.sizeof(data_type) - len(buffer))
 
         return data_type, buffer
@@ -68,6 +66,21 @@ class PString:
             return ctype_object.data.decode(PROTOCOL_STRING_ENCODING)
         else:
             return ''
+
+    @staticmethod
+    def from_python(value):
+        if isinstance(value, str):
+            value = value.encode(PROTOCOL_STRING_ENCODING)
+        length = len(value)
+        data_type = PString.build_c_type(length)
+        data_object = data_type()
+        data_object.type_code = int.from_bytes(
+            TC_STRING,
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
+        data_object.length = length
+        data_object.data = value
+        return bytes(data_object)
 
 
 @attr.s
@@ -121,11 +134,8 @@ class Struct:
         fields = []
 
         for name, c_type in self.fields:
-            if is_ctype_type(c_type):
-                buffer += conn.recv(ctypes.sizeof(c_type))
-            else:
-                c_type, buffer_fragment = c_type.parse(conn)
-                buffer += buffer_fragment
+            c_type, buffer_fragment = c_type.parse(conn)
+            buffer += buffer_fragment
 
             fields.append((name, c_type))
 
@@ -143,57 +153,86 @@ class Struct:
     def to_python(self, ctype_object):
         result = OrderedDict()
         for name, c_type in self.fields:
-            if is_ctype_type(c_type):
-                result[name] = getattr(ctype_object, name)
-            else:
-                result[name] = c_type.to_python(getattr(ctype_object, name))
+            result[name] = c_type.to_python(getattr(ctype_object, name))
         return result
 
 
+class CacheMode(Int):
+    LOCAL = 0
+    REPLICATED = 1
+    PARTITIONED = 2
+
+
+class PartitionLossPolicy(Int):
+    READ_ONLY_SAFE = 0
+    READ_ONLY_ALL = 1
+    READ_WRITE_SAFE = 2
+    READ_WRITE_ALL = 3
+    IGNORE = 4
+
+
+class RebalanceMode(Int):
+    SYNC = 0
+    ASYNC = 1
+    NONE = 2
+
+
+class WriteSynchronizationMode(Int):
+    FULL_SYNC = 0
+    FULL_ASYNC = 1
+    PRIMARY_SYNC = 2
+
+
+class IndexType(Byte):
+    SORTED = 0
+    FULLTEXT = 1
+    GEOSPATIAL = 2
+
+
 cache_config_struct = Struct([
-    ('length', ctypes.c_int),
-    ('backups_number', ctypes.c_int),
-    ('cache_mode', ctypes.c_int),
-    ('mistery_parameter', ctypes.c_int),
-    ('copy_on_read', ctypes.c_byte),
+    ('length', Int),
+    ('backups_number', Int),
+    ('cache_mode', CacheMode),
+    ('mistery_parameter', Int),
+    ('copy_on_read', Bool),
 
     ('data_region_name', PString),
 
-    ('eager_ttl', ctypes.c_byte),
-    ('statistics_enabled', ctypes.c_byte),
+    ('eager_ttl', Bool),
+    ('statistics_enabled', Bool),
 
     ('group_name', PString),
 
-    ('invalidate', ctypes.c_int),
-    ('default_lock_timeout', ctypes.c_long),
-    ('max_query_iterators', ctypes.c_int),
+    ('invalidate', Int),
+    ('default_lock_timeout', Long),
+    ('max_query_iterators', Int),
 
     ('name', PString),
 
-    ('is_onheap_cache_enabled', ctypes.c_byte),
-    ('partition_loss_policy', ctypes.c_int),
-    ('query_detail_metric_size', ctypes.c_int),
-    ('query_parallelism', ctypes.c_int),
-    ('read_from_backup', ctypes.c_byte),
-    ('rebalance_batch_size', ctypes.c_int),
-    ('rebalance_batches_prefetch_count', ctypes.c_long),
-    ('rebalance_delay', ctypes.c_long),
-    ('rebalance_mode', ctypes.c_int),
-    ('rebalance_order', ctypes.c_int),
-    ('rebalance_throttle', ctypes.c_long),
-    ('rebalance_timeout', ctypes.c_long),
-    ('sql_escape_all', ctypes.c_byte),
-    ('sql_index_inline_max_size', ctypes.c_int),
+    ('is_onheap_cache_enabled', Bool),
+    ('partition_loss_policy', PartitionLossPolicy),
+    ('query_detail_metric_size', Int),
+    ('query_parallelism', Int),
+    ('read_from_backup', Bool),
+    ('rebalance_batch_size', Int),
+    ('rebalance_batches_prefetch_count', Long),
+    ('rebalance_delay', Long),
+    ('rebalance_mode', RebalanceMode),
+    ('rebalance_order', Int),
+    ('rebalance_throttle', Long),
+    ('rebalance_timeout', Long),
+    ('sql_escape_all', Bool),
+    ('sql_index_inline_max_size', Int),
 
     ('sql_schema', PString),
 
-    ('write_sync_mode', ctypes.c_int),
+    ('write_synchronization_mode', WriteSynchronizationMode),
 
     ('cache_key_configuration', StructArray([
         ('name', PString),
         ('type_name', PString),
-        ('is_key_field', ctypes.c_byte),
-        ('is_notnull_constraint_field', ctypes.c_byte),
+        ('is_key_field', Bool),
+        ('is_notnull_constraint_field', Bool),
     ])),
 
     ('query_entity', StructArray([
@@ -206,8 +245,8 @@ cache_config_struct = Struct([
         ('query_fields', StructArray([
             ('name', PString),
             ('type_name', PString),
-            ('is_key_field', ctypes.c_byte),
-            ('is_notnull_constraint_field', ctypes.c_byte),
+            ('is_key_field', Bool),
+            ('is_notnull_constraint_field', Bool),
         ])),
 
         ('field_name_aliases', StructArray([
@@ -217,37 +256,12 @@ cache_config_struct = Struct([
 
         ('query_indexes', StructArray([
             ('index_name', PString),
-            ('index_type', ctypes.c_byte),
-            ('inline_size', ctypes.c_int),
+            ('index_type', IndexType),
+            ('inline_size', Int),
             ('fields', StructArray([
                 ('name', PString),
-                ('is_descending', ctypes.c_byte),
+                ('is_descending', Bool),
             ])),
         ])),
     ])),
 ])
-
-
-class CacheConfigHeader:
-    """ Enum fields. """
-    CACHE_MODE_LOCAL = 0
-    CACHE_MODE_REPLICATED = 1
-    CACHE_MODE_PARTITIONED = 2
-
-    PARTITION_LOSS_POLICY_READ_ONLY_SAFE = 0
-    PARTITION_LOSS_POLICY_READ_ONLY_ALL = 1
-    PARTITION_LOSS_POLICY_READ_WRITE_SAFE = 2
-    PARTITION_LOSS_POLICY_READ_WRITE_ALL = 3
-    PARTITION_LOSS_POLICY_IGNORE = 4
-
-    REBALANCE_MODE_SYNC = 0
-    REBALANCE_MODE_ASYNC = 1
-    REBALANCE_MODE_NONE = 2
-
-    WRITE_SYNC_MODE_FULL_SYNC = 0
-    WRITE_SYNC_MODE_FULL_ASYNC = 1
-    WRITE_SYNC_MODE_PRIMARY_SYNC = 2
-
-    QUERY_INDEX_TYPE_SORTED = 0
-    QUERY_INDEX_TYPE_FULLTEXT = 1
-    QUERY_INDEX_TYPE_GEOSPATIAL = 2

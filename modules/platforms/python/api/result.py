@@ -49,3 +49,4 @@ class APIResult:
     status = attr.ib(type=int)
     message = attr.ib(type=str, default='Success')
     value = attr.ib(default=None)
+    query_id = attr.ib(type=int, default=None)
