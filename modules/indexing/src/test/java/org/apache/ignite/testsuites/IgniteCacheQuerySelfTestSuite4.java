@@ -38,14 +38,24 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 4");
 
         // Continuous queries failover tests.
-        suite.addTestSuite(CacheContinuousQueryFailoverAtomicSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryFailoverTxSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryFailoverTxReplicatedSelfTest.class);
+//        suite.addTestSuite(CacheContinuousQueryFailoverAtomicSelfTest.class);
+//        suite.addTestSuite(CacheContinuousQueryFailoverAtomicReplicatedSelfTest.class);
+//        suite.addTestSuite(CacheContinuousQueryFailoverTxSelfTest.class);
+//        suite.addTestSuite(CacheContinuousQueryFailoverTxReplicatedSelfTest.class);
+//
+//        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
+//        suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class);
+//        suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxSelfTest.class);
+//
+//        CacheContinuousQueryFailoverAtomicSelfTest
 
-        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxSelfTest.class);
+        for (int i = 0; i < 200; i++) {
+            CacheContinuousQueryAsyncFailoverAtomicSelfTest test = new CacheContinuousQueryAsyncFailoverAtomicSelfTest();
+
+            test.setName("testMultiThreadedFailover");
+
+            suite.addTest(test);
+        }
 
         return suite;
     }
