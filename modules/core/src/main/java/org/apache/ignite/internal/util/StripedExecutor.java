@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -130,15 +129,11 @@ public class StripedExecutor implements ExecutorService {
         }
         finally {
             if (!success) {
-                for (Stripe stripe : stripes) {
-                    if (stripe != null)
-                        stripe.signalStop();
-                }
+                for (Stripe stripe : stripes)
+                    U.cancel(stripe);
 
-                for (Stripe stripe : stripes) {
-                    if (stripe != null)
-                        stripe.awaitStop();
-                }
+                for (Stripe stripe : stripes)
+                    U.join(stripe, log);
             }
         }
     }
@@ -239,7 +234,7 @@ public class StripedExecutor implements ExecutorService {
     /** {@inheritDoc} */
     @Override public boolean isShutdown() {
         for (Stripe stripe : stripes) {
-            if (stripe != null && stripe.stopping)
+            if (stripe != null && stripe.isCancelled())
                 return true;
         }
 
@@ -270,15 +265,15 @@ public class StripedExecutor implements ExecutorService {
      */
     private void signalStop() {
         for (Stripe stripe : stripes)
-            stripe.signalStop();
+            U.cancel(stripe);
     }
 
     /**
-     * @throws IgniteInterruptedException If interrupted.
+     * Waits for all stripes to stop.
      */
-    private void awaitStop() throws IgniteInterruptedException {
+    private void awaitStop() {
         for (Stripe stripe : stripes)
-            stripe.awaitStop();
+            U.join(stripe, log);
     }
 
     /**
@@ -435,9 +430,6 @@ public class StripedExecutor implements ExecutorService {
         /** */
         private final IgniteLogger log;
 
-        /** Stopping flag. */
-        private volatile boolean stopping;
-
         /** */
         private volatile long completedCnt;
 
@@ -488,34 +480,10 @@ public class StripedExecutor implements ExecutorService {
             thread.start();
         }
 
-        /**
-         * Stop the stripe.
-         */
-        void signalStop() {
-            stopping = true;
-
-            U.interrupt(thread);
-        }
-
-        /**
-         * Await thread stop.
-         */
-        void awaitStop() {
-            try {
-                if (thread != null)
-                    thread.join();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteInterruptedException(e);
-            }
-        }
-
         /** {@inheritDoc} */
         @SuppressWarnings("NonAtomicOperationOnVolatileField")
         @Override public void body() {
-            while (!stopping) {
+            while (!isCancelled()) {
                 Runnable cmd;
 
                 try {
@@ -546,7 +514,7 @@ public class StripedExecutor implements ExecutorService {
                 }
             }
 
-            if (!stopping) {
+            if (!isCancelled()) {
                 errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
                     " is terminated unexpectedly"));
             }
