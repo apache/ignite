@@ -305,7 +305,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      * Test that WAL segments that are fully covered by checkpoint are logged
      * @throws Exception if failed.
      */
-    public void testClearedWalsNum() throws Exception {
+    public void testClearedWalsLogged() throws Exception {
         try {
             final GridStringLogger log0 = new GridStringLogger();
 
