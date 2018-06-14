@@ -13,16 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
-import ctypes
-from random import randint
-
-import attr
-
 from connection import Connection
-from constants import *
-from datatypes import data_class, data_object, string_object
-from queries import QueryHeader, ResponseHeader
 from queries.op_codes import *
 from .result import APIResult
 
@@ -30,48 +21,7 @@ from .result import APIResult
 from datatypes.primitive import Byte, Int
 from datatypes.primitive_objects import IntObject
 from datatypes.cache_config import PString
-
-
-OP_SUCCESS = 0
-
-
-@attr.s
-class Query:
-    op_code = None
-    following = attr.ib(type=list)
-
-    @classmethod
-    def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('op_code', ctypes.c_short),
-                    ('query_id', ctypes.c_long),
-                ],
-            },
-        )
-
-    def from_python(self, values: dict):
-        buffer = b''
-
-        header_class = self.build_c_type()
-        header = header_class()
-        header.op_code = self.op_code
-        header.query_id = randint(MIN_LONG, MAX_LONG)
-
-        for name, c_type in self.following:
-            buffer += c_type.from_python(values[name])
-
-        header.length = (
-            len(buffer)
-            + ctypes.sizeof(header_class)
-            - ctypes.sizeof(ctypes.c_int)
-        )
-        return header.query_id, bytes(header) + buffer
+from queries import Query, Response
 
 
 class CachePutQuery(Query):
@@ -80,60 +30,6 @@ class CachePutQuery(Query):
 
 class CacheGetQuery(Query):
     op_code = OP_CACHE_GET
-
-
-@attr.s
-class Response:
-    following = attr.ib(type=list)
-
-    @staticmethod
-    def build_header():
-        return type(
-            'ResponseHeader',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('query_id', ctypes.c_long),
-                    ('status_code', ctypes.c_int),
-                ],
-            },
-        )
-
-    def parse(self, conn: Connection):
-        header_class = self.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
-        header = header_class.from_buffer_copy(buffer)
-        fields = []
-
-        if header.status_code == OP_SUCCESS:
-            for name, ignite_type in self.following:
-                c_type, buffer_fragment = ignite_type.parse(conn)
-                buffer += buffer_fragment
-                fields.append((name, c_type))
-        else:
-            c_type, buffer_fragment = PString.parse(conn)
-            buffer += buffer_fragment
-            fields.append(('error_message', c_type))
-
-        response_class = type(
-            'Response',
-            (header_class,),
-            {
-                '_pack_': 1,
-                '_fields_': fields,
-            }
-        )
-        return response_class, buffer
-
-    def to_python(self, ctype_object):
-        result = OrderedDict()
-
-        for name, c_type in self.following:
-            result[name] = c_type.to_python(getattr(ctype_object, name))
-
-        return result if result else None
 
 
 def cache_put(
@@ -158,6 +54,7 @@ def cache_put(
      is written, non-zero status and an error description otherwise.
     """
 
+    # TODO: map Python type to internal type
     query_struct = CachePutQuery([
         ('hash_code', Int),
         ('flag', Byte),

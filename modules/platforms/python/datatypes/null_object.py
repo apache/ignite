@@ -14,33 +14,43 @@
 # limitations under the License.
 
 """
-Null type.
+Null object.
+
+There can't be null type, because null payload takes exactly 0 bytes.
 """
 
 import ctypes
+
 from connection import Connection
-
-from .type_codes import *
-from .simple import init
+from .type_codes import TC_NULL
 
 
-def null_class(*args, **kwargs):
-    return type(
-        'Null',
-        (ctypes.LittleEndianStructure,),
-        {
-            '_pack_': 1,
-            '_fields_': [
-                ('type_code', ctypes.c_byte),
-            ],
-            '_type_code': TC_NULL,
-            'init': init,
-            'get_attribute': lambda self: None,
-            'set_attribute': lambda self: None,
-        },
-    )
+class Null:
 
+    @classmethod
+    def build_c_type(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('type_code', ctypes.c_byte),
+                ],
+            },
+        )
 
-def null_object(connection: Connection, initial=None, **kwargs):
-    buffer = initial or connection.recv(1)
-    return null_class().from_buffer_copy(buffer)
+    @classmethod
+    def parse(cls, conn: Connection):
+        buffer = conn.recv(ctypes.sizeof(ctypes.c_byte))
+        data_type = cls.build_c_type()
+        return data_type, buffer
+
+    @staticmethod
+    def to_python(*args):
+        return None
+
+    @staticmethod
+    def from_python(*args):
+        return TC_NULL
+

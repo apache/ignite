@@ -20,67 +20,8 @@ import attr
 
 from connection import Connection
 from constants import *
-from .type_codes import *
-from .null import null_class
-
+from .strings import PString
 from .primitive import *
-
-
-class PString:
-    """ Pascal-style string: `c_int` counter, followed by count*bytes. """
-
-    @staticmethod
-    def build_c_type(length: int):
-        return type(
-            'String',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('length', ctypes.c_int),
-                    ('data', ctypes.c_char * length),
-                ],
-            },
-        )
-
-    @staticmethod
-    def parse(conn: Connection):
-        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
-        # String or Null
-        if tc_type == TC_NULL:
-            return null_class(), tc_type
-
-        buffer = tc_type + conn.recv(ctypes.sizeof(ctypes.c_int))
-        length = int.from_bytes(buffer[1:], byteorder=PROTOCOL_BYTE_ORDER)
-
-        data_type = PString.build_c_type(length)
-        buffer += conn.recv(ctypes.sizeof(data_type) - len(buffer))
-
-        return data_type, buffer
-
-    @staticmethod
-    def to_python(ctype_object):
-        length = getattr(ctype_object, 'length', None)
-        if length:
-            return ctype_object.data.decode(PROTOCOL_STRING_ENCODING)
-        else:
-            return ''
-
-    @staticmethod
-    def from_python(value):
-        if isinstance(value, str):
-            value = value.encode(PROTOCOL_STRING_ENCODING)
-        length = len(value)
-        data_type = PString.build_c_type(length)
-        data_object = data_type()
-        data_object.type_code = int.from_bytes(
-            TC_STRING,
-            byteorder=PROTOCOL_BYTE_ORDER
-        )
-        data_object.length = length
-        data_object.data = value
-        return bytes(data_object)
 
 
 @attr.s

@@ -16,72 +16,109 @@
 """
 This module is a source of some basic information about the binary protocol.
 
-Most importantly, it contains `QueryHeader` and `ResponseHeader` base classes.
+Most importantly, it contains `Query` and `Response` base classes.
 """
 
-__all__ = [
-    'QueryHeader',
-    'ResponseHeader',
-]
-
+from collections import OrderedDict
 import ctypes
 from random import randint
 
+import attr
+
+from connection import Connection
 from constants import *
+from datatypes.strings import PString
+from .op_codes import *
 
 
-class QueryHeader(ctypes.LittleEndianStructure):
-    """
-    Standard query header used throughout the Ignite Binary API.
+@attr.s
+class Query:
+    op_code = None
+    following = attr.ib(type=list)
 
-    op_code field sets the query operation.
-    Server returns query_id in response as it was given in query. It may help
-    matching requests with responses in asynchronous apps.
-    """
-    _pack_ = 1
-    _fields_ = [
-        ('length', ctypes.c_int),
-        ('op_code', ctypes.c_short),
-        ('query_id', ctypes.c_long),
-    ]
+    @classmethod
+    def build_c_type(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                    ('op_code', ctypes.c_short),
+                    ('query_id', ctypes.c_long),
+                ],
+            },
+        )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.query_id = randint(MIN_LONG, MAX_LONG)
-        self.length = ctypes.sizeof(self) - ctypes.sizeof(ctypes.c_int)
-        # sadly, data objects' __init__ methods are out of MRO,
-        # so we have to implicitly run their init methods here
-        for attr_name in dir(self):
-            attr = self.__getattribute__(attr_name, original_method=True)
-            if hasattr(attr, 'init'):
-                attr.init()
+    def from_python(self, values: dict):
+        buffer = b''
 
-    def __setattr__(self, key, value):
-        attr = self.__getattribute__(key, original_method=True)
-        if hasattr(attr, 'set_attribute'):
-            attr.set_attribute(value)
+        header_class = self.build_c_type()
+        header = header_class()
+        header.op_code = self.op_code
+        header.query_id = randint(MIN_LONG, MAX_LONG)
+
+        for name, c_type in self.following:
+            buffer += c_type.from_python(values[name])
+
+        header.length = (
+            len(buffer)
+            + ctypes.sizeof(header_class)
+            - ctypes.sizeof(ctypes.c_int)
+        )
+        return header.query_id, bytes(header) + buffer
+
+
+@attr.s
+class Response:
+    following = attr.ib(type=list)
+
+    @staticmethod
+    def build_header():
+        return type(
+            'ResponseHeader',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                    ('query_id', ctypes.c_long),
+                    ('status_code', ctypes.c_int),
+                ],
+            },
+        )
+
+    def parse(self, conn: Connection):
+        header_class = self.build_header()
+        buffer = conn.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+        fields = []
+
+        if header.status_code == OP_SUCCESS:
+            for name, ignite_type in self.following:
+                c_type, buffer_fragment = ignite_type.parse(conn)
+                buffer += buffer_fragment
+                fields.append((name, c_type))
         else:
-            super().__setattr__(key, value)
+            c_type, buffer_fragment = PString.parse(conn)
+            buffer += buffer_fragment
+            fields.append(('error_message', c_type))
 
-    def __getattribute__(self, item, original_method=False):
-        value = super().__getattribute__(item)
-        if hasattr(value, 'get_attribute') and not original_method:
-            return value.get_attribute()
-        return value
+        response_class = type(
+            'Response',
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': fields,
+            }
+        )
+        return response_class, buffer
 
+    def to_python(self, ctype_object):
+        result = OrderedDict()
 
-class ResponseHeader(ctypes.LittleEndianStructure):
-    """
-    Standard response header.
+        for name, c_type in self.following:
+            result[name] = c_type.to_python(getattr(ctype_object, name))
 
-    status_code == 0 means that operation was successful, and it also means
-    that this header may conclude the server response or be followed with
-    result data objects. Otherwise, the response continues with the extra
-    string object holding the error message.
-    """
-    _pack_ = 1
-    _fields_ = [
-        ('length', ctypes.c_int),
-        ('query_id', ctypes.c_long),
-        ('status_code', ctypes.c_int),
-    ]
+        return result if result else None

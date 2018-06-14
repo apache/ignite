@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from connection import Connection
-from api import cache_create, cache_destroy, cache_get, cache_put, cache_get_names, hashcode
+from api import cache_create, cache_destroy, cache_get, cache_put, hashcode
 
 
 def test_put_get(ignite_host, ignite_port):
@@ -35,22 +35,22 @@ def test_put_get(ignite_host, ignite_port):
     conn.close()
 
 
-def test_get_names(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
-
-    bucket_names = ['my_bucket', 'my_bucket_2', 'my_bucket_3']
-    for name in bucket_names:
-        cache_create(conn, name)
-
-    result = cache_get_names(conn)
-    assert result.status == 0
-    assert type(result.value) == list
-    assert len(result.value) == len(bucket_names)
-    for i, name in enumerate(bucket_names):
-        assert name in result.value
-
-    # cleanup
-    for name in bucket_names:
-        cache_destroy(conn, hashcode(name))
-    conn.close()
+# def test_get_names(ignite_host, ignite_port):
+#     conn = Connection()
+#     conn.connect(ignite_host, ignite_port)
+#
+#     bucket_names = ['my_bucket', 'my_bucket_2', 'my_bucket_3']
+#     for name in bucket_names:
+#         cache_create(conn, name)
+#
+#     result = cache_get_names(conn)
+#     assert result.status == 0
+#     assert type(result.value) == list
+#     assert len(result.value) == len(bucket_names)
+#     for i, name in enumerate(bucket_names):
+#         assert name in result.value
+#
+#     # cleanup
+#     for name in bucket_names:
+#         cache_destroy(conn, hashcode(name))
+#     conn.close()
