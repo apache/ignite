@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -812,11 +813,23 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Awaits completion of partition destroy process in case of {@code EVICTED} partition state.
      */
     public void awaitDestroy() {
-        try {
-            if (state() == EVICTED)
-                rent.get();
-        } catch (IgniteCheckedException e) {
-            log.error("Unable to await partition destroy " + this, e);
+        if (state() != EVICTED)
+            return;
+
+        final long timeout = 10_000;
+
+        for (;;) {
+            try {
+                rent.get(timeout);
+
+                break;
+            }
+            catch (IgniteFutureTimeoutCheckedException ignored) {
+                U.warn(log, "Failed to await partition destroy within timeout " + this);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to await partition destroy " + this, e);
+            }
         }
     }
 
