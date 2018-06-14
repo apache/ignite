@@ -20,12 +20,10 @@
 
 #include <stdint.h>
 #include <string>
-#include <vector>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include <ignite/impl/thin/connectable_node_partitions.h>
 #include <ignite/impl/thin/protocol_version.h>
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
@@ -60,69 +58,6 @@ namespace ignite
                     /** Handshake. */
                     HANDSHAKE = 1,
 
-                    /** Cache get. */
-                    CACHE_GET = 1000,
-
-                    /** Cache put. */
-                    CACHE_PUT = 1001,
-
-                    /** Cache put if absent. */
-                    CACHE_PUT_IF_ABSENT = 1002,
-
-                    /** Get all. */
-                    CACHE_GET_ALL = 1003,
-
-                    /** Put all. */
-                    CACHE_PUT_ALL = 1004,
-
-                    /** Cache get and put. */
-                    CACHE_GET_AND_PUT = 1005,
-
-                    /** Cache get and replace. */
-                    CACHE_GET_AND_REPLACE = 1006,
-
-                    /** Cache get and remove. */
-                    CACHE_GET_AND_REMOVE = 1007,
-
-                    /** Cache get and put if absent. */
-                    CACHE_GET_AND_PUT_IF_ABSENT = 1008,
-
-                    /** Cache replace. */
-                    CACHE_REPLACE = 1009,
-
-                    /** Cache replace if equals. */
-                    CACHE_REPLACE_IF_EQUALS = 1010,
-
-                    /** Cache contains key. */
-                    CACHE_CONTAINS_KEY = 1011,
-
-                    /** Cache contains keys. */
-                    CACHE_CONTAINS_KEYS = 1012,
-
-                    /** Cache clear. */
-                    CACHE_CLEAR = 1013,
-
-                    /** Cache clear key. */
-                    CACHE_CLEAR_KEY = 1014,
-
-                    /** Cache clear keys. */
-                    CACHE_CLEAR_KEYS = 1015,
-
-                    /** Cache remove key. */
-                    CACHE_REMOVE_KEY = 1016,
-
-                    /** Cache remove if equals. */
-                    CACHE_REMOVE_IF_EQUALS = 1017,
-
-                    /** Cache remove keys. */
-                    CACHE_REMOVE_KEYS = 1018,
-
-                    /** Cache remove all. */
-                    CACHE_REMOVE_ALL = 1019,
-
-                    /** Get size. */
-                    CACHE_GET_SIZE = 1020,
-
                     /** Cache get names. */
                     CACHE_GET_NAMES = 1050,
 
@@ -135,8 +70,68 @@ namespace ignite
                     /** Cache destroy. */
                     CACHE_DESTROY = 1056,
 
-                    /** Cache nodes and partitions request. */
-                    CACHE_NODE_PARTITIONS = 1100,
+                    /** Cache get. */
+                    CACHE_GET = 1000,
+
+                    /** Cache put. */
+                    CACHE_PUT = 1001,
+
+                    /** Cache contains key. */
+                    CACHE_CONTAINS_KEY = 1011,
+
+                    /** Cache contains keys. */
+                    CACHE_CONTAINS_KEYS = 1012,
+
+                    /** Get size. */
+                    CACHE_GET_SIZE = 1020,
+
+                    /** Get all. */
+                    CACHE_GET_ALL = 1003,
+
+                    /** Put all. */
+                    CACHE_PUT_ALL = 1004,
+
+                    /** Cache replace. */
+                    CACHE_REPLACE = 1009,
+
+                    /** Cache remove all. */
+                    CACHE_REMOVE_ALL = 1019,
+
+                    /** Cache remove key. */
+                    CACHE_REMOVE_KEY = 1016,
+
+                    /** Cache remove keys. */
+                    CACHE_REMOVE_KEYS = 1018,
+
+                    /** Cache clear. */
+                    CACHE_CLEAR = 1013,
+
+                    /** Cache clear key. */
+                    CACHE_CLEAR_KEY = 1014,
+
+                    /** Cache clear keys. */
+                    CACHE_CLEAR_KEYS = 1015,
+
+                    /** Cache replace if equals. */
+                    CACHE_REPLACE_IF_EQUALS = 1010,
+
+                    /** Cache remove if equals. */
+                    CACHE_REMOVE_IF_EQUALS = 1017,
+
+                    /** Cache get and put. */
+                    CACHE_GET_AND_PUT = 1005,
+
+                    /** Cache get and remove. */
+                    CACHE_GET_AND_REMOVE = 1007,
+
+                    /** Cache get and replace. */
+                    CACHE_GET_AND_REPLACE = 1006,
+
+                    /** Cache put if absent. */
+                    CACHE_PUT_IF_ABSENT = 1002,
+
+                    /** Cache get and put if absent. */
+                    CACHE_GET_AND_PUT_IF_ABSENT = 1008,
 
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
@@ -333,61 +328,12 @@ namespace ignite
             };
 
             /**
-             * Cache request.
-             *
-             * Request to cache.
-             */
-            template<int32_t OpCode>
-            class CacheRequest : public Request<OpCode>
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param cacheId Cache ID.
-                 * @param binary Binary cache flag.
-                 */
-                CacheRequest(int32_t cacheId, bool binary) :
-                    cacheId(cacheId),
-                    binary(binary)
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~CacheRequest()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Write request using provided writer.
-                 * @param writer Writer.
-                 * @param ver Version.
-                 */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
-                {
-                    writer.WriteInt32(cacheId);
-                    writer.WriteBool(binary);
-                }
-
-            private:
-                /** Cache ID. */
-                int32_t cacheId;
-
-                /** Binary flag. */
-                bool binary;
-            };
-
-            /**
              * Cache key request.
              *
              * Request to cache containing single key.
              */
             template<int32_t OpCode>
-            class CacheKeyRequest : public CacheRequest<OpCode>
+            class CacheKeyRequest : public Request<OpCode>
             {
             public:
                 /**
@@ -398,7 +344,8 @@ namespace ignite
                  * @param key Key.
                  */
                 CacheKeyRequest(int32_t cacheId, bool binary, const Writable& key) :
-                    CacheRequest(cacheId, binary),
+                    cacheId(cacheId),
+                    binary(binary),
                     key(key)
                 {
                     // No-op.
@@ -419,10 +366,19 @@ namespace ignite
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
                 {
+                    writer.WriteInt32(cacheId);
+                    writer.WriteBool(binary);
+
                     key.Write(writer);
                 }
 
             private:
+                /** Cache ID. */
+                int32_t cacheId;
+
+                /** Binary flag. */
+                bool binary;
+
                 /** Key. */
                 const Writable& key;
             };
@@ -502,6 +458,43 @@ namespace ignite
             };
 
             /**
+             * Cache node list request.
+             */
+            class ClientCacheNodePartitionsRequest : public Request<RequestType::PUT_BINARY_TYPE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param snapshot Type snapshot.
+                 */
+                ClientCacheNodePartitionsRequest(const binary::Snap& snapshot) :
+                    snapshot(snapshot)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ClientCacheNodePartitionsRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                const binary::Snap& snapshot;
+            };
+
+            /**
              * General response.
              */
             class Response
@@ -557,34 +550,6 @@ namespace ignite
 
                 /** Error message. */
                 std::string error;
-            };
-
-            /**
-             * Cache node list request.
-             */
-            class ClientCacheNodePartitionsResponse : public Response
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param nodeParts Node partitions.
-                 */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~ClientCacheNodePartitionsResponse();
-
-                /**
-                 * Read data if response status is ResponseStatus::SUCCESS.
-                 */
-                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
-
-            private:
-                /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
             };
 
             /**

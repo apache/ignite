@@ -20,12 +20,10 @@
 
 #include <stdint.h>
 #include <string>
-#include <vector>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include <ignite/impl/thin/connectable_node_partitions.h>
 #include <ignite/impl/thin/protocol_version.h>
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
@@ -568,23 +566,32 @@ namespace ignite
                 /**
                  * Constructor.
                  *
-                 * @param nodeParts Node partitions.
+                 * @param snapshot Type snapshot.
                  */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
+                ClientCacheNodePartitionsResponse(const binary::Snap& snapshot) :
+                    snapshot(snapshot)
+                {
+                    // No-op.
+                }
 
                 /**
                  * Destructor.
                  */
-                virtual ~ClientCacheNodePartitionsResponse();
+                virtual ~ClientCacheNodePartitionsResponse()
+                {
+                    // No-op.
+                }
 
                 /**
-                 * Read data if response status is ResponseStatus::SUCCESS.
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
                  */
-                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
-                /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
+                /** Cache ID. */
+                const binary::Snap& snapshot;
             };
 
             /**

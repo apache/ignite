@@ -20,7 +20,6 @@
 #include <ignite/impl/thin/readable.h>
 
 #include <ignite/impl/thin/message.h>
-#include "..\..\include\ignite\impl\thin\message.h"
 #include "ignite/binary/binary_raw_reader.h"
 
 namespace ignite
@@ -89,6 +88,30 @@ namespace ignite
 
                 key.Write(writer);
                 value.Write(writer);
+            }
+
+            ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
+                std::vector<ConnectableNodePartitions>& nodeParts):
+                nodeParts(nodeParts)
+            {
+                // No-op.
+            }
+
+            ClientCacheNodePartitionsResponse::~ClientCacheNodePartitionsResponse()
+            {
+                // No-op.
+            }
+
+            void ClientCacheNodePartitionsResponse::ReadOnSuccess(
+                binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                int32_t num = reader.ReadInt32();
+
+                nodeParts.clear();
+                nodeParts.resize(static_cast<size_t>(num));
+
+                for (int32_t i = 0; i < num; ++i)
+                    nodeParts[i].Read(reader);
             }
 
             CacheGetResponse::CacheGetResponse(Readable& value) :

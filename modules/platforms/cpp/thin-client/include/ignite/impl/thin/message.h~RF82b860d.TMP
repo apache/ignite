@@ -20,12 +20,10 @@
 
 #include <stdint.h>
 #include <string>
-#include <vector>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include <ignite/impl/thin/connectable_node_partitions.h>
 #include <ignite/impl/thin/protocol_version.h>
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
@@ -333,61 +331,12 @@ namespace ignite
             };
 
             /**
-             * Cache request.
-             *
-             * Request to cache.
-             */
-            template<int32_t OpCode>
-            class CacheRequest : public Request<OpCode>
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param cacheId Cache ID.
-                 * @param binary Binary cache flag.
-                 */
-                CacheRequest(int32_t cacheId, bool binary) :
-                    cacheId(cacheId),
-                    binary(binary)
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~CacheRequest()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Write request using provided writer.
-                 * @param writer Writer.
-                 * @param ver Version.
-                 */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
-                {
-                    writer.WriteInt32(cacheId);
-                    writer.WriteBool(binary);
-                }
-
-            private:
-                /** Cache ID. */
-                int32_t cacheId;
-
-                /** Binary flag. */
-                bool binary;
-            };
-
-            /**
              * Cache key request.
              *
              * Request to cache containing single key.
              */
             template<int32_t OpCode>
-            class CacheKeyRequest : public CacheRequest<OpCode>
+            class CacheKeyRequest : public Request<OpCode>
             {
             public:
                 /**
@@ -398,7 +347,8 @@ namespace ignite
                  * @param key Key.
                  */
                 CacheKeyRequest(int32_t cacheId, bool binary, const Writable& key) :
-                    CacheRequest(cacheId, binary),
+                    cacheId(cacheId),
+                    binary(binary),
                     key(key)
                 {
                     // No-op.
@@ -419,10 +369,19 @@ namespace ignite
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
                 {
+                    writer.WriteInt32(cacheId);
+                    writer.WriteBool(binary);
+
                     key.Write(writer);
                 }
 
             private:
+                /** Cache ID. */
+                int32_t cacheId;
+
+                /** Binary flag. */
+                bool binary;
+
                 /** Key. */
                 const Writable& key;
             };
@@ -502,6 +461,43 @@ namespace ignite
             };
 
             /**
+             * Cache node list request.
+             */
+            class ClientCacheNodePartitionsRequest : public Request<RequestType::CACHE_NODE_PARTITIONS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param snapshot Type snapshot.
+                 */
+                ClientCacheNodePartitionsRequest(const binary::Snap& snapshot) :
+                    snapshot(snapshot)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ClientCacheNodePartitionsRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                const binary::Snap& snapshot;
+            };
+
+            /**
              * General response.
              */
             class Response
@@ -557,34 +553,6 @@ namespace ignite
 
                 /** Error message. */
                 std::string error;
-            };
-
-            /**
-             * Cache node list request.
-             */
-            class ClientCacheNodePartitionsResponse : public Response
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param nodeParts Node partitions.
-                 */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~ClientCacheNodePartitionsResponse();
-
-                /**
-                 * Read data if response status is ResponseStatus::SUCCESS.
-                 */
-                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
-
-            private:
-                /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
             };
 
             /**

@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\connectable_node_partitions.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\data_router.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ignite_client_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\message.h" />

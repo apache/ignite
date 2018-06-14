@@ -123,5 +123,8 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\net\remote_type_updater.h">
       <Filter>Code\impl\net</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\connectable_node_partitions.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
