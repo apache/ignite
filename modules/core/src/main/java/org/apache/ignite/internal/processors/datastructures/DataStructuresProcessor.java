@@ -212,7 +212,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                             new DataStructuresEntryFilter(),
                             cctx.isReplicated() && cctx.affinityNode(),
                             false,
-                            false
+                            false,
+                            true
                         ));
                 }
             }
