@@ -50,12 +50,10 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
 
     /**
      * @param atomicityMode Atomicity mode.
-     * @param offheapMem Offheap memory size.
      * @param idx Indexing enabled flag.
      * @return Cache configuration.
      */
     private CacheConfiguration<String, TestIndexedType> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        long offheapMem,
         boolean idx) {
         CacheConfiguration<String, TestIndexedType> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -81,14 +79,14 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAtomicIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, 0, true));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomic() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, 0, false));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, false));
     }
 
     /**
