@@ -357,7 +357,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // Check that the nodes have registered again with the previous configuration.
         assertEquals(4, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
 
-        // Block the clients until connected for grids stopping without sessions timeout.
+        // Block the clients until connected.
         for (int i = 0; i < 4; i++) {
             TcpDiscoverySpi spi = (TcpDiscoverySpi)grid(i).configuration().getDiscoverySpi();
 
