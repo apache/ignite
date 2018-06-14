@@ -246,8 +246,8 @@ public class GridJettyObjectMapper extends ObjectMapper {
                             if (ref.hasCircularReferences())
                                 throw ser.mappingException("Failed convert to JSON object for circular references");
                         }
-                        else
-                            gen.writeObjectField(name, val);
+
+                        gen.writeObjectField(name, val);
                     }
 
                     gen.writeEndObject();
