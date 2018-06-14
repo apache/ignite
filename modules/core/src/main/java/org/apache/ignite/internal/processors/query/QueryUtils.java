@@ -1280,6 +1280,26 @@ public class QueryUtils {
                         ", queryIdx=" + idx + ']');
             }
         }
+
+        Map<String, Object> dfltVals = entity.getDefaultFieldValues();
+        Map<String, Integer> maxLengthInfo = entity.getMaxLengthInfo();
+
+        if (!F.isEmpty(maxLengthInfo)) {
+            for (String fld : maxLengthInfo.keySet()) {
+                if (!dfltVals.containsKey(fld))
+                    continue;
+
+                Object dfltVal = dfltVals.get(fld);
+
+                if (dfltVal == null)
+                    continue;
+
+                if (dfltVal.toString().length() > maxLengthInfo.get(fld)) {
+                    throw new IgniteSQLException("Default value '" + dfltVal +
+                        "' is longer than maximum length " + maxLengthInfo.get(fld));
+                }
+            }
+        }
     }
 
     /**
