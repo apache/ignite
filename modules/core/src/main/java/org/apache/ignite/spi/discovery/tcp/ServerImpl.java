@@ -466,10 +466,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
 
-        if (msgWorker != null) {
-            U.interrupt(msgWorker.runner());
-            U.join(msgWorker.runner(), log);
-        }
+        U.cancel(msgWorker);
+        U.join(msgWorker, log);
 
         for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
             if (clientWorker != null) {
@@ -1679,10 +1677,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tmp);
         U.joinThreads(tmp, log);
 
-        if (msgWorker != null) {
-            U.interrupt(msgWorker.runner());
-            U.join(msgWorker.runner(), log);
-        }
+        U.cancel(msgWorker);
+        U.join(msgWorker, log);
 
         for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
             if (msgWorker != null) {
@@ -6896,7 +6892,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (log.isDebugEnabled())
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
-            while (!runner().isInterrupted()) {
+            while (!isCancelled()) {
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
 
                 if (msg == null)
