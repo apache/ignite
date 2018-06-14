@@ -918,10 +918,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
         // Interceptor on near node needs old values to execute callbacks.
-        Collection<IgniteTxEntry> writes = req.writes();
-
-        if (!F.isEmpty(writes)) {
-            for (IgniteTxEntry e : writes) {
+        if (!F.isEmpty(req.writes())) {
+            for (IgniteTxEntry e : req.writes()) {
                 IgniteTxEntry txEntry = tx.entry(e.txKey());
 
                 assert txEntry != null : "Missing tx entry for key [tx=" + tx + ", key=" + e.txKey() + ']';
@@ -1215,13 +1213,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         boolean skipInit = false;
 
         try {
-            Collection<IgniteTxEntry> writes = req.writes();
-
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
 
                 try {
-                    err0 = checkReadConflict(writes);
+                    err0 = checkReadConflict(req.writes());
 
                     if (err0 == null)
                         err0 = checkReadConflict(req.reads());
@@ -1279,8 +1275,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             // Assign keys to primary nodes.
-            if (!F.isEmpty(writes)) {
-                for (IgniteTxEntry write : writes)
+            if (!F.isEmpty(req.writes())) {
+                for (IgniteTxEntry write : req.writes())
                     map(tx.entry(write.txKey()));
             }
 
@@ -1333,7 +1329,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
     /** {@inheritDoc} */
     @Override public void onError(IgniteCheckedException e) {
-        // No-op
+        onError((Throwable) e);
     }
 
     /**

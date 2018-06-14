@@ -445,10 +445,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
 
-            if (updated == null) {
-                // An exception occurred while transaction mapping, stop further processing.
+            if(updated == null)
+                // an exception occurred while transaction mapping, stop further processing
                 break;
-            }
 
             if (write.context().mvccEnabled() && mvccCrd == null) {
                 mvccCrd = write.context().affinity().mvccCoordinator(topVer);
