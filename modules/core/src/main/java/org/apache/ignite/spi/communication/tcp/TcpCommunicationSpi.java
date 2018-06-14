@@ -111,7 +111,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -2504,10 +2503,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        if (commWorker != null) {
-            U.interrupt(commWorker.runner());
-            U.join(commWorker.runner(), log);
-        }
+        U.cancel(commWorker);
+        U.join(commWorker, log);
 
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
@@ -4252,7 +4249,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             Throwable err = null;
 
             try {
-                while (!runner().isInterrupted()) {
+                while (!isCancelled()) {
                     DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
                     if (disconnectData != null)
