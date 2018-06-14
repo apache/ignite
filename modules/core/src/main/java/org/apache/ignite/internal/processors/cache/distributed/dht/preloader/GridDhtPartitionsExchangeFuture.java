@@ -3459,7 +3459,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (dynamicCacheChangeExchange() && !F.isEmpty(exchangeGlobalExceptions)) {
                 assert cctx.localNode().isClient();
 
-                // TODO
+                // TODO: https://issues.apache.org/jira/browse/IGNITE-8796
                 // The current exchange has been successfully completed on all server nodes,
                 // but has failed on that client node for some reason.
                 // It looks like that we need to rollback dynamically started caches on the client node,

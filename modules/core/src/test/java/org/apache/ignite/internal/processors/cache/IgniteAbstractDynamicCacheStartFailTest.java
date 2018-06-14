@@ -94,37 +94,6 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
     /**
      * @throws Exception If failed.
      */
-//    @Ignore
-//    @IgniteIgnore(value = "", forceFailure = true)
-//    public void testBrokenAffinityFunStartOnClientFailOnClient() throws Exception {
-//        final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnClientFailOnClient";
-//
-//        IgniteConfiguration clientCfg = getConfiguration(clientName);
-//
-//        clientCfg.setClientMode(true);
-//
-//        Ignite client = startGrid(clientName, clientCfg);
-//
-//        CacheConfiguration cfg = new CacheConfiguration();
-//
-//        cfg.setName(DYNAMIC_CACHE_NAME + "-client-1");
-//
-//        cfg.setAffinity(new BrokenAffinityFunction(false, clientName));
-//
-//        try {
-//            IgniteCache cache = client.getOrCreateCache(cfg);
-//
-//            fail("Expected exception was not thrown.");
-//        }
-//        catch (CacheException e) {
-//        }
-//
-//        stopGrid(clientName);
-//    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testBrokenAffinityFunStartOnClientFailOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnClientFailOnServer";
 
