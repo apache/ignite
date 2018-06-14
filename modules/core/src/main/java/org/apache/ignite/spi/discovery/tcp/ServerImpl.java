@@ -2570,14 +2570,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /** */
-    private class MessageWorkerDiscoveryThread extends MessageWorkerThread implements IgniteDiscoveryThread {
-        /** {@inheritDoc}*/
-        private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
-            super(worker, log);
-        }
-    }
-
     /**
      * Message worker for discovery messages processing.
      */
@@ -2624,9 +2616,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private long lastRingMsgTime;
-
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
 
         /**
          * @param log Logger.
@@ -5666,9 +5655,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** Port to listen. */
         private int port;
-
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
 
         /**
          * @param log Logger.
