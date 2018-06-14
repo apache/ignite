@@ -2124,66 +2124,56 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            try {
-                while (!Thread.currentThread().isInterrupted() && !stopped) {
-                    long segmentToDecompress = -1L;
+            while (!Thread.currentThread().isInterrupted() && !stopped) {
+                long segmentToDecompress = -1L;
+
+                try {
+                    segmentToDecompress = segmentsQueue.take();
+
+                    if (stopped)
+                        break;
+
+                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
+                    File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
+                    File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
+
+                    try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
+                         FileIO io = ioFactory.create(unzipTmp)) {
+                        zis.getNextEntry();
+
+                        int bytesRead;
+                        while ((bytesRead = zis.read(arr)) > 0)
+                            io.write(arr, 0, bytesRead);
+                    }
 
                     try {
-                        segmentToDecompress = segmentsQueue.take();
+                        Files.move(unzipTmp.toPath(), unzip.toPath());
+                    }
+                    catch (FileAlreadyExistsException e) {
+                        U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
+                            "[tmp=" + unzipTmp + ", raw=" + unzip + "]", e);
 
-                        if (stopped)
-                            break;
+                        if (!unzipTmp.delete())
+                            U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
+                    }
 
-                        File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
-                        File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
-                        File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
-
-                        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
-                             FileIO io = ioFactory.create(unzipTmp)) {
-                            zis.getNextEntry();
-
-                            int bytesRead;
-                            while ((bytesRead = zis.read(arr)) > 0)
-                                io.write(arr, 0, bytesRead);
-                        }
-
-                        try {
-                            Files.move(unzipTmp.toPath(), unzip.toPath());
-                        }
-                        catch (FileAlreadyExistsException e) {
-                            U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
-                                "[tmp=" + unzipTmp + ", raw=" + unzip + "]", e);
-
-                            if (!unzipTmp.delete())
-                                U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
-                        }
+                    synchronized (this) {
+                        decompressionFutures.remove(segmentToDecompress).onDone();
+                    }
+                }
+                catch (InterruptedException ignore) {
+                    Thread.currentThread().interrupt();
+                }
+                catch (Throwable t) {
+                    if (!stopped && segmentToDecompress != -1L) {
+                        IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
+                            "decompression [segmentIdx=" + segmentToDecompress + "]", t);
 
                         synchronized (this) {
-                            decompressionFutures.remove(segmentToDecompress).onDone();
-                        }
-                    }
-                    catch (InterruptedException ignore) {
-                        Thread.currentThread().interrupt();
-                    }
-                    catch (Throwable t) {
-                        if (t instanceof OutOfMemoryError)
-                            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
-
-                        if (!stopped && segmentToDecompress != -1L) {
-                            IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
-                                "decompression [segmentIdx=" + segmentToDecompress + "]", t);
-
-                            synchronized (this) {
-                                decompressionFutures.remove(segmentToDecompress).onDone(e);
-                            }
+                            decompressionFutures.remove(segmentToDecompress).onDone(e);
                         }
                     }
                 }
-            }
-            finally {
-                if (!stopped)
-                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION,
-                        new IllegalStateException("Worker " + name() + " is terminated unexpectedly")));
             }
         }
 
