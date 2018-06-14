@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -28,6 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
@@ -173,60 +175,55 @@ public class FilePageStore implements PageStore {
      * Checks that file store has correct header and size.
      *
      * @return Next available position in the file to store a data.
-     * @throws PersistentStorageIOException If check is failed.
+     * @throws IOException If check is failed.
      */
-    private long checkFile() throws PersistentStorageIOException {
-        try {
-            ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
+    private long checkFile() throws IOException {
+        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
+        while (hdr.remaining() > 0)
+            fileIO.read(hdr);
 
-            hdr.rewind();
+        hdr.rewind();
 
-            long signature = hdr.getLong();
+        long signature = hdr.getLong();
 
-            if (SIGNATURE != signature)
-                throw new IOException("Failed to verify store file (invalid file signature)" +
-                    " [expectedSignature=" + U.hexLong(SIGNATURE) +
-                    ", actualSignature=" + U.hexLong(signature) + ']');
+        if (SIGNATURE != signature)
+            throw new IOException("Failed to verify store file (invalid file signature)" +
+                " [expectedSignature=" + U.hexLong(SIGNATURE) +
+                ", actualSignature=" + U.hexLong(signature) + ']');
 
-            int ver = hdr.getInt();
+        int ver = hdr.getInt();
 
-            if (version() != ver)
-                throw new IOException("Failed to verify store file (invalid file version)" +
-                    " [expectedVersion=" + version() +
-                    ", fileVersion=" + ver + "]");
+        if (version() != ver)
+            throw new IOException("Failed to verify store file (invalid file version)" +
+                " [expectedVersion=" + version() +
+                ", fileVersion=" + ver + "]");
 
-            byte type = hdr.get();
+        byte type = hdr.get();
 
-            if (this.type != type)
-                throw new IOException("Failed to verify store file (invalid file type)" +
-                    " [expectedFileType=" + this.type +
-                    ", actualFileType=" + type + "]");
+        if (this.type != type)
+            throw new IOException("Failed to verify store file (invalid file type)" +
+                " [expectedFileType=" + this.type +
+                ", actualFileType=" + type + "]");
 
-            int pageSize = hdr.getInt();
+        int pageSize = hdr.getInt();
 
-            if (dbCfg.getPageSize() != pageSize)
-                throw new IOException("Failed to verify store file (invalid page size)" +
-                    " [expectedPageSize=" + dbCfg.getPageSize() +
-                    ", filePageSize=" + pageSize + "]");
+        if (dbCfg.getPageSize() != pageSize)
+            throw new IOException("Failed to verify store file (invalid page size)" +
+                " [expectedPageSize=" + dbCfg.getPageSize() +
+                ", filePageSize=" + pageSize + "]");
 
-            long fileSize = cfgFile.length();
+        long fileSize = cfgFile.length();
 
-            if (fileSize == headerSize()) // Every file has a special meta page.
-                fileSize = pageSize + headerSize();
+        if (fileSize == headerSize()) // Every file has a special meta page.
+            fileSize = pageSize + headerSize();
 
-            if ((fileSize - headerSize()) % pageSize != 0)
-                throw new IOException("Failed to verify store file (invalid file size)" +
-                    " [fileSize=" + U.hexLong(fileSize) +
-                    ", pageSize=" + U.hexLong(pageSize) + ']');
+        if ((fileSize - headerSize()) % pageSize != 0)
+            throw new IOException("Failed to verify store file (invalid file size)" +
+                " [fileSize=" + U.hexLong(fileSize) +
+                ", pageSize=" + U.hexLong(pageSize) + ']');
 
-            return fileSize;
-        }
-        catch (IOException e) {
-            throw new PersistentStorageIOException("File check failed", e);
-        }
+        return fileSize;
     }
 
     /**
@@ -259,9 +256,9 @@ public class FilePageStore implements PageStore {
      * Truncates and deletes partition file.
      *
      * @param tag New partition tag.
-     * @throws PersistentStorageIOException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void truncate(int tag) throws PersistentStorageIOException {
+    public void truncate(int tag) throws IgniteCheckedException {
         init();
 
         lock.writeLock().lock();
@@ -387,7 +384,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, savedCrc32);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Read error", e);
+            throw wrapIoException("Read error", e);
         }
     }
 
@@ -416,14 +413,14 @@ public class FilePageStore implements PageStore {
             while (len > 0);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Read error", e);
+            throw wrapIoException("Read error", e);
         }
     }
 
     /**
-     * @throws PersistentStorageIOException If failed to initialize store file.
+     * @throws IgniteCheckedException If failed to initialize store file.
      */
-    private void init() throws PersistentStorageIOException {
+    private void init() throws IgniteCheckedException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -431,7 +428,7 @@ public class FilePageStore implements PageStore {
                 if (!inited) {
                     FileIO fileIO = null;
 
-                    PersistentStorageIOException err = null;
+                    IgniteCheckedException err = null;
 
                     try {
                         this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
@@ -451,7 +448,7 @@ public class FilePageStore implements PageStore {
                         inited = true;
                     }
                     catch (IOException e) {
-                        err = new PersistentStorageIOException(
+                        err = wrapIoException(
                             "Failed to initialize partition file: " + cfgFile.getName(), e);
 
                         throw err;
@@ -521,7 +518,7 @@ public class FilePageStore implements PageStore {
             PageIO.setCrc(pageBuf, 0);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId +
+            throw wrapIoException("Failed to write the page to the file store [pageId=" + pageId +
                 ", file=" + cfgFile.getAbsolutePath() + ']', e);
         }
         finally {
@@ -606,5 +603,22 @@ public class FilePageStore implements PageStore {
             return 0;
 
         return (int)((allocated.get() - headerSize()) / pageSize);
+    }
+
+    /**
+     * Wraps IOException to correct {@link IgniteCheckedException} instance.
+     *
+     * Since {@link PersistentStorageIOException} is a critical failure and typically makes a node to stop, this
+     * exception cannot be thrown in case operation was canceled and IOException was caused by thread interruption.
+     */
+    private static IgniteCheckedException wrapIoException(String msg, IOException cause) {
+        if (cause instanceof ClosedByInterruptException) {
+            IgniteCheckedException e = new IgniteInterruptedCheckedException(msg);
+
+            e.initCause(cause);
+
+            return e;
+        } else
+            return new PersistentStorageIOException(msg, cause);
     }
 }
