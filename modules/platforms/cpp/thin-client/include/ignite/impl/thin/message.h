@@ -579,6 +579,8 @@ namespace ignite
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
                  */
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
@@ -607,6 +609,8 @@ namespace ignite
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
                  */
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
@@ -642,6 +646,8 @@ namespace ignite
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
                  */
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
@@ -677,6 +683,8 @@ namespace ignite
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
                  */
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
@@ -720,6 +728,8 @@ namespace ignite
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
                  */
                 virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
