@@ -832,7 +832,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void release(WALPointer start) throws IgniteCheckedException {
+    @Override public void release(WALPointer start) {
         assert start != null && start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
@@ -1997,14 +1997,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 finally {
-                    try {
-                        if (currReservedSegment != -1)
-                            release(new FileWALPointer(currReservedSegment, 0, 0));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Can't release raw WAL segment [idx=" + currReservedSegment +
-                            "] after compression", e);
-                    }
+                    if (currReservedSegment != -1)
+                        release(new FileWALPointer(currReservedSegment, 0, 0));
                 }
             }
         }
