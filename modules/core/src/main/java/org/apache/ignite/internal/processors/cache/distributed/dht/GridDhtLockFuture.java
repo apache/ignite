@@ -1309,7 +1309,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     info.version(),
                                     info.ttl(),
                                     info.expireTime(),
-                                    true, topVer,
+                                    true,
+                                    topVer,
                                     replicate ? DR_PRELOAD : DR_NONE,
                                     false)) {
                                     if (rec && !entry.isInternal())
