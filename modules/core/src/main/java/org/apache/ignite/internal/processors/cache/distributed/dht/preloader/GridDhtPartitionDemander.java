@@ -761,7 +761,7 @@ public class GridDhtPartitionDemander {
                                     }
 
                                     for (GridCacheContext cctx : grp.caches()) {
-                                        if (cctx.statisticsEnabled() && !fut.isDone())
+                                        if (cctx.statisticsEnabled())
                                             cctx.cache().metrics0().onRebalanceKeyReceived();
                                     }
                                 }
