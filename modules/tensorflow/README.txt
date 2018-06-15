@@ -4,7 +4,7 @@ Apache Ignite TensorFlow Integration Module
 Apache Ignite TensorFlow Integration Module allowed using TensorFlow with Apache Ignite. In this scenario Apache Ignite
 will be a datasource for any TensorFlow model training.
 
-Apache Ignite TensorFlow Integration Module In Maven Project
+Import Apache Ignite TensorFlow Integration Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Cassandra Store module
