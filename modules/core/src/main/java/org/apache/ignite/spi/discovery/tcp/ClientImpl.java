@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -111,6 +112,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -183,7 +185,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final Timer timer = new Timer("TcpDiscoverySpi.timer");
 
     /** */
-    protected MessageWorker msgWorker;
+    private MessageWorker msgWorker;
 
     /** Force fail message for local node. */
     private TcpDiscoveryNodeFailedMessage forceFailMsg;
@@ -503,14 +505,18 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param prevAddr If reconnect is in progress, then previous address of the router the client was connected to
      *      and {@code null} otherwise.
      * @param timeout Timeout.
+     * @param beforeEachSleep code to be run before each sleep span.
      * @return Opened socket or {@code null} if timeout.
      * @throws InterruptedException If interrupted.
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
     @SuppressWarnings("BusyWait")
-    @Nullable private T2<SocketStream, Boolean> joinTopology(InetSocketAddress prevAddr, long timeout)
-        throws IgniteSpiException, InterruptedException {
+    @Nullable private T2<SocketStream, Boolean> joinTopology(
+        InetSocketAddress prevAddr,
+        long timeout,
+        @Nullable Runnable beforeEachSleep
+    ) throws IgniteSpiException, InterruptedException {
         List<InetSocketAddress> addrs = null;
 
         long startTime = U.currentTimeMillis();
@@ -536,6 +542,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 " and make sure multicast works on your network. " : ". ") +
                             "Will retry every " + spi.getReconnectDelay() + " ms. " +
                             "Change 'reconnectDelay' to configure the frequency of retries.", true);
+
+                    if (beforeEachSleep != null)
+                        beforeEachSleep.run();
 
                     Thread.sleep(spi.getReconnectDelay());
                 }
@@ -1445,7 +1454,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 while (true) {
-                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout);
+                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout, null);
 
                     if (joinRes == null) {
                         if (join) {
@@ -1571,6 +1580,9 @@ class ClientImpl extends TcpDiscoveryImpl {
      * Message worker.
      */
     protected class MessageWorker extends GridWorker {
+        /** */
+        private static final int DFLT_POLL_TIMEOUT = 10_000;
+
         /** Message queue. */
         private final BlockingDeque<Object> queue = new LinkedBlockingDeque<>();
 
@@ -1583,11 +1595,19 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private boolean nodeAdded;
 
+        /** */
+        private final long pollTimeoutMs = IgniteSystemProperties.getLong(IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT,
+            DFLT_POLL_TIMEOUT);
+
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param log Logger.
          */
         private MessageWorker(IgniteLogger log) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry());
+            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry(), getWorkersRegistry(),
+                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
         }
 
         /** {@inheritDoc} */
@@ -1595,13 +1615,31 @@ class ClientImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             state = STARTING;
 
+            updateHeartbeat();
+
             spi.stats.onJoinStarted();
 
             try {
                 tryJoin();
 
                 while (true) {
-                    Object msg = queue.take();
+                    Object msg;
+
+                    do {
+                        updateHeartbeat();
+
+                        msg = queue.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
+
+                        if (msg == null)
+                            updateHeartbeat();
+
+                        if (msg == null || U.currentTimeMillis() - lastOnIdleTs > pollTimeoutMs) {
+                            onIdle();
+
+                            lastOnIdleTs = U.currentTimeMillis();
+                        }
+                    } while (msg == null);
+
 
                     if (msg == JOIN_TIMEOUT) {
                         if (state == STARTING) {
@@ -1890,7 +1928,11 @@ class ClientImpl extends TcpDiscoveryImpl {
             T2<SocketStream, Boolean> joinRes;
 
             try {
-                joinRes = joinTopology(null, spi.joinTimeout);
+                joinRes = joinTopology(null, spi.joinTimeout, new Runnable() {
+                    @Override public void run() {
+                        updateHeartbeat();
+                    }
+                });
             }
             catch (IgniteSpiException e) {
                 joinError(e);
