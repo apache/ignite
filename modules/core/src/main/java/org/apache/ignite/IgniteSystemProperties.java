@@ -118,8 +118,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
-    /** This property allow rewriting default ({@code 30}) rest session expire time (in seconds). */
+    /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
     public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
+
+    /** This property allow rewriting default ({@code 300}) REST session invalidate interval (in seconds). */
+    public static final String IGNITE_REST_SESSION_INVALIDATE_INTERVAL = "IGNITE_REST_SESSION_INVALIDATE_INTERVAL";
 
     /**
      * This property allows to override maximum count of task results stored on one node
@@ -988,7 +991,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1016,7 +1019,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Float value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1044,12 +1047,13 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code long} using {@code Long.parseLong()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param factor A multiplier.
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
      */
-    public static long getLong(String name, long dflt) {
+    public static long getLong(String name, int factor, long dflt) {
         String s = getString(name);
 
         if (s == null)
@@ -1058,7 +1062,7 @@ public final class IgniteSystemProperties {
         long res;
 
         try {
-            res = Long.parseLong(s);
+            res = Long.parseLong(s) * factor;
         }
         catch (NumberFormatException ignore) {
             res = dflt;
@@ -1069,10 +1073,24 @@ public final class IgniteSystemProperties {
 
     /**
      * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code long} using {@code Long.parseLong()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value.
+     * @return Integer value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
+    public static long getLong(String name, long dflt) {
+        return getLong(name, 1, dflt);
+    }
+
+    /**
+     * Gets either system property or environment variable with given name.
      * The result is transformed to {@code double} using {@code Double.parseDouble()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
