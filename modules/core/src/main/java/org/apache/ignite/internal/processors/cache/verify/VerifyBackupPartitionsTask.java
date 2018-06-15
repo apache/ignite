@@ -293,7 +293,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             });
         }
 
-
         /**
          * @param grpCtx Group context.
          * @param part Local partition.
@@ -307,23 +306,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
             int partHash = 0;
             long partSize;
-            long updateCntrBefore = part.updateCounter();
-
-            PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
-
-            Object consId = ignite.context().discovery().localNode().consistentId();
-
-            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
+            long updateCntrBefore;
 
             try {
-                if (part.state() == GridDhtPartitionState.MOVING) {
-                    PartitionHashRecord movingHashRecord = new PartitionHashRecord(partKey, isPrimary, consId,
-                        partHash, updateCntrBefore, PartitionHashRecord.MOVING_PARTITION_SIZE);
-
-                    return Collections.singletonMap(partKey, movingHashRecord);
-                }
-                else if (part.state() != GridDhtPartitionState.OWNING)
+                if (part.state() != GridDhtPartitionState.OWNING)
                     return Collections.emptyMap();
+
+                updateCntrBefore = part.updateCounter();
 
                 partSize = part.dataStore().fullSize();
 
@@ -355,6 +344,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 part.release();
             }
 
+            Object consId = ignite.context().discovery().localNode().consistentId();
+
+            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
+
+            PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
+
             PartitionHashRecord partRec = new PartitionHashRecord(
                 partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);
 
@@ -363,5 +358,4 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             return Collections.singletonMap(partKey, partRec);
         }
     }
-
 }
