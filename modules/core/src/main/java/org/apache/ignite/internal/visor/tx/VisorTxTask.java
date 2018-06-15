@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -34,7 +33,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxMappings;
-import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,8 +43,6 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -138,7 +136,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             if (arg == null)
                 return new VisorTxTaskResult(Collections.emptyList());
 
-            Collection<Transaction> transactions = ignite.transactions().localActiveTransactions();
+            IgniteTxManager tm = ignite.context().cache().context().tm();
+
+            Collection<IgniteInternalTx> transactions = tm.activeTransactions();
 
             List<VisorTxInfo> infos = new ArrayList<>();
 
@@ -155,31 +155,41 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 }
             }
 
-            for (Transaction transaction : transactions) {
-                GridNearTxLocal locTx = ((TransactionProxyImpl)transaction).tx();
-
+            for (IgniteInternalTx locTx : transactions) {
                 if (arg.getXid() != null && !locTx.xid().toString().equals(arg.getXid()))
                     continue;
 
                 if (arg.getState() != null && locTx.state() != arg.getState())
                     continue;
 
-                long duration = U.currentTimeMillis() - transaction.startTime();
+                long duration = U.currentTimeMillis() - locTx.startTime();
 
-                if (arg.getMinDuration() != null &&
-                    duration < arg.getMinDuration())
+                if (arg.getMinDuration() != null && duration < arg.getMinDuration())
                     continue;
 
-                if (lbMatch != null && !lbMatch.matcher(locTx.label() == null ? "null" : locTx.label()).matches())
+                // Near tx features.
+                String lb = null;
+                IgniteTxMappings txMappings = null;
+                boolean nearTx = false;
+
+                if (locTx instanceof GridNearTxLocal) {
+                    nearTx = true;
+
+                    GridNearTxLocal locTx0 = (GridNearTxLocal)locTx;
+
+                    lb = locTx0.label();
+
+                    txMappings = locTx0.mappings();
+                }
+
+                if (nearTx && lbMatch != null && !lbMatch.matcher(lb == null ? "null" : lb).matches())
                     continue;
 
                 Collection<UUID> mappings = new ArrayList<>();
 
                 int size = 0;
 
-                if (locTx.mappings() != null) {
-                    IgniteTxMappings txMappings = locTx.mappings();
-
+                if (nearTx && txMappings != null) {
                     for (GridDistributedTxMapping mapping :
                         txMappings.single() ? Collections.singleton(txMappings.singleMapping()) : txMappings.mappings()) {
                         if (mapping == null)
@@ -195,7 +205,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                     continue;
 
                 infos.add(new VisorTxInfo(locTx.xid(), duration, locTx.isolation(), locTx.concurrency(),
-                    locTx.timeout(), locTx.label(), mappings, locTx.state(), size));
+                    locTx.timeout(), lb, mappings, locTx.state(),
+                    size, locTx.nearXidVersion().asGridUuid(), locTx.masterNodeIds()));
 
                 if (arg.getOperation() == VisorTxOperation.KILL)
                     locTx.rollbackAsync();

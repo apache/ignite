@@ -32,10 +32,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -46,19 +48,29 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -130,10 +142,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -449,10 +463,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            for (VisorTxInfo info:res.getInfos()){
+            for (VisorTxInfo info:res.getInfos())
                 assertNull(info.getLabel());
-
-            }
 
         }, "--tx", "label", "null");
 
@@ -465,10 +477,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             assertNotNull(res);
 
-            for (VisorTxInfo txInfo : res.getInfos()) {
+            for (VisorTxInfo txInfo : res.getInfos())
                 assertTrue(txInfo.getSize() >= minSize);
-
-            }
         }, "--tx", "minSize", Integer.toString(minSize));
 
         // test order by size.
@@ -523,6 +533,57 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         checkFutures();
+    }
+
+    /**
+     *
+     */
+    public void testListBrokenTransactions() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "5000");
+
+        Ignite ignite = startGridsMultiThreaded(2);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setWriteSynchronizationMode(FULL_SYNC));
+
+        Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
+
+        // Blocks lock response to near node.
+        TestRecordingCommunicationSpi.spi(prim).blockMessages(GridNearLockResponse.class, client.name());
+
+        TestRecordingCommunicationSpi.spi(client).blockMessages(GridNearTxFinishRequest.class, prim.name());
+
+        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 2000, 1)) {
+            client.cache(DEFAULT_CACHE_NAME).put(0L, 0L);
+
+            fail();
+        }
+        catch (Exception e) {
+            assertTrue(X.hasCause(e, TransactionTimeoutException.class));
+        }
+
+        IgniteEx primEx = (IgniteEx)prim;
+
+        IgniteInternalTx tx0 = primEx.context().cache().context().tm().activeTransactions().iterator().next();
+
+        assertNotNull(tx0);
+
+        CommandHandler h = new CommandHandler();
+
+        validate(h, map -> {
+            ClusterNode node = grid(0).cluster().localNode();
+
+            VisorTxTaskResult res = map.get(node);
+
+            for (VisorTxInfo info : res.getInfos())
+                assertEquals(tx0.xid(), info.getXid());
+
+            assertEquals(1, map.size());
+        }, "--tx");
     }
 
     /**
@@ -924,5 +985,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
         }
+    }
+
+    @Override protected long getTestTimeout() {
+        return Integer.MAX_VALUE;
     }
 }

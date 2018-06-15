@@ -64,6 +64,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private int size;
 
+    /** */
+    private IgniteUuid nearXid;
+
+    /** */
+    private Collection<UUID> masterNodeIds;
+
     /**
      * Default constructor.
      */
@@ -84,7 +90,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
      */
     public VisorTxInfo(IgniteUuid xid, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size) {
+        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds) {
         this.xid = xid;
         this.duration = duration;
         this.isolation = isolation;
@@ -94,6 +100,13 @@ public class VisorTxInfo extends VisorDataTransferObject {
         this.primaryNodes = primaryNodes;
         this.state = state;
         this.size = size;
+        this.nearXid = nearXid;
+        this.masterNodeIds = masterNodeIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** */
@@ -141,6 +154,16 @@ public class VisorTxInfo extends VisorDataTransferObject {
         return size;
     }
 
+    /** */
+    public IgniteUuid getNearXid() {
+        return nearXid;
+    }
+
+    /** */
+    public Collection<UUID> getMasterNodeIds() {
+        return masterNodeIds;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, xid);
@@ -152,6 +175,8 @@ public class VisorTxInfo extends VisorDataTransferObject {
         U.writeCollection(out, primaryNodes);
         U.writeEnum(out, state);
         out.writeInt(size);
+        U.writeGridUuid(out, nearXid);
+        U.writeCollection(out, masterNodeIds);
     }
 
     /** {@inheritDoc} */
@@ -165,6 +190,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
         primaryNodes = U.readCollection(in);
         state = TransactionState.fromOrdinal(in.readByte());
         size = in.readInt();
+        if (protoVer >= V2) {
+            nearXid = U.readGridUuid(in);
+
+            masterNodeIds = U.readCollection(in);
+        }
+
     }
 
     /** {@inheritDoc} */

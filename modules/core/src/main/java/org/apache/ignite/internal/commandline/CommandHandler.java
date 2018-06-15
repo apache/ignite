@@ -994,6 +994,12 @@ public class CommandHandler {
                             return U.id8(id);
                         }
                     }) +
+                        ", nearXid=" + info.getNearXid() +
+                        ", parentNodeIds=" + F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                        @Override public String apply(UUID id) {
+                            return U.id8(id);
+                        }
+                    }) +
                         ']');
             }
         }
