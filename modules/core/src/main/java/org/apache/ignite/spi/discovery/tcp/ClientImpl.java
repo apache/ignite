@@ -943,6 +943,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         joinLatch.countDown();
     }
 
+    /** */
     private WorkersRegistry getWorkersRegistry() {
         Ignite ignite = spi.ignite();
 
