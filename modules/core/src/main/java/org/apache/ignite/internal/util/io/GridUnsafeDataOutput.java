@@ -120,7 +120,10 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /**
      * @param size Size.
      */
-    private void requestFreeSize(int size) {
+    private void requestFreeSize(int size) throws IOException {
+        if (off + size < size)
+            throw new IOException("Impossible to allocate required memory: length=" + size + " offset=" + off);
+
         size = off + size;
 
         maxOff = Math.max(maxOff, size);
@@ -185,6 +188,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         int bytesToCp = arr.length << 3;
 
+        checkArrayAllocationOverflow(bytesToCp, arr.length, "double");
+
         requestFreeSize(bytesToCp);
 
         if (BIG_ENDIAN) {
@@ -217,6 +222,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         int bytesToCp = arr.length << 1;
 
+        checkArrayAllocationOverflow(bytesToCp, arr.length, "char");
+
         requestFreeSize(bytesToCp);
 
         if (BIG_ENDIAN) {
@@ -240,6 +247,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         int bytesToCp = arr.length << 3;
 
+        checkArrayAllocationOverflow(bytesToCp, arr.length, "long");
+
         requestFreeSize(bytesToCp);
 
         if (BIG_ENDIAN) {
@@ -262,6 +271,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         writeInt(arr.length);
 
         int bytesToCp = arr.length << 2;
+
+        checkArrayAllocationOverflow(bytesToCp, arr.length, "float");
 
         requestFreeSize(bytesToCp);
 
@@ -304,6 +315,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         int bytesToCp = arr.length << 1;
 
+        checkArrayAllocationOverflow(bytesToCp, arr.length, "short");
+
         requestFreeSize(bytesToCp);
 
         if (BIG_ENDIAN) {
@@ -326,6 +339,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         writeInt(arr.length);
 
         int bytesToCp = arr.length << 2;
+
+        checkArrayAllocationOverflow(bytesToCp, arr.length, "int");
 
         requestFreeSize(bytesToCp);
 
@@ -469,6 +484,18 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** {@inheritDoc} */
     @Override public void writeUTF(String s) throws IOException {
         writeUTF(s, utfLength(s));
+    }
+
+    /**
+     * Check for possible arithmetic overflow when trying to serialize a humongous array.
+     *
+     * @param bytesToAlloc Bytes to alloc.
+     * @param arrLen Array length.
+     * @param type Type.
+     */
+    private void checkArrayAllocationOverflow(int bytesToAlloc, int arrLen, String type) throws IOException {
+        if (bytesToAlloc < arrLen)
+            throw new IOException("Impossible to allocate required memory for " + type + " array: length=" + arrLen);
     }
 
     /**
