@@ -2406,6 +2406,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 maxCntr.nodes.add(cctx.localNodeId());
         }
 
+        int entryLeft = maxCntrs.size();
+
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.groupId()) : null;
