@@ -277,7 +277,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private FileIOFactory ioFactory;
+    private volatile FileIOFactory ioFactory;
 
     /** Next WAL segment archived monitor. Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedMonitor archivedMonitor = new SegmentArchivedMonitor();
@@ -3291,13 +3291,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                 }
-
-                unparkWaiters(Long.MAX_VALUE);
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
+                unparkWaiters(Long.MAX_VALUE);
+
                 if (err == null && !shutdown)
                     err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 
@@ -3458,7 +3458,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
-                StorageException se = new StorageException("Unable to write", e);
+                StorageException se = new StorageException("Failed to write buffer.", e);
 
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
