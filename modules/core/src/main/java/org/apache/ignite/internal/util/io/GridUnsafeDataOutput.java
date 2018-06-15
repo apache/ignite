@@ -128,7 +128,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         long now = U.currentTimeMillis();
 
         if (size > bytes.length) {
-            byte[] newBytes = new byte[size << 1]; // Grow.
+            byte[] newBytes = new byte[Math.max(size << 1, size)]; // Grow.
 
             System.arraycopy(bytes, 0, newBytes, 0, off);
 
