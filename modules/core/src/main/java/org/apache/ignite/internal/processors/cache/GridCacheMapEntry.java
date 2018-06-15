@@ -4436,6 +4436,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            if (oldRow != null)
+                oldRow = checkRowExpired(oldRow);
+
             this.oldRow = oldRow;
 
             if (predicate != null && !predicate.apply(oldRow)) {
@@ -4476,6 +4479,42 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Nullable @Override public CacheDataRow oldRow() {
             return oldRow;
+        }
+
+        private CacheDataRow checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
+            assert row != null;
+
+            if (!(row.expireTime() > 0 && row.expireTime() < U.currentTimeMillis()))
+                return row;
+
+            GridCacheContext cctx = entry.context();
+
+            CacheObject expiredVal = row.value();
+
+            if(!entry.deletedUnlocked())
+                entry.deletedUnlocked(true);
+
+            if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+                cctx.events().addEvent(entry.partition(),
+                    entry.key(),
+                    cctx.localNodeId(),
+                    null,
+                    EVT_CACHE_OBJECT_EXPIRED,
+                    null,
+                    false,
+                    expiredVal,
+                    expiredVal != null,
+                    null,
+                    null,
+                    null,
+                    true);
+            }
+
+            cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
+
+            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, row.version(), true);
+
+            return null;
         }
     }
 
@@ -4820,7 +4859,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
 
-            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer, true);
+            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, row.version(), true);
 
             return null;
         }
