@@ -146,6 +146,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -825,8 +826,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             notifyMetastorageReadyForReadWrite();
         }
-        catch (StorageException | PersistentStorageIOException e) {
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+        catch (IgniteCheckedException e) {
+            if (X.hasCause(e, StorageException.class, PersistentStorageIOException.class, IOException.class))
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
