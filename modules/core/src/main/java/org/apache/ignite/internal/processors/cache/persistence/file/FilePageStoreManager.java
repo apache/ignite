@@ -956,5 +956,4 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             this.partStores = partStores;
         }
     }
-
 }
