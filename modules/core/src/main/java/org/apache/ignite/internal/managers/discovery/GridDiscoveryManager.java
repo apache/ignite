@@ -300,6 +300,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Discovery spi registered flag. */
     private boolean registeredDiscoSpi;
 
+    /** Coordinator node */
+    ClusterNode coord = null;
+
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
 
@@ -1563,6 +1566,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Get current coordinator node.
+     *
+     * @return Coordinator node.
+     */
+    private ClusterNode coordinator() {
+        ClusterNode crd0 = null;
+
+        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+            if (crd0 == null || crd0.order() > node.order())
+                crd0 = node;
+        }
+
+        return crd0;
+    }
+
+    /**
      * @param clo Wrapper of logger.
      * @param topVer Topology version.
      * @param discoCache Discovery cache.
@@ -1586,6 +1605,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ", heap=" + heap + "GB]";
 
         clo.apply(summary);
+
+        ClusterNode newCoord = coordinator();
+
+        if (coord != null && newCoord.order() != coord.order())
+            clo.apply("Coordinator changed [prev=" + coord + ", cur=" + newCoord + "]");
+
+        coord = newCoord;
 
         DiscoveryDataClusterState state = discoCache.state();
 
