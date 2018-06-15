@@ -1295,11 +1295,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     for (T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> val : threadBufMap.values()) {
                         IgniteCacheFutureImpl fut = val.getKey();
 
-                        Exception e = err != null ? err :
-                            new IgniteCheckedException("Data streamer has been cancelled: " + DataStreamerImpl.this);
-
                         if (fut != null)
-                            ((GridFutureAdapter) fut.internalFuture()).onDone(e);
+                            ((GridFutureAdapter) fut.internalFuture()).onDone();
                     }
 
                     for (Buffer buf : bufMappings.values())
