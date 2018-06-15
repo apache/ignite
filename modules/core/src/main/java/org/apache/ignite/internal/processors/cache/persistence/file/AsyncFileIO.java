@@ -161,13 +161,11 @@ public class AsyncFileIO implements FileIO {
         ch.write(ByteBuffer.wrap(buf, off, len), position, this, fut);
 
         try {
-            fut.getUninterruptibly();
+            return fut.getUninterruptibly();
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
-
-        return 0;
     }
 
     /** {@inheritDoc} */
