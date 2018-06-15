@@ -489,9 +489,10 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /**
      * Check for possible arithmetic overflow when trying to serialize a humongous array.
      *
-     * @param bytesToAlloc Bytes to alloc.
+     * @param bytesToAlloc Bytes to allocate.
      * @param arrLen Array length.
-     * @param type Type.
+     * @param type Type of an array.
+     * @throws IOException If oveflow presents and data corruption can occur.
      */
     private void checkArrayAllocationOverflow(int bytesToAlloc, int arrLen, String type) throws IOException {
         if (bytesToAlloc < arrLen)
