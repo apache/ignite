@@ -225,6 +225,8 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         assertNotNull(ref);
 
         assertSame(ref, ignite.atomicReference(name, 0, true));
+
+        ref.close();
     }
 
     /**
@@ -258,6 +260,9 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         assert atomicLong != null;
         assert atomicSeq != null;
+
+        atomicLong.close();
+        atomicSeq.close();
     }
 
     /**

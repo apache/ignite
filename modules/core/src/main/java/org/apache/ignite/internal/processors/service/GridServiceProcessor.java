@@ -255,7 +255,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 // It is also invoked on rebalancing.
                 // Otherwise remote listener is registered.
                 serviceCache.context().continuousQueries().executeInternalQuery(
-                    new ServiceEntriesListener(), null, isLocLsnr, true, false
+                    new ServiceEntriesListener(), null, isLocLsnr, true, false, false
                 );
             }
             else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
