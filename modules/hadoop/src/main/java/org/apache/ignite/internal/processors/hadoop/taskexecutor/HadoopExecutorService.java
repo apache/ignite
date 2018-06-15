@@ -32,7 +32,6 @@ import org.apache.ignite.thread.IgniteThread;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.newSetFromMap;
-import static org.apache.ignite.internal.util.worker.GridWorker.DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS;
 
 /**
  * Executor service without thread pooling.
@@ -181,8 +180,7 @@ public class HadoopExecutorService {
         else
             workerName = task.toString();
 
-        GridWorker w = new GridWorker(igniteInstanceName, workerName, log, lsnr, null,
-            DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
+        GridWorker w = new GridWorker(igniteInstanceName, workerName, log, lsnr) {
             @Override protected void body() {
                 try {
                     task.call();

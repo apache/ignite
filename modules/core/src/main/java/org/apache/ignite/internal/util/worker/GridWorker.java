@@ -108,6 +108,25 @@ public abstract class GridWorker implements Runnable {
      *      different things. The same worker can be executed by multiple threads and therefore
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
+     * @param lsnr Listener for life-cycle events.
+     */
+    protected GridWorker(
+        String igniteInstanceName,
+        String name,
+        IgniteLogger log,
+        @Nullable GridWorkerListener lsnr
+    ) {
+        this(igniteInstanceName, name, log, lsnr, null, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+    }
+
+    /**
+     * Creates new grid worker with given parameters.
+     *
+     * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
+     * @param name Worker name. Note that in general thread name and worker (runnable) name are two
+     *      different things. The same worker can be executed by multiple threads and therefore
+     *      for logging and debugging purposes we separate the two.
+     * @param log Grid logger to be used.
      */
     protected GridWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
         this(igniteInstanceName, name, log, null, null, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
