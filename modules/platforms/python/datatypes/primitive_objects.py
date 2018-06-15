@@ -96,7 +96,7 @@ class CharObject(DataObject):
 
     @classmethod
     def to_python(cls, ctype_object):
-        return ctype_object.value.value.to_bytes(
+        return ctype_object.value.to_bytes(
             ctypes.sizeof(cls.c_type),
             byteorder=PROTOCOL_BYTE_ORDER
         ).decode(PROTOCOL_CHAR_ENCODING)

@@ -18,3 +18,8 @@ This module contains ctypes classes and class generator functions (metaclasses
 in a broad sense of the word), used internally for parsing and creating binary
 data streams.
 """
+
+from .primitive import *
+from .primitive_objects import *
+from .strings import *
+from .null_object import *

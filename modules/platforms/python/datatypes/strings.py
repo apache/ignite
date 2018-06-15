@@ -25,6 +25,13 @@ from .type_codes import *
 from .null_object import Null
 
 
+__all__ = [
+    'PString',
+    'PStringArray',
+    'PStringArrayObject',
+]
+
+
 class PString:
     """ Pascal-style string: `c_int` counter, followed by count*bytes. """
 

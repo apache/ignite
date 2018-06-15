@@ -25,6 +25,9 @@ from connection import Connection
 from .type_codes import TC_NULL
 
 
+__all__ = ['Null']
+
+
 class Null:
 
     @classmethod

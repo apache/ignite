@@ -17,7 +17,7 @@ from connection import Connection
 from queries.op_codes import *
 from .result import APIResult
 
-
+from datatypes.any_object import AnyDataObject
 from datatypes.primitive import Byte, Int
 from datatypes.primitive_objects import IntObject
 from datatypes.cache_config import PString
@@ -119,8 +119,7 @@ def cache_get(
     conn.send(send_buffer)
 
     response_struct = Response([
-        # TODO: create generic (smart) object type
-        ('value', IntObject),
+        ('value', AnyDataObject),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)

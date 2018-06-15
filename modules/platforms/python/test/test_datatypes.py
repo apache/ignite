@@ -13,12 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
-from decimal import Decimal
-import uuid
-
 import pytest
 
-from constants import *
-from datatypes.type_codes import *
-from datatypes.class_configs import array_types, vararray_types
+from api import hashcode
+from api.key_value import cache_get, cache_put
+from api.cache_config import cache_create, cache_destroy
+from connection import Connection
+from datatypes.primitive_objects import CharObject
+
+
+@pytest.mark.parametrize(
+    'value, value_hint',
+    [
+        ('ы', CharObject),
+        ('カ', CharObject),
+    ]
+)
+def test_put_get_data(ignite_host, ignite_port, value, value_hint):
+    conn = Connection()
+    conn.connect(ignite_host, ignite_port)
+
+    cache_create(conn, 'my_bucket')
+
+    result = cache_put(
+        conn, hashcode('my_bucket'), 'my_key',
+        value, value_hint=value_hint
+    )
+    assert result.status == 0
+
+    result = cache_get(conn, hashcode('my_bucket'), 'my_key')
+    assert result.status == 0
+    assert result.value == value
+
+    # cleanup
+    cache_destroy(conn, hashcode('my_bucket'))
+    conn.close()
