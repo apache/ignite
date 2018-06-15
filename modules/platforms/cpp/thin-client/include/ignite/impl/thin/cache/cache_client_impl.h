@@ -56,7 +56,9 @@ namespace ignite
                     CacheClientImpl(const SP_DataRouter& router, const std::string& name, int32_t id) :
                         router(router),
                         name(name),
-                        id(id)
+                        id(id),
+                        binary(false),
+                        assignment()
                     {
                         // No-op.
                     }
@@ -93,6 +95,11 @@ namespace ignite
                      */
                     bool ContainsKey(const Writable& key);
 
+                    /**
+                     * Update cache partitions info.
+                     */
+                    void UpdatePartitions();
+
                 private:
                     /** Data router. */
                     SP_DataRouter router;
@@ -105,6 +112,9 @@ namespace ignite
 
                     /** Binary flag. */
                     bool binary;
+
+                    /** Partitions assignment. */
+                    std::vector< std::vector<net::EndPoint> > assignment;
                 };
             }
         }

@@ -62,6 +62,43 @@ namespace ignite
 
                     return rsp.GetValue();
                 }
+
+                void CacheClientImpl::UpdatePartitions()
+                {
+                    std::vector<ConnectableNodePartitions> nodeParts;
+
+                    CacheRequest<RequestType::CACHE_NODE_PARTITIONS> req(id, binary);
+                    ClientCacheNodePartitionsResponse rsp(nodeParts);
+
+                    router.Get()->SyncMessage(req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    std::vector<ConnectableNodePartitions>::const_iterator it;
+
+                    for (it = nodeParts.begin(); it != nodeParts.end(); ++it)
+                    {
+                        const std::vector<int32_t>& parts = it->GetPartitions();
+                        const std::vector<net::EndPoint>& endPoints = it->GetEndPoints();
+
+                        for (size_t i = 0; i < parts.size(); ++i)
+                        {
+                            assert(parts[i] >= 0);
+
+                            size_t upart = static_cast<size_t>(parts[i]);
+
+                            if (upart >= assignment.size())
+                                assignment.resize(upart + 1);
+
+                            std::vector<net::EndPoint>& dst = assignment[upart];
+
+                            assert(dst.empty());
+
+                            dst.insert(dst.end(), endPoints.begin(), endPoints.end());
+                        }
+                    }
+                }
             }
         }
     }
