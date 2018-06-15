@@ -1976,7 +1976,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    if (!isCancelled() && segmentToDecompress != -1L) {
+                    if (!isCancelled && segmentToDecompress != -1L) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + ']', t);
 

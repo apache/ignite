@@ -514,7 +514,7 @@ public class StripedExecutor implements ExecutorService {
                 }
             }
 
-            if (!isCancelled()) {
+            if (!isCancelled) {
                 errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
                     " is terminated unexpectedly"));
             }

@@ -2162,7 +2162,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    if (!isCancelled() && segmentToDecompress != -1L) {
+                    if (!isCancelled && segmentToDecompress != -1L) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + "]", t);
 
@@ -3305,7 +3305,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 err = t;
             }
             finally {
-                if (err == null && !isCancelled())
+                if (err == null && !isCancelled)
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
