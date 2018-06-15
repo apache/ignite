@@ -22,6 +22,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteOrder;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -49,6 +53,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.arraycopy;
+import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -213,65 +218,90 @@ public class IgniteWalIteratorFactory {
         if (filesOrDirs == null || filesOrDirs.length == 0)
             return Collections.emptyList();
 
+        final FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
+
         final List<FileDescriptor> descriptors = new ArrayList<>();
 
         for (File file : filesOrDirs) {
             if (file.isDirectory()) {
-                descriptors.addAll(
-                    resolveWalFiles(
-                        file.listFiles(),
-                        iteratorParametersBuilder
-                    )
-                ); // Recursive search.
+                try {
+                    walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                            addFileDescriptor(path.toFile(), ioFactory, descriptors);
+
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                }
+                catch (IOException e) {
+                    U.warn(log, "Failed to wall directories from root [" + file + "]. Skipping this directory.", e);
+                }
 
                 continue;
             }
 
-            if (file.length() < HEADER_RECORD_SIZE)
-                continue;  // Filter out this segment as it is too short.
-
-            String fileName = file.getName();
-
-            if (!WAL_NAME_PATTERN.matcher(fileName).matches() &&
-                !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
-                continue;   // Filter out this because it is not segment file.
-
-            FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
-
-            FileDescriptor ds = new FileDescriptor(file);
-
-            FileWALPointer ptr;
-
-            try (
-                FileIO fileIO = ds.isCompressed() ? new UnzipFileIO(file) : ioFactory.create(file);
-                ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
-            ) {
-                final DataInput in = new FileInput(fileIO, buf);
-
-                // Header record must be agnostic to the serializer version.
-                final int type = in.readUnsignedByte();
-
-                if (type == RecordType.STOP_ITERATION_RECORD_TYPE) {
-                    if (log.isInfoEnabled())
-                        log.info("Reached logical end of the segment for file " + file);
-
-                    continue; // Filter out this segment
-                }
-
-                ptr = readPosition(in);
-            }
-            catch (IOException e) {
-                U.warn(log, "Failed to scan index from file [" + file + "]. Skipping this file during iteration", e);
-
-                continue; // Filter out this segment.
-            }
-
-            descriptors.add(new FileDescriptor(file, ptr.index()));
+            addFileDescriptor(file, ioFactory, descriptors);
         }
 
         Collections.sort(descriptors);
 
         return descriptors;
+    }
+
+    /**
+     * @param file File.
+     * @param ioFactory IO factory.
+     * @param descriptors List of descriptors.
+     */
+    private void addFileDescriptor(File file, FileIOFactory ioFactory, List<FileDescriptor> descriptors) {
+        if (file.length() < HEADER_RECORD_SIZE)
+            return; // Filter out this segment as it is too short.
+
+        String fileName = file.getName();
+
+        if (!WAL_NAME_PATTERN.matcher(fileName).matches() &&
+            !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
+            return;  // Filter out this because it is not segment file.
+
+        FileDescriptor desc = readFileDescriptor(file, ioFactory);
+
+        if (desc != null)
+            descriptors.add(desc);
+    }
+
+    /**
+     * @param file File to read.
+     * @param ioFactory IO factory.
+     */
+    private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
+        FileDescriptor ds = new FileDescriptor(file);
+
+        try (
+            FileIO fileIO = ds.isCompressed() ? new UnzipFileIO(file) : ioFactory.create(file);
+            ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
+        ) {
+            final DataInput in = new FileInput(fileIO, buf);
+
+            // Header record must be agnostic to the serializer version.
+            final int type = in.readUnsignedByte();
+
+            if (type == RecordType.STOP_ITERATION_RECORD_TYPE) {
+                if (log.isInfoEnabled())
+                    log.info("Reached logical end of the segment for file " + file);
+
+                return null;
+            }
+
+            FileWALPointer ptr = readPosition(in);
+
+            return new FileDescriptor(file, ptr.index());
+        }
+        catch (IOException e) {
+            U.warn(log, "Failed to scan index from file [" + file + "]. Skipping this file during iteration", e);
+
+            return null;
+        }
     }
 
     /**
