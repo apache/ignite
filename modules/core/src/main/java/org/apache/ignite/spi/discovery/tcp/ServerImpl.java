@@ -98,8 +98,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -453,10 +453,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        if (tcpSrvr != null) {
-            U.interrupt(tcpSrvr.runner());
-            U.join(tcpSrvr.runner(), log);
-        }
+        U.cancel(tcpSrvr);
+        U.join(tcpSrvr, log);
 
         tcpSrvr = null;
 
@@ -472,10 +470,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
 
-        if (msgWorker != null) {
-            U.interrupt(msgWorker.runner());
-            U.join(msgWorker.runner(), log);
-        }
+        U.cancel(msgWorker);
+        U.join(msgWorker, log);
 
         for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
             if (clientWorker != null) {
@@ -1670,10 +1666,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        if (tcpSrvr != null) {
-            U.interrupt(tcpSrvr.runner());
-            U.join(tcpSrvr.runner(), log);
-        }
+        U.cancel(tcpSrvr);
+        U.join(tcpSrvr, log);
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -1687,10 +1681,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tmp);
         U.joinThreads(tmp, log);
 
-        if (msgWorker != null) {
-            U.interrupt(msgWorker.runner());
-            U.join(msgWorker.runner(), log);
-        }
+        U.cancel(msgWorker);
+        U.join(msgWorker, log);
 
         for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
             if (msgWorker != null) {
@@ -1705,7 +1697,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void brakeConnection() {
-        throw new UnsupportedOperationException();
+        Socket sock = msgWorker.sock;
+
+        if (sock != null)
+            U.closeQuiet(sock);
     }
 
     /** {@inheritDoc} */
@@ -2685,7 +2680,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 super.body();
             }
             catch (InterruptedException e) {
-                if (!spi.isNodeStopping0())
+                if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
                     err = e;
 
                 throw e;
@@ -2722,7 +2717,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             finally {
                 if (spi.ignite() instanceof IgniteEx) {
-                    if (err == null && !spi.isNodeStopping0())
+                    if (err == null && !spi.isNodeStopping0()&& spiStateCopy() != DISCONNECTING)
                         err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
@@ -5745,7 +5740,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 long lastOnIdleTs = U.currentTimeMillis();
 
-                while (!runner().isInterrupted()) {
+                while (!isCancelled()) {
                     updateHeartbeat();
 
                     try {
@@ -5810,7 +5805,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             finally {
                 if (spi.ignite() instanceof IgniteEx) {
-                    if (err == null && !spi.isNodeStopping0())
+                    if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
                         err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
@@ -6969,7 +6964,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (log.isDebugEnabled())
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
-            while (!runner().isInterrupted()) {
+            while (!isCancelled()) {
                 if (beforeEachPoll != null)
                     beforeEachPoll.run();
 

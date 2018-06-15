@@ -2505,10 +2505,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        if (commWorker != null) {
-            U.interrupt(commWorker.runner());
-            U.join(commWorker.runner(), log);
-        }
+        U.cancel(commWorker);
+        U.join(commWorker, log);
 
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
@@ -4260,7 +4258,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             Throwable err = null;
 
             try {
-                while (!runner().isInterrupted()) {
+                while (!isCancelled()) {
                     updateHeartbeat();
 
                     DisconnectedSessionInfo disconnectData = null;

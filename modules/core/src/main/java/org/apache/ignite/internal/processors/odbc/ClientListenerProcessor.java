@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
@@ -145,8 +144,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(false)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
-                            .workerListener(ctx.workersRegistry())
-                            .idlenessHandler(ctx.workersRegistry())
                             .build();
 
                         srv0.start();

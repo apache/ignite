@@ -144,9 +144,9 @@ public class GridNioServer<T> {
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;
 
-    /** Accept worker thread. */
+    /** Accept worker. */
     @GridToStringExclude
-    private final IgniteThread acceptThread;
+    private final GridNioAcceptWorker acceptWorker;
 
     /** Read worker threads. */
     private final IgniteThread[] clientThreads;
@@ -344,12 +344,19 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log,
-                acceptSelector, workerLsnr, idleHnd));
+            String threadName;
+
+            if (srvName == null)
+                threadName = "nio-acceptor";
+            else
+                threadName = "nio-acceptor-" + srvName;
+
+            acceptWorker = new GridNioAcceptWorker(igniteInstanceName, threadName, log, acceptSelector, workerLsnr,
+                idleHnd);
         }
         else {
             locAddr = null;
-            acceptThread = null;
+            acceptWorker = null;
         }
 
         clientWorkers = new ArrayList<>(selectorCnt);
@@ -435,8 +442,8 @@ public class GridNioServer<T> {
     public void start() {
         filterChain.start();
 
-        if (acceptThread != null)
-            acceptThread.start();
+        if (acceptWorker != null)
+            new IgniteThread(acceptWorker).start();
 
         for (IgniteThread thread : clientThreads)
             thread.start();
@@ -450,8 +457,8 @@ public class GridNioServer<T> {
             closed = true;
 
             // Make sure to entirely stop acceptor if any.
-            U.interrupt(acceptThread);
-            U.join(acceptThread, log);
+            U.cancel(acceptWorker);
+            U.join(acceptWorker, log);
 
             U.cancel(clientWorkers);
             U.join(clientWorkers, log);
@@ -2159,6 +2166,7 @@ public class GridNioServer<T> {
                         else
                             updateHeartbeat();
 
+                        // select() call above doesn't throw on interruption; checking it here to propagate timely.
                         if (!closed && !isCancelled && Thread.interrupted())
                             throw new InterruptedException();
                     }
@@ -2876,7 +2884,7 @@ public class GridNioServer<T> {
             try {
                 boolean reset = false;
 
-                while (!closed && !Thread.currentThread().isInterrupted()) {
+                while (!closed && !isCancelled()) {
                     try {
                         if (reset)
                             selector = createSelector(locAddr);
