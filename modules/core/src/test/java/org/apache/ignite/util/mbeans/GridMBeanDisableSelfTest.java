@@ -41,8 +41,6 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
     }
 

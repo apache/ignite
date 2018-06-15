@@ -112,10 +112,12 @@ namespace ignite
 
             parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
 
-            std::string dsn = config.GetDsn();
+            if (config.IsDsnSet())
+            {
+                std::string dsn = config.GetDsn();
 
-            if (!dsn.empty())
                 ReadDsnConfiguration(dsn.c_str(), config);
+            }
 
             return InternalEstablish(config);
         }
@@ -446,6 +448,15 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = SQL_AUTOCOMMIT_ON;
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -465,13 +476,6 @@ namespace ignite
 
         SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
         {
-            if (!value)
-            {
-                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER, "Value pointer is null.");
-
-                return SqlResult::AI_ERROR;
-            }
-
             switch (attr)
             {
                 case SQL_ATTR_CONNECTION_DEAD:
@@ -497,6 +501,16 @@ namespace ignite
 
                     if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
                         return SqlResult::AI_SUCCESS_WITH_INFO;
+
+                    break;
+                }
+
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER val = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+
+                    if (val != SQL_AUTOCOMMIT_ON)
+                        return SqlResult::AI_ERROR;
 
                     break;
                 }

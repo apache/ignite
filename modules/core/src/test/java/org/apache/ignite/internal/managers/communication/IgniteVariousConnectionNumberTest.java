@@ -83,13 +83,6 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
         log.info("Random seed: " + seed);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

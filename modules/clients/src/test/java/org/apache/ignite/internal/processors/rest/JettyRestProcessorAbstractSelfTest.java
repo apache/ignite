@@ -184,8 +184,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IGNITE_JETTY_PORT);
     }
 
@@ -483,6 +481,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode json = assertResponseSucceeded(ret, false);
         assertEquals(ref1.name, json.get("name").asText());
+        assertEquals(ref1.ref.toString(), json.get("ref").toString());
 
         ref2.ref(ref1);
 
@@ -2760,6 +2759,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         public void ref(CircularRef ref) {
             this.ref = ref;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            SB sb = new SB();
+
+            sb.a('{')
+                .a('"').a("id").a('"').a(':').a(id).a(',')
+                .a('"').a("name").a('"').a(':').a('"').a(name).a('"').a(',')
+                .a('"').a("ref").a('"').a(':').a(ref)
+                .a('}');
+
+            return sb.toString();
+        }
     }
 
     /**
@@ -3062,7 +3074,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
         drCfg.setName("testDataRegion");
-        drCfg.setMaxSize(100 * 1024 * 1024);
+        drCfg.setMaxSize(100L * 1024 * 1024);
 
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
