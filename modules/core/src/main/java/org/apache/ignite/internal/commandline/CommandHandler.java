@@ -54,7 +54,9 @@ import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -793,7 +795,7 @@ public class CommandHandler {
             if (!F.isEmpty(res.counterConflicts())) {
                 log("Update counter conflicts:");
 
-                for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : res.counterConflicts().entrySet()) {
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : res.counterConflicts().entrySet()) {
                     log("Conflict partition: " + entry.getKey());
 
                     log("Partition instances: " + entry.getValue());
@@ -805,7 +807,7 @@ public class CommandHandler {
             if (!F.isEmpty(res.hashConflicts())) {
                 log("Hash conflicts:");
 
-                for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : res.hashConflicts().entrySet()) {
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : res.hashConflicts().entrySet()) {
                     log("Conflict partition: " + entry.getKey());
 
                     log("Partition instances: " + entry.getValue());
@@ -818,7 +820,7 @@ public class CommandHandler {
         if (!F.isEmpty(res.movingPartitions())) {
             log("Verification was skipped for " + res.movingPartitions().size() + " MOVING partitions:");
 
-            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : res.movingPartitions().entrySet()) {
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : res.movingPartitions().entrySet()) {
                 log("Rebalancing partition: " + entry.getKey());
 
                 log("Partition instances: " + entry.getValue());

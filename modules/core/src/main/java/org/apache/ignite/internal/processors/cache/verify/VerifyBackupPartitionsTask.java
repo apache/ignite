@@ -56,7 +56,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Legacy version of {@link VerifyBackupPartitionsTaskV2}.
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
@@ -68,8 +67,11 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
+ *
+ * @deprecated Legacy version of {@link VerifyBackupPartitionsTaskV2}.
  */
 @GridInternal
+@Deprecated
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     Map<PartitionKey, List<PartitionHashRecord>>> {
     /** */
@@ -155,10 +157,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     }
 
     /**
-     * Even though {@link VerifyBackupPartitionsTask} is deprecated, instances of this job is produced by newer
-     * version of the task - {@link VerifyBackupPartitionsTaskV2}.
+     * Legacy version of {@link VerifyBackupPartitionsTaskV2} internal job, kept for compatibility.
      */
-    public static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
+    @Deprecated
+    private static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 

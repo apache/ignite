@@ -34,13 +34,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Counter conflicts. */
-    private Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts;
 
     /** Hash conflicts. */
-    private Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts;
 
     /** Moving partitions. */
-    private Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
+    private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
 
     /**
      * @param cntrConflicts Counter conflicts.
@@ -48,9 +48,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @param movingPartitions Moving partitions.
      */
     public IdleVerifyResultV2(
-        Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts,
-        Map<PartitionKey, List<PartitionHashRecord>> hashConflicts,
-        Map<PartitionKey, List<PartitionHashRecord>> movingPartitions
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions
     ) {
         this.cntrConflicts = cntrConflicts;
         this.hashConflicts = hashConflicts;
@@ -81,21 +81,21 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * @return Counter conflicts.
      */
-    public Map<PartitionKey, List<PartitionHashRecord>> counterConflicts() {
+    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> counterConflicts() {
         return cntrConflicts;
     }
 
     /**
      * @return Hash conflicts.
      */
-    public Map<PartitionKey, List<PartitionHashRecord>> hashConflicts() {
+    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts() {
         return hashConflicts;
     }
 
     /**
      * @return Moving partitions.
      */
-    public Map<PartitionKey, List<PartitionHashRecord>> movingPartitions() {
+    public Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions() {
         return movingPartitions;
     }
 
