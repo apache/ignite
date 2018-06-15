@@ -41,11 +41,13 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -106,7 +109,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -941,6 +943,12 @@ class ClientImpl extends TcpDiscoveryImpl {
         joinLatch.countDown();
     }
 
+    private WorkersRegistry getWorkersRegistry() {
+        Ignite ignite = spi.ignite();
+
+        return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
+    }
+
     /**
      * Metrics sender.
      */
@@ -1578,7 +1586,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private MessageWorker(IgniteLogger log) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log);
+            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry());
         }
 
         /** {@inheritDoc} */
