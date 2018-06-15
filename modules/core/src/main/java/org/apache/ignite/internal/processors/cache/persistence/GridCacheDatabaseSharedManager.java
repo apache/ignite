@@ -4325,21 +4325,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Method for wrap it.next() call.
      *
      * @param it WalIterator.
-     * @param failed CRC failure handler. True if CRC fail should throws as exception.
+     * @param throwsCRCError CRC failure handler. True if CRC fail should throws as exception.
      * False if it last corrupted  record.
      * @return Tuple of WalPointer and WalRecord.
      * @throws IgniteCheckedException If exception is not handled.
      */
     private IgniteBiTuple<WALPointer, WALRecord> next(
         WALIterator it,
-        Supplier<Boolean> failed
+        Supplier<Boolean> throwsCRCError
     ) throws IgniteCheckedException {
         try {
             return it.nextX();
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
-                if (failed.get())
+                if (throwsCRCError.get())
                     throw e;
                 else
                     return null;
