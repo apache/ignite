@@ -604,7 +604,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] buf, int off, int len) throws IOException {
+        @Override public int write(byte[] buf, int off, int len) throws IOException {
             CountDownLatch latch = fileIOLatch.get();
 
             if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
@@ -615,7 +615,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                     throw new IgniteException(ex);
                 }
 
-            delegate.write(buf, off, len);
+            return delegate.write(buf, off, len);
         }
 
         /** {@inheritDoc} */
