@@ -206,6 +206,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         total += cm.getEstimatedRebalancingKeys();
                         ready += cm.getRebalancedKeys();
 
+                        System.out.println("??? cache=" + cacheName + ", total=" + total + ", ready=" + ready + (ready > total ? " !BROKEN!" : ""));
+
                         resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
                     catch(IllegalStateException | IllegalArgumentException e) {
