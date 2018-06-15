@@ -1558,6 +1558,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Notifying exchange future about single message: " + exchFut);
 
+                if (msg.client() && !exchFut.isDone()) {
+                    if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
+                        U.warn(log, "Client node tries to connect but its exchange " +
+                            "info is cleaned up from exchange history." +
+                            " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
+                            "or start clients in  smaller batches."
+                        );
+
+                        exchFut.forceClientReconnect(node, msg);
+
+                        return;
+                    }
+                }
+
                 exchFut.onReceiveSingleMessage(node, msg);
             }
         }
@@ -2648,14 +2662,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     throw e;
                 }
                 catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
-                    assert cctx.discovery().reconnectSupported();
+                    if (cctx.discovery().reconnectSupported()) {
+                        U.warn(log, "Local node failed to complete partition map exchange due to " +
+                            "exception, will try to reconnect to cluster: " + e.getMessage(), e);
 
-                    U.warn(log,"Local node failed to complete partition map exchange due to " +
-                        "network issues, will try to reconnect to cluster", e);
+                        cctx.discovery().reconnect();
 
-                    cctx.discovery().reconnect();
-
-                    reconnectNeeded = true;
+                        reconnectNeeded = true;
+                    }
+                    else
+                        U.warn(log, "Local node received IgniteClientDisconnectedCheckedException or " +
+                            " IgniteNeedReconnectException exception but doesn't support reconnect, stopping node: " +
+                            e.getMessage(), e);
 
                     return;
                 }
