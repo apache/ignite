@@ -269,8 +269,6 @@ public class GridToStringBuilder {
         assert name3 != null;
         assert name4 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[5];
         Object[] addVals = new Object[5];
         boolean[] addSens = new boolean[5];
@@ -291,12 +289,12 @@ public class GridToStringBuilder {
         addVals[4] = val4;
         addSens[4] = sens4;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 5, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 5);
         }
         finally {
             if (newStr)
@@ -346,8 +344,6 @@ public class GridToStringBuilder {
         assert name4 != null;
         assert name5 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[6];
         Object[] addVals = new Object[6];
         boolean[] addSens = new boolean[6];
@@ -371,12 +367,12 @@ public class GridToStringBuilder {
         addVals[5] = val5;
         addSens[5] = sens5;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 6, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 6);
         }
         finally {
             if (newStr)
@@ -431,8 +427,6 @@ public class GridToStringBuilder {
         assert name5 != null;
         assert name6 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[7];
         Object[] addVals = new Object[7];
         boolean[] addSens = new boolean[7];
@@ -459,12 +453,12 @@ public class GridToStringBuilder {
         addVals[6] = val6;
         addSens[6] = sens6;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 7, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 7);
         }
         finally {
             if (newStr)
@@ -532,8 +526,6 @@ public class GridToStringBuilder {
         assert name2 != null;
         assert name3 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[4];
         Object[] addVals = new Object[4];
         boolean[] addSens = new boolean[4];
@@ -551,12 +543,12 @@ public class GridToStringBuilder {
         addVals[3] = val3;
         addSens[3] = sens3;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 4, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 4);
         }
         finally {
             if (newStr)
@@ -616,8 +608,6 @@ public class GridToStringBuilder {
         assert name1 != null;
         assert name2 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[3];
         Object[] addVals = new Object[3];
         boolean[] addSens = new boolean[3];
@@ -632,12 +622,12 @@ public class GridToStringBuilder {
         addVals[2] = val2;
         addSens[2] = sens2;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 3, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 3);
         }
         finally {
             if (newStr)
@@ -685,8 +675,6 @@ public class GridToStringBuilder {
         assert name0 != null;
         assert name1 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[2];
         Object[] addVals = new Object[2];
         boolean[] addSens = new boolean[2];
@@ -698,12 +686,12 @@ public class GridToStringBuilder {
         addVals[1] = val1;
         addSens[1] = sens1;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 2, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 2);
         }
         finally {
             if (newStr)
@@ -741,8 +729,6 @@ public class GridToStringBuilder {
         assert obj != null;
         assert name != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] addNames = new Object[1];
         Object[] addVals = new Object[1];
         boolean[] addSens = new boolean[1];
@@ -751,12 +737,12 @@ public class GridToStringBuilder {
         addVals[0] = val;
         addSens[0] = sens;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 1, newStr);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 1);
         }
         finally {
             if (newStr)
@@ -778,12 +764,10 @@ public class GridToStringBuilder {
 
         SBLimitedLength sb = threadLocSB.get();
 
-        boolean newStr = false;
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
-            return toStringImpl(cls, sb, obj, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, newStr);
+            return toStringImpl(cls, sb, obj, EMPTY_ARRAY, EMPTY_ARRAY, null, 0);
         }
         finally {
             if (newStr)
@@ -970,7 +954,6 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
-     * @param newStr {@code True} if it is the first call of {@code GridToStringBuilder} in the stack.
      * @return String presentation of the given object.
      */
     private static <T> String toStringImpl(
@@ -980,8 +963,7 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen,
-        boolean newStr) {
+        int addLen) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
@@ -989,6 +971,8 @@ public class GridToStringBuilder {
         assert addVals != null;
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
+
+        boolean newStr = buf.length() == 0;
 
         IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
 
@@ -1199,8 +1183,6 @@ public class GridToStringBuilder {
     public static String toString(String str, String name, @Nullable Object val, boolean sens) {
         assert name != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[1];
         Object[] propVals = new Object[1];
         boolean[] propSens = new boolean[1];
@@ -1209,11 +1191,11 @@ public class GridToStringBuilder {
         propVals[0] = val;
         propSens[0] = sens;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 1);
         }
         finally {
@@ -1255,8 +1237,6 @@ public class GridToStringBuilder {
         assert name0 != null;
         assert name1 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[2];
         Object[] propVals = new Object[2];
         boolean[] propSens = new boolean[2];
@@ -1268,11 +1248,11 @@ public class GridToStringBuilder {
         propVals[1] = val1;
         propSens[1] = sens1;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 2);
         }
         finally {
@@ -1304,8 +1284,6 @@ public class GridToStringBuilder {
         assert name1 != null;
         assert name2 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[3];
         Object[] propVals = new Object[3];
         boolean[] propSens = new boolean[3];
@@ -1320,11 +1298,11 @@ public class GridToStringBuilder {
         propVals[2] = val2;
         propSens[2] = sens2;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 3);
         }
         finally {
@@ -1361,8 +1339,6 @@ public class GridToStringBuilder {
         assert name2 != null;
         assert name3 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[4];
         Object[] propVals = new Object[4];
         boolean[] propSens = new boolean[4];
@@ -1380,11 +1356,11 @@ public class GridToStringBuilder {
         propVals[3] = val3;
         propSens[3] = sens3;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 4);
         }
         finally {
@@ -1426,8 +1402,6 @@ public class GridToStringBuilder {
         assert name3 != null;
         assert name4 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[5];
         Object[] propVals = new Object[5];
         boolean[] propSens = new boolean[5];
@@ -1448,11 +1422,11 @@ public class GridToStringBuilder {
         propVals[4] = val4;
         propSens[4] = sens4;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 5);
         }
         finally {
@@ -1499,8 +1473,6 @@ public class GridToStringBuilder {
         assert name4 != null;
         assert name5 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[6];
         Object[] propVals = new Object[6];
         boolean[] propSens = new boolean[6];
@@ -1524,11 +1496,11 @@ public class GridToStringBuilder {
         propVals[5] = val5;
         propSens[5] = sens5;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 6);
         }
         finally {
@@ -1580,8 +1552,6 @@ public class GridToStringBuilder {
         assert name5 != null;
         assert name6 != null;
 
-        SBLimitedLength sb = threadLocSB.get();
-
         Object[] propNames = new Object[7];
         Object[] propVals = new Object[7];
         boolean[] propSens = new boolean[7];
@@ -1608,11 +1578,11 @@ public class GridToStringBuilder {
         propVals[6] = val6;
         propSens[6] = sens6;
 
-        boolean newStr = false;
+        SBLimitedLength sb = threadLocSB.get();
+
+        boolean newStr = sb.length() == 0;
 
         try {
-            newStr = sb.length() == 0;
-
             return toStringImpl(str, sb, propNames, propVals, propSens, 7);
         }
         finally {
