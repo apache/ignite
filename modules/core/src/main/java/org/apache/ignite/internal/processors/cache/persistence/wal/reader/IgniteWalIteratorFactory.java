@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -69,7 +70,6 @@ public class IgniteWalIteratorFactory {
     /**
      * Creates WAL files iterator factory.
      * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
-     *
      */
     public IgniteWalIteratorFactory() {
         this(ConsoleLogger.INSTANCE);
@@ -220,7 +220,7 @@ public class IgniteWalIteratorFactory {
 
         final FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
 
-        final List<FileDescriptor> descriptors = new ArrayList<>();
+        final TreeSet<FileDescriptor> descriptors = new TreeSet<>();
 
         for (File file : filesOrDirs) {
             if (file.isDirectory()) {
@@ -244,9 +244,7 @@ public class IgniteWalIteratorFactory {
             addFileDescriptor(file, ioFactory, descriptors);
         }
 
-        Collections.sort(descriptors);
-
-        return descriptors;
+        return new ArrayList<>(descriptors);
     }
 
     /**
@@ -254,7 +252,7 @@ public class IgniteWalIteratorFactory {
      * @param ioFactory IO factory.
      * @param descriptors List of descriptors.
      */
-    private void addFileDescriptor(File file, FileIOFactory ioFactory, List<FileDescriptor> descriptors) {
+    private void addFileDescriptor(File file, FileIOFactory ioFactory, TreeSet<FileDescriptor> descriptors) {
         if (file.length() < HEADER_RECORD_SIZE)
             return; // Filter out this segment as it is too short.
 
@@ -437,7 +435,6 @@ public class IgniteWalIteratorFactory {
 
             return this;
         }
-
 
         /**
          * @param marshallerMappingFileStoreDir Path to the marshaller mapping.
