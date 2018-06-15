@@ -22,10 +22,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -33,6 +37,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -55,6 +60,9 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
     /** Sample count. */
     private static final int SAMPLE_CNT = 1;
+
+    /** Latch on failure processor. */
+    private static CountDownLatch failureLatch;
 
     /** */
     public static final String TEST_BODY = "Test body";
@@ -86,6 +94,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return new TestMessage2();
             }
         });
+
+        GridIoMessageFactory.registerCustom(TestBadMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
+                return new TestBadMessage();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -100,6 +114,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes((int[])null);
 
+        cfg.setFailureHandler(new TestFailureHandler());
+
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -113,6 +129,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        failureLatch = new CountDownLatch(1);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -121,6 +142,42 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             startGridsMultiThreaded(2);
 
             doSend();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSendBadMessage() throws Exception {
+        try {
+            startGrids(2);
+
+            Ignite ignite0 = grid(0);
+            Ignite ignite1 = grid(1);
+
+            ((IgniteKernal)ignite0).context().cache().context().io().addCacheHandler(
+                0, TestBadMessage.class, new CI2<UUID, GridCacheMessage>() {
+                @Override public void apply(UUID nodeId, GridCacheMessage msg) {
+                    throw new RuntimeException("Test bad message exception");
+                }
+            });
+
+            ((IgniteKernal)ignite1).context().cache().context().io().addCacheHandler(
+                0, TestBadMessage.class, new CI2<UUID, GridCacheMessage>() {
+                    @Override public void apply(UUID nodeId, GridCacheMessage msg) {
+                        throw new RuntimeException("Test bad message exception");
+                    }
+                });
+
+            ((IgniteKernal)ignite0).context().cache().context().io().send(
+                ((IgniteKernal)ignite1).localNode().id(), new TestBadMessage(), (byte)2);
+
+            boolean res = failureLatch.await(5, TimeUnit.SECONDS);
+
+            assertTrue(res);
         }
         finally {
             stopAllGrids();
@@ -544,6 +601,185 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                         return false;
 
                     writer.incrementState();
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            reader.setBuffer(buf);
+
+            if (!reader.beforeMessageRead())
+                return false;
+
+            if (!super.readFrom(buf, reader))
+                return false;
+
+            switch (reader.state()) {
+                case 3:
+                    nodeId = reader.readUuid("nodeId");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 4:
+                    id = reader.readInt("id");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 5:
+                    body = reader.readString("body");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 6:
+                    msg = reader.readMessage("msg");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * Test message class.
+     */
+    static class TestBadMessage extends GridCacheMessage {
+        /** */
+        public static final short DIRECT_TYPE = 204;
+
+        /** Node id. */
+        private UUID nodeId;
+
+        /** Integer field. */
+        private int id;
+
+        /** Body. */
+        private String body;
+
+        /** */
+        private Message msg;
+
+        /**
+         * @param mes Message.
+         */
+        public void init(Message mes, UUID nodeId, int id, String body) {
+            this.nodeId = nodeId;
+            this.id = id;
+            this.msg = mes;
+            this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
+        }
+
+        /**
+         * @return Body.
+         */
+        public String body() {
+            return body;
+        }
+
+        /**
+         * @return Message.
+         */
+        public Message message() {
+            return msg;
+        }
+
+        /**
+         * @return Node id.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Id.
+         */
+        public int id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            return DIRECT_TYPE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 7;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            throw new RuntimeException("Exception while log message");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            writer.setBuffer(buf);
+
+            if (!super.writeTo(buf, writer))
+                return false;
+
+            if (!writer.isHeaderWritten()) {
+                if (!writer.writeHeader(directType(), fieldsCount()))
+                    return false;
+
+                writer.onHeaderWritten();
+            }
+
+            switch (writer.state()) {
+                case 3:
+                    if (!writer.writeUuid("nodeId", nodeId))
+                        return false;
+
+                    writer.incrementState();
+
+                case 4:
+                    if (!writer.writeInt("id", id))
+                        return false;
+
+                    writer.incrementState();
+
+                case 5:
+                    if (!writer.writeString("body", body))
+                        return false;
+
+                    writer.incrementState();
+
+                case 6:
+                    if (!writer.writeMessage("msg", msg))
+                        return false;
+
+                    writer.incrementState();
 
             }
 
@@ -596,6 +832,18 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             }
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestFailureHandler implements FailureHandler {
+        /** {@inheritDoc} */
+        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+            failureLatch.countDown();
+
+            return false;
         }
     }
 }
