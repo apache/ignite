@@ -1959,9 +1959,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * @param log Logger.
          */
         FileDecompressor(IgniteLogger log) {
-            super(cctx.igniteInstanceName(), "wal-file-decompressor%" + cctx.igniteInstanceName(), log,
-                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry(),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(cctx.igniteInstanceName(), "wal-file-decompressor%" + cctx.igniteInstanceName(), log);
         }
 
         /** {@inheritDoc} */
