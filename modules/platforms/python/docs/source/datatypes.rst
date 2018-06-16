@@ -9,42 +9,50 @@ datatypes package
 Submodules
 ----------
 
-datatypes.arrays module
------------------------
+datatypes.any\_object module
+----------------------------
 
-.. automodule:: datatypes.arrays
+.. automodule:: datatypes.any_object
     :members:
     :undoc-members:
     :show-inheritance:
 
-datatypes.class\_configs module
--------------------------------
+datatypes.cache\_config module
+------------------------------
 
-.. automodule:: datatypes.class_configs
+.. automodule:: datatypes.cache_config
     :members:
     :undoc-members:
     :show-inheritance:
 
-datatypes.fractional module
----------------------------
+datatypes.null\_object module
+-----------------------------
 
-.. automodule:: datatypes.fractional
+.. automodule:: datatypes.null_object
     :members:
     :undoc-members:
     :show-inheritance:
 
-datatypes.null module
----------------------
+datatypes.primitive module
+--------------------------
 
-.. automodule:: datatypes.null
+.. automodule:: datatypes.primitive
     :members:
     :undoc-members:
     :show-inheritance:
 
-datatypes.simple module
------------------------
+datatypes.primitive\_arrays module
+----------------------------------
 
-.. automodule:: datatypes.simple
+.. automodule:: datatypes.primitive_arrays
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+datatypes.primitive\_objects module
+-----------------------------------
+
+.. automodule:: datatypes.primitive_objects
     :members:
     :undoc-members:
     :show-inheritance:
@@ -57,10 +65,10 @@ datatypes.standard module
     :undoc-members:
     :show-inheritance:
 
-datatypes.string module
------------------------
+datatypes.strings module
+------------------------
 
-.. automodule:: datatypes.string
+.. automodule:: datatypes.strings
     :members:
     :undoc-members:
     :show-inheritance:
@@ -69,14 +77,6 @@ datatypes.type\_codes module
 ----------------------------
 
 .. automodule:: datatypes.type_codes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-datatypes.vararrays module
---------------------------
-
-.. automodule:: datatypes.vararrays
     :members:
     :undoc-members:
     :show-inheritance:

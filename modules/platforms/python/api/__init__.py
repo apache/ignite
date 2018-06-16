@@ -14,22 +14,22 @@
 # limitations under the License.
 
 """
-This module contains classes and functions, that let one communicate
+This module contains classes and functions, that let you communicate
 with Apache Ignite cluster node by the means of Ignite binary client protocol.
 
-To start the communication, one may connect to the node of their choice
+To start the communication, you may connect to the node of their choice
 by instantiating the `Connection` object with proper connection parameters,
 like host name, and port number. Connection wraps TCP socket handling,
 as well as Ignite protocol handshaking.
 
 The whole storage room of Ignite cluster is split up onto named structures,
-called caches. One may access the particular cache, creating the hash code
+called caches. You may access the particular cache, creating the hash code
 of its name with `hashcode()` function.
 
 Apache Ignite binary API contains a rich set of functions to control
-the lifecycle of caches. One may use them through the `cache_config` module.
+the lifecycle of caches. These functions resides in the `cache_config` module.
 
-On successful connection, one may query the data on Ignite server, using
+On successful connection, you may query the data on Ignite server, using
 either key-value subset of functions, in the way similar to Redis/memcached
 APIs, or SQL subset of functions, or both. Those are `key_value` and `sql`
 modules for you.

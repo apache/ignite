@@ -57,8 +57,8 @@ To override the default parameters, use command line options
 You can use each of these options multiple times. All combinations
 of given host and port will be tested.
 
-Documetation
-------------
+Documentation
+-------------
 To recompile this documentation, do
 
 ::

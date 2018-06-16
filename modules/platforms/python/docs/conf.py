@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'Apache Ignite binary client Python API'
-copyright = '2018, Dmitry Melnichuk'
+copyright = '2018, Apache Software Foundation (ASF)'
 author = 'Dmitry Melnichuk'
 
 # The short X.Y version
@@ -131,7 +131,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'ApacheIgnitebinaryclientPythonAPI.tex', 'Apache Ignite binary client Python API Documentation',
-     'Dmitry Melnichuk', 'manual'),
+     'Apache Software Foundation (ASF)', 'manual'),
 ]
 
 
