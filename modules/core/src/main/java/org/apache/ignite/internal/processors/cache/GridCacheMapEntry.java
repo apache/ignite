@@ -1202,7 +1202,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx, MvccSnapshot mvccVer)
+    @Override public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx, MvccSnapshot mvccVer)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert tx != null;
         assert mvccVer != null;

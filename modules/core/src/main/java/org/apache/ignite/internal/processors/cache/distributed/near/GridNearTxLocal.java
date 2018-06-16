@@ -3632,7 +3632,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             }
         }
         else
-            fut.finish(false, onTimeout, onTimeout);
+            fut.finish(false, true, onTimeout);
 
         return fut;
     }

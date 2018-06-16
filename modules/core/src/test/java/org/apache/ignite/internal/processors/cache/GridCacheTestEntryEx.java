@@ -27,6 +27,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -492,6 +493,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
         val = null;
 
+        return new GridCacheUpdateTxResult(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx,
+        MvccSnapshot mvccVer) throws GridCacheEntryRemovedException, IgniteCheckedException {
         return new GridCacheUpdateTxResult(true);
     }
 

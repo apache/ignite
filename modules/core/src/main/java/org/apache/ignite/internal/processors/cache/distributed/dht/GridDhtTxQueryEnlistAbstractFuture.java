@@ -813,22 +813,12 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         // No-op.
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion version() {
-        return lockVer;
-    }
-
-    /**
-     * @param nodeId Left node ID
-     * @return {@code True} if node was in the list.
-     */
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean backupLeft = false;
 

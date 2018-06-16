@@ -28,6 +28,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -386,6 +387,16 @@ public interface GridCacheEntryEx {
             AffinityTopologyVersion topVer,
             @Nullable Long updateCntr,
             MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param tx Transaction adapter.
+     * @param mvccVer Mvcc version.
+     * @return Lock result.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @throws IgniteCheckedException If locking failed
+     */
+    GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx,
+        MvccSnapshot mvccVer) throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
      * @param tx Cache transaction.
