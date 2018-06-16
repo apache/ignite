@@ -88,6 +88,29 @@ from datatypes.strings import *
 
         # time
         (timedelta(days=4, hours=4, minutes=24), None),
+
+        # enum is useless in Python, except for interoperability with Java.
+        # Also no autodetection
+        ((5, 6), BinaryEnumObject),
+
+        # arrays of standard types
+        ([uuid.uuid4(), uuid.uuid4()], None),
+        (
+            [
+                datetime(year=2010, month=1, day=1),
+                datetime(year=2010, month=12, day=31),
+            ],
+            None,
+        ),
+        ([timedelta(minutes=30), timedelta(hours=2)], None),
+        (
+            [
+                (datetime(year=2010, month=1, day=1), 1000),
+                (datetime(year=2010, month=12, day=31), 200),
+            ],
+            TimestampArrayObject
+        ),
+        ((-1, [(6001, 1), (6002, 2), (6003, 3)]), BinaryEnumArrayObject),
     ]
 )
 def test_put_get_data(ignite_host, ignite_port, value, value_hint):

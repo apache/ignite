@@ -15,7 +15,7 @@
 
 import ctypes
 import decimal
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import uuid
 
 from connection import Connection
@@ -47,6 +47,8 @@ tc_map = {
     TC_DATE: DateObject,
     TC_TIMESTAMP: TimestampObject,
     TC_TIME: TimeObject,
+    TC_ENUM: EnumObject,
+    TC_BINARY_ENUM: BinaryEnumObject,
 
     TC_BYTE_ARRAY: ByteArrayObject,
     TC_SHORT_ARRAY: ShortArrayObject,
@@ -57,8 +59,16 @@ tc_map = {
     TC_CHAR_ARRAY: CharArrayObject,
     TC_BOOL_ARRAY: BoolArrayObject,
 
+    TC_UUID_ARRAY: UUIDArrayObject,
+    TC_DATE_ARRAY: DateArrayObject,
+    TC_TIMESTAMP_ARRAY: TimestampArrayObject,
+    TC_TIME_ARRAY: TimeArrayObject,
+    TC_ENUM_ARRAY: EnumArrayObject,
+
     TC_STRING: String,
     TC_STRING_ARRAY: StringArrayObject,
+
+    TC_OBJECT_ARRAY: ObjectArray,
 }
 
 
@@ -151,6 +161,7 @@ class AnyDataObject:
             type(None): Null,
             uuid.UUID: UUIDObject,
             datetime: DateObject,
+            date: DateObject,
             timedelta: TimeObject,
         }
 
@@ -160,6 +171,10 @@ class AnyDataObject:
             str: StringArrayObject,
             bytes: StringArrayObject,
             bool: BoolArrayObject,
+            uuid.UUID: UUIDArrayObject,
+            datetime: DateArrayObject,
+            date: DateArrayObject,
+            timedelta: TimeArrayObject,
         }
 
         value_type = type(value)

@@ -40,8 +40,10 @@ TC_COLLECTION = b'\x18'
 TC_MAP = b'\x19'
 
 TC_ARRAY_WRAPPED_OBJECTS = b'\x1b'
+
 TC_ENUM = b'\x1c'
 TC_ENUM_ARRAY = b'\x1d'
+
 TC_DECIMAL = b'\x1e'
 TC_DECIMAL_ARRAY = b'\x1f'
 TC_TIMESTAMP = b'\x21'
@@ -49,6 +51,7 @@ TC_TIMESTAMP_ARRAY = b'\x22'
 
 TC_TIME = b'\x24'
 TC_TIME_ARRAY = b'\x25'
+TC_BINARY_ENUM = b'\x26'
 
 TC_NULL = b'\x65'
 TC_COMPLEX_OBJECT = b'\x67'

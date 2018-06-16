@@ -19,8 +19,6 @@ from .result import APIResult
 
 from datatypes.any_object import AnyDataObject
 from datatypes.primitive import Byte, Int
-from datatypes.primitive_objects import IntObject
-from datatypes.cache_config import String
 from queries import Query, Response
 
 
