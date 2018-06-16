@@ -120,7 +120,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
 
             boolean checkpointWithLowNumOfPagesFound = false;
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 10; i++) {
                 Random random = new Random();
                 //touch some entry
                 int d = random.nextInt(PARTS) + PARTS;
@@ -134,29 +134,18 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
                 if (log.isInfoEnabled())
                     log.info("Put to cache [" + fullname + "] value " + d);
 
-                long start = System.nanoTime();
+                final int timeout = 5000;
                 try {
-                    final int cpTimeout = 25000;
-
-                    db.wakeupForCheckpoint("").get(cpTimeout, TimeUnit.MILLISECONDS);
+                    db.wakeupForCheckpoint("").get(timeout, TimeUnit.MILLISECONDS);
                 }
-                catch (IgniteFutureTimeoutCheckedException ignored) {
-                    long msPassed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-
-                    log.error("Timeout during waiting for checkpoint to start:" +
-                        " [" + msPassed + "] but checkpoint is not running");
-
+                catch (IgniteFutureTimeoutCheckedException e) {
                     continue;
                 }
 
-                final int timeout = 5000;
                 int currCpPages = waitForCurrentCheckpointPagesCounterUpdated(db, timeout);
 
-                if (currCpPages < 0) {
-                    log.error("Timeout during waiting for checkpoint counter to be updated");
-
+                if (currCpPages < 0)
                     continue;
-                }
 
                 pageCntObserved.add(currCpPages);
 
