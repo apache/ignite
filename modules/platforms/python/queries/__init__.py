@@ -27,7 +27,7 @@ import attr
 
 from connection import Connection
 from constants import *
-from datatypes.strings import PString
+from datatypes.strings import String
 from .op_codes import *
 
 
@@ -103,7 +103,7 @@ class Response:
                 buffer += buffer_fragment
                 fields.append((name, c_type))
         else:
-            c_type, buffer_fragment = PString.parse(conn)
+            c_type, buffer_fragment = String.parse(conn)
             buffer += buffer_fragment
             fields.append(('error_message', c_type))
 

@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
 import pytest
+import uuid
 
 from api import hashcode
 from api.key_value import cache_get, cache_put
@@ -21,6 +23,7 @@ from api.cache_config import cache_create, cache_destroy
 from connection import Connection
 from datatypes.primitive_objects import *
 from datatypes.primitive_arrays import *
+from datatypes.standard import *
 from datatypes.strings import *
 
 
@@ -37,8 +40,8 @@ from datatypes.strings import *
         (3.1415, None),  # True for Double but not Float
         (3.5, FloatObject),
 
-        # char
-        ('ы', CharObject),  # Char is never autodetected
+        # char is never autodetected
+        ('ы', CharObject),
         ('カ', CharObject),
 
         # bool
@@ -65,12 +68,26 @@ from datatypes.strings import *
 
         # string
         ('Little Mary had a lamb', None),
-        ('This is a test', PString),
+        ('This is a test', String),
 
         # array of string
         (['String 1', 'String 2'], None),
         (['Some of us are empty', None, 'But not the others'], None),
-        
+
+        # uuid
+        (uuid.uuid4(), None),
+
+        # date
+        (datetime(year=1998, month=4, day=6, hour=18, minute=30), None),
+
+        # no autodetection for timestamp either
+        (
+            (datetime(year=1998, month=4, day=6, hour=18, minute=30), 1000),
+            TimestampObject
+        ),
+
+        # time
+        (timedelta(days=4, hours=4, minutes=24), None),
     ]
 )
 def test_put_get_data(ignite_host, ignite_port, value, value_hint):

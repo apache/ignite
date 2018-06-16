@@ -26,19 +26,19 @@ from .null_object import Null
 
 
 __all__ = [
-    'PString',
-    'PStringArray',
-    'PStringArrayObject',
+    'String',
+    'StringArray',
+    'StringArrayObject',
 ]
 
 
-class PString:
+class String:
     """ Pascal-style string: `c_int` counter, followed by count*bytes. """
 
-    @staticmethod
-    def build_c_type(length: int):
+    @classmethod
+    def build_c_type(cls, length: int):
         return type(
-            'String',
+            cls.__name__,
             (ctypes.LittleEndianStructure,),
             {
                 '_pack_': 1,
@@ -50,8 +50,8 @@ class PString:
             },
         )
 
-    @staticmethod
-    def parse(conn: Connection):
+    @classmethod
+    def parse(cls, conn: Connection):
         tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
         # String or Null
         if tc_type == TC_NULL:
@@ -60,7 +60,7 @@ class PString:
         buffer = tc_type + conn.recv(ctypes.sizeof(ctypes.c_int))
         length = int.from_bytes(buffer[1:], byteorder=PROTOCOL_BYTE_ORDER)
 
-        data_type = PString.build_c_type(length)
+        data_type = cls.build_c_type(length)
         buffer += conn.recv(ctypes.sizeof(data_type) - len(buffer))
 
         return data_type, buffer
@@ -75,15 +75,15 @@ class PString:
         else:
             return ''
 
-    @staticmethod
-    def from_python(value):
+    @classmethod
+    def from_python(cls, value):
         if value is None:
             return Null.from_python()
 
         if isinstance(value, str):
             value = value.encode(PROTOCOL_STRING_ENCODING)
         length = len(value)
-        data_type = PString.build_c_type(length)
+        data_type = cls.build_c_type(length)
         data_object = data_type()
         data_object.type_code = int.from_bytes(
             TC_STRING,
@@ -94,7 +94,7 @@ class PString:
         return bytes(data_object)
 
 
-class PStringArray:
+class StringArray:
 
     @classmethod
     def build_header_class(cls):
@@ -116,7 +116,7 @@ class PStringArray:
         header = header_class.from_buffer_copy(buffer)
         fields = []
         for i in range(header.length):
-            c_type, buffer_fragment = PString.parse(conn)
+            c_type, buffer_fragment = String.parse(conn)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 
@@ -135,7 +135,7 @@ class PStringArray:
         result = []
         for i in range(ctype_object.length):
             result.append(
-                PString.to_python(
+                String.to_python(
                     getattr(ctype_object, 'element_{}'.format(i))
                 )
             )
@@ -154,11 +154,11 @@ class PStringArray:
         buffer = bytes(header)
 
         for string in value:
-            buffer += PString.from_python(string)
+            buffer += String.from_python(string)
         return buffer
 
 
-class PStringArrayObject(PStringArray):
+class StringArrayObject(StringArray):
 
     @classmethod
     def build_header_class(cls):

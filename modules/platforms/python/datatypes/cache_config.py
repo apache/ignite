@@ -20,7 +20,7 @@ import attr
 
 from connection import Connection
 from constants import *
-from .strings import PString
+from .strings import String
 from .primitive import *
 
 
@@ -137,18 +137,18 @@ cache_config_struct = Struct([
     ('mistery_parameter', Int),
     ('copy_on_read', Bool),
 
-    ('data_region_name', PString),
+    ('data_region_name', String),
 
     ('eager_ttl', Bool),
     ('statistics_enabled', Bool),
 
-    ('group_name', PString),
+    ('group_name', String),
 
     ('invalidate', Int),
     ('default_lock_timeout', Long),
     ('max_query_iterators', Int),
 
-    ('name', PString),
+    ('name', String),
 
     ('is_onheap_cache_enabled', Bool),
     ('partition_loss_policy', PartitionLossPolicy),
@@ -165,42 +165,42 @@ cache_config_struct = Struct([
     ('sql_escape_all', Bool),
     ('sql_index_inline_max_size', Int),
 
-    ('sql_schema', PString),
+    ('sql_schema', String),
 
     ('write_synchronization_mode', WriteSynchronizationMode),
 
     ('cache_key_configuration', StructArray([
-        ('name', PString),
-        ('type_name', PString),
+        ('name', String),
+        ('type_name', String),
         ('is_key_field', Bool),
         ('is_notnull_constraint_field', Bool),
     ])),
 
     ('query_entity', StructArray([
-        ('key_type_name', PString),
-        ('value_type_name', PString),
-        ('table_name', PString),
-        ('key_field_name', PString),
-        ('value_field_name', PString),
+        ('key_type_name', String),
+        ('value_type_name', String),
+        ('table_name', String),
+        ('key_field_name', String),
+        ('value_field_name', String),
 
         ('query_fields', StructArray([
-            ('name', PString),
-            ('type_name', PString),
+            ('name', String),
+            ('type_name', String),
             ('is_key_field', Bool),
             ('is_notnull_constraint_field', Bool),
         ])),
 
         ('field_name_aliases', StructArray([
-            ('field_name', PString),
-            ('alias', PString),
+            ('field_name', String),
+            ('alias', String),
         ])),
 
         ('query_indexes', StructArray([
-            ('index_name', PString),
+            ('index_name', String),
             ('index_type', IndexType),
             ('inline_size', Int),
             ('fields', StructArray([
-                ('name', PString),
+                ('name', String),
                 ('is_descending', Bool),
             ])),
         ])),

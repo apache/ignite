@@ -26,7 +26,7 @@ only non-persistent storage tier.)
 from connection import Connection
 from datatypes.cache_config import cache_config_struct
 from datatypes.primitive import Int, Byte
-from datatypes.strings import PString, PStringArray
+from datatypes.strings import String, StringArray
 from queries.op_codes import *
 from queries import Query, Response
 from .result import APIResult
@@ -104,7 +104,7 @@ def cache_create(conn: Connection, name: str) -> APIResult:
     """
 
     query_struct = CacheCreateQuery([
-        ('cache_name', PString),
+        ('cache_name', String),
     ])
     _, send_buffer = query_struct.from_python({'cache_name': name})
     conn.send(send_buffer)
@@ -132,7 +132,7 @@ def cache_get_or_create(conn: Connection, name: str) -> APIResult:
     """
 
     query_struct = CacheGetOrCreateQuery([
-        ('cache_name', PString),
+        ('cache_name', String),
     ])
     _, send_buffer = query_struct.from_python({'cache_name': name})
     conn.send(send_buffer)
@@ -195,7 +195,7 @@ def cache_get_names(conn: Connection) -> APIResult:
     conn.send(send_buffer)
 
     response_struct = Response([
-        ('cache_names', PStringArray),
+        ('cache_names', StringArray),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)

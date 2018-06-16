@@ -15,13 +15,15 @@
 
 import ctypes
 import decimal
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
+import uuid
 
 from connection import Connection
 from constants import *
 from .primitive_arrays import *
 from .primitive_objects import *
 from .strings import *
+from .standard import *
 from .null_object import *
 from .type_codes import *
 
@@ -41,6 +43,11 @@ tc_map = {
     TC_CHAR: CharObject,
     TC_BOOL: BoolObject,
 
+    TC_UUID: UUIDObject,
+    TC_DATE: DateObject,
+    TC_TIMESTAMP: TimestampObject,
+    TC_TIME: TimeObject,
+
     TC_BYTE_ARRAY: ByteArrayObject,
     TC_SHORT_ARRAY: ShortArrayObject,
     TC_INT_ARRAY: IntArrayObject,
@@ -50,8 +57,8 @@ tc_map = {
     TC_CHAR_ARRAY: CharArrayObject,
     TC_BOOL_ARRAY: BoolArrayObject,
 
-    TC_STRING: PString,
-    TC_STRING_ARRAY: PStringArrayObject,
+    TC_STRING: String,
+    TC_STRING_ARRAY: StringArrayObject,
 }
 
 
@@ -84,10 +91,10 @@ class AnyDataObject:
         # arrays of these types can contain Null objects
         object_array_python_types = [
             str,
-            date,
             datetime,
             timedelta,
             decimal.Decimal,
+            uuid.UUID,
         ]
 
         iterator = iter(iterable)
@@ -138,17 +145,20 @@ class AnyDataObject:
         python_map = {
             int: LongObject,
             float: DoubleObject,
-            str: PString,
-            bytes: PString,
+            str: String,
+            bytes: String,
             bool: BoolObject,
             type(None): Null,
+            uuid.UUID: UUIDObject,
+            datetime: DateObject,
+            timedelta: TimeObject,
         }
 
         python_array_map = {
             int: LongArrayObject,
             float: DoubleArrayObject,
-            str: PStringArrayObject,
-            bytes: PStringArrayObject,
+            str: StringArrayObject,
+            bytes: StringArrayObject,
             bool: BoolArrayObject,
         }
 
