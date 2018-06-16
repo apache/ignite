@@ -24,12 +24,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Replacement removal candidate. Class represents some page from loaded pages table. Usually candidate is found during
- * random {@link LoadedPagesMap} touch.
+ *
  */
-public class ReplaceCandidate {
-    /** Partition generation saved in map, too old value means page may be safely cleared. */
-    private int gen;
+public class EvictCandidate {
+    /** */
+    private int tag;
 
     /** */
     @GridToStringExclude
@@ -40,25 +39,25 @@ public class ReplaceCandidate {
     private FullPageId fullId;
 
     /**
-     * @param gen Partition generation.
-     * @param relPtr Relative pointer to page.
+     * @param tag Tag.
+     * @param relPtr Relative pointer.
      * @param fullId Full page ID.
      */
-    public ReplaceCandidate(int gen, long relPtr, FullPageId fullId) {
-        this.gen = gen;
+    public EvictCandidate(int tag, long relPtr, FullPageId fullId) {
+        this.tag = tag;
         this.relPtr = relPtr;
         this.fullId = fullId;
     }
 
     /**
-     * @return Partition generation saved in map, too old value means page may be safely cleared.
+     * @return Tag.
      */
-    public int generation() {
-        return gen;
+    public int tag() {
+        return tag;
     }
 
     /**
-     * @return Relative pointer to page.
+     * @return Relative pointer.
      */
     public long relativePointer() {
         return relPtr;
@@ -73,6 +72,6 @@ public class ReplaceCandidate {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ReplaceCandidate.class, this, "relPtr", U.hexLong(relPtr));
+        return S.toString(EvictCandidate.class, this, "relPtr", U.hexLong(relPtr));
     }
 }

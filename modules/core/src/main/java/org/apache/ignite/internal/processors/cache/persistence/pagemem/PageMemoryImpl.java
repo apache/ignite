@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +38,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockSta
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -77,7 +76,9 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -156,7 +157,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Page lock offset. */
     public static final int PAGE_LOCK_OFFSET = 32;
 
-    /** Page temp copy buffer relative pointer offset. */
+    /** Page lock offset. */
     public static final int PAGE_TMP_BUF_OFFSET = 40;
 
     /**
@@ -187,10 +188,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Number of used pages in checkpoint buffer. */
     private final AtomicInteger cpBufPagesCntr = new AtomicInteger(0);
-
-    /** Use new implementation of loaded pages table:  'Robin Hood hashing: backward shift deletion'. */
-    private final boolean useBackwardShiftMap
-        = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP, true);
 
     /** */
     private ExecutorService asyncRunner = new ThreadPoolExecutor(
@@ -486,7 +483,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             long relPtr = seg.loadedPages.get(
                 cacheId,
                 PageIdUtils.effectivePageId(pageId),
-                seg.partGeneration(cacheId, partId),
+                seg.partTag(cacheId, partId),
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
             );
@@ -539,7 +536,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 }
             }
 
-            seg.loadedPages.put(cacheId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(cacheId, partId));
+            seg.loadedPages.put(cacheId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partTag(cacheId, partId));
         }
         catch (IgniteOutOfMemoryException oom) {
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
@@ -631,7 +628,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             long relPtr = seg.loadedPages.get(
                 cacheId,
                 PageIdUtils.effectivePageId(pageId),
-                seg.partGeneration(cacheId, partId),
+                seg.partTag(cacheId, partId),
                 INVALID_REL_PTR,
                 INVALID_REL_PTR
             );
@@ -659,7 +656,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             long relPtr = seg.loadedPages.get(
                 cacheId,
                 PageIdUtils.effectivePageId(pageId),
-                seg.partGeneration(cacheId, partId),
+                seg.partTag(cacheId, partId),
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
             );
@@ -688,7 +685,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     cacheId,
                     PageIdUtils.effectivePageId(pageId),
                     relPtr,
-                    seg.partGeneration(cacheId, partId)
+                    seg.partTag(cacheId, partId)
                 );
 
                 long pageAddr = absPtr + PAGE_OVERHEAD;
@@ -768,7 +765,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private long refreshOutdatedPage(Segment seg, int cacheId, long pageId, boolean rmv) {
         assert seg.writeLock().isHeldByCurrentThread();
 
-        int tag = seg.partGeneration(cacheId, PageIdUtils.partId(pageId));
+        int tag = seg.partTag(cacheId, PageIdUtils.partId(pageId));
 
         long relPtr = seg.loadedPages.refresh(cacheId, PageIdUtils.effectivePageId(pageId), tag);
 
@@ -792,7 +789,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         if (rmv)
-            seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId));
+            seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId), tag);
 
         if (seg.segCheckpointPages != null)
             seg.segCheckpointPages.remove(new FullPageId(pageId, cacheId));
@@ -1008,7 +1005,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         int tag;
 
-        boolean pageSingleAcquire = false;
+        boolean tmpBuffer = false;
 
         seg.readLock().lock();
 
@@ -1016,7 +1013,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (!isInCheckpoint(fullId))
                 return null;
 
-            tag = seg.partGeneration(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
+            tag = seg.partTag(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
 
             relPtr = seg.loadedPages.get(
                 fullId.groupId(),
@@ -1037,7 +1034,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR)
                     PageHeader.acquirePage(absPtr);
                 else
-                    pageSingleAcquire = true;
+                    tmpBuffer = true;
             }
         }
         finally {
@@ -1052,7 +1049,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 relPtr = seg.loadedPages.get(
                     fullId.groupId(),
                     PageIdUtils.effectivePageId(fullId.pageId()),
-                    seg.partGeneration(
+                    seg.partTag(
                         fullId.groupId(),
                         PageIdUtils.partId(fullId.pageId())
                     ),
@@ -1081,22 +1078,19 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, tmpBuffer, tracker) ? tag : null;
     }
 
     /**
      * @param absPtr Absolute ptr.
      * @param fullId Full id.
-     * @param outBuf Output buffer to write page content into.
-     * @param pageSingleAcquire Page is acquired only once. We don't pin the page second time (until page will not be
-     * copied) in case checkpoint temporary buffer is used.
-     * @param tracker Checkpoint statistics tracker.
+     * @param tmpBuf Tmp buffer.
      */
     private boolean copyPageForCheckpoint(
         long absPtr,
         FullPageId fullId,
-        ByteBuffer outBuf,
-        boolean pageSingleAcquire,
+        ByteBuffer tmpBuf,
+        boolean tmpBuffer,
         CheckpointMetricsTracker tracker
     ) {
         assert absPtr != 0;
@@ -1116,7 +1110,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
 
-                copyInBuffer(tmpAbsPtr, outBuf);
+                copyInBuffer(tmpAbsPtr, tmpBuf);
 
                 GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
@@ -1127,18 +1121,18 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 // Need release again because we pin page when resolve abs pointer,
                 // and page did not have tmp buffer page.
-                if (!pageSingleAcquire)
+                if (!tmpBuffer)
                     PageHeader.releasePage(absPtr);
 
             }
             else {
-                copyInBuffer(absPtr, outBuf);
+                copyInBuffer(absPtr, tmpBuf);
 
                 PageHeader.dirty(absPtr, false);
             }
 
-            assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
-            assert PageIO.getVersion(outBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
+            assert PageIO.getType(tmpBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
+            assert PageIO.getVersion(tmpBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
             return true;
         }
@@ -1182,7 +1176,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.writeLock().lock();
 
             try {
-                int newTag = seg.incrementPartGeneration(grpId, partId);
+                int newTag = seg.incrementPartTag(grpId, partId);
 
                 if (tag == 0)
                     tag = newTag;
@@ -1203,7 +1197,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.writeLock().lock();
 
             try {
-                seg.resetGroupPartitionsGeneration(grpId);
+                seg.resetPartTags(grpId);
             }
             finally {
                 seg.writeLock().unlock();
@@ -1213,7 +1207,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> clearAsync(
-        LoadedPagesMap.KeyPredicate pred,
+        GridPredicate3<Integer, Long, Integer> pred,
         boolean cleanDirty
     ) {
         CountDownFuture completeFut = new CountDownFuture(segments.length);
@@ -1799,22 +1793,16 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private static final double FULL_SCAN_THRESHOLD = 0.4;
 
-        /** Pointer to acquired pages integer counter. */
-        private static final int ACQUIRED_PAGES_SIZEOF = 4;
-
-        /** Padding to read from word beginning. */
-        private static final int ACQUIRED_PAGES_PADDING = 4;
-
         /** Page ID to relative pointer map. */
-        private LoadedPagesMap loadedPages;
+        private FullPageIdTable loadedPages;
 
-        /** Pointer to acquired pages integer counter. */
+        /** */
         private long acquiredPagesPtr;
 
         /** */
         private PagePool pool;
 
-        /** Bytes required to store {@link #loadedPages}. */
+        /** */
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
@@ -1826,11 +1814,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private final int maxDirtyPages;
 
-        /** Initial partition generation. */
-        private static final int INIT_PART_GENERATION = 1;
-
-        /** Maps partition (cacheId, partId) to its generation. Generation is 1-based incrementing partition counter. */
-        private final Map<GroupPartitionId, Integer> partGenerationMap = new HashMap<>();
+        /** Maps partition (cacheId, partId) to its tag. Tag is 1-based incrementing partition file counter */
+        private final Map<T2<Integer, Integer>, Integer> partTagMap = new HashMap<>();
 
         /** */
         private boolean closed;
@@ -1844,23 +1829,15 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             int pages = (int)(totalMemory / sysPageSize);
 
+            memPerTbl = requiredSegmentTableMemory(pages);
+
             acquiredPagesPtr = region.address();
 
             GridUnsafe.putIntVolatile(null, acquiredPagesPtr, 0);
 
-            int ldPagesMapOffInRegion = ACQUIRED_PAGES_SIZEOF + ACQUIRED_PAGES_PADDING;
+            loadedPages = new FullPageIdTable(region.address() + 8, memPerTbl, true);
 
-            long ldPagesAddr = region.address() + ldPagesMapOffInRegion;
-
-            memPerTbl = useBackwardShiftMap
-                ? RobinHoodBackwardShiftHashMap.requiredMemory(pages)
-                : requiredSegmentTableMemory(pages);
-
-            loadedPages = useBackwardShiftMap
-                ? new RobinHoodBackwardShiftHashMap(ldPagesAddr, memPerTbl)
-                : new FullPageIdTable(ldPagesAddr, memPerTbl, true);
-
-            DirectMemoryRegion poolRegion = region.slice(memPerTbl + ldPagesMapOffInRegion);
+            DirectMemoryRegion poolRegion = region.slice(memPerTbl + 8);
 
             pool = new PagePool(idx, poolRegion, null);
 
@@ -1985,7 +1962,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     saveDirtyPage.writePage(
                         fullPageId,
                         wrapPointer(absPtr + PAGE_OVERHEAD, pageSize()),
-                        partGeneration(
+                        partTag(
                             fullPageId.groupId(),
                             PageIdUtils.partId(fullPageId.pageId())
                         )
@@ -2107,13 +2084,13 @@ public class PageMemoryImpl implements PageMemoryEx {
                     // We need to lookup for pages only in current segment for thread safety,
                     // so peeking random memory will lead to checking for found page segment.
                     // It's much faster to check available pages for segment right away.
-                    ReplaceCandidate nearest = loadedPages.getNearestAt(rnd.nextInt(cap));
+                    EvictCandidate nearest = loadedPages.getNearestAt(rnd.nextInt(cap), INVALID_REL_PTR);
 
                     assert nearest != null && nearest.relativePointer() != INVALID_REL_PTR;
 
                     long rndAddr = nearest.relativePointer();
 
-                    int partGen = nearest.generation();
+                    int partTag = nearest.tag();
 
                     final long absPageAddr = absolute(rndAddr);
 
@@ -2123,7 +2100,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     assert fullId.equals(nearest.fullId()) : "Invalid page mapping [tableId=" + nearest.fullId() +
                         ", actual=" + fullId + ", nearest=" + nearest;
 
-                    boolean outdated = partGen < partGeneration(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
+                    boolean outdated = partTag < partTag(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
 
                     if (outdated)
                         return refreshOutdatedPage(this, fullId.groupId(), fullId.pageId(), true);
@@ -2189,7 +2166,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 loadedPages.remove(
                     fullPageId.groupId(),
-                    PageIdUtils.effectivePageId(fullPageId.pageId())
+                    PageIdUtils.effectivePageId(fullPageId.pageId()),
+                    partTag(
+                        fullPageId.groupId(),
+                        PageIdUtils.partId(fullPageId.pageId())
+                    )
                 );
 
                 return relRmvAddr;
@@ -2232,19 +2213,19 @@ public class PageMemoryImpl implements PageMemoryEx {
             int failToPrepare = 0;
 
             for (int i = 0; i < cap; i++) {
-                final ReplaceCandidate nearest = loadedPages.getNearestAt(i);
+                final EvictCandidate nearest = loadedPages.getNearestAt(i, INVALID_REL_PTR);
 
                 assert nearest != null && nearest.relativePointer() != INVALID_REL_PTR;
 
                 final long addr = nearest.relativePointer();
 
-                int partGen = nearest.generation();
+                int partTag = nearest.tag();
 
                 final long absPageAddr = absolute(addr);
 
                 FullPageId fullId = PageHeader.fullPageId(absPageAddr);
 
-                if (partGen < partGeneration(fullId.groupId(), PageIdUtils.partId(fullId.pageId())))
+                if (partTag < partTag(fullId.groupId(), PageIdUtils.partId(fullId.pageId())))
                     return refreshOutdatedPage(this, fullId.groupId(), fullId.pageId(), true);
 
                 boolean pinned = PageHeader.isAcquired(absPageAddr);
@@ -2262,7 +2243,11 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (preparePageRemoval(fullPageId, absEvictAddr, saveDirtyPage)) {
                     loadedPages.remove(
                         fullPageId.groupId(),
-                        PageIdUtils.effectivePageId(fullPageId.pageId())
+                        PageIdUtils.effectivePageId(fullPageId.pageId()),
+                        partTag(
+                            fullPageId.groupId(),
+                            PageIdUtils.partId(fullPageId.pageId())
+                        )
                     );
 
                     return addr;
@@ -2306,55 +2291,64 @@ public class PageMemoryImpl implements PageMemoryEx {
         /**
          * @param grpId Cache group ID.
          * @param partId Partition ID.
-         * @return Partition generation. Growing, 1-based partition version. Changed
+         * @return Partition tag. Growing 1 based partition file version
          */
-        private int partGeneration(int grpId, int partId) {
+        private int partTag(int grpId, int partId) {
             assert getReadHoldCount() > 0 || getWriteHoldCount() > 0;
 
-            Integer tag = partGenerationMap.get(new GroupPartitionId(grpId, partId));
+            Integer tag = partTagMap.get(new T2<>(grpId, partId));
 
-            return tag == null ? INIT_PART_GENERATION : tag;
+            if (tag == null)
+                return 1;
+
+            return tag;
         }
 
         /**
-         * Increments partition generation due to partition invalidation (e.g. partition was rebalanced to other node
-         * and evicted).
-         *
          * @param grpId Cache group ID.
          * @param partId Partition ID.
-         * @return New partition generation.
+         * @return New partition tag.
          */
-        private int incrementPartGeneration(int grpId, int partId) {
+        private int incrementPartTag(int grpId, int partId) {
             assert getWriteHoldCount() > 0;
 
-            GroupPartitionId grpPart = new GroupPartitionId(grpId, partId);
+            T2<Integer, Integer> t = new T2<>(grpId, partId);
 
-            Integer gen = partGenerationMap.get(grpPart);
+            Integer tag = partTagMap.get(t);
 
-            if (gen == null)
-                gen = INIT_PART_GENERATION;
+            if (tag == null) {
+                partTagMap.put(t, 2);
 
-            if (gen == Integer.MAX_VALUE) {
+                return 2;
+            }
+            else if (tag == Integer.MAX_VALUE) {
                 U.warn(log, "Partition tag overflow [grpId=" + grpId + ", partId=" + partId + "]");
 
-                partGenerationMap.put(grpPart, 0);
+                partTagMap.put(t, 0);
 
                 return 0;
             }
             else {
-                partGenerationMap.put(grpPart, gen + 1);
+                partTagMap.put(t, tag + 1);
 
-                return gen + 1;
+                return tag + 1;
             }
         }
 
         /**
          * @param grpId Cache group id.
          */
-        private void resetGroupPartitionsGeneration(int grpId) {
+        private void resetPartTags(int grpId) {
             assert getWriteHoldCount() > 0;
 
-            partGenerationMap.keySet().removeIf(grpPart -> grpPart.getGroupId() == grpId);
+            Iterator<T2<Integer, Integer>> iter = partTagMap.keySet().iterator();
+
+            while (iter.hasNext()) {
+                T2<Integer, Integer> t = iter.next();
+
+                if (t.get1() == grpId)
+                    iter.remove();
+            }
         }
     }
 
@@ -2540,19 +2534,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * Sets pointer to checkpoint buffer.
-         *
          * @param absPtr Page absolute pointer.
-         * @param tmpRelPtr Temp buffer relative pointer or {@link #INVALID_REL_PTR} if page is not copied to checkpoint
-         * buffer.
+         * @param tmpRelPtr Temp buffer relative pointer.
          */
         private static void tempBufferPointer(long absPtr, long tmpRelPtr) {
             GridUnsafe.putLong(absPtr + PAGE_TMP_BUF_OFFSET, tmpRelPtr);
         }
 
         /**
-         * Gets pointer to checkpoint buffer or {@link #INVALID_REL_PTR} if page is not copied to checkpoint buffer.
-         *
          * @param absPtr Page absolute pointer.
          * @return Temp buffer relative pointer.
          */
@@ -2630,8 +2619,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private Segment seg;
 
-        /** Clear element filter for (cache group ID, page ID). */
-        LoadedPagesMap.KeyPredicate clearPred;
+        /** */
+        private GridPredicate3<Integer, Long, Integer> clearPred;
 
         /** */
         private CountDownFuture doneFut;
@@ -2644,12 +2633,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         /**
          * @param seg Segment.
-         * @param clearPred Clear predicate for (cache group ID, page ID).
+         * @param clearPred Clear predicate.
          * @param doneFut Completion future.
          */
         private ClearSegmentRunnable(
             Segment seg,
-            LoadedPagesMap.KeyPredicate clearPred,
+            GridPredicate3<Integer, Long, Integer> clearPred,
             boolean rmvDirty,
             CountDownFuture doneFut,
             int pageSize
@@ -2675,11 +2664,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                     seg.writeLock().lock();
 
                     try {
-                        GridLongList list = seg.loadedPages.removeIf(base, boundary, clearPred);
+                        while (base < boundary) {
+                            long ptr = seg.loadedPages.clearAt(base, clearPred, INVALID_REL_PTR);
 
-                        ptrs.addAll(list);
+                            if (ptr != INVALID_REL_PTR)
+                                ptrs.add(ptr);
 
-                        base = boundary;
+                            base++;
+                        }
                     }
                     finally {
                         seg.writeLock().unlock();
