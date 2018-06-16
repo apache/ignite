@@ -161,6 +161,12 @@ This is a collection of functions, split into three parts:
 
 - :mod:`api.sql` gives you the ultimate power of SQL queries.
 
+To construct client queries and process server responses, all API functions
+uses :mod:`queries.Query` and :mod:`queries.Response` base classes
+respectively under their hoods. These classes are a natural extension of the
+data type parsing/constructing module (:mod:`datatypes`) and uses all the power
+of the indigenous :mod:`datatypes.any_object.AnyDataObject`.
+
 Each function returns operation status and result data (or verbose error
 message) in :mod:`api.result.APIResult` object.
 
