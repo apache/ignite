@@ -32,8 +32,8 @@ to the parser/constructor class definition.
 *Note:* you are not obliged to actually use those parser/constructor classes.
 Pythonic types will suffice to interact with Apache Ignite binary API.
 However, in some rare cases of type ambiguity, as well as for the needs
-of interoperability, you will have to sneak one or the other class, along
-with your data, in to some API function as a type conversion hint.
+of interoperability, you may have to sneak one or the other class, along
+with your data, in to some API function as a *type conversion hint*.
 
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
 |`type_code`|Apache Ignite       |Python type                    |Parser/constructor                                   |
@@ -126,11 +126,25 @@ with your data, in to some API function as a type conversion hint.
 
 All type codes are stored in module :mod:`datatypes.type_codes`.
 
+On top of all parser/constructor classes, there is an
+:mod:`datatypes.any_object.AnyDataObject` class. It is an omnivorous data type
+that has no `type_code`; instead, it picks up the right class on serializing
+your python data or deserializing the byte stream.
+
+It is not overly smart or omnipotent though: it can not choose CharObject
+for you; it will use String. It will also use LongArrayObject for represent
+two-integer tuple, even if you mean Enum or Collection. Bottom line: use
+type hints when you need to pick up a certain data type for your data, and
+not just store that data.
+
+
 :mod:`connection`
 -----------------
 
 To connect to Ignite server socket, instantiate a :mod:`connection.Connection`
-class with host name and port number.
+class with host name and port number. Connection will negotiate a handshake
+with the Ignite server and raise a :mod:`connection.SocketError` in case of
+client/server API versions mismatch or data flow errors.
 
 You can then pass a :mod:`connection.Connection` instance to various API
 functions.
