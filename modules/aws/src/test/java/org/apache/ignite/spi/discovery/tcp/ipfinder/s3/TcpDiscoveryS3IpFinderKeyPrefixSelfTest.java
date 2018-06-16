@@ -18,11 +18,10 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.mockito.Mockito;
 
 /**
- * TcpDiscoveryS3IpFinder tests key prefix for IP finder.
- * For information about key prefix visit
+ * TcpDiscoveryS3IpFinder tests key prefix for IP finder. For information about key prefix visit:
  * <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html"/>.
  */
 public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFinderAbstractSelfTest {
@@ -32,17 +31,39 @@ public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFin
      * @throws Exception If any error occurs.
      */
     public TcpDiscoveryS3IpFinderKeyPrefixSelfTest() throws Exception {
-        keyPrefix = "/test/key/prefix/";
     }
 
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
-        finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey()));
+        finder.setAwsCredentials(new BasicAWSCredentials("dummy", "dummy"));
+    }
+
+    @Override protected void setKeyPrefix(TcpDiscoveryS3IpFinder finder) {
+        finder.setKeyPrefix("/test/key/prefix");
+    }
+
+    @Override protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
+        finder.setBucketName(getBucketName());
+    }
+
+    @Override protected TcpDiscoveryS3IpFinder ipFinder() throws Exception {
+        TcpDiscoveryS3IpFinder ipFinder = Mockito.spy(new TcpDiscoveryS3IpFinder());
+        Mockito.doReturn(new DummyS3Client()).when(ipFinder).createAmazonS3Client();
+
+        setAwsCredentials(ipFinder);
+        setBucketName(ipFinder);
+        setKeyPrefix(ipFinder);
+
+        return ipFinder;
     }
 
     /** {@inheritDoc} */
     @Override public void testIpFinder() throws Exception {
+
+        injectLogger(finder);
+
+        assert finder.isShared() : "Ip finder should be shared by default.";
+
         super.testIpFinder();
     }
 }
