@@ -77,6 +77,9 @@ class PString:
 
     @staticmethod
     def from_python(value):
+        if value is None:
+            return Null.from_python()
+
         if isinstance(value, str):
             value = value.encode(PROTOCOL_STRING_ENCODING)
         length = len(value)
@@ -143,7 +146,10 @@ class PStringArray:
         header_class = cls.build_header_class()
         header = header_class()
         if hasattr(header, 'type_code'):
-            header.type_code = TC_STRING_ARRAY
+            header.type_code = int.from_bytes(
+                TC_STRING_ARRAY,
+                byteorder=PROTOCOL_BYTE_ORDER
+            )
         header.length = len(value)
         buffer = bytes(header)
 

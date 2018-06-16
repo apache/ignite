@@ -13,16 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ctypes
+import decimal
+from datetime import date, datetime, timedelta
+
+from connection import Connection
+from constants import *
+from .primitive_arrays import *
 from .primitive_objects import *
 from .strings import *
 from .null_object import *
 from .type_codes import *
 
 
+__all__ = ['AnyDataObject']
+
+
 tc_map = {
     TC_NULL: Null,
 
-    TC_BYTE: BytesObject,
+    TC_BYTE: ByteObject,
     TC_SHORT: ShortObject,
     TC_INT: IntObject,
     TC_LONG: LongObject,
@@ -30,6 +40,15 @@ tc_map = {
     TC_DOUBLE: DoubleObject,
     TC_CHAR: CharObject,
     TC_BOOL: BoolObject,
+
+    TC_BYTE_ARRAY: ByteArrayObject,
+    TC_SHORT_ARRAY: ShortArrayObject,
+    TC_INT_ARRAY: IntArrayObject,
+    TC_LONG_ARRAY: LongArrayObject,
+    TC_FLOAT_ARRAY: FloatArrayObject,
+    TC_DOUBLE_ARRAY: DoubleArrayObject,
+    TC_CHAR_ARRAY: CharArrayObject,
+    TC_BOOL_ARRAY: BoolArrayObject,
 
     TC_STRING: PString,
     TC_STRING_ARRAY: PStringArrayObject,
@@ -60,6 +79,45 @@ class PrefetchConnection(Connection):
 
 class AnyDataObject:
 
+    @staticmethod
+    def get_subtype(iterable, allow_none=False):
+        # arrays of these types can contain Null objects
+        object_array_python_types = [
+            str,
+            date,
+            datetime,
+            timedelta,
+            decimal.Decimal,
+        ]
+
+        iterator = iter(iterable)
+        type_first = type(None)
+        try:
+            while isinstance(None, type_first):
+                type_first = type(next(iterator))
+        except StopIteration:
+            raise TypeError(
+                'Can not represent an empty iterable '
+                'or an iterable of `NoneType` in Ignite type.'
+            )
+
+        if type_first in object_array_python_types:
+            allow_none = True
+
+        if all([
+            isinstance(x, type_first)
+            or ((x is None) and allow_none) for x in iterator
+        ]):
+            return type_first
+
+    @staticmethod
+    def is_iterable(value):
+        try:
+            iter(value)
+            return True
+        except TypeError:
+            return False
+
     @classmethod
     def parse(cls, conn: Connection):
         type_code = conn.recv(ctypes.sizeof(ctypes.c_byte))
@@ -74,3 +132,37 @@ class AnyDataObject:
         )
         data_class = tc_map[type_code]
         return data_class.to_python(ctype_object)
+
+    @classmethod
+    def from_python(cls, value):
+        python_map = {
+            int: LongObject,
+            float: DoubleObject,
+            str: PString,
+            bytes: PString,
+            bool: BoolObject,
+            type(None): Null,
+        }
+
+        python_array_map = {
+            int: LongArrayObject,
+            float: DoubleArrayObject,
+            str: PStringArrayObject,
+            bytes: PStringArrayObject,
+            bool: BoolArrayObject,
+        }
+
+        value_type = type(value)
+        if cls.is_iterable(value) and value_type is not str:
+            value_subtype = cls.get_subtype(value)
+            if value_subtype in python_array_map:
+                return python_array_map[value_subtype].from_python(value)
+            raise TypeError(
+                'Type `array of {}` is invalid'.format(value_subtype)
+            )
+
+        if value_type in python_map:
+            return python_map[value_type].from_python(value)
+        raise TypeError(
+            'Type `{}` is invalid.'.format(value_type)
+        )

@@ -19,14 +19,58 @@ from api import hashcode
 from api.key_value import cache_get, cache_put
 from api.cache_config import cache_create, cache_destroy
 from connection import Connection
-from datatypes.primitive_objects import CharObject
+from datatypes.primitive_objects import *
+from datatypes.primitive_arrays import *
+from datatypes.strings import *
 
 
 @pytest.mark.parametrize(
     'value, value_hint',
     [
-        ('ы', CharObject),
+        # integers
+        (42, None),
+        (42, ByteObject),
+        (42, ShortObject),
+        (42, IntObject),
+
+        # floats
+        (3.1415, None),  # True for Double but not Float
+        (3.5, FloatObject),
+
+        # char
+        ('ы', CharObject),  # Char is never autodetected
         ('カ', CharObject),
+
+        # bool
+        (True, None),
+        (False, None),
+        (True, BoolObject),
+        (False, BoolObject),
+
+        # arrays of integers
+        ([1, 2, 3, 5], None),
+        ([1, 2, 3, 5], ByteArrayObject),
+        ([1, 2, 3, 5], ShortArrayObject),
+        ([1, 2, 3, 5], IntArrayObject),
+
+        # arrays of floats
+        ([2.2, 4.4, 6.6], None),
+        ([2.5, 6.5], FloatArrayObject),
+
+        # array of char
+        (['ы', 'カ'], CharArrayObject),
+
+        # array of bool
+        ([True, False, True], None),
+
+        # string
+        ('Little Mary had a lamb', None),
+        ('This is a test', PString),
+
+        # array of string
+        (['String 1', 'String 2'], None),
+        (['Some of us are empty', None, 'But not the others'], None),
+        
     ]
 )
 def test_put_get_data(ignite_host, ignite_port, value, value_hint):

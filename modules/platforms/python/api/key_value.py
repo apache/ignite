@@ -54,12 +54,11 @@ def cache_put(
      is written, non-zero status and an error description otherwise.
     """
 
-    # TODO: map Python type to internal type
     query_struct = CachePutQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('key', key_hint or PString),
-        ('value', value_hint or IntObject),
+        ('key', key_hint or AnyDataObject),
+        ('value', value_hint or AnyDataObject),
     ])
 
     _, send_buffer = query_struct.from_python({
@@ -107,7 +106,7 @@ def cache_get(
     query_struct = CacheGetQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('key', key_hint or PString),
+        ('key', key_hint or AnyDataObject),
     ])
 
     _, send_buffer = query_struct.from_python({

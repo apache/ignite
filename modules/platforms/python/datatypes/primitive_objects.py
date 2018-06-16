@@ -20,7 +20,20 @@ from constants import *
 from .type_codes import *
 
 
+__all__ = [
+    'DataObject', 'ByteObject', 'ShortObject', 'IntObject', 'LongObject',
+    'FloatObject', 'DoubleObject', 'CharObject', 'BoolObject',
+]
+
+
 class DataObject:
+    """
+    Base class for primitive data objects.
+
+    Primitive data objects are built of primitive data prepended by
+    the corresponding type code.
+    """
+
     c_type = None
     type_code = None
 
@@ -60,7 +73,7 @@ class DataObject:
         return bytes(data_object)
 
 
-class BytesObject(DataObject):
+class ByteObject(DataObject):
     c_type = ctypes.c_byte
     type_code = TC_BYTE
 
