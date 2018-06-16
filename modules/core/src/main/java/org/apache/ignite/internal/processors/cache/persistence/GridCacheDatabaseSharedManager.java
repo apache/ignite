@@ -1936,14 +1936,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         WALPointer lastRead = null;
 
-        AtomicBoolean apply0 = new AtomicBoolean(apply);
+        AtomicBoolean checkPointRecordReached = new AtomicBoolean(apply);
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = next(it, apply0::get);
+                IgniteBiTuple<WALPointer, WALRecord> tup = next(it, checkPointRecordReached::get);
 
                 if (tup == null)
                     break;
@@ -1961,7 +1961,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
                                 ", pos=" + tup.get1() + ']');
 
-                            apply0.set(false);
+                            checkPointRecordReached.set(false);
                         }
                         else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
                             U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
@@ -1970,7 +1970,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PAGE_RECORD:
-                        if (apply0.get()) {
+                        if (checkPointRecordReached.get()) {
                             PageSnapshot pageRec = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
@@ -2053,7 +2053,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     default:
-                        if (apply0.get() && rec instanceof PageDeltaRecord) {
+                        if (checkPointRecordReached.get() && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
                             int grpId = r.groupId();
@@ -2095,7 +2095,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
 
         if (status.needRestoreMemory()) {
-            if (apply0.get())
+            if (checkPointRecordReached.get())
                 throw new StorageException("Failed to restore memory state (checkpoint marker is present " +
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastRead + "]");
