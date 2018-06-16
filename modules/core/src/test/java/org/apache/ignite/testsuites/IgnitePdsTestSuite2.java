@@ -73,7 +73,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         addRealPageStoreTests(suite);
 
-        addRealPageStoreTestsLongRunning(suite);
+        addRealPageStoreTestsNotForDirectIo(suite);
 
         // BaselineTopology tests
         suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
@@ -92,7 +92,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      *
      * @param suite suite to add tests into.
      */
-    private static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
         suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
 
         suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
@@ -107,6 +107,14 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
 
         suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
+
+        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
     }
 
     /**
@@ -134,12 +142,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         // Failover test
         suite.addTestSuite(IgniteWalFlushFailoverTest.class);
 
-        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
-
-        suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
-
-        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
-
         suite.addTestSuite(IgniteWalFlushBackgroundSelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushBackgroundWithMmapBufferSelfTest.class);
@@ -165,8 +167,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
 
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
-
-        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
 
         suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
 
