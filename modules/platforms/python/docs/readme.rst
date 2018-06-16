@@ -42,24 +42,30 @@ Testing
 
 Create and activate virtualenv_ environment. Run
 
-`$ pip install -r requirements.txt`
+::
+
+$ pip install -r requirements.txt
 
 Then just run
 
-`$ pytest`
+::
+
+$ pytest
 
 *NB!* Some tests require Apache Ignite node running on localhost:10800.
 To override the default parameters, use command line options
 `--ignite-host` and `--ignite-port`:
 
-`$ pytest --ignite-host=example.com --ignite-port=19840`
+::
+
+$ pytest --ignite-host=example.com --ignite-port=19840
 
 You can use each of these options multiple times. All combinations
 of given host and port will be tested.
 
 Documentation
 -------------
-To recompile this documentation, do
+To recompile this documentation, do this from your virtualenv_ environment:
 
 ::
 
@@ -67,6 +73,17 @@ $ cd ./docs
 $ make html
 
 Then open `docs/_build/html/index.html` in your browser.
+
+If you feel that old version is stuck, do
+
+::
+
+$ cd ./docs
+$ make clean
+$ sphinx-apidoc -M -o source/ ../
+$ make html
+
+And that should be it.
 
 .. _Apache Ignite: https://apacheignite.readme.io/docs/what-is-ignite
 .. _binary client protocol: https://apacheignite.readme.io/docs/binary-client-protocol
