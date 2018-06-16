@@ -20,7 +20,7 @@ import attr
 
 from connection import Connection
 from constants import *
-from .strings import String
+from .standard import String
 from .primitive import *
 
 

@@ -104,6 +104,12 @@ class DoubleObject(DataObject):
 
 
 class CharObject(DataObject):
+    """
+    This type is a little tricky. It stores character values in
+    UTF-16 Little-endian encoding. We have to encode/decode it
+    to/from UTF-8 to keep the coding hassle to minimum. Bear in mind
+    though: decoded character may take 1..4 bytes in UTF-8.
+    """
     c_type = ctypes.c_short
     type_code = TC_CHAR
 

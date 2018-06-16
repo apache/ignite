@@ -21,5 +21,5 @@ data streams.
 
 from .primitive import *
 from .primitive_objects import *
-from .strings import *
 from .null_object import *
+from .standard import *

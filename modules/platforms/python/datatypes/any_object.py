@@ -22,7 +22,6 @@ from connection import Connection
 from constants import *
 from .primitive_arrays import *
 from .primitive_objects import *
-from .strings import *
 from .standard import *
 from .null_object import *
 from .type_codes import *

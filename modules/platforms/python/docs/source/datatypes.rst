@@ -65,14 +65,6 @@ datatypes.standard module
     :undoc-members:
     :show-inheritance:
 
-datatypes.strings module
-------------------------
-
-.. automodule:: datatypes.strings
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 datatypes.type\_codes module
 ----------------------------
 

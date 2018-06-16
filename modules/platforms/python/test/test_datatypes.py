@@ -24,7 +24,6 @@ from connection import Connection
 from datatypes.primitive_objects import *
 from datatypes.primitive_arrays import *
 from datatypes.standard import *
-from datatypes.strings import *
 
 
 @pytest.mark.parametrize(

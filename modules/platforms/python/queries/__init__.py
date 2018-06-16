@@ -27,7 +27,7 @@ import attr
 
 from connection import Connection
 from constants import *
-from datatypes.strings import String
+from datatypes.standard import String
 from .op_codes import *
 
 
