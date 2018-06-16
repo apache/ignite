@@ -171,7 +171,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager implements CheckpointWriteProgressSupplier {
+public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -365,7 +365,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger syncedPagesCntr = null;
 
-    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
+    /** Counter for evictted checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger evictedPagesCntr = null;
 
     /** Number of pages in current checkpoint at the beginning of checkpoint. */
@@ -995,23 +995,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             ),
             cctx,
             memCfg.getPageSize(),
-            (fullId, pageBuf, tag) -> {
-                // First of all, write page to disk.
-                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
+            new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
+                @Override public void applyx(
+                    FullPageId fullId,
+                    ByteBuffer pageBuf,
+                    Integer tag
+                ) throws IgniteCheckedException {
+                    // First of all, write page to disk.
+                    storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
-                // Only after write we can write page into snapshot.
-                snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
+                    // Only after write we can write page into snapshot.
+                    snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
 
-                AtomicInteger cntr = evictedPagesCntr;
+                    AtomicInteger cntr = evictedPagesCntr;
 
-                if (cntr != null)
-                    cntr.incrementAndGet();
+                    if (cntr != null)
+                        cntr.incrementAndGet();
+                }
             },
             changeTracker,
             this,
             memMetrics,
-            plc,
-            this
+            plc
         );
 
         memMetrics.pageMemory(pageMem);
@@ -2634,23 +2639,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public AtomicInteger writtenPagesCounter() {
+    /**
+     * Counter for written checkpoint pages. Not null only if checkpoint is running.
+     */
+    public AtomicInteger writtenPagesCounter() {
         return writtenPagesCntr;
     }
 
-    /** {@inheritDoc} */
-    @Override public AtomicInteger syncedPagesCounter() {
+    /**
+     * @return Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
+     */
+    public AtomicInteger syncedPagesCounter() {
         return syncedPagesCntr;
     }
 
-    /** {@inheritDoc} */
-    @Override public AtomicInteger evictedPagesCntr() {
+    /**
+     * @return Counter for evicted pages during current checkpoint. Not null only if checkpoint is running.
+     */
+    public AtomicInteger evictedPagesCntr() {
         return evictedPagesCntr;
     }
 
-    /** {@inheritDoc} */
-    @Override public int currentCheckpointPagesCount() {
+    /**
+     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
+     */
+    public int currentCheckpointPagesCount() {
         return currCheckpointPagesCnt;
     }
 

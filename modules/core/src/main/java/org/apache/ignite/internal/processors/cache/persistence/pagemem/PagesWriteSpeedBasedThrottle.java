@@ -21,8 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
 /**
@@ -38,7 +37,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final CheckpointWriteProgressSupplier cpProgress;
+    private final GridCacheDatabaseSharedManager dbSharedMgr;
 
     /** Starting throttle time. Limits write speed to 1000 MB/s. */
     private static final long STARTING_THROTTLE_NANOS = 4000;
@@ -92,9 +91,6 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** Total pages which is possible to store in page memory. */
     private long totalPages;
 
-    /** Checkpoint lock state provider. */
-    private CheckpointLockStateChecker cpLockStateChecker;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -109,26 +105,22 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /**
      * @param pageMemory Page memory.
-     * @param cpProgress Database manager.
-     * @param stateChecker Checkpoint lock state provider.
+     * @param dbSharedMgr Database manager.
      * @param log Logger.
      */
     public PagesWriteSpeedBasedThrottle(PageMemoryImpl pageMemory,
-        CheckpointWriteProgressSupplier cpProgress,
-        CheckpointLockStateChecker stateChecker,
-        IgniteLogger log) {
+        GridCacheDatabaseSharedManager dbSharedMgr, IgniteLogger log) {
         this.pageMemory = pageMemory;
-        this.cpProgress = cpProgress;
+        this.dbSharedMgr = dbSharedMgr;
         totalPages = pageMemory.totalPages();
-        this.cpLockStateChecker = stateChecker;
         this.log = log;
     }
 
     /** {@inheritDoc} */
     @Override public void onMarkDirty(boolean isPageInCheckpoint) {
-        assert cpLockStateChecker.checkpointLockIsHeldByThread();
+        assert dbSharedMgr.checkpointLockIsHeldByThread();
 
-        AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
+        AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
 
         if (writtenPagesCntr == null) {
             speedForMarkAll = 0;
@@ -234,7 +226,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return number of written pages.
      */
     private int cpWrittenPages() {
-        AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
+        AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
 
         return writtenPagesCntr == null ? 0 : writtenPagesCntr.get();
     }
@@ -243,14 +235,14 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return Number of pages in current checkpoint.
      */
     private int cpTotalPages() {
-        return cpProgress.currentCheckpointPagesCount();
+        return dbSharedMgr.currentCheckpointPagesCount();
     }
 
     /**
      * @return  Counter for fsynced checkpoint pages.
      */
     private int cpSyncedPages() {
-        AtomicInteger syncedPagesCntr = cpProgress.syncedPagesCounter();
+        AtomicInteger syncedPagesCntr = dbSharedMgr.syncedPagesCounter();
 
         return syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
     }
@@ -259,7 +251,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return number of evicted pages.
      */
     private int cpEvictedPages() {
-        AtomicInteger evictedPagesCntr = cpProgress.evictedPagesCntr();
+        AtomicInteger evictedPagesCntr = dbSharedMgr.evictedPagesCntr();
 
         return evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
     }
