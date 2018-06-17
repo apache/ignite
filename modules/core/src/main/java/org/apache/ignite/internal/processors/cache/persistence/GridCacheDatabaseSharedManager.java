@@ -2233,6 +2233,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!metastoreOnly)
             cctx.kernalContext().query().skipFieldLookup(true);
 
+        AtomicReference<FileWALPointer> lastRead = new AtomicReference<>();
+
+        long lastArchivedSegment = cctx.wal().lastArchivedSegment();
+
+        Supplier<Boolean> throwsCRCError = () -> {
+            FileWALPointer lastReadPtr = lastRead.get();
+
+            return lastReadPtr != null && lastReadPtr.index() <= lastArchivedSegment;
+        };
+
         long start = U.currentTimeMillis();
         int applied = 0;
 
@@ -2243,12 +2253,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = next(it, () -> Boolean.FALSE);
+                IgniteBiTuple<WALPointer, WALRecord> next = next(it, throwsCRCError);
 
                 if (next == null)
                     break;
 
                 WALRecord rec = next.get2();
+
+                lastRead.set((FileWALPointer)next.get1());
 
                 switch (rec.type()) {
                     case DATA_RECORD:
