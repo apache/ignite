@@ -806,13 +806,9 @@ public class IgniteConfiguration {
      * Returns striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @return Positive value if striped pool should be initialized
-     *      with configured number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @return Number of threads (stripes) which are used for requests processing.
      *
      * @see #getPublicThreadPoolSize()
      * @see #getSystemThreadPoolSize()
@@ -825,13 +821,13 @@ public class IgniteConfiguration {
      * Sets striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
+     * <p>
+     * Striped pool can be disabled by
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_STRIPED_POOL_DISABLED}
+     * property. In this case, the regular thread pool will be used instead of striped one.
      *
-     * @param stripedPoolSize Positive value if striped pool should be initialized
-     *      with passed in number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @param stripedPoolSize Number of threads (stripes) which are used for requests processing.
      * @return {@code this} for chaining.
      *
      * @see #getPublicThreadPoolSize()

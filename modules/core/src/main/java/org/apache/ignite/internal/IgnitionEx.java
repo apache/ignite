@@ -84,6 +84,8 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.StripedExecutorImpl;
+import org.apache.ignite.internal.util.StripedExecutorProxy;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1815,17 +1817,30 @@ public class IgnitionEx {
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
-            stripedExecSvc = new StripedExecutor(
-                cfg.getStripedPoolSize(),
-                cfg.getIgniteInstanceName(),
-                "sys",
-                log,
-                new Thread.UncaughtExceptionHandler() {
-                    @Override public void uncaughtException(Thread thread, Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
-                });
+            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED)) {
+                stripedExecSvc = new StripedExecutorProxy(
+                    "sys2",
+                    cfg.getIgniteInstanceName(),
+                    cfg.getStripedPoolSize(),
+                    cfg.getStripedPoolSize(),
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(),
+                    GridIoPolicy.SYSTEM_POOL,
+                    oomeHnd);
+            }
+            else {
+                stripedExecSvc = new StripedExecutorImpl(
+                    cfg.getStripedPoolSize(),
+                    cfg.getIgniteInstanceName(),
+                    "sys",
+                    log,
+                    new Thread.UncaughtExceptionHandler() {
+                        @Override public void uncaughtException(Thread thread, Throwable t) {
+                            if (grid != null)
+                                grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                        }
+                    });
+            }
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1862,7 +1877,7 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
-            dataStreamerExecSvc = new StripedExecutor(
+            dataStreamerExecSvc = new StripedExecutorImpl(
                 cfg.getDataStreamerThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "data-streamer",

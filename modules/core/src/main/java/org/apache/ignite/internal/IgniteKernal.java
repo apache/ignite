@@ -1507,6 +1507,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
             perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
+
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED)) {
+            perf.add("Enable striped pool (remove -DIGNITE_STRIPED_POOL_DISABLED=true" +
+                " or set -DIGNITE_STRIPED_POOL_DISABLED=false)");
+        }
     }
 
     /**
