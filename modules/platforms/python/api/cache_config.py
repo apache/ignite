@@ -32,26 +32,6 @@ from queries import Query, Response
 from .result import APIResult
 
 
-class CacheGetConfigurationQuery(Query):
-    op_code = OP_CACHE_GET_CONFIGURATION
-
-
-class CacheGetNamesQuery(Query):
-    op_code = OP_CACHE_GET_NAMES
-
-
-class CacheCreateQuery(Query):
-    op_code = OP_CACHE_CREATE_WITH_NAME
-
-
-class CacheGetOrCreateQuery(Query):
-    op_code = OP_CACHE_GET_OR_CREATE_WITH_NAME
-
-
-class CacheDestroyQuery(Query):
-    op_code = OP_CACHE_DESTROY
-
-
 def cache_get_configuration(
     conn: Connection, hash_code: int, flags: int=0
 ) -> APIResult:
@@ -65,6 +45,9 @@ def cache_get_configuration(
     :return: API result data object. Result value is OrderedDict with
      the cache configuration parameters.
     """
+
+    class CacheGetConfigurationQuery(Query):
+        op_code = OP_CACHE_GET_CONFIGURATION
 
     query_struct = CacheGetConfigurationQuery([
         ('hash_code', Int),
@@ -103,6 +86,9 @@ def cache_create(conn: Connection, name: str) -> APIResult:
      created successfully, non-zero status and an error description otherwise.
     """
 
+    class CacheCreateQuery(Query):
+        op_code = OP_CACHE_CREATE_WITH_NAME
+
     query_struct = CacheCreateQuery([
         ('cache_name', String),
     ])
@@ -131,6 +117,9 @@ def cache_get_or_create(conn: Connection, name: str) -> APIResult:
      created successfully, non-zero status and an error description otherwise.
     """
 
+    class CacheGetOrCreateQuery(Query):
+        op_code = OP_CACHE_GET_OR_CREATE_WITH_NAME
+
     query_struct = CacheGetOrCreateQuery([
         ('cache_name', String),
     ])
@@ -158,6 +147,9 @@ def cache_destroy(conn: Connection, hash_code: int) -> APIResult:
      the `hashcode()` function to the cache name,
     :return: API result data object.
     """
+
+    class CacheDestroyQuery(Query):
+        op_code = OP_CACHE_DESTROY
 
     query_struct = CacheDestroyQuery([
         ('hash_code', Int),
@@ -188,6 +180,9 @@ def cache_get_names(conn: Connection) -> APIResult:
     :return: API result data object. Contains zero status and a list of cache
      names, non-zero status and an error description otherwise.
     """
+
+    class CacheGetNamesQuery(Query):
+        op_code = OP_CACHE_GET_NAMES
 
     query_struct = CacheGetNamesQuery()
 

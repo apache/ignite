@@ -22,14 +22,6 @@ from datatypes.primitive import Byte, Int
 from queries import Query, Response
 
 
-class CachePutQuery(Query):
-    op_code = OP_CACHE_PUT
-
-
-class CacheGetQuery(Query):
-    op_code = OP_CACHE_GET
-
-
 def cache_put(
     conn: Connection, hash_code: int, key, value,
     binary=False, key_hint=None, value_hint=None
@@ -51,6 +43,9 @@ def cache_put(
     :return: API result data object. Contains zero status if a value
      is written, non-zero status and an error description otherwise.
     """
+
+    class CachePutQuery(Query):
+        op_code = OP_CACHE_PUT
 
     query_struct = CachePutQuery([
         ('hash_code', Int),
@@ -100,6 +95,9 @@ def cache_get(
     :return: API result data object. Contains zero status and a value
      retrieved on success, non-zero status and an error description on failure.
     """
+
+    class CacheGetQuery(Query):
+        op_code = OP_CACHE_GET
 
     query_struct = CacheGetQuery([
         ('hash_code', Int),
