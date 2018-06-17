@@ -9,18 +9,18 @@ datatypes package
 Submodules
 ----------
 
-datatypes.any\_object module
-----------------------------
-
-.. automodule:: datatypes.any_object
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 datatypes.cache\_config module
 ------------------------------
 
 .. automodule:: datatypes.cache_config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+datatypes.complex module
+------------------------
+
+.. automodule:: datatypes.complex
     :members:
     :undoc-members:
     :show-inheritance:

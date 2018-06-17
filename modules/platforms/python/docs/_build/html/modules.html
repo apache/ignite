@@ -242,38 +242,38 @@ class</th>
 <tr class="row-even"><td>0x17</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-object-collections">Object array</a></td>
 <td>iterable/list</td>
-<td><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex_objects.ObjectArray</span></code></td>
+<td><a class="reference internal" href="source/datatypes.html#datatypes.complex.ObjectArrayObject" title="datatypes.complex.ObjectArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex.ObjectArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x18</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-collection">Collection</a></td>
 <td>tuple</td>
-<td><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex_objects.Colection</span></code></td>
+<td><a class="reference internal" href="source/datatypes.html#datatypes.complex.CollectionObject" title="datatypes.complex.CollectionObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex.CollectionObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x19</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-map">Map</a></td>
 <td>dict, collections.OrderedDict</td>
-<td><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex_objects.Map</span></code></td>
+<td><a class="reference internal" href="source/datatypes.html#datatypes.complex.MapObject" title="datatypes.complex.MapObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex.MapObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x1d</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-enum-array">Enum array</a></td>
 <td>iterable/list</td>
-<td><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex_objects.EnumArrayObject</span></code></td>
+<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.EnumArrayObject" title="datatypes.standard.EnumArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.EnumArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x67</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-complex-object">Complex object</a></td>
 <td>&#160;</td>
-<td><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex_objects.ComplexObject</span></code></td>
+<td>Not yet implemented</td>
 </tr>
 <tr class="row-odd"><td>0x1b</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-wrapped-data">Wrapped data</a></td>
 <td>&#160;</td>
-<td><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex_objects.WrappedDataObject</span></code></td>
+<td>Not yet implemented</td>
 </tr>
 </tbody>
 </table>
 <p>All type codes are stored in module <a class="reference internal" href="source/datatypes.html#module-datatypes.type_codes" title="datatypes.type_codes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.type_codes</span></code></a>.</p>
 <p>On top of all parser/constructor classes, there is an
-<a class="reference internal" href="source/datatypes.html#datatypes.any_object.AnyDataObject" title="datatypes.any_object.AnyDataObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code></a> class. It is an omnivorous data type
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code> class. It is an omnivorous data type
 that has no <cite>type_code</cite>; instead, it picks up the right class on serializing
 your python data or deserializing the byte stream.</p>
 <p>It is not overly smart or omnipotent though: it can not choose CharObject
@@ -304,7 +304,7 @@ functions.</p>
 uses <a class="reference internal" href="source/queries.html#queries.Query" title="queries.Query"><code class="xref py py-mod docutils literal notranslate"><span class="pre">queries.Query</span></code></a> and <a class="reference internal" href="source/queries.html#queries.Response" title="queries.Response"><code class="xref py py-mod docutils literal notranslate"><span class="pre">queries.Response</span></code></a> base classes
 respectively under their hoods. These classes are a natural extension of the
 data type parsing/constructing module (<a class="reference internal" href="source/datatypes.html#module-datatypes" title="datatypes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes</span></code></a>) and uses all the power
-of the indigenous <a class="reference internal" href="source/datatypes.html#datatypes.any_object.AnyDataObject" title="datatypes.any_object.AnyDataObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code></a>.</p>
+of the indigenous <code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code>.</p>
 <p>Each function returns operation status and result data (or verbose error
 message) in <a class="reference internal" href="source/api.html#api.result.APIResult" title="api.result.APIResult"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api.result.APIResult</span></code></a> object.</p>
 <p>All data manipulations are handled with native Python data types, without the

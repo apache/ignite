@@ -111,17 +111,17 @@ with your data, in to some API function as a *type conversion hint*.
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
 |*Object collections, special types, and complex object*                                                               |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x17       |`Object array`_     |iterable/list                  |:mod:`datatypes.complex_objects.ObjectArray`         |
+|0x17       |`Object array`_     |iterable/list                  |:mod:`datatypes.complex.ObjectArrayObject`           |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x18       |`Collection`_       |tuple                          |:mod:`datatypes.complex_objects.Colection`           |
+|0x18       |`Collection`_       |tuple                          |:mod:`datatypes.complex.CollectionObject`            |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x19       |`Map`_              |dict, collections.OrderedDict  |:mod:`datatypes.complex_objects.Map`                 |
+|0x19       |`Map`_              |dict, collections.OrderedDict  |:mod:`datatypes.complex.MapObject`                   |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1d       |`Enum array`_       |iterable/list                  |:mod:`datatypes.complex_objects.EnumArrayObject`     |
+|0x1d       |`Enum array`_       |iterable/list                  |:mod:`datatypes.standard.EnumArrayObject`            |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x67       |`Complex object`_   |                               |:mod:`datatypes.complex_objects.ComplexObject`       |
+|0x67       |`Complex object`_   |                               |Not yet implemented                                  |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1b       |`Wrapped data`_     |                               |:mod:`datatypes.complex_objects.WrappedDataObject`   |
+|0x1b       |`Wrapped data`_     |                               |Not yet implemented                                  |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------+
 
 All type codes are stored in module :mod:`datatypes.type_codes`.

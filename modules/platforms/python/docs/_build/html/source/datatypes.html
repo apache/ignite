@@ -37,40 +37,6 @@ data streams.</p>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-datatypes.any_object">
-<span id="datatypes-any-object-module"></span><h2>datatypes.any_object module<a class="headerlink" href="#module-datatypes.any_object" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="datatypes.any_object.AnyDataObject">
-<em class="property">class </em><code class="descclassname">datatypes.any_object.</code><code class="descname">AnyDataObject</code><a class="headerlink" href="#datatypes.any_object.AnyDataObject" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="classmethod">
-<dt id="datatypes.any_object.AnyDataObject.from_python">
-<em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.any_object.AnyDataObject.from_python" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="datatypes.any_object.AnyDataObject.get_subtype">
-<em class="property">static </em><code class="descname">get_subtype</code><span class="sig-paren">(</span><em>iterable</em>, <em>allow_none=False</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.any_object.AnyDataObject.get_subtype" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="datatypes.any_object.AnyDataObject.is_iterable">
-<em class="property">static </em><code class="descname">is_iterable</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.any_object.AnyDataObject.is_iterable" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="classmethod">
-<dt id="datatypes.any_object.AnyDataObject.parse">
-<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.any_object.AnyDataObject.parse" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="classmethod">
-<dt id="datatypes.any_object.AnyDataObject.to_python">
-<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.any_object.AnyDataObject.to_python" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
 <div class="section" id="module-datatypes.cache_config">
 <span id="datatypes-cache-config-module"></span><h2>datatypes.cache_config module<a class="headerlink" href="#module-datatypes.cache_config" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
@@ -218,6 +184,150 @@ data streams.</p>
 <dl class="attribute">
 <dt id="datatypes.cache_config.WriteSynchronizationMode.PRIMARY_SYNC">
 <code class="descname">PRIMARY_SYNC</code><em class="property"> = 2</em><a class="headerlink" href="#datatypes.cache_config.WriteSynchronizationMode.PRIMARY_SYNC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-datatypes.complex">
+<span id="datatypes-complex-module"></span><h2>datatypes.complex module<a class="headerlink" href="#module-datatypes.complex" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="datatypes.complex.AnyDataObject">
+<em class="property">class </em><code class="descclassname">datatypes.complex.</code><code class="descname">AnyDataObject</code><a class="headerlink" href="#datatypes.complex.AnyDataObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Not an actual Ignite type, but contains a guesswork
+on serializing Python data or parsing an unknown Ignite data object.</p>
+<dl class="classmethod">
+<dt id="datatypes.complex.AnyDataObject.from_python">
+<em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="datatypes.complex.AnyDataObject.get_subtype">
+<em class="property">static </em><code class="descname">get_subtype</code><span class="sig-paren">(</span><em>iterable</em>, <em>allow_none=False</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.get_subtype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="datatypes.complex.AnyDataObject.is_iterable">
+<em class="property">static </em><code class="descname">is_iterable</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.is_iterable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.AnyDataObject.parse">
+<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.AnyDataObject.to_python">
+<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.to_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="datatypes.complex.ObjectArrayObject">
+<em class="property">class </em><code class="descclassname">datatypes.complex.</code><code class="descname">ObjectArrayObject</code><a class="headerlink" href="#datatypes.complex.ObjectArrayObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#datatypes.complex.AnyDataObject" title="datatypes.complex.AnyDataObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">datatypes.complex.AnyDataObject</span></code></a></p>
+<p>Array of objects of any type. Its Python representation is
+tuple(type_id, iterable of any type).</p>
+<dl class="classmethod">
+<dt id="datatypes.complex.ObjectArrayObject.build_header">
+<em class="property">classmethod </em><code class="descname">build_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.ObjectArrayObject.build_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.ObjectArrayObject.from_python">
+<em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.ObjectArrayObject.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.ObjectArrayObject.parse">
+<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.ObjectArrayObject.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.complex.ObjectArrayObject.tc_type">
+<code class="descname">tc_type</code><em class="property"> = b'\x17'</em><a class="headerlink" href="#datatypes.complex.ObjectArrayObject.tc_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.ObjectArrayObject.to_python">
+<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.ObjectArrayObject.to_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.complex.ObjectArrayObject.type_or_id_name">
+<code class="descname">type_or_id_name</code><em class="property"> = 'type_id'</em><a class="headerlink" href="#datatypes.complex.ObjectArrayObject.type_or_id_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="datatypes.complex.CollectionObject">
+<em class="property">class </em><code class="descclassname">datatypes.complex.</code><code class="descname">CollectionObject</code><a class="headerlink" href="#datatypes.complex.CollectionObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#datatypes.complex.ObjectArrayObject" title="datatypes.complex.ObjectArrayObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">datatypes.complex.ObjectArrayObject</span></code></a></p>
+<p>Just like object array, but contains deserialization type hint instead of
+type id. This hint is also useless in Python, because the list type along
+covers all the use cases.</p>
+<p>Also represented as tuple(type_id, iterable of any type) in Python.</p>
+<dl class="classmethod">
+<dt id="datatypes.complex.CollectionObject.build_header">
+<em class="property">classmethod </em><code class="descname">build_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.CollectionObject.build_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.complex.CollectionObject.tc_type">
+<code class="descname">tc_type</code><em class="property"> = b'\x18'</em><a class="headerlink" href="#datatypes.complex.CollectionObject.tc_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.complex.CollectionObject.type_or_id_name">
+<code class="descname">type_or_id_name</code><em class="property"> = 'type'</em><a class="headerlink" href="#datatypes.complex.CollectionObject.type_or_id_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="datatypes.complex.MapObject">
+<em class="property">class </em><code class="descclassname">datatypes.complex.</code><code class="descname">MapObject</code><a class="headerlink" href="#datatypes.complex.MapObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This is a dictionary type. Type conversion hint can be a <cite>HASH_MAP</cite>
+(ordinary dict) or <cite>LINKED_HASH_MAP</cite> (collections.OrderedDict).</p>
+<p>Keys and values in map are independent data objects, but <cite>count</cite>
+counts pairs. Very annoying.</p>
+<dl class="attribute">
+<dt id="datatypes.complex.MapObject.HASH_MAP">
+<code class="descname">HASH_MAP</code><em class="property"> = 1</em><a class="headerlink" href="#datatypes.complex.MapObject.HASH_MAP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.complex.MapObject.LINKED_HASH_MAP">
+<code class="descname">LINKED_HASH_MAP</code><em class="property"> = 2</em><a class="headerlink" href="#datatypes.complex.MapObject.LINKED_HASH_MAP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.MapObject.build_header">
+<em class="property">classmethod </em><code class="descname">build_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.MapObject.build_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.MapObject.from_python">
+<em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.MapObject.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.MapObject.parse">
+<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.MapObject.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.complex.MapObject.tc_type">
+<code class="descname">tc_type</code><em class="property"> = b'\x19'</em><a class="headerlink" href="#datatypes.complex.MapObject.tc_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="datatypes.complex.MapObject.to_python">
+<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.MapObject.to_python" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1367,8 +1477,8 @@ The only <cite>type_id</cite> value of -1 (user type) works from Python perspect
   <ul>
 <li><a class="reference internal" href="#">datatypes package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-datatypes.any_object">datatypes.any_object module</a></li>
 <li><a class="reference internal" href="#module-datatypes.cache_config">datatypes.cache_config module</a></li>
+<li><a class="reference internal" href="#module-datatypes.complex">datatypes.complex module</a></li>
 <li><a class="reference internal" href="#module-datatypes.null_object">datatypes.null_object module</a></li>
 <li><a class="reference internal" href="#module-datatypes.primitive">datatypes.primitive module</a></li>
 <li><a class="reference internal" href="#module-datatypes.primitive_arrays">datatypes.primitive_arrays module</a></li>

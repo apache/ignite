@@ -44,6 +44,7 @@
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
@@ -59,7 +60,7 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="source/datatypes.html#datatypes.any_object.AnyDataObject">AnyDataObject (class in datatypes.any_object)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.AnyDataObject">AnyDataObject (class in datatypes.complex)</a>
 </li>
       <li><a href="source/api.html#module-api">api (module)</a>
 </li>
@@ -119,8 +120,16 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="source/queries.html#queries.Response.build_header">build_header() (queries.Response static method)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.CollectionObject.build_header">build_header() (datatypes.complex.CollectionObject class method)</a>
+
+      <ul>
+        <li><a href="source/datatypes.html#datatypes.complex.MapObject.build_header">(datatypes.complex.MapObject class method)</a>
 </li>
+        <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject.build_header">(datatypes.complex.ObjectArrayObject class method)</a>
+</li>
+        <li><a href="source/queries.html#queries.Response.build_header">(queries.Response static method)</a>
+</li>
+      </ul></li>
       <li><a href="source/datatypes.html#datatypes.standard.EnumArrayObject.build_header_class">build_header_class() (datatypes.standard.EnumArrayObject class method)</a>
 </li>
       <li><a href="source/datatypes.html#datatypes.primitive.Byte">Byte (class in datatypes.primitive)</a>
@@ -237,7 +246,11 @@
 </li>
       <li><a href="source/connection.html#connection.Connection.close">close() (connection.Connection method)</a>
 </li>
+      <li><a href="source/datatypes.html#datatypes.complex.CollectionObject">CollectionObject (class in datatypes.complex)</a>
+</li>
       <li><a href="source/conftest.html#module-conftest">conftest (module)</a>
+</li>
+      <li><a href="source/connection.html#connection.PrefetchConnection.conn">conn (connection.PrefetchConnection attribute)</a>
 </li>
       <li><a href="source/connection.html#connection.Connection.connect">connect() (connection.Connection method)</a>
 </li>
@@ -259,9 +272,9 @@
 </li>
       <li><a href="source/datatypes.html#module-datatypes">datatypes (module)</a>
 </li>
-      <li><a href="source/datatypes.html#module-datatypes.any_object">datatypes.any_object (module)</a>
-</li>
       <li><a href="source/datatypes.html#module-datatypes.cache_config">datatypes.cache_config (module)</a>
+</li>
+      <li><a href="source/datatypes.html#module-datatypes.complex">datatypes.complex (module)</a>
 </li>
       <li><a href="source/datatypes.html#module-datatypes.null_object">datatypes.null_object (module)</a>
 </li>
@@ -325,9 +338,13 @@
 </li>
       <li><a href="source/datatypes.html#datatypes.primitive_objects.FloatObject">FloatObject (class in datatypes.primitive_objects)</a>
 </li>
-      <li><a href="source/datatypes.html#datatypes.any_object.AnyDataObject.from_python">from_python() (datatypes.any_object.AnyDataObject class method)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.AnyDataObject.from_python">from_python() (datatypes.complex.AnyDataObject class method)</a>
 
       <ul>
+        <li><a href="source/datatypes.html#datatypes.complex.MapObject.from_python">(datatypes.complex.MapObject class method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject.from_python">(datatypes.complex.ObjectArrayObject class method)</a>
+</li>
         <li><a href="source/datatypes.html#datatypes.null_object.Null.from_python">(datatypes.null_object.Null static method)</a>
 </li>
         <li><a href="source/datatypes.html#datatypes.primitive.Char.from_python">(datatypes.primitive.Char class method)</a>
@@ -375,7 +392,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="source/datatypes.html#datatypes.any_object.AnyDataObject.get_subtype">get_subtype() (datatypes.any_object.AnyDataObject static method)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.AnyDataObject.get_subtype">get_subtype() (datatypes.complex.AnyDataObject static method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -387,6 +404,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source/datatypes.html#datatypes.complex.MapObject.HASH_MAP">HASH_MAP (datatypes.complex.MapObject attribute)</a>
+</li>
       <li><a href="source/api.html#api.result.hashcode">hashcode() (in module api.result)</a>
 </li>
   </ul></td>
@@ -409,7 +428,7 @@
 </li>
       <li><a href="source/datatypes.html#datatypes.primitive_objects.IntObject">IntObject (class in datatypes.primitive_objects)</a>
 </li>
-      <li><a href="source/datatypes.html#datatypes.any_object.AnyDataObject.is_iterable">is_iterable() (datatypes.any_object.AnyDataObject static method)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.AnyDataObject.is_iterable">is_iterable() (datatypes.complex.AnyDataObject static method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -419,17 +438,27 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/connection.html#connection.handshake.HandshakeRequest.length">length (connection.handshake.HandshakeRequest attribute)</a>
 </li>
-      <li><a href="source/datatypes.html#datatypes.cache_config.CacheMode.LOCAL">LOCAL (datatypes.cache_config.CacheMode attribute)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.MapObject.LINKED_HASH_MAP">LINKED_HASH_MAP (datatypes.complex.MapObject attribute)</a>
 </li>
-      <li><a href="source/datatypes.html#datatypes.primitive.Long">Long (class in datatypes.primitive)</a>
+      <li><a href="source/datatypes.html#datatypes.cache_config.CacheMode.LOCAL">LOCAL (datatypes.cache_config.CacheMode attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source/datatypes.html#datatypes.primitive.Long">Long (class in datatypes.primitive)</a>
+</li>
       <li><a href="source/datatypes.html#datatypes.primitive_arrays.LongArray">LongArray (class in datatypes.primitive_arrays)</a>
 </li>
       <li><a href="source/datatypes.html#datatypes.primitive_arrays.LongArrayObject">LongArrayObject (class in datatypes.primitive_arrays)</a>
 </li>
       <li><a href="source/datatypes.html#datatypes.primitive_objects.LongObject">LongObject (class in datatypes.primitive_objects)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source/datatypes.html#datatypes.complex.MapObject">MapObject (class in datatypes.complex)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -451,6 +480,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/datatypes.html#datatypes.standard.ObjectArray">ObjectArray (class in datatypes.standard)</a>
 </li>
+      <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject">ObjectArrayObject (class in datatypes.complex)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/connection.html#connection.handshake.HandshakeRequest.op_code">op_code (connection.handshake.HandshakeRequest attribute)</a>
@@ -465,12 +496,16 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="source/datatypes.html#datatypes.any_object.AnyDataObject.parse">parse() (datatypes.any_object.AnyDataObject class method)</a>
+      <li><a href="source/datatypes.html#datatypes.cache_config.Struct.parse">parse() (datatypes.cache_config.Struct method)</a>
 
       <ul>
-        <li><a href="source/datatypes.html#datatypes.cache_config.Struct.parse">(datatypes.cache_config.Struct method)</a>
-</li>
         <li><a href="source/datatypes.html#datatypes.cache_config.StructArray.parse">(datatypes.cache_config.StructArray method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.AnyDataObject.parse">(datatypes.complex.AnyDataObject class method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.MapObject.parse">(datatypes.complex.MapObject class method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject.parse">(datatypes.complex.ObjectArrayObject class method)</a>
 </li>
         <li><a href="source/datatypes.html#datatypes.null_object.Null.parse">(datatypes.null_object.Null class method)</a>
 </li>
@@ -489,10 +524,16 @@
 </li>
       <li><a href="source/datatypes.html#datatypes.cache_config.PartitionLossPolicy">PartitionLossPolicy (class in datatypes.cache_config)</a>
 </li>
+      <li><a href="source/connection.html#connection.PrefetchConnection.prefetch">prefetch (connection.PrefetchConnection attribute)</a>
+</li>
+      <li><a href="source/connection.html#connection.PrefetchConnection">PrefetchConnection (class in connection)</a>
+</li>
       <li><a href="source/datatypes.html#datatypes.cache_config.WriteSynchronizationMode.PRIMARY_SYNC">PRIMARY_SYNC (datatypes.cache_config.WriteSynchronizationMode attribute)</a>
 </li>
       <li><a href="source/datatypes.html#datatypes.primitive.Primitive">Primitive (class in datatypes.primitive)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/datatypes.html#datatypes.primitive_arrays.BoolArray.primitive_type">primitive_type (datatypes.primitive_arrays.BoolArray attribute)</a>
 
       <ul>
@@ -527,8 +568,6 @@
         <li><a href="source/datatypes.html#datatypes.primitive_arrays.ShortArrayObject.primitive_type">(datatypes.primitive_arrays.ShortArrayObject attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/conftest.html#conftest.pytest_addoption">pytest_addoption() (in module conftest)</a>
 </li>
       <li><a href="source/conftest.html#conftest.pytest_generate_tests">pytest_generate_tests() (in module conftest)</a>
@@ -572,7 +611,11 @@
       <li><a href="source/datatypes.html#datatypes.cache_config.RebalanceMode">RebalanceMode (class in datatypes.cache_config)</a>
 </li>
       <li><a href="source/connection.html#connection.Connection.recv">recv() (connection.Connection method)</a>
+
+      <ul>
+        <li><a href="source/connection.html#connection.PrefetchConnection.recv">(connection.PrefetchConnection method)</a>
 </li>
+      </ul></li>
       <li><a href="source/datatypes.html#datatypes.cache_config.CacheMode.REPLICATED">REPLICATED (datatypes.cache_config.CacheMode attribute)</a>
 </li>
       <li><a href="source/queries.html#queries.Response">Response (class in queries)</a>
@@ -653,9 +696,15 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="source/datatypes.html#datatypes.standard.BinaryEnumObject.tc_type">tc_type (datatypes.standard.BinaryEnumObject attribute)</a>
+      <li><a href="source/datatypes.html#datatypes.complex.CollectionObject.tc_type">tc_type (datatypes.complex.CollectionObject attribute)</a>
 
       <ul>
+        <li><a href="source/datatypes.html#datatypes.complex.MapObject.tc_type">(datatypes.complex.MapObject attribute)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject.tc_type">(datatypes.complex.ObjectArrayObject attribute)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.standard.BinaryEnumObject.tc_type">(datatypes.standard.BinaryEnumObject attribute)</a>
+</li>
         <li><a href="source/datatypes.html#datatypes.standard.DateArrayObject.tc_type">(datatypes.standard.DateArrayObject attribute)</a>
 </li>
         <li><a href="source/datatypes.html#datatypes.standard.DateObject.tc_type">(datatypes.standard.DateObject attribute)</a>
@@ -697,12 +746,16 @@
 </li>
       <li><a href="source/datatypes.html#datatypes.standard.TimestampObject">TimestampObject (class in datatypes.standard)</a>
 </li>
-      <li><a href="source/datatypes.html#datatypes.any_object.AnyDataObject.to_python">to_python() (datatypes.any_object.AnyDataObject class method)</a>
+      <li><a href="source/datatypes.html#datatypes.cache_config.Struct.to_python">to_python() (datatypes.cache_config.Struct method)</a>
 
       <ul>
-        <li><a href="source/datatypes.html#datatypes.cache_config.Struct.to_python">(datatypes.cache_config.Struct method)</a>
-</li>
         <li><a href="source/datatypes.html#datatypes.cache_config.StructArray.to_python">(datatypes.cache_config.StructArray method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.AnyDataObject.to_python">(datatypes.complex.AnyDataObject class method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.MapObject.to_python">(datatypes.complex.MapObject class method)</a>
+</li>
+        <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject.to_python">(datatypes.complex.ObjectArrayObject class method)</a>
 </li>
         <li><a href="source/datatypes.html#datatypes.null_object.Null.to_python">(datatypes.null_object.Null static method)</a>
 </li>
@@ -755,6 +808,12 @@
         <li><a href="source/datatypes.html#datatypes.primitive_objects.LongObject.type_code">(datatypes.primitive_objects.LongObject attribute)</a>
 </li>
         <li><a href="source/datatypes.html#datatypes.primitive_objects.ShortObject.type_code">(datatypes.primitive_objects.ShortObject attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="source/datatypes.html#datatypes.complex.CollectionObject.type_or_id_name">type_or_id_name (datatypes.complex.CollectionObject attribute)</a>
+
+      <ul>
+        <li><a href="source/datatypes.html#datatypes.complex.ObjectArrayObject.type_or_id_name">(datatypes.complex.ObjectArrayObject attribute)</a>
 </li>
       </ul></li>
   </ul></td>
