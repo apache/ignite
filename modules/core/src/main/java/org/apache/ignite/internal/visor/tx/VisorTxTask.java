@@ -379,6 +379,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
     /** Kills near or local tx. */
     private static class NearKillClosure implements TxKillClosure {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<IgniteInternalTx> apply(IgniteInternalTx tx, IgniteTxManager tm) {
             return tx.isRollbackOnly() ? new GridFinishedFuture<>() : tx.rollbackAsync();
@@ -387,6 +390,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
     /** Kills remote tx. */
     private static class RemoteKillClosure implements TxKillClosure {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<IgniteInternalTx> apply(IgniteInternalTx tx, IgniteTxManager tm) {
             IgniteTxRemoteEx remote = (IgniteTxRemoteEx)tx;
