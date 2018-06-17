@@ -226,7 +226,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private final int serializerVersion =
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
-    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer)}. */
+    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer, Collection<String>)}. */
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
@@ -819,6 +819,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 else {
                     if (names != null)
                         names.add(desc.file.getName());
+
                     deleted++;
                 }
 

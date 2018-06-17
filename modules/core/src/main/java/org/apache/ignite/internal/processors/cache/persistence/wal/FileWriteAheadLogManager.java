@@ -278,7 +278,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final int serializerVer =
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
-    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer)}. */
+    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer, Collection<String>)}. */
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
@@ -875,7 +875,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer low, WALPointer high, Collection<String> names) {
+    @Override public int truncate(final WALPointer low, final WALPointer high, final Collection<String> names) {
         if (high == null)
             return 0;
 
@@ -909,6 +909,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 else {
                     if (names != null)
                         names.add(desc.file.getName());
+                    
                     deleted++;
                 }
 

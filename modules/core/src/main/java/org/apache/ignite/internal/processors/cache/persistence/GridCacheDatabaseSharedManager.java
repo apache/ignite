@@ -3911,6 +3911,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public void walFilesDeleted(int walFilesDeleted) {
             this.walFilesDeleted = walFilesDeleted;
         }
+
+        /**
+         * @param walNamesDeleted WAL names deleted.
+         */
+        public void walNamesDeleted(final List<String> walNamesDeleted) {
+            this.walNamesDeleted = walNamesDeleted;
+        }
     }
 
     /**

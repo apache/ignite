@@ -334,6 +334,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             String lines[] = log.split("\\r?\\n");
 
             Pattern numPtrn = Pattern.compile("walSegmentsCleared=([0-9]+),");
+
             Pattern namesPtrn = Pattern.compile("walSegmentNamesCleared=\\[(.*)\\], ");
 
             boolean found = false;
@@ -468,17 +469,12 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     @Override public Void call() throws Exception {
                         final Collection<Integer> toRmvLaterList = new ArrayList<>();
 
-                        int j = 0;
-
                         for (int id = finalJ * recsPerThread; id < ((finalJ + 1) * recsPerThread); id++) {
                             HugeIndexedObject v = new HugeIndexedObject(id);
 
                             cache.put(id, v);
                             toRmvLaterList.add(id);
                             watchdog.reportProgress(1);
-
-                            if (j % 10 == 0)
-                                forceCheckpoint();
 
                             if (toRmvLaterList.size() > 100) {
                                 for (Integer toRemoveId : toRmvLaterList) {
@@ -541,7 +537,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         /**
          * @param iVal Integer value.
          */
-        public HugeIndexedObject(int iVal) {
+        private HugeIndexedObject(int iVal) {
             this.iVal = iVal;
 
             int sz = OBJECT_SIZE;
