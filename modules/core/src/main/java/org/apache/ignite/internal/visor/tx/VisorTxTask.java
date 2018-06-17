@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,20 +32,32 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxMappings;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
+import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 
 /**
  *
@@ -101,6 +115,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
     @Nullable @Override protected Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, VisorTxTaskResult> mapRes = new TreeMap<>();
 
+        Map<UUID, ClusterNode> nodeMap = new HashMap<>();
+
         for (ComputeJobResult result : results) {
             VisorTxTaskResult data = result.getData();
 
@@ -108,6 +124,47 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 continue;
 
             mapRes.put(result.getNode(), data);
+
+            nodeMap.put(result.getNode().id(), result.getNode());
+        }
+
+        // Remove local and remote txs for which near txs are present.
+        for (VisorTxTaskResult result : mapRes.values()) {
+            List<VisorTxInfo> infos = result.getInfos();
+
+            Iterator<VisorTxInfo> it = infos.iterator();
+
+            while (it.hasNext()) {
+                VisorTxInfo info = it.next();
+
+                if (!info.getXid().equals(info.getNearXid())) {
+                    UUID nearNodeId = info.getMasterNodeIds().iterator().next();
+
+                    // Try find id.
+                    ClusterNode node = nodeMap.get(nearNodeId);
+
+                    if (node == null)
+                        continue;
+
+                    VisorTxTaskResult res0 = mapRes.get(node);
+
+                    if (res0 == null)
+                        continue;
+
+                    boolean exists = false;
+
+                    for (VisorTxInfo txInfo : res0.getInfos()) {
+                        if (txInfo.getXid().equals(info.getNearXid())) {
+                            exists = true;
+
+                            break;
+                        }
+                    }
+
+                    if (exists)
+                        it.remove();
+                }
+            }
         }
 
         return mapRes;
@@ -121,7 +178,16 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         private static final long serialVersionUID = 0L;
 
         /** */
-        public static final int DEFAULT_LIMIT = 50;
+        private static final int DEFAULT_LIMIT = 50;
+
+        /** */
+        private static final TxKillClosure NEAR_KILL_CLOSURE = new NearKillClosure();
+
+        /** */
+        private static final TxKillClosure LOCAL_KILL_CLOSURE = NEAR_KILL_CLOSURE;
+
+        /** */
+        private static final TxKillClosure REMOTE_KILL_CLOSURE = new RemoteKillClosure();
 
         /**
          * @param arg Formal job argument.
@@ -167,49 +233,90 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 if (arg.getMinDuration() != null && duration < arg.getMinDuration())
                     continue;
 
-                // Near tx features.
                 String lb = null;
-                IgniteTxMappings txMappings = null;
-                boolean nearTx = false;
+                int size = 0;
+                Collection<UUID> mappings = null;
+                TxKillClosure killClo = null;
+
+                // This filter conditions have meaning only for near txs, so we skip dht because it will never match.
+                boolean skip = arg.getMinSize() != null || lbMatch != null;
 
                 if (locTx instanceof GridNearTxLocal) {
-                    nearTx = true;
-
                     GridNearTxLocal locTx0 = (GridNearTxLocal)locTx;
 
                     lb = locTx0.label();
 
-                    txMappings = locTx0.mappings();
-                }
+                    if (lbMatch != null && !lbMatch.matcher(lb == null ? "null" : lb).matches())
+                        continue;
 
-                if (nearTx && lbMatch != null && !lbMatch.matcher(lb == null ? "null" : lb).matches())
-                    continue;
+                    mappings = new ArrayList<>();
 
-                Collection<UUID> mappings = new ArrayList<>();
+                    if (locTx0.mappings() != null) {
+                        IgniteTxMappings txMappings = locTx0.mappings();
 
-                int size = 0;
+                        for (GridDistributedTxMapping mapping :
+                            txMappings.single() ? Collections.singleton(txMappings.singleMapping()) : txMappings.mappings()) {
+                            if (mapping == null)
+                                continue;
 
-                if (nearTx && txMappings != null) {
-                    for (GridDistributedTxMapping mapping :
-                        txMappings.single() ? Collections.singleton(txMappings.singleMapping()) : txMappings.mappings()) {
-                        if (mapping == null)
-                            continue;
+                            mappings.add(mapping.primary().id());
 
-                        mappings.add(mapping.primary().id());
-
-                        size += mapping.entries().size(); // Entries are not synchronized so no visibility guaranties for size.
+                            size += mapping.entries().size(); // Entries are not synchronized so no visibility guaranties for size.
+                        }
                     }
-                }
 
-                if (arg.getMinSize() != null && size < arg.getMinSize())
-                    continue;
+                    if (arg.getMinSize() != null && size < arg.getMinSize())
+                        continue;
+
+                    killClo = NEAR_KILL_CLOSURE;
+                }
+                else if (locTx instanceof GridDhtTxLocal) {
+                    if (skip)
+                        continue;
+
+                    GridDhtTxLocal locTx0 = (GridDhtTxLocal)locTx;
+
+                    Map<UUID, GridDistributedTxMapping> dhtMap = U.field(locTx0, "dhtMap");
+
+                    mappings = new ArrayList<>();
+
+                    if (dhtMap != null) {
+                        for (GridDistributedTxMapping mapping : dhtMap.values()) {
+                            mappings.add(mapping.primary().id());
+
+                            size += mapping.entries().size();
+                        }
+                    }
+
+                    Map<UUID, GridDistributedTxMapping> nearMap = U.field(locTx, "nearMap");
+
+                    if (nearMap != null) {
+                        for (GridDistributedTxMapping mapping : nearMap.values()) {
+                            mappings.add(mapping.primary().id());
+
+                            size += mapping.entries().size();
+                        }
+                    }
+
+                    killClo = LOCAL_KILL_CLOSURE;
+                }
+                else if (locTx instanceof GridDhtTxRemote) {
+                    if (skip)
+                        continue;
+
+                    GridDhtTxRemote locTx0 = (GridDhtTxRemote)locTx;
+
+                    size = locTx0.readMap().size() + locTx.writeMap().size();
+
+                    killClo = REMOTE_KILL_CLOSURE;
+                }
 
                 infos.add(new VisorTxInfo(locTx.xid(), duration, locTx.isolation(), locTx.concurrency(),
                     locTx.timeout(), lb, mappings, locTx.state(),
                     size, locTx.nearXidVersion().asGridUuid(), locTx.masterNodeIds()));
 
                 if (arg.getOperation() == VisorTxOperation.KILL)
-                    locTx.rollbackAsync();
+                    killClo.apply(locTx, tm);
 
                 if (infos.size() == limit)
                     break;
@@ -262,6 +369,37 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         /** {@inheritDoc} */
         @Override public int compare(VisorTxInfo o1, VisorTxInfo o2) {
             return Long.compare(o2.getSize(), o1.getSize());
+        }
+    }
+
+    /** Type shortcut. */
+    private interface TxKillClosure extends
+        IgniteBiClosure<IgniteInternalTx, IgniteTxManager, IgniteInternalFuture<IgniteInternalTx>> {
+    }
+
+    /** Kills near or local tx. */
+    private static class NearKillClosure implements TxKillClosure {
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<IgniteInternalTx> apply(IgniteInternalTx tx, IgniteTxManager tm) {
+            return tx.isRollbackOnly() ? new GridFinishedFuture<>() : tx.rollbackAsync();
+        }
+    }
+
+    /** Kills remote tx. */
+    private static class RemoteKillClosure implements TxKillClosure {
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<IgniteInternalTx> apply(IgniteInternalTx tx, IgniteTxManager tm) {
+            IgniteTxRemoteEx remote = (IgniteTxRemoteEx)tx;
+
+            if (tx.isRollbackOnly()) return new GridFinishedFuture<>();
+
+            if (tx.state() == TransactionState.PREPARED)
+                remote.doneRemote(tx.xidVersion(),
+                    Collections.<GridCacheVersion>emptyList(),
+                    Collections.<GridCacheVersion>emptyList(),
+                    Collections.<GridCacheVersion>emptyList());
+
+            return tx.rollbackAsync();
         }
     }
 }
