@@ -19,17 +19,21 @@ package org.apache.ignite.transactions.spring;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.InvalidIsolationLevelException;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -197,7 +201,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * </pre>
  */
 public class SpringTransactionManager extends AbstractPlatformTransactionManager
-    implements ResourceTransactionManager, PlatformTransactionManager, InitializingBean, ApplicationContextAware {
+    implements ResourceTransactionManager, PlatformTransactionManager, ApplicationListener<ContextRefreshedEvent>, ApplicationContextAware {
     /**
      * Logger.
      */
@@ -339,7 +343,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
     }
 
     /** {@inheritDoc} */
-    @Override public void afterPropertiesSet() throws Exception {
+    @Override public void onApplicationEvent(ContextRefreshedEvent event) {
         assert ignite == null;
 
         if (cfgPath != null && cfg != null) {
@@ -349,12 +353,18 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
                     "'igniteInstanceName' property.");
         }
 
-        if (cfgPath != null)
-            ignite = IgniteSpring.start(cfgPath, springCtx);
-        else if (cfg != null)
-            ignite = IgniteSpring.start(cfg, springCtx);
-        else
-            ignite = Ignition.ignite(igniteInstanceName);
+        try {
+            if (cfgPath != null) {
+                ignite = IgniteSpring.start(cfgPath, springCtx);
+            }
+            else if (cfg != null)
+                ignite = IgniteSpring.start(cfg, springCtx);
+            else
+                ignite = Ignition.ignite(igniteInstanceName);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
 
         if (transactionConcurrency == null)
             transactionConcurrency = ignite.configuration().getTransactionConfiguration().getDefaultTxConcurrency();

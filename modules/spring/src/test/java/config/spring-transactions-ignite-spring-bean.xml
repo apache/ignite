@@ -26,6 +26,38 @@
 
     <tx:annotation-driven/>
 
+    <bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean">
+        <property name="configuration">
+            <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+                <property name="peerClassLoadingEnabled" value="true"/>
+                <property name="igniteInstanceName" value="testGrid"/>
+
+                <property name="cacheConfiguration">
+                    <list>
+                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                            <property name="name" value="testCache"/>
+                            <property name="atomicityMode" value="TRANSACTIONAL"/>
+                        </bean>
+                    </list>
+                </property>
+
+                <property name="discoverySpi">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                        <property name="ipFinder">
+                            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                                <property name="addresses">
+                                    <list>
+                                        <value>127.0.0.1:47500..47509</value>
+                                    </list>
+                                </property>
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
     <bean id="gridSpringTransactionService" class="org.apache.ignite.transactions.spring.GridSpringTransactionService"/>
 
     <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">

@@ -20,21 +20,24 @@ package org.apache.ignite.cache.spring;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.beans.factory.InitializingBean;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 
 /**
  * Implementation of Spring cache abstraction based on Ignite cache.
@@ -140,7 +143,7 @@ import org.springframework.context.ApplicationContextAware;
  * Ignite distribution, and all these nodes will participate
  * in caching the data.
  */
-public class SpringCacheManager implements CacheManager, InitializingBean, ApplicationContextAware {
+public class SpringCacheManager implements CacheManager, ApplicationListener<ContextRefreshedEvent>, ApplicationContextAware {
     /** Default locks count. */
     private static final int DEFAULT_LOCKS_COUNT = 512;
 
@@ -311,7 +314,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     }
 
     /** {@inheritDoc} */
-    @Override public void afterPropertiesSet() throws Exception {
+    @Override public void onApplicationEvent(ContextRefreshedEvent event) {
         assert ignite == null;
 
         if (cfgPath != null && cfg != null) {
@@ -321,12 +324,18 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
                 "'igniteInstanceName' property.");
         }
 
-        if (cfgPath != null)
-            ignite = IgniteSpring.start(cfgPath, springCtx);
-        else if (cfg != null)
-            ignite = IgniteSpring.start(cfg, springCtx);
-        else
-            ignite = Ignition.ignite(igniteInstanceName);
+        try {
+            if (cfgPath != null) {
+                ignite = IgniteSpring.start(cfgPath, springCtx);
+            }
+            else if (cfg != null)
+                ignite = IgniteSpring.start(cfg, springCtx);
+            else
+                ignite = Ignition.ignite(igniteInstanceName);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
