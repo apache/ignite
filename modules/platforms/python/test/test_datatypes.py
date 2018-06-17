@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
+import decimal
 import pytest
 import uuid
 
@@ -69,9 +70,9 @@ from datatypes.standard import *
         ('Little Mary had a lamb', None),
         ('This is a test', String),
 
-        # array of string
-        (['String 1', 'String 2'], None),
-        (['Some of us are empty', None, 'But not the others'], None),
+        # decimals
+        (decimal.Decimal('2.5'), None),
+        (decimal.Decimal('-1.3'), None),
 
         # uuid
         (uuid.uuid4(), None),
@@ -93,6 +94,12 @@ from datatypes.standard import *
         ((5, 6), BinaryEnumObject),
 
         # arrays of standard types
+        (['String 1', 'String 2'], None),
+        (['Some of us are empty', None, 'But not the others'], None),
+
+        ([decimal.Decimal('2.71828'), decimal.Decimal('100')], None),
+        ([decimal.Decimal('2.1'), None, decimal.Decimal('3.1415')], None),
+
         ([uuid.uuid4(), uuid.uuid4()], None),
         (
             [
@@ -110,6 +117,7 @@ from datatypes.standard import *
             TimestampArrayObject
         ),
         ((-1, [(6001, 1), (6002, 2), (6003, 3)]), BinaryEnumArrayObject),
+
     ]
 )
 def test_put_get_data(ignite_host, ignite_port, value, value_hint):

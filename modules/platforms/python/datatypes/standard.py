@@ -15,6 +15,7 @@
 
 import ctypes
 from datetime import datetime, timedelta
+import decimal
 import uuid
 
 from connection import Connection
@@ -24,12 +25,17 @@ from .null_object import Null
 
 
 __all__ = [
-    'String', 'UUIDObject', 'TimestampObject', 'DateObject', 'TimeObject',
-    'EnumObject', 'StringArray', 'UUIDArray', 'TimestampArray', 'DateArray',
-    'TimeArray', 'EnumArray', 'StringArrayObject', 'UUIDArrayObject',
+    'String', 'DecimalObject', 'UUIDObject', 'TimestampObject', 'DateObject',
+    'TimeObject',
+
+    'StringArray', 'DecimalArray', 'UUIDArray', 'TimestampArray', 'DateArray',
+    'TimeArray',
+
+    'StringArrayObject', 'DecimalArrayObject', 'UUIDArrayObject',
     'TimestampArrayObject', 'TimeArrayObject', 'DateArrayObject',
-    'EnumArrayObject', 'BinaryEnumObject', 'BinaryEnumArrayObject',
-    'ObjectArray',
+
+    'EnumObject', 'EnumArray', 'EnumArrayObject', 'BinaryEnumObject',
+    'BinaryEnumArrayObject', 'ObjectArray',
 ]
 
 
@@ -57,6 +63,7 @@ class String:
     Pascal-style string: `c_int` counter, followed by count*bytes.
     UTF-8-encoded, so that one character may take 1 to 4 bytes.
     """
+    tc_type = TC_STRING
 
     @classmethod
     def build_c_type(cls, length: int):
@@ -109,11 +116,110 @@ class String:
         data_type = cls.build_c_type(length)
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            TC_STRING,
+            cls.tc_type,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.length = length
         data_object.data = value
+        return bytes(data_object)
+
+
+class DecimalObject:
+    tc_type = TC_DECIMAL
+
+    @classmethod
+    def build_c_header(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('type_code', ctypes.c_byte),
+                    ('scale', ctypes.c_int),
+                    ('length', ctypes.c_int),
+                ],
+            }
+        )
+
+    @classmethod
+    def parse(cls, conn: Connection):
+        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
+        # Decimal or Null
+        if tc_type == TC_NULL:
+            return Null.build_c_type(), tc_type
+
+        header_class = cls.build_c_header()
+        buffer = tc_type + conn.recv(
+            ctypes.sizeof(header_class)
+            - len(tc_type)
+        )
+        header = header_class.from_buffer_copy(buffer)
+        data_type = type(
+            cls.__name__,
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('data', ctypes.c_char * header.length),
+                ],
+            }
+        )
+        buffer += conn.recv(
+            ctypes.sizeof(data_type)
+            - ctypes.sizeof(header_class)
+        )
+        return data_type, buffer
+
+    @classmethod
+    def to_python(cls, ctype_object):
+        if getattr(ctype_object, 'length', None) is None:
+            return None
+
+        sign = 1 if ctype_object.data[0] & 0x80 else 0
+        data = bytes([ctype_object.data[0] & 0x7f]) + ctype_object.data[1:]
+        result = decimal.Decimal(data.decode(PROTOCOL_STRING_ENCODING))
+        # apply scale
+        result = (
+            result
+            * decimal.Decimal('10') ** decimal.Decimal(ctype_object.scale)
+        )
+        if sign:
+            # apply sign
+            result = -result
+        return result
+
+    @classmethod
+    def from_python(cls, value: decimal.Decimal):
+        if value is None:
+            return Null.from_python()
+
+        sign, digits, scale = value.normalize().as_tuple()
+        data = bytearray([ord('0') + digit for digit in digits])
+        if sign:
+            data[0] |= 0x80
+        else:
+            data[0] &= 0x7f
+        length = len(digits)
+        header_class = cls.build_c_header()
+        data_class = type(
+            cls.__name__,
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('data', ctypes.c_char * length),
+                ],
+            }
+        )
+        data_object = data_class()
+        data_object.type_code = int.from_bytes(
+            cls.tc_type,
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
+        data_object.length = length
+        data_object.scale = scale
+        data_object.data = bytes(data)
         return bytes(data_object)
 
 
@@ -433,74 +539,18 @@ class StandardArray:
         return buffer
 
 
-class StringArray:
+class StringArray(StandardArray):
     """
     Array of Pascal-like strings. Payload-only, i.e. no `type_code` field
     in binary representation.
 
     List(str) in Python.
     """
+    standard_type = String
 
-    @classmethod
-    def build_header_class(cls):
-        return type(
-            cls.__name__+'Header',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                ],
-            }
-        )
 
-    @classmethod
-    def parse(cls, conn: Connection):
-        header_class = cls.build_header_class()
-        buffer = conn.recv(ctypes.sizeof(header_class))
-        header = header_class.from_buffer_copy(buffer)
-        fields = []
-        for i in range(header.length):
-            c_type, buffer_fragment = String.parse(conn)
-            buffer += buffer_fragment
-            fields.append(('element_{}'.format(i), c_type))
-
-        final_class = type(
-            cls.__name__,
-            (header_class,),
-            {
-                '_pack_': 1,
-                '_fields_': fields,
-            }
-        )
-        return final_class, buffer
-
-    @classmethod
-    def to_python(cls, ctype_object):
-        result = []
-        for i in range(ctype_object.length):
-            result.append(
-                String.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
-                )
-            )
-        return result
-
-    @classmethod
-    def from_python(cls, value):
-        header_class = cls.build_header_class()
-        header = header_class()
-        if hasattr(header, 'type_code'):
-            header.type_code = int.from_bytes(
-                TC_STRING_ARRAY,
-                byteorder=PROTOCOL_BYTE_ORDER
-            )
-        header.length = len(value)
-        buffer = bytes(header)
-
-        for string in value:
-            buffer += String.from_python(string)
-        return buffer
+class DecimalArray(StandardArray):
+    standard_type = DecimalObject
 
 
 class UUIDArray(StandardArray):
@@ -538,6 +588,18 @@ class StandardArrayObject(StandardArray):
                 ],
             }
         )
+
+
+class StringArrayObject(StandardArrayObject):
+    """ List of strings. """
+    standard_type = String
+    tc_type = TC_STRING_ARRAY
+
+
+class DecimalArrayObject(StandardArrayObject):
+    """ List of decimal.Decimal objects. """
+    standard_type = DecimalObject
+    tc_type = TC_DECIMAL_ARRAY
 
 
 class UUIDArrayObject(StandardArrayObject):
@@ -620,25 +682,3 @@ class BinaryEnumArrayObject(EnumArrayObject):
 
 class ObjectArray(EnumArrayObject):
     standard_type = BinaryEnumObject
-
-
-class StringArrayObject(StringArray):
-    """
-    Array of Pascal-like strings. Have `type_code`.
-
-    List(str) in Python.
-    """
-
-    @classmethod
-    def build_header_class(cls):
-        return type(
-            cls.__name__+'Header',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('length', ctypes.c_int),
-                ],
-            }
-        )

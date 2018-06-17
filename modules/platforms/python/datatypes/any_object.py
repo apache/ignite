@@ -66,6 +66,8 @@ tc_map = {
 
     TC_STRING: String,
     TC_STRING_ARRAY: StringArrayObject,
+    TC_DECIMAL: DecimalObject,
+    TC_DECIMAL_ARRAY: DecimalArrayObject,
 
     TC_OBJECT_ARRAY: ObjectArray,
 }
@@ -162,6 +164,7 @@ class AnyDataObject:
             datetime: DateObject,
             date: DateObject,
             timedelta: TimeObject,
+            decimal.Decimal: DecimalObject,
         }
 
         python_array_map = {
@@ -174,6 +177,7 @@ class AnyDataObject:
             datetime: DateArrayObject,
             date: DateArrayObject,
             timedelta: TimeArrayObject,
+            decimal.Decimal: DecimalArrayObject,
         }
 
         value_type = type(value)
