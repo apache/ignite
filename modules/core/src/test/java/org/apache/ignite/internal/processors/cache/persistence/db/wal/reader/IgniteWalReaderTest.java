@@ -107,7 +107,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static final String CACHE_ADDL_NAME = "cache1";
 
     /** Dump records to logger. Should be false for non local run. */
-    private static final boolean DUMP_RECORDS = false;
+    private static final boolean DUMP_RECORDS = true;
 
     /**
      * Field for transferring setting from test to getConfig method.
@@ -615,7 +615,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String subfolderName = genDbSubfolderName(ig, 0);
 
-        stopGrid("node0");
+        // Wait async allocation wal segment file by archiver.
+        Thread.sleep(1000);
+
+        stopGrid("node0", false);
 
         String workDir = U.defaultWorkDirectory();
 

@@ -241,7 +241,7 @@ public class IgniteWalIteratorFactory {
                     });
                 }
                 catch (IOException e) {
-                    U.warn(log, "Failed to walk directories from root [" + file + "]. Skipping this directory.", e);
+                    U.error(log, "Failed to walk directories from root [" + file + "]. Skipping this directory.", e);
                 }
 
                 continue;
