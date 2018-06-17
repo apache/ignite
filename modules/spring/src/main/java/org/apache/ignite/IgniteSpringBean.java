@@ -597,6 +597,15 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public <K, V> IgniteMultimap<K, V> multimap(String name,
+        CollectionConfiguration cfg)
+    {
+        checkIgnite();
+
+        return g.multimap(name, cfg);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return g.affinity(cacheName);
     }
