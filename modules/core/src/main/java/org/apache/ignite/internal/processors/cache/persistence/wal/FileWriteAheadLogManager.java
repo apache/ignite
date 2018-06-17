@@ -956,6 +956,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public long lastArchivedSegment() {
+        long lastArchived = archivedMonitor.lastArchivedAbsoluteIndex();
+
+        return lastArchived == -1 ? 0 : lastArchived;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         FileWALPointer fPtr = (FileWALPointer)ptr;
 

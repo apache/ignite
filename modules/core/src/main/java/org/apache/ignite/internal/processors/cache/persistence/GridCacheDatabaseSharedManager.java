@@ -51,6 +51,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
@@ -1932,25 +1933,37 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.wal().allowCompressionUntil(status.startPtr);
 
         long start = U.currentTimeMillis();
-        int applied = 0;
 
-        WALPointer lastRead = null;
+        AtomicReference<FileWALPointer> lastRead = new AtomicReference<>();
 
-        AtomicBoolean checkPointRecordReached = new AtomicBoolean(apply);
+        AtomicBoolean needMemoryRecovery = new AtomicBoolean(apply);
+
+        long lastArchivedSegment = cctx.wal().lastArchivedSegment();
+
+        Supplier<Boolean> throwsCRCError = () -> {
+            if (needMemoryRecovery.get())
+                return true;
+
+            FileWALPointer lastReadPtr = lastRead.get();
+
+            return lastReadPtr != null && lastReadPtr.index() <= lastArchivedSegment;
+        };
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
+        int applied = 0;
+
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = next(it, checkPointRecordReached::get);
+                IgniteBiTuple<WALPointer, WALRecord> tup = next(it, throwsCRCError);
 
                 if (tup == null)
                     break;
 
                 WALRecord rec = tup.get2();
 
-                lastRead = tup.get1();
+                lastRead.set((FileWALPointer)tup.get1());
 
                 switch (rec.type()) {
                     case CHECKPOINT_RECORD:
@@ -1961,7 +1974,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
                                 ", pos=" + tup.get1() + ']');
 
-                            checkPointRecordReached.set(false);
+                            needMemoryRecovery.set(false);
                         }
                         else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
                             U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
@@ -1970,7 +1983,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PAGE_RECORD:
-                        if (checkPointRecordReached.get()) {
+                        if (needMemoryRecovery.get()) {
                             PageSnapshot pageRec = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
@@ -2053,7 +2066,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     default:
-                        if (checkPointRecordReached.get() && rec instanceof PageDeltaRecord) {
+                        if (needMemoryRecovery.get() && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
                             int grpId = r.groupId();
@@ -2095,7 +2108,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
 
         if (status.needRestoreMemory()) {
-            if (checkPointRecordReached.get())
+            if (needMemoryRecovery.get())
                 throw new StorageException("Failed to restore memory state (checkpoint marker is present " +
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastRead + "]");
@@ -2109,7 +2122,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         cpHistory.initialize(retreiveHistory());
 
-        return lastRead == null ? null : lastRead.next();
+        FileWALPointer lastReadPtr = lastRead.get();
+
+        return  lastReadPtr == null ? null : lastReadPtr.next();
     }
 
     /**
