@@ -1,0 +1,333 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>api package &#8212; Apache Ignite binary client Python API 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-api">
+<span id="api-package"></span><h1>api package<a class="headerlink" href="#module-api" title="Permalink to this headline">¶</a></h1>
+<p>This module contains classes and functions, that let you communicate
+with Apache Ignite cluster node by the means of Ignite binary client protocol.</p>
+<p>To start the communication, you may connect to the node of their choice
+by instantiating the <cite>Connection</cite> object with proper connection parameters,
+like host name, and port number. Connection wraps TCP socket handling,
+as well as Ignite protocol handshaking.</p>
+<p>The whole storage room of Ignite cluster is split up onto named structures,
+called caches. You may access the particular cache, creating the hash code
+of its name with <cite>hashcode()</cite> function.</p>
+<p>Apache Ignite binary API contains a rich set of functions to control
+the lifecycle of caches. These functions resides in the <cite>cache_config</cite> module.</p>
+<p>On successful connection, you may query the data on Ignite server, using
+either key-value subset of functions, in the way similar to Redis/memcached
+APIs, or SQL subset of functions, or both. Those are <cite>key_value</cite> and <cite>sql</cite>
+modules for you.</p>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-api.cache_config">
+<span id="api-cache-config-module"></span><h2>api.cache_config module<a class="headerlink" href="#module-api.cache_config" title="Permalink to this headline">¶</a></h2>
+<p>Set of functions to manipulate caches.</p>
+<p>Ignite <cite>cache</cite> can be viewed as a named entity designed to store key-value
+pairs. Each cache is split transparently between different Ignite partitions.</p>
+<p>The choice of <cite>cache</cite> term is due to historical reasons. (Ignite initially had
+only non-persistent storage tier.)</p>
+<dl class="function">
+<dt id="api.cache_config.cache_create">
+<code class="descclassname">api.cache_config.</code><code class="descname">cache_create</code><span class="sig-paren">(</span><em>conn: connection.Connection</em>, <em>name: str</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.cache_config.cache_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a cache with a given name. Returns error if a cache with specified
+name already exists.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conn</strong> – connection to Ignite server,</li>
+<li><strong>name</strong> – cache name,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">API result data object. Contains zero status if a cache is
+created successfully, non-zero status and an error description otherwise.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.cache_config.cache_destroy">
+<code class="descclassname">api.cache_config.</code><code class="descname">cache_destroy</code><span class="sig-paren">(</span><em>conn: connection.Connection</em>, <em>hash_code: int</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.cache_config.cache_destroy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Destroys cache with a given name.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conn</strong> – connection to Ignite server,</li>
+<li><strong>hash_code</strong> – hash code of the cache. Can be obtained by applying
+the <cite>hashcode()</cite> function to the cache name,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">API result data object.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.cache_config.cache_get_configuration">
+<code class="descclassname">api.cache_config.</code><code class="descname">cache_get_configuration</code><span class="sig-paren">(</span><em>conn: connection.Connection</em>, <em>hash_code: int</em>, <em>flags: int = 0</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.cache_config.cache_get_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets configuration for the given cache.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conn</strong> – connection to Ignite server,</li>
+<li><strong>hash_code</strong> – hash code of the cache. Can be obtained by applying
+the <cite>hashcode()</cite> function to the cache name,</li>
+<li><strong>flags</strong> – Ignite documentation is unclear on this subject,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">API result data object. Result value is OrderedDict with
+the cache configuration parameters.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.cache_config.cache_get_names">
+<code class="descclassname">api.cache_config.</code><code class="descname">cache_get_names</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.cache_config.cache_get_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets existing cache names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conn</strong> – connection to Ignite server,</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">API result data object. Contains zero status and a list of cache
+names, non-zero status and an error description otherwise.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.cache_config.cache_get_or_create">
+<code class="descclassname">api.cache_config.</code><code class="descname">cache_get_or_create</code><span class="sig-paren">(</span><em>conn: connection.Connection</em>, <em>name: str</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.cache_config.cache_get_or_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a cache with a given name. Does nothing if the cache exists.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conn</strong> – connection to Ignite server,</li>
+<li><strong>name</strong> – cache name,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">API result data object. Contains zero status if a cache is
+created successfully, non-zero status and an error description otherwise.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-api.key_value">
+<span id="api-key-value-module"></span><h2>api.key_value module<a class="headerlink" href="#module-api.key_value" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="api.key_value.cache_get">
+<code class="descclassname">api.key_value.</code><code class="descname">cache_get</code><span class="sig-paren">(</span><em>conn: connection.Connection</em>, <em>hash_code: int</em>, <em>key</em>, <em>binary=False</em>, <em>key_hint=None</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.key_value.cache_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a value from cache by key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conn</strong> – connection to Ignite server,</li>
+<li><strong>hash_code</strong> – hash code of the cache. Can be obtained by applying
+the <cite>hashcode()</cite> function to the cache name,</li>
+<li><strong>key</strong> – key for the cache entry. Can be of any supported type,</li>
+<li><strong>binary</strong> – pass True to keep the value in binary form. False
+by default,</li>
+<li><strong>key_hint</strong> – (optional) Ignite data type, for which the given key
+should be converted,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">API result data object. Contains zero status and a value
+retrieved on success, non-zero status and an error description on failure.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.key_value.cache_put">
+<code class="descclassname">api.key_value.</code><code class="descname">cache_put</code><span class="sig-paren">(</span><em>conn: connection.Connection</em>, <em>hash_code: int</em>, <em>key</em>, <em>value</em>, <em>binary=False</em>, <em>key_hint=None</em>, <em>value_hint=None</em><span class="sig-paren">)</span> &#x2192; api.result.APIResult<a class="headerlink" href="#api.key_value.cache_put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Puts a value with a given key to cache (overwriting existing value if any).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conn</strong> – connection to Ignite server,</li>
+<li><strong>hash_code</strong> – hash code of the cache. Can be obtained by applying
+the <cite>hashcode()</cite> function to the cache name,</li>
+<li><strong>key</strong> – key for the cache entry. Can be of any supported type,</li>
+<li><strong>value</strong> – value for the key,</li>
+<li><strong>binary</strong> – pass True to keep the value in binary form. False
+by default,</li>
+<li><strong>key_hint</strong> – (optional) Ignite data type, for which the given key
+should be converted,</li>
+<li><strong>value_hint</strong> – (optional) Ignite data type, for which the given value
+should be converted.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">API result data object. Contains zero status if a value
+is written, non-zero status and an error description otherwise.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-api.result">
+<span id="api-result-module"></span><h2>api.result module<a class="headerlink" href="#module-api.result" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="api.result.APIResult">
+<em class="property">class </em><code class="descclassname">api.result.</code><code class="descname">APIResult</code><span class="sig-paren">(</span><em>status: int</em>, <em>message: str = 'Success'</em>, <em>value=None</em>, <em>query_id: int = None</em><span class="sig-paren">)</span><a class="headerlink" href="#api.result.APIResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Dataclass which represents the result of API request.</p>
+<p>Fields are:</p>
+<ul class="simple">
+<li>status: request status code. 0 if successful,</li>
+<li>message: ‘Success’ if status == 0, verbatim error description
+otherwise,</li>
+<li>value: return value or None.</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="api.result.hashcode">
+<code class="descclassname">api.result.</code><code class="descname">hashcode</code><span class="sig-paren">(</span><em>string: str</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#api.result.hashcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate hash code used for referencing cache bucket name
+in Ignite binary API.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>string</strong> – bucket name (or other string identifier),</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">hash code.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-api.sql">
+<span id="api-sql-module"></span><h2>api.sql module<a class="headerlink" href="#module-api.sql" title="Permalink to this headline">¶</a></h2>
+<p>This part of API is not yet implemented.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">api package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-api.cache_config">api.cache_config module</a></li>
+<li><a class="reference internal" href="#module-api.key_value">api.key_value module</a></li>
+<li><a class="reference internal" href="#module-api.result">api.result module</a></li>
+<li><a class="reference internal" href="#module-api.sql">api.sql module</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/api.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Apache Software Foundation (ASF).
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="../_sources/source/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
