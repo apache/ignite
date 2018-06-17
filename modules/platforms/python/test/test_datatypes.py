@@ -22,6 +22,7 @@ from api import hashcode
 from api.key_value import cache_get, cache_put
 from api.cache_config import cache_create, cache_destroy
 from connection import Connection
+from datatypes.complex import *
 from datatypes.primitive_objects import *
 from datatypes.primitive_arrays import *
 from datatypes.standard import *
@@ -118,6 +119,15 @@ from datatypes.standard import *
         ),
         ((-1, [(6001, 1), (6002, 2), (6003, 3)]), BinaryEnumArrayObject),
 
+        # object array
+        ((-1, [1, 2, decimal.Decimal('3')]), None),
+
+        # collection
+        ((3, [1, 2, 3]), CollectionObject),
+
+        # map
+        ((1, {'key': 4, 5: 6.0}), None),
+        ((2, {'key': 4, 5: 6.0}), None),
     ]
 )
 def test_put_get_data(ignite_host, ignite_port, value, value_hint):

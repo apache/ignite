@@ -441,6 +441,7 @@ class EnumObject(StandardObject):
     def from_python(cls, value: tuple):
         if value is None:
             return Null.from_python()
+
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(

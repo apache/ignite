@@ -17,7 +17,7 @@ from connection import Connection
 from queries.op_codes import *
 from .result import APIResult
 
-from datatypes.any_object import AnyDataObject
+from datatypes.complex import AnyDataObject
 from datatypes.primitive import Byte, Int
 from queries import Query, Response
 

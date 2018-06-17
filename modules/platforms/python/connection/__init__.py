@@ -94,3 +94,25 @@ class Connection:
     def close(self):
         self.socket.close()
         self.socket = None
+
+
+class PrefetchConnection(Connection):
+    prefetch = None
+    conn = None
+
+    def __init__(self, conn: Connection, prefetch: bytes=b''):
+        super().__init__()
+        self.conn = conn
+        self.prefetch = prefetch
+
+    def recv(self, buffersize, flags=None):
+        pref_size = len(self.prefetch)
+        if buffersize > pref_size:
+            result = self.prefetch + self.conn.recv(
+                buffersize-pref_size, flags)
+            self.prefetch = b''
+            return result
+        else:
+            result = self.prefetch[:buffersize]
+            self.prefetch = self.prefetch[buffersize:]
+            return result
