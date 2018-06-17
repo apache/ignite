@@ -43,6 +43,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -950,7 +951,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
 
     /** */
     @NotNull private IgniteCheckedException vacuumCancelledException() {
-        return new IgniteCheckedException("Operation has been cancelled.");
+        return new NodeStoppingException("Operation has been cancelled (node is stopping).");
     }
 
     /**
@@ -1345,20 +1346,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                 }
             });
 
-        res.listen(new IgniteInClosure<IgniteInternalFuture<VacuumMetrics>>() {
-            @Override public void apply(IgniteInternalFuture<VacuumMetrics> fut) {
-                try {
-                    VacuumMetrics metrics = fut.get();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Vacuum completed. " + metrics);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Vacuum error. ", e);
-                }
-            }
-        });
-
         return res;
     }
 
@@ -1366,8 +1353,13 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         ackTxCommit(currentCoordinator().nodeId(), snapshot, null)
             .listen(new IgniteInClosure<IgniteInternalFuture>() {
                 @Override public void apply(IgniteInternalFuture fut) {
-                    if (fut.error() != null)
-                        res.onDone(fut.error());
+                    Throwable err;
+
+                    if ((err = fut.error()) != null) {
+                        U.error(log, "Vacuum error.", err);
+
+                        res.onDone(err);
+                    }
                     else if (snapshot.cleanupVersion() <= MVCC_COUNTER_NA)
                         res.onDone(new VacuumMetrics());
                     else {
@@ -1395,28 +1387,36 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                                 }
                             }
 
-                            res.markInitialized();
-
-                            res.listen(new CI1<IgniteInternalFuture>() {
-                                @Override public void apply(IgniteInternalFuture fut) {
+                            res.listen(new CI1<IgniteInternalFuture<VacuumMetrics>>() {
+                                @Override public void apply(IgniteInternalFuture<VacuumMetrics> fut) {
                                     try {
-                                        fut.get();
+                                        VacuumMetrics metrics = fut.get();
 
                                         assert currentCoordinator().coordinatorVersion() == snapshot.coordinatorVersion();
 
                                         if (U.assertionsEnabled()) {
-                                            for (long key : waitTxFuts.keySet()) {
-                                                assert key > snapshot.cleanupVersion();
+                                            for (TxKey key : waitList.keySet()) {
+                                                assert key.major() == snapshot.coordinatorVersion();
+                                                assert key.minor() > snapshot.cleanupVersion();
                                             }
                                         }
 
                                         txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
+
+                                        if (log.isDebugEnabled())
+                                            log.debug("Vacuum completed. " + metrics);
                                     }
-                                    catch (IgniteCheckedException e) {
-                                        U.error(log, "Cannot truncate Tx log due to vacuum error.", e);
+                                    catch (NodeStoppingException ignored) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Cannot complete vacuum (node is stopping).");
+                                    }
+                                    catch (Throwable e) {
+                                        U.error(log, "Vacuum error.", e);
                                     }
                                 }
                             });
+
+                            res.markInitialized();
                         }
                         catch (Throwable e) {
                             completeWithException(res, e);

@@ -1072,10 +1072,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
 
-            Throwable vacuumError = crd.getVacuumError();
-
-            assertNull(X.getFullStackTrace(vacuumError), vacuumError);
-
             crd.stopVacuum(); // to prevent new futures creation.
 
             Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
@@ -1106,6 +1102,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             if (!node.configuration().isClientMode() && node.configuration().isMvccEnabled()) {
                 final MvccProcessor crd = ((IgniteEx)node).context().cache().context().coordinators();
+
+                Throwable vacuumError = crd.getVacuumError();
+
+                assertNull(X.getFullStackTrace(vacuumError), vacuumError);
 
                 fut.add(crd.runVacuum());
             }
