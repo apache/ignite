@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -28,6 +29,7 @@ import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -184,6 +187,8 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
 
         startGridAsync(2);
 
+        waitForExchangeStarted(ig);
+
         // Set short timeout on PME
         mxBean.setTxTimeoutOnPartitionMapExchange(shortTimeout);
 
@@ -218,6 +223,25 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
         });
 
         startLatch.await();
+    }
+
+    /**
+     * Waits for srarting PME on grid.
+     *
+     * @param ig Ignite grid.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void waitForExchangeStarted(IgniteEx ig) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (GridDhtPartitionsExchangeFuture fut: ig.context().cache().context().exchange().exchangeFutures()) {
+                    if (!fut.isDone())
+                        return true;
+                }
+
+                return false;
+            }
+        }, WAIT_CONDITION_TIMEOUT);
     }
 
     /**
