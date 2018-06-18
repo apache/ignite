@@ -17,12 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Starts up an empty node with example compute configuration.
@@ -35,6 +31,6 @@ public class ExampleNodeStartup {
      * @throws IgniteException If failed.
      */
     public static void main(String[] args) throws IgniteException {
-        Ignite ig = Ignition.start("examples/config/example-ignite.xml");
+        Ignition.start("examples/config/example-ignite.xml");
     }
 }
