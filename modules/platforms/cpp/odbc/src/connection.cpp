@@ -532,15 +532,6 @@ namespace ignite
                     break;
                 }
 
-                case SQL_ATTR_AUTOCOMMIT:
-                {
-                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
-
-                    *val = SQL_AUTOCOMMIT_ON;
-
-                    break;
-                }
-
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
