@@ -17,6 +17,7 @@ from connection import Connection
 from queries.op_codes import *
 from .result import APIResult
 
+from datatypes.cache_config import StructArray
 from datatypes.complex import AnyDataObject
 from datatypes.primitive import Byte, Int
 from queries import Query, Response
@@ -126,4 +127,89 @@ def cache_get(
     if hasattr(response, 'error_message'):
         result.message = response.error_message
     result.value = response_struct.to_python(response)['value']
+    return result
+
+
+def cache_get_all(
+    conn: Connection, hash_code: int, keys: list, binary=False,
+) -> APIResult:
+    """
+    Retrieves multiple key-value pairs from cache.
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param keys: list of keys or tuples of (key, key_hint),
+    :param binary: pass True to keep the value in binary form. False
+     by default,
+    :return: API result data object. Contains zero status and a dict, made of
+     retrieved key-value pairs, non-zero status and an error description
+     on failure.
+    """
+
+    class CacheGetAllQuery(Query):
+        op_code = OP_CACHE_GET_ALL
+    value_hint_pairs = []
+    length = len(keys)
+    for key_or_pair in keys:
+        if (
+            isinstance(key_or_pair, tuple)
+            and len(key_or_pair) == 2
+            and isinstance(key_or_pair[1], object)
+        ):
+            value_hint_pairs.append(key_or_pair)
+        else:
+            value_hint_pairs.append((key_or_pair, AnyDataObject))
+
+    # structure name: hint
+    key_fields = {}
+    # value: hint
+    data = {}
+    for i, pair in enumerate(value_hint_pairs):
+        name = 'element_{}'.format(i)
+        value, hint = pair
+        key_fields[name] = hint
+        data[name] = value
+
+    query_struct = CacheGetAllQuery([
+        ('hash_code', Int),
+        ('flag', Byte),
+        ('length', Int),
+    ] + list(key_fields.items()))
+
+    data.update({
+        'hash_code': hash_code,
+        'flag': 1 if binary else 0,
+        'length': length,
+    })
+    _, send_buffer = query_struct.from_python(data)
+    conn.send(send_buffer)
+
+    response_struct = Response([
+        (
+            'data', StructArray([
+                ('key', AnyDataObject),
+                ('value', AnyDataObject),
+            ])
+        ),
+    ])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = response.error_message
+
+    result.value = {}
+    for i in range(response.data.length):
+        key = AnyDataObject.to_python(
+            getattr(response.data, 'element_{}'.format(i)).key
+        )
+        value = AnyDataObject.to_python(
+            getattr(response.data, 'element_{}'.format(i)).value
+        )
+        result.value[key] = value
     return result

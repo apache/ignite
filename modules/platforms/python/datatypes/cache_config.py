@@ -24,6 +24,13 @@ from .standard import String
 from .primitive import *
 
 
+__all__ = [
+    'Struct', 'StructArray', 'cache_config_struct', 'CacheMode',
+    'PartitionLossPolicy', 'RebalanceMode', 'WriteSynchronizationMode',
+    'IndexType',
+]
+
+
 @attr.s
 class StructArray:
     """ `counter_type` counter, followed by count*following structure. """

@@ -15,9 +15,10 @@
 
 from connection import Connection
 from api import (
-    cache_create, cache_destroy, cache_get, cache_get_names, cache_put,
-    hashcode,
+    cache_create, cache_destroy, cache_get, cache_get_all, cache_get_names,
+    cache_put, hashcode,
 )
+from datatypes.primitive_objects import IntObject
 
 
 def test_put_get(ignite_host, ignite_port):
@@ -56,4 +57,30 @@ def test_get_names(ignite_host, ignite_port):
     # cleanup
     for name in bucket_names:
         cache_destroy(conn, hashcode(name))
+    conn.close()
+
+
+def test_get_all(ignite_host, ignite_port):
+    conn = Connection()
+    conn.connect(ignite_host, ignite_port)
+
+    cache_create(conn, 'my_bucket')
+
+    result = cache_get_all(
+        conn, hashcode('my_bucket'), ['key_1', 2, (3, IntObject)]
+    )
+    assert result.status == 0
+    assert result.value == {}
+
+    cache_put(conn, hashcode('my_bucket'), 'key_1', 4)
+    cache_put(conn, hashcode('my_bucket'), 3, 18, key_hint=IntObject)
+
+    result = cache_get_all(
+        conn, hashcode('my_bucket'), ['key_1', 2, (3, IntObject)]
+    )
+    assert result.status == 0
+    assert result.value == {'key_1': 4, 3: 18}
+
+    # cleanup
+    cache_destroy(conn, hashcode('my_bucket'))
     conn.close()

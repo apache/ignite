@@ -21,6 +21,7 @@ import uuid
 
 from connection import Connection, PrefetchConnection
 from constants import *
+from utils import is_iterable
 from .primitive_arrays import *
 from .primitive_objects import *
 from .standard import *
@@ -118,14 +119,6 @@ class AnyDataObject:
         ]):
             return type_first
 
-    @staticmethod
-    def is_iterable(value):
-        try:
-            iter(value)
-            return True
-        except TypeError:
-            return False
-
     @classmethod
     def parse(cls, conn: Connection):
         type_code = conn.recv(ctypes.sizeof(ctypes.c_byte))
@@ -171,7 +164,7 @@ class AnyDataObject:
         }
 
         value_type = type(value)
-        if cls.is_iterable(value) and value_type is not str:
+        if is_iterable(value) and value_type is not str:
             value_subtype = cls.get_subtype(value)
             if value_subtype in python_array_map:
                 return python_array_map[value_subtype].from_python(value)
@@ -189,7 +182,7 @@ class AnyDataObject:
                 value_subtype is None,
                 len(value) == 2,
                 isinstance(value[0], int),
-                cls.is_iterable(value[1]),
+                is_iterable(value[1]),
             ]):
                 return ObjectArrayObject.from_python(value)
 
