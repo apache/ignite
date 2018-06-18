@@ -784,50 +784,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         catch (IgniteNeedReconnectException e) {
             onDone(e);
         }
-        catch (Exception e) {
-            if (reconnectOnError(e)) {
-                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
-
-                return;
-            }
-
-            U.error(log, "Failed to initialize cache(s) (will try to rollback). " + exchId, e);
-
-            if (!isRollbackSupported()) {
-                onDone(e);
-
-                return;
-            }
-
-            exchangeLocE = new IgniteCheckedException(
-                "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
-
-            exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocE);
-
-            if (crd != null) {
-                if (crd.isLocal()) {
-                    boolean allRcvd;
-
-                    synchronized (mux) {
-                        allRcvd = remaining.isEmpty();
-                    }
-
-                    if (allRcvd)
-                        sendExchangeFailureMessage();
-                }
-                else {
-                    if (!centralizedAff)
-                        sendPartitions(crd);
-                }
-
-                // Send acknowledge message just in case the latch was not created or released on this node.
-                cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion()).countDown();
-            }
-            else
-                onDone(e);
-
-            initDone();
-        }
         catch (Throwable e) {
             if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
@@ -1103,7 +1059,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert !exchActions.clientOnlyExchange() : exchActions;
 
-        cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+        try {
+            cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+        }
+        catch (Exception e) {
+            if (reconnectOnError(e) || !isRollbackSupported())
+                // This exception will be handled by init() method.
+                throw e;
+
+            U.error(log, "Failed to initialize cache(s) (will try to rollback). " + exchId, e);
+
+            exchangeLocE = new IgniteCheckedException(
+                "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
+
+            exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocE);
+        }
 
         return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
@@ -2665,7 +2635,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return exception that represents a cause of the exchange initialization failure.
      */
     private IgniteCheckedException createExchangeException(Map<UUID, Exception> globalExceptions) {
-        ExchangeInitializationException ex = new ExchangeInitializationException("Failed to complete exchange process.");
+        IgniteCheckedException ex = new IgniteCheckedException("Failed to complete exchange process.");
 
         for (Map.Entry<UUID, Exception> entry : globalExceptions.entrySet())
             if (ex != entry.getValue())
@@ -2752,8 +2722,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (!exchCtx.mergeExchanges() && !crd.equals(events().discoveryCache().serverNodes().get(0))) {
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (!grp.isLocal())
+                    if (grp.isLocal())
+                        continue;;
+
+                    // It is possible affinity is not initialized.
+                    // For example, dynamic cache start failed.
+                    if (grp.affinity().lastVersion().topologyVersion() > 0)
                         grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
+                    else
+                        assert exchangeLocE != null;
                 }
             }
 
@@ -3286,15 +3263,27 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 assert msg.restoreExchangeId() != null : msg;
 
-                GridDhtPartitionsSingleMessage res = cctx.exchange().createPartitionsSingleMessage(
-                    msg.restoreExchangeId(),
-                    cctx.kernalContext().clientNode(),
-                    true,
-                    node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0,
-                    exchActions);
+                GridDhtPartitionsSingleMessage res;
 
-                if (localJoinExchange() && finishState0 == null)
-                    res.cacheGroupsAffinityRequest(exchCtx.groupsAffinityRequestOnJoin());
+                if (hasCachesToStart() && exchangeLocE != null) {
+                    res = new GridDhtPartitionsSingleMessage(msg.restoreExchangeId(),
+                        cctx.kernalContext().clientNode(),
+                        cctx.versions().last(),
+                        true);
+
+                    res.setError(exchangeLocE);
+                }
+                else {
+                    res = cctx.exchange().createPartitionsSingleMessage(
+                        msg.restoreExchangeId(),
+                        cctx.kernalContext().clientNode(),
+                        true,
+                        node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0,
+                        exchActions);
+
+                    if (localJoinExchange() && finishState0 == null)
+                        res.cacheGroupsAffinityRequest(exchCtx.groupsAffinityRequestOnJoin());
+                }
 
                 res.restoreState(true);
 
@@ -3574,8 +3563,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 try {
                     assert msg.error() != null: msg;
 
-                    if (isRollbackSupported())
-                        rollbackExchange(msg);
+                    rollbackExchange(msg);
 
                     synchronized (mux) {
                         finishState = new FinishState(crd.id(), initialVersion(), null);
@@ -3586,7 +3574,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (exchActions != null)
                         exchActions.completeRequestFutures(cctx, msg.error());
 
-                    onDone(exchId.topologyVersion(), msg.error());
+                    onDone(exchId.topologyVersion());
                 }
                 finally {
                     leaveBusy();
@@ -3983,6 +3971,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     if (!msg.client()) {
                         msgs.put(e.getKey().id(), e.getValue());
+
+                        if (hasCachesToStart() && msg.getError() != null)
+                            exchangeGlobalExceptions.put(e.getKey().id(), msg.getError());
 
                         updatePartitionSingleMap(e.getKey().id(), msg);
                     }
