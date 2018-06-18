@@ -129,8 +129,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         dataLdr.perNodeBufferSize(1);
 
-        multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
+        multithreadedAsync(new Runnable() {
+            @Override public void run() {
                 try {
                     for (int i = 0; i < 100; i++)
                         futures.add(dataLdr.addData(i, i));
@@ -138,21 +138,23 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                 catch (IllegalStateException ignored) {
                     // No-op.
                 }
-                return null;
             }
         }, 3);
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !futures.isEmpty();
             }
-        }, 5000);
+        }, 5000L);
+
+        assertTrue(wait);
 
         dataLdr.close(true);
 
-        for (IgniteFuture fut : futures)
+        for (IgniteFuture fut : futures) {
             if (fut != null)
                 assertTrue(fut.isDone());
+        }
     }
 
     /**
