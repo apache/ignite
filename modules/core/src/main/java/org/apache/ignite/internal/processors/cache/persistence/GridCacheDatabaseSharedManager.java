@@ -4285,7 +4285,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * Clears checkpoint history by wal history size. It needs for backward compatibility
+         * Clears checkpoint history by wal history size. It needs for backward compatibility.
          *
          * @param chp Finished checkpoint.
          * @deprecated use {@link #onMaxWalArchiveSizeCheckpointFinished} instead.
@@ -4326,15 +4326,96 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * Clears checkpoint history by archive size.
          *
-         * @param chp checkpoint which finishing now
+         * @param chp Checkpoint which finishing now.
          */
         private void onMaxWalArchiveSizeCheckpointFinished(Checkpoint chp) {
-            //When maxWalArchiveSize==MAX_VALUE clearing by max size is turned off.
-            if(persistenceCfg.getMaxWalArchiveSize() == Long.MAX_VALUE){
+            WALPointer checkpointMarkUntilDel = resolveCheckpointMarkUntilDelete(chp);
+
+            if (checkpointMarkUntilDel == null) {
                 finishCheckpoint(chp, 0);
 
                 return;
             }
+
+            onWalTruncated(checkpointMarkUntilDel);
+
+            int deleted = 0;
+
+            if (isRemovingWalEnable())
+                deleted = cctx.wal().truncate(null, lowCheckpointBound());
+
+            finishCheckpoint(chp, deleted);
+        }
+
+        /**
+         * @return {@code true} if removing WAL files are enable and {@code false} otherwise.
+         */
+        private boolean isRemovingWalEnable() {
+            //When maxWalArchiveSize==MAX_VALUE clearing by max size is turned off.
+            return persistenceCfg.getMaxWalArchiveSize() != Long.MAX_VALUE;
+        }
+
+        /**
+         * @param chp Current finished checkpoint.
+         * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
+         */
+        @Nullable private WALPointer resolveCheckpointMarkUntilDelete(Checkpoint chp) {
+            WALPointer markUntilDeleteByMemorySize = checkpointMarkUntilDeleteByMemorySize();
+
+            if (!isRemovingWalEnable())
+                return markUntilDeleteByMemorySize;
+
+            WALPointer markUntilDeleteByArchiveSize = checkpointMarkUntilDeleteByArchiveSize(chp);
+
+            return higherPointer(markUntilDeleteByMemorySize, markUntilDeleteByArchiveSize);
+        }
+
+        /**
+         * @param firstPointer One of pointers to choose the highest.
+         * @param secondPointer One of pointers to choose the highest.
+         * @return The highest pointer from input ones.
+         */
+        private WALPointer higherPointer(WALPointer firstPointer, WALPointer secondPointer) {
+            FileWALPointer first = (FileWALPointer)firstPointer;
+            FileWALPointer second = (FileWALPointer)secondPointer;
+
+            if (first == null)
+                return second;
+
+            if (second == null)
+                return first;
+
+            return first.index() > second.index() ? first : second;
+        }
+
+        /**
+         * Calculate mark until delete by maximum checkpoint history memory size.
+         *
+         * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
+         */
+        private WALPointer checkpointMarkUntilDeleteByMemorySize() {
+            if (histMap.size() <= maxCpHistMemSize)
+                return null;
+
+            int calculatedCpHistSize = maxCpHistMemSize;
+
+            for (Map.Entry<Long, CheckpointEntry> entry : histMap.entrySet()) {
+                if (histMap.size() <= calculatedCpHistSize++)
+                    return entry.getValue().checkpointMark();
+            }
+
+            return lastCheckpointEntry.checkpointMark();
+        }
+
+        /**
+         * Calculate mark until delete by maximum allowed archive size.
+         *
+         * @param chp Current finished checkpoint.
+         * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
+         */
+        @Nullable private WALPointer checkpointMarkUntilDeleteByArchiveSize(Checkpoint chp) {
+            if (chp.cpEntry == null)
+                return null;
 
             FileDescriptor[] archivedFiles = cctx.wal().walArchiveFiles();
 
@@ -4344,33 +4425,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             long absFileIdxForDel = calculateFileIdxToDelete(archivedFiles, totalArchiveSize);
 
-            if (absFileIdxForDel < 0) {
-                finishCheckpoint(chp, 0);
-
-                return;
-            }
-
-            WALPointer checkpointMarkToDel = calculateCheckpointMarkToDelete(chp, absFileIdxForDel);
-
-            if (checkpointMarkToDel == null) {
-                finishCheckpoint(chp, 0);
-
-                return;
-            }
-
-            onWalTruncated(checkpointMarkToDel);
-
-            //rechecking checkpoint to del because  perhaps didn't all checkpoints less than checkpointMarkToDel were deleted
-            checkpointMarkToDel = histMap.firstEntry().getValue().checkpointMark();
-
-            finishCheckpoint(chp, cctx.wal().truncate(null, checkpointMarkToDel));
-        }
-
-        /**
-         * Calculate checkpoint mark to which checkpoints can be deleted(not including this checkpoint)
-         */
-        @Nullable private WALPointer calculateCheckpointMarkToDelete(Checkpoint chp, long absFileIdxForDel) {
-            if (chp.cpEntry == null)
+            if (absFileIdxForDel < 0)
                 return null;
 
             long fileUntilDel = absFileIdxForDel + 1;
@@ -4384,14 +4439,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return cpEntry.checkpointMark();
             }
 
-            return null;
+            return lastCheckpointEntry.checkpointMark();
         }
 
         /**
-         * Calculate max allowed index of files to delete
+         * @param fileDescriptors Set of files for find files to delete.
+         * @param totalArchiveSize Total size of archive files.
+         * @return Max allowed index of files to delete.(including this file).
          */
         private long calculateFileIdxToDelete(FileDescriptor[] fileDescriptors, Long totalArchiveSize) {
-            if(totalArchiveSize < allowedThresholdWalArchiveSize)
+            if (fileDescriptors.length == 0 || totalArchiveSize < allowedThresholdWalArchiveSize)
                 return -1;
 
             long sizeOfOldestArchivedFiles = 0;
@@ -4403,14 +4460,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return desc.getIdx();
             }
 
-            return -1;
+            return fileDescriptors[fileDescriptors.length - 1].getIdx();
         }
 
         /**
-         * Do finish action for checkpoint
+         * Do finish action for checkpoint.
          *
-         * @param chp checkpoint which finishing now
-         * @param deleted {@code True} if wal files was deleted
+         * @param chp checkpoint which finishing now.
+         * @param deleted {@code True} if wal files was deleted.
          */
         private void finishCheckpoint(Checkpoint chp, int deleted) {
             chp.walFilesDeleted = deleted;
