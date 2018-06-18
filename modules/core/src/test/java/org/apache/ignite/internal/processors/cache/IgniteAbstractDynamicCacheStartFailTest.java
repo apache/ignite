@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
@@ -9,8 +26,12 @@ import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -19,12 +40,18 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 
-public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSelfTest {
+/**
+ * Tests the recovery after a dynamic cache start failure.
+ */
+public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSelfTest {
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
 
     /** */
     private static final String CLIENT_GRID_NAME = "client";
+
+    /** */
+    protected static final String EXISTING_CACHE_NAME = "existing-cache";;
 
     /** Coordinator node index. */
     private int crdIdx = 0;
@@ -319,7 +346,136 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
         }
     }
 
-    private List<CacheConfiguration> createCacheConfigsWithBrokenAffinityFun(
+    /**
+     * Tests that a cache with the same name can be started after failure if cache configuration is corrected.
+     *
+     * @throws Exception If test failed.
+     */
+    public void testCacheStartAfterFailure() throws Exception {
+        CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFun(
+            false, 1, 0, 1, false).get(0);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).getOrCreateCache(cfg);
+                return null;
+            }
+        }, CacheException.class, null);
+
+        // Correct the cache configuration.
+        cfg.setAffinity(new RendezvousAffinityFunction());
+
+        IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
+
+        checkCacheOperations(cache);
+    }
+
+    /**
+     * Tests that other cache (existed before the failed start) is still operable after the failure.
+     *
+     * @throws Exception If test failed.
+     */
+    public void testExistingCacheAfterFailure() throws Exception {
+        IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
+
+        CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFun(
+            false, 1, 0, 1, false).get(0);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).getOrCreateCache(cfg);
+                return null;
+            }
+        }, CacheException.class, null);
+
+        checkCacheOperations(cache);
+    }
+
+    /**
+     * Tests that other cache works as expected after the failure and further topology changes.
+     *
+     * @throws Exception If test failed.
+     */
+    public void testTopologyChangesAfterFailure() throws Exception {
+        final String clientName = "testTopologyChangesAfterFailure";
+
+        IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
+
+        checkCacheOperations(cache);
+
+        CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFun(
+            false, 0, 0, 1, false).get(0);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).getOrCreateCache(cfg);
+                return null;
+            }
+        }, CacheException.class, null);
+
+        awaitPartitionMapExchange();
+
+        checkCacheOperations(cache);
+
+        // Start a new server node and check cache operations.
+        Ignite serverNode = startGrid(gridCount() + 1);
+
+        checkCacheOperations(serverNode.cache(EXISTING_CACHE_NAME));
+
+        // Start a new client node and check cache operations.
+        IgniteConfiguration clientCfg = getConfiguration(clientName);
+
+        clientCfg.setClientMode(true);
+
+        Ignite clientNode = startGrid(clientName, clientCfg);
+
+        checkCacheOperations(clientNode.cache(EXISTING_CACHE_NAME));
+    }
+
+    protected void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {
+        assert initiatorId < gridCount();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(initiatorId).getOrCreateCaches(cfgs);
+                return null;
+            }
+        }, CacheException.class, null);
+
+        for (CacheConfiguration cfg: cfgs) {
+            IgniteCache cache = grid(initiatorId).cache(cfg.getName());
+
+            assertNull(cache);
+        }
+    }
+
+    /**
+     * Creates new cache configuration with the given name.
+     *
+     * @param cacheName Cache name.
+     * @return New cache configuration.
+     */
+    protected CacheConfiguration createCacheConfiguration(String cacheName) {
+        CacheConfiguration cfg = new CacheConfiguration()
+            .setName(cacheName)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        return cfg;
+    }
+
+    /**
+     * Create list of cache configurations.
+     *
+     * @param failOnAllNodes {@code true} if affinity function should be broken on all nodes.
+     * @param unluckyNode Node, where exception is raised.
+     * @param unluckyCfg Unlucky cache configuration number.
+     * @param cacheNum Number of caches.
+     * @param useFilter {@code true} if NodeFilter should be used.
+     *
+     * @return List of cache configurations.
+     */
+    protected List<CacheConfiguration> createCacheConfigsWithBrokenAffinityFun(
         boolean failOnAllNodes,
         int unluckyNode,
         final int unluckyCfg,
@@ -333,9 +489,7 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
         List<CacheConfiguration> cfgs = new ArrayList<>();
 
         for (int i = 0; i < cacheNum; ++i) {
-            CacheConfiguration cfg = new CacheConfiguration();
-
-            cfg.setName(DYNAMIC_CACHE_NAME + "-" + i);
+            CacheConfiguration cfg = createCacheConfiguration(DYNAMIC_CACHE_NAME + "-" + i);
 
             if (i == unluckyCfg)
                 cfg.setAffinity(new BrokenAffinityFunction(failOnAllNodes, getTestIgniteInstanceName(unluckyNode)));
@@ -349,7 +503,18 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
         return cfgs;
     }
 
-    private Collection<CacheConfiguration> createCacheConfigsWithBrokenCacheStore(
+    /**
+     * Create list of cache configurations.
+     *
+     * @param failOnAllNodes {@code true} if cache store should be broken on all nodes.
+     * @param unluckyNode Node, where exception is raised.
+     * @param unluckyCfg Unlucky cache configuration number.
+     * @param cacheNum Number of caches.
+     * @param useFilter {@code true} if NodeFilter should be used.
+     *
+     * @return List of cache configurations.
+     */
+    protected Collection<CacheConfiguration> createCacheConfigsWithBrokenCacheStore(
         boolean failOnAllNodes,
         int unluckyNode,
         int unluckyCfg,
@@ -379,27 +544,53 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
         return cfgs;
     }
 
-    private void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {
-        assert initiatorId < gridCount();
+    /**
+     * Test the basic cache operations.
+     *
+     * @param cache Cache.
+     * @throws Exception If test failed.
+     */
+    protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
+        int cnt = 1000;
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(initiatorId).getOrCreateCaches(cfgs);
-                return null;
-            }
-        }, CacheException.class, null);
+        // Check cache operations.
+        for (int i = 0; i < cnt; ++i)
+            cache.put(i, new Value(i));
 
-        for (CacheConfiguration cfg: cfgs) {
-            IgniteCache cache = grid(initiatorId).cache(cfg.getName());
+        for (int i = 0; i < cnt; ++i) {
+            Value v = cache.get(i);
 
-            assertNull(cache);
+            assertNotNull(v);
+            assertEquals(i, v.getValue());
+        }
+
+        // Check Data Streamer functionality.
+        try (IgniteDataStreamer<Integer, Value> streamer = grid(0).dataStreamer(cache.getName())) {
+            for (int i = 0; i < 10_000; ++i)
+                streamer.addData(i, new Value(i));
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Value {
+        @QuerySqlField
+        private final int fieldVal;
+
+        public Value(int fieldVal) {
+            this.fieldVal = fieldVal;
+        }
+
+        public int getValue() {
+            return fieldVal;
         }
     }
 
     /**
      * Filter specifying on which node the cache should be started.
      */
-    private static class NodeFilter implements IgnitePredicate<ClusterNode> {
+    public static class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** Cache should be created node with certain UUID. */
         public UUID uuid;
 
@@ -417,9 +608,9 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
     }
 
     /**
-     * Factory that throws an exception is got created.
+     * Affinity function that throws an exception when affinity nodes are calculated on the given node.
      */
-    private static class BrokenAffinityFunction extends RendezvousAffinityFunction {
+    public static class BrokenAffinityFunction extends RendezvousAffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -462,7 +653,7 @@ public class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSe
     /**
      * Factory that throws an exception is got created.
      */
-    private static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
+    public static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;

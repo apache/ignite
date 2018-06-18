@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekMo
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheMultinodeTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailTestWithPersistence;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
@@ -229,6 +230,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteDynamicCacheMultinodeTest.class);
         suite.addTestSuite(IgniteDynamicCacheStartFailTest.class);
         suite.addTestSuite(IgniteDynamicCacheStartFailTestWithPersistence.class);
+        suite.addTestSuite(IgniteDynamicCacheStartCoordinatorFailoverTest.class);
         suite.addTestSuite(IgniteDynamicCacheWithConfigStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
         suite.addTestSuite(IgniteDynamicCacheStartStopConcurrentTest.class);

@@ -17,41 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
-/**
- * Tests the recovery after a dynamic cache start failure, with enabled persistence.
- */
-public class IgniteDynamicCacheStartFailTestWithPersistence extends IgniteAbstractDynamicCacheStartFailTest {
+public class CacheQueryAfterDynamicCacheStartFailure extends IgniteAbstractDynamicCacheStartFailTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setMaxSize(256L * 1024 * 1024)
-                    .setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         startGrids(gridCount());
-
-        grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
     }
@@ -61,22 +44,26 @@ public class IgniteDynamicCacheStartFailTestWithPersistence extends IgniteAbstra
         stopAllGrids();
 
         super.afterTestsStopped();
-
-        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
+    protected CacheConfiguration createCacheConfiguration(String cacheName) {
+        CacheConfiguration cfg = new CacheConfiguration()
+            .setName(cacheName)
+            .setIndexedTypes(Integer.class, Value.class);
+
+        return cfg;
+    }
+
     protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
         super.checkCacheOperations(cache);
 
-        // Disable write-ahead log.
-        grid(0).cluster().disableWal(cache.getName());
+        // Check SQL API.
+        String sql = "fieldVal >= ? and fieldVal <= ?";
+        List<Cache.Entry<Integer, Value>> res = cache.query(
+            new SqlQuery<Integer, Value>(Value.class, sql).setArgs(1, 100)).getAll();
 
-        try (IgniteDataStreamer<Integer, Value> streamer = grid(0).dataStreamer(cache.getName())) {
-            for (int i = 10_000; i < 15_000; ++i)
-                streamer.addData(i, new Value(i));
-        }
-
-        grid(0).cluster().enableWal(cache.getName());
+        assertNotNull(res);
+        assertEquals(100, res.size());
     }
 }

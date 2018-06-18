@@ -20,9 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- *
+ * Tests the recovery after a dynamic cache start failure.
  */
-@SuppressWarnings("unchecked")
 public class IgniteDynamicCacheStartFailTest extends IgniteAbstractDynamicCacheStartFailTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
