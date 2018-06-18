@@ -33,8 +33,16 @@ import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
 import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 
-public class MasterNode {
-
+/**
+ * TensorFlow cluster example.
+ */
+public class TensorFlowClusterExample {
+    /**
+     * Main method.
+     *
+     * @param args Args.
+     * @throws InterruptedException In case of exception.
+     */
     public static void main(String... args) throws InterruptedException {
         IgniteConfiguration configuration = new IgniteConfiguration();
         configuration.setClientMode(false);

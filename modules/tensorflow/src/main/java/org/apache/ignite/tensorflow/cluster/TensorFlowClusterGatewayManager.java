@@ -79,7 +79,7 @@ public class TensorFlowClusterGatewayManager {
         TensorFlowClusterGateway gateway = new TensorFlowClusterGateway();
 
         Ignite ignite = igniteSupplier.get();
-        ignite.message().localListen(topicName, new TensorFlowClusterGateway());
+        ignite.message().localListen(topicName, gateway);
 
         return gateway;
     }
