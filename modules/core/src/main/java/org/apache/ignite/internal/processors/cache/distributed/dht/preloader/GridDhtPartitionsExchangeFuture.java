@@ -668,9 +668,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage) {
+                else if (msg instanceof SnapshotDiscoveryMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
-                }
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 else {
@@ -3557,12 +3556,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             return;
                         }
-
-                        if (crdChanged)
-                            if (log.isInfoEnabled()) {
-                                log.info("Coordinator changed [ver=" + initialVersion() +
-                                    ", prev=" + node.id() + ", new=" + crd.id() + ']');
-                            }
 
                         if (crd0.isLocal()) {
                             if (stateChangeExchange() && changeGlobalStateE != null)
