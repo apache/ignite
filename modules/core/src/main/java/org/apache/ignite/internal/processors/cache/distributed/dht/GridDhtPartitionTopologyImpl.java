@@ -137,6 +137,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Partition update counter. */
     private final CachePartitionFullCountersMap cntrMap;
 
+    /** */
     private volatile Map<Integer, Long> globalPartSizes;
 
     /** */
@@ -2630,6 +2631,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public Map<Integer, Long> globalPartSizes() {
         lock.readLock().lock();
 
@@ -2644,6 +2646,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void globalPartSizes(@Nullable Map<Integer, Long> partSizes) {
         lock.writeLock().lock();
 

@@ -119,6 +119,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** */
     private final int parts;
 
+    /** */
     private volatile Map<Integer, Long> globalPartSizes;
 
     /**
@@ -1228,6 +1229,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return Collections.emptyMap();
     }
 
+    /** {@inheritDoc} */
     @Override @Nullable public Map<Integer, Long> globalPartSizes() {
         lock.readLock().lock();
 
@@ -1242,6 +1244,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void globalPartSizes(@Nullable Map<Integer, Long> partSizes) {
         lock.writeLock().lock();
 

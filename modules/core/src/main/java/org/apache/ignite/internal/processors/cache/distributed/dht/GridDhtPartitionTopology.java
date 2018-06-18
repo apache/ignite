@@ -383,8 +383,14 @@ public interface GridDhtPartitionTopology {
      */
     public void printMemoryStats(int threshold);
 
+    /**
+     * @return Sizes of up-to-date partition versions in topology.
+     */
     Map<Integer, Long> globalPartSizes();
 
+    /**
+     * @param partSizes Sizes of up-to-date partition versions in topology.
+     */
     void globalPartSizes(@Nullable Map<Integer, Long> partSizes);
 
     /**

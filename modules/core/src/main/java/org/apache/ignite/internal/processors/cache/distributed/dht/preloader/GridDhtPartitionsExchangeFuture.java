@@ -2329,6 +2329,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
     }
 
+    /**
+     * @param top Topology.
+     */
     private void assignPartitionSizes(GridDhtPartitionTopology top) {
         Map<Integer, Long> partSizes = new HashMap<>();
 
