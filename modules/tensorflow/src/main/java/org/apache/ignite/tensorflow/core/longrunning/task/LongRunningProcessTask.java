@@ -17,15 +17,14 @@
 
 package org.apache.ignite.tensorflow.core.longrunning.task;
 
-import org.apache.ignite.tensorflow.core.longrunning.LongRunningProcessManager;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.tensorflow.core.longrunning.LongRunningProcessManager;
 
 /**
  * Task that can be executed on a cluster using the {@link LongRunningProcessManager}.
@@ -44,11 +43,11 @@ public abstract class LongRunningProcessTask<T> implements IgniteCallable<T> {
      *
      * @return Task metadata storage that is kept by every node in the cluster.
      */
-    Map<UUID, Future<?>> getMetadataStorage() {
+    ConcurrentHashMap<UUID, Future<?>> getMetadataStorage() {
         Ignite ignite = Ignition.localIgnite();
 
-        ConcurrentMap<String, Map<UUID, Future<?>>> nodeLocMap = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<String, ConcurrentHashMap<UUID, Future<?>>> nodeLocMap = ignite.cluster().nodeLocalMap();
 
-        return nodeLocMap.computeIfAbsent(LONG_RUNNING_PROCESS_STORAGE_NAME, k -> new HashMap<>());
+        return nodeLocMap.computeIfAbsent(LONG_RUNNING_PROCESS_STORAGE_NAME, k -> new ConcurrentHashMap<>());
     }
 }

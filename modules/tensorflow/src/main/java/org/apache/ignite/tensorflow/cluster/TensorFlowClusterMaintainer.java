@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -35,12 +36,15 @@ import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProces
 /**
  * TensorFlow cluster service that maintains TensorFlow cluster.
  */
-public class TensorFlowClusterService implements Service {
+public class TensorFlowClusterMaintainer implements Service {
     /** */
     private static final long serialVersionUID = -3220563310643566419L;
 
     /** Upstream cache name. */
     private final String cacheName;
+
+    /** Topic name. */
+    private final String topicName;
 
     /** TensorFlow cluster manager. */
     private final TensorFlowClusterManager clusterMgr;
@@ -52,12 +56,15 @@ public class TensorFlowClusterService implements Service {
      * Constructs a new instance of TensorFlow cluster service.
      *
      * @param cacheName Upstream cache name.
+     * @param topicName Topic name.
      */
-    public TensorFlowClusterService(String cacheName) {
+    public TensorFlowClusterMaintainer(String cacheName, String topicName) {
         assert cacheName != null : "Cache name should not be null";
+        assert topicName != null : "Topic name should not be null";
 
         this.clusterMgr = new TensorFlowClusterManager((Supplier<Ignite> & Serializable)Ignition::ignite);
         this.cacheName = cacheName;
+        this.topicName = topicName;
     }
 
     /** {@inheritDoc} */
@@ -72,10 +79,8 @@ public class TensorFlowClusterService implements Service {
 
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) throws Exception {
-        int cnt = 0;
         while (!Thread.currentThread().isInterrupted()) {
             Thread.sleep(1000);
-            cnt++;
 
             boolean restartRequired = hasAffinityChanged();
 
@@ -94,52 +99,13 @@ public class TensorFlowClusterService implements Service {
                 }
             }
 
-
             if (restartRequired) {
                 clusterMgr.stopClusterIfExists(cacheName);
-                clusterMgr.getOrCreateCluster(cacheName);
-            }
 
-            if (cnt % 10 == 0) {
-                Ignite ignite = Ignition.ignite();
+                TensorFlowCluster cluster =  clusterMgr.getOrCreateCluster(cacheName);
 
-                StringBuilder builder = new StringBuilder();
-                builder.append("------------------- TensorFlow Cluster Service Info -------------------").append('\n');
-                builder.append("Cache : ").append(cacheName).append("\n");
-                builder.append("Node : ").append(ignite.cluster().localNode().id().toString().substring(0, 8)).append("\n");
-
-                builder.append("Specification : ").append('\n');
-
-                TensorFlowCluster cluster = clusterMgr.getCache().get(cacheName);
-
-                String clusterSpec = clusterMgr.getSrvProcMgr().formatClusterSpec(cluster.getSpec());
-                builder.append(clusterSpec).append('\n');
-
-                Map<UUID, List<LongRunningProcessStatus>> statuses = clusterMgr.getSrvProcMgr().ping(cluster.getProcesses());
-
-                builder.append("State : ").append('\n');
-
-                for (UUID nodeId : cluster.getProcesses().keySet()) {
-                    List<UUID> pr = cluster.getProcesses().get(nodeId);
-                    List<LongRunningProcessStatus> st = statuses.get(nodeId);
-
-                    builder.append("Node ").append(nodeId.toString().substring(0, 8)).append(" -> ").append('\n');
-                    for (int i = 0; i < pr.size(); i++) {
-                        builder.append("\tProcess ")
-                            .append(pr.get(i).toString().substring(0, 8))
-                            .append(" with status ")
-                            .append(st.get(i).getState());
-
-                        if (st.get(i).getException() != null)
-                            builder.append(" (").append(st.get(i).getException()).append(")");
-
-                        builder.append('\n');
-                    }
-                }
-
-                builder.append("-----------------------------------------------------------------------").append('\n');
-
-                System.out.println(builder);
+                IgniteMessaging messaging = Ignition.ignite().message();
+                messaging.send(topicName, cluster);
             }
         }
     }

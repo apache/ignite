@@ -18,24 +18,23 @@
 package org.apache.ignite.tensorflow.cluster;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServer;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
 import org.apache.ignite.tensorflow.cluster.util.Component;
 import org.apache.ignite.tensorflow.cluster.util.TensorFlowClusterResolver;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * TensorFlow cluster manager that allows to start, maintain and stop TensorFlow cluster.
@@ -46,6 +45,9 @@ public class TensorFlowClusterManager implements Component {
 
     /** TensorFlow cluster metadata cache name. */
     private static final String TF_CLUSTER_METADATA_CACHE_NAME = "TF_CLUSTER_METADATA_CACHE";
+
+    /** Ignite instance supplier. */
+    private final Supplier<Ignite> igniteSupplier;
 
     /** TensorFlow server manager. */
     private final TensorFlowServerManager srvProcMgr;
@@ -63,19 +65,27 @@ public class TensorFlowClusterManager implements Component {
      * @param <T> Type of serializable supplier.
      */
     public <T extends Supplier<Ignite> & Serializable> TensorFlowClusterManager(T igniteSupplier) {
-        this(new TensorFlowServerManager(igniteSupplier), new TensorFlowClusterResolver(igniteSupplier));
+        this(
+            igniteSupplier,
+            new TensorFlowServerManager(igniteSupplier),
+            new TensorFlowClusterResolver(igniteSupplier)
+        );
     }
 
     /**
      * Constructs a new instance of TensorFlow cluster manager.
      *
+     * @param igniteSupplier Ignite instance supplier.
      * @param srvProcMgr TensorFlow server manager.
      * @param clusterRslvr TensorFlow cluster resolver.
      */
-    public TensorFlowClusterManager(TensorFlowServerManager srvProcMgr, TensorFlowClusterResolver clusterRslvr) {
+    public <T extends Supplier<Ignite> & Serializable> TensorFlowClusterManager(T igniteSupplier,
+        TensorFlowServerManager srvProcMgr, TensorFlowClusterResolver clusterRslvr) {
+        assert igniteSupplier != null : "Ignite supplier should not be null";
         assert srvProcMgr != null : "TensorFlow server manager should not be null";
         assert clusterRslvr != null : "TensorFlow cluster resolver should not be null";
 
+        this.igniteSupplier = igniteSupplier;
         this.srvProcMgr = srvProcMgr;
         this.clusterRslvr = clusterRslvr;
     }
@@ -89,11 +99,13 @@ public class TensorFlowClusterManager implements Component {
         cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
         cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        cache = Ignition.ignite().getOrCreateCache(cacheConfiguration);
+        Ignite ignite = igniteSupplier.get();
+        cache = ignite.getOrCreateCache(cacheConfiguration);
     }
 
     /**
-     * Creates and starts a new TensorFlow cluster for the specified cache, otherwise returns existing one.
+     * Creates and starts a new TensorFlow cluster for the specified cache if it doesn't exist, otherwise returns
+     * existing one.
      *
      * @param upstreamCacheName Upstream cache name.
      * @return TensorFlow cluster metadata.
@@ -108,7 +120,8 @@ public class TensorFlowClusterManager implements Component {
             TensorFlowCluster cluster = cache.get(upstreamCacheName);
 
             if (cluster == null) {
-                cluster = startCluster(clusterRslvr.resolveAndAcquirePorts(upstreamCacheName));
+                TensorFlowClusterSpec clusterSpec = clusterRslvr.resolveAndAcquirePorts(upstreamCacheName);
+                cluster = startCluster(clusterSpec);
                 cache.put(upstreamCacheName, cluster);
             }
 
@@ -117,6 +130,39 @@ public class TensorFlowClusterManager implements Component {
         finally {
             clusterMgrCacheLock.unlock();
         }
+    }
+
+    /**
+     * Stops TensorFlow cluster.
+     *
+     * @param upstreamCacheName Upstream cache name.
+     */
+    public void stopClusterIfExists(String upstreamCacheName) {
+        checkThatInitialized();
+
+        Lock clusterMgrCacheLock = cache.lock(upstreamCacheName);
+        clusterMgrCacheLock.lock();
+
+        try {
+            TensorFlowCluster cluster = cache.get(upstreamCacheName);
+
+            if (cluster != null) {
+                srvProcMgr.stop(cluster.getProcesses(), true);
+                clusterRslvr.freePorts(cluster.getSpec());
+                cache.remove(upstreamCacheName);
+            }
+        }
+        finally {
+            clusterMgrCacheLock.unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        clusterRslvr.destroy();
+
+        Ignite ignite = igniteSupplier.get();
+        ignite.destroyCache(TF_CLUSTER_METADATA_CACHE_NAME);
     }
 
     /**
@@ -144,39 +190,6 @@ public class TensorFlowClusterManager implements Component {
         Map<UUID, List<UUID>> processes = srvProcMgr.start(srvs);
 
         return new TensorFlowCluster(spec, processes);
-    }
-
-    /**
-     * Stops TensorFlow cluster.
-     *
-     * @param upstreamCacheName Upstream cache name.
-     */
-    public void stopClusterIfExists(String upstreamCacheName) {
-        checkThatInitialized();
-
-        Lock clusterMgrCacheLock = cache.lock(upstreamCacheName);
-        clusterMgrCacheLock.lock();
-
-        try {
-            TensorFlowCluster cluster = cache.get(upstreamCacheName);
-
-            if (cluster != null) {
-                srvProcMgr.stop(cluster.getProcesses(), true);
-                clusterRslvr.freePorts(cluster.getSpec());
-                cache.remove(upstreamCacheName);
-                // We need to stop the cluster.
-            }
-        }
-        finally {
-            clusterMgrCacheLock.unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroy() {
-        clusterRslvr.destroy();
-
-        Ignition.ignite().destroyCache(TF_CLUSTER_METADATA_CACHE_NAME);
     }
 
     /**

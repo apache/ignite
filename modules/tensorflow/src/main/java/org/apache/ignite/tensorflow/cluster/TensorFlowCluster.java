@@ -40,7 +40,7 @@ public class TensorFlowCluster implements Serializable {
      * Constructs a new instance of TensorFlow cluster.
      *
      * @param spec TensorFlow cluster specification.
-     * @param processes Process identifiers.P
+     * @param processes Process identifiers.
      */
     public TensorFlowCluster(TensorFlowClusterSpec spec, Map<UUID, List<UUID>> processes) {
         assert spec != null : "TensorFlow cluster specification should not be null";

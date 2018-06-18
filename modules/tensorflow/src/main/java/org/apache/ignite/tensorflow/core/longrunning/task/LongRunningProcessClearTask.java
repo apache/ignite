@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 
 /**
- * Task that clears process metadata on the nodes where the process has run.
+ * Task that clears process metadata on the node where the process has run.
  */
 public class LongRunningProcessClearTask extends LongRunningProcessTask<List<LongRunningProcessStatus>> {
     /** */
@@ -43,7 +43,8 @@ public class LongRunningProcessClearTask extends LongRunningProcessTask<List<Lon
     }
 
     /**
-     * Prepares processes to be removed.
+     * Prepares process to be removed. Checks that the process is not running and wraps information about state and
+     * exception into a status object.
      *
      * @param procId Process identifier.
      * @return Process status.
