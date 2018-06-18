@@ -26,12 +26,17 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -49,7 +54,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -57,11 +64,15 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -152,7 +163,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setClientMode("client".equals(igniteInstanceName));
+        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -533,7 +544,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testKillBrokenTransactions() throws Exception {
+    public void testKillHangingLocalTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
         ignite.cluster().active(true);
@@ -593,6 +604,120 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> nearFinFut = U.field(clientTx, "finishFut");
 
         nearFinFut.get();
+
+        checkFutures();
+    }
+
+    /**
+     *
+     */
+    public void testKillHangingRemoteTransactions() throws Exception {
+        Ignite[] clients = new Ignite[] {
+            startGrid("client1"),
+            startGrid("client2"),
+            startGrid("client3"),
+            startGrid("client4")
+        };
+
+        LongAdder progress = new LongAdder();
+
+        AtomicInteger idx = new AtomicInteger();
+
+        int tc = clients.length;
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch commitLatch = new CountDownLatch(1);
+
+        Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
+
+        TestRecordingCommunicationSpi primSpi = TestRecordingCommunicationSpi.spi(prim);
+
+        primSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message message) {
+                return message instanceof GridDhtTxFinishRequest;
+            }
+        });
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                int id = idx.getAndIncrement();
+
+                Ignite client = clients[id];
+
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 1)) {
+                    IgniteCache<Long, Long> cache = client.cache(DEFAULT_CACHE_NAME);
+
+                    if (id != 0)
+                        U.awaitQuiet(lockLatch);
+
+                    cache.invoke(0L, new IncrementClosure(), null);
+
+                    if (id == 0) {
+                        lockLatch.countDown();
+
+                        U.awaitQuiet(commitLatch);
+
+                        doSleep(500); // Wait until candidates will enqueue.
+                    }
+
+                    log.info("Before commit: " + id);
+
+                    tx.commit();
+                }
+                catch (Exception e) {
+                    assertTrue(X.hasCause(e, TransactionTimeoutException.class));
+                }
+
+                progress.increment();
+
+            }
+        }, tc, "invoke-thread");
+
+        U.awaitQuiet(lockLatch);
+
+        commitLatch.countDown();
+
+        primSpi.waitForBlocked();
+
+        doSleep(3000);
+
+        primSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode,GridIoMessage>>() {
+            @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
+                GridIoMessage iom = objects.get2();
+
+                Message m = iom.message();
+
+                if (m instanceof GridDhtTxFinishRequest) {
+                    GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)m;
+
+                    if (r.nearNodeId().equals(clients[0].cluster().localNode().id()))
+                        return false;
+                }
+
+                return true;
+            }
+        });
+
+        // Wait for all remote txs to finish.
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            Collection<IgniteInternalTx> txs = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
+
+            for (IgniteInternalTx tx : txs)
+                if (!tx.local())
+                    tx.finishFuture().get();
+        }
+
+        // Send remaining message.
+        primSpi.stopBlock(true);
+
+        fut.get();
+
+        Long cur = (Long)clients[0].cache(DEFAULT_CACHE_NAME).get(0L);
+
+        assertEquals(tc - 1, cur.longValue());
 
         checkFutures();
     }
@@ -1002,6 +1127,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 log.info("Waiting for tx: " + tx);
 
             assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+        }
+    }
+
+    /** */
+    private static class IncrementClosure implements EntryProcessor<Long, Long, Void> {
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<Long, Long> entry, Object... arguments) throws EntryProcessorException {
+            entry.setValue(entry.exists() ? entry.getValue() + 1 : 0);
+
+            return null;
         }
     }
 }
