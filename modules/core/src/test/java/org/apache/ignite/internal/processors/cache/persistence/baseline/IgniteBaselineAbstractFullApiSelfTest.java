@@ -33,18 +33,11 @@ public abstract class IgniteBaselineAbstractFullApiSelfTest extends GridCacheAbs
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(256 * 1024 * 1024)
+                    .setMaxSize(200 * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

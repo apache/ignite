@@ -41,11 +41,9 @@ public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        int type = PageIO.getType(pageAddr);
+        assert PageIO.getType(pageAddr) == PageIO.T_META || PageIO.getType(pageAddr) == PageIO.T_PART_META;
 
-        assert type == PageIO.T_META || type == PageIO.T_PART_META;
-
-        PageMetaIO io = PageIO.getPageIO(type, PageIO.getVersion(pageAddr));
+        PageMetaIO io = PageMetaIO.VERSIONS.forVersion(PageIO.getVersion(pageAddr));
 
         io.setLastAllocatedPageCount(pageAddr, lastAllocatedIdx);
     }

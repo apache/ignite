@@ -22,11 +22,9 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -42,9 +40,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
-public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
+public class IgnitePdsContinuousRestartTest2 extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
 
@@ -58,18 +56,19 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     private volatile int checkpointDelay = -1;
 
     /** */
-    private boolean cancel = false;
+    private boolean cancel;
 
     /**
      * Default constructor.
      */
-    public IgnitePdsContinuousRestartTest() {
+    public IgnitePdsContinuousRestartTest2() {
+
     }
 
     /**
      * @param cancel Cancel.
      */
-    public IgnitePdsContinuousRestartTest(boolean cancel) {
+    public IgnitePdsContinuousRestartTest2(boolean cancel) {
         this.cancel = cancel;
     }
 
@@ -79,21 +78,23 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(400 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration()
+                    .setMaxSize(400 * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(checkpointDelay);
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg1.setName(CACHE_NAME);
-        ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg1.setAffinity(new RendezvousAffinityFunction(false, 128));
-        ccfg1.setBackups(2);
+        ccfg.setName(CACHE_NAME);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+        ccfg.setBackups(2);
 
-        cfg.setCacheConfiguration(ccfg1);
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -227,7 +228,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         final Ignite load = ignite(0);
 
-        load.active(true);
+        load.cluster().active(true);
 
         try (IgniteDataStreamer<Object, Object> s = load.dataStreamer(CACHE_NAME)) {
             s.allowOverwrite(true);
