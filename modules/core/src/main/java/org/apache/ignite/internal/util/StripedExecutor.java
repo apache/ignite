@@ -528,8 +528,6 @@ public class StripedExecutor implements ExecutorService {
                             cmd.run();
                         }
                         finally {
-                            updateHeartbeat("After run() : " + name() + "@" + igniteInstanceName);
-
                             active = false;
                             completedCnt++;
                         }
@@ -541,8 +539,6 @@ public class StripedExecutor implements ExecutorService {
                     break;
                 }
                 catch (Throwable e) {
-                    updateHeartbeat("Throwable caught in " + name() + "@" + igniteInstanceName + ": " + e);
-
                     if (e instanceof OutOfMemoryError)
                         errHnd.apply(e);
 
@@ -554,8 +550,6 @@ public class StripedExecutor implements ExecutorService {
                 errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
                     " is terminated unexpectedly"));
             }
-
-            updateHeartbeat("Stripe worker exits: " + name() + "@" + igniteInstanceName);
         }
 
         /**
@@ -694,8 +688,6 @@ public class StripedExecutor implements ExecutorService {
                     updateHeartbeat("Parking " + name() + "@" + igniteInstanceName());
 
                     LockSupport.parkNanos(WAIT_TIMEOUT_NS);
-
-                    updateHeartbeat("Done parking " + name() + "@" + igniteInstanceName());
 
                     if (Thread.interrupted())
                         throw new InterruptedException();
