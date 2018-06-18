@@ -88,7 +88,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -2173,54 +2172,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /**
      * @param primary Primary node.
-     * @param req Message.
-     * @param first Flag if this is a first request in current operation.
-     */
-    private void processDhtTxQueryEnlistRequest(UUID primary, GridDhtTxQueryEnlistRequest req, boolean first) {
-        // Need to ensure that we have all needed keys on the node.
-        IgniteInternalFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
-            ctx.group().preloader().request(ctx, req.keys(), req.topologyVersion());
-
-        if (keyFut == null || keyFut.isDone()) {
-            if (keyFut != null) {
-                try {
-                    keyFut.get();
-                }
-                catch (NodeStoppingException ignored) {
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    onError(primary, req, e);
-
-                    return;
-                }
-            }
-
-            processDhtTxQueryEnlistRequest0(primary, req, first);
-        }
-        else {
-            keyFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> fut) {
-                    try {
-                        fut.get();
-                    }
-                    catch (NodeStoppingException ignored) {
-                        return;
-                    }
-                    catch (IgniteCheckedException e) {
-                        onError(primary, req, e);
-
-                        return;
-                    }
-
-                    processDhtTxQueryEnlistRequest0(primary, req, first);
-                }
-            });
-        }
-    }
-
-    /**
-     * @param primary Primary node.
      * @param req Request.
      * @param e Error.
      */
@@ -2242,8 +2193,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     /**
      * @param primary Primary node.
      * @param req Message.
+     * @param first Flag if this is a first request in current operation.
      */
-    private void processDhtTxQueryEnlistRequest0(UUID primary, GridDhtTxQueryEnlistRequest req, boolean first) {
+    private void processDhtTxQueryEnlistRequest(UUID primary, GridDhtTxQueryEnlistRequest req, boolean first) {
         try {
             assert req.version() != null && req.op() != null;
 
@@ -2294,7 +2246,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             MvccSnapshot snapshot = new MvccSnapshotWithoutTxs(s0.coordinatorVersion(), s0.counter(),
                 req.operationCounter(), s0.cleanupVersion());
 
-            tx.mvccEnlistBatch(ctx, req.op(), req.keys(), req.values(), snapshot);
+            if (F.isEmpty(req.entries()))
+                tx.mvccEnlistBatch(ctx, req.op(), req.keys(), req.values(), snapshot);
+            else
+                tx.mvccEnlistPreloadInfoBatch(ctx, req.op(), req.keys(), req.entries(), snapshot);
 
             GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(req.cacheId(),
                 req.dhtFutureId(),

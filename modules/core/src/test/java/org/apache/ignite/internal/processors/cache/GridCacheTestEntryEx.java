@@ -481,14 +481,18 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val, long ttl0, AffinityTopologyVersion topVer, @Nullable Long updateCntr, MvccSnapshot mvccVer, GridCacheOperation op) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val,
+        long ttl0, AffinityTopologyVersion topVer, @Nullable Long updateCntr, MvccSnapshot mvccVer,
+        GridCacheOperation op, boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException {
         rawPut(val, ttl);
 
         return new GridCacheUpdateTxResult(true);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccRemove(@Nullable IgniteInternalTx tx, UUID affNodeId, AffinityTopologyVersion topVer, @Nullable Long updateCntr, MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public GridCacheUpdateTxResult mvccRemove(@Nullable IgniteInternalTx tx, UUID affNodeId,
+        AffinityTopologyVersion topVer, @Nullable Long updateCntr, MvccSnapshot mvccVer, boolean needHistory)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 
         val = null;
@@ -677,6 +681,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         GridCacheVersion ver,
         MvccVersion mvccVer,
         MvccVersion newMvccVer,
+        byte mvccTxState,
+        byte newMvccTxState,
         long ttl,
         long expireTime,
         boolean preload,
@@ -933,5 +939,16 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public boolean lockedByCurrentThread() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheUpdateTxResult mvccUpdateRowsWithPreloadInfo(IgniteInternalTx tx,
+        UUID affNodeId,
+        AffinityTopologyVersion topVer,
+        @Nullable Long updateCntr,
+        List<GridCacheEntryInfo> entries,
+        GridCacheOperation op,
+        MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        return null;
     }
 }

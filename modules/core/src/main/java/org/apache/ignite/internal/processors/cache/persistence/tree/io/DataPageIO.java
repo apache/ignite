@@ -271,10 +271,11 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param dataOff Data offset.
      * @param newVer New version.
      */
-    public void updateNewVersion(long pageAddr, int dataOff, MvccVersion newVer) {
+    public void updateNewVersion(long pageAddr, int dataOff, MvccVersion newVer, byte newTxState) {
         long addr = pageAddr + dataOff;
 
-        updateNewVersion(addr, newVer.coordinatorVersion(), newVer.counter(), newVer.operationCounter());
+        updateNewVersion(addr, newVer.coordinatorVersion(), newVer.counter(),
+            (newVer.operationCounter() & ~MVCC_HINTS_MASK) | ((int)newTxState << MVCC_HINTS_BIT_OFF));
     }
 
     /**

@@ -355,20 +355,22 @@ public interface GridCacheEntryEx {
      * @param updateCntr Update counter.
      * @param mvccVer Mvcc version.
      * @param op Cache operation.
+     * @param needHistory Whether to collect rows created or affected by the current tx.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult mvccSet(
-            @Nullable IgniteInternalTx tx,
-            UUID affNodeId,
-            CacheObject val,
-            long ttl0,
-            AffinityTopologyVersion topVer,
-            @Nullable Long updateCntr,
-            MvccSnapshot mvccVer,
-            GridCacheOperation op) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        @Nullable IgniteInternalTx tx,
+        UUID affNodeId,
+        CacheObject val,
+        long ttl0,
+        AffinityTopologyVersion topVer,
+        @Nullable Long updateCntr,
+        MvccSnapshot mvccVer,
+        GridCacheOperation op,
+        boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.
@@ -376,17 +378,19 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param updateCntr Update counter.
      * @param mvccVer Mvcc version.
+     * @param needHistory Whether to collect rows created or affected by the current tx.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult mvccRemove(
-            @Nullable IgniteInternalTx tx,
-            UUID affNodeId,
-            AffinityTopologyVersion topVer,
-            @Nullable Long updateCntr,
-            MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        @Nullable IgniteInternalTx tx,
+        UUID affNodeId,
+        AffinityTopologyVersion topVer,
+        @Nullable Long updateCntr,
+        MvccSnapshot mvccVer,
+        boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Transaction adapter.
@@ -722,20 +726,22 @@ public interface GridCacheEntryEx {
      * @param ver Version to use.
      * @param mvccVer Mvcc version.
      * @param newMvccVer New mvcc version.
+     * @param mvccTxState Tx state hint for mvcc version.
+     * @param newMvccTxState Tx state hint for new mvcc version.
      * @param ttl Time to live.
      * @param expireTime Expiration time.
      * @param preload Flag indicating whether entry is being preloaded.
      * @param topVer Topology version.
      * @param drType DR type.
-     * @param fromStore {@code True} if value was loaded from store.
-     * @return {@code True} if initial value was set.
-     * @throws IgniteCheckedException In case of error.
+     * @param fromStore {@code True} if value was loaded from store.       @return {@code True} if initial value was set.       @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public boolean initialValue(CacheObject val,
         GridCacheVersion ver,
         @Nullable MvccVersion mvccVer,
         @Nullable MvccVersion newMvccVer,
+        byte mvccTxState,
+        byte newMvccTxState,
         long ttl,
         long expireTime,
         boolean preload,
@@ -1114,4 +1120,25 @@ public interface GridCacheEntryEx {
      * @return {@code True} if the entry is locked.
      */
     public boolean lockedByCurrentThread();
+
+    /**
+     *
+     * @param tx Transaction.
+     * @param affNodeId Affinity node id.
+     * @param topVer Topology version.
+     * @param updateCntr Update counter.
+     * @param op Cache operation.
+     * @param mvccVer Mvcc version.  @return Update result.
+     * @throws IgniteCheckedException, If failed.
+     * @throws GridCacheEntryRemovedException, If entry has been removed.
+     */
+    public GridCacheUpdateTxResult mvccUpdateRowsWithPreloadInfo(
+        IgniteInternalTx tx,
+        UUID affNodeId,
+        AffinityTopologyVersion topVer,
+        @Nullable Long updateCntr,
+        List<GridCacheEntryInfo> entries,
+        GridCacheOperation op,
+        MvccSnapshot mvccVer)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 }

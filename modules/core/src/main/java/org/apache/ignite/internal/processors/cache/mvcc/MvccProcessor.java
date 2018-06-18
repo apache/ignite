@@ -1324,7 +1324,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         assert !ctx.clientNode();
 
         if (crdVer == 0 && ctx.localNodeId().equals(currentCoordinator().nodeId()))
-            return new GridFinishedFuture<>();
+            return new GridFinishedFuture<>(new VacuumMetrics());
 
         if (Thread.currentThread().isInterrupted())
             return new GridFinishedFuture<>(new VacuumMetrics());

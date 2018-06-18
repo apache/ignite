@@ -227,36 +227,60 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
+     * @param entry Entry.
+     * @param val Value.
+     * @param ver Version.
+     * @param mvccVer MVCC version.
+     * @param newMvccVer New MVCC version.
+     * @param txState Tx state hint for the mvcc version.
+     * @param newTxState Tx state hint for the new mvcc version.
+     * @return {@code True} if value was inserted.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean mvccInitialValueIfAbsent(
+        GridCacheMapEntry entry,
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        MvccVersion mvccVer,
+        MvccVersion newMvccVer,
+        byte txState,
+        byte newTxState
+    ) throws IgniteCheckedException;
+
+    /**
      * @param primary {@code True} if on primary node.
      * @param entry Entry.
      * @param val Value.
      * @param ver Cache version.
      * @param expireTime Expire time.
      * @param mvccSnapshot MVCC snapshot.
+     * @param needHistory Flag to collect history.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public MvccUpdateResult mvccUpdate(
-            boolean primary,
-            GridCacheMapEntry entry,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccSnapshot mvccSnapshot
-    ) throws IgniteCheckedException;
+        boolean primary,
+        GridCacheMapEntry entry,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        MvccSnapshot mvccSnapshot,
+        boolean needHistory) throws IgniteCheckedException;
 
     /**
      * @param primary {@code True} if on primary node.
      * @param entry Entry.
      * @param mvccSnapshot MVCC snapshot.
+     * @param needHistory
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public MvccUpdateResult mvccRemove(
         boolean primary,
         GridCacheMapEntry entry,
-        MvccSnapshot mvccSnapshot
-    ) throws IgniteCheckedException;
+        MvccSnapshot mvccSnapshot,
+        boolean needHistory) throws IgniteCheckedException;
 
     /**
      * @param primary {@code True} if on primary node.
@@ -269,6 +293,26 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot
+    ) throws IgniteCheckedException;
+
+    /**
+     * @param entry Entry.
+     * @param val Value.
+     * @param ver Version.
+     * @param mvccVer MVCC version.
+     * @param newMvccVer New MVCC version.
+     * @return {@code True} if value was inserted.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean mvccUpdateRowWithPreloadInfo(
+        GridCacheMapEntry entry,
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        MvccVersion mvccVer,
+        MvccVersion newMvccVer,
+        byte mvccTxState,
+        byte newMvccTxState
     ) throws IgniteCheckedException;
 
     /**
@@ -639,12 +683,59 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param cctx Cache context.
+         * @param key Key.
+         * @param val Value.
+         * @param ver Version.
+         * @param mvccVer MVCC version.
+         * @param newMvccVer New MVCC version.
+         * @param txState Tx state hint for the mvcc version.
+         * @param newTxState Tx state hint for the new mvcc version.
+         * @return {@code True} if new value was inserted.
+         * @throws IgniteCheckedException If failed.
+         */
+        boolean mvccInitialValueIfAbsent(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer,
+            byte txState,
+            byte newTxState) throws IgniteCheckedException;
+
+        /**
+         *
+         * @param cctx Grid cache context.
+         * @param key Key.
+         * @param val Value.
+         * @param ver Version.
+         * @param expireTime Expiration time.
+         * @param mvccVer Mvcc version.
+         * @param newMvccVer New mvcc version.
+         * @return {@code true} on success.
+         * @throws IgniteCheckedException, if failed.
+         */
+        boolean mvccUpdateRowWithPreloadInfo(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer,
+            byte mvccTxState,
+            byte newMvccTxState) throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
          * @param primary {@code True} if update is executed on primary node.
          * @param key Key.
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
          * @param mvccSnapshot MVCC snapshot.
+         * @param needHistory Flag to collect history.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
          */
@@ -655,13 +746,15 @@ public interface IgniteCacheOffheapManager {
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+            MvccSnapshot mvccSnapshot,
+            boolean needHistory) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
          * @param primary {@code True} if update is executed on primary node.
          * @param key Key.
          * @param mvccSnapshot MVCC snapshot.
+         * @param needHistory
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
          */
@@ -669,7 +762,8 @@ public interface IgniteCacheOffheapManager {
             GridCacheContext cctx,
             boolean primary,
             KeyCacheObject key,
-            MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+            MvccSnapshot mvccSnapshot,
+            boolean needHistory) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

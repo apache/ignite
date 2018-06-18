@@ -98,6 +98,12 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     @GridToStringExclude
     private long resCntr;
 
+    /** */
+    private boolean needHistory;
+
+    /** */
+    private List<MvccLinkAwareSearchRow> historyRows;
+
     /**
      * @param key Key.
      * @param val Value.
@@ -108,6 +114,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      * @param part Partition.
      * @param primary Primary node flag.
      * @param lockOnly Whether no actual update should be done and the only thing to do is to acquire lock.
+     * @param needHistory Whether to collect rows created or affected by the current tx.
      * @param cctx Cache context.
      */
     public MvccUpdateDataRow(
@@ -120,6 +127,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         int part,
         boolean primary,
         boolean lockOnly,
+        boolean needHistory,
         GridCacheContext cctx) {
         super(key,
             val,
@@ -131,6 +139,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             newVer);
 
         this.mvccSnapshot = mvccSnapshot;
+        this.needHistory = needHistory;
         this.cctx = cctx;
 
         assert !lockOnly || val == null;
@@ -325,11 +334,22 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
             cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr, rowLink));
         }
-        else if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
-            && !isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)
-            && (rowCrd < mvccCrd || Long.compare(cleanupVer, rowCntr) >= 0))
+        else {
+            // Row obsoleted by current operation, all rows created or updated with current tx.
+            if (needHistory && (row == oldRow || (rowCrd == mvccCrd && rowCntr == mvccCntr) ||
+                (rowNewCrd == mvccCrd && rowNewCntr == mvccCntr))) {
+                if (historyRows == null)
+                    historyRows = new ArrayList<>();
+
+                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr, rowLink));
+            }
+
+            if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
+                && !isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)
+                && (rowCrd < mvccCrd || Long.compare(cleanupVer, rowCntr) >= 0))
                 // all further versions are guaranteed to be less than cleanup version
                 setFlags(CAN_CLEANUP);
+        }
 
         return unsetFlags(FIRST);
     }
@@ -382,6 +402,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                 throw new IllegalStateException("Unexpected result type: " + resultType());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<MvccLinkAwareSearchRow> history() {
+        if (needHistory && historyRows==null)
+            historyRows = new ArrayList<>();
+
+        return historyRows;
     }
 
     /** */

@@ -29,13 +29,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -426,7 +426,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                     ctx.localNodeId(),
                                     topologyVersion(),
                                     null,
-                                    snapshot);
+                                    snapshot,
+                                    false);
 
                                 break;
 
@@ -439,7 +440,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                     topologyVersion(),
                                     null,
                                     snapshot,
-                                    op);
+                                    op,
+                                    false);
 
                                 break;
 
@@ -447,7 +449,74 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                 throw new IgniteSQLException("Cannot acquire lock for operation [op= "
                                     + op + "]" + "Operation is unsupported at the moment ",
                                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                            }
+                        }
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        entry = dht.entryExx(key);
+                    }
+                    finally {
+                        ctx.shared().database().checkpointReadUnlock();
+                    }
+                }
+
+                assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
+
+                ptr = updRes.loggedPointer();
+            }
+            finally {
+                locPart.release();
+            }
+        }
+
+        if (ptr != null && !ctx.tm().logTxRecords())
+            ctx.shared().wal().flush(ptr, true);
+    }
+
+    /**
+     *
+     * @param ctx Cache context.
+     * @param op Cache operation.
+     * @param keys Keys.
+     * @param entries Entries collection per key.
+     * @param snapshot Mvcc snapshot.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void mvccEnlistPreloadInfoBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
+        List<CacheEntryInfoCollection> entries, MvccSnapshot snapshot) throws IgniteCheckedException {
+        WALPointer ptr = null;
+
+        GridDhtCacheAdapter dht = ctx.dht();
+
+        for (int i = 0; i < keys.size(); i++) {
+            KeyCacheObject key = keys.get(i);
+
+            assert key != null;
+
+            int part = ctx.affinity().partition(key);
+
+            GridDhtLocalPartition locPart = ctx.topology().localPartition(part, topologyVersion(), false);
+
+            if (locPart == null || !locPart.reserve())
+                throw new ClusterTopologyException("Can not reserve partition. Please retry on stable topology.");
+
+            try {
+                GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
+
+                GridCacheUpdateTxResult updRes;
+
+                while (true) {
+                    ctx.shared().database().checkpointReadLock();
+
+                    try {
+                        updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
+                            ctx.localNodeId(),
+                            topologyVersion(),
+                            null,
+                            entries.get(i).infos(),
+                            op,
+                            snapshot);
 
                         break;
                     }

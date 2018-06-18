@@ -307,45 +307,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
         }
 
-        IgniteInternalFuture<Object> keyFut = F.isEmpty(keys) ? null :
-            cctx.group().preloader().request(cctx, keys, topVer);
-
-        if (keyFut == null || keyFut.isDone()) {
-            if (keyFut != null) {
-                try {
-                    keyFut.get();
-                }
-                catch (NodeStoppingException ignored) {
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-
-                    return;
-                }
-            }
-
-            processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
-        }
-        else {
-            keyFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> fut) {
-                    try {
-                        fut.get();
-                    }
-                    catch (NodeStoppingException ignored) {
-                        return;
-                    }
-                    catch (IgniteCheckedException e) {
-                        onDone(e);
-
-                        return;
-                    }
-
-                    processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
-                }
-            });
-        }
+        processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
     }
 
     /**
@@ -515,7 +477,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
             Batch batch = batches.get(nodeId);
 
-            if (batch != null && !F.isEmpty(batch.localBackupRows()))
+            if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
                 processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
             else
                 sendNextBatches(nodeId);

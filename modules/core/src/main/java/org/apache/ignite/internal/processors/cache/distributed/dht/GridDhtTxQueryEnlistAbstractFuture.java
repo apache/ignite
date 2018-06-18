@@ -35,10 +35,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -46,7 +49,12 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -168,6 +176,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
     /** Batches for sending to remote nodes. */
     private Map<UUID, Batch> batches;
 
+    /** Batches containing keys for moving partitions. */
+    private Map<UUID, Batch> histBatches;
+
     /** Batches already sent to remotes, but their acks are not received yet. */
     private ConcurrentMap<UUID, ConcurrentMap<Integer, Batch>> pending;
 
@@ -179,6 +190,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
     /** There are keys belonging to backup partitions on near node. */
     protected boolean hasNearNodeUpdates;
+
+    /** Moving partitions. */
+    private Map<Integer, Boolean> movingParts;
 
     /**
      *
@@ -387,7 +401,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                                         cctx.localNodeId(),
                                         topVer,
                                         null,
-                                        mvccSnapshot);
+                                        mvccSnapshot,
+                                        isMovingPart(key.partition()));
 
                                     break;
 
@@ -401,7 +416,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        op);
+                                        op,
+                                        isMovingPart(key.partition()));
 
                                     break;
 
@@ -469,14 +485,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                         walPtr = null; // Avoid additional flushing.
                     }
 
-                    if (!F.isEmpty(batches)) {
-                        // Flush incomplete batches.
-                        for (Batch batch : batches.values()) {
-                            sendBatch(batch);
-                        }
-
-                        batches = null;
-                    }
+                    flushBatches();
 
                     if (noPendingRequests())
                         onDone(createResponse());
@@ -559,7 +568,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         cnt++;
 
         if (op != READ)
-            addToBatch(entry.key(), val);
+            addToBatch(entry.key(), val, updRes.mvccHistory());
     }
 
     /**
@@ -568,14 +577,20 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      *
      * @param key Key.
      * @param val Value.
+     * @param hist History rows.
      */
-    private void addToBatch(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist)
+        throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
         if (F.isEmpty(backups))
             return;
 
         Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
+
+        List<GridCacheEntryInfo> hist0 = null;
+
+        int part = cctx.affinity().partition(key);
 
         for (ClusterNode node : backups) {
             assert !node.isLocal();
@@ -587,7 +602,12 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
             mapping.markQueryUpdate();
 
-            if (skipNearNodeUpdates && node.id().equals(nearNodeId)) {
+            GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), part);
+
+            boolean movingPart =
+                partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED;
+
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !movingPart) {
                 if (!txStarted(node))
                     tx.addLockTransactionNode(node);
 
@@ -596,26 +616,108 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 continue;
             }
 
-            Batch batch = null;
+            if (movingPart && hist0 == null) {
+                assert !F.isEmpty(hist);
 
-            if (batches == null)
-                batches = new HashMap<>();
-            else
-                batch = batches.get(node.id());
+                hist0 = fetchHistoryInfo(key, hist);
+            }
 
-            if (batch == null)
-                batches.put(node.id(), batch = txStarted(node) ? new Batch(node) : new FirstBatch(node));
+            Batch batch = getBatch(node, movingPart);
 
-            batch.add(key, val);
+            batch.add(key, val, hist0);
 
-            if (batch.size() == BATCH_SIZE) {
-                assert batches != null;
-
-                batches.remove(node.id());
+            if (batch.size() == BATCH_SIZE && !firstBatchIsPending(node.id())) {
+                removeBatch(node.id(), movingPart);
 
                 sendBatch(batch);
             }
         }
+    }
+
+    /**
+     *
+     * @param key Key.
+     * @param hist History rows.
+     * @return History entries.
+     * @throws IgniteCheckedException, if failed.
+     */
+    private List<GridCacheEntryInfo> fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
+        throws IgniteCheckedException {
+        List<GridCacheEntryInfo> res = new ArrayList<>();
+
+        for (int i = 0; i < hist.size(); i++) {
+            MvccLinkAwareSearchRow row0 = hist.get(i);
+
+            MvccDataRow row = new MvccDataRow(cctx.group(),
+                row0.hash(),
+                row0.link(),
+                key.partition(),
+                CacheDataRowAdapter.RowData.NO_KEY,
+                row0.mvccCoordinatorVersion(),
+                row0.mvccCounter(),
+                row0.mvccOperationCounter());
+
+            GridCacheMvccEntryInfo entry = new GridCacheMvccEntryInfo();
+
+            entry.version(row.version());
+            entry.mvccVersion(row);
+            entry.newMvccVersion(row);
+            entry.value(row.value());
+            entry.expireTime(row.expireTime());
+
+            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
+                entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
+                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
+            }
+
+            if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
+                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                    row.newMvccOperationCounter()));
+            }
+
+            res.add(entry);
+        }
+
+        return res;
+    }
+
+    /**
+     * @param node Node.
+     * @param movingPart Flag to indicate moving partition.
+     * @return Batch.
+     */
+    private Batch getBatch(ClusterNode node, boolean movingPart) {
+        Map<UUID, Batch> map = movingPart ? histBatches : batches;
+
+        if (map == null) {
+            if (movingPart)
+                map = histBatches = new HashMap<>();
+            else
+                map = batches = new HashMap<>();
+        }
+
+        Batch batch = map.get(node.id());
+
+        if (batch == null) {
+            batch = new Batch(node);
+
+            map.put(node.id(), batch);
+        }
+
+        return batch;
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param movingPart Flag to indicate moving partition.
+     */
+    private void removeBatch(UUID nodeId, boolean movingPart) {
+        Map<UUID, Batch> map = movingPart ? histBatches : batches;
+
+        assert map != null;
+
+        map.remove(nodeId);
     }
 
     /** */
@@ -633,15 +735,20 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean ensureFreeSlot(KeyCacheObject key) {
-        if (F.isEmpty(batches) || F.isEmpty(pending))
+        if ((F.isEmpty(batches) && F.isEmpty(histBatches)) || F.isEmpty(pending))
             return true;
 
         // Check possibility of adding to batch and sending.
         for (ClusterNode node : backupNodes(key)) {
-            if (skipNearNodeUpdates && node.id().equals(nearNodeId))
+            GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), key.partition());
+
+            boolean movingPart =
+                (partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED);
+
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !movingPart)
                 continue;
 
-            Batch batch = batches.get(node.id());
+            Batch batch = getBatch(node, movingPart);
 
             // We can add key if batch is not full.
             if (batch == null || batch.size() < BATCH_SIZE - 1)
@@ -659,6 +766,20 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
     }
 
     /**
+     *
+     * @param id Node id.
+     * @return {@code true} if first batch is pending.
+     */
+    public boolean firstBatchIsPending(UUID id) {
+        if (pending == null)
+            return false;
+
+        ConcurrentMap<Integer, Batch> pending0 = pending.get(id);
+
+        return pending0 != null && pending0.containsKey(FIRST_BATCH_ID);
+    }
+
+    /**
      * Send batch request to remote data node.
      *
      * <b>IMPORTANT:</b> This method should be called from the critical section in {@link this.sendNextBatches()}
@@ -668,10 +789,11 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
     private void sendBatch(Batch batch) throws IgniteCheckedException {
         assert batch != null;
 
-        boolean first = batch.getClass() == FirstBatch.class;
-        int batchId = first ? FIRST_BATCH_ID : ++batchIdCntr;
-
         ClusterNode node = batch.node();
+
+        boolean first = !txStarted(node);
+
+        int batchId = first ? FIRST_BATCH_ID : ++batchIdCntr;
 
         assert !node.isLocal();
 
@@ -709,6 +831,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 batch.keys(),
                 batch.values());
         }
+
+        req.entries(batch.entries());
 
         ConcurrentMap<Integer, Batch> pending0 = null;
 
@@ -775,6 +899,68 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         finally {
             top.readUnlock();
         }
+    }
+
+    /**
+     * @param batchesMap Batches map to flush.
+     * @return Map containing remaining batches.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Map<UUID, Batch> flushBatches(Map<UUID, Batch> batchesMap) throws IgniteCheckedException {
+        Map<UUID, Batch> remains = null;
+
+        if (!F.isEmpty(batchesMap)) {
+            // Flush incomplete batches.
+            for (Batch batch : batchesMap.values()) {
+                UUID id = batch.node().id();
+                if (firstBatchIsPending(id)) {
+                    if (remains == null)
+                        remains = new HashMap<>();
+
+                    remains.put(id, batch);
+                }
+                else
+                    sendBatch(batch);
+            }
+        }
+
+        return remains;
+    }
+
+    /** */
+    private void flushBatches() throws IgniteCheckedException {
+        batches = flushBatches(batches);
+        histBatches = flushBatches(histBatches);
+    }
+
+    /**
+     * @param part Partition.
+     * @return {@code true} if the given partition is rebalancing to any backup node.
+     */
+    private boolean isMovingPart(int part) {
+        if (movingParts == null)
+            movingParts = new HashMap<>();
+
+        Boolean res = movingParts.get(part);
+
+        if (res != null)
+            return res;
+
+        List<ClusterNode> dhtNodes = cctx.affinity().nodesByPartition(part, tx.topologyVersion());
+
+        for (int i = 1; i < dhtNodes.size(); i++) {
+            GridDhtPartitionState partState = cctx.topology().partitionState(dhtNodes.get(i).id(), part);
+
+            if (partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED) {
+                movingParts.put(part, Boolean.TRUE);
+
+                return true;
+            }
+        }
+
+        movingParts.put(part, Boolean.FALSE);
+
+        return false;
     }
 
     /**
@@ -911,6 +1097,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         /** */
         private List<CacheObject> vals;
 
+        /** */
+        private List<CacheEntryInfoCollection> entries;
+
         /**
          * @param node Cluster node.
          */
@@ -930,8 +1119,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
          *
          * @param key Key.
          * @param val Value.
+         * @param entryInfos History entries.
          */
-        public void add(KeyCacheObject key, CacheObject val) {
+        public void add(KeyCacheObject key, CacheObject val, List<GridCacheEntryInfo> entryInfos) {
             if (keys == null)
                 keys = new ArrayList<>();
 
@@ -943,6 +1133,16 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
                 vals.add(val);
             }
+
+            if (entryInfos != null) {
+                if (entries == null)
+                    entries = new ArrayList<>();
+
+                entries.add(new CacheEntryInfoCollection(entryInfos));
+            }
+
+            assert (vals == null) || keys.size() == vals.size();
+            assert (entries == null) || keys.size() == entries.size();
         }
 
         /**
@@ -965,15 +1165,12 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         public List<CacheObject> values() {
             return vals;
         }
-    }
 
-    /** Marker class. */
-    private static class FirstBatch extends Batch {
         /**
-         * @param node Cluster node.
+         * @return Historical entries.
          */
-        private FirstBatch(ClusterNode node) {
-            super(node);
+        public List<CacheEntryInfoCollection> entries() {
+           return entries;
         }
     }
 
