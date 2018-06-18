@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
@@ -31,13 +32,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,21 +50,18 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -538,9 +533,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testListBrokenTransactions() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "5000");
-
+    public void testKillBrokenTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
         ignite.cluster().active(true);
@@ -557,7 +550,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(client).blockMessages(GridNearTxFinishRequest.class, prim.name());
 
+        GridNearTxLocal clientTx = null;
+
         try(Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 2000, 1)) {
+            clientTx = ((TransactionProxyImpl)tx).tx();
+
             client.cache(DEFAULT_CACHE_NAME).put(0L, 0L);
 
             fail();
@@ -565,6 +562,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assertTrue(X.hasCause(e, TransactionTimeoutException.class));
         }
+
+        assertNotNull(clientTx);
 
         IgniteEx primEx = (IgniteEx)prim;
 
@@ -583,7 +582,19 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 assertEquals(tx0.xid(), info.getXid());
 
             assertEquals(1, map.size());
-        }, "--tx");
+        }, "--tx", "kill");
+
+        tx0.finishFuture().get();
+
+        TestRecordingCommunicationSpi.spi(prim).stopBlock();
+
+        TestRecordingCommunicationSpi.spi(client).stopBlock();
+
+        IgniteInternalFuture<?> nearFinFut = U.field(clientTx, "finishFut");
+
+        nearFinFut.get();
+
+        checkFutures();
     }
 
     /**
@@ -984,10 +995,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 log.info("Waiting for future: " + fut);
 
             assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
-        }
-    }
 
-    @Override protected long getTestTimeout() {
-        return Integer.MAX_VALUE;
+            Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
+
+            for (IgniteInternalTx tx : txs)
+                log.info("Waiting for tx: " + tx);
+
+            assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+        }
     }
 }
