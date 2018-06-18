@@ -203,10 +203,15 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         CacheMetrics cm = ca.localMetrics();
 
                         partitions += cm.getTotalPartitionsCount();
-                        total += cm.getEstimatedRebalancingKeys();
-                        ready += cm.getRebalancedKeys();
 
-                        ignite.log().error("??? cache=" + cacheName + ", total=" + total + ", ready=" + ready + (ready > total ? " !BROKEN!" : ""));
+                        long partTotal = cm.getEstimatedRebalancingKeys();
+                        long partReady = cm.getRebalancedKeys();
+
+                        if (partReady >= partTotal)
+                            partReady = Math.max(partTotal - 1, 0);
+
+                        total += partTotal;
+                        ready += partReady;
 
                         resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
