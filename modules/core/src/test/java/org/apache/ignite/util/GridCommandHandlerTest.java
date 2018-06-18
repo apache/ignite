@@ -456,16 +456,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            for (VisorTxInfo info:res.getInfos()){
+            for (VisorTxInfo info : res.getInfos())
                 assertNull(info.getLabel());
-
-            }
 
         }, "--tx", "label", "null");
 
-
         // test check minSize
-        int minSize=10;
+        int minSize = 10;
 
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
@@ -482,7 +479,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            assertTrue(res.getInfos().get(0).getSize() >=  res.getInfos().get(1).getSize());
+            assertTrue(res.getInfos().get(0).getSize() >= res.getInfos().get(1).getSize());
 
         }, "--tx", "order", "SIZE");
 
@@ -490,9 +487,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            assertTrue(res.getInfos().get(0).getDuration() >=  res.getInfos().get(1).getDuration());
+            assertTrue(res.getInfos().get(0).getDuration() >= res.getInfos().get(1).getDuration());
 
         }, "--tx", "order", "DURATION");
+
+        // test order by start_time.
+        validate(h, map -> {
+            VisorTxTaskResult res = map.get(grid(0).localNode());
+
+            for (int i = res.getInfos().size() - 1; i > 1; i--)
+                assertTrue(res.getInfos().get(i - 1).getStartTime() >= res.getInfos().get(i).getStartTime());
+        }, "--tx", "order", CommandHandler.CMD_TX_ORDER_START_TIME);
 
         // Trigger topology change and test connection.
         IgniteInternalFuture<?> startFut = multithreadedAsync(() -> {
@@ -846,16 +851,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     private Map<Object, Object> generate(int from, int cnt) {
         Map<Object, Object> map = new TreeMap<>();
 
-        for (int i = 0; i < cnt; i++ )
+        for (int i = 0; i < cnt; i++)
             map.put(i + from, i + from);
 
         return map;
     }
 
     /**
-     *  Test execution of --wal print command.
+     * Test execution of --wal print command.
      *
-     *  @throws Exception if failed.
+     * @throws Exception if failed.
      */
     public void testUnusedWalPrint() throws Exception {
         Ignite ignite = startGrids(2);
@@ -864,14 +869,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         List<String> nodes = new ArrayList<>(2);
 
-        for (ClusterNode node: ignite.cluster().forServers().nodes())
+        for (ClusterNode node : ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
 
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
 
-        for(String id: nodes)
+        for (String id : nodes)
             assertTrue(testOut.toString().contains(id));
 
         assertTrue(!testOut.toString().contains("error"));
@@ -886,9 +891,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  Test execution of --wal delete command.
+     * Test execution of --wal delete command.
      *
-     *  @throws Exception if failed.
+     * @throws Exception if failed.
      */
     public void testUnusedWalDelete() throws Exception {
         Ignite ignite = startGrids(2);
@@ -897,14 +902,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         List<String> nodes = new ArrayList<>(2);
 
-        for (ClusterNode node: ignite.cluster().forServers().nodes())
+        for (ClusterNode node : ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
 
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
 
-        for(String id: nodes)
+        for (String id : nodes)
             assertTrue(testOut.toString().contains(id));
 
         assertTrue(!testOut.toString().contains("error"));
@@ -919,11 +924,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @param lockLatch Lock latch.
      * @param unlockLatch Unlock latch.
      */
-    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch, CountDownLatch unlockLatch) throws Exception {
+    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch,
+        CountDownLatch unlockLatch) throws Exception {
         IgniteEx client = grid("client");
 
         AtomicInteger idx = new AtomicInteger();

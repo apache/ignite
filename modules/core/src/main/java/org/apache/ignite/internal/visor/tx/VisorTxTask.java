@@ -194,7 +194,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 if (arg.getMinSize() != null && size < arg.getMinSize())
                     continue;
 
-                infos.add(new VisorTxInfo(locTx.xid(), duration, locTx.isolation(), locTx.concurrency(),
+                infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(), locTx.concurrency(),
                     locTx.timeout(), locTx.label(), mappings, locTx.state(), size));
 
                 if (arg.getOperation() == VisorTxOperation.KILL)
@@ -218,6 +218,11 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
                         break;
 
+                    case START_TIME:
+                        comp = TxStartTimeComparator.INSTANCE;
+
+                        break;
+
                     default:
                 }
             }
@@ -225,6 +230,19 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             Collections.sort(infos, comp);
 
             return new VisorTxTaskResult(infos);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TxStartTimeComparator implements Comparator<VisorTxInfo> {
+        /** Instance. */
+        public static final TxStartTimeComparator INSTANCE = new TxStartTimeComparator();
+
+        /** {@inheritDoc} */
+        @Override public int compare(VisorTxInfo o1, VisorTxInfo o2) {
+            return Long.compare(o2.getStartTime(), o1.getStartTime());
         }
     }
 
