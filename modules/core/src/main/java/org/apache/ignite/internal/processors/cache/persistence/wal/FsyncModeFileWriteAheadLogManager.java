@@ -230,7 +230,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private FileIOFactory ioFactory;
+    private volatile FileIOFactory ioFactory;
 
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FsyncModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
@@ -265,9 +265,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
-
-    /** Environment failure. */
-    private volatile Throwable envFailed;
 
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
@@ -2412,9 +2409,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Write serializer version to current handle.
          * NOTE: Method mutates {@code fileIO} position, written and lastFsyncPos fields.
          *
-         * @throws IgniteCheckedException If fail to write serializer version.
+         * @throws IOException If fail to write serializer version.
          */
-        public void writeSerializerVersion() throws IgniteCheckedException {
+        public void writeSerializerVersion() throws IOException {
             try {
                 assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
                     fileIO.position();
@@ -2427,7 +2424,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 head.set(new FakeRecord(new FileWALPointer(idx, (int)updatedPosition, 0), false));
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Unable to write serializer version for segment " + idx, e);
+                throw new IOException("Unable to write serializer version for segment " + idx, e);
             }
         }
 
@@ -2542,7 +2539,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             lock.lock();
 
             try {
-                while (written < expWritten && envFailed == null)
+                while (written < expWritten && !cctx.kernalContext().invalid())
                     U.awaitQuiet(writeComplete);
             }
             finally {
@@ -2858,7 +2855,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             try {
                 WALRecord rec = head.get();
 
-                if (envFailed == null) {
+                if (!cctx.kernalContext().invalid()) {
                     assert rec instanceof FakeRecord : "Expected head FakeRecord, actual head "
                     + (rec != null ? rec.getClass().getSimpleName() : "null");
 
@@ -2882,7 +2879,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             lock.lock();
 
             try {
-                while (fileIO != null)
+                while (fileIO != null && !cctx.kernalContext().invalid())
                     U.awaitQuiet(nextSegment);
             }
             finally {

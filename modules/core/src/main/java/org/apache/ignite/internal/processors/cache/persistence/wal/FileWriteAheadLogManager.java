@@ -71,6 +71,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -98,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -254,6 +256,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Events service */
     private final GridEventStorageManager evt;
 
+    /** Failure processor */
+    private final FailureProcessor failureProcessor;
+
     /** */
     private IgniteConfiguration igCfg;
 
@@ -277,7 +282,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private FileIOFactory ioFactory;
+    private volatile FileIOFactory ioFactory;
 
     /** Next WAL segment archived monitor. Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedMonitor archivedMonitor = new SegmentArchivedMonitor();
@@ -360,6 +365,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
+        failureProcessor = ctx.failure();
     }
 
     /**
@@ -836,7 +842,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void release(WALPointer start) throws IgniteCheckedException {
+    @Override public void release(WALPointer start) {
         assert start != null && start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
@@ -1382,11 +1388,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = bytesCntToFormat;
 
-            if (mode == WALMode.FSYNC) {
+            if (mode == WALMode.FSYNC || mmap) {
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
-                    fileIO.write(FILL_BUF, 0, toWrite);
+                    if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite) {
+                        final IgniteCheckedException ex = new IgniteCheckedException("Failed to extend WAL segment file: " +
+                            file.getName() + ". Probably disk is too busy, please check your device.");
+
+                        if (failureProcessor != null)
+                            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+                        throw ex;
+                    }
 
                     left -= toWrite;
                 }
@@ -2001,14 +2015,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 finally {
-                    try {
-                        if (currReservedSegment != -1)
-                            release(new FileWALPointer(currReservedSegment, 0, 0));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Can't release raw WAL segment [idx=" + currReservedSegment +
-                            "] after compression", e);
-                    }
+                    if (currReservedSegment != -1)
+                        release(new FileWALPointer(currReservedSegment, 0, 0));
                 }
             }
         }
@@ -2139,7 +2147,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         int bytesRead;
                         while ((bytesRead = zis.read(arr)) > 0)
-                            io.write(arr, 0, bytesRead);
+                            if (io.write(arr, 0, bytesRead) < bytesRead) {
+                                final IgniteCheckedException ex = new IgniteCheckedException("Failed to extend file: " +
+                                    unzipTmp.getName() + ". Probably disk is too busy, please check your device.");
+
+                                if (failureProcessor != null)
+                                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+                                throw ex;
+                            }
                     }
 
                     try {
@@ -3297,13 +3313,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                 }
-
-                unparkWaiters(Long.MAX_VALUE);
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
+                unparkWaiters(Long.MAX_VALUE);
+
                 if (err == null && !shutdown)
                     err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 
@@ -3464,7 +3480,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
-                StorageException se = new StorageException("Unable to write", e);
+                StorageException se = new StorageException("Failed to write buffer.", e);
 
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 

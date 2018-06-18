@@ -1687,7 +1687,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void brakeConnection() {
-        throw new UnsupportedOperationException();
+        Socket sock = msgWorker.sock;
+
+        if (sock != null)
+            U.closeQuiet(sock);
     }
 
     /** {@inheritDoc} */
@@ -2621,7 +2624,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 super.body();
             }
             catch (InterruptedException e) {
-                if (!spi.isNodeStopping0())
+                if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
                     err = e;
 
                 throw e;
@@ -2657,7 +2660,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw e;
             }
             finally {
-                if (err == null && !spi.isNodeStopping0())
+                if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
                     err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
 
                 FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
@@ -5682,7 +5685,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw t;
             }
             finally {
-                if (err == null && !spi.isNodeStopping0())
+                if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
                     err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
 
                 FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
