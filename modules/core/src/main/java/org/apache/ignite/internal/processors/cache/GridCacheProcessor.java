@@ -2022,9 +2022,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getDataRegionName();
 
-        DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
+        DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
+
+        boolean persistenceEnabled = sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
+            dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
@@ -2032,12 +2035,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheType,
             cfg,
             affNode,
-            memPlc,
+            dataRegion,
             cacheObjCtx,
             freeList,
             reuseList,
             exchTopVer,
-            desc.persistenceEnabled(),
+            persistenceEnabled,
             desc.walEnabled()
         );
 
@@ -2426,12 +2429,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
-            pageStoreMgr = new FilePageStoreManager(ctx);
+            pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
-            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
-                walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
-            else
-                walMgr = new FileWriteAheadLogManager(ctx);
+            if (pageStoreMgr == null)
+                pageStoreMgr = new FilePageStoreManager(ctx);
+
+            walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
+
+            if (walMgr == null) {
+                if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC &&
+                    !walFsyncWithDedicatedWorker)
+                    walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
+                else
+                    walMgr = new FileWriteAheadLogManager(ctx);
+            }
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();

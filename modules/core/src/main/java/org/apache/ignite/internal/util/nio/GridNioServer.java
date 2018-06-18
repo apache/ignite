@@ -338,7 +338,16 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log, acceptSelector));
+            String threadName;
+
+            if (srvName == null)
+                threadName = "nio-acceptor";
+            else
+                threadName = "nio-acceptor-" + srvName;
+
+            GridNioAcceptWorker w = new GridNioAcceptWorker(igniteInstanceName, threadName, log, acceptSelector);
+
+            acceptThread = new IgniteThread(w);
         }
         else {
             locAddr = null;

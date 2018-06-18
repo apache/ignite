@@ -279,9 +279,9 @@ public class FilePageStore implements PageStore {
             throw new PersistentStorageIOException("Failed to delete partition file: " + cfgFile.getPath(), e);
         }
         finally {
-            allocated.set(0);
+            allocatedTracker.updateTotalAllocatedPages(-1L * pages());
 
-            allocatedTracker.updateTotalAllocatedPages(-1L * this.pages());
+            allocated.set(0);
 
             inited = false;
 
