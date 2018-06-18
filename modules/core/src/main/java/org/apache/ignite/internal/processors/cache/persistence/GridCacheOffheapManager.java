@@ -1315,6 +1315,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                         catch (IgniteCheckedException e) {
                             if (X.hasCause(e, ClosedByInterruptException.class)) {
+                                log.warning("Thread was interrupted during IO operation, " +
+                                    "retrying CacheDataStore initialization", e);
+
                                 interrupted = true;
 
                                 Thread.interrupted();
