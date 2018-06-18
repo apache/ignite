@@ -110,7 +110,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         DataRegionConfiguration regCfg = new DataRegionConfiguration()
             .setName("dfltMemPlc")
             .setMetricsEnabled(true)
-            .setMaxSize(2 * 1024L * 1024 * 1024)
+            .setMaxSize(256L * 1024 * 1024)
             .setPersistenceEnabled(true);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
@@ -232,6 +232,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
             System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, "speed");
+            System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "true");
+
 
             setWalArchAndWorkToSameVal = true;
 
