@@ -42,5 +42,11 @@ from .cache_config import (
     cache_destroy,
     cache_get_configuration,
 )
-from .key_value import cache_get, cache_put, cache_get_all, cache_put_all
+from .key_value import (
+    cache_get,
+    cache_put,
+    cache_get_all,
+    cache_put_all,
+    cache_contains_key,
+)
 from .result import APIResult, hashcode

@@ -13,10 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from connection import Connection
 from api import (
-    cache_create, cache_destroy, cache_get, cache_get_all, cache_get_names,
-    cache_put, cache_put_all, hashcode,
+    cache_get, cache_get_all, cache_contains_key, cache_put, cache_put_all,
 )
 from datatypes.primitive_objects import IntObject
 
@@ -63,3 +61,14 @@ def test_put_all(conn, hash_code):
 
     for key in result.value:
         assert key in test_keys
+
+
+def test_contains_key(conn, hash_code):
+
+    cache_put(conn, hash_code, 'test_key', 42)
+
+    result = cache_contains_key(conn, hash_code, 'test_key')
+    assert result.value == True
+
+    result = cache_contains_key(conn, hash_code, 'non-existant-key')
+    assert result.value == False

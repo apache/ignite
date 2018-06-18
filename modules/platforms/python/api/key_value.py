@@ -19,7 +19,7 @@ from .result import APIResult
 
 from datatypes.cache_config import StructArray
 from datatypes.complex import AnyDataObject
-from datatypes.primitive import Byte, Int
+from datatypes.primitive import Bool, Byte, Int
 from queries import Query, Response
 from utils import is_hinted
 
@@ -279,4 +279,57 @@ def cache_put_all(
     )
     if hasattr(response, 'error_message'):
         result.message = response.error_message
+    return result
+
+
+def cache_contains_key(
+    conn: Connection, hash_code: int, key,
+    binary=False, key_hint=None
+) -> APIResult:
+    """
+    Returns a value indicating whether given key is present in cache.
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param key: key for the cache entry. Can be of any supported type,
+    :param binary: pass True to keep the value in binary form. False
+     by default,
+    :param key_hint: (optional) Ignite data type, for which the given key
+     should be converted,
+    :return: API result data object. Contains zero status and a bool value
+     retrieved on success: `True` when key is present, `False` otherwise,
+     non-zero status and an error description on failure.
+    """
+
+    class CacheContainsKeyQuery(Query):
+        op_code = OP_CACHE_CONTAINS_KEY
+
+    query_struct = CacheContainsKeyQuery([
+        ('hash_code', Int),
+        ('flag', Byte),
+        ('key', key_hint or AnyDataObject),
+    ])
+
+    _, send_buffer = query_struct.from_python({
+        'hash_code': hash_code,
+        'flag': 1 if binary else 0,
+        'key': key,
+    })
+
+    conn.send(send_buffer)
+
+    response_struct = Response([
+        ('value', Bool),
+    ])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = response.error_message
+    result.value = response_struct.to_python(response)['value']
     return result
