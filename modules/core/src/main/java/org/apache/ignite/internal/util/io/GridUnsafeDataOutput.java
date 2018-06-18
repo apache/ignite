@@ -121,6 +121,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
      * @param size Size.
      */
     private void requestFreeSize(int size) throws IOException {
+        // If arithmetic overflow occurs, off + size should be less than size.
         if (off + size < size)
             throw new IOException("Impossible to allocate required memory: length=" + size + " offset=" + off);
 
@@ -495,6 +496,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
      * @throws IOException If oveflow presents and data corruption can occur.
      */
     private void checkArrayAllocationOverflow(int bytesToAlloc, int arrLen, String type) throws IOException {
+        // If arithmetic overflow occurs, bytesToAlloc should be less than arrLen.
         if (bytesToAlloc < arrLen)
             throw new IOException("Impossible to allocate required memory for " + type + " array: length=" + arrLen);
     }
