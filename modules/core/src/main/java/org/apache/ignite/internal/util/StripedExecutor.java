@@ -509,10 +509,7 @@ public class StripedExecutor implements ExecutorService {
                 Runnable cmd;
 
                 try {
-                    if (name().startsWith("data-streamer-stripe"))
-                        log.info("Before take() : " + name() + "@" + igniteInstanceName);
-
-                    updateHeartbeat();
+                    updateHeartbeat("Before take() : " + name() + "@" + igniteInstanceName);
 
                     cmd = take();
 
@@ -525,17 +522,13 @@ public class StripedExecutor implements ExecutorService {
                     if (cmd != null) {
                         active = true;
 
-                        if (name().startsWith("data-streamer-stripe"))
-                            log.info("Before run() : " + name() + "@" + igniteInstanceName);
-
-                        updateHeartbeat();
+                        updateHeartbeat("Before run() : " + name() + "@" + igniteInstanceName);
 
                         try {
                             cmd.run();
                         }
                         finally {
-                            if (name().startsWith("data-streamer-stripe"))
-                                log.info("After run() : " + name() + "@" + igniteInstanceName);
+                            updateHeartbeat("After run() : " + name() + "@" + igniteInstanceName);
 
                             active = false;
                             completedCnt++;
@@ -548,8 +541,7 @@ public class StripedExecutor implements ExecutorService {
                     break;
                 }
                 catch (Throwable e) {
-                    if (name().startsWith("data-streamer-stripe"))
-                        log.info("Throwable caught in " + name() + "@" + igniteInstanceName + ": " + e);
+                    updateHeartbeat("Throwable caught in " + name() + "@" + igniteInstanceName + ": " + e);
 
                     if (e instanceof OutOfMemoryError)
                         errHnd.apply(e);
@@ -563,8 +555,7 @@ public class StripedExecutor implements ExecutorService {
                     " is terminated unexpectedly"));
             }
 
-            if (name().startsWith("data-streamer-stripe"))
-                log.info("Stripe worker exits: " + name() + "@" + igniteInstanceName);
+            updateHeartbeat("Stripe worker exits: " + name() + "@" + igniteInstanceName);
         }
 
         /**
@@ -700,15 +691,11 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
 
-                    updateHeartbeat();
-
-                    if (name().startsWith("data-streamer-stripe"))
-                        log.info("Parking " + name() + "@" + igniteInstanceName());
+                    updateHeartbeat("Parking " + name() + "@" + igniteInstanceName());
 
                     LockSupport.parkNanos(WAIT_TIMEOUT_NS);
 
-                    if (name().startsWith("data-streamer-stripe"))
-                        log.info("Done parking " + name() + "@" + igniteInstanceName());
+                    updateHeartbeat("Done parking " + name() + "@" + igniteInstanceName());
 
                     if (Thread.interrupted())
                         throw new InterruptedException();

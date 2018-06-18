@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,6 +62,10 @@ public abstract class GridWorker implements Runnable {
 
     /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
     private volatile long heartbeatTimeMillis;
+
+    /** */
+    @GridToStringInclude
+    private volatile String heartbeatAnnotation = "<noinit>";
 
     /** */
     private final long criticalHeartbeatTimeoutMs;
@@ -138,7 +143,7 @@ public abstract class GridWorker implements Runnable {
         // may depend on it being present.
         runner = Thread.currentThread();
 
-        updateHeartbeat();
+        updateHeartbeat("Worker run() starts: " + name + "@" + igniteInstanceName);
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);
@@ -311,8 +316,14 @@ public abstract class GridWorker implements Runnable {
     }
 
     /** */
-    public void updateHeartbeat() {
+    public void updateHeartbeat(String annotation) {
         heartbeatTimeMillis = System.currentTimeMillis();
+        heartbeatAnnotation = annotation;
+    }
+
+    /** */
+    public void updateHeartbeat() {
+        updateHeartbeat("");
     }
 
     /** */
