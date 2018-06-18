@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -476,7 +475,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
 
         // test check minSize
-        int minSize=10;
+        int minSize = 10;
 
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
@@ -551,8 +550,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid("client");
 
-        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL).setWriteSynchronizationMode(FULL_SYNC));
+        client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).
+            setAtomicityMode(TRANSACTIONAL).
+            setWriteSynchronizationMode(FULL_SYNC).
+            setAffinity(new RendezvousAffinityFunction(false, 64)));
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
 
@@ -609,15 +610,31 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Simulate uncommitted backup transactions and test rolling back using utility.
      */
     public void testKillHangingRemoteTransactions() throws Exception {
+        final int cnt = 3;
+
+        startGridsMultiThreaded(cnt);
+
         Ignite[] clients = new Ignite[] {
             startGrid("client1"),
             startGrid("client2"),
             startGrid("client3"),
             startGrid("client4")
         };
+
+        clients[0].getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).
+            setBackups(2).
+            setAtomicityMode(TRANSACTIONAL).
+            setWriteSynchronizationMode(FULL_SYNC).
+            setAffinity(new RendezvousAffinityFunction(false, 64)));
+
+        for (Ignite client : clients) {
+            assertTrue(client.configuration().isClientMode());
+
+            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+        }
 
         LongAdder progress = new LongAdder();
 
@@ -660,8 +677,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                         doSleep(500); // Wait until candidates will enqueue.
                     }
 
-                    log.info("Before commit: " + id);
-
                     tx.commit();
                 }
                 catch (Exception e) {
@@ -677,10 +692,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         commitLatch.countDown();
 
-        primSpi.waitForBlocked();
+        primSpi.waitForBlocked(clients.length);
 
-        doSleep(3000);
-
+        // Unblock only finish messages from clients from 2 to 4.
         primSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode,GridIoMessage>>() {
             @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
                 GridIoMessage iom = objects.get2();
@@ -698,6 +712,23 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             }
         });
 
+        CommandHandler h = new CommandHandler();
+
+        validate(h, map -> {
+            for (int i = 0; i < cnt; i++) {
+                IgniteEx grid = grid(i);
+
+                // Skip primary.
+                if (grid.localNode().id().equals(prim.cluster().localNode().id()))
+                    continue;
+
+                VisorTxTaskResult res = map.get(grid.localNode());
+
+                // Validate queue length on backups.
+                assertEquals(clients.length, res.getInfos().size());
+            }
+        }, "--tx", "kill");
+
         // Wait for all remote txs to finish.
         for (Ignite ignite : G.allGrids()) {
             if (ignite.configuration().isClientMode())
@@ -710,7 +741,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                     tx.finishFuture().get();
         }
 
-        // Send remaining message.
+        // Unblock finish message from client1.
         primSpi.stopBlock(true);
 
         fut.get();

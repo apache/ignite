@@ -56,6 +56,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 
@@ -384,7 +386,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<IgniteInternalTx> apply(IgniteInternalTx tx, IgniteTxManager tm) {
-            return tx.isRollbackOnly() ? new GridFinishedFuture<>() : tx.rollbackAsync();
+            return tx.isRollbackOnly() || tx.state() == COMMITTING || tx.state() == COMMITTED ?
+                new GridFinishedFuture<>() : tx.rollbackAsync();
         }
     }
 
@@ -397,7 +400,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         @Override public IgniteInternalFuture<IgniteInternalTx> apply(IgniteInternalTx tx, IgniteTxManager tm) {
             IgniteTxRemoteEx remote = (IgniteTxRemoteEx)tx;
 
-            if (tx.isRollbackOnly()) return new GridFinishedFuture<>();
+            if (tx.isRollbackOnly() || tx.state() == COMMITTING || tx.state() == COMMITTED)
+                return new GridFinishedFuture<>();
 
             if (tx.state() == TransactionState.PREPARED)
                 remote.doneRemote(tx.xidVersion(),
