@@ -641,10 +641,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
-        FileWriteHandle currWrHandle = currentLogHandle();
+        FileWriteHandle currWrHandle = currentHandle();
 
         // Logging was not resumed yet.
-        if (currWrHandle == null)
+        if (currWrHandle == null || walDisabled)
             return null;
 
         // Need to calculate record size first.
@@ -1014,13 +1014,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         U.ensureDirectory(dir, msg, log);
 
         return dir;
-    }
-
-    /**
-     * @return Current log segment handle.
-     */
-    private FileWriteHandle currentLogHandle() {
-        return walDisabled ? null : currentHandle();
     }
 
     /**
