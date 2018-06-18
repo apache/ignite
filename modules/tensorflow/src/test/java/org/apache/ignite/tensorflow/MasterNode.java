@@ -54,33 +54,4 @@ public class MasterNode {
             Thread.currentThread().join();
         }
     }
-
-//    private static void addListener(Ignite ignite) {
-//        new Thread(() -> {
-//            try {
-//                ServerSocket srvSock = new ServerSocket(9912);
-//
-//                while (true) {
-//                    Socket sock = srvSock.accept();
-//                    System.out.println("Connected!");
-//                    Scanner scanner = new Scanner(sock.getInputStream());
-//
-//                    String cacheName = scanner.nextLine();
-//
-//                    System.out.println("Cache name " + cacheName);
-//
-//                    String spec = null;//start(ignite, cacheName);
-//
-//                    PrintWriter printWriter = new PrintWriter(sock.getOutputStream());
-//                    printWriter.println(spec);
-//                    printWriter.flush();
-//
-//                    sock.close();
-//                }
-//            }
-//            catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }).start();
-//    }
 }
