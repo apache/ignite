@@ -237,6 +237,9 @@ public class CommandHandler {
     private static final String TX_ORDER = "order";
 
     /** */
+    public static final String CMD_TX_ORDER_START_TIME="START_TIME";
+
+    /** */
     private static final String TX_SERVERS = "servers";
 
     /** */
@@ -1079,6 +1082,7 @@ public class CommandHandler {
                     log("    Tx: [xid=" + info.getXid() +
                         ", label=" + info.getLabel() +
                         ", state=" + info.getState() +
+                        ", startTime=" + info.getFormattedStartTime() +
                         ", duration=" + info.getDuration() / 1000 +
                         ", isolation=" + info.getIsolation() +
                         ", concurrency=" + info.getConcurrency() +
@@ -1826,7 +1830,7 @@ public class CommandHandler {
                 usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
                 usage("  List or kill transactions:", TX, " [xid XID] [minDuration SECONDS] " +
                     "[minSize SIZE] [label PATTERN_REGEX] [servers|clients] " +
-                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE] [kill] [--force]");
+                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE|", CMD_TX_ORDER_START_TIME, "] [kill] [--force]");
 
                 if(enableExperimental) {
                     usage("  Print absolute paths of unused archived wal segments on each node:", WAL,
