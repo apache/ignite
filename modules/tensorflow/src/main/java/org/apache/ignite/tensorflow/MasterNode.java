@@ -17,7 +17,7 @@
 
 package org.apache.ignite.tensorflow;
 
-import org.apache.ignite.tensorflow.tf.TensorFlowClusterService;
+import org.apache.ignite.tensorflow.cluster.TensorFlowClusterService;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
