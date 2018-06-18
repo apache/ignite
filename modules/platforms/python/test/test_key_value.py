@@ -16,7 +16,7 @@
 from connection import Connection
 from api import (
     cache_create, cache_destroy, cache_get, cache_get_all, cache_get_names,
-    cache_put, hashcode,
+    cache_put, cache_put_all, hashcode,
 )
 from datatypes.primitive_objects import IntObject
 
@@ -80,6 +80,35 @@ def test_get_all(ignite_host, ignite_port):
     )
     assert result.status == 0
     assert result.value == {'key_1': 4, 3: 18}
+
+    # cleanup
+    cache_destroy(conn, hashcode('my_bucket'))
+    conn.close()
+
+
+def test_put_all(ignite_host, ignite_port):
+    conn = Connection()
+    conn.connect(ignite_host, ignite_port)
+
+    cache_create(conn, 'my_bucket')
+
+    test_dict = {
+        1: 2,
+        'key_1': 4,
+        (3, IntObject): 18,
+    }
+
+    test_keys = ['key_1', 1, 3]
+
+    result = cache_put_all(conn, hashcode('my_bucket'), test_dict)
+    assert result.status == 0
+
+    result = cache_get_all(conn, hashcode('my_bucket'), test_keys)
+    assert result.status == 0
+    assert len(test_dict) == 3
+
+    for key in result.value:
+        assert key in test_keys
 
     # cleanup
     cache_destroy(conn, hashcode('my_bucket'))

@@ -25,3 +25,14 @@ def is_iterable(value):
         return True
     except TypeError:
         return False
+
+
+def is_hinted(value):
+    """
+    Check if a value is a tuple of data item and its type hint.
+    """
+    return (
+        isinstance(value, tuple)
+        and len(value) == 2
+        and isinstance(value[1], object)
+    )

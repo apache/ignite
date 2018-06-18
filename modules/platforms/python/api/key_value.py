@@ -21,6 +21,7 @@ from datatypes.cache_config import StructArray
 from datatypes.complex import AnyDataObject
 from datatypes.primitive import Byte, Int
 from queries import Query, Response
+from utils import is_hinted
 
 
 def cache_put(
@@ -149,21 +150,18 @@ def cache_get_all(
 
     class CacheGetAllQuery(Query):
         op_code = OP_CACHE_GET_ALL
+
     value_hint_pairs = []
     length = len(keys)
     for key_or_pair in keys:
-        if (
-            isinstance(key_or_pair, tuple)
-            and len(key_or_pair) == 2
-            and isinstance(key_or_pair[1], object)
-        ):
+        if is_hinted(key_or_pair):
             value_hint_pairs.append(key_or_pair)
         else:
             value_hint_pairs.append((key_or_pair, AnyDataObject))
 
     # structure name: hint
     key_fields = {}
-    # value: hint
+    # structure name: value
     data = {}
     for i, pair in enumerate(value_hint_pairs):
         name = 'element_{}'.format(i)
@@ -212,4 +210,73 @@ def cache_get_all(
             getattr(response.data, 'element_{}'.format(i)).value
         )
         result.value[key] = value
+    return result
+
+
+def cache_put_all(
+    conn: Connection, hash_code: int, pairs: dict, binary=False,
+) -> APIResult:
+    """
+    Puts multiple key-value pairs to cache (overwriting existing associations
+    if any).
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param pairs: dictionary type parameters, contains key-value pairs to save.
+     Each key or value can be an item of representable Python type or a tuple
+     of (item, hint),
+    :param binary: pass True to keep the value in binary form. False
+     by default,
+    :return: API result data object. Contains zero status if key-value pairs
+     are written, non-zero status and an error description otherwise.
+    """
+
+    class CachePutAllQuery(Query):
+        op_code = OP_CACHE_PUT_ALL
+
+    length = len(pairs)
+    unrolled = []
+    for k_pair, v_pair in pairs.items():
+        if not is_hinted(k_pair):
+            k_pair = (k_pair, AnyDataObject)
+        unrolled.append(k_pair)
+        if not is_hinted(v_pair):
+            v_pair = (v_pair, AnyDataObject)
+        unrolled.append(v_pair)
+
+    # structure name: hint
+    key_fields = {}
+    # structure name: value:
+    data = {}
+    for i, pair in enumerate(unrolled):
+        name = 'element_{}'.format(i)
+        value, hint = pair
+        key_fields[name] = hint
+        data[name] = value
+
+    query_struct = CachePutAllQuery([
+        ('hash_code', Int),
+        ('flag', Byte),
+        ('length', Int),
+    ] + list(key_fields.items()))
+
+    data.update({
+        'hash_code': hash_code,
+        'flag': 1 if binary else 0,
+        'length': length,
+    })
+    _, send_buffer = query_struct.from_python(data)
+    conn.send(send_buffer)
+
+    response_struct = Response([])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = response.error_message
     return result
