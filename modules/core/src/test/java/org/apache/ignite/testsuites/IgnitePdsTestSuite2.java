@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithMmapBufferSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlyWithMmapBufferSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFormatFileFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
@@ -111,6 +112,10 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
     }
 
     /**
@@ -138,10 +143,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         // Failover test
         suite.addTestSuite(IgniteWalFlushFailoverTest.class);
 
-        suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
-
-        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
-
         suite.addTestSuite(IgniteWalFlushBackgroundSelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushBackgroundWithMmapBufferSelfTest.class);
@@ -149,6 +150,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalFlushLogOnlySelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushLogOnlyWithMmapBufferSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFormatFileFailoverTest.class);
 
         // Test suite uses Standalone WAL iterator to verify PDS content.
         suite.addTestSuite(IgniteWalReaderTest.class);
