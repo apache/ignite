@@ -18,6 +18,7 @@
 package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 
 /**
@@ -32,6 +33,13 @@ public class TestFailureHandler implements FailureHandler {
 
     /** Failure context. */
     volatile FailureContext failureCtx;
+
+    /**
+     * @param invalidate Invalidate.
+     */
+    public TestFailureHandler(boolean invalidate) {
+        this(invalidate, new CountDownLatch(1));
+    }
 
     /**
      * @param invalidate Invalidate.
@@ -58,6 +66,17 @@ public class TestFailureHandler implements FailureHandler {
      * @return Failure context.
      */
     public FailureContext failureContext() {
+        return failureCtx;
+    }
+
+    /**
+     * @param millis Millis.
+
+     * @return Failure context.
+     */
+    public FailureContext awaitFailure(long millis) throws InterruptedException {
+        latch.await(millis, TimeUnit.MILLISECONDS);
+
         return failureCtx;
     }
 }
