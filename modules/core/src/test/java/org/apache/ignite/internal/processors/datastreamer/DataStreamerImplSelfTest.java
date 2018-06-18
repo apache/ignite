@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -123,38 +121,22 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         Ignite g2 = grid(2);
 
-        List<IgniteFuture> futures = new CopyOnWriteArrayList<>();
+        List<IgniteFuture> futures = new ArrayList<>();
 
         IgniteDataStreamer<Object, Object> dataLdr = g2.dataStreamer(DEFAULT_CACHE_NAME);
 
-        dataLdr.perNodeBufferSize(1);
+        for (int i = 0; i < 100; i++)
+            futures.add(dataLdr.addData(i, i));
 
-        multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 0; i < 100; i++)
-                        futures.add(dataLdr.addData(i, i));
-                }
-                catch (IllegalStateException ignored) {
-                    // No-op.
-                }
-            }
-        }, 3);
-
-        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return !futures.isEmpty();
-            }
-        }, 5000L);
-
-        assertTrue(wait);
-
-        dataLdr.close(true);
-
-        for (IgniteFuture fut : futures) {
-            if (fut != null)
-                assertTrue(fut.isDone());
+        try {
+            dataLdr.close(true);
         }
+        catch (CacheException e) {
+            //no-op
+        }
+
+        for (IgniteFuture fut : futures)
+            assertTrue(fut.isDone());
     }
 
     /**
