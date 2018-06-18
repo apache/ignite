@@ -312,6 +312,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Current log segment handle */
     private volatile FileWriteHandle currHnd;
 
+    /** */
+    private volatile boolean walDisabled;
+
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
      * See {@link DataStorageConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
@@ -726,7 +729,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
-        FileWriteHandle currWrHandle = currentHandle();
+        FileWriteHandle currWrHandle = currentLogHandle();
 
         // Logging was not resumed yet.
         if (currWrHandle == null)
@@ -989,6 +992,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public void disableWal(boolean disable) {
+        this.walDisabled = disable;
+
+        log.info("WAL logging " + (disable ? "disabled" : "enabled"));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
@@ -1082,6 +1092,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         U.ensureDirectory(dir, msg, log);
 
         return dir;
+    }
+
+    /**
+     * @return Current log segment handle.
+     */
+    private FileWriteHandle currentLogHandle() {
+        return walDisabled ? null : currentHandle();
     }
 
     /**
