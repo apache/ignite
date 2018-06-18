@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -146,6 +147,8 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         try {
+            A.ensure(timeout >= 0, "txTimeoutOnPartitionMapExchange should be greater than or equal to zero.");
+
             ctx.grid().context().cache().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (Exception e) {

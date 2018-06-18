@@ -46,6 +46,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -1309,21 +1310,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         int dumpCnt = 0;
 
-        long waitStart = U.currentTimeMillis();
-
         long nextDumpTime = 0;
 
         IgniteConfiguration cfg = cctx.gridConfig();
 
-        boolean rollbackEnabled = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange() > 0;
+        TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
 
-        long waitTimeout = 2 * cfg.getNetworkTimeout();
+        boolean rollbackEnabled = txCfg.getTxTimeoutOnPartitionMapExchange() > 0;
+
+        long waitStart = U.currentTimeMillis();
 
         while (true) {
+            long waitTimeout = rollbackEnabled && txCfg.getTxTimeoutOnPartitionMapExchange() < 2 * cfg.getNetworkTimeout() ?
+                    txCfg.getTxTimeoutOnPartitionMapExchange() : 2 * cfg.getNetworkTimeout();
+
             try {
-                partReleaseFut.get(rollbackEnabled ?
-                    cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange() :
-                    waitTimeout, TimeUnit.MILLISECONDS);
+                partReleaseFut.get(waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
             }
@@ -1335,7 +1337,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
                 }
 
-                if (rollbackEnabled) {
+                if (rollbackEnabled && U.currentTimeMillis() - waitStart >= txCfg.getTxTimeoutOnPartitionMapExchange()) {
                     rollbackEnabled = false;
 
                     cctx.tm().rollbackOnTopologyChange(initialVersion());
@@ -1365,6 +1367,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         nextDumpTime = 0;
         dumpCnt = 0;
+
+        long waitTimeout = 2 * cfg.getNetworkTimeout();
 
         while (true) {
             try {

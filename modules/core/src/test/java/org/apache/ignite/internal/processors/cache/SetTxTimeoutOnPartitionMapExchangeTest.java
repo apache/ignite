@@ -18,13 +18,22 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -36,6 +45,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
+
+import static org.apache.ignite.internal.util.typedef.X.hasCause;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -117,6 +132,92 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
 
         ig2.cluster().setTxTimeoutOnPartitionMapExchange(expTimeout2);
         assertTxTimeoutOnPartitionMapExchange(expTimeout2);
+    }
+
+    /**
+     * Tests applying new txTimeoutOnPartitionMapExchange while an exchange future runs.
+     *
+     * @throws Exception If fails.
+     */
+    public void testSetTxTimeoutDuringPartitionMapExchange() throws Exception {
+        IgniteEx ig = (IgniteEx)startGrids(2);
+
+        final long longTimeout = 600_000L;
+        final long shortTimeout = 5_000L;
+
+        TransactionsMXBean mxBean = txMXBean(0);
+
+        // Set very long txTimeoutOnPme.
+        mxBean.setTxTimeoutOnPartitionMapExchange(longTimeout);
+        assertTxTimeoutOnPartitionMapExchange(longTimeout);
+
+        IgniteCache<Object, Object> cache = ig.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        AtomicInteger thCnt = new AtomicInteger();
+
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        AtomicBoolean rolledBack = new AtomicBoolean(false);
+
+        // Start deadlock.
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() {
+                int thNum = thCnt.incrementAndGet();
+
+                try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                    cache.put(thNum, 1);
+
+                    barrier.await();
+
+                    cache.put(thNum % 2 + 1, 1);
+
+                    tx.commit();
+                } catch (Exception e) {
+                    if (hasCause(e, TransactionRollbackException.class))
+                        rolledBack.set(true);
+                }
+
+                return null;
+            }
+        }, 2, "tx-thread");
+
+        startGridAsync(2);
+
+        // Set short timeout on PME
+        mxBean.setTxTimeoutOnPartitionMapExchange(shortTimeout);
+
+        awaitPartitionMapExchange();
+
+        fut.get();
+
+        assertTrue("Transaction should be rolled back", rolledBack.get());
+    }
+
+    /**
+     * Starts grid asynchronously and returns just before grid starting.
+     * Avoids blocking on PME.
+     *
+     * @param idx Test grid index.
+     * @throws Exception If fails.
+     */
+    private void startGridAsync(int idx) throws Exception {
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    startLatch.countDown();
+
+                    startGrid(idx);
+                }
+                catch (Exception e) {
+                    // no-op.
+                }
+            }
+        });
+
+        startLatch.await();
     }
 
     /**
