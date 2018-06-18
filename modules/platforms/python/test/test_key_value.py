@@ -21,95 +21,45 @@ from api import (
 from datatypes.primitive_objects import IntObject
 
 
-def test_put_get(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
+def test_put_get(conn, hash_code):
 
-    cache_create(conn, 'my_bucket')
-
-    result = cache_put(conn, hashcode('my_bucket'), 'my_key', 5)
+    result = cache_put(conn, hash_code, 'my_key', 5)
     assert result.status == 0
 
-    result = cache_get(conn, hashcode('my_bucket'), 'my_key')
+    result = cache_get(conn, hash_code, 'my_key')
     assert result.status == 0
     assert result.value == 5
 
-    # cleanup
-    cache_destroy(conn, hashcode('my_bucket'))
-    conn.close()
 
+def test_get_all(conn, hash_code):
 
-def test_get_names(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
-
-    bucket_names = ['my_bucket', 'my_bucket_2', 'my_bucket_3']
-    for name in bucket_names:
-        cache_create(conn, name)
-
-    result = cache_get_names(conn)
-    assert result.status == 0
-    assert type(result.value) == list
-    assert len(result.value) == len(bucket_names)
-    for i, name in enumerate(bucket_names):
-        assert name in result.value
-
-    # cleanup
-    for name in bucket_names:
-        cache_destroy(conn, hashcode(name))
-    conn.close()
-
-
-def test_get_all(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
-
-    cache_create(conn, 'my_bucket')
-
-    result = cache_get_all(
-        conn, hashcode('my_bucket'), ['key_1', 2, (3, IntObject)]
-    )
+    result = cache_get_all(conn, hash_code, ['key_1', 2, (3, IntObject)])
     assert result.status == 0
     assert result.value == {}
 
-    cache_put(conn, hashcode('my_bucket'), 'key_1', 4)
-    cache_put(conn, hashcode('my_bucket'), 3, 18, key_hint=IntObject)
+    cache_put(conn, hash_code, 'key_1', 4)
+    cache_put(conn, hash_code, 3, 18, key_hint=IntObject)
 
-    result = cache_get_all(
-        conn, hashcode('my_bucket'), ['key_1', 2, (3, IntObject)]
-    )
+    result = cache_get_all(conn, hash_code, ['key_1', 2, (3, IntObject)])
     assert result.status == 0
     assert result.value == {'key_1': 4, 3: 18}
 
-    # cleanup
-    cache_destroy(conn, hashcode('my_bucket'))
-    conn.close()
 
-
-def test_put_all(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
-
-    cache_create(conn, 'my_bucket')
+def test_put_all(conn, hash_code):
 
     test_dict = {
         1: 2,
         'key_1': 4,
         (3, IntObject): 18,
     }
-
     test_keys = ['key_1', 1, 3]
 
-    result = cache_put_all(conn, hashcode('my_bucket'), test_dict)
+    result = cache_put_all(conn, hash_code, test_dict)
     assert result.status == 0
 
-    result = cache_get_all(conn, hashcode('my_bucket'), test_keys)
+    result = cache_get_all(conn, hash_code, test_keys)
     assert result.status == 0
     assert len(test_dict) == 3
 
     for key in result.value:
         assert key in test_keys
-
-    # cleanup
-    cache_destroy(conn, hashcode('my_bucket'))
-    conn.close()

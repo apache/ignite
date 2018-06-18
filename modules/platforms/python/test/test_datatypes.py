@@ -130,22 +130,11 @@ from datatypes.standard import *
         ((2, {'key': 4, 5: 6.0}), None),
     ]
 )
-def test_put_get_data(ignite_host, ignite_port, value, value_hint):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
+def test_put_get_data(conn, hash_code, value, value_hint):
 
-    cache_create(conn, 'my_bucket')
-
-    result = cache_put(
-        conn, hashcode('my_bucket'), 'my_key',
-        value, value_hint=value_hint
-    )
+    result = cache_put(conn, hash_code, 'my_key', value, value_hint=value_hint)
     assert result.status == 0
 
-    result = cache_get(conn, hashcode('my_bucket'), 'my_key')
+    result = cache_get(conn, hash_code, 'my_key')
     assert result.status == 0
     assert result.value == value
-
-    # cleanup
-    cache_destroy(conn, hashcode('my_bucket'))
-    conn.close()
