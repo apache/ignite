@@ -2675,6 +2675,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             " IgniteNeedReconnectException exception but doesn't support reconnect, stopping node: " +
                             e.getMessage(), e);
 
+                    reconnectNeeded = true;
+
                     return;
                 }
                 catch (IgniteCheckedException e) {
