@@ -791,6 +791,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Compares checksums between primary and backup partitions of specified caches.
+     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
+     * concurrently updated.
+     *
+     * @param ig Ignite instance.
+     * @param cacheNames Cache names (if null, all user caches will be verified).
+     * @throws IgniteCheckedException If checksum conflict has been found.
+     */
+    protected void verifyBackupPartitions(Ignite ig, Set<String> cacheNames) throws IgniteCheckedException {
+        Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
+            new VerifyBackupPartitionsTask(), cacheNames);
+
+        if (!conflicts.isEmpty())
+            throw new IgniteCheckedException("Conflict partitions: " + conflicts.keySet());
+    }
+
+    /**
      * @param top Topology.
      * @param topVer Version to wait for.
      * @throws Exception If failed.
