@@ -524,7 +524,7 @@ public class CacheGroupContext {
      * @return {@code True} if fast eviction is allowed.
      */
     public boolean allowFastEviction() {
-        return persistenceEnabled() && !queriesEnabled();
+        return false; // TODO: Should be reworked after IGNITE-5874 fix.
     }
 
     /**
