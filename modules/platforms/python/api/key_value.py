@@ -333,3 +333,72 @@ def cache_contains_key(
         result.message = response.error_message
     result.value = response_struct.to_python(response)['value']
     return result
+
+
+def cache_contains_keys(
+    conn: Connection, hash_code: int, keys, binary=False,
+) -> APIResult:
+    """
+    Returns a value indicating whether all given keys are present in cache.
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param keys:
+    :param binary: pass True to keep the value in binary form. False
+     by default,
+    :return: API result data object. Contains zero status and a bool value
+     retrieved on success: `True` when all keys are present, `False` otherwise,
+     non-zero status and an error description on failure.
+    """
+
+    class CacheContainsKeysQuery(Query):
+        op_code = OP_CACHE_CONTAINS_KEYS
+
+    value_hint_pairs = []
+    length = len(keys)
+    for key_or_pair in keys:
+        if is_hinted(key_or_pair):
+            value_hint_pairs.append(key_or_pair)
+        else:
+            value_hint_pairs.append((key_or_pair, AnyDataObject))
+
+    # structure name: hint
+    key_fields = {}
+    # structure name: value
+    data = {}
+    for i, pair in enumerate(value_hint_pairs):
+        name = 'element_{}'.format(i)
+        value, hint = pair
+        key_fields[name] = hint
+        data[name] = value
+
+    query_struct = CacheContainsKeysQuery([
+        ('hash_code', Int),
+        ('flag', Byte),
+        ('length', Int),
+    ] + list(key_fields.items()))
+
+    data.update({
+        'hash_code': hash_code,
+        'flag': 1 if binary else 0,
+        'length': length,
+    })
+
+    _, send_buffer = query_struct.from_python(data)
+    conn.send(send_buffer)
+
+    response_struct = Response([
+        ('value', Bool),
+    ])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = response.error_message
+    result.value = response_struct.to_python(response)['value']
+    return result

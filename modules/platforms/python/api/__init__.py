@@ -48,5 +48,6 @@ from .key_value import (
     cache_get_all,
     cache_put_all,
     cache_contains_key,
+    cache_contains_keys,
 )
 from .result import APIResult, hashcode
