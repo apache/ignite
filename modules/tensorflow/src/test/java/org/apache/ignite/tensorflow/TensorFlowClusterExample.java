@@ -56,7 +56,7 @@ public class TensorFlowClusterExample {
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
 
-            TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(() -> ignite);
+            TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
             TensorFlowClusterGateway gateway = mgr.getOrCreateCluster("TEST_CACHE_1");
 
             gateway.subscribe(cluster -> {

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.tensorflow.cluster;
 
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
 
@@ -32,18 +31,18 @@ public class TensorFlowClusterGatewayManager {
     /** Service topic name template. */
     private static final String SERVICE_TOPIC_NAME_TEMPLATE = "TF_SERVICE_TOPIC_%s";
 
-    /** Ignite instance supplier. */
-    private final Supplier<Ignite> igniteSupplier;
+    /** Ignite instance. */
+    private final Ignite ignite;
 
     /**
      * Constructs a new instance of TensorFlow cluster manager with maintenance.
      *
-     * @param igniteSupplier Ignite instance supplier.
+     * @param ignite Ignite instance.
      */
-    public TensorFlowClusterGatewayManager(Supplier<Ignite> igniteSupplier) {
-        assert igniteSupplier != null : "Ignite supplier should not be null";
+    public TensorFlowClusterGatewayManager(Ignite ignite) {
+        assert ignite != null : "Ignite should not be null";
 
-        this.igniteSupplier = igniteSupplier;
+        this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
@@ -53,7 +52,6 @@ public class TensorFlowClusterGatewayManager {
 
         TensorFlowClusterGateway gateway = createTensorFlowClusterGateway(topicName);
 
-        Ignite ignite = igniteSupplier.get();
         IgniteServices services = ignite.services();
 
         services.deployClusterSingleton(svcName, new TensorFlowClusterMaintainer(upstreamCacheName, topicName));
@@ -63,7 +61,6 @@ public class TensorFlowClusterGatewayManager {
 
     /** {@inheritDoc} */
     public void stopClusterIfExists(String upstreamCacheName) {
-        Ignite ignite = igniteSupplier.get();
         IgniteServices services = ignite.services();
 
         services.cancel(String.format(SERVICE_NAME_TEMPLATE, upstreamCacheName));
@@ -78,7 +75,6 @@ public class TensorFlowClusterGatewayManager {
     private TensorFlowClusterGateway createTensorFlowClusterGateway(String topicName) {
         TensorFlowClusterGateway gateway = new TensorFlowClusterGateway();
 
-        Ignite ignite = igniteSupplier.get();
         ignite.message().localListen(topicName, gateway);
 
         return gateway;
