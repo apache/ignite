@@ -1885,8 +1885,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
-
         try {
             topologyChangeWithRestarts(true, false);
         }
@@ -1901,8 +1899,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
-
         try {
             topologyChangeWithRestarts(true, true);
         }
