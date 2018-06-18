@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1123,6 +1125,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return pendingEntries != null ? pendingEntries.size() : 0;
     }
 
+    public static Set offheapValues = new LinkedHashSet();
+
+    public static Boolean shouldPrint = Boolean.TRUE;
+
     /**
      *
      */
@@ -1364,6 +1370,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
                 dataRow.cacheId(cctx.cacheId());
 
+            if (shouldPrint)
+                offheapValues.add(new GridTuple3(key.value(cctx.cacheObjectContext(), false),
+                    val.value(cctx.cacheObjectContext(), false),
+                    new RuntimeException().fillInStackTrace()));
+
             return dataRow;
         }
 
@@ -1418,6 +1429,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     }
                     else
                         old = dataTree.put(dataRow);
+
+                    System.out.println("[offheap]Putting value into offheap " + key.value(cctx.cacheObjectContext(), false)
+                        + " value " + val.value(cctx.cacheObjectContext(), false));
                 }
 
                 finishUpdate(cctx, dataRow, old);
