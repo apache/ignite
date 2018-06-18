@@ -1,0 +1,138 @@
+package org.apache.ignite.internal.processors.service;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+/**
+ *
+ */
+public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
+    /** */
+    private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+
+    /** */
+    TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        discoverySpi.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(discoverySpi);
+
+        if("server".equals(igniteInstanceName)) {
+            cfg.setServiceConfiguration(serviceConfiguration());
+        }
+
+        return cfg;
+    }
+
+    /** */
+    public void test() throws Exception {
+        captureErr();
+        new Thread(this::startServer).start();
+        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        IgniteServices services = client.services();
+        SimpleService service = services.serviceProxy("service", SimpleService.class, false);
+        Thread.sleep(1000);
+        assertFalse(getErr().contains("Cache is not configured:"));
+    }
+
+    /** {@inheritDoc} */
+    void startServer() {
+        try {
+            startGrid(getConfiguration("server"));
+        }
+        catch (Exception e) {
+            fail();
+        }
+    }
+
+    /** {@inheritDoc} */
+    ServiceConfiguration serviceConfiguration() {
+        ServiceConfiguration svcCfg = new ServiceConfiguration();
+        svcCfg.setName("service");
+        svcCfg.setTotalCount(1);
+        svcCfg.setService(new SimpleServiceImpl());
+        return svcCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * Turns on stdErr output capture
+     */
+    private void captureErr() {
+        System.setErr( new PrintStream( errContent ) );
+    }
+
+    /**
+     * Turns off stdErr capture and returns the contents
+     * that have been captured
+     *
+     * @return
+     */
+    private String getErr() {
+        System.setErr(new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
+        return errContent.toString().replaceAll( "\r", "" );
+    }
+
+    /**
+     * Simple service implementation for test
+     */
+    public static class SimpleServiceImpl implements Service, SimpleService {
+        /** {@inheritDoc} */
+        public SimpleServiceImpl() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void test() {
+            // No-op.
+        }
+    }
+
+    /**
+     * Simple service interface for test
+     */
+    public interface SimpleService {
+        /** */
+        void test();
+    }
+}
