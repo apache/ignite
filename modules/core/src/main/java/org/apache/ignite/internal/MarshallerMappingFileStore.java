@@ -92,14 +92,12 @@ final class MarshallerMappingFileStore {
             File file = new File(workDir, fileName);
 
             try (FileOutputStream out = new FileOutputStream(file)) {
-                FileLock fileLock = fileLock(out.getChannel(), false);
-
-                assert fileLock != null : fileName;
-
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(typeName);
+                    try (FileLock fileLock = fileLock(out.getChannel(), false)) {
+                        writer.write(typeName);
 
-                    writer.flush();
+                        writer.flush();
+                    }
                 }
             }
             catch (IOException e) {
@@ -120,12 +118,9 @@ final class MarshallerMappingFileStore {
     }
 
     /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
+     * @param fileName File name.
      */
-    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
-        String fileName = getFileName(platformId, typeId);
-
+    private String readMapping(String fileName) throws IgniteCheckedException {
         Lock lock = fileLock(fileName);
 
         lock.lock();
@@ -134,12 +129,10 @@ final class MarshallerMappingFileStore {
             File file = new File(workDir, fileName);
 
             try (FileInputStream in = new FileInputStream(file)) {
-                FileLock fileLock = fileLock(in.getChannel(), true);
-
-                assert fileLock != null : fileName;
-
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    return reader.readLine();
+                    try (FileLock fileLock = fileLock(in.getChannel(), true)) {
+                        return reader.readLine();
+                    }
                 }
             }
             catch (IOException ignored) {
@@ -149,6 +142,14 @@ final class MarshallerMappingFileStore {
         finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+        return readMapping(getFileName(platformId, typeId));
     }
 
     /**
@@ -165,22 +166,16 @@ final class MarshallerMappingFileStore {
 
             int typeId = getTypeId(name);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String clsName = reader.readLine();
+            String clsName = readMapping(name);
 
-                    if (clsName == null) {
-                        throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
-                            ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
-                            "Clean up marshaller directory (<work_dir>/marshaller) and restart the node.");
-                    }
+            if (clsName == null) {
+                throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
+                    ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
+                    "Clean up marshaller directory (<work_dir>/marshaller) and restart the node. File name: " + name +
+                    ", FileSize: " + file.length());
+            }
 
-                    marshCtx.registerClassNameLocally(platformId, typeId, clsName);
-                }
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Reading marshaller mapping from file " + name + " failed.", e);
-            }
+            marshCtx.registerClassNameLocally(platformId, typeId, clsName);
         }
     }
 
@@ -276,10 +271,10 @@ final class MarshallerMappingFileStore {
         while (true) {
             FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
 
-            if (fileLock == null)
-                U.sleep(rnd.nextLong(50));
-            else
+            if (fileLock != null)
                 return fileLock;
+
+            U.sleep(rnd.nextLong(50));
         }
     }
 }
