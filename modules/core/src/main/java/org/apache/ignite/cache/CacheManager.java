@@ -258,8 +258,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
         try {
             if (kernalGateway.getState() != GridKernalState.STARTED)
-                return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
-                                               // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
+                throw new IllegalStateException();
 
             Collection<String> res = new ArrayList<>();
 
