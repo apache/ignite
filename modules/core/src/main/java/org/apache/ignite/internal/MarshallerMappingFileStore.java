@@ -28,6 +28,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
@@ -121,6 +122,8 @@ final class MarshallerMappingFileStore {
      * @param fileName File name.
      */
     private String readMapping(String fileName) throws IgniteCheckedException {
+        ThreadLocalRandom rnd = null;
+
         Lock lock = fileLock(fileName);
 
         lock.lock();
@@ -128,15 +131,23 @@ final class MarshallerMappingFileStore {
         try {
             File file = new File(workDir, fileName);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    try (FileLock fileLock = fileLock(in.getChannel(), true)) {
-                        return reader.readLine();
+            while (true) {
+                try (FileInputStream in = new FileInputStream(file)) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                        try (FileLock fileLock = fileLock(in.getChannel(), true)) {
+                            if (file.length() > 0)
+                                return reader.readLine();
+
+                            if (rnd == null)
+                                rnd = ThreadLocalRandom.current();
+
+                            U.sleep(rnd.nextLong(50));
+                        }
                     }
                 }
-            }
-            catch (IOException ignored) {
-                return null;
+                catch (IOException ignored) {
+                    return null;
+                }
             }
         }
         finally {
