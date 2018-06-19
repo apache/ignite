@@ -95,9 +95,13 @@ public class Loader implements IgniteClosure<Integer, Integer> {
         DataRegionConfiguration[] arr = ignite.configuration().getDataStorageConfiguration()
             .getDataRegionConfigurations();
 
-        for (DataRegionConfiguration cfg : arr) {
-            if (cfg.getName().equals(dataRegName))
-                dataRegCfg = cfg;
+        if(arr == null)
+            dataRegCfg = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+        else {
+            for (DataRegionConfiguration cfg : arr) {
+                if (cfg.getName().equals(dataRegName))
+                    dataRegCfg = cfg;
+            }
         }
 
         if (dataRegCfg == null) {
