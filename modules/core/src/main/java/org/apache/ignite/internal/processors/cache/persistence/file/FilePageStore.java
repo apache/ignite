@@ -752,6 +752,10 @@ public class FilePageStore implements PageStore {
     private int readWithFailover(ByteBuffer destBuf, long position) throws IOException {
         boolean interrupted = false;
 
+        int iteration = 0;
+
+        int pos = destBuf.position();
+
         while (true) {
             FileIO fileIO = this.fileIO;
 
@@ -767,7 +771,14 @@ public class FilePageStore implements PageStore {
                 return bytesRead;
             }
             catch (ClosedChannelException e) {
-                System.out.println("Thread " + Thread.currentThread().getName() + " Read error " + e);
+                System.out.println("Thread " + Thread.currentThread().getName() + " Read error " + e + " iteration " + ++iteration + " fileIO " + fileIO);
+
+                if (destBuf.position() != pos) {
+                    System.out.println("Warning: position moved " + pos + " -> " + destBuf.position());
+
+                    destBuf.position(pos);
+                }
+
                 if (e instanceof ClosedByInterruptException) {
                     interrupted = true;
 

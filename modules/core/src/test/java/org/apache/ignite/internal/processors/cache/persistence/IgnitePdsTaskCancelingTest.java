@@ -256,6 +256,8 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                                     pageStore.write(pageId, buf, 0, true);
                                 }
+
+                                Thread.interrupted();
                             }
                             catch (Exception e) {
                                 log.error("Error while reading/writing page", e);
@@ -270,17 +272,15 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             for (Thread thread : threadList)
                 thread.start();
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 100; i++) {
                 for (Thread thread : threadList) {
-                    doSleep(50L);
+                    doSleep(10L);
 
                     log.info("Interrupting " + thread.getName());
 
                     thread.interrupt();
                 }
             }
-
-            doSleep(5000L);
 
             stopThreads.set(true);
 
