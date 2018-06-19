@@ -20,8 +20,11 @@ package org.apache.ignite.internal.visor.tx;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.TimeZone;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +42,15 @@ public class VisorTxInfo extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    /** */
     private IgniteUuid xid;
+
+    /**
+     * Transaction start time.
+     */
+    private long startTime;
 
     /** */
     private long duration;
@@ -80,6 +91,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
 
     /**
      * @param xid Xid.
+     * @param startTime Start time of transaction.
      * @param duration Duration.
      * @param isolation Isolation.
      * @param concurrency Concurrency.
@@ -89,10 +101,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
      * @param state State.
      * @param size Size.
      */
-    public VisorTxInfo(IgniteUuid xid, long duration, TransactionIsolation isolation,
+    public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
         TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds) {
         this.xid = xid;
+        this.startTime = startTime;
         this.duration = duration;
         this.isolation = isolation;
         this.concurrency = concurrency;
@@ -113,6 +126,16 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     public IgniteUuid getXid() {
         return xid;
+    }
+
+    /** */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** */
+    public String getFormattedStartTime() {
+        return dateTimeFormatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), TimeZone.getDefault().toZoneId()));
     }
 
     /** */
@@ -178,6 +201,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
         out.writeInt(size);
         U.writeGridUuid(out, nearXid);
         U.writeCollection(out, masterNodeIds);
+        out.writeLong(startTime);
     }
 
     /** {@inheritDoc} */
@@ -195,6 +219,8 @@ public class VisorTxInfo extends VisorDataTransferObject {
             nearXid = U.readGridUuid(in);
 
             masterNodeIds = U.readCollection(in);
+
+            startTime = in.readLong();
         }
 
     }
