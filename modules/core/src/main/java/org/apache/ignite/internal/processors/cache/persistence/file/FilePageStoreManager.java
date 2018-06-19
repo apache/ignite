@@ -167,11 +167,33 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
+    @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
+        try {
+            File workDir = storeWorkDir;
+
+            if(!workDir.exists())
+                return;
+
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(workDir.toPath())) {
+                for (Path path : files) {
+                    File f = path.toFile();
+
+                    if (f.getName().contains("cache"))
+                        U.delete(f);
+                }
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
         try {
             File cacheWorkDir = cacheWorkDir(cacheConfiguration);
 
-            if(!cacheWorkDir.exists())
+            if (!cacheWorkDir.exists())
                 return;
 
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cacheWorkDir.toPath(),

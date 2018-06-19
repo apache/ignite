@@ -239,6 +239,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Prefix for meta store records which means that checkpoint entry for some group is not applicable for WAL rebalance. */
     private static final String CHECKPOINT_INAPPLICABLE_FOR_REBALANCE = "cp-wal-rebalance-inapplicable-";
 
+    /** */
+    private static final String WAL_DISABLED = "wal-disabled";
+
     /** WAL marker predicate for meta store. */
     private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
         @Override public boolean apply(String key) {
@@ -623,6 +626,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
+            boolean needCleanUp;
+
             cctx.pageStore().initializeForMetastorage();
 
             storePageMem.start();
@@ -640,6 +645,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 fillWalDisabledGroups();
 
+                Boolean cleanUp = (Boolean)metaStorage.read(WAL_DISABLED);
+
+                needCleanUp = cleanUp != null && cleanUp.equals(Boolean.TRUE);
+
                 notifyMetastorageReadyForRead();
             }
             finally {
@@ -649,6 +658,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             metaStorage = null;
 
             storePageMem.stop();
+
+            if (needCleanUp) {
+                cctx.pageStore().cleanupPersistentSpace();
+            }
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -2138,6 +2151,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
+        boolean successApply = false;
+
+        MetaStorage metaStore = cctx.database().metaStorage();
+
+        checkpointReadLock();
+
+        try {
+            metaStore.write(WAL_DISABLED, Boolean.TRUE);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+
+        waitForCheckpoint("Checkpoint before apply updates on recovery.");
 
         cctx.wal().disableWal(true);
 
@@ -2198,11 +2225,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             finally {
                 checkpointReadUnlock();
             }
+
+            successApply = true;
         }
         finally {
-            cctx.wal().disableWal(false);
+            if (successApply) {
+                cctx.wal().disableWal(false);
 
-            waitForCheckpoint("Checkpoint after recovery.");
+                waitForCheckpoint("Checkpoint after apply updates on recovery.");
+
+                checkpointReadLock();
+
+                try {
+                    metaStore.remove(WAL_DISABLED);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+            }
         }
     }
 

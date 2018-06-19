@@ -228,4 +228,9 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cacheConfiguration Cache configuration of cache which should be cleanup.
      */
     public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException;
+
+    /**
+     * Cleanup persistent space .
+     */
+    public void cleanupPersistentSpace() throws IgniteCheckedException;
 }
