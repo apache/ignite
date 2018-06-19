@@ -274,9 +274,13 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                 for (Thread thread : threadList) {
                     doSleep(50L);
 
+                    log.info("Interrupting " + thread.getName());
+
                     thread.interrupt();
                 }
             }
+
+            doSleep(5000L);
 
             stopThreads.set(true);
 

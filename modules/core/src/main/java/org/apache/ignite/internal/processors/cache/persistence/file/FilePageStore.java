@@ -459,6 +459,7 @@ public class FilePageStore implements PageStore {
                                 break;
                             }
                             catch (ClosedByInterruptException e) {
+                                System.out.println("Thread " + Thread.currentThread().getName() + " Init error " + e);
                                 interrupted = true;
 
                                 Thread.interrupted();
@@ -531,12 +532,15 @@ public class FilePageStore implements PageStore {
 
                         this.fileIO = fileIO;
 
+                        System.out.println("Reinited " + fileIO);
+
                         if (interrupted)
                             Thread.currentThread().interrupt();
 
                         break;
                     }
                     catch (ClosedByInterruptException e) {
+                        System.out.println("Thread " + Thread.currentThread().getName() + " Reinit error " + e);
                         interrupted = true;
 
                         Thread.interrupted();
@@ -565,6 +569,8 @@ public class FilePageStore implements PageStore {
         init();
 
         boolean interrupted = false;
+
+        int iteration = 0;
 
         while (true) {
             FileIO fileIO = this.fileIO;
@@ -626,6 +632,7 @@ public class FilePageStore implements PageStore {
                 }
             }
             catch (IOException e) {
+                System.out.println("Thread " + Thread.currentThread().getName() + " Write error " + e + " iteration " + ++iteration + " fileIO " + fileIO);
                 if (e instanceof ClosedChannelException) {
                     try {
                         if (e instanceof ClosedByInterruptException) {
@@ -746,12 +753,12 @@ public class FilePageStore implements PageStore {
         boolean interrupted = false;
 
         while (true) {
+            FileIO fileIO = this.fileIO;
+
+            if (fileIO == null)
+                throw new IOException("FileIO has stopped");
+
             try {
-                FileIO fileIO = this.fileIO;
-
-                if (fileIO == null)
-                    throw new IOException("FileIO has stopped");
-
                 int bytesRead = fileIO.read(destBuf, position);
 
                 if (interrupted)
@@ -760,6 +767,7 @@ public class FilePageStore implements PageStore {
                 return bytesRead;
             }
             catch (ClosedChannelException e) {
+                System.out.println("Thread " + Thread.currentThread().getName() + " Read error " + e);
                 if (e instanceof ClosedByInterruptException) {
                     interrupted = true;
 
