@@ -1219,9 +1219,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      * @param cur Current file write handle released by WAL writer
      * @return Initialized file handle.
-     * @throws StorageException If IO exception occurred.
+     * @throws IgniteCheckedException If exception occurred.
      */
-    private FileWriteHandle initNextWriteHandle(FileWriteHandle cur) throws StorageException {
+    private FileWriteHandle initNextWriteHandle(FileWriteHandle cur) throws IgniteCheckedException {
+        IgniteCheckedException error = null;
+
         try {
             File nextFile = pollNextFile(cur.idx);
 
@@ -1295,12 +1297,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             return hnd;
         }
+        catch (IgniteCheckedException e) {
+            throw error = e;
+        }
         catch (IOException e) {
-            StorageException se = new StorageException("Unable to initialize WAL segment", e);
-
-            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
-
-            throw se;
+            throw error = new StorageException("Unable to initialize WAL segment", e);
+        }
+        finally {
+            if (error != null)
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, error));
         }
     }
 
