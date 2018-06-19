@@ -189,7 +189,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
 
         waitForExchangeStarted(ig);
 
-        // Set short timeout on PME
+        // Set short timeout on PME.
         mxBean.setTxTimeoutOnPartitionMapExchange(shortTimeout);
 
         awaitPartitionMapExchange();
@@ -207,13 +207,9 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      * @throws Exception If fails.
      */
     private void startGridAsync(int idx) throws Exception {
-        CountDownLatch startLatch = new CountDownLatch(1);
-
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    startLatch.countDown();
-
                     startGrid(idx);
                 }
                 catch (Exception e) {
@@ -221,8 +217,6 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
                 }
             }
         });
-
-        startLatch.await();
     }
 
     /**
@@ -242,6 +236,9 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
                 return false;
             }
         }, WAIT_CONDITION_TIMEOUT);
+
+        // Additional waiting to ensure that code really start waiting for partition release.
+        U.sleep(5_000L);
     }
 
     /**
