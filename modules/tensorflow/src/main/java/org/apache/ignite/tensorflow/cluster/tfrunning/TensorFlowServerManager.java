@@ -91,7 +91,10 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
         StringBuilder builder = new StringBuilder();
 
         builder.append("import tensorflow as tf").append('\n');
-        builder.append("cluster = tf.train.ClusterSpec(").append(formatClusterSpec(spec.getClusterSpec())).append(')').append('\n');
+        builder.append("cluster = tf.train.ClusterSpec(")
+            .append(formatClusterSpec(spec.getClusterSpec()))
+            .append(')')
+            .append('\n');
         builder.append("server = tf.train.Server(cluster");
 
         if (spec.getJobName() != null)
