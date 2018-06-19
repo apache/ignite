@@ -117,13 +117,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     public void testCloseWithCancellation() throws Exception {
         cnt = 0;
 
-        startGrids(3);
+        startGrids(2);
 
-        Ignite g2 = grid(2);
+        Ignite g1 = grid(1);
 
         List<IgniteFuture> futures = new ArrayList<>();
 
-        IgniteDataStreamer<Object, Object> dataLdr = g2.dataStreamer(DEFAULT_CACHE_NAME);
+        IgniteDataStreamer<Object, Object> dataLdr = g1.dataStreamer(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++)
             futures.add(dataLdr.addData(i, i));

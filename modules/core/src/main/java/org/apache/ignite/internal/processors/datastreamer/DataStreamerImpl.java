@@ -1292,18 +1292,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (cancel) {
                     cancelled = true;
 
-                    if (err == null)
-                        err = new IgniteCheckedException("Data streamer has been cancelled: " + DataStreamerImpl.this);
+                    IgniteCheckedException cancellationErr = err;
+
+                    if (cancellationErr == null && (!threadBufMap.isEmpty() || !bufMappings.values().isEmpty()))
+                        cancellationErr = new IgniteCheckedException("Data streamer has been cancelled: " +
+                            DataStreamerImpl.this);
 
                     for (T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> val : threadBufMap.values()) {
                         IgniteCacheFutureImpl fut = val.getKey();
 
                         if (fut != null)
-                            ((GridFutureAdapter)fut.internalFuture()).onDone(err);
+                            ((GridFutureAdapter)fut.internalFuture()).onDone(cancellationErr);
                     }
 
                     for (Buffer buf : bufMappings.values())
-                        buf.cancelAll(err);
+                        buf.cancelAll(cancellationErr);
                 }
                 else
                     doFlush();
@@ -2007,8 +2010,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param err Error.
          */
         void cancelAll(IgniteCheckedException err) {
-            assert err != null;
-
             for (IgniteInternalFuture<?> f : locFuts) {
                 try {
                     f.cancel();
