@@ -2138,61 +2138,78 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        if (it != null) {
-            while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+        waitForCheckpoint("Checkpoint before apply updates on recovery.");
 
-                WALRecord rec = next.get2();
+        cctx.wal().disableWal(true);
 
-                if (!recPredicate.apply(next))
-                    break;
+        boolean successApply = false;
 
-                switch (rec.type()) {
-                    case DATA_RECORD:
-                        checkpointReadLock();
+        try {
+            if (it != null) {
+                while (it.hasNextX()) {
+                    IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
 
-                        try {
-                            DataRecord dataRec = (DataRecord)rec;
+                    WALRecord rec = next.get2();
 
-                            for (DataEntry dataEntry : dataRec.writeEntries()) {
-                                if (entryPredicate.apply(dataEntry)) {
-                                    checkpointReadLock();
+                    if (!recPredicate.apply(next))
+                        break;
 
-                                    try {
-                                        int cacheId = dataEntry.cacheId();
+                    switch (rec.type()) {
+                        case DATA_RECORD:
+                            checkpointReadLock();
 
-                                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                            try {
+                                DataRecord dataRec = (DataRecord)rec;
 
-                                        if (cacheCtx != null)
-                                            applyUpdate(cacheCtx, dataEntry);
-                                        else if (log != null)
-                                            log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
-                                    }
-                                    finally {
-                                        checkpointReadUnlock();
+                                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                                    if (entryPredicate.apply(dataEntry)) {
+                                        checkpointReadLock();
+
+                                        try {
+                                            int cacheId = dataEntry.cacheId();
+
+                                            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                                            if (cacheCtx != null)
+                                                applyUpdate(cacheCtx, dataEntry);
+                                            else if (log != null)
+                                                log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
+                                        }
+                                        finally {
+                                            checkpointReadUnlock();
+                                        }
                                     }
                                 }
                             }
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
+                            finally {
+                                checkpointReadUnlock();
+                            }
 
-                        break;
+                            break;
 
-                    default:
-                        // Skip other records.
+                        default:
+                            // Skip other records.
+                    }
                 }
             }
-        }
 
-        checkpointReadLock();
+            checkpointReadLock();
 
-        try {
-            restorePartitionStates(partStates, null);
+            try {
+                restorePartitionStates(partStates, null);
+            }
+            finally {
+                checkpointReadUnlock();
+            }
+
+            successApply = true;
         }
         finally {
-            checkpointReadUnlock();
+            if (successApply) {
+                cctx.wal().disableWal(false);
+
+                waitForCheckpoint("Checkpoint after apply updates on recovery.");
+            }
         }
     }
 

@@ -274,6 +274,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      */
     private final long walAutoArchiveAfterInactivity;
 
+    /** */
+    private volatile boolean walDisabled;
+
     /**
      * Container with last WAL record logged timestamp.<br>
      * Zero value means there was no records logged to current segment, skip possible archiving for this case<br>
@@ -638,7 +641,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         FileWriteHandle currWrHandle = currentHandle();
 
         // Logging was not resumed yet.
-        if (currWrHandle == null)
+        if (currWrHandle == null || walDisabled)
             return null;
 
         // Need to calculate record size first.
@@ -889,6 +892,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
         return ctx != null && !ctx.walEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableWal(boolean disable) {
+        this.walDisabled = disable;
+
+        log.info("WAL logging " + (disable ? "disabled" : "enabled"));
     }
 
     /** {@inheritDoc} */
