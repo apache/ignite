@@ -19,9 +19,9 @@ import decimal
 from datetime import date, datetime, timedelta
 import uuid
 
-from connection import Connection, PrefetchConnection
-from constants import *
-from utils import is_iterable
+from pyignite.connection import Connection, PrefetchConnection
+from pyignite.constants import *
+from pyignite.utils import is_iterable
 from .primitive_arrays import *
 from .primitive_objects import *
 from .standard import *

@@ -18,8 +18,8 @@ import ctypes
 
 import attr
 
-from connection import Connection
-from constants import *
+from pyignite.connection import Connection
+from pyignite.constants import *
 from .standard import String
 from .primitive import *
 

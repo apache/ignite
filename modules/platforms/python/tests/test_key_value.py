@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api import *
-from datatypes.primitive_objects import IntObject
+from pyignite.api import *
+from pyignite.datatypes.primitive_objects import IntObject
 
 
 def test_put_get(conn, hash_code):

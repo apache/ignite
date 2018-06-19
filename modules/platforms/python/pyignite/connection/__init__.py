@@ -15,7 +15,7 @@
 
 import socket
 
-from constants import *
+from pyignite.constants import *
 from .handshake import HandshakeRequest, read_response
 
 

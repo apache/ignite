@@ -13,15 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from connection import Connection
-from queries.op_codes import *
+from pyignite.connection import Connection
+from pyignite.queries.op_codes import *
+from pyignite.datatypes.cache_config import StructArray
+from pyignite.datatypes.complex import AnyDataObject
+from pyignite.datatypes.primitive import Bool, Byte, Int
+from pyignite.queries import Query, Response
+from pyignite.utils import is_hinted
 from .result import APIResult
-
-from datatypes.cache_config import StructArray
-from datatypes.complex import AnyDataObject
-from datatypes.primitive import Bool, Byte, Int
-from queries import Query, Response
-from utils import is_hinted
 
 
 def cache_put(

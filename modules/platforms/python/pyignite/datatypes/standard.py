@@ -18,8 +18,8 @@ from datetime import datetime, timedelta
 import decimal
 import uuid
 
-from connection import Connection
-from constants import *
+from pyignite.connection import Connection
+from pyignite.constants import *
 from .type_codes import *
 from .null_object import Null
 

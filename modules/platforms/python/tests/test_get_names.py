@@ -13,26 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from connection import Connection
-from connection.handshake import HandshakeRequest, read_response
+from pyignite.api import cache_create, cache_get_names
 
 
-def test_handshake(ignite_host, ignite_port):
-    conn = Connection()
-    conn.socket.connect((ignite_host, ignite_port))
-    hs_request = HandshakeRequest()
-    conn.send(hs_request)
-    hs_response = read_response(conn)
-    assert hs_response.op_code != 0
+def test_get_names(conn):
 
-    # intentionally pass wrong protocol version
-    conn.close()
-    conn = Connection()
-    conn.socket.connect((ignite_host, ignite_port))
-    hs_request = HandshakeRequest()
-    hs_request.version_major = 10
-    conn.send(hs_request)
-    hs_response = read_response(conn)
-    assert hs_response.op_code == 0
+    bucket_names = ['my_bucket', 'my_bucket_2', 'my_bucket_3']
+    for name in bucket_names:
+        cache_create(conn, name)
 
-    conn.close()
+    result = cache_get_names(conn)
+    assert result.status == 0
+    assert type(result.value) == list
+    assert len(result.value) == len(bucket_names)
+    for i, name in enumerate(bucket_names):
+        assert name in result.value

@@ -15,8 +15,8 @@
 
 import ctypes
 
-from connection import Connection
-from constants import *
+from pyignite.connection import Connection
+from pyignite.constants import *
 
 
 __all__ = [

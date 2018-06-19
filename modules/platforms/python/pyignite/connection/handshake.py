@@ -15,7 +15,7 @@
 
 import ctypes
 
-from constants import *
+from pyignite.constants import *
 
 
 OP_HANDSHAKE = 1

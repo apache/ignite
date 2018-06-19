@@ -18,14 +18,11 @@ import decimal
 import pytest
 import uuid
 
-from api import hashcode
-from api.key_value import cache_get, cache_put
-from api.cache_config import cache_create, cache_destroy
-from connection import Connection
-from datatypes.complex import *
-from datatypes.primitive_objects import *
-from datatypes.primitive_arrays import *
-from datatypes.standard import *
+from pyignite.api.key_value import cache_get, cache_put
+from pyignite.datatypes.complex import *
+from pyignite.datatypes.primitive_objects import *
+from pyignite.datatypes.primitive_arrays import *
+from pyignite.datatypes.standard import *
 
 
 @pytest.mark.parametrize(

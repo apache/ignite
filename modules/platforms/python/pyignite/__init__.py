@@ -12,27 +12,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-
-"""
-
-
-def is_iterable(value):
-    """ Check if value is iterable. """
-    try:
-        iter(value)
-        return True
-    except TypeError:
-        return False
-
-
-def is_hinted(value):
-    """
-    Check if a value is a tuple of data item and its type hint.
-    """
-    return (
-        isinstance(value, tuple)
-        and len(value) == 2
-        and isinstance(value[1], object)
-    )

@@ -13,23 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from connection import Connection
-from api import (
-    cache_destroy, cache_get_or_create, cache_get_configuration, hashcode,
-)
+
+def is_iterable(value):
+    """ Check if value is iterable. """
+    try:
+        iter(value)
+        return True
+    except TypeError:
+        return False
 
 
-def test_put_get(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
-
-    result = cache_get_or_create(conn, 'my_cache')
-    assert result.status == 0
-
-    result = cache_get_configuration(conn, hashcode('my_cache'))
-    assert result.status == 0
-    assert result.value['name'] == 'my_cache'
-
-    # cleanup
-    cache_destroy(conn, hashcode('my_cache'))
-    conn.close()
+def is_hinted(value):
+    """
+    Check if a value is a tuple of data item and its type hint.
+    """
+    return (
+        isinstance(value, tuple)
+        and len(value) == 2
+        and isinstance(value[1], object)
+    )

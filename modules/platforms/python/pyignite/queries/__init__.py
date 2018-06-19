@@ -25,9 +25,9 @@ from random import randint
 
 import attr
 
-from connection import Connection
-from constants import *
-from datatypes.standard import String
+from pyignite.connection import Connection
+from pyignite.constants import *
+from pyignite.datatypes.standard import String
 from .op_codes import *
 
 

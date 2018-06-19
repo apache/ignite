@@ -23,12 +23,12 @@ The choice of `cache` term is due to historical reasons. (Ignite initially had
 only non-persistent storage tier.)
 """
 
-from connection import Connection
-from datatypes.cache_config import cache_config_struct
-from datatypes.primitive import Int, Byte
-from datatypes.standard import String, StringArray
-from queries.op_codes import *
-from queries import Query, Response
+from pyignite.connection import Connection
+from pyignite.datatypes.cache_config import cache_config_struct
+from pyignite.datatypes.primitive import Int, Byte
+from pyignite.datatypes.standard import String, StringArray
+from pyignite.queries.op_codes import *
+from pyignite.queries import Query, Response
 from .result import APIResult
 
 

@@ -21,7 +21,7 @@ There can't be null type, because null payload takes exactly 0 bytes.
 
 import ctypes
 
-from connection import Connection
+from pyignite.connection import Connection
 from .type_codes import TC_NULL
 
 
