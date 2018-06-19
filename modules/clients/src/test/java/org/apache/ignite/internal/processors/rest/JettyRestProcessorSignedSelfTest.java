@@ -82,10 +82,10 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
     @Override protected String signature() throws Exception {
         long ts = U.currentTimeMillis();
 
-        String s = ts + ":" + REST_SECRET_KEY;
-
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
+
+            String s = ts + ":" + REST_SECRET_KEY;
 
             md.update(s.getBytes());
 

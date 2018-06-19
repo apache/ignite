@@ -14,5 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-svg(ignite-icon='connectedClusters')
-| Connected clusters: {{ $ctrl.connectedClusters }}
+button.btn-ignite.btn-ignite--link-dashed-secondary(
+    ng-click='$event.stopPropagation(); $ctrl.logout()'
+    bs-tooltip=''
+    data-title='Click here to logout from cluster.'
+    data-placement='top'
+)
+    svg(ignite-icon='exit')

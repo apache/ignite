@@ -93,6 +93,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
             this.active = top.active;
+            this.secured = top.secured;
         }
 
         isSameCluster(top) {
@@ -106,6 +107,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
             this.active = top.active;
+            this.secured = top.secured;
         }
 
         same(top) {
@@ -428,7 +430,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
             const sockets = this._agentSockets[token];
 
-            _.forEach(sockets, (socket) => socket._emit('agent:reset:token', token));
+            _.forEach(sockets, (socket) => socket._sendToAgent('agent:reset:token', token));
         }
     }
 
