@@ -55,5 +55,9 @@ from .key_value import (
     cache_put_if_absent,
     cache_get_and_put_if_absent,
     cache_replace,
+    cache_replace_if_equals,
+    cache_clear,
+    cache_clear_key,
+    cache_clear_keys,
 )
 from .result import APIResult, hashcode

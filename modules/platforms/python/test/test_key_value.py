@@ -170,3 +170,76 @@ def test_replace(conn, hash_code):
     result = cache_get(conn, hash_code, 'test_key')
     assert result.status == 0
     assert result.value == 42
+
+
+def test_replace_if_equals(conn, hash_code):
+
+    result = cache_replace_if_equals(conn, hash_code, 'my_test', 42, 1234)
+    assert result.status == 0
+    assert result.value is False
+
+    cache_put(conn, hash_code, 'my_test', 42)
+
+    result = cache_replace_if_equals(conn, hash_code, 'my_test', 42, 1234)
+    assert result.status == 0
+    assert result.value is True
+
+    result = cache_get(conn, hash_code, 'my_test')
+    assert result.status == 0
+    assert result.value == 1234
+
+
+def test_clear(conn, hash_code):
+
+    result = cache_put(conn, hash_code, 'my_test', 42)
+    assert result.status == 0
+
+    result = cache_clear(conn, hash_code)
+    assert result.status == 0
+
+    result = cache_get(conn, hash_code, 'my_test')
+    assert result.status == 0
+    assert result.value is None
+
+
+def test_clear_key(conn, hash_code):
+
+    result = cache_put(conn, hash_code, 'my_test', 42)
+    assert result.status == 0
+
+    result = cache_put(conn, hash_code, 'another_test', 24)
+    assert result.status == 0
+
+    result = cache_clear_key(conn, hash_code, 'my_test')
+    assert result.status == 0
+
+    result = cache_get(conn, hash_code, 'my_test')
+    assert result.status == 0
+    assert result.value is None
+
+    result = cache_get(conn, hash_code, 'another_test')
+    assert result.status == 0
+    assert result.value == 24
+
+
+def test_clear_keys(conn, hash_code):
+
+    result = cache_put(conn, hash_code, 'my_test_key', 42)
+    assert result.status == 0
+
+    result = cache_put(conn, hash_code, 'another_test', 24)
+    assert result.status == 0
+
+    result = cache_clear_keys(conn, hash_code, [
+        'my_test_key',
+        'nonexistent_key',
+    ])
+    assert result.status == 0
+
+    result = cache_get(conn, hash_code, 'my_test')
+    assert result.status == 0
+    assert result.value is None
+
+    result = cache_get(conn, hash_code, 'another_test')
+    assert result.status == 0
+    assert result.value == 24
