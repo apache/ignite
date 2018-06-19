@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -36,6 +38,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -430,6 +433,65 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         Ignite clientNode = startGrid(clientName, clientCfg);
 
         checkCacheOperations(clientNode.cache(EXISTING_CACHE_NAME));
+    }
+
+    public void testConcurrentClientNodeJoins() throws Exception {
+        final int clientCnt = 3;
+        final int numberOfAttempts = 5;
+
+        IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
+
+        final AtomicInteger attemptCnt = new AtomicInteger();
+        final CountDownLatch stopLatch = new CountDownLatch(clientCnt);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                String clientName = Thread.currentThread().getName();
+
+                try {
+                    for (int i = 0; i < numberOfAttempts; ++i) {
+                        int uniqueCnt = attemptCnt.getAndIncrement();
+
+                        IgniteConfiguration clientCfg = getConfiguration(clientName + uniqueCnt);
+
+                        clientCfg.setClientMode(true);
+
+                        final Ignite clientNode = startGrid(clientName, clientCfg);
+
+                        CacheConfiguration cfg = new CacheConfiguration();
+
+                        cfg.setName(clientName + uniqueCnt);
+
+                        String instanceName = getTestIgniteInstanceName(uniqueCnt % gridCount());
+
+                        cfg.setAffinity(new BrokenAffinityFunction(false, instanceName));
+
+                        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                clientNode.getOrCreateCache(cfg);
+                                return null;
+                            }
+                        }, CacheException.class, null);
+
+                        stopGrid(clientName, true);
+                    }
+                }
+                catch (Exception e) {
+                    fail("Unexpected exception: " + e.getMessage());
+                }
+                finally {
+                    stopLatch.countDown();
+                }
+
+                return null;
+            }
+        }, clientCnt, "start-client-thread");
+
+        stopLatch.await();
+
+        assertEquals(numberOfAttempts * clientCnt, attemptCnt.get());
+
+        checkCacheOperations(cache);
     }
 
     protected void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {

@@ -107,6 +107,8 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
+        awaitPartitionMapExchange();
+
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName("test-coordinator-failover");
@@ -128,7 +130,7 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
 
         latch.await();
 
-        stopGrid(0, false);
+        stopGrid(0, true);
 
         awaitPartitionMapExchange();
 
