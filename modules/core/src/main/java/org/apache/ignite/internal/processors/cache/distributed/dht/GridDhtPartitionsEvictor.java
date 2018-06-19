@@ -216,6 +216,8 @@ public class GridDhtPartitionsEvictor {
                 return true;
             }
             catch (Throwable ex) {
+                evictionFut.onDone(ex);
+
                 if (ctx.kernalContext().isStopping()) {
                     LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
                         false,
@@ -223,8 +225,6 @@ public class GridDhtPartitionsEvictor {
                 }
                 else
                     LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
-
-                evictionFut.onDone(ex);
             }
 
             return false;
