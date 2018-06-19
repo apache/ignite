@@ -114,28 +114,16 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         return dbCfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
+    /**
+     * Checks that tasks canceling does not lead to node failure.
+     */
+    public void testFailNodesOnCanceledTask() throws Exception {
         cleanPersistenceDir();
 
         slowFileIoEnabled.set(false);
 
         failure.set(false);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        cleanPersistenceDir();
-    }
-
-    /**
-     * Checks that tasks canceling does not lead to node failure.
-     */
-    public void testFailNodesOnCanceledTask() throws Exception {
         try {
             Ignite ig0 = startGrids(4);
 
@@ -194,13 +182,17 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+
+            cleanPersistenceDir();
         }
     }
 
     /**
-     *
+     * Test FilePageStore with multiple interrupted threads.
      */
-    public void testFilePageStoreCancelThreads() throws Exception {
+    public void testFilePageStoreInterruptThreads() throws Exception {
+        failure.set(false);
+
         FileIOFactory factory = new RandomAccessFileIOFactory();
 
         File file = new File(U.defaultWorkDirectory(), "file.bin");
@@ -272,7 +264,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             for (Thread thread : threadList)
                 thread.start();
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 10; i++) {
                 for (Thread thread : threadList) {
                     doSleep(10L);
 
