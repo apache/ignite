@@ -32,7 +32,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassTrainer;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
@@ -40,7 +40,7 @@ import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run Logistic Regression multi-class classification trainer over distributed dataset to build two models:
- * one with normalization and one without normalization.
+ * one with minmaxscaling and one without minmaxscaling.
  *
  * @see SVMLinearMultiClassClassificationModel
  */
@@ -78,7 +78,7 @@ public class LogRegressionMultiClassClassificationExample {
                 System.out.println(">>> SVM Multi-class model");
                 System.out.println(mdl.toString());
 
-                NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
+                MinMaxScalerTrainer<Integer, double[]> normalizationTrainer = new MinMaxScalerTrainer<>();
 
                 IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
                     ignite,
@@ -93,7 +93,7 @@ public class LogRegressionMultiClassClassificationExample {
                     (k, v) -> v[0]
                 );
 
-                System.out.println(">>> Logistic Regression Multi-class model with normalization");
+                System.out.println(">>> Logistic Regression Multi-class model with minmaxscaling");
                 System.out.println(mdlWithNormalization.toString());
 
                 System.out.println(">>> ----------------------------------------------------------------");
@@ -128,7 +128,7 @@ public class LogRegressionMultiClassClassificationExample {
 
                         confusionMtx[idx1][idx2]++;
 
-                        // Collect data for model with normalization
+                        // Collect data for model with minmaxscaling
                         if(groundTruth != predictionWithNormalization)
                             amountOfErrorsWithNormalization++;
 
