@@ -610,10 +610,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
-            walWriter = new WALWriter(log);
+        walWriter = new WALWriter(log);
 
-            if (!mmap)
-                new IgniteThread(walWriter).start();
+        if (!mmap)
+            new IgniteThread(walWriter).start();
 
             currHnd = restoreWriteHandle(filePtr);
 
