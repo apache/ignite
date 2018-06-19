@@ -475,7 +475,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            for (VisorTxInfo info:res.getInfos())
+            for (VisorTxInfo info : res.getInfos())
                 assertNull(info.getLabel());
 
         }, "--tx", "label", "null");
@@ -497,7 +497,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
             assertTrue(res.getInfos().get(0).getSize() >=  res.getInfos().get(1).getSize());
-
         }, "--tx", "order", "SIZE");
 
         // test order by duration.
@@ -505,7 +504,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
             assertTrue(res.getInfos().get(0).getDuration() >=  res.getInfos().get(1).getDuration());
-
         }, "--tx", "order", "DURATION");
 
         // test order by start_time.
