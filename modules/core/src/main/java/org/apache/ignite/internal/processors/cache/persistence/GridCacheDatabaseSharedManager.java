@@ -1321,6 +1321,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             restorePartitionStates(Collections.emptyMap(), restoreGroups);
         }
 
+        cctx.kernalContext().dataStructures().onBeforeExchange(fut.exchangeActions());
+
         if (cctx.kernalContext().query().moduleEnabled()) {
             ExchangeActions acts = fut.exchangeActions();
 

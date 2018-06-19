@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
@@ -91,6 +92,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
@@ -299,19 +301,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * Callback invoked when first exchange future for dynamic cache is completed.
      *
      * @param exchActions Change requests.
      */
-    public void onExchangeDone(ExchangeActions exchActions) {
+    public void onBeforeExchange(ExchangeActions exchActions) {
+        assert !ctx.clientNode();
+
         List<DynamicCacheDescriptor> cacheDescs = new ArrayList<>();
 
-        for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
-            cacheDescs.add(req.descriptor());
+        if (exchActions == null)
+            return;
 
         if (exchActions.localJoinContext() != null) {
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> pair : exchActions.localJoinContext().caches())
                 cacheDescs.add(pair.getKey());
+        }
+        else {
+            for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
+                cacheDescs.add(req.descriptor());
         }
 
         for (DynamicCacheDescriptor desc : cacheDescs) {
