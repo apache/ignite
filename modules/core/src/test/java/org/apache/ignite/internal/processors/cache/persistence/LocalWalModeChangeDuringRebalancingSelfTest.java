@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -223,7 +224,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(3);
 
-        final GridCacheDatabaseSharedManager.CheckpointHistory cpHist =
+        final CheckpointHistory cpHist =
             ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -603,7 +604,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] buf, int off, int len) throws IOException {
+        @Override public int write(byte[] buf, int off, int len) throws IOException {
             CountDownLatch latch = fileIOLatch.get();
 
             if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
@@ -614,7 +615,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                     throw new IgniteException(ex);
                 }
 
-            delegate.write(buf, off, len);
+            return delegate.write(buf, off, len);
         }
 
         /** {@inheritDoc} */

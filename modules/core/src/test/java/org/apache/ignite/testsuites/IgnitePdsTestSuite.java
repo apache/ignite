@@ -39,7 +39,10 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SysPropWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
@@ -77,6 +80,11 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
+
+        // WAL delta consistency
+        suite.addTestSuite(CpTriggeredWalDeltaConsistencyTest.class);
+        suite.addTestSuite(ExplicitWalDeltaConsistencyTest.class);
+        suite.addTestSuite(SysPropWalDeltaConsistencyTest.class);
 
         return suite;
     }

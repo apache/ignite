@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
@@ -83,6 +84,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDataStreamerTest.class);
 
         suite.addTestSuite(GridCommandHandlerIndexingTest.class);
+
+        suite.addTestSuite(BinaryTypeMismatchLoggingTest.class);
 
         return suite;
     }

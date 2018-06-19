@@ -67,8 +67,11 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
+ *
+ * @deprecated Legacy version of {@link VerifyBackupPartitionsTaskV2}.
  */
 @GridInternal
+@Deprecated
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     Map<PartitionKey, List<PartitionHashRecord>>> {
     /** */
@@ -154,9 +157,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     }
 
     /**
-     *
+     * Legacy version of {@link VerifyBackupPartitionsTaskV2} internal job, kept for compatibility.
      */
-    public static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
+    @Deprecated
+    private static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -177,7 +181,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
         /**
          * @param names Names.
          */
-        private VerifyBackupPartitionsJob(Set<String> names) {
+        public VerifyBackupPartitionsJob(Set<String> names) {
             cacheNames = names;
         }
 
@@ -244,7 +248,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFutures.get(i);
 
                 try {
-                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(10, TimeUnit.SECONDS);
+                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
                     res.putAll(partHash);
 
@@ -261,7 +265,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                     else
                         throw new IgniteException(e.getCause());
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
                         lastProgressLogTs = U.currentTimeMillis();
 
@@ -288,7 +292,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 }
             });
         }
-
 
         /**
          * @param grpCtx Group context.
@@ -355,5 +358,4 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             return Collections.singletonMap(partKey, partRec);
         }
     }
-
 }
