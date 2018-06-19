@@ -18,7 +18,7 @@ Apache Ignite binary protocol client, written in Python 3.
 ## Installation
 If you only want to use the `pyignite` module in your project, do:
 ```
-$ pip install git+https://github.com/nobitlost/ignite.git@ignite-7782#egg=pyignite&subdirectory=modules/platforms/python
+$ pip install pyignite
 ```
 
 If you want also run tests and build documentation, clone the whole
@@ -27,6 +27,8 @@ repository:
 $ git clone git@github.com:nobitlost/ignite.git
 $ git checkout ignite-7782
 ```
+
+You may consult `distutils` manual about using `setup.py`.
 
 ## Documentation
 Run
