@@ -274,14 +274,58 @@ class</th>
 </table>
 <p>All type codes are stored in module <a class="reference internal" href="source/pyignite.datatypes.html#module-pyignite.datatypes.type_codes" title="pyignite.datatypes.type_codes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyignite.datatypes.type_codes</span></code></a>.</p>
 <p>On top of all parser/constructor classes, there is an
-<code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code> class. It is an omnivorous data type
-that has no <cite>type_code</cite>; instead, it picks up the right class on serializing
-your python data or deserializing the byte stream.</p>
+<a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.complex.AnyDataObject" title="pyignite.datatypes.complex.AnyDataObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnyDataObject</span></code></a> class. It is an omnivorous
+data type that has no <cite>type_code</cite>; instead, it picks up the right class
+on serializing your python data or deserializing the byte stream.</p>
 <p>It is not overly smart or omnipotent though: it can not choose CharObject
 for you; it will use String. It will also use LongArrayObject for represent
-two-integer tuple, even if you mean Enum or Collection. Bottom line: use
-type hints when you need to pick up a certain data type for your data, and
-not just store that data.</p>
+two-integer tuple, even if you mean Enum or Collection.</p>
+<p>This is the summary of its type guessing:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Native
+data types</th>
+<th class="head">Ignite
+data object</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>None</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.null_object.Null" title="pyignite.datatypes.null_object.Null"><code class="xref py py-class docutils literal notranslate"><span class="pre">Null</span></code></a></td>
+</tr>
+<tr class="row-odd"><td>int</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.LongObject" title="pyignite.datatypes.primitive_objects.LongObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">LongObject</span></code></a></td>
+</tr>
+<tr class="row-even"><td>float</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.DoubleObject" title="pyignite.datatypes.primitive_objects.DoubleObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoubleObject</span></code></a></td>
+</tr>
+<tr class="row-odd"><td>str, bytes</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.String" title="pyignite.datatypes.standard.String"><code class="xref py py-class docutils literal notranslate"><span class="pre">String</span></code></a></td>
+</tr>
+<tr class="row-even"><td>datetime.datetime</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.DateObject" title="pyignite.datatypes.standard.DateObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">DateObject</span></code></a></td>
+</tr>
+<tr class="row-odd"><td>datetime.timedelta</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.TimeObject" title="pyignite.datatypes.standard.TimeObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeObject</span></code></a></td>
+</tr>
+<tr class="row-even"><td>decimal.Decimal</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.DecimalObject" title="pyignite.datatypes.standard.DecimalObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">DecimalObject</span></code></a></td>
+</tr>
+<tr class="row-odd"><td>uuid.UUID</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.UUIDObject" title="pyignite.datatypes.standard.UUIDObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">UUIDObject</span></code></a></td>
+</tr>
+<tr class="row-even"><td>iterable</td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#module-pyignite.datatypes" title="pyignite.datatypes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes</span></code></a> will inspect its contents to find
+the right *ArrayObject class</td>
+</tr>
+</tbody>
+</table>
+<p>Bottom line: use type hints when you need to pick up a certain data type
+for your data, not just store that data.</p>
 </div>
 <div class="section" id="connection">
 <h2><a class="reference internal" href="source/pyignite.connection.html#module-pyignite.connection" title="pyignite.connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">connection</span></code></a><a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>

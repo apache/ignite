@@ -128,15 +128,42 @@ with your data, in to some API function as a *type conversion hint*.
 All type codes are stored in module :mod:`pyignite.datatypes.type_codes`.
 
 On top of all parser/constructor classes, there is an
-:mod:`datatypes.any_object.AnyDataObject` class. It is an omnivorous data type
-that has no `type_code`; instead, it picks up the right class on serializing
-your python data or deserializing the byte stream.
+:class:`~pyignite.datatypes.complex.AnyDataObject` class. It is an omnivorous
+data type that has no `type_code`; instead, it picks up the right class
+on serializing your python data or deserializing the byte stream.
 
 It is not overly smart or omnipotent though: it can not choose CharObject
 for you; it will use String. It will also use LongArrayObject for represent
-two-integer tuple, even if you mean Enum or Collection. Bottom line: use
-type hints when you need to pick up a certain data type for your data, and
-not just store that data.
+two-integer tuple, even if you mean Enum or Collection.
+
+This is the summary of its type guessing:
+
++-----------------------+---------------------------------------------------------------+
+|Native                 |Ignite                                                         |
+|data types             |data object                                                    |
++=======================+===============================================================+
+|None                   |:class:`~pyignite.datatypes.null_object.Null`                  |
++-----------------------+---------------------------------------------------------------+
+|int                    |:class:`~pyignite.datatypes.primitive_objects.LongObject`      |
++-----------------------+---------------------------------------------------------------+
+|float                  |:class:`~pyignite.datatypes.primitive_objects.DoubleObject`    |
++-----------------------+---------------------------------------------------------------+
+|str, bytes             |:class:`~pyignite.datatypes.standard.String`                   |
++-----------------------+---------------------------------------------------------------+
+|datetime.datetime      |:class:`~pyignite.datatypes.standard.DateObject`               |
++-----------------------+---------------------------------------------------------------+
+|datetime.timedelta     |:class:`~pyignite.datatypes.standard.TimeObject`               |
++-----------------------+---------------------------------------------------------------+
+|decimal.Decimal        |:class:`~pyignite.datatypes.standard.DecimalObject`            |
++-----------------------+---------------------------------------------------------------+
+|uuid.UUID              |:class:`~pyignite.datatypes.standard.UUIDObject`               |
++-----------------------+---------------------------------------------------------------+
+|iterable               |:mod:`~pyignite.datatypes` will inspect its contents to find   |
+|                       |the right \*\ArrayObject class                                 |
++-----------------------+---------------------------------------------------------------+
+
+Bottom line: use type hints when you need to pick up a certain data type
+for your data, not just store that data.
 
 
 :mod:`~pyignite.connection`
