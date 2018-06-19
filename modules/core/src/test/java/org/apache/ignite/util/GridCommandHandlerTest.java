@@ -743,7 +743,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                         if (!tx.local()) {
                             IgniteTxEntry entry = tx.writeEntries().iterator().next();
 
-                            GridCacheMapEntry cached = (GridCacheMapEntry)entry.cached();
+                            GridCacheEntryEx cached = entry.cached();
 
                             Collection<GridCacheMvccCandidate> candidates = cached.remoteMvccSnapshot();
 
