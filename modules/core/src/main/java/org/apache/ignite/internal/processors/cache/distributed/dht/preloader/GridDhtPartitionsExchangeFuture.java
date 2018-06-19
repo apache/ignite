@@ -3557,28 +3557,34 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
-                if (isDone() || !enterBusy())
-                    return;
+                // The rollbackExchange() method has to wait for checkpoint.
+                // That operation is time consumed, and therefore it should be executed outside the discovery thread.
+                cctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
+                    @Override public void run() {
+                        if (isDone() || !enterBusy())
+                            return;
 
-                try {
-                    assert msg.error() != null: msg;
+                        try {
+                            assert msg.error() != null: msg;
 
-                    rollbackExchange(msg);
+                            rollbackExchange(msg);
 
-                    synchronized (mux) {
-                        finishState = new FinishState(crd.id(), initialVersion(), null);
+                            synchronized (mux) {
+                                finishState = new FinishState(crd.id(), initialVersion(), null);
 
-                        state = ExchangeLocalState.DONE;
+                                state = ExchangeLocalState.DONE;
+                            }
+
+                            if (exchActions != null)
+                                exchActions.completeRequestFutures(cctx, msg.error());
+
+                            onDone(exchId.topologyVersion());
+                        }
+                        finally {
+                            leaveBusy();
+                        }
                     }
-
-                    if (exchActions != null)
-                        exchActions.completeRequestFutures(cctx, msg.error());
-
-                    onDone(exchId.topologyVersion());
-                }
-                finally {
-                    leaveBusy();
-                }
+                });
             }
         });
     }

@@ -397,9 +397,8 @@ class ClusterCachesInfo {
 
     /**
      * @param failMsg Dynamic change request fail message.
-     * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
         ExchangeActions exchangeActions = new ExchangeActions();
 
         Set<Integer> groupsTobeDestroyed = new HashSet<>();
@@ -436,8 +435,6 @@ class ClusterCachesInfo {
         }
 
         failMsg.exchangeActions(exchangeActions);
-
-        return false;
     }
 
     /**
