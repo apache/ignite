@@ -26,6 +26,7 @@ repository:
 ```
 $ git clone git@github.com:nobitlost/ignite.git
 $ git checkout ignite-7782
+$ cd ignite/modules/platforms/python
 ```
 
 You may consult `distutils` manual about using `setup.py`.
@@ -33,7 +34,7 @@ You may consult `distutils` manual about using `setup.py`.
 ## Documentation
 Run
 ```
-$ cd ./docs
+$ cd ignite/modules/platforms/python/docs
 $ make html
 ```
 Then open `docs/_build/html/index.html` in your browser.
@@ -41,6 +42,7 @@ Then open `docs/_build/html/index.html` in your browser.
 ## Tests
 Run
 ```
+$ cd ignite/modules/platforms/python
 $ python setup.py pytest
 ```
 

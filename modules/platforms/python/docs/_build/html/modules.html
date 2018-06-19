@@ -33,9 +33,10 @@
   <div class="section" id="module-structure">
 <h1>Module Structure<a class="headerlink" href="#module-structure" title="Permalink to this headline">¶</a></h1>
 <p>The client library consists of several modules.</p>
-<p>The most important for the end user are <a class="reference internal" href="#connection">connection</a> and <a class="reference internal" href="#api">api</a>.</p>
+<p>The most important for the end user are <a class="reference internal" href="#connection">connection</a> and
+<a class="reference internal" href="#api">api</a>.</p>
 <div class="section" id="datatypes">
-<h2><a class="reference internal" href="source/datatypes.html#module-datatypes" title="datatypes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes</span></code></a><a class="headerlink" href="#datatypes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="reference internal" href="source/pyignite.datatypes.html#module-pyignite.datatypes" title="pyignite.datatypes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes</span></code></a><a class="headerlink" href="#datatypes" title="Permalink to this headline">¶</a></h2>
 <p>Apache Ignite uses a sophisticated system of serializable data types
 to store and retrieve user data, as well as to manage the configuration
 of its caches through the Ignite binary protocol.</p>
@@ -58,10 +59,10 @@ of interoperability, you may have to sneak one or the other class, along
 with your data, in to some API function as a <em>type conversion hint</em>.</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="10%" />
-<col width="17%" />
-<col width="27%" />
-<col width="46%" />
+<col width="9%" />
+<col width="16%" />
+<col width="25%" />
+<col width="50%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head"><cite>type_code</cite></th>
@@ -79,185 +80,185 @@ class</th>
 <tr class="row-odd"><td>0x01</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-byte">Byte</a></td>
 <td>int</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.ByteObject" title="datatypes.primitive_objects.ByteObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.ByteObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.ByteObject" title="pyignite.datatypes.primitive_objects.ByteObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ByteObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x02</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-short">Short</a></td>
 <td>int</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.ShortObject" title="datatypes.primitive_objects.ShortObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.ShortObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.ShortObject" title="pyignite.datatypes.primitive_objects.ShortObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ShortObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x03</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-int">Int</a></td>
 <td>int</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.IntObject" title="datatypes.primitive_objects.IntObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.IntObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.IntObject" title="pyignite.datatypes.primitive_objects.IntObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">IntObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x04</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-long">Long</a></td>
 <td>int</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.LongObject" title="datatypes.primitive_objects.LongObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.LongObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.LongObject" title="pyignite.datatypes.primitive_objects.LongObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">LongObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x05</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-float">Float</a></td>
 <td>float</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.FloatObject" title="datatypes.primitive_objects.FloatObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.FloatObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.FloatObject" title="pyignite.datatypes.primitive_objects.FloatObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">FloatObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x06</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-double">Double</a></td>
 <td>float</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.DoubleObject" title="datatypes.primitive_objects.DoubleObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.DoubleObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.DoubleObject" title="pyignite.datatypes.primitive_objects.DoubleObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">DoubleObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x07</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-char">Char</a></td>
 <td>str</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.CharObject" title="datatypes.primitive_objects.CharObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.CharObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.CharObject" title="pyignite.datatypes.primitive_objects.CharObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">CharObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x08</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-bool">Bool</a></td>
 <td>bool</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_objects.BoolObject" title="datatypes.primitive_objects.BoolObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_objects.BoolObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_objects.BoolObject" title="pyignite.datatypes.primitive_objects.BoolObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BoolObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x65</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-null">Null</a></td>
 <td>NoneType</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.null_object.Null" title="datatypes.null_object.Null"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.null_object.Null</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.null_object.Null" title="pyignite.datatypes.null_object.Null"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Null</span></code></a></td>
 </tr>
 <tr class="row-even"><td colspan="4"><em>Standard objects</em></td>
 </tr>
 <tr class="row-odd"><td>0x09</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-string">String</a></td>
 <td>Str</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.String" title="datatypes.standard.String"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.String</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.String" title="pyignite.datatypes.standard.String"><code class="xref py py-mod docutils literal notranslate"><span class="pre">String</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x0a</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-uuid-guid-">UUID</a></td>
 <td>uuid.UUID</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.UUIDObject" title="datatypes.standard.UUIDObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.UUIDObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.UUIDObject" title="pyignite.datatypes.standard.UUIDObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">UUIDObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x21</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-timestamp">Timestamp</a></td>
 <td>tuple</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.TimestampObject" title="datatypes.standard.TimestampObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.TimestampObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.TimestampObject" title="pyignite.datatypes.standard.TimestampObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">TimestampObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x0b</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-date">Date</a></td>
 <td>datetime.datetime</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.DateObject" title="datatypes.standard.DateObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.DateObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.DateObject" title="pyignite.datatypes.standard.DateObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">DateObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x24</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-time">Time</a></td>
 <td>datetime.timedelta</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.TimeObject" title="datatypes.standard.TimeObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.TimeObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.TimeObject" title="pyignite.datatypes.standard.TimeObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">TimeObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x1e</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-decimal">Decimal</a></td>
 <td>decimal.Decimal</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.DecimalObject" title="datatypes.standard.DecimalObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.DecimalObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.DecimalObject" title="pyignite.datatypes.standard.DecimalObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">DecimalObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x1c</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-enum">Enum</a></td>
 <td>tuple</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.EnumObject" title="datatypes.standard.EnumObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.EnumObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.EnumObject" title="pyignite.datatypes.standard.EnumObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">EnumObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x67</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-binary-enum">Binary enum</a></td>
 <td>tuple</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.BinaryEnumObject" title="datatypes.standard.BinaryEnumObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.BinaryEnumObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.BinaryEnumObject" title="pyignite.datatypes.standard.BinaryEnumObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BinaryEnumObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td colspan="4"><em>Arrays of primitives</em></td>
 </tr>
 <tr class="row-even"><td>0x0c</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-byte-array">Byte array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.ByteArrayObject" title="datatypes.primitive_arrays.ByteArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.ByteArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.ByteArrayObject" title="pyignite.datatypes.primitive_arrays.ByteArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ByteArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x0d</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-short-array">Short array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.ShortArrayObject" title="datatypes.primitive_arrays.ShortArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.ShortArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.ShortArrayObject" title="pyignite.datatypes.primitive_arrays.ShortArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ShortArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x0e</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-int-array">Int array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.IntArrayObject" title="datatypes.primitive_arrays.IntArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.IntArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.IntArrayObject" title="pyignite.datatypes.primitive_arrays.IntArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">IntArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x0f</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-long-array">Long array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.LongArrayObject" title="datatypes.primitive_arrays.LongArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.LongArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.LongArrayObject" title="pyignite.datatypes.primitive_arrays.LongArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">LongArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x10</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-float-array">Float array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.FloatArrayObject" title="datatypes.primitive_arrays.FloatArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.FloatArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.FloatArrayObject" title="pyignite.datatypes.primitive_arrays.FloatArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">FloatArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x11</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-double-array">Double array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.DoubleArrayObject" title="datatypes.primitive_arrays.DoubleArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.DoubleArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.DoubleArrayObject" title="pyignite.datatypes.primitive_arrays.DoubleArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">DoubleArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x12</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-char-array">Char array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.CharArrayObject" title="datatypes.primitive_arrays.CharArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.CharArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.CharArrayObject" title="pyignite.datatypes.primitive_arrays.CharArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">CharArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x13</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-bool-array">Bool array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.primitive_arrays.BoolArrayObject" title="datatypes.primitive_arrays.BoolArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.primitive_arrays.BoolArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.primitive_arrays.BoolArrayObject" title="pyignite.datatypes.primitive_arrays.BoolArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BoolArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td colspan="4"><em>Arrays of standard objects</em></td>
 </tr>
 <tr class="row-odd"><td>0x14</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-string-array">String array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.StringArrayObject" title="datatypes.standard.StringArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.StringArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.StringArrayObject" title="pyignite.datatypes.standard.StringArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">StringArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x15</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-uuid-guid-array">UUID array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.UUIDArrayObject" title="datatypes.standard.UUIDArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.UUIDArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.UUIDArrayObject" title="pyignite.datatypes.standard.UUIDArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">UUIDArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x22</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-timestamp-array">Timestamp array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.TimestampArrayObject" title="datatypes.standard.TimestampArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.TimestampArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.TimestampArrayObject" title="pyignite.datatypes.standard.TimestampArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">TimestampArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x16</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-date-array">Date array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.DateArrayObject" title="datatypes.standard.DateArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.DateArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.DateArrayObject" title="pyignite.datatypes.standard.DateArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">DateArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x23</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-time-array">Time array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.TimeArrayObject" title="datatypes.standard.TimeArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.TimeArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.TimeArrayObject" title="pyignite.datatypes.standard.TimeArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">TimeArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x1f</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-decimal-array">Decimal array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.DecimalArrayObject" title="datatypes.standard.DecimalArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.DecimalArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.DecimalArrayObject" title="pyignite.datatypes.standard.DecimalArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">DecimalArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td colspan="4"><em>Object collections, special types, and complex object</em></td>
 </tr>
 <tr class="row-even"><td>0x17</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-object-collections">Object array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.complex.ObjectArrayObject" title="datatypes.complex.ObjectArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex.ObjectArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.complex.ObjectArrayObject" title="pyignite.datatypes.complex.ObjectArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ObjectArrayObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x18</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-collection">Collection</a></td>
 <td>tuple</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.complex.CollectionObject" title="datatypes.complex.CollectionObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex.CollectionObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.complex.CollectionObject" title="pyignite.datatypes.complex.CollectionObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">CollectionObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x19</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-map">Map</a></td>
 <td>dict, collections.OrderedDict</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.complex.MapObject" title="datatypes.complex.MapObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.complex.MapObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.complex.MapObject" title="pyignite.datatypes.complex.MapObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">MapObject</span></code></a></td>
 </tr>
 <tr class="row-odd"><td>0x1d</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-enum-array">Enum array</a></td>
 <td>iterable/list</td>
-<td><a class="reference internal" href="source/datatypes.html#datatypes.standard.EnumArrayObject" title="datatypes.standard.EnumArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.standard.EnumArrayObject</span></code></a></td>
+<td><a class="reference internal" href="source/pyignite.datatypes.html#pyignite.datatypes.standard.EnumArrayObject" title="pyignite.datatypes.standard.EnumArrayObject"><code class="xref py py-mod docutils literal notranslate"><span class="pre">EnumArrayObject</span></code></a></td>
 </tr>
 <tr class="row-even"><td>0x67</td>
 <td><a class="reference external" href="https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-complex-object">Complex object</a></td>
@@ -271,7 +272,7 @@ class</th>
 </tr>
 </tbody>
 </table>
-<p>All type codes are stored in module <a class="reference internal" href="source/datatypes.html#module-datatypes.type_codes" title="datatypes.type_codes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.type_codes</span></code></a>.</p>
+<p>All type codes are stored in module <a class="reference internal" href="source/pyignite.datatypes.html#module-pyignite.datatypes.type_codes" title="pyignite.datatypes.type_codes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyignite.datatypes.type_codes</span></code></a>.</p>
 <p>On top of all parser/constructor classes, there is an
 <code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code> class. It is an omnivorous data type
 that has no <cite>type_code</cite>; instead, it picks up the right class on serializing
@@ -283,30 +284,32 @@ type hints when you need to pick up a certain data type for your data, and
 not just store that data.</p>
 </div>
 <div class="section" id="connection">
-<h2><a class="reference internal" href="source/connection.html#module-connection" title="connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">connection</span></code></a><a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>
-<p>To connect to Ignite server socket, instantiate a <a class="reference internal" href="source/connection.html#connection.Connection" title="connection.Connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">connection.Connection</span></code></a>
-class with host name and port number. Connection will negotiate a handshake
-with the Ignite server and raise a <a class="reference internal" href="source/connection.html#connection.SocketError" title="connection.SocketError"><code class="xref py py-mod docutils literal notranslate"><span class="pre">connection.SocketError</span></code></a> in case of
-client/server API versions mismatch or data flow errors.</p>
-<p>You can then pass a <a class="reference internal" href="source/connection.html#connection.Connection" title="connection.Connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">connection.Connection</span></code></a> instance to various API
-functions.</p>
+<h2><a class="reference internal" href="source/pyignite.connection.html#module-pyignite.connection" title="pyignite.connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">connection</span></code></a><a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>
+<p>To connect to Ignite server socket, instantiate a
+<a class="reference internal" href="source/pyignite.connection.html#pyignite.connection.Connection" title="pyignite.connection.Connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Connection</span></code></a> class with host name and port number.
+Connection will negotiate a handshake with the Ignite server and raise a
+<a class="reference internal" href="source/pyignite.connection.html#pyignite.connection.SocketError" title="pyignite.connection.SocketError"><code class="xref py py-mod docutils literal notranslate"><span class="pre">SocketError</span></code></a> in case of client/server API versions
+mismatch or data flow errors.</p>
+<p>You can then pass a <a class="reference internal" href="source/pyignite.connection.html#pyignite.connection.Connection" title="pyignite.connection.Connection"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Connection</span></code></a> instance to
+various API functions.</p>
 </div>
 <div class="section" id="api">
-<h2><a class="reference internal" href="source/api.html#module-api" title="api"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api</span></code></a><a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<h2><a class="reference internal" href="source/pyignite.api.html#module-pyignite.api" title="pyignite.api"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api</span></code></a><a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
 <p>This is a collection of functions, split into three parts:</p>
 <ul class="simple">
-<li><a class="reference internal" href="source/api.html#module-api.cache_config" title="api.cache_config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api.cache_config</span></code></a> allows you to manipulate caches;</li>
-<li><a class="reference internal" href="source/api.html#module-api.key_value" title="api.key_value"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api.key_value</span></code></a> brings a key-value-style data manipulation, similar to
-<cite>memcached</cite> or <cite>Redis</cite> APIs;</li>
-<li><a class="reference internal" href="source/api.html#module-api.sql" title="api.sql"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api.sql</span></code></a> gives you the ultimate power of SQL queries.</li>
+<li><a class="reference internal" href="source/pyignite.api.html#module-pyignite.api.cache_config" title="pyignite.api.cache_config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cache_config</span></code></a> allows you to manipulate caches;</li>
+<li><a class="reference internal" href="source/pyignite.api.html#module-pyignite.api.key_value" title="pyignite.api.key_value"><code class="xref py py-mod docutils literal notranslate"><span class="pre">key_value</span></code></a> brings a key-value-style data manipulation,
+similar to <cite>memcached</cite> or <cite>Redis</cite> APIs;</li>
+<li><a class="reference internal" href="source/pyignite.api.html#module-pyignite.api.sql" title="pyignite.api.sql"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sql</span></code></a> gives you the ultimate power of SQL queries.</li>
 </ul>
 <p>To construct client queries and process server responses, all API functions
-uses <a class="reference internal" href="source/queries.html#queries.Query" title="queries.Query"><code class="xref py py-mod docutils literal notranslate"><span class="pre">queries.Query</span></code></a> and <a class="reference internal" href="source/queries.html#queries.Response" title="queries.Response"><code class="xref py py-mod docutils literal notranslate"><span class="pre">queries.Response</span></code></a> base classes
-respectively under their hoods. These classes are a natural extension of the
-data type parsing/constructing module (<a class="reference internal" href="source/datatypes.html#module-datatypes" title="datatypes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes</span></code></a>) and uses all the power
-of the indigenous <code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes.any_object.AnyDataObject</span></code>.</p>
+uses <a class="reference internal" href="source/pyignite.queries.html#pyignite.queries.Query" title="pyignite.queries.Query"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Query</span></code></a> and <a class="reference internal" href="source/pyignite.queries.html#pyignite.queries.Response" title="pyignite.queries.Response"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Response</span></code></a> base
+classes respectively under their hoods. These classes are a natural extension
+of the data type parsing/constructing module (<a class="reference internal" href="source/pyignite.datatypes.html#module-pyignite.datatypes" title="pyignite.datatypes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datatypes</span></code></a>) and
+uses all the power of the indigenous
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">AnyDataObject</span></code>.</p>
 <p>Each function returns operation status and result data (or verbose error
-message) in <a class="reference internal" href="source/api.html#api.result.APIResult" title="api.result.APIResult"><code class="xref py py-mod docutils literal notranslate"><span class="pre">api.result.APIResult</span></code></a> object.</p>
+message) in <a class="reference internal" href="source/pyignite.api.html#pyignite.api.result.APIResult" title="pyignite.api.result.APIResult"><code class="xref py py-mod docutils literal notranslate"><span class="pre">APIResult</span></code></a> object.</p>
 <p>All data manipulations are handled with native Python data types, without the
 need for the end user to construct complex data objects or parse blobs.</p>
 </div>

@@ -4,10 +4,11 @@ Module Structure
 
 The client library consists of several modules.
 
-The most important for the end user are `connection`_ and `api`_.
+The most important for the end user are `connection`_ and
+`api`_.
 
-:mod:`datatypes`
-----------------
+:mod:`~pyignite.datatypes`
+--------------------------
 
 Apache Ignite uses a sophisticated system of serializable data types
 to store and retrieve user data, as well as to manage the configuration
@@ -35,96 +36,96 @@ However, in some rare cases of type ambiguity, as well as for the needs
 of interoperability, you may have to sneak one or the other class, along
 with your data, in to some API function as a *type conversion hint*.
 
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|`type_code`|Apache Ignite       |Python type                    |Parser/constructor                                   |
-|           |docs reference      |or class                       |class                                                |
-+===========+====================+===============================+=====================================================+
-|*Primitive data types*                                                                                                |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x01       |Byte_               |int                            |:mod:`datatypes.primitive_objects.ByteObject`        |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x02       |Short_              |int                            |:mod:`datatypes.primitive_objects.ShortObject`       |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x03       |Int_                |int                            |:mod:`datatypes.primitive_objects.IntObject`         |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x04       |Long_               |int                            |:mod:`datatypes.primitive_objects.LongObject`        |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x05       |Float_              |float                          |:mod:`datatypes.primitive_objects.FloatObject`       |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x06       |Double_             |float                          |:mod:`datatypes.primitive_objects.DoubleObject`      |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x07       |Char_               |str                            |:mod:`datatypes.primitive_objects.CharObject`        |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x08       |Bool_               |bool                           |:mod:`datatypes.primitive_objects.BoolObject`        |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x65       |Null_               |NoneType                       |:mod:`datatypes.null_object.Null`                    |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|*Standard objects*                                                                                                    |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x09       |String_             |Str                            |:mod:`datatypes.standard.String`                     |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x0a       |UUID_               |uuid.UUID                      |:mod:`datatypes.standard.UUIDObject`                 |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x21       |Timestamp_          |tuple                          |:mod:`datatypes.standard.TimestampObject`            |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x0b       |Date_               |datetime.datetime              |:mod:`datatypes.standard.DateObject`                 |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x24       |Time_               |datetime.timedelta             |:mod:`datatypes.standard.TimeObject`                 |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1e       |Decimal_            |decimal.Decimal                |:mod:`datatypes.standard.DecimalObject`              |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1c       |Enum_               |tuple                          |:mod:`datatypes.standard.EnumObject`                 |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x67       |`Binary enum`_      |tuple                          |:mod:`datatypes.standard.BinaryEnumObject`           |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|*Arrays of primitives*                                                                                                |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x0c       |`Byte array`_       |iterable/list                  |:mod:`datatypes.primitive_arrays.ByteArrayObject`    |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x0d       |`Short array`_      |iterable/list                  |:mod:`datatypes.primitive_arrays.ShortArrayObject`   |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x0e       |`Int array`_        |iterable/list                  |:mod:`datatypes.primitive_arrays.IntArrayObject`     |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x0f       |`Long array`_       |iterable/list                  |:mod:`datatypes.primitive_arrays.LongArrayObject`    |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x10       |`Float array`_      |iterable/list                  |:mod:`datatypes.primitive_arrays.FloatArrayObject`   |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x11       |`Double array`_     |iterable/list                  |:mod:`datatypes.primitive_arrays.DoubleArrayObject`  |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x12       |`Char array`_       |iterable/list                  |:mod:`datatypes.primitive_arrays.CharArrayObject`    |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x13       |`Bool array`_       |iterable/list                  |:mod:`datatypes.primitive_arrays.BoolArrayObject`    |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|*Arrays of standard objects*                                                                                          |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x14       |`String array`_     |iterable/list                  |:mod:`datatypes.standard.StringArrayObject`          |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x15       |`UUID array`_       |iterable/list                  |:mod:`datatypes.standard.UUIDArrayObject`            |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x22       |`Timestamp array`_  |iterable/list                  |:mod:`datatypes.standard.TimestampArrayObject`       |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x16       |`Date array`_       |iterable/list                  |:mod:`datatypes.standard.DateArrayObject`            |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x23       |`Time array`_       |iterable/list                  |:mod:`datatypes.standard.TimeArrayObject`            |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1f       |`Decimal array`_    |iterable/list                  |:mod:`datatypes.standard.DecimalArrayObject`         |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|*Object collections, special types, and complex object*                                                               |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x17       |`Object array`_     |iterable/list                  |:mod:`datatypes.complex.ObjectArrayObject`           |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x18       |`Collection`_       |tuple                          |:mod:`datatypes.complex.CollectionObject`            |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x19       |`Map`_              |dict, collections.OrderedDict  |:mod:`datatypes.complex.MapObject`                   |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1d       |`Enum array`_       |iterable/list                  |:mod:`datatypes.standard.EnumArrayObject`            |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x67       |`Complex object`_   |                               |Not yet implemented                                  |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
-|0x1b       |`Wrapped data`_     |                               |Not yet implemented                                  |
-+-----------+--------------------+-------------------------------+-----------------------------------------------------+
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|`type_code`|Apache Ignite       |Python type                    |Parser/constructor                                           |
+|           |docs reference      |or class                       |class                                                        |
++===========+====================+===============================+=============================================================+
+|*Primitive data types*                                                                                                        |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x01       |Byte_               |int                            |:mod:`~pyignite.datatypes.primitive_objects.ByteObject`      |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x02       |Short_              |int                            |:mod:`~pyignite.datatypes.primitive_objects.ShortObject`     |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x03       |Int_                |int                            |:mod:`~pyignite.datatypes.primitive_objects.IntObject`       |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x04       |Long_               |int                            |:mod:`~pyignite.datatypes.primitive_objects.LongObject`      |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x05       |Float_              |float                          |:mod:`~pyignite.datatypes.primitive_objects.FloatObject`     |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x06       |Double_             |float                          |:mod:`~pyignite.datatypes.primitive_objects.DoubleObject`    |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x07       |Char_               |str                            |:mod:`~pyignite.datatypes.primitive_objects.CharObject`      |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x08       |Bool_               |bool                           |:mod:`~pyignite.datatypes.primitive_objects.BoolObject`      |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x65       |Null_               |NoneType                       |:mod:`~pyignite.datatypes.null_object.Null`                  |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|*Standard objects*                                                                                                            |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x09       |String_             |Str                            |:mod:`~pyignite.datatypes.standard.String`                   |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x0a       |UUID_               |uuid.UUID                      |:mod:`~pyignite.datatypes.standard.UUIDObject`               |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x21       |Timestamp_          |tuple                          |:mod:`~pyignite.datatypes.standard.TimestampObject`          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x0b       |Date_               |datetime.datetime              |:mod:`~pyignite.datatypes.standard.DateObject`               |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x24       |Time_               |datetime.timedelta             |:mod:`~pyignite.datatypes.standard.TimeObject`               |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x1e       |Decimal_            |decimal.Decimal                |:mod:`~pyignite.datatypes.standard.DecimalObject`            |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x1c       |Enum_               |tuple                          |:mod:`~pyignite.datatypes.standard.EnumObject`               |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x67       |`Binary enum`_      |tuple                          |:mod:`~pyignite.datatypes.standard.BinaryEnumObject`         |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|*Arrays of primitives*                                                                                                        |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x0c       |`Byte array`_       |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.ByteArrayObject`  |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x0d       |`Short array`_      |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.ShortArrayObject` |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x0e       |`Int array`_        |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.IntArrayObject`   |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x0f       |`Long array`_       |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.LongArrayObject`  |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x10       |`Float array`_      |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.FloatArrayObject` |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x11       |`Double array`_     |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.DoubleArrayObject`|
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x12       |`Char array`_       |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.CharArrayObject`  |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x13       |`Bool array`_       |iterable/list                  |:mod:`~pyignite.datatypes.primitive_arrays.BoolArrayObject`  |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|*Arrays of standard objects*                                                                                                  |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x14       |`String array`_     |iterable/list                  |:mod:`~pyignite.datatypes.standard.StringArrayObject`        |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x15       |`UUID array`_       |iterable/list                  |:mod:`~pyignite.datatypes.standard.UUIDArrayObject`          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x22       |`Timestamp array`_  |iterable/list                  |:mod:`~pyignite.datatypes.standard.TimestampArrayObject`     |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x16       |`Date array`_       |iterable/list                  |:mod:`~pyignite.datatypes.standard.DateArrayObject`          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x23       |`Time array`_       |iterable/list                  |:mod:`~pyignite.datatypes.standard.TimeArrayObject`          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x1f       |`Decimal array`_    |iterable/list                  |:mod:`~pyignite.datatypes.standard.DecimalArrayObject`       |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|*Object collections, special types, and complex object*                                                                       |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x17       |`Object array`_     |iterable/list                  |:mod:`~pyignite.datatypes.complex.ObjectArrayObject`         |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x18       |`Collection`_       |tuple                          |:mod:`~pyignite.datatypes.complex.CollectionObject`          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x19       |`Map`_              |dict, collections.OrderedDict  |:mod:`~pyignite.datatypes.complex.MapObject`                 |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x1d       |`Enum array`_       |iterable/list                  |:mod:`~pyignite.datatypes.standard.EnumArrayObject`          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x67       |`Complex object`_   |                               |Not yet implemented                                          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
+|0x1b       |`Wrapped data`_     |                               |Not yet implemented                                          |
++-----------+--------------------+-------------------------------+-------------------------------------------------------------+
 
-All type codes are stored in module :mod:`datatypes.type_codes`.
+All type codes are stored in module :mod:`pyignite.datatypes.type_codes`.
 
 On top of all parser/constructor classes, there is an
 :mod:`datatypes.any_object.AnyDataObject` class. It is an omnivorous data type
@@ -138,37 +139,39 @@ type hints when you need to pick up a certain data type for your data, and
 not just store that data.
 
 
-:mod:`connection`
------------------
+:mod:`~pyignite.connection`
+---------------------------
 
-To connect to Ignite server socket, instantiate a :mod:`connection.Connection`
-class with host name and port number. Connection will negotiate a handshake
-with the Ignite server and raise a :mod:`connection.SocketError` in case of
-client/server API versions mismatch or data flow errors.
+To connect to Ignite server socket, instantiate a
+:mod:`~pyignite.connection.Connection` class with host name and port number.
+Connection will negotiate a handshake with the Ignite server and raise a
+:mod:`~pyignite.connection.SocketError` in case of client/server API versions
+mismatch or data flow errors.
 
-You can then pass a :mod:`connection.Connection` instance to various API
-functions.
+You can then pass a :mod:`~pyignite.connection.Connection` instance to
+various API functions.
 
-:mod:`api`
-----------
+:mod:`~pyignite.api`
+--------------------
 
 This is a collection of functions, split into three parts:
 
-- :mod:`api.cache_config` allows you to manipulate caches;
+- :mod:`~pyignite.api.cache_config` allows you to manipulate caches;
 
-- :mod:`api.key_value` brings a key-value-style data manipulation, similar to
-  `memcached` or `Redis` APIs;
+- :mod:`~pyignite.api.key_value` brings a key-value-style data manipulation,
+  similar to `memcached` or `Redis` APIs;
 
-- :mod:`api.sql` gives you the ultimate power of SQL queries.
+- :mod:`~pyignite.api.sql` gives you the ultimate power of SQL queries.
 
 To construct client queries and process server responses, all API functions
-uses :mod:`queries.Query` and :mod:`queries.Response` base classes
-respectively under their hoods. These classes are a natural extension of the
-data type parsing/constructing module (:mod:`datatypes`) and uses all the power
-of the indigenous :mod:`datatypes.any_object.AnyDataObject`.
+uses :mod:`~pyignite.queries.Query` and :mod:`~pyignite.queries.Response` base
+classes respectively under their hoods. These classes are a natural extension
+of the data type parsing/constructing module (:mod:`~pyignite.datatypes`) and
+uses all the power of the indigenous
+:mod:`~pyignite.datatypes.any_object.AnyDataObject`.
 
 Each function returns operation status and result data (or verbose error
-message) in :mod:`api.result.APIResult` object.
+message) in :mod:`~pyignite.api.result.APIResult` object.
 
 All data manipulations are handled with native Python data types, without the
 need for the end user to construct complex data objects or parse blobs.

@@ -36,7 +36,7 @@
 <div class="section" id="what-it-is">
 <h2>What it is?<a class="headerlink" href="#what-it-is" title="Permalink to this headline">¶</a></h2>
 <p>This is an Apache Ignite lightweight (binary protocol) client library,
-written in Python.</p>
+written in Python, abbreviated as <em>pyignite</em>.</p>
 <p><a class="reference external" href="https://apacheignite.readme.io/docs/what-is-ignite">Apache Ignite</a> is a memory-centric distributed database, caching,
 and processing platform for transactional, analytical, and streaming
 workloads delivering in-memory speeds at petabyte scale.</p>
@@ -52,6 +52,8 @@ through a raw TCP socket.</p>
 <li><a class="reference external" href="http://www.attrs.org/">attrs</a></li>
 <li><em>Sphinx</em> for documentation</li>
 <li><em>pytest</em> for tests</li>
+<li><em>pytest-runner</em> for <cite>distutils</cite> test integration</li>
+<li><em>pytest-cov</em> for measuring test coverage (optional)</li>
 </ul>
 </div>
 <div class="section" id="licensing">
@@ -60,23 +62,31 @@ through a raw TCP socket.</p>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>While this is not an official PyPi package, you can just <cite>git clone</cite> it
-from the repository and use it anywhere.</p>
+<p>If you want to use <em>pyignite</em> in your project, you may install it from PyPI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install pyignite
+</pre></div>
+</div>
+<p>If you want to develop, test or build documents for <em>pyignite</em>, you may clone
+it from repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone git@github.com:nobitlost/ignite.git
+$ git checkout ignite-7782
+$ cd ignite/modules/platforms/python
+</pre></div>
+</div>
 </div>
 <div class="section" id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h2>
 <p>Create and activate <a class="reference external" href="https://virtualenv.pypa.io/">virtualenv</a> environment. Run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install -r requirements.txt
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd ignite/modules/platforms/python
+$ python ./setup.py pytest
 </pre></div>
 </div>
-<p>Then just run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pytest
-</pre></div>
-</div>
-<p><em>NB!</em> Some tests require Apache Ignite node running on localhost:10800.
+<p>This does not require <cite>pytest</cite> and other test dependencies to be installed
+in your environment.</p>
+<p><em>NB!</em> Some or all tests require Apache Ignite node running on localhost:10800.
 To override the default parameters, use command line options
 <cite>–ignite-host</cite> and <cite>–ignite-port</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pytest --ignite-host=example.com --ignite-port=19840
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python ./setup.py pytest --addopts &quot;--ignite-host=example.com --ignite-port=19840&quot;
 </pre></div>
 </div>
 <p>You can use each of these options multiple times. All combinations
@@ -85,15 +95,15 @@ of given host and port will be tested.</p>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <p>To recompile this documentation, do this from your <a class="reference external" href="https://virtualenv.pypa.io/">virtualenv</a> environment:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd ./docs
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd ignite/modules/platforms/python/docs
 $ make html
 </pre></div>
 </div>
 <p>Then open <cite>docs/_build/html/index.html</cite> in your browser.</p>
 <p>If you feel that old version is stuck, do</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd ./docs
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd ignite/modules/platforms/python/docs
 $ make clean
-$ sphinx-apidoc -M -o source/ ../
+$ sphinx-apidoc -M -o source/ ../pyignite
 $ make html
 </pre></div>
 </div>

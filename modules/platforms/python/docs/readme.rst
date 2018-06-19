@@ -6,7 +6,7 @@ What it is?
 -----------
 
 This is an Apache Ignite lightweight (binary protocol) client library,
-written in Python.
+written in Python, abbreviated as *pyignite*.
 
 `Apache Ignite`_ is a memory-centric distributed database, caching,
 and processing platform for transactional, analytical, and streaming
@@ -24,6 +24,8 @@ Prerequisites
 - attrs_
 - *Sphinx* for documentation
 - *pytest* for tests
+- *pytest-runner* for `distutils` test integration
+- *pytest-cov* for measuring test coverage (optional)
 
 Licensing
 ---------
@@ -34,8 +36,20 @@ This is a free software, brought to you on terms of the `Apache License v2`_.
 Installation
 ------------
 
-While this is not an official PyPi package, you can just `git clone` it
-from the repository and use it anywhere.
+If you want to use *pyignite* in your project, you may install it from PyPI:
+
+::
+
+$ pip install pyignite
+
+If you want to develop, test or build documents for *pyignite*, you may clone
+it from repository:
+
+::
+
+$ git clone git@github.com:nobitlost/ignite.git
+$ git checkout ignite-7782
+$ cd ignite/modules/platforms/python
 
 Testing
 -------
@@ -44,21 +58,19 @@ Create and activate virtualenv_ environment. Run
 
 ::
 
-$ pip install -r requirements.txt
+$ cd ignite/modules/platforms/python
+$ python ./setup.py pytest
 
-Then just run
+This does not require `pytest` and other test dependencies to be installed
+in your environment.
 
-::
-
-$ pytest
-
-*NB!* Some tests require Apache Ignite node running on localhost:10800.
+*NB!* Some or all tests require Apache Ignite node running on localhost:10800.
 To override the default parameters, use command line options
 `--ignite-host` and `--ignite-port`:
 
 ::
 
-$ pytest --ignite-host=example.com --ignite-port=19840
+$ python ./setup.py pytest --addopts "--ignite-host=example.com --ignite-port=19840"
 
 You can use each of these options multiple times. All combinations
 of given host and port will be tested.
@@ -69,7 +81,7 @@ To recompile this documentation, do this from your virtualenv_ environment:
 
 ::
 
-$ cd ./docs
+$ cd ignite/modules/platforms/python/docs
 $ make html
 
 Then open `docs/_build/html/index.html` in your browser.
@@ -78,9 +90,9 @@ If you feel that old version is stuck, do
 
 ::
 
-$ cd ./docs
+$ cd ignite/modules/platforms/python/docs
 $ make clean
-$ sphinx-apidoc -M -o source/ ../
+$ sphinx-apidoc -M -o source/ ../pyignite
 $ make html
 
 And that should be it.

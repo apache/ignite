@@ -1,13 +1,7 @@
-python
-======
+pyignite
+========
 
 .. toctree::
    :maxdepth: 4
 
-   api
-   conftest
-   connection
-   constants
-   datatypes
-   queries
-   utils
+   pyignite
