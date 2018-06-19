@@ -897,6 +897,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         clientTop.partitionMap(true),
                         clientTop.fullUpdateCounters(),
                         Collections.emptySet(),
+                        null,
                         null);
                 }
             }
@@ -2363,6 +2364,37 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @param top Topology.
+     */
+    private void assignPartitionSizes(GridDhtPartitionTopology top) {
+        Map<Integer, Long> partSizes = new HashMap<>();
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            GridDhtPartitionsSingleMessage singleMsg = e.getValue();
+
+            GridDhtPartitionMap partMap = singleMsg.partitions().get(top.groupId());
+
+            if (partMap == null)
+                continue;
+
+            for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
+                int p = e0.getKey();
+                GridDhtPartitionState state = e0.getValue();
+
+                if (state == GridDhtPartitionState.OWNING)
+                    partSizes.put(p, singleMsg.partitionSizes(top.groupId()).get(p));
+            }
+        }
+
+        for (GridDhtLocalPartition locPart : top.currentLocalPartitions()) {
+            if (locPart.state() == GridDhtPartitionState.OWNING)
+                partSizes.put(locPart.id(), locPart.fullSize());
+        }
+
+        top.globalPartSizes(partSizes);
+    }
+
+    /**
      * Collects and determines new owners of partitions for all nodes for given {@code top}.
      *
      * @param top Topology to assign.
@@ -2402,7 +2434,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 CounterWithNodes maxCntr = maxCntrs.get(p);
 
                 if (maxCntr == null || cntr > maxCntr.cnt)
-                    maxCntrs.put(p, new CounterWithNodes(cntr, uuid));
+                    maxCntrs.put(p, new CounterWithNodes(cntr, e.getValue().partitionSizes(top.groupId()).get(p), uuid));
                 else if (cntr == maxCntr.cnt)
                     maxCntr.nodes.add(uuid);
             }
@@ -2428,7 +2460,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
 
             if (maxCntr == null && cntr == 0) {
-                CounterWithNodes cntrObj = new CounterWithNodes(0, cctx.localNodeId());
+                CounterWithNodes cntrObj = new CounterWithNodes(0, 0L, cctx.localNodeId());
 
                 for (UUID nodeId : msgs.keySet()) {
                     if (top.partitionState(nodeId, part.id()) == GridDhtPartitionState.OWNING)
@@ -2438,7 +2470,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 maxCntrs.put(part.id(), cntrObj);
             }
             else if (maxCntr == null || cntr > maxCntr.cnt)
-                maxCntrs.put(part.id(), new CounterWithNodes(cntr, cctx.localNodeId()));
+                maxCntrs.put(part.id(), new CounterWithNodes(cntr, part.fullSize(), cctx.localNodeId()));
             else if (cntr == maxCntr.cnt)
                 maxCntr.nodes.add(cctx.localNodeId());
         }
@@ -2489,6 +2521,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Map<Integer, Set<UUID>> ownersByUpdCounters = new HashMap<>(maxCntrs.size());
         for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
             ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
+
+        Map<Integer, Long> partSizes = new HashMap<>(maxCntrs.size());
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
+            partSizes.put(e.getKey(), e.getValue().size);
+
+        top.globalPartSizes(partSizes);
 
         Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory);
 
@@ -2903,16 +2941,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
                 continue;
 
-            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
-                continue;
-
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
 
             GridDhtPartitionTopology top = grpCtx != null ?
                 grpCtx.topology() :
                 cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
 
-            assignPartitionStates(top);
+            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                assignPartitionSizes(top);
+            else
+                assignPartitionStates(top);
         }
     }
 
@@ -3303,6 +3341,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     entry.getValue(),
                     cntrMap,
                     msg.partsToReload(cctx.localNodeId(), grpId),
+                    msg.partitionSizes(grpId),
                     null);
             }
             else {
@@ -3318,6 +3357,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         entry.getValue(),
                         cntrMap,
                         Collections.emptySet(),
+                        null,
                         null);
                 }
             }
@@ -3903,14 +3943,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         private final long cnt;
 
         /** */
+        private final long size;
+
+        /** */
         private final Set<UUID> nodes = new HashSet<>();
 
         /**
          * @param cnt Count.
          * @param firstNode Node ID.
          */
-        private CounterWithNodes(long cnt, UUID firstNode) {
+        private CounterWithNodes(long cnt, @Nullable Long size, UUID firstNode) {
             this.cnt = cnt;
+            this.size = size != null ? size : 0;
 
             nodes.add(firstNode);
         }

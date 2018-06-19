@@ -509,6 +509,16 @@ public interface CacheMetrics {
     public int getRebalancingPartitionsCount();
 
     /**
+     * @return Number of already rebalanced keys.
+     */
+    public long getRebalancedKeys();
+
+    /**
+     * @return Number estimated to rebalance keys.
+     */
+    public long getEstimatedRebalancingKeys();
+
+    /**
      * @return Estimated number of keys to be rebalanced on current node.
      */
     public long getKeysToRebalanceLeft();
