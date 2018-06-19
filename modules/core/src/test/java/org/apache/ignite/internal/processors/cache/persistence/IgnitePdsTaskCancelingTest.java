@@ -23,9 +23,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,11 +39,17 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -59,8 +70,11 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /** Node failure occurs. */
     private static final AtomicBoolean failure = new AtomicBoolean(false);
 
-    /** Number of cache updating tasks. */
+    /** Number of executing tasks. */
     private static final int NUM_TASKS = 16;
+
+    /** Page size. */
+    private static final int PAGE_SIZE = 2048;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -78,9 +92,18 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             new RendezvousAffinityFunction(false, NUM_TASKS / 2)
         ));
 
+        cfg.setDataStorageConfiguration(getDataStorageConfiguration());
+
+        return cfg;
+    }
+
+    /**
+     * Default data storage configuration.
+     */
+    private DataStorageConfiguration getDataStorageConfiguration() {
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        cfg.setDataStorageConfiguration(dbCfg);
+        dbCfg.setPageSize(PAGE_SIZE);
 
         dbCfg.setFileIOFactory(new SlowIOFactory());
 
@@ -88,7 +111,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             .setMaxSize(100 * 1024 * 1024)
             .setPersistenceEnabled(true));
 
-        return cfg;
+        return dbCfg;
     }
 
     /**
@@ -161,6 +184,84 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testFilePageStoreCancelThreads() throws Exception {
+        FileIOFactory factory = new SlowIOFactory();
+
+        File file = new File(U.defaultWorkDirectory(), "file.bin");
+
+        DataStorageConfiguration dbCfg = getDataStorageConfiguration();
+
+        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file, factory, dbCfg,
+            new AllocatedPageTracker() {
+                @Override public void updateTotalAllocatedPages(long delta) {
+                    // No-op.
+                }
+            });
+
+        int pageSize = dbCfg.getPageSize();
+
+        PageIO pageIO = PageIO.getPageIO(PageIO.T_DATA, 1);
+
+        long ptr = GridUnsafe.allocateMemory(NUM_TASKS * pageSize);
+
+        try {
+            List<Thread> threadList = new ArrayList<>(NUM_TASKS);
+
+            for (int i = 0; i < NUM_TASKS; i++) {
+                long pageId = PageIdUtils.pageId(0, PageMemory.FLAG_DATA, (int)pageStore.allocatePage());
+
+                long pageAdr = ptr + i * pageSize;
+
+                pageIO.initNewPage(pageAdr, pageId, pageSize);
+
+                ByteBuffer buf = GridUnsafe.wrapPointer(pageAdr, pageSize);
+
+                pageStore.write(pageId, buf, 0, true);
+
+                threadList.add(new Thread(new Runnable() {
+                    @Override public void run() {
+                        Random random = new Random();
+
+                        while (true) {
+                            buf.position(0);
+
+                            try {
+                                if (random.nextBoolean())
+                                    pageStore.read(pageId, buf, false);
+                                else
+                                    pageStore.write(pageId, buf, 0, true);
+                            }
+                            catch (Exception e) {
+                                log.error("Error", e);
+
+                                failure.set(true);
+                            }
+                        }
+                    }
+                }));
+            }
+
+            slowFileIoEnabled.set(true);
+
+            for (Thread thread : threadList)
+                thread.start();
+
+            for (Thread thread : threadList) {
+                doSleep(1_000L);
+
+                thread.interrupt();
+            }
+
+            assertFalse(failure.get());
+        }
+        finally {
+            GridUnsafe.freeMemory(ptr);
+        }
+    }
+
+    /**
      * Decorated FileIOFactory with slow IO operations.
      */
     private static class SlowIOFactory implements FileIOFactory {
@@ -220,7 +321,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                 private void parkForAWhile() {
                     if(slowFileIoEnabled.get() && slow)
-                        LockSupport.parkNanos(5_000_000_000L);
+                        LockSupport.parkNanos(1_000_000_000L);
                 }
             };
         }

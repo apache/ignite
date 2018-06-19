@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -248,6 +249,8 @@ public class FilePageStore implements PageStore {
 
             fileIO.close();
 
+            fileIO = null;
+
             if (cleanFile)
                 Files.delete(cfgFile.toPath());
         }
@@ -276,6 +279,8 @@ public class FilePageStore implements PageStore {
             fileIO.clear();
 
             fileIO.close();
+
+            fileIO = null;
 
             Files.delete(cfgFile.toPath());
         }
@@ -504,11 +509,12 @@ public class FilePageStore implements PageStore {
         if (!inited)
             return;
 
+        if (fileIO != this.fileIO)
+            return;
+
         lock.writeLock().lock();
 
         try {
-            inited = false;
-
             if (fileIO != this.fileIO)
                 return;
 
@@ -534,8 +540,6 @@ public class FilePageStore implements PageStore {
                         Thread.interrupted();
                     }
                 }
-
-                inited = true;
             }
             catch (IOException e) {
                 try {
@@ -558,55 +562,94 @@ public class FilePageStore implements PageStore {
     @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
-        lock.readLock().lock();
+        boolean interrupted = false;
 
-        try {
-            if (tag < this.tag)
-                return;
+        while (true) {
+            FileIO fileIO = this.fileIO;
 
-            long off = pageOffset(pageId);
+            try {
+                lock.readLock().lock();
 
-            assert (off >= 0 && off + headerSize() <= allocated.get() ) || recover :
-                "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
+                try {
+                    if (tag < this.tag)
+                        return;
 
-            assert pageBuf.capacity() == pageSize;
-            assert pageBuf.position() == 0;
-            assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
-                + " should be same with " + ByteOrder.nativeOrder();
-            assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
-            assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
+                    long off = pageOffset(pageId);
 
-            if (calculateCrc && !skipCrc) {
-                assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+                    assert (off >= 0 && off + headerSize() <= allocated.get()) || recover :
+                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
-                PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+                    assert pageBuf.capacity() == pageSize;
+                    assert pageBuf.position() == 0;
+                    assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                        + " should be same with " + ByteOrder.nativeOrder();
+                    assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
+                    assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
+
+                    if (calculateCrc && !skipCrc) {
+                        assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+
+                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+                    }
+
+                    // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
+                    assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+                        "CRC hasn't been calculated, crc=0";
+
+                    assert pageBuf.position() == 0 : pageBuf.position();
+
+                    int len = pageSize;
+
+                    if (fileIO == null)
+                        throw new IOException("FileIO has stopped");
+
+                    do {
+                        int n = fileIO.write(pageBuf, off);
+
+                        off += n;
+
+                        len -= n;
+                    }
+                    while (len > 0);
+
+                    PageIO.setCrc(pageBuf, 0);
+
+                    if (interrupted)
+                        Thread.currentThread().interrupt();
+
+                    return;
+                }
+                finally {
+                    lock.readLock().unlock();
+                }
             }
+            catch (IOException e) {
+                if (e instanceof ClosedChannelException) {
+                    try {
+                        if (e instanceof ClosedByInterruptException) {
+                            interrupted = true;
 
-            // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
-            assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
-                    "CRC hasn't been calculated, crc=0";
+                            Thread.interrupted();
+                        }
 
-            assert pageBuf.position() == 0 : pageBuf.position();
+                        reinit(fileIO);
 
-            int len = pageSize;
+                        pageBuf.position(0);
 
-            do {
-                int n = writeWithFailover(pageBuf, off);
+                        PageIO.setCrc(pageBuf, 0);
 
-                off += n;
+                        continue;
+                    }
+                    catch (IOException e0) {
+                        e0.addSuppressed(e);
 
-                len -= n;
+                        e = e0;
+                    }
+                }
+
+                throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId
+                    + ", file=" + cfgFile.getAbsolutePath() + ']', e);
             }
-            while (len > 0);
-
-            PageIO.setCrc(pageBuf, 0);
-        }
-        catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId +
-                ", file=" + cfgFile.getAbsolutePath() + ']', e);
-        }
-        finally {
-            lock.readLock().unlock();
         }
     }
 
@@ -637,7 +680,10 @@ public class FilePageStore implements PageStore {
         try {
             init();
 
-            fileIO.force();
+            FileIO fileIO = this.fileIO;
+
+            if (fileIO != null)
+                fileIO.force();
         }
         catch (IOException e) {
             throw new PersistentStorageIOException("Sync error", e);
@@ -698,49 +744,32 @@ public class FilePageStore implements PageStore {
         boolean interrupted = false;
 
         while (true) {
-            FileIO fileIO = this.fileIO;
-
             try {
-                int bytesRead = fileIO.read(destBuf, position);
+                lock.readLock().lock();
 
-                if (interrupted)
-                    Thread.currentThread().interrupt();
+                try {
+                    FileIO fileIO = this.fileIO;
 
-                return bytesRead;
+                    if (fileIO == null)
+                        throw new IOException("FileIO has stopped");
+
+                    int bytesRead = fileIO.read(destBuf, position);
+
+                    if (interrupted)
+                        Thread.currentThread().interrupt();
+
+                    return bytesRead;
+                }
+                finally {
+                    lock.readLock().unlock();
+                }
             }
-            catch (ClosedByInterruptException e) {
-                interrupted = true;
+            catch (ClosedChannelException e) {
+                if (e instanceof ClosedByInterruptException) {
+                    interrupted = true;
 
-                Thread.interrupted();
-
-                reinit(fileIO);
-            }
-        }
-    }
-
-    /**
-     * @param srcBuf Source buffer.
-     * @param position Position.
-     * @return Number of bytes written.
-     */
-    private int writeWithFailover(ByteBuffer srcBuf, long position) throws IOException {
-        boolean interrupted = false;
-
-        while (true) {
-            FileIO fileIO = this.fileIO;
-
-            try {
-                int bytesWritten = fileIO.write(srcBuf, position);
-
-                if (interrupted)
-                    Thread.currentThread().interrupt();
-
-                return bytesWritten;
-            }
-            catch (ClosedByInterruptException e) {
-                interrupted = true;
-
-                Thread.interrupted();
+                    Thread.interrupted();
+                }
 
                 reinit(fileIO);
             }
