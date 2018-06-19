@@ -178,7 +178,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 for (Path path : files) {
                     File f = path.toFile();
 
-                    if (f.getName().contains("cache"))
+                    if (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX))
                         U.delete(f);
                 }
             }
