@@ -73,9 +73,14 @@ public class Loader implements IgniteClosure<Integer, Integer> {
 
         String dataRegName = cc.getDataRegionName();
 
-        if(dataRegName == null)
+        BenchmarkUtils.println("Data region name = " + dataRegName);
+
+        if(dataRegName == null || dataRegName.equals("null")) {
+            BenchmarkUtils.println("Setting data region name to default data region name.");
+
             dataRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
                 .getName();
+        }
 
         BenchmarkUtils.println("Data region name = " + dataRegName);
 
