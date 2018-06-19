@@ -161,7 +161,7 @@ public class FilePageStore implements PageStore {
      * @return Next available position in the file to store a data.
      * @throws IOException If initialization is failed.
      */
-    private long initFile() throws IOException {
+    private long initFile(FileIO fileIO) throws IOException {
         try {
             ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
@@ -185,7 +185,7 @@ public class FilePageStore implements PageStore {
      * @return Next available position in the file to store a data.
      * @throws IOException If check is failed.
      */
-    private long checkFile() throws IOException {
+    private long checkFile(FileIO fileIO) throws IOException {
         ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
         while (hdr.remaining() > 0)
@@ -451,7 +451,7 @@ public class FilePageStore implements PageStore {
                             try {
                                 this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                                newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+                                newSize = cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO);
 
                                 if (interrupted)
                                     Thread.currentThread().interrupt();
@@ -525,9 +525,11 @@ public class FilePageStore implements PageStore {
                     try {
                         fileIO = null;
 
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+                        fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                        checkFile();
+                        checkFile(fileIO);
+
+                        this.fileIO = fileIO;
 
                         if (interrupted)
                             Thread.currentThread().interrupt();
@@ -745,24 +747,17 @@ public class FilePageStore implements PageStore {
 
         while (true) {
             try {
-                lock.readLock().lock();
+                FileIO fileIO = this.fileIO;
 
-                try {
-                    FileIO fileIO = this.fileIO;
+                if (fileIO == null)
+                    throw new IOException("FileIO has stopped");
 
-                    if (fileIO == null)
-                        throw new IOException("FileIO has stopped");
+                int bytesRead = fileIO.read(destBuf, position);
 
-                    int bytesRead = fileIO.read(destBuf, position);
+                if (interrupted)
+                    Thread.currentThread().interrupt();
 
-                    if (interrupted)
-                        Thread.currentThread().interrupt();
-
-                    return bytesRead;
-                }
-                finally {
-                    lock.readLock().unlock();
-                }
+                return bytesRead;
             }
             catch (ClosedChannelException e) {
                 if (e instanceof ClosedByInterruptException) {

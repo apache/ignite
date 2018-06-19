@@ -114,12 +114,28 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         return dbCfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+
+        slowFileIoEnabled.set(false);
+
+        failure.set(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * Checks that tasks canceling does not lead to node failure.
      */
     public void testFailNodesOnCanceledTask() throws Exception {
-        cleanPersistenceDir();
-
         try {
             Ignite ig0 = startGrids(4);
 
@@ -177,8 +193,6 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             }, 5_000L));
         }
         finally {
-            cleanPersistenceDir();
-
             stopAllGrids();
         }
     }
@@ -187,9 +201,11 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
      *
      */
     public void testFilePageStoreCancelThreads() throws Exception {
-        FileIOFactory factory = new SlowIOFactory();
+        FileIOFactory factory = new RandomAccessFileIOFactory();
 
         File file = new File(U.defaultWorkDirectory(), "file.bin");
+
+        file.deleteOnExit();
 
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
@@ -209,6 +225,8 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         try {
             List<Thread> threadList = new ArrayList<>(NUM_TASKS);
 
+            AtomicBoolean stopThreads = new AtomicBoolean(false);
+
             for (int i = 0; i < NUM_TASKS; i++) {
                 long pageId = PageIdUtils.pageId(0, PageMemory.FLAG_DATA, (int)pageStore.allocatePage());
 
@@ -224,17 +242,23 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         Random random = new Random();
 
-                        while (true) {
+                        while (!stopThreads.get()) {
                             buf.position(0);
 
                             try {
-                                if (random.nextBoolean())
+                                if (random.nextBoolean()) {
+                                    log.info(">>> Read page " + U.hexLong(pageId));
+
                                     pageStore.read(pageId, buf, false);
-                                else
+                                }
+                                else {
+                                    log.info(">>> Write page " + U.hexLong(pageId));
+
                                     pageStore.write(pageId, buf, 0, true);
+                                }
                             }
                             catch (Exception e) {
-                                log.error("Error", e);
+                                log.error("Error while reading/writing page", e);
 
                                 failure.set(true);
                             }
@@ -243,16 +267,21 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                 }));
             }
 
-            slowFileIoEnabled.set(true);
-
             for (Thread thread : threadList)
                 thread.start();
 
-            for (Thread thread : threadList) {
-                doSleep(1_000L);
+            for (int i = 0; i < 5; i++) {
+                for (Thread thread : threadList) {
+                    doSleep(50L);
 
-                thread.interrupt();
+                    thread.interrupt();
+                }
             }
+
+            stopThreads.set(true);
+
+            for (Thread thread : threadList)
+                thread.join();
 
             assertFalse(failure.get());
         }
