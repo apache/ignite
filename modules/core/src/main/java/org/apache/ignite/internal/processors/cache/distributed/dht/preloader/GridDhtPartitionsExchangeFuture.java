@@ -2340,6 +2340,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             GridDhtPartitionMap partMap = singleMsg.partitions().get(top.groupId());
 
+            if (partMap == null)
+                continue;
+
             for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
                 int p = e0.getKey();
                 GridDhtPartitionState state = e0.getValue();
