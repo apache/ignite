@@ -29,7 +29,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
@@ -69,7 +68,7 @@ public class FilePageStore implements PageStore {
     private final FileIOFactory ioFactory;
 
     /** I/O interface for read/write operations with file */
-    private FileIO fileIO;
+    private volatile FileIO fileIO;
 
     /** */
     private final AtomicLong allocated;
@@ -162,13 +161,21 @@ public class FilePageStore implements PageStore {
      * @throws IOException If initialization is failed.
      */
     private long initFile() throws IOException {
-        ByteBuffer hdr = header(type, dbCfg.getPageSize());
+        try {
+            ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-        while (hdr.remaining() > 0)
-            fileIO.write(hdr);
+            while (hdr.remaining() > 0)
+                fileIO.write(hdr);
 
-        //there is 'super' page in every file
-        return headerSize() + dbCfg.getPageSize();
+            //there is 'super' page in every file
+            return headerSize() + dbCfg.getPageSize();
+        }
+        catch (ClosedByInterruptException e) {
+            // If thread was interrupted written header can be inconsistent.
+            Files.delete(cfgFile.toPath());
+
+            throw e;
+        }
     }
 
     /**
@@ -256,9 +263,9 @@ public class FilePageStore implements PageStore {
      * Truncates and deletes partition file.
      *
      * @param tag New partition tag.
-     * @throws IgniteCheckedException If failed
+     * @throws PersistentStorageIOException If failed
      */
-    public void truncate(int tag) throws IgniteCheckedException {
+    public void truncate(int tag) throws PersistentStorageIOException {
         init();
 
         lock.writeLock().lock();
@@ -345,7 +352,7 @@ public class FilePageStore implements PageStore {
             int len = pageSize;
 
             do {
-                int n = fileIO.read(pageBuf, off);
+                int n = readWithFailover(pageBuf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0) {
@@ -384,7 +391,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, savedCrc32);
         }
         catch (IOException e) {
-            throw wrapIoException("Read error", e);
+            throw new PersistentStorageIOException("Read error", e);
         }
     }
 
@@ -400,7 +407,7 @@ public class FilePageStore implements PageStore {
             long off = 0;
 
             do {
-                int n = fileIO.read(buf, off);
+                int n = readWithFailover(buf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0)
@@ -413,14 +420,14 @@ public class FilePageStore implements PageStore {
             while (len > 0);
         }
         catch (IOException e) {
-            throw wrapIoException("Read error", e);
+            throw new PersistentStorageIOException("Read error", e);
         }
     }
 
     /**
-     * @throws IgniteCheckedException If failed to initialize store file.
+     * @throws PersistentStorageIOException If failed to initialize store file.
      */
-    private void init() throws IgniteCheckedException {
+    private void init() throws PersistentStorageIOException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -428,12 +435,30 @@ public class FilePageStore implements PageStore {
                 if (!inited) {
                     FileIO fileIO = null;
 
-                    IgniteCheckedException err = null;
+                    PersistentStorageIOException err = null;
+
+                    long newSize;
 
                     try {
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+                        boolean interrupted = false;
 
-                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+                        while (true) {
+                            try {
+                                this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+
+                                newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+
+                                if (interrupted)
+                                    Thread.currentThread().interrupt();
+
+                                break;
+                            }
+                            catch (ClosedByInterruptException e) {
+                                interrupted = true;
+
+                                Thread.interrupted();
+                            }
+                        }
 
                         assert allocated.get() == 0;
 
@@ -448,7 +473,7 @@ public class FilePageStore implements PageStore {
                         inited = true;
                     }
                     catch (IOException e) {
-                        err = wrapIoException(
+                        err = new PersistentStorageIOException(
                             "Failed to initialize partition file: " + cfgFile.getName(), e);
 
                         throw err;
@@ -467,6 +492,65 @@ public class FilePageStore implements PageStore {
             finally {
                 lock.writeLock().unlock();
             }
+        }
+    }
+
+    /**
+     * Reinit page store after file channel was closed by thread interruption.
+     *
+     * @param fileIO Old fileIO.
+     */
+    private void reinit(FileIO fileIO) throws IOException {
+        if (!inited)
+            return;
+
+        lock.writeLock().lock();
+
+        try {
+            inited = false;
+
+            if (fileIO != this.fileIO)
+                return;
+
+            try {
+                boolean interrupted = false;
+
+                while (true) {
+                    try {
+                        fileIO = null;
+
+                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+
+                        checkFile();
+
+                        if (interrupted)
+                            Thread.currentThread().interrupt();
+
+                        break;
+                    }
+                    catch (ClosedByInterruptException e) {
+                        interrupted = true;
+
+                        Thread.interrupted();
+                    }
+                }
+
+                inited = true;
+            }
+            catch (IOException e) {
+                try {
+                    if (fileIO != null)
+                        fileIO.close();
+                }
+                catch (IOException e0) {
+                    e.addSuppressed(e0);
+                }
+
+                throw e;
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -507,7 +591,7 @@ public class FilePageStore implements PageStore {
             int len = pageSize;
 
             do {
-                int n = fileIO.write(pageBuf, off);
+                int n = writeWithFailover(pageBuf, off);
 
                 off += n;
 
@@ -518,7 +602,7 @@ public class FilePageStore implements PageStore {
             PageIO.setCrc(pageBuf, 0);
         }
         catch (IOException e) {
-            throw wrapIoException("Failed to write the page to the file store [pageId=" + pageId +
+            throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId +
                 ", file=" + cfgFile.getAbsolutePath() + ']', e);
         }
         finally {
@@ -606,19 +690,60 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     * Wraps IOException to correct {@link IgniteCheckedException} instance.
-     *
-     * Since {@link PersistentStorageIOException} is a critical failure and typically makes a node to stop, this
-     * exception cannot be thrown in case operation was canceled and IOException was caused by thread interruption.
+     * @param destBuf Destination buffer.
+     * @param position Position.
+     * @return Number of read bytes.
      */
-    private static IgniteCheckedException wrapIoException(String msg, IOException cause) {
-        if (cause instanceof ClosedByInterruptException) {
-            IgniteCheckedException e = new IgniteInterruptedCheckedException(msg);
+    private int readWithFailover(ByteBuffer destBuf, long position) throws IOException {
+        boolean interrupted = false;
 
-            e.initCause(cause);
+        while (true) {
+            FileIO fileIO = this.fileIO;
 
-            return e;
-        } else
-            return new PersistentStorageIOException(msg, cause);
+            try {
+                int bytesRead = fileIO.read(destBuf, position);
+
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+
+                return bytesRead;
+            }
+            catch (ClosedByInterruptException e) {
+                interrupted = true;
+
+                Thread.interrupted();
+
+                reinit(fileIO);
+            }
+        }
+    }
+
+    /**
+     * @param srcBuf Source buffer.
+     * @param position Position.
+     * @return Number of bytes written.
+     */
+    private int writeWithFailover(ByteBuffer srcBuf, long position) throws IOException {
+        boolean interrupted = false;
+
+        while (true) {
+            FileIO fileIO = this.fileIO;
+
+            try {
+                int bytesWritten = fileIO.write(srcBuf, position);
+
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+
+                return bytesWritten;
+            }
+            catch (ClosedByInterruptException e) {
+                interrupted = true;
+
+                Thread.interrupted();
+
+                reinit(fileIO);
+            }
+        }
     }
 }

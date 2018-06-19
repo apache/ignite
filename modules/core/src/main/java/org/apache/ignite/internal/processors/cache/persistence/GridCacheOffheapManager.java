@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.nio.channels.ClosedByInterruptException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -83,7 +82,6 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1200,132 +1198,108 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
 
                 dbMgr.checkpointReadLock();
-
                 try {
-                    boolean interrupted = false;
+                    Metas metas = getOrAllocatePartitionMetas();
 
-                    while (true) {
-                        try {
-                            Metas metas = getOrAllocatePartitionMetas();
+                    RootPage reuseRoot = metas.reuseListRoot;
 
-                            RootPage reuseRoot = metas.reuseListRoot;
+                    freeList = new CacheFreeListImpl(
+                        grp.groupId(),
+                        grp.cacheOrGroupName() + "-" + partId,
+                        grp.dataRegion().memoryMetrics(),
+                        grp.dataRegion(),
+                        null,
+                        ctx.wal(),
+                        reuseRoot.pageId().pageId(),
+                        reuseRoot.isAllocated()) {
+                        /** {@inheritDoc} */
+                        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
 
-                            freeList = new CacheFreeListImpl(
-                                grp.groupId(),
-                                grp.cacheOrGroupName() + "-" + partId,
-                                grp.dataRegion().memoryMetrics(),
-                                grp.dataRegion(),
-                                null,
-                                ctx.wal(),
-                                reuseRoot.pageId().pageId(),
-                                reuseRoot.isAllocated()) {
-                                /** {@inheritDoc} */
-                                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                                    assert grp.shared().database().checkpointLockIsHeldByThread();
-
-                                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-                                }
-                            };
-
-                            CacheDataRowStore rowStore = new CacheDataRowStore(grp, freeList, partId);
-
-                            RootPage treeRoot = metas.treeRoot;
-
-                            CacheDataTree dataTree = new CacheDataTree(
-                                grp,
-                                name,
-                                freeList,
-                                rowStore,
-                                treeRoot.pageId().pageId(),
-                                treeRoot.isAllocated()) {
-                                /** {@inheritDoc} */
-                                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                                    assert grp.shared().database().checkpointLockIsHeldByThread();
-
-                                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-                                }
-                            };
-
-                            RootPage pendingTreeRoot = metas.pendingTreeRoot;
-
-                            final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
-                                grp,
-                                "PendingEntries-" + partId,
-                                grp.dataRegion().pageMemory(),
-                                pendingTreeRoot.pageId().pageId(),
-                                freeList,
-                                pendingTreeRoot.isAllocated()) {
-                                /** {@inheritDoc} */
-                                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                                    assert grp.shared().database().checkpointLockIsHeldByThread();
-
-                                    return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-                                }
-                            };
-
-                            PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-                            delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
-                                /** {@inheritDoc} */
-                                @Override public PendingEntriesTree pendingTree() {
-                                    return pendingTree0;
-                                }
-                            };
-
-                            pendingTree = pendingTree0;
-
-                            if (!hasPendingEntries && pendingTree0.size() > 0)
-                                hasPendingEntries = true;
-
-                            int grpId = grp.groupId();
-                            long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
-                            long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
-
-                            try {
-                                long pageAddr = pageMem.readLock(grpId, partMetaId, partMetaPage);
-
-                                try {
-                                    if (PageIO.getType(pageAddr) != 0) {
-                                        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
-
-                                        Map<Integer, Long> cacheSizes = null;
-
-                                        if (grp.sharedGroup())
-                                            cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
-
-                                        delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes);
-
-                                        globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
-                                    }
-                                }
-                                finally {
-                                    pageMem.readUnlock(grpId, partMetaId, partMetaPage);
-                                }
-                            }
-                            finally {
-                                pageMem.releasePage(grpId, partMetaId, partMetaPage);
-                            }
-
-                            delegate = delegate0;
-
-                            if (interrupted)
-                                Thread.currentThread().interrupt();
-
-                            break;
+                            return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
-                        catch (IgniteCheckedException e) {
-                            if (X.hasCause(e, ClosedByInterruptException.class)) {
-                                log.warning("Thread was interrupted during IO operation, " +
-                                    "retrying CacheDataStore initialization", e);
+                    };
 
-                                interrupted = true;
+                    CacheDataRowStore rowStore = new CacheDataRowStore(grp, freeList, partId);
 
-                                Thread.interrupted();
+                    RootPage treeRoot = metas.treeRoot;
+
+                    CacheDataTree dataTree = new CacheDataTree(
+                        grp,
+                        name,
+                        freeList,
+                        rowStore,
+                        treeRoot.pageId().pageId(),
+                        treeRoot.isAllocated()) {
+                        /** {@inheritDoc} */
+                        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                            return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                        }
+                    };
+
+                    RootPage pendingTreeRoot = metas.pendingTreeRoot;
+
+                    final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
+                        grp,
+                        "PendingEntries-" + partId,
+                        grp.dataRegion().pageMemory(),
+                        pendingTreeRoot.pageId().pageId(),
+                        freeList,
+                        pendingTreeRoot.isAllocated()) {
+                        /** {@inheritDoc} */
+                        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                            return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                        }
+                    };
+
+                    PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+                    delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
+                        /** {@inheritDoc} */
+                        @Override public PendingEntriesTree pendingTree() {
+                            return pendingTree0;
+                        }
+                    };
+
+                    pendingTree = pendingTree0;
+
+                    if (!hasPendingEntries && pendingTree0.size() > 0)
+                        hasPendingEntries = true;
+
+                    int grpId = grp.groupId();
+                    long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
+                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+
+                    try {
+                        long pageAddr = pageMem.readLock(grpId, partMetaId, partMetaPage);
+
+                        try {
+                            if (PageIO.getType(pageAddr) != 0) {
+                                PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
+
+                                Map<Integer, Long> cacheSizes = null;
+
+                                if (grp.sharedGroup())
+                                    cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
+
+                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes);
+
+                                globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
-                            else
-                                throw e;
+                        }
+                        finally {
+                            pageMem.readUnlock(grpId, partMetaId, partMetaPage);
                         }
                     }
+                    finally {
+                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
+                    }
+
+                    delegate = delegate0;
                 }
                 catch (Throwable ex) {
                     U.error(log, "Unhandled exception during page store initialization. All further operations will " +
