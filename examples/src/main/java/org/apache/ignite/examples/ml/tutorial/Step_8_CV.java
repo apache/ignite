@@ -28,7 +28,13 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
+import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
+import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
@@ -38,22 +44,26 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LogisticRegressionSGDTrainer
  */
-public class Step_3_Categorial {
+public class Step_8_CV {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_3_Categorial.class.getSimpleName(), () -> {
+                Step_8_CV.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[5], v[6], v[10]}; // "pclass", "sibsp", "parch", "sex", "embarked"
+                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+
+                    TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                        .split(0.75);
 
                     IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
-                        .encodeFeature(4)
+                        .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
                             dataCache,
                             featureExtractor
@@ -65,17 +75,51 @@ public class Step_3_Categorial {
                             strEncoderPreprocessor
                         );
 
+
+                    IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                        .fit(
+                        ignite,
+                        dataCache,
+                        imputingPreprocessor
+                    );
+
+                    IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                        .withP(1)
+                        .fit(
+                        ignite,
+                        dataCache,
+                        minMaxScalerPreprocessor
+                    );
+
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-                    // Train decision tree model.
+      /*              // Train decision tree model.
                     DecisionTreeNode mdl = trainer.fit(
                         ignite,
                         dataCache,
-                        imputingPreprocessor,
+                        split.getTrainFilter(),
+                        normalizationPreprocessor,
                         (k, v) -> (double)v[1]
+                    );*/
+
+
+                    CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                        = new CrossValidationScoreCalculator<>();
+
+                    double[] scores = scoreCalculator.score(
+                        trainer,
+                        new AccuracyScoreCalculator<>(),
+                        ignite,
+                        dataCache,
+                        split.getTrainFilter(),
+                        normalizationPreprocessor,
+                        (k, v) -> (double)v[1],
+                        3
                     );
 
+                    System.out.println(">>> Accuracy: " + Arrays.toString(scores));
 
+/*
                     System.out.println(">>> ----------------------------------------------------------------");
                     System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
                     System.out.println(">>> ----------------------------------------------------------------");
@@ -86,14 +130,17 @@ public class Step_3_Categorial {
                     // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
                     int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    ScanQuery<Integer, Object[]> qry = new ScanQuery<>();
+                    qry.setFilter(split.getTestFilter());
+
+                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(qry)) {
                         for (Cache.Entry<Integer, Object[]> observation : observations) {
 
                             Object[] val = observation.getValue();
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(imputingPreprocessor.apply(observation.getKey(), val));
+                            double prediction = mdl.apply(normalizationPreprocessor.apply(observation.getKey(), val));
 
                             totalAmount++;
                             if (groundTruth != prediction)
@@ -116,7 +163,7 @@ public class Step_3_Categorial {
 
                         System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
                         System.out.println(">>> ---------------------------------");
-                    }
+                    }*/
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();

@@ -38,22 +38,24 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LogisticRegressionSGDTrainer
  */
-public class Step_3_Categorial {
+public class Step_4_Add_age_fare {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_3_Categorial.class.getSimpleName(), () -> {
+                Step_4_Add_age_fare.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[5], v[6], v[10]}; // "pclass", "sibsp", "parch", "sex", "embarked"
+                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+
 
                     IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
-                        .encodeFeature(4)
+                        .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
                             dataCache,
                             featureExtractor

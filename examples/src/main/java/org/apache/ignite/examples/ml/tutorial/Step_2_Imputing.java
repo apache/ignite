@@ -76,12 +76,12 @@ public class Step_2_Imputing {
 
                     try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
                         for (Cache.Entry<Integer, Object[]> observation : observations) {
+
                             Object[] val = observation.getValue();
-                            double[] inputs = new double[]{(double)val[0], (double)val[5], (double)val[6]};
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(inputs);
+                            double prediction = mdl.apply(imputingPreprocessor.apply(observation.getKey(), val));
 
                             totalAmount++;
                             if (groundTruth != prediction)

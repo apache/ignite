@@ -25,9 +25,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
+import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -38,22 +44,24 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LogisticRegressionSGDTrainer
  */
-public class Step_3_Categorial {
+public class Step_6_KNN {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_3_Categorial.class.getSimpleName(), () -> {
+                Step_6_KNN.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[5], v[6], v[10]}; // "pclass", "sibsp", "parch", "sex", "embarked"
+                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+
 
                     IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
-                        .encodeFeature(4)
+                        .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
                             dataCache,
                             featureExtractor
@@ -65,15 +73,31 @@ public class Step_3_Categorial {
                             strEncoderPreprocessor
                         );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-                    // Train decision tree model.
-                    DecisionTreeNode mdl = trainer.fit(
+                    IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                        .fit(
                         ignite,
                         dataCache,
-                        imputingPreprocessor,
-                        (k, v) -> (double)v[1]
+                        imputingPreprocessor
                     );
+
+                    IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                        .withP(1)
+                        .fit(
+                        ignite,
+                        dataCache,
+                        minMaxScalerPreprocessor
+                    );
+
+                    KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+
+                    // Train decision tree model.
+                    KNNClassificationModel mdl = trainer.fit(
+                        ignite,
+                        dataCache,
+                        normalizationPreprocessor,
+                        (k, v) -> (double)v[1]
+                    ).withK(1).withStrategy(KNNStrategy.WEIGHTED);
 
 
                     System.out.println(">>> ----------------------------------------------------------------");
@@ -93,7 +117,7 @@ public class Step_3_Categorial {
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(imputingPreprocessor.apply(observation.getKey(), val));
+                            double prediction = mdl.apply(new DenseLocalOnHeapVector(normalizationPreprocessor.apply(observation.getKey(), val)));
 
                             totalAmount++;
                             if (groundTruth != prediction)
