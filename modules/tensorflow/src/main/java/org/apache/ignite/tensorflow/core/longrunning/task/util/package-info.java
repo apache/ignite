@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow.cluster.util;
-
-import java.io.Serializable;
-
 /**
- * Component that have to be initialized before usage and destroyed after.
+ * <!-- Package description. -->
+ * Util package that contains util classes used in long-running tasks.
  */
-public interface Component extends Serializable {
-    /**
-     * Initializes component.
-     */
-    public void init();
-
-    /**
-     * Destroys component.
-     */
-    public void destroy();
-}
+package org.apache.ignite.tensorflow.core.longrunning.task.util;

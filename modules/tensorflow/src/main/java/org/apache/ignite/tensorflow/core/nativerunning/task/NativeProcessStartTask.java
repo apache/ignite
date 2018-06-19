@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
 import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * Task that starts native process by their specifications.
+ * Task that starts native process by its specification.
  */
 public class NativeProcessStartTask implements IgniteRunnable {
     /** */

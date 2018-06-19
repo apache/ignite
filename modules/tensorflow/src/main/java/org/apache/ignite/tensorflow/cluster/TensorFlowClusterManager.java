@@ -33,13 +33,12 @@ import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServer;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
-import org.apache.ignite.tensorflow.cluster.util.Component;
 import org.apache.ignite.tensorflow.cluster.util.TensorFlowClusterResolver;
 
 /**
  * TensorFlow cluster manager that allows to start, maintain and stop TensorFlow cluster.
  */
-public class TensorFlowClusterManager implements Component {
+public class TensorFlowClusterManager implements Serializable {
     /** */
     private static final long serialVersionUID = -4847155592164802806L;
 
@@ -90,8 +89,8 @@ public class TensorFlowClusterManager implements Component {
         this.clusterRslvr = clusterRslvr;
     }
 
-    /** {@inheritDoc} */
-    @Override public void init() {
+    /** Initializes TensorFlow cluster manager and gets or creates correspondent caches. */
+    public void init() {
         clusterRslvr.init();
 
         CacheConfiguration<String, TensorFlowCluster> cacheConfiguration = new CacheConfiguration<>();
@@ -157,8 +156,8 @@ public class TensorFlowClusterManager implements Component {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void destroy() {
+    /** Destroys TensorFlow cluster manager and related caches. */
+    public void destroy() {
         clusterRslvr.destroy();
 
         Ignite ignite = igniteSupplier.get();

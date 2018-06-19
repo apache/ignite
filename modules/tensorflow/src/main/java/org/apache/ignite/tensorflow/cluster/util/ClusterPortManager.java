@@ -32,9 +32,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
  * Cluster port manager that allows to reliably {@link #acquirePort(UUID)} and {@link #freePort(UUID, int)} on the
  * cluster nodes.
  */
-public class ClusterPortManager implements Component {
+public class ClusterPortManager implements Serializable {
     /** */
-    private static final long serialVersionUID = -3006017730448960948L;
+    private static final long serialVersionUID = -5116593574559007292L;
 
     /** Port manager cache name. */
     private final String portMgrCacheName;
@@ -71,8 +71,8 @@ public class ClusterPortManager implements Component {
         this.igniteSupplier = igniteSupplier;
     }
 
-    /** {@inheritDoc} */
-    @Override public void init() {
+    /** Initializes port manager and creates or gets correspondent caches. */
+    public void init() {
         CacheConfiguration<UUID, BitSet> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName(portMgrCacheName);
         cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
@@ -145,8 +145,8 @@ public class ClusterPortManager implements Component {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void destroy() {
+    /** Destroys port manager and related caches. */
+    public void destroy() {
         Ignite ignite = igniteSupplier.get();
         ignite.destroyCache(portMgrCacheName);
     }

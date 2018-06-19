@@ -45,7 +45,13 @@ public class TensorFlowClusterGatewayManager {
         this.ignite = ignite;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Creates and starts a new TensorFlow cluster for the specified cache if it doesn't exist, otherwise returns
+     * existing one.
+     *
+     * @param upstreamCacheName Upstream cache name.
+     * @return TensorFlow cluster gateway that allows to subscribe on cluster changes.
+     */
     public TensorFlowClusterGateway getOrCreateCluster(String upstreamCacheName) {
         String svcName = String.format(SERVICE_NAME_TEMPLATE, upstreamCacheName);
         String topicName = String.format(SERVICE_TOPIC_NAME_TEMPLATE, upstreamCacheName);
@@ -59,7 +65,11 @@ public class TensorFlowClusterGatewayManager {
         return gateway;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Stops TensorFlow cluster.
+     *
+     * @param upstreamCacheName Upstream cache name.
+     */
     public void stopClusterIfExists(String upstreamCacheName) {
         IgniteServices services = ignite.services();
 

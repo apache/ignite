@@ -29,9 +29,9 @@ import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
 /**
  * TensorFlow cluster resolver based on Ignite Cache affinity.
  */
-public class TensorFlowClusterResolver implements Component {
+public class TensorFlowClusterResolver implements Serializable {
     /** */
-    private static final long serialVersionUID = 8881305616566367624L;
+    private static final long serialVersionUID = 631456775167710173L;
 
     /** Cluster port manager. */
     private final ClusterPortManager portMgr;
@@ -52,8 +52,8 @@ public class TensorFlowClusterResolver implements Component {
         this.portMgr = new ClusterPortManager("TF_POOL", 10000, 100, igniteSupplier);
     }
 
-    /** {@inheritDoc} */
-    @Override public void init() {
+    /** Initializes TensorFlow cluster resolver. */
+    public void init() {
         portMgr.init();
     }
 
@@ -94,8 +94,8 @@ public class TensorFlowClusterResolver implements Component {
                 portMgr.freePort(address.getNodeId(), address.getPort());
     }
 
-    /** {@inheritDoc} */
-    @Override public void destroy() {
+    /** Destroys TensorFlow cluster resolver. */
+    public void destroy() {
         portMgr.destroy();
     }
 }
