@@ -35,6 +35,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -56,12 +57,24 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     /** */
     protected static final String EXISTING_CACHE_NAME = "existing-cache";;
 
+    /** */
+    private static final int PARTITION_COUNT = 16;
+
     /** Coordinator node index. */
     private int crdIdx = 0;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
+    }
+
+    /**
+     * Returns {@code true} if persistence is enabled.
+     *
+     * @return {@code true} if persistence is enabled.
+     */
+    protected boolean persistenceEnabled() {
+        return false;
     }
 
     /**
@@ -366,7 +379,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         }, CacheException.class, null);
 
         // Correct the cache configuration.
-        cfg.setAffinity(new RendezvousAffinityFunction());
+        cfg.setAffinity(new RendezvousAffinityFunction(false, PARTITION_COUNT));
 
         IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
 
@@ -422,6 +435,16 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
         // Start a new server node and check cache operations.
         Ignite serverNode = startGrid(gridCount() + 1);
+
+        if (persistenceEnabled()) {
+            List<BaselineNode> baseline = new ArrayList<>(grid(0).cluster().currentBaselineTopology());
+
+            baseline.add(serverNode.cluster().localNode());
+
+            grid(0).cluster().setBaselineTopology(baseline);
+        }
+
+        awaitPartitionMapExchange();
 
         checkCacheOperations(serverNode.cache(EXISTING_CACHE_NAME));
 
@@ -690,6 +713,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
          * Default constructor.
          */
         public BrokenAffinityFunction() {
+            super(false, PARTITION_COUNT);
             // No-op.
         }
 
@@ -698,6 +722,8 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
          * @param gridName Exception should arise on node with certain name.
          */
         public BrokenAffinityFunction(boolean eOnAllNodes, String gridName) {
+            super(false, PARTITION_COUNT);
+
             this.eOnAllNodes = eOnAllNodes;
             this.gridName = gridName;
         }

@@ -30,6 +30,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
  */
 public class IgniteDynamicCacheStartFailTestWithPersistence extends IgniteAbstractDynamicCacheStartFailTest {
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60 * 1000;
+    }
+
+    protected boolean persistenceEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
