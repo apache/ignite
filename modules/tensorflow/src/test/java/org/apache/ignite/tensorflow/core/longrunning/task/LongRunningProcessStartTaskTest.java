@@ -18,10 +18,10 @@
 package org.apache.ignite.tensorflow.core.longrunning.task;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.ignite.tensorflow.core.longrunning.LongRunningProcess;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.spy;
  */
 public class LongRunningProcessStartTaskTest {
     /** Process metadata storage used instead of Apache Ignite node local storage. */
-    private final Map<UUID, Future<?>> metadataStorage = new HashMap<>();
+    private final ConcurrentMap<UUID, Future<?>> metadataStorage = new ConcurrentHashMap<>();
 
     /** Initializes tests. */
     @Before

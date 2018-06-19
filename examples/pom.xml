@@ -124,6 +124,8 @@
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <spark.folder>src/main/java</spark.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
+        <tensorflow.folder>src/main/java</tensorflow.folder>
+        <tensorflow.test.folder>src/test/java</tensorflow.test.folder>
     </properties>
 
     <profiles>
@@ -245,6 +247,23 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>tensorflow</id>
+
+            <properties>
+                <tensorflow.folder>src/main/tensorflow</tensorflow.folder>
+                <tensorflow.test.folder>src/test/tensorflow</tensorflow.test.folder>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-tensorflow</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <build>
@@ -275,6 +294,7 @@
                             <sources>
                                 <source>${lgpl.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${tensorflow.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -289,6 +309,7 @@
                             <sources>
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
+                                <source>${tensorflow.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

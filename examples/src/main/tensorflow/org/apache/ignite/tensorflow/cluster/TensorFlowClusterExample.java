@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow;
+package org.apache.ignite.tensorflow.cluster;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,36 +29,39 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGateway;
-import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
 import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 
 /**
- * TensorFlow cluster example.
+ * Example that shows how to use {@link TensorFlowClusterGatewayManager} and start, maintain and stop TensorFlow
+ * cluster. Be aware that to successfully run this example you need to have Python and TensorFlow installed on your
+ * machine. Installation instructions you can find on the TensorFlow web site: https://www.tensorflow.org/install/.
  */
 public class TensorFlowClusterExample {
-    /**
-     * Main method.
-     *
-     * @param args Args.
-     * @throws InterruptedException In case of exception.
-     */
+    /** Run example. */
     public static void main(String... args) throws InterruptedException {
         IgniteConfiguration configuration = new IgniteConfiguration();
         configuration.setClientMode(false);
 
         try (Ignite ignite = Ignition.start(configuration)) {
+            System.out.println(">>> TensorFlow cluster example started.");
+
             CacheConfiguration<Integer, Integer> cacheConfiguration = new CacheConfiguration<>();
             cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-            cacheConfiguration.setName("TEST_CACHE_1");
+            cacheConfiguration.setName("TEST_CACHE");
 
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration);
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
 
+            System.out.println(">>> Cache created.");
+
             TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
-            TensorFlowClusterGateway gateway = mgr.getOrCreateCluster("TEST_CACHE_1");
+            TensorFlowClusterGateway gateway = mgr.getOrCreateCluster("TEST_CACHE");
+
+            System.out.println(">>> TensorFlow cluster gateway started.");
+
+            CountDownLatch latch = new CountDownLatch(1);
 
             gateway.subscribe(cluster -> {
                 StringBuilder builder = new StringBuilder();
@@ -95,9 +99,15 @@ public class TensorFlowClusterExample {
                 builder.append("-----------------------------------------------------------------------").append('\n');
 
                 System.out.println(builder);
+
+                latch.countDown();
             });
 
-            Thread.currentThread().join();
+            latch.await();
+
+            mgr.stopClusterIfExists("TEST_CACHE");
+
+            System.out.println(">>> TensorFlow cluster example completed.");
         }
     }
 }
