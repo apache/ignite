@@ -442,7 +442,7 @@ public class StripedExecutor implements ExecutorService {
         protected final int idx;
 
         /** */
-        protected final IgniteLogger log;
+        private final IgniteLogger log;
 
         /** */
         private volatile long completedCnt;
@@ -509,7 +509,7 @@ public class StripedExecutor implements ExecutorService {
                 Runnable cmd;
 
                 try {
-                    updateHeartbeat("Before take() : " + name() + "@" + igniteInstanceName);
+                    updateHeartbeat();
 
                     cmd = take();
 
@@ -522,7 +522,7 @@ public class StripedExecutor implements ExecutorService {
                     if (cmd != null) {
                         active = true;
 
-                        updateHeartbeat("Before run() : " + name() + "@" + igniteInstanceName);
+                        updateHeartbeat();
 
                         try {
                             cmd.run();
@@ -685,7 +685,7 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
 
-                    updateHeartbeat("Parking " + name() + "@" + igniteInstanceName());
+                    updateHeartbeat();
 
                     LockSupport.parkNanos(WAIT_TIMEOUT_NS);
 
