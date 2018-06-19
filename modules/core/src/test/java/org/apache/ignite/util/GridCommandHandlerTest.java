@@ -57,17 +57,22 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -79,6 +84,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -724,8 +730,35 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             }
         });
 
+        // Wait until queue is stable
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            Collection<IgniteInternalTx> txs = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    for (IgniteInternalTx tx : txs)
+                        if (!tx.local()) {
+                            IgniteTxEntry entry = tx.writeEntries().iterator().next();
+
+                            GridCacheMapEntry cached = (GridCacheMapEntry)entry.cached();
+
+                            Collection<GridCacheMvccCandidate> candidates = cached.remoteMvccSnapshot();
+
+                            if (candidates.size() != clients.length)
+                                return false;
+                        }
+
+                    return true;
+                }
+            }, 10_000);
+        }
+
         CommandHandler h = new CommandHandler();
 
+        // Check listing.
         validate(h, map -> {
             for (int i = 0; i < cnt; i++) {
                 IgniteEx grid = grid(i);
@@ -739,6 +772,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 // Validate queue length on backups.
                 assertEquals(clients.length, res.getInfos().size());
             }
+        }, "--tx");
+
+        // Check kill.
+        validate(h, map -> {
+            // No-op.
         }, "--tx", "kill");
 
         // Wait for all remote txs to finish.
