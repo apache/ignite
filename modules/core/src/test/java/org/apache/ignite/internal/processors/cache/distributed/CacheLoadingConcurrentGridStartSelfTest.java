@@ -135,83 +135,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
-    public void testLoadCacheWithDataStreamer() throws Exception {
-        configured = true;
-
-        try {
-            IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
-                @Override public void apply(Ignite grid) {
-                    try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
-                        dataStreamer.allowOverwrite(allowOverwrite);
-
-                        for (int i = 0; i < KEYS_CNT; i++)
-                            dataStreamer.addData(i, Integer.toString(i));
-                    }
-
-                    log.info("Data loaded.");
-                }
-            };
-
-            loadCache(f);
-        }
-        finally {
-            configured = false;
-        }
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheFromStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4210");
-
-        loadCache(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
-            }
-        });
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheWithDataStreamerSequentialClient() throws Exception {
-        client = true;
-
-        try {
-            loadCacheWithDataStreamerSequential();
-        }
-        finally {
-            client = false;
-        }
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
-        client = true;
-        configured = true;
-
-        try {
-            loadCacheWithDataStreamerSequential();
-        }
-        finally {
-            client = false;
-            configured = false;
-        }
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheWithDataStreamerSequential() throws Exception {
-        loadCacheWithDataStreamerSequential();
-    }
-
-    /**
-     * @throws Exception if failed
-     */
     public void testLoadCacheWithDataStreamerSequentialWithConfigAndRestarts() throws Exception {
         restarts = true;
         configured = true;
@@ -221,20 +144,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         }
         finally {
             restarts = false;
-            configured = false;
-        }
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheWithDataStreamerSequentialWithConfig() throws Exception {
-        configured = true;
-
-        try {
-            loadCacheWithDataStreamerSequential();
-        }
-        finally {
             configured = false;
         }
     }
