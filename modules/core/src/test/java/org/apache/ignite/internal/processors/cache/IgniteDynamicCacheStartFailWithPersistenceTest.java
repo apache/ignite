@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 /**
  * Tests the recovery after a dynamic cache start failure, with enabled persistence.
  */
-public class IgniteDynamicCacheStartFailTestWithPersistence extends IgniteAbstractDynamicCacheStartFailTest {
+public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstractDynamicCacheStartFailTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60 * 1000;
