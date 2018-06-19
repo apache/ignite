@@ -37,7 +37,7 @@ docs_requirements = [
 
 setuptools.setup(
     name='pyignite',
-    version='0.1.0',
+    version='0.1.3',
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
     description='Apache Ignite binary client Python API',
@@ -54,7 +54,7 @@ setuptools.setup(
     extras_require={
         'docs': docs_requirements,
     },
-    classifiers=(
+    classifiers=[
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
@@ -64,5 +64,5 @@ setuptools.setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
-    ),
+    ],
 )

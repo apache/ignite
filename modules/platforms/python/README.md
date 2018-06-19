@@ -37,6 +37,7 @@ Run
 $ cd ignite/modules/platforms/python/docs
 $ make html
 ```
+
 Then open `docs/_build/html/index.html` in your browser.
 
 ## Tests
@@ -49,7 +50,6 @@ $ python setup.py pytest
 *NB!* Some tests require Apache Ignite node running on localhost:10800.
 To override the default parameters, use command line options
 `--ignite-host` and `--ignite-port`:
-
 ```
 $ python setup.py pytest --addopts "--ignite-host=example.com --ignite-port=19840"
 ```
