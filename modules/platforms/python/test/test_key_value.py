@@ -138,3 +138,35 @@ def test_put_if_absent(conn, hash_code):
     result = cache_put_if_absent(conn, hash_code, 'test_key', 1234)
     assert result.status == 0
     assert result.value is False
+
+
+def test_get_and_put_if_absent(conn, hash_code):
+
+    result = cache_get_and_put_if_absent(conn, hash_code, 'test_key', 42)
+    assert result.status == 0
+    assert result.value is None
+
+    result = cache_get_and_put_if_absent(conn, hash_code, 'test_key', 1234)
+    assert result.status == 0
+    assert result.value == 42
+
+    result = cache_get_and_put_if_absent(conn, hash_code, 'test_key', 5678)
+    assert result.status == 0
+    assert result.value == 42
+
+
+def test_replace(conn, hash_code):
+
+    result = cache_replace(conn, hash_code, 'test_key', 42)
+    assert result.status == 0
+    assert result.value is False
+
+    cache_put(conn, hash_code, 'test_key', 1234)
+
+    result = cache_replace(conn, hash_code, 'test_key', 42)
+    assert result.status == 0
+    assert result.value is True
+
+    result = cache_get(conn, hash_code, 'test_key')
+    assert result.status == 0
+    assert result.value == 42
