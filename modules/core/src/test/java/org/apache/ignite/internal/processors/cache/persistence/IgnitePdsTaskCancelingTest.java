@@ -120,8 +120,6 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     public void testFailNodesOnCanceledTask() throws Exception {
         cleanPersistenceDir();
 
-        slowFileIoEnabled.set(false);
-
         failure.set(false);
 
         try {
