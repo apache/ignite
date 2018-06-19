@@ -37,6 +37,13 @@ List keys in cache
   :language: python
   :lines: 39-40
 
+Type hints usage
+----------------
+
+.. literalinclude:: ../examples/type_hints.py
+  :language: python
+  :lines: 30-49
+
 Inspect cache configuration
 ---------------------------
 
