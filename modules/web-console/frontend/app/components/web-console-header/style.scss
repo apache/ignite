@@ -101,7 +101,7 @@ web-console-header {
         &:hover {
             color: $color-hover;
         }
-        
+
         &:focus, :focus,
         &.active, .active {
             color: $color-active;
@@ -118,6 +118,17 @@ web-console-header {
 
         &:not(:last-child) {
             margin-right: $nav-item-margin;
+        }
+
+        .user-name-wrapper {
+            display: flex;
+            align-items: center;
+
+           & > span {
+               max-width: 180px;
+               overflow: hidden;
+               text-overflow: ellipsis;
+           }
         }
     }
 

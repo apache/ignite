@@ -136,12 +136,12 @@ export default class PageConfigureBasicController {
 
         this.formActionsMenu = [
             {
-                text: 'Save changes and download project',
+                text: 'Save and Download',
                 click: () => this.save(true),
                 icon: 'download'
             },
             {
-                text: 'Save changes',
+                text: 'Save',
                 click: () => this.save(),
                 icon: 'checkmark'
             }

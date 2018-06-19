@@ -804,10 +804,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
             new VerifyBackupPartitionsTask(), cacheNames);
 
-        if (!conflicts.isEmpty()) {
-            throw new IgniteCheckedException("Partition checksums are different for backups " +
-                "of the following partitions: " + conflicts.keySet());
-        }
+        if (!conflicts.isEmpty())
+            throw new IgniteCheckedException("Conflict partitions: " + conflicts.keySet());
     }
 
     /**
