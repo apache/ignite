@@ -103,7 +103,7 @@ public class ClusterPortManager implements Component {
             int free = ports.nextClearBit(0);
 
             if (free >= cnt)
-                throw new IllegalStateException("No free ports in range " + from + ".." + (from + cnt));
+                throw new IllegalStateException("No free ports in range [from=" + from + ", cnt=" + cnt + "]");
 
             ports.set(free);
 
