@@ -10,3 +10,4 @@ python
    constants
    datatypes
    queries
+   utils

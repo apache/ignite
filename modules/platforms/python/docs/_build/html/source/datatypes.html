@@ -40,6 +40,40 @@ data streams.</p>
 <div class="section" id="module-datatypes.cache_config">
 <span id="datatypes-cache-config-module"></span><h2>datatypes.cache_config module<a class="headerlink" href="#module-datatypes.cache_config" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
+<dt id="datatypes.cache_config.Struct">
+<em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">Struct</code><span class="sig-paren">(</span><em>fields: list</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.Struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Sequence of fields, including variable-sized and nested.</p>
+<dl class="method">
+<dt id="datatypes.cache_config.Struct.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.Struct.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="datatypes.cache_config.Struct.to_python">
+<code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.Struct.to_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="datatypes.cache_config.StructArray">
+<em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">StructArray</code><span class="sig-paren">(</span><em>following: list</em>, <em>counter_type=&lt;class 'ctypes.c_int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.StructArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><cite>counter_type</cite> counter, followed by count*following structure.</p>
+<dl class="method">
+<dt id="datatypes.cache_config.StructArray.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.StructArray.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="datatypes.cache_config.StructArray.to_python">
+<code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.StructArray.to_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="datatypes.cache_config.CacheMode">
 <em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">CacheMode</code><a class="headerlink" href="#datatypes.cache_config.CacheMode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#datatypes.primitive.Int" title="datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">datatypes.primitive.Int</span></code></a></p>
@@ -56,27 +90,6 @@ data streams.</p>
 <dl class="attribute">
 <dt id="datatypes.cache_config.CacheMode.REPLICATED">
 <code class="descname">REPLICATED</code><em class="property"> = 1</em><a class="headerlink" href="#datatypes.cache_config.CacheMode.REPLICATED" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="datatypes.cache_config.IndexType">
-<em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">IndexType</code><a class="headerlink" href="#datatypes.cache_config.IndexType" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#datatypes.primitive.Byte" title="datatypes.primitive.Byte"><code class="xref py py-class docutils literal notranslate"><span class="pre">datatypes.primitive.Byte</span></code></a></p>
-<dl class="attribute">
-<dt id="datatypes.cache_config.IndexType.FULLTEXT">
-<code class="descname">FULLTEXT</code><em class="property"> = 1</em><a class="headerlink" href="#datatypes.cache_config.IndexType.FULLTEXT" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="datatypes.cache_config.IndexType.GEOSPATIAL">
-<code class="descname">GEOSPATIAL</code><em class="property"> = 2</em><a class="headerlink" href="#datatypes.cache_config.IndexType.GEOSPATIAL" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="datatypes.cache_config.IndexType.SORTED">
-<code class="descname">SORTED</code><em class="property"> = 0</em><a class="headerlink" href="#datatypes.cache_config.IndexType.SORTED" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -134,40 +147,6 @@ data streams.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="datatypes.cache_config.Struct">
-<em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">Struct</code><span class="sig-paren">(</span><em>fields: list</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.Struct" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Sequence of fields, including variable-sized and nested.</p>
-<dl class="method">
-<dt id="datatypes.cache_config.Struct.parse">
-<code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.Struct.parse" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="datatypes.cache_config.Struct.to_python">
-<code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.Struct.to_python" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="datatypes.cache_config.StructArray">
-<em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">StructArray</code><span class="sig-paren">(</span><em>following: list</em>, <em>counter_type=&lt;class 'ctypes.c_int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.StructArray" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p><cite>counter_type</cite> counter, followed by count*following structure.</p>
-<dl class="method">
-<dt id="datatypes.cache_config.StructArray.parse">
-<code class="descname">parse</code><span class="sig-paren">(</span><em>conn: connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.StructArray.parse" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="datatypes.cache_config.StructArray.to_python">
-<code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.cache_config.StructArray.to_python" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="datatypes.cache_config.WriteSynchronizationMode">
 <em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">WriteSynchronizationMode</code><a class="headerlink" href="#datatypes.cache_config.WriteSynchronizationMode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#datatypes.primitive.Int" title="datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">datatypes.primitive.Int</span></code></a></p>
@@ -184,6 +163,27 @@ data streams.</p>
 <dl class="attribute">
 <dt id="datatypes.cache_config.WriteSynchronizationMode.PRIMARY_SYNC">
 <code class="descname">PRIMARY_SYNC</code><em class="property"> = 2</em><a class="headerlink" href="#datatypes.cache_config.WriteSynchronizationMode.PRIMARY_SYNC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="datatypes.cache_config.IndexType">
+<em class="property">class </em><code class="descclassname">datatypes.cache_config.</code><code class="descname">IndexType</code><a class="headerlink" href="#datatypes.cache_config.IndexType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#datatypes.primitive.Byte" title="datatypes.primitive.Byte"><code class="xref py py-class docutils literal notranslate"><span class="pre">datatypes.primitive.Byte</span></code></a></p>
+<dl class="attribute">
+<dt id="datatypes.cache_config.IndexType.FULLTEXT">
+<code class="descname">FULLTEXT</code><em class="property"> = 1</em><a class="headerlink" href="#datatypes.cache_config.IndexType.FULLTEXT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.cache_config.IndexType.GEOSPATIAL">
+<code class="descname">GEOSPATIAL</code><em class="property"> = 2</em><a class="headerlink" href="#datatypes.cache_config.IndexType.GEOSPATIAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="datatypes.cache_config.IndexType.SORTED">
+<code class="descname">SORTED</code><em class="property"> = 0</em><a class="headerlink" href="#datatypes.cache_config.IndexType.SORTED" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -205,11 +205,6 @@ on serializing Python data or parsing an unknown Ignite data object.</p>
 <dl class="staticmethod">
 <dt id="datatypes.complex.AnyDataObject.get_subtype">
 <em class="property">static </em><code class="descname">get_subtype</code><span class="sig-paren">(</span><em>iterable</em>, <em>allow_none=False</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.get_subtype" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="datatypes.complex.AnyDataObject.is_iterable">
-<em class="property">static </em><code class="descname">is_iterable</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#datatypes.complex.AnyDataObject.is_iterable" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="classmethod">
