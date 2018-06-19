@@ -93,20 +93,10 @@ public class Step_8_CV {
 
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-      /*              // Train decision tree model.
-                    DecisionTreeNode mdl = trainer.fit(
-                        ignite,
-                        dataCache,
-                        split.getTrainFilter(),
-                        normalizationPreprocessor,
-                        (k, v) -> (double)v[1]
-                    );*/
-
-
                     CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
                         = new CrossValidationScoreCalculator<>();
 
-                    double[] scores = scoreCalculator.score(
+                    DecisionTreeNode mdl = scoreCalculator.bestModel(
                         trainer,
                         new AccuracyScoreCalculator<>(),
                         ignite,
@@ -117,9 +107,7 @@ public class Step_8_CV {
                         3
                     );
 
-                    System.out.println(">>> Accuracy: " + Arrays.toString(scores));
 
-/*
                     System.out.println(">>> ----------------------------------------------------------------");
                     System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
                     System.out.println(">>> ----------------------------------------------------------------");
@@ -163,7 +151,7 @@ public class Step_8_CV {
 
                         System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
                         System.out.println(">>> ---------------------------------");
-                    }*/
+                    }
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();
