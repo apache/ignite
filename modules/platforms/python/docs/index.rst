@@ -12,6 +12,7 @@ Welcome to Apache Ignite binary client Python API documentation!
 
    readme
    modules
+   examples
 
 
 Indices and tables
