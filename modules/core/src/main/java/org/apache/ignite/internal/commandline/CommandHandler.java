@@ -997,11 +997,12 @@ public class CommandHandler {
                             }
                         })) +
                         ", nearXid=" + info.getNearXid() +
-                        ", parentNodeIds=" + F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
-                        @Override public String apply(UUID id) {
-                            return U.id8(id);
-                        }
-                    }) +
+                        ", parentNodeIds=" + (info.getMasterNodeIds() == null ? "N/A" :
+                        F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                            @Override public String apply(UUID id) {
+                                return U.id8(id);
+                            }
+                        })) +
                         ']');
             }
         }

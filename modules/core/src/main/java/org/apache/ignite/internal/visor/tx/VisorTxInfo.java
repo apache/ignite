@@ -30,6 +30,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -155,12 +156,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
     }
 
     /** */
-    public IgniteUuid getNearXid() {
+    public @Nullable IgniteUuid getNearXid() {
         return nearXid;
     }
 
     /** */
-    public Collection<UUID> getMasterNodeIds() {
+    public @Nullable Collection<UUID> getMasterNodeIds() {
         return masterNodeIds;
     }
 
