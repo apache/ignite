@@ -59,5 +59,9 @@ from .key_value import (
     cache_clear,
     cache_clear_key,
     cache_clear_keys,
+    cache_remove_key,
+    cache_remove_if_equals,
+    cache_remove_keys,
+    cache_remove_all,
 )
 from .result import APIResult, hashcode
