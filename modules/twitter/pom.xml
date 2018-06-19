@@ -66,6 +66,12 @@
             <groupId>com.twitter</groupId>
             <artifactId>hbc-twitter4j</artifactId>
             <version>${twitter.hbc.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
