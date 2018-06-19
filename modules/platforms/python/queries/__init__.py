@@ -35,6 +35,7 @@ from .op_codes import *
 class Query:
     op_code = None
     following = attr.ib(type=list, default=[])
+    query_id = attr.ib(type=int, default=None)
 
     @classmethod
     def build_c_type(cls):
@@ -59,7 +60,8 @@ class Query:
         header_class = self.build_c_type()
         header = header_class()
         header.op_code = self.op_code
-        header.query_id = randint(MIN_LONG, MAX_LONG)
+        if self.query_id is None:
+            header.query_id = randint(MIN_LONG, MAX_LONG)
 
         for name, c_type in self.following:
             buffer += c_type.from_python(values[name])

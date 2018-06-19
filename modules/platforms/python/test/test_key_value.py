@@ -66,10 +66,10 @@ def test_contains_key(conn, hash_code):
     cache_put(conn, hash_code, 'test_key', 42)
 
     result = cache_contains_key(conn, hash_code, 'test_key')
-    assert result.value == True
+    assert result.value is True
 
     result = cache_contains_key(conn, hash_code, 'non-existant-key')
-    assert result.value == False
+    assert result.value is False
 
 
 def test_contains_keys(conn, hash_code):
@@ -78,7 +78,63 @@ def test_contains_keys(conn, hash_code):
     cache_put(conn, hash_code, 'test_key', 42)
 
     result = cache_contains_keys(conn, hash_code, [5, 'test_key'])
-    assert result.value == True
+    assert result.value is True
 
-    result = cache_contains_keys(conn, hash_code, [5, 'non-existant-key'])
-    assert result.value == False
+    result = cache_contains_keys(conn, hash_code, [5, 'non-existent-key'])
+    assert result.value is False
+
+
+def test_get_and_put(conn, hash_code):
+
+    result = cache_get_and_put(conn, hash_code, 'test_key', 42)
+    assert result.status == 0
+    assert result.value is None
+
+    result = cache_get(conn, hash_code, 'test_key')
+    assert result.status == 0
+    assert result.value is 42
+
+    result = cache_get_and_put(conn, hash_code, 'test_key', 1234)
+    assert result.status == 0
+    assert result.value == 42
+
+
+def test_get_and_replace(conn, hash_code):
+
+    result = cache_get_and_replace(conn, hash_code, 'test_key', 42)
+    assert result.status == 0
+    assert result.value is None
+
+    result = cache_get(conn, hash_code, 'test_key')
+    assert result.status == 0
+    assert result.value is None
+
+    cache_put(conn, hash_code, 'test_key', 42)
+
+    result = cache_get_and_replace(conn, hash_code, 'test_key', 1234)
+    assert result.status == 0
+    assert result.value == 42
+
+
+def test_get_and_remove(conn, hash_code):
+
+    result = cache_get_and_remove(conn, hash_code, 'test_key')
+    assert result.status == 0
+    assert result.value is None
+
+    cache_put(conn, hash_code, 'test_key', 42)
+
+    result = cache_get_and_remove(conn, hash_code, 'test_key')
+    assert result.status == 0
+    assert result.value == 42
+
+
+def test_put_if_absent(conn, hash_code):
+
+    result = cache_put_if_absent(conn, hash_code, 'test_key', 42)
+    assert result.status == 0
+    assert result.value is True
+
+    result = cache_put_if_absent(conn, hash_code, 'test_key', 1234)
+    assert result.status == 0
+    assert result.value is False
