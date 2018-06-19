@@ -1877,8 +1877,8 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
-        if (txRecoveryMsgLog.isDebugEnabled()) {
-            txRecoveryMsgLog.debug("Received tx recovery response [txId=" + res.version() +
+        if (txRecoveryMsgLog.isInfoEnabled()) {
+            txRecoveryMsgLog.info("Received tx recovery response [txId=" + res.version() +
                 ", node=" + nodeId +
                 ", res=" + res + ']');
         }
@@ -1886,8 +1886,8 @@ public class IgniteTxHandler {
         GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
-            if (txRecoveryMsgLog.isDebugEnabled()) {
-                txRecoveryMsgLog.debug("Failed to find future for tx recovery response [txId=" + res.version() +
+            if (txRecoveryMsgLog.isInfoEnabled()) {
+                txRecoveryMsgLog.info("Failed to find future for tx recovery response [txId=" + res.version() +
                     ", node=" + nodeId + ", res=" + res + ']');
             }
 
