@@ -2176,21 +2176,28 @@ public class BinaryUtils {
         for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             if (Externalizable.class.isAssignableFrom(c))
                 return true;
-
-            try {
-                Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
-                Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);
-
-                if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                    writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
-                    return true;
+    
+            if (Enum.class.isAssignableFrom(c)) {
+            	return false;
             }
-            catch (NoSuchMethodException ignored) {
-                // No-op.
-            }
+            
+            if (hasCustomSerializationMethod(c, "writeObject", ObjectOutputStream.class)
+                    || hasCustomSerializationMethod(c, "readObject", ObjectInputStream.class))
+                return true;
         }
 
         return false;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private static boolean hasCustomSerializationMethod(Class cls, String methodName, Class... parameters) {
+        try {
+            Method method = cls.getDeclaredMethod(methodName, parameters);
+            return !Modifier.isStatic(method.getModifiers()) && method.getReturnType() == void.class;
+        }
+        catch (NoSuchMethodException e) {
+            return false;
+        }
     }
 
     /**

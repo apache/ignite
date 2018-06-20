@@ -3314,6 +3314,18 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             ++i;
         }
     }
+	
+	/**
+	 * Test that objects with custom serialization methods are detected as such
+	 */
+	public void testCustomSerializationDetection() {
+		assertTrue(BinaryUtils.isCustomJavaSerialization(HasCustomReadMethod.class));
+		assertTrue(BinaryUtils.isCustomJavaSerialization(HasCustomWriteMethod.class));
+		assertTrue(BinaryUtils.isCustomJavaSerialization(HasBothCustomMethods.class));
+		assertFalse(BinaryUtils.isCustomJavaSerialization(HasNoCustomMethods.class));
+		assertFalse(BinaryUtils.isCustomJavaSerialization(HasStaticCustomMethod.class));
+		assertFalse(BinaryUtils.isCustomJavaSerialization(HasCustomMethodWithWrongReturnType.class));
+	}
 
     /**
      * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
@@ -5592,4 +5604,47 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         }
     }
+	
+	private static class HasCustomReadMethod implements Serializable {
+		
+		private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		
+		}
+	}
+	
+	private static class HasCustomWriteMethod implements Serializable {
+		
+		private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+		
+		}
+	}
+	
+	private static class HasBothCustomMethods implements Serializable {
+		
+		private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		
+		}
+		
+		private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+		
+		}
+	}
+	
+	private static class HasNoCustomMethods implements Serializable {
+	
+	}
+	
+	private static class HasStaticCustomMethod implements Serializable {
+		
+		private static void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+		
+		}
+	}
+	
+	private static class HasCustomMethodWithWrongReturnType implements Serializable {
+		
+		private static int readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+			return 0;
+		}
+	}
 }
