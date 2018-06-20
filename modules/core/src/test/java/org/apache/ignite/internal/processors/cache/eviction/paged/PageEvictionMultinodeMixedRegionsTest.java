@@ -53,6 +53,8 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 }
