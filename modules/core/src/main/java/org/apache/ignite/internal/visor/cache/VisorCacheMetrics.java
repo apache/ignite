@@ -55,6 +55,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Gets number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
 
+    /** Number of non-{@code null} values in the cache as a long value. */
+    private long cacheSize;
+
     /** Total number of reads of the owning entity (either cache or entry). */
     private long reads;
 
@@ -172,6 +175,12 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Total number of partitions on current node. */
     private int totalPartsCnt;
 
+    /** Number of already rebalanced keys. */
+    private long rebalancedKeys;
+
+    /** Number estimated to rebalance keys. */
+    private long estimatedRebalancingKeys;
+
     /** Number of currently rebalancing partitions on current node. */
     private int rebalancingPartsCnt;
 
@@ -224,6 +233,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         size = m.getSize();
         keySize = m.getKeySize();
 
+        cacheSize = m.getCacheSize();
+
         reads = m.getCacheGets();
         writes = m.getCachePuts() + m.getCacheRemovals();
         hits = m.getCacheHits();
@@ -271,6 +282,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
 
         totalPartsCnt = m.getTotalPartitionsCount();
+        rebalancedKeys = m.getRebalancedKeys();
+        estimatedRebalancingKeys = m.getEstimatedRebalancingKeys();
         rebalancingPartsCnt = m.getRebalancingPartitionsCount();
         keysToRebalanceLeft = m.getKeysToRebalanceLeft();
         rebalancingKeysRate = m.getRebalancingKeysRate();
@@ -457,6 +470,13 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of non-{@code null} values in the cache as a long value.
+     */
+    public long getCacheSize() {
+        return cacheSize;
+    }
+
+    /**
      * @return Gets query metrics for cache.
      */
     public VisorQueryMetrics getQueryMetrics() {
@@ -611,6 +631,20 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of already rebalanced keys.
+     */
+    public long getRebalancedKeys() {
+        return rebalancedKeys;
+    }
+
+    /**
+     * @return Number estimated to rebalance keys.
+     */
+    public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys;
+    }
+
+    /**
      * @return Number of currently rebalancing partitions on current node.
      */
     public int getRebalancingPartitionsCount() {
@@ -636,6 +670,11 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      */
     public long getRebalancingBytesRate() {
         return rebalancingBytesRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -694,6 +733,11 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(rebalancingBytesRate);
 
         out.writeObject(qryMetrics);
+
+        out.writeLong(cacheSize);
+
+        out.writeLong(rebalancedKeys);
+        out.writeLong(estimatedRebalancingKeys);
     }
 
     /** {@inheritDoc} */
@@ -751,6 +795,14 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         rebalancingBytesRate = in.readLong();
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
+
+        if (in.available() > 0)
+            cacheSize = in.readLong();
+
+        if (protoVer > V1) {
+            rebalancedKeys = in.readLong();
+            estimatedRebalancingKeys = in.readLong();
+        }
     }
 
     /** {@inheritDoc} */

@@ -468,5 +468,20 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getRebalanceClearingPartitionsLeft() {
             return 64;
         }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheSize() {
+            return 65;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalancedKeys() {
+            return 66;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEstimatedRebalancingKeys() {
+            return 67;
+        }
     }
 }

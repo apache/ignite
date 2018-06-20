@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -48,6 +49,8 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setConsistentId(gridName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
@@ -102,7 +105,7 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
             assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            FileWALPointer lowPtr = (FileWALPointer)dbMgr.checkpointHistory().lowCheckpointBound();
+            FileWALPointer lowPtr = (FileWALPointer)dbMgr.checkpointHistory().firstCheckpointPointer();
 
             assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
@@ -136,7 +139,7 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
             assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            FileWALPointer lowPtr = (FileWALPointer) dbMgr.checkpointHistory().lowCheckpointBound();
+            FileWALPointer lowPtr = (FileWALPointer) dbMgr.checkpointHistory().firstCheckpointPointer();
 
             assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
@@ -186,17 +189,10 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
      * Get index of reserved WAL segment by checkpointer.
      *
      * @param dbMgr Database shared manager.
-     * @throws Exception If failed.
      */
-    private long getReservedWalSegmentIndex(GridCacheDatabaseSharedManager dbMgr) throws Exception{
-        GridCacheDatabaseSharedManager.CheckpointHistory cpHist = dbMgr.checkpointHistory();
+    private long getReservedWalSegmentIndex(GridCacheDatabaseSharedManager dbMgr) {
+        CheckpointHistory cpHist = dbMgr.checkpointHistory();
 
-        Object histMap = GridTestUtils.getFieldValue(cpHist, "histMap");
-
-        Object cpEntry = GridTestUtils.getFieldValue(GridTestUtils.invoke(histMap, "firstEntry"), "value");
-
-        FileWALPointer walPtr = GridTestUtils.getFieldValue(cpEntry, "cpMark");
-
-        return walPtr.index();
+        return ((FileWALPointer) cpHist.firstCheckpointPointer()).index();
     }
 }

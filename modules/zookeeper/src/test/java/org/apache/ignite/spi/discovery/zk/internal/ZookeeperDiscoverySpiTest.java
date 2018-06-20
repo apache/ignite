@@ -118,6 +118,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -127,6 +128,7 @@ import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -420,7 +422,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -3589,6 +3591,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(5, 3);
 
+        client = false;
+
+        awaitPartitionMapExchange();
+
         List<ClusterNode> all = G.allGrids().stream()
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());;
@@ -3599,6 +3605,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         ConnectionsFailureMatrix matrix = ConnectionsFailureMatrix.buildFrom(part1, part2);
 
         ClusterNode lastClient = startGrid(8).cluster().localNode();
+
+        awaitPartitionMapExchange();
 
         // Make last client connected to other nodes.
         for (ClusterNode node : all) {
@@ -3633,15 +3641,21 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());
 
+        Assert.assertEquals(5, srvNodes.size());
+
         client = true;
 
         startGridsMultiThreaded(5, 3);
 
         client = false;
 
+        awaitPartitionMapExchange();
+
         ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
 
-        matrix.addAll(G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList()));
+        List<ClusterNode> allNodes = G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList());
+
+        matrix.addAll(allNodes);
 
         // Remove 2 connections between server nodes.
         matrix.removeConnection(srvNodes.get(0), srvNodes.get(1));
@@ -3674,6 +3688,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());
 
+        Assert.assertEquals(6, srvNodes.size());
+
         List<ClusterNode> srvPart1 = srvNodes.subList(0, 3);
         List<ClusterNode> srvPart2 = srvNodes.subList(3, srvNodes.size());
 
@@ -3683,10 +3699,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         client = false;
 
+        awaitPartitionMapExchange();
+
         List<ClusterNode> clientNodes = G.allGrids().stream()
             .map(g -> g.cluster().localNode())
             .filter(ClusterNode::isClient)
             .collect(Collectors.toList());
+
+        Assert.assertEquals(5, clientNodes.size());
 
         List<ClusterNode> clientPart1 = clientNodes.subList(0, 2);
         List<ClusterNode> clientPart2 = clientNodes.subList(2, 4);
@@ -3793,15 +3813,22 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         private static volatile boolean failure;
 
         /** Connections failure matrix. */
-        private static ConnectionsFailureMatrix matrix;
+        private static volatile ConnectionsFailureMatrix matrix;
 
         /**
          * Start failing connections according to given matrix {@code with}.
          * @param with Failure matrix.
          */
-        public static void fail(ConnectionsFailureMatrix with) {
+        static void fail(ConnectionsFailureMatrix with) {
             matrix = with;
             failure = true;
+        }
+
+        /**
+         * Resets failure matrix.
+         */
+        static void unfail() {
+            failure = false;
         }
 
         /** {@inheritDoc} */
@@ -4264,6 +4291,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         err = false;
 
         failCommSpi = false;
+        PeerToPeerCommunicationFailureSpi.unfail();
 
         evts.clear();
 
@@ -4288,7 +4316,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(500) + 500);
+                    U.sleep(rnd.nextLong(2500) + 2500);
 
                     int idx = rnd.nextInt(ZK_SRVS);
 

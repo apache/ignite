@@ -54,6 +54,7 @@
     <Compile Include="Binary\TimestampAttribute.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Cache\IQueryMetrics.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
@@ -72,6 +73,7 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
@@ -110,7 +112,6 @@
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\Services\DynamicServiceProxy.cs" />
-    <Compile Include="Impl\Services\ServiceMethodHelper.cs" />
     <Compile Include="Impl\Services\ServiceProxyFactory.cs" />
     <Compile Include="Impl\Services\ServiceProxyTypeGenerator.cs" />
     <Compile Include="Impl\Shell.cs" />

@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.WALMode;
 /**
  *
  */
-public class IgniteWalFlushDefaultSelfTest extends IgniteWalFlushMultiNodeFailoverAbstractSelfTest {
+public class IgniteWalFlushFsyncSelfTest extends IgniteWalFlushMultiNodeFailoverAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
