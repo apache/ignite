@@ -1805,7 +1805,7 @@ public class GridNioServer<T> {
 
                         bodyInternal();
 
-                        if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs()) {
+                        if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
                             onIdle();
 
                             lastOnIdleTs = U.currentTimeMillis();
