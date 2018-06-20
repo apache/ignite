@@ -46,6 +46,9 @@ import org.apache.ignite.marshaller.MarshallerContext;
  * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
 final class MarshallerMappingFileStore {
+    /** File lock timeout in milliseconds. */
+    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
+
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -130,6 +133,7 @@ final class MarshallerMappingFileStore {
 
         try {
             File file = new File(workDir, fileName);
+            long time = 0;
 
             while (true) {
                 try (FileInputStream in = new FileInputStream(file)) {
@@ -140,6 +144,11 @@ final class MarshallerMappingFileStore {
 
                             if (rnd == null)
                                 rnd = ThreadLocalRandom.current();
+
+                            if (time == 0)
+                                time = U.currentTimeMillis();
+                            else if ((U.currentTimeMillis() - time) >= FILE_LOCK_TIMEOUT_MS)
+                                return null;
 
                             U.sleep(rnd.nextLong(50));
                         }
