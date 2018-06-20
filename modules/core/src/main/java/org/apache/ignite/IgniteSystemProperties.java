@@ -916,26 +916,38 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
-     *  Single queue poll timeout for discovery worker.
+     *  Single queue poll timeout for discovery worker, milliseconds.
+     *
+     *  Default is {@code 10_000}.
      */
     public static final String IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT = "IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT";
 
     /**
-     * Maximum wait step duration for checkpointer worker.
+     * Maximum wait step duration for checkpointer worker, milliseconds.
+     *
+     * Default is {@code 10_000}.
      */
     public static final String IGNITE_CHECKPOINTER_WAIT_TIMEOUT = "IGNITE_CHECKPOINTER_WAIT_TIMEOUT";
 
     /**
-     * Maximum wait step duration for WAL manager workers.
+     * Maximum wait step duration for WAL manager workers, milliseconds.
+     *
+     * Default is {@code 10_000}.
      */
     public static final String IGNITE_WAL_WORKERS_WAIT_TIMEOUT = "IGNITE_WAL_WORKERS_WAIT_TIMEOUT";
 
     /**
-     *  Single queue poll timeout for striped executor workers.
+     *  Single queue poll timeout for striped executor workers, milliseconds.
+     *
+     * Default is {@code 10_000}.
      */
     public static final String IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT = "IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT";
 
-    /** Accept timeout socket option for generic TCP servers. */
+    /**
+     * Accept timeout socket option for generic TCP servers, milliseconds.
+     *
+     * Default is {@code 10_000}.
+     */
     public static final String IGNITE_TCP_ACCEPT_SO_TIMEOUT = "IGNITE_TCP_ACCEPT_SO_TIMEOUT";
 
     /**
