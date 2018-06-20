@@ -446,9 +446,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 //            checkZkNodesCleanup();
         }
         finally {
-            reset();
-
             stopAllGrids();
+
+            reset();
         }
     }
 
