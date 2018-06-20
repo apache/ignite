@@ -64,6 +64,8 @@ This example demonstrates how to establish a secure connection to an Ignite node
 
 Source: [FailoverExample.js](./FailoverExample.js)
 
+This example requires [additional setup](#additional-setup-for-failoverexample).
+
 This example demonstrates the failover behavior of the client
 - configures the client to connect to a set of nodes
 - connects to a node
