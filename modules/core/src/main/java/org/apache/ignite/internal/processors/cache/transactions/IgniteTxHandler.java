@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
@@ -1652,15 +1651,8 @@ public class IgniteTxHandler {
                                             if (val == null)
                                                 val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
 
-                                            if (val != null) {
+                                            if (val != null)
                                                 entry.readValue(val);
-
-                                                IgniteCacheOffheapManagerImpl.shouldPrint = true;
-                                                U.dumpStack("[offheap]Get value from offheap " + val.value(cacheCtx.cacheObjectContext(), false)
-                                                    + " TxEntry value " + entry.value().value(cacheCtx.cacheObjectContext(), false)
-                                                + " " + entry.hashCode());
-
-                                            }
 
                                         break;
                                     }

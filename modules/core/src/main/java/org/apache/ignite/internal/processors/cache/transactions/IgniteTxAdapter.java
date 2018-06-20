@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
@@ -59,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -1507,35 +1505,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             CacheObject cacheVal;
 
-            if (txEntry.hasValue()) {
+            if (txEntry.hasValue())
                 cacheVal = txEntry.value();
-
-                CacheObject val = txEntry.cached().innerGet(
-                    /*ver*/null,
-                    this,
-                    /*readThrough*/false,
-                    /*updateMetrics*/false,
-                    /*evt*/false,
-                    this.subjectId(),
-                    /*transformClo*/null,
-                    this.resolveTaskName(),
-                    /*expiryPlc*/null,
-                    /*keepBinary*/true);
-
-                if (val != null && !val.value(cacheCtx.cacheObjectContext(), false).equals(cacheVal.value(cacheCtx.cacheObjectContext(), false))){
-                    System.out.println("");
-                } else {
-                    IgniteCacheOffheapManagerImpl.shouldPrint = false;
-                    IgniteCacheOffheapManagerImpl.offheapValues.clear();
-                }
-            } else if (txEntry.hasOldValue()) {
+            else if (txEntry.hasOldValue())
                 cacheVal = txEntry.oldValue();
-
-                IgniteCacheOffheapManagerImpl.shouldPrint = false;
-                IgniteCacheOffheapManagerImpl.offheapValues.clear();
-
-                assert false;
-            } else {
+            else {
                 cacheVal = txEntry.cached().innerGet(
                     null,
                     this,
@@ -1547,9 +1521,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     resolveTaskName(),
                     null,
                     keepBinary);
-
-                IgniteCacheOffheapManagerImpl.shouldPrint = false;
-                IgniteCacheOffheapManagerImpl.offheapValues.clear();
             }
 
             boolean modified = false;
