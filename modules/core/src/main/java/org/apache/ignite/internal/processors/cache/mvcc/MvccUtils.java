@@ -39,7 +39,6 @@ import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedExcepti
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -206,7 +205,7 @@ public class MvccUtils {
         assert mvccCrd <= snapshotCrd : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
 
         long snapshotCntr = snapshot.counter();
-        long snapshotOpCntr = snapshot.operationCounter();
+        int snapshotOpCntr = snapshot.operationCounter();
 
         if (mvccCrd < snapshotCrd)
             // Don't check the row with TxLog if the row is expected to be committed.
@@ -230,11 +229,53 @@ public class MvccUtils {
         byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
 
         if (state != TxState.COMMITTED && state != TxState.ABORTED)
-            throw new IgniteTxMvccVersionCheckedException("Unexpected state: " + state +
-                ", rowMvcc=" + mvccCntr + ":" + opCntr + ", txMvcc=" + snapshot.counter() + ":" +
-                snapshot.operationCounter() + ", node=" + cctx.localNodeId());
+            throw unexpectedStateException(cctx, state, mvccCrd, mvccCntr, opCntr, snapshot);
 
         return state == TxState.COMMITTED;
+    }
+
+    /**
+     *
+     * @param grp Cache group context.
+     * @param state State.
+     * @param crd Mvcc coordinator counter.
+     * @param cntr Mvcc counter.
+     * @param opCntr Mvcc operation counter.
+     * @return State exception.
+     */
+    public static IgniteTxMvccVersionCheckedException unexpectedStateException(
+        CacheGroupContext grp, byte state, long crd, long cntr,
+        int opCntr) {
+        return unexpectedStateException(grp.shared().kernalContext(), state, crd, cntr, opCntr, null);
+    }
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param state State.
+     * @param crd Mvcc coordinator counter.
+     * @param cntr Mvcc counter.
+     * @param opCntr Mvcc operation counter.
+     * @param snapshot Mvcc snapshot
+     * @return State exception.
+     */
+    public static IgniteTxMvccVersionCheckedException unexpectedStateException(
+        GridCacheContext cctx, byte state, long crd, long cntr,
+        int opCntr, MvccSnapshot snapshot) {
+        return unexpectedStateException(cctx.kernalContext(), state, crd, cntr, opCntr, snapshot);
+    }
+
+    /** */
+    private static IgniteTxMvccVersionCheckedException unexpectedStateException(GridKernalContext ctx, byte state, long crd, long cntr,
+        int opCntr, MvccSnapshot snapshot) {
+        String msg = "Unexpected state: [state=" + state + ", rowVer=" + crd + ":" + cntr + ":" + opCntr;
+
+        if (snapshot != null)
+            msg += ", txVer=" + snapshot.coordinatorVersion() + ":" + snapshot.counter() + ":" + snapshot.operationCounter();
+
+        msg += ", localNodeId=" + ctx.localNodeId()  + "]";
+
+        return new IgniteTxMvccVersionCheckedException(msg);
     }
 
     /**

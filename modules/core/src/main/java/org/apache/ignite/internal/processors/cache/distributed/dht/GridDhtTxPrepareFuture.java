@@ -1891,7 +1891,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         }
                     }
 
-                    if (dhtMapping.empty()) {
+                    if (!dhtMapping.queryUpdate() && dhtMapping.empty()) {
                         dhtMap.remove(nodeId);
 
                         if (log.isDebugEnabled())

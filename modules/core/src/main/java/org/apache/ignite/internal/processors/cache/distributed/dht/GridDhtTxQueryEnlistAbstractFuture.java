@@ -351,7 +351,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      * @param ignoreCntr {@code True} if need to ignore skip counter.
      */
     private void continueLoop(boolean ignoreCntr) {
-        if (!ignoreCntr && (SKIP_UPD.getAndIncrement(this) != 0))
+        if (isDone() || (!ignoreCntr && (SKIP_UPD.getAndIncrement(this) != 0)))
             return;
 
         GridDhtCacheAdapter cache = cctx.dhtCache();
@@ -360,9 +360,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         try {
             while (true) {
                 while (hasNext0()) {
-                    if (isDone())
-                        return; // Cancelled.
-
                     Object cur = next0();
 
                     KeyCacheObject key = cctx.toCacheKeyObject(op == DELETE || op == READ ? cur : ((IgniteBiTuple)cur).getKey());
@@ -457,9 +454,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                             updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
                                     try {
-                                        if (isDone())
-                                            return; // Cancelled.
-
                                         processEntry(entry0, op, fut.get(), val0);
 
                                         continueLoop(true);
@@ -487,8 +481,11 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
                     flushBatches();
 
-                    if (noPendingRequests())
+                    if (noPendingRequests()) {
                         onDone(createResponse());
+
+                        return;
+                    }
                 }
 
                 if (SKIP_UPD.decrementAndGet(this) == 0)
@@ -554,8 +551,10 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      * @param val New value.
      * @throws IgniteCheckedException If failed.
      */
-    protected void processEntry(GridDhtCacheEntry entry, GridCacheOperation op,
+    private void processEntry(GridDhtCacheEntry entry, GridCacheOperation op,
         GridCacheUpdateTxResult updRes, CacheObject val) throws IgniteCheckedException {
+        checkCompleted();
+
         assert updRes != null && updRes.updateFuture() == null;
 
         WALPointer ptr0 = updRes.loggedPointer();
@@ -563,7 +562,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         if (ptr0 != null)
             walPtr = ptr0;
 
-        tx.queryEnlisted(true);
+        if (!tx.queryEnlisted())
+            tx.queryEnlisted(true);
 
         cnt++;
 
@@ -586,8 +586,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         if (F.isEmpty(backups))
             return;
 
-        Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
-
         List<GridCacheEntryInfo> hist0 = null;
 
         int part = cctx.affinity().partition(key);
@@ -595,20 +593,15 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         for (ClusterNode node : backups) {
             assert !node.isLocal();
 
-            GridDistributedTxMapping mapping = m.get(node.id());
-
-            if (mapping == null)
-                m.put(node.id(), mapping = new GridDistributedTxMapping(node));
-
-            mapping.markQueryUpdate();
-
             GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), part);
 
             boolean movingPart =
                 partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED;
 
             if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !movingPart) {
-                if (!txStarted(node))
+                updateMappings(node);
+
+                if (newRemoteTx(node))
                     tx.addLockTransactionNode(node);
 
                 hasNearNodeUpdates = true;
@@ -721,10 +714,10 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
     }
 
     /** */
-    private boolean txStarted(ClusterNode node) {
+    private boolean newRemoteTx(ClusterNode node) {
         Set<ClusterNode> nodes = tx.lockTransactionNodes();
 
-        return nodes!= null && nodes.contains(node);
+        return nodes == null || !nodes.contains(node);
     }
 
     /**
@@ -782,24 +775,22 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
     /**
      * Send batch request to remote data node.
      *
-     * <b>IMPORTANT:</b> This method should be called from the critical section in {@link this.sendNextBatches()}
-     *
      * @param batch Batch.
      */
-    private void sendBatch(Batch batch) throws IgniteCheckedException {
-        assert batch != null;
+    private synchronized void sendBatch(Batch batch) throws IgniteCheckedException {
+        checkCompleted();
+
+        assert batch != null && !batch.node().isLocal();
 
         ClusterNode node = batch.node();
 
-        boolean first = !txStarted(node);
-
-        int batchId = first ? FIRST_BATCH_ID : ++batchIdCntr;
-
-        assert !node.isLocal();
+        updateMappings(node);
 
         GridDhtTxQueryEnlistRequest req;
 
-        if (first) {
+        if (newRemoteTx(node)) {
+            tx.addLockTransactionNode(node);
+
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
                 futId,
@@ -812,13 +803,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 nearNodeId,
                 nearLockVer,
                 it.operation(),
-                batchId,
+                FIRST_BATCH_ID,
                 batch.keys(),
                 batch.values());
-
-            assert !txStarted(node);
-
-            tx.addLockTransactionNode(node);
         }
         else {
             // Send only keys, values, LockVersion and batchId if this is not a first request to this backup.
@@ -826,7 +813,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 futId,
                 lockVer,
                 it.operation(),
-                batchId,
+                ++batchIdCntr,
                 mvccSnapshot.operationCounter(),
                 batch.keys(),
                 batch.values());
@@ -844,11 +831,23 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         if (pending0 == null)
             pending.put(node.id(), pending0 = new ConcurrentHashMap<>());
 
-        Batch prev = pending0.put(batchId, batch);
+        Batch prev = pending0.put(req.batchId(), batch);
 
         assert prev == null;
 
         cctx.io().send(node, req, cctx.ioPolicy());
+    }
+
+    /** */
+    private void updateMappings(ClusterNode node) {
+        Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
+
+        GridDistributedTxMapping mapping = m.get(node.id());
+
+        if (mapping == null)
+            m.put(node.id(), mapping = new GridDistributedTxMapping(node));
+
+        mapping.markQueryUpdate();
     }
 
     /**
@@ -963,6 +962,12 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         return false;
     }
 
+    /** */
+    private void checkCompleted() throws IgniteCheckedException {
+        if (isDone())
+            throw new IgniteCheckedException("Future is done.");
+    }
+
     /**
      * Callback on backup response.
      *
@@ -971,7 +976,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      */
     public void onResult(UUID nodeId, GridDhtTxQueryEnlistResponse res) {
         if (res.error() != null) {
-            onDone(new IgniteCheckedException("Failed to update backup node=" + nodeId + '.', res.error()));
+            onDone(new IgniteCheckedException("Failed to update backup node: [localNodeId=" + cctx.localNodeId() +
+                ", remoteNodeId=" + nodeId + ']', res.error()));
 
             return;
         }
@@ -1040,23 +1046,26 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         if (res.error() == null)
             clearLockFuture();
 
-        boolean done = super.onDone(res, null);
+        // To prevent new remote transactions creation
+        // after future is cancelled by rollback.
+        synchronized (this) {
+            boolean done = super.onDone(res, null);
 
-        assert done;
+            assert done;
 
-        if (log.isDebugEnabled())
-            log.debug("Completing future: " + this);
+            if (log.isDebugEnabled())
+                log.debug("Completing future: " + this);
 
-        // Clean up.
-        cctx.mvcc().removeFuture(futId);
+            // Clean up.
+            cctx.mvcc().removeFuture(futId);
 
-        if (timeoutObj != null)
-            cctx.time().removeTimeoutObject(timeoutObj);
+            if (timeoutObj != null)
+                cctx.time().removeTimeoutObject(timeoutObj);
 
-        U.close(it, log);
+            U.close(it, log);
 
-        return true;
-
+            return true;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1170,7 +1179,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
          * @return Historical entries.
          */
         public List<CacheEntryInfoCollection> entries() {
-           return entries;
+            return entries;
         }
     }
 

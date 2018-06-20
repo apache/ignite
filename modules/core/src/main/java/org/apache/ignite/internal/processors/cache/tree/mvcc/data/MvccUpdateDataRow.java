@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -46,6 +45,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 
@@ -255,7 +255,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                             txState = MvccUtils.state(cctx, rowNewCrd, rowNewCntr, rowNewOpCntr);
 
                         if (!(txState == TxState.COMMITTED || txState == TxState.ABORTED))
-                            throw new IgniteTxMvccVersionCheckedException("Unexpected state: " + txState);
+                            throw unexpectedStateException(cctx, txState, rowNewCrd, rowNewCntr, rowNewOpCntr, mvccSnapshot);
 
                         removed = txState == TxState.COMMITTED;
                     }
@@ -312,9 +312,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     resCrd = rowCrd;
                     resCntr = rowCntr;
                 }
-                else
-                    throw new IgniteTxMvccVersionCheckedException("Unexpected state: " + txState + ", key=" + key +
-                    ", rowMvcc=" + rowCntr + ", txMvcc=" + mvccSnapshot.counter() + ":" + mvccSnapshot.operationCounter());
+                else {
+                    throw unexpectedStateException(cctx, txState, rowCrd, rowCntr, rowOpCntr, mvccSnapshot);
+                }
             }
         }
 

@@ -1176,7 +1176,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                         try {
                             if (!cctx.localNode().isClient()) {
-                                if (remote())
+                                if (dht() && remote())
                                     cctx.coordinators().updateState(snapshot, txState, false);
                                 else if (local()) {
                                     IgniteInternalFuture rollbackFut = rollbackFuture();
