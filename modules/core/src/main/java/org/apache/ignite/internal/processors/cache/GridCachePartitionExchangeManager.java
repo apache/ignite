@@ -2433,7 +2433,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     boolean forcePreload = false;
 
                     // When assignments not changed we can skip them.
-                    boolean skipAssigns = true;
+                    boolean skipAssigns = false;
 
                     GridDhtPartitionExchangeId exchId;
 
@@ -2561,10 +2561,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance && !hasPendingExchange()) {
+                                if ((delay == 0 || forcePreload) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                    skipAssigns = skipAssigns && !assigns.changed();
+                                    skipAssigns &= !assigns.changed();
                                 }
 
                                 assignsMap.put(grp.groupId(), assigns);
@@ -2614,15 +2614,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                // Cancels previous rebalance future (in case it's not done yet and
-                                // assigments are different to previous rebalance future).
-                                // Sends previous rebalance stopped event (if necessary).
-                                // Creates new rebalance future.
-                                // Sends current rebalance started event (if necessary).
-                                // Finishes cache sync future (on empty assignments).
                                 if (skipAssigns)
-                                    grp.preloader().updateTopology(exchFut.topologyVersion());
+                                    grp.preloader().updateTopology(assigns.topologyVersion());
                                 else {
+                                    // Cancels previous rebalance future (in case it's not done yet).
+                                    // Sends previous rebalance stopped event (if necessary).
+                                    // Creates new rebalance future.
+                                    // Sends current rebalance started event (if necessary).
+                                    // Finishes cache sync future (on empty assignments).
                                     Runnable cur = grp.preloader().addAssignments(assigns,
                                         forcePreload,
                                         cnt,
@@ -2651,11 +2650,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList + "]");
 
-                            U.log(log, "Rebalancing started " +
-                                "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + ']');
+                            if (!hasPendingExchange()) {
+                                U.log(log, "Rebalancing started " +
+                                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                                    ", node=" + exchId.nodeId() + ']');
 
-                            r.run(); // Starts rebalancing routine.
+                                r.run(); // Starts rebalancing routine.
+                            }
+                            else
+                                U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                                    ", node=" + exchId.nodeId() + ']');
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +

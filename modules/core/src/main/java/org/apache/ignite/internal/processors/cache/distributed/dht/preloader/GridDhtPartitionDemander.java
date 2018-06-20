@@ -104,6 +104,13 @@ public class GridDhtPartitionDemander {
     @GridToStringInclude
     private volatile RebalanceFuture rebalanceFut;
 
+    /**
+     * Due to {@link RebalanceFuture#topVer} can be updated if assignments not changed we need to
+     * keep latest running rebalance routine and stop all stale supply-demand messages.
+     */
+    @GridToStringInclude
+    private volatile AffinityTopologyVersion rebalanceTopVer = AffinityTopologyVersion.ZERO;
+
     /** Last timeout object. */
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
 
@@ -247,8 +254,10 @@ public class GridDhtPartitionDemander {
      * @param fut Future.
      * @return {@code True} if topology changed.
      */
-    private boolean topologyChanged(RebalanceFuture fut) {
-        return fut != rebalanceFut;
+    private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
+        return
+            !rebalanceTopVer.equals(topVer) || // Topology changed.
+                fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
@@ -264,6 +273,9 @@ public class GridDhtPartitionDemander {
      * Update rebalance future topology version e.g. when assignments not changed from previous version.
      */
     public void updateTopology(AffinityTopologyVersion top){
+        if (log.isInfoEnabled())
+            log.info("Updating rebalance future logged [oldTopVer=" + rebalanceFut.topologyVersion() + ", topVer=" + top + "]");
+
         rebalanceFut.topVer = top;
     }
 
@@ -367,6 +379,8 @@ public class GridDhtPartitionDemander {
                         }
                     });
 
+                rebalanceTopVer = assignments.topologyVersion();
+
                 requestPartitions(fut, assignments);
             };
         }
@@ -423,7 +437,7 @@ public class GridDhtPartitionDemander {
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assignments) {
         assert fut != null;
 
-        if (topologyChanged(fut)) {
+        if (topologyChanged(fut, assignments.topologyVersion())) {
             fut.cancel();
 
             return;
@@ -678,7 +692,7 @@ public class GridDhtPartitionDemander {
         if (node == null)
             return;
 
-        if (topologyChanged(fut)) // Topology already changed (for the future that supply message based on).
+        if (topologyChanged(fut, topVer)) // Topology already changed (for the future that supply message based on).
             return;
 
         if (!fut.isActual(supply.rebalanceId())) {
@@ -823,7 +837,7 @@ public class GridDhtPartitionDemander {
 
             d.topic(rebalanceTopics.get(topicId));
 
-            if (!topologyChanged(fut) && !fut.isDone()) {
+            if (!topologyChanged(fut, topVer) && !fut.isDone()) {
                 // Send demand message.
                 try {
                     ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
