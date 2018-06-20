@@ -20,8 +20,11 @@ package org.apache.ignite.internal.visor.tx;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.TimeZone;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -30,6 +33,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -38,7 +42,15 @@ public class VisorTxInfo extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    /** */
     private IgniteUuid xid;
+
+    /**
+     * Transaction start time.
+     */
+    private long startTime;
 
     /** */
     private long duration;
@@ -64,6 +76,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private int size;
 
+    /** */
+    private IgniteUuid nearXid;
+
+    /** */
+    private Collection<UUID> masterNodeIds;
+
     /**
      * Default constructor.
      */
@@ -73,6 +91,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
 
     /**
      * @param xid Xid.
+     * @param startTime Start time of transaction.
      * @param duration Duration.
      * @param isolation Isolation.
      * @param concurrency Concurrency.
@@ -82,10 +101,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
      * @param state State.
      * @param size Size.
      */
-    public VisorTxInfo(IgniteUuid xid, long duration, TransactionIsolation isolation,
+    public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size) {
+        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds) {
         this.xid = xid;
+        this.startTime = startTime;
         this.duration = duration;
         this.isolation = isolation;
         this.concurrency = concurrency;
@@ -94,11 +114,28 @@ public class VisorTxInfo extends VisorDataTransferObject {
         this.primaryNodes = primaryNodes;
         this.state = state;
         this.size = size;
+        this.nearXid = nearXid;
+        this.masterNodeIds = masterNodeIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** */
     public IgniteUuid getXid() {
         return xid;
+    }
+
+    /** */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** */
+    public String getFormattedStartTime() {
+        return dateTimeFormatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), TimeZone.getDefault().toZoneId()));
     }
 
     /** */
@@ -141,6 +178,16 @@ public class VisorTxInfo extends VisorDataTransferObject {
         return size;
     }
 
+    /** */
+    public @Nullable IgniteUuid getNearXid() {
+        return nearXid;
+    }
+
+    /** */
+    public @Nullable Collection<UUID> getMasterNodeIds() {
+        return masterNodeIds;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, xid);
@@ -152,6 +199,9 @@ public class VisorTxInfo extends VisorDataTransferObject {
         U.writeCollection(out, primaryNodes);
         U.writeEnum(out, state);
         out.writeInt(size);
+        U.writeGridUuid(out, nearXid);
+        U.writeCollection(out, masterNodeIds);
+        out.writeLong(startTime);
     }
 
     /** {@inheritDoc} */
@@ -165,6 +215,14 @@ public class VisorTxInfo extends VisorDataTransferObject {
         primaryNodes = U.readCollection(in);
         state = TransactionState.fromOrdinal(in.readByte());
         size = in.readInt();
+        if (protoVer >= V2) {
+            nearXid = U.readGridUuid(in);
+
+            masterNodeIds = U.readCollection(in);
+
+            startTime = in.readLong();
+        }
+
     }
 
     /** {@inheritDoc} */

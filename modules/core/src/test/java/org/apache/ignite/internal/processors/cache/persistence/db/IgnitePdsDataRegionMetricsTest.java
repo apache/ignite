@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Random;
+import java.io.File;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,20 +35,19 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
 /**
@@ -136,9 +136,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
             final IgniteCache<String, String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            final Set<Integer> grpIds = node.context().cache().cacheGroups()
-                .stream().map(CacheGroupContext::groupId).collect(Collectors.toSet());
-
             Map<String, String> map = new HashMap<>();
 
             for (int batch = 0; batch < BATCHES; batch++) {
@@ -149,7 +146,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 cache.putAll(map);
 
-                checkMetricsConsistency(node, grpIds);
+                forceCheckpoint();
+
+                checkMetricsConsistency(node, DEFAULT_CACHE_NAME);
             }
 
             currMetrics = getDfltRegionMetrics(node);
@@ -169,22 +168,21 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         node0.cluster().active(true);
 
-        final IgniteCache<String, String> cache = node0.getOrCreateCache(DEFAULT_CACHE_NAME);
+        final IgniteCache<Integer, String> cache = node0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        final Set<Integer> grpIds = node0.context().cache().cacheGroups()
-            .stream().map(CacheGroupContext::groupId).collect(Collectors.toSet());
-
-        Map<String, String> map = new HashMap<>();
+        Map<Integer, String> map = new HashMap<>();
 
         for (int i = 0; i < 10_000; i++)
-            map.put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            map.put(i, UUID.randomUUID().toString());
 
         cache.putAll(map);
 
         awaitPartitionMapExchange(true, true, null);
 
-        checkMetricsConsistency(node0, grpIds);
-        checkMetricsConsistency(node1, grpIds);
+        forceCheckpoint();
+
+        checkMetricsConsistency(node0, DEFAULT_CACHE_NAME);
+        checkMetricsConsistency(node1, DEFAULT_CACHE_NAME);
 
         IgniteEx node2 = startGrid(2);
 
@@ -192,9 +190,11 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        checkMetricsConsistency(node0, grpIds);
-        checkMetricsConsistency(node1, grpIds);
-        checkMetricsConsistency(node2, grpIds);
+        forceCheckpoint();
+
+        checkMetricsConsistency(node0, DEFAULT_CACHE_NAME);
+        checkMetricsConsistency(node1, DEFAULT_CACHE_NAME);
+        checkMetricsConsistency(node2, DEFAULT_CACHE_NAME);
 
         stopGrid(1, true);
 
@@ -202,8 +202,10 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        checkMetricsConsistency(node0, grpIds);
-        checkMetricsConsistency(node2, grpIds);
+        forceCheckpoint();
+
+        checkMetricsConsistency(node0, DEFAULT_CACHE_NAME);
+        checkMetricsConsistency(node2, DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -289,29 +291,28 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static void checkMetricsConsistency(
-        final IgniteEx node,
-        final Set<Integer> grpIds) throws Exception {
-        boolean storageMatches = GridTestUtils.waitForCondition((PA)() -> {
-            long pagesInStore = 0;
-            long allocated = 0;
+    private void checkMetricsConsistency(final IgniteEx node, String cacheName) throws Exception {
+        FilePageStoreManager pageStoreManager = (FilePageStoreManager)node.context().cache().context().pageStore();
 
-            for (int grpId : grpIds) {
-                DataRegion region = node.context().cache().cacheGroup(grpId).dataRegion();
+        long totalPersistanceSize = 0;
+        File cacheWorkDir = pageStoreManager.cacheWorkDir(
+            node.getOrCreateCache(cacheName).getConfiguration(CacheConfiguration.class)
+        );
 
-                if (!region.config().isMetricsEnabled())
-                    continue;
+        try (DirectoryStream<Path> files = newDirectoryStream(
+            cacheWorkDir.toPath(), entry -> entry.toFile().getName().endsWith(".bin"))
+        ) {
+            for (Path path : files)
+                totalPersistanceSize += path.toFile().length();
+        }
 
-                pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
-                allocated += region.memoryMetrics().getTotalAllocatedPages();
-            }
+        long totalAllocatedPagesFromMetrics = node.context().cache().context()
+            .cacheContext(CU.cacheId(DEFAULT_CACHE_NAME))
+            .group()
+            .dataRegion()
+            .memoryMetrics()
+            .getTotalAllocatedPages();
 
-            assert 0 != pagesInStore;
-            assert 0 != allocated;
-
-            return allocated == pagesInStore;
-        }, 1000);
-
-        assertTrue(storageMatches);
+        assertEquals(totalPersistanceSize / pageStoreManager.pageSize(), totalAllocatedPagesFromMetrics);
     }
 }

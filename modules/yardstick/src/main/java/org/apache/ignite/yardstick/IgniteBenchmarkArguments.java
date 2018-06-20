@@ -110,7 +110,7 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-ep", "--enablePreload"}, description = "Enable preload flag.")
-    private boolean enablePreload = true;
+    private boolean enablePreload = false;
 
     /** */
     @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")

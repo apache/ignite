@@ -383,16 +383,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (state == ACTIVE || state == PREPARING || state == PREPARED || state == MARKED_ROLLBACK) {
             if (!tx.markFinalizing(status)) {
-                if (log.isDebugEnabled())
-                    log.debug("Will not try to commit invalidate transaction (could not mark finalized): " + tx);
+                if (log.isInfoEnabled())
+                    log.info("Will not try to commit invalidate transaction (could not mark finalized): " + tx);
 
                 return;
             }
 
             tx.salvageTx();
 
-            if (log.isDebugEnabled())
-                log.debug("Invalidated transaction because originating node left grid: " + CU.txString(tx));
+            if (log.isInfoEnabled())
+                log.info("Invalidated transaction because originating node left grid: " + CU.txString(tx));
         }
     }
 
@@ -2012,12 +2012,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param commit Whether transaction should be committed or rolled back.
      */
     public void finishTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
-        if (log.isDebugEnabled())
-            log.debug("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
+        if (log.isInfoEnabled())
+            log.info("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
 
         if (!tx.markFinalizing(RECOVERY_FINISH)) {
-            if (log.isDebugEnabled())
-                log.debug("Will not try to commit prepared transaction (could not mark finalized): " + tx);
+            if (log.isInfoEnabled())
+                log.info("Will not try to commit prepared transaction (could not mark finalized): " + tx);
 
             return;
         }
@@ -2057,8 +2057,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
-        if (log.isDebugEnabled())
-            log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
+        if (log.isInfoEnabled())
+            log.info("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
 
         fut.prepare();
     }

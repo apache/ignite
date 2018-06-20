@@ -637,8 +637,19 @@ public abstract class PagesList extends DataStructure {
                         continue;
                 }
 
-                assert PageIO.getPageId(tailAddr) == tailId : "pageId = " + PageIO.getPageId(tailAddr) + ", tailId = " + tailId;
-                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
+                if (stripe.tailId != tailId) {
+                    // Another thread took the last page.
+                    writeUnlock(tailId, tailPage, tailAddr, false);
+
+                    lockAttempt--; // Ignore current attempt.
+
+                    continue;
+                }
+
+                assert PageIO.getPageId(tailAddr) == tailId
+                    : "tailId = " + U.hexLong(tailId) + ", pageId = " + U.hexLong(PageIO.getPageId(tailAddr));
+                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE
+                    : "tailId = " + U.hexLong(tailId) + ", type = " + PageIO.getType(tailAddr);
 
                 boolean ok = false;
 
@@ -1036,7 +1047,7 @@ public abstract class PagesList extends DataStructure {
                 if (tailAddr == 0L)
                     continue;
 
-                if (stripe.empty) {
+                if (stripe.empty || stripe.tailId != tailId) {
                     // Another thread took the last page.
                     writeUnlock(tailId, tailPage, tailAddr, false);
 
@@ -1049,8 +1060,10 @@ public abstract class PagesList extends DataStructure {
                         return 0L;
                 }
 
-                assert PageIO.getPageId(tailAddr) == tailId : "tailId = " + tailId + ", tailPageId = " + PageIO.getPageId(tailAddr);
-                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
+                assert PageIO.getPageId(tailAddr) == tailId
+                    : "tailId = " + U.hexLong(tailId) + ", pageId = " + U.hexLong(PageIO.getPageId(tailAddr));
+                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE
+                    : "tailId = " + U.hexLong(tailId) + ", type = " + PageIO.getType(tailAddr);
 
                 boolean dirty = false;
                 long dataPageId;

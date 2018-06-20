@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.tx;
 
+import org.apache.ignite.internal.commandline.CommandHandler;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,7 +26,9 @@ public enum VisorTxSortOrder {
     /** Sort by duration. */
     DURATION,
     /** Sort by size. */
-    SIZE;
+    SIZE,
+    /** Sort by startTime */
+    START_TIME;
 
     /** Enumerated values. */
     private static final VisorTxSortOrder[] VALS = values();
@@ -49,6 +52,9 @@ public enum VisorTxSortOrder {
 
         if (SIZE.toString().equals(name))
             return SIZE;
+
+        if (CommandHandler.CMD_TX_ORDER_START_TIME.equals(name))
+            return START_TIME;
 
         throw new IllegalArgumentException("Sort order is unknown: " + name);
     }
