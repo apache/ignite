@@ -130,7 +130,7 @@ public class IgnitePdsDuplicatedCacheConfigurationTest extends GridCommonAbstrac
 
             corrData.config().setGroupName(ODD_GROUP_NAME);
 
-            pageStore.storeCacheData(corrData, true);
+            //pageStore.storeCacheData(corrData, true);
         }
     }
 

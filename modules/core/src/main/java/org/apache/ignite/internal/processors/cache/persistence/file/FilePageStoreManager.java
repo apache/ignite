@@ -281,35 +281,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        File cacheWorkDir = cacheWorkDir(cacheData.config());
-        File file;
-
-        checkAndInitCacheWorkDir(cacheWorkDir);
-
-        assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
-
-        if (cacheData.config().getGroupName() != null)
-            file = new File(cacheWorkDir, cacheData.config().getName() + CACHE_DATA_FILENAME);
-        else
-            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
-
-        if (overwrite || !file.exists() || file.length() == 0) {
-            try {
-                file.createNewFile();
-
-                // Pre-existing file will be truncated upon stream open.
-                try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
-                    marshaller.marshal(cacheData, stream);
-                }
-            }
-            catch (IOException ex) {
-                throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException {
         grpsWithoutIdx.remove(grp.groupId());
 
@@ -648,7 +619,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
+    public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())
             return Collections.emptyMap();
 
@@ -842,23 +813,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx.toString(), e);
             }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
-        CacheConfiguration cacheCfg = cacheData.config();
-        File cacheWorkDir = cacheWorkDir(cacheCfg);
-        File file;
-
-        if (cacheData.config().getGroupName() != null)
-            file = new File(cacheWorkDir, cacheCfg.getName() + CACHE_DATA_FILENAME);
-        else
-            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
-
-        if (file.exists()) {
-            if (!file.delete())
-                throw new IgniteCheckedException("Failed to delete cache configuration:" + cacheCfg.getName());
         }
     }
 

@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -97,6 +99,9 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -185,7 +190,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
  * Cache processor.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
-public class GridCacheProcessor extends GridProcessorAdapter {
+public class GridCacheProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
     /** Template of message of conflicts during configuration merge*/
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -253,6 +258,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
+    private final String STORE_CACHE_PREFIX = "cache.";
+
+    /** Meta storage. */
+    private ReadWriteMetastorage metastorage;
+
     /**
      * @param ctx Kernal context.
      */
@@ -265,6 +275,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         internalCaches = new HashSet<>();
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
     /**
@@ -808,7 +820,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
-            Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+            Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
 
             if (!F.isEmpty(storedCaches))
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
@@ -819,6 +831,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
                 }
         }
+    }
+
+    public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+        this.context().database().checkpointReadLock();
+        try {
+            String cacheName = cacheData.config().getName();
+
+            if (metastorage.read(STORE_CACHE_PREFIX + cacheName) == null || overwrite)
+                metastorage.write(STORE_CACHE_PREFIX + cacheName, cacheData);
+        }
+        finally {
+            this.context().database().checkpointReadUnlock();
+        }
+    }
+
+    public void removeCacheData(String cacheName) throws IgniteCheckedException {
+
+        this.context().database().checkpointReadLock();
+        try {
+            this.metastorage.remove(STORE_CACHE_PREFIX + cacheName);
+        }
+        finally {
+            this.context().database().checkpointReadUnlock();
+        }
+
     }
 
     /**
@@ -1293,11 +1330,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            IgnitePageStoreManager pageStore;
-
-            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
+            if (destroy && CU.isPersistenceEnabled(ctx.gridConfig())) {
                 try {
-                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                    removeCacheData(ctx.name());
                 } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
                             "[cache=" + ctx.name() + "]", e);
@@ -1314,6 +1349,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         finally {
             cleanup(ctx);
         }
+    }
+
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+//        if (!ctx.clientNode() && CU.isPersistenceEnabled(ctx.config()))
+//           proceedCacheStart();
+        Map<String, StoredCacheData> data = (Map<String, StoredCacheData>)metastorage.readForPredicate(new IgnitePredicate<String>() {
+            @Override public boolean apply(String s) {
+                return s.startsWith(STORE_CACHE_PREFIX);
+            }
+        });
+    }
+
+    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        if (!ctx.clientNode() && CU.isPersistenceEnabled(ctx.config()))
+            this.metastorage = metastorage;
+        else
+            this.metastorage = null;
     }
 
     /**
@@ -3304,9 +3356,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
         assert desc != null;
 
-        if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
-            isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
-            sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
+        if (!sharedCtx.kernalContext().clientNode() &&
+                isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            storeCacheData(desc.toStoredData(), true);
     }
 
     /**
