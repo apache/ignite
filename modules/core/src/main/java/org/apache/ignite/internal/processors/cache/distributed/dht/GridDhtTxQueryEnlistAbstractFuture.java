@@ -371,6 +371,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                     if (op == CREATE || op == UPDATE)
                         val = cctx.toCacheObject(((IgniteBiTuple)cur).getValue());
 
+                    tx.markQueryEnlisted(mvccSnapshot);
+
                     GridCacheUpdateTxResult res;
 
                     while (true) {
@@ -552,9 +554,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
         if (ptr0 != null)
             walPtr = ptr0;
-
-        if (!tx.queryEnlisted())
-            tx.queryEnlisted(true);
 
         cnt++;
 

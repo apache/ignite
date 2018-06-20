@@ -31,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -118,18 +117,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0);
 
     /** */
-    private static final BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>> CONC =
-        new BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>>() {
-        /** {@inheritDoc} */
-        @Override public List<LockFuture> apply(List<LockFuture> l1, List<LockFuture> l2) {
-            ArrayList<LockFuture> res = new ArrayList<>(l1.size() + l2.size());
-
-            res.addAll(l1);
-            res.addAll(l2);
-
-            return res;
-        }
-    };
+    private static final Waiter LOCAL_TRANSACTION_MARKER = new LocalTransactionMarker();
 
     /** */
     private final Object mux = new Object();
@@ -162,7 +150,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private ConcurrentMap<Long, WaitTxFuture> waitTxFuts = new ConcurrentHashMap<>();
 
     /** */
-    private final Map<TxKey, List<LockFuture>> waitList = new ConcurrentHashMap<>();
+    private final Map<TxKey, Waiter> waitMap = new ConcurrentHashMap<>();
 
     /** */
     private final AtomicLong futIdCntr = new AtomicLong(0);
@@ -275,15 +263,35 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      */
     public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
-        List<LockFuture> waiting;
 
         txLog.put(key, state, primary);
 
+        Waiter waiter;
+
         if (primary && (state == TxState.ABORTED || state == TxState.COMMITTED)
-                && (waiting = waitList.remove(key)) != null) {
-            for (LockFuture fut0 : waiting)
-                complete(fut0);
-        }
+            && (waiter = waitMap.remove(key)) != null)
+            waiter.run(ctx);
+    }
+
+    /**
+     * @param crd Mvcc coordinator version.
+     * @param cntr Mvcc counter.
+     */
+    public void registerLocalTransaction(long crd, long cntr) {
+        Waiter old = waitMap.put(new TxKey(crd, cntr), LOCAL_TRANSACTION_MARKER);
+
+        assert old == null;
+    }
+
+    /**
+     * @param crd Mvcc coordinator version.
+     * @param cntr Mvcc counter.
+     * @return {@code True} if there is an active local transaction with given version.
+     */
+    public boolean hasLocalTransaction(long crd, long cntr) {
+        Waiter waiter = waitMap.get(new TxKey(crd, cntr));
+
+        return waiter != null && waiter.hasLocalTransaction();
     }
 
     /**
@@ -294,19 +302,16 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      */
     public IgniteInternalFuture waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
         TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
+
         LockFuture fut = new LockFuture(cctx.ioPolicy());
 
-        List<LockFuture> waiting = new ArrayList<>(1); waiting.add(fut);
-
-        waitList.merge(key, waiting, CONC);
+        Waiter waiter = waitMap.merge(key, fut, Waiter::concat);
 
         byte state = txLog.get(key);
 
         if ((state == TxState.ABORTED || state == TxState.COMMITTED)
-                && (waiting = waitList.remove(key)) != null) {
-            for (LockFuture fut0 : waiting)
-                complete(fut0);
-        }
+            && !waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
+            waiter.run(ctx);
 
         return fut;
     }
@@ -319,18 +324,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      */
     public void removeUntil(MvccVersion ver) throws IgniteCheckedException {
         txLog.removeUntil(ver.coordinatorVersion(), ver.counter());
-    }
-
-    /**
-     * @param fut Lock future.
-     */
-    private void complete(LockFuture fut) {
-        try {
-            ctx.pools().poolForPolicy(fut.plc).execute(fut);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, e);
-        }
     }
 
     /**
@@ -1395,7 +1388,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                                         assert currentCoordinator().coordinatorVersion() == snapshot.coordinatorVersion();
 
                                         if (U.assertionsEnabled()) {
-                                            for (TxKey key : waitList.keySet()) {
+                                            for (TxKey key : waitMap.keySet()) {
                                                 assert key.major() == snapshot.coordinatorVersion();
                                                 assert key.minor() > snapshot.cleanupVersion();
                                             }
@@ -1639,7 +1632,31 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     }
 
     /** */
-    private static class LockFuture extends GridFutureAdapter implements Runnable {
+    private interface Waiter {
+        /**
+         * @param ctx Grid kernal context.
+         */
+        void run(GridKernalContext ctx);
+
+        /**
+         * @param other Another waiter.
+         * @return New compound waiter.
+         */
+        Waiter concat(Waiter other);
+
+        /**
+         * @return {@code True} if there is an active local transaction
+         */
+        boolean hasLocalTransaction();
+
+        /**
+         * @return {@code True} if it is a compound waiter.
+         */
+        boolean compound();
+    }
+
+    /** */
+    private static class LockFuture extends GridFutureAdapter implements Waiter, Runnable {
         /** */
         private final byte plc;
 
@@ -1650,8 +1667,141 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
             this.plc = plc;
         }
 
+        /** {@inheritDoc} */
         @Override public void run() {
             onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run(GridKernalContext ctx) {
+            try {
+                ctx.pools().poolForPolicy(plc).execute(this);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(ctx.log(LockFuture.class), e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Waiter concat(Waiter other) {
+            return new CompoundWaiterNoLocal(this, other);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasLocalTransaction() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean compound() {
+            return false;
+        }
+    }
+
+    /** */
+    private static class LocalTransactionMarker implements Waiter {
+        /** {@inheritDoc} */
+        @Override public void run(GridKernalContext ctx) {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public Waiter concat(Waiter other) {
+            return new CompoundWaiter(other);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasLocalTransaction() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean compound() {
+            return false;
+        }
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static class CompoundWaiter implements Waiter {
+        /** */
+        private final Object inner;
+
+        /**
+         * @param waiter Waiter to wrap.
+         */
+        private CompoundWaiter(Waiter waiter) {
+            inner = waiter.compound() ? ((CompoundWaiter)waiter).inner : waiter;
+        }
+
+        /**
+         * @param first First waiter.
+         * @param second Second waiter.
+         */
+        private CompoundWaiter(Waiter first, Waiter second) {
+            ArrayList<Waiter> list = new ArrayList<>();
+
+            add(list, first);
+            add(list, second);
+
+            inner = list;
+        }
+
+        /** */
+        private void add(List<Waiter> to, Waiter waiter) {
+            if (!waiter.compound())
+                to.add(waiter);
+            else if (((CompoundWaiter)waiter).inner.getClass() == ArrayList.class)
+                to.addAll((List<Waiter>)((CompoundWaiter)waiter).inner);
+            else
+                to.add((Waiter)((CompoundWaiter)waiter).inner);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run(GridKernalContext ctx) {
+            if (inner.getClass() == ArrayList.class) {
+                for (Waiter waiter : (List<Waiter>)inner) {
+                    waiter.run(ctx);
+                }
+            }
+            else
+                ((Waiter)inner).run(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Waiter concat(Waiter other) {
+            return new CompoundWaiter(this, other);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasLocalTransaction() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean compound() {
+            return true;
+        }
+    }
+
+    /** */
+    private static class CompoundWaiterNoLocal extends CompoundWaiter {
+        /**
+         * @param first First waiter.
+         * @param second Second waiter.
+         */
+        private CompoundWaiterNoLocal(Waiter first, Waiter second) {
+            super(first, second);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Waiter concat(Waiter other) {
+            return new CompoundWaiterNoLocal(this, other);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasLocalTransaction() {
+            return false;
         }
     }
 

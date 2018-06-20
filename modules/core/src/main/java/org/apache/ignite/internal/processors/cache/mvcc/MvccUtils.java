@@ -118,46 +118,49 @@ public class MvccUtils {
 
         byte state = state(cctx, mvccCrd, mvccCntr, 0);
 
-        return state != TxState.COMMITTED && state != TxState.ABORTED;
+        return state != TxState.COMMITTED && state != TxState.ABORTED
+            || cctx.kernalContext().coordinators().hasLocalTransaction(mvccCrd, mvccCntr);
     }
 
     /**
      * @param cctx Cache context.
      * @param mvccCrd Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Mvcc operation counter.
      * @return TxState
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
     public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
-        return state(cctx.kernalContext(), mvccCrd, mvccCntr, mvccOpCntr);
+        return state(cctx.kernalContext().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
     }
 
     /**
      * @param grp Cache group context.
      * @param mvccCrd Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Mvcc operation counter.
      * @return TxState
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
     public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
-        return state(grp.shared().kernalContext(), mvccCrd, mvccCntr, mvccOpCntr);
+        return state(grp.shared().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
     }
 
     /**
-     * @param ctx Kernal context.
+     * @param proc Mvcc processor.
      * @param mvccCrd Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @return TxState
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
-    private static byte state(GridKernalContext ctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+    private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
-        return ctx.coordinators().state(mvccCrd, mvccCntr);
+        return proc.state(mvccCrd, mvccCntr);
     }
 
     /**
