@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -175,9 +176,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
     /** Batches for sending to remote nodes. */
     private Map<UUID, Batch> batches;
-
-    /** Batches containing keys for moving partitions. */
-    private Map<UUID, Batch> histBatches;
 
     /** Batches already sent to remotes, but their acks are not received yet. */
     private ConcurrentMap<UUID, ConcurrentMap<Integer, Batch>> pending;
@@ -479,7 +477,28 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                         walPtr = null; // Avoid additional flushing.
                     }
 
-                    flushBatches();
+                    if (!F.isEmpty(batches)) {
+                        Map<UUID, Batch> remains = null;
+
+                        // Flush incomplete batches.
+                        // Need to skip batches for nodes where first request (contains tx info) is still in-flight.
+                        // Otherwise, the regular enlist request (without tx info) may beat it to the primary node.
+                        for (Batch batch : batches.values()) {
+                            ConcurrentMap<Integer, Batch> pending0 =
+                                pending == null ? null : pending.get(batch.node().id());
+
+                            if (pending0 != null && pending0.containsKey(FIRST_BATCH_ID)) {
+                                if (remains == null)
+                                    remains = new HashMap<>();
+
+                                remains.put(batch.node().id(), batch);
+                            }
+                            else
+                                sendBatch(batch);
+                        }
+
+                        batches = remains;
+                    }
 
                     if (noPendingRequests()) {
                         onDone(createResponse());
@@ -586,7 +605,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         if (F.isEmpty(backups))
             return;
 
-        List<GridCacheEntryInfo> hist0 = null;
+        CacheEntryInfoCollection hist0 = null;
 
         int part = cctx.affinity().partition(key);
 
@@ -609,18 +628,28 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 continue;
             }
 
+            Batch batch = null;
+
+            if (batches == null)
+                batches = new HashMap<>();
+            else
+                batch = batches.get(node.id());
+
+            if (batch == null)
+                batches.put(node.id(), batch = new Batch(node));
+
             if (movingPart && hist0 == null) {
                 assert !F.isEmpty(hist);
 
                 hist0 = fetchHistoryInfo(key, hist);
             }
 
-            Batch batch = getBatch(node, movingPart);
+            batch.add(key, movingPart ? hist0 : val);
 
-            batch.add(key, val, hist0);
+            if (batch.size() == BATCH_SIZE) {
+                assert batches != null;
 
-            if (batch.size() == BATCH_SIZE && !firstBatchIsPending(node.id())) {
-                removeBatch(node.id(), movingPart);
+                batches.remove(node.id());
 
                 sendBatch(batch);
             }
@@ -634,7 +663,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      * @return History entries.
      * @throws IgniteCheckedException, if failed.
      */
-    private List<GridCacheEntryInfo> fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
+    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
         throws IgniteCheckedException {
         List<GridCacheEntryInfo> res = new ArrayList<>();
 
@@ -672,45 +701,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
             res.add(entry);
         }
 
-        return res;
-    }
-
-    /**
-     * @param node Node.
-     * @param movingPart Flag to indicate moving partition.
-     * @return Batch.
-     */
-    private Batch getBatch(ClusterNode node, boolean movingPart) {
-        Map<UUID, Batch> map = movingPart ? histBatches : batches;
-
-        if (map == null) {
-            if (movingPart)
-                map = histBatches = new HashMap<>();
-            else
-                map = batches = new HashMap<>();
-        }
-
-        Batch batch = map.get(node.id());
-
-        if (batch == null) {
-            batch = new Batch(node);
-
-            map.put(node.id(), batch);
-        }
-
-        return batch;
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param movingPart Flag to indicate moving partition.
-     */
-    private void removeBatch(UUID nodeId, boolean movingPart) {
-        Map<UUID, Batch> map = movingPart ? histBatches : batches;
-
-        assert map != null;
-
-        map.remove(nodeId);
+        return new CacheEntryInfoCollection(res);
     }
 
     /** */
@@ -728,7 +719,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean ensureFreeSlot(KeyCacheObject key) {
-        if ((F.isEmpty(batches) && F.isEmpty(histBatches)) || F.isEmpty(pending))
+        if (F.isEmpty(batches) || F.isEmpty(pending))
             return true;
 
         // Check possibility of adding to batch and sending.
@@ -741,7 +732,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
             if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !movingPart)
                 continue;
 
-            Batch batch = getBatch(node, movingPart);
+            Batch batch = batches.get(node.id());
 
             // We can add key if batch is not full.
             if (batch == null || batch.size() < BATCH_SIZE - 1)
@@ -756,20 +747,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         }
 
         return true;
-    }
-
-    /**
-     *
-     * @param id Node id.
-     * @return {@code true} if first batch is pending.
-     */
-    public boolean firstBatchIsPending(UUID id) {
-        if (pending == null)
-            return false;
-
-        ConcurrentMap<Integer, Batch> pending0 = pending.get(id);
-
-        return pending0 != null && pending0.containsKey(FIRST_BATCH_ID);
     }
 
     /**
@@ -818,8 +795,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 batch.keys(),
                 batch.values());
         }
-
-        req.entries(batch.entries());
 
         ConcurrentMap<Integer, Batch> pending0 = null;
 
@@ -898,38 +873,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         finally {
             top.readUnlock();
         }
-    }
-
-    /**
-     * @param batchesMap Batches map to flush.
-     * @return Map containing remaining batches.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Map<UUID, Batch> flushBatches(Map<UUID, Batch> batchesMap) throws IgniteCheckedException {
-        Map<UUID, Batch> remains = null;
-
-        if (!F.isEmpty(batchesMap)) {
-            // Flush incomplete batches.
-            for (Batch batch : batchesMap.values()) {
-                UUID id = batch.node().id();
-                if (firstBatchIsPending(id)) {
-                    if (remains == null)
-                        remains = new HashMap<>();
-
-                    remains.put(id, batch);
-                }
-                else
-                    sendBatch(batch);
-            }
-        }
-
-        return remains;
-    }
-
-    /** */
-    private void flushBatches() throws IgniteCheckedException {
-        batches = flushBatches(batches);
-        histBatches = flushBatches(histBatches);
     }
 
     /**
@@ -1103,11 +1046,11 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         /** */
         private List<KeyCacheObject> keys;
 
-        /** */
-        private List<CacheObject> vals;
-
-        /** */
-        private List<CacheEntryInfoCollection> entries;
+        /**
+         * Values collection.
+         * Items can be either {@link CacheObject} or preload entries collection {@link CacheEntryInfoCollection}.
+         */
+        private List<Message> vals;
 
         /**
          * @param node Cluster node.
@@ -1127,10 +1070,11 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
          * Adds a row to batch.
          *
          * @param key Key.
-         * @param val Value.
-         * @param entryInfos History entries.
+         * @param val Value or preload entries collection.
          */
-        public void add(KeyCacheObject key, CacheObject val, List<GridCacheEntryInfo> entryInfos) {
+        public void add(KeyCacheObject key, Message val) {
+            assert val == null || val instanceof CacheObject || val instanceof CacheEntryInfoCollection;
+
             if (keys == null)
                 keys = new ArrayList<>();
 
@@ -1143,15 +1087,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                 vals.add(val);
             }
 
-            if (entryInfos != null) {
-                if (entries == null)
-                    entries = new ArrayList<>();
-
-                entries.add(new CacheEntryInfoCollection(entryInfos));
-            }
-
             assert (vals == null) || keys.size() == vals.size();
-            assert (entries == null) || keys.size() == entries.size();
         }
 
         /**
@@ -1162,24 +1098,17 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
         }
 
         /**
-         * @return Collection of rows.
+         * @return Collection of row keys.
          */
         public List<KeyCacheObject> keys() {
             return keys;
         }
 
         /**
-         * @return Collection of rows.
+         * @return Collection of row values.
          */
-        public List<CacheObject> values() {
+        public List<Message> values() {
             return vals;
-        }
-
-        /**
-         * @return Historical entries.
-         */
-        public List<CacheEntryInfoCollection> entries() {
-            return entries;
         }
     }
 

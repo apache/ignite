@@ -388,12 +388,12 @@ class GridDhtPartitionSupplier {
                         MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
                         row.mvccOperationCounter());
 
-                    if (txState == TxState.NA)
+                    if (txState == TxState.NA || txState == TxState.PREPARED)
                         continue;
 
                     byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
                         MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                            row.newMvccOperationCounter());
+                        row.newMvccOperationCounter());
 
                     ((GridCacheMvccEntryInfo)info).mvccTxState(txState);
                     ((GridCacheMvccEntryInfo)info).newMvccTxState(newTxState);

@@ -2246,10 +2246,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             MvccSnapshot snapshot = new MvccSnapshotWithoutTxs(s0.coordinatorVersion(), s0.counter(),
                 req.operationCounter(), s0.cleanupVersion());
 
-            if (F.isEmpty(req.entries()))
-                tx.mvccEnlistBatch(ctx, req.op(), req.keys(), req.values(), snapshot);
-            else
-                tx.mvccEnlistPreloadInfoBatch(ctx, req.op(), req.keys(), req.entries(), snapshot);
+            tx.mvccEnlistBatch(ctx, req.op(), req.keys(), req.values(), snapshot);
 
             GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(req.cacheId(),
                 req.dhtFutureId(),

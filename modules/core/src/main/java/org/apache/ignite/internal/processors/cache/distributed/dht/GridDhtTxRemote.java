@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -388,7 +389,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
-        List<CacheObject> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+        List<Message> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
 
         WALPointer ptr = null;
 
@@ -409,8 +410,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             try {
                 CacheObject val = null;
 
-                if (op != DELETE)
-                    val = vals.get(i);
+                Message val0 = vals != null? vals.get(i) : null;
+
+                CacheEntryInfoCollection entries =
+                    val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
+
+                if (entries == null && op != DELETE)
+                    val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
 
                 GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
 
@@ -420,103 +426,47 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                     ctx.shared().database().checkpointReadLock();
 
                     try {
-                        switch (op) {
-                            case DELETE:
-                                updRes = entry.mvccRemove(this,
-                                    ctx.localNodeId(),
-                                    topologyVersion(),
-                                    null,
-                                    snapshot,
-                                    false);
+                        if (entries == null) {
+                            switch (op) {
+                                case DELETE:
+                                    updRes = entry.mvccRemove(this,
+                                        ctx.localNodeId(),
+                                        topologyVersion(),
+                                        null,
+                                        snapshot,
+                                        false);
 
-                                break;
+                                    break;
 
-                            case CREATE:
-                            case UPDATE:
-                                updRes = entry.mvccSet(this,
-                                    ctx.localNodeId(),
-                                    val,
-                                    0,
-                                    topologyVersion(),
-                                    null,
-                                    snapshot,
-                                    op,
-                                    false);
+                                case CREATE:
+                                case UPDATE:
+                                    updRes = entry.mvccSet(this,
+                                        ctx.localNodeId(),
+                                        val,
+                                        0,
+                                        topologyVersion(),
+                                        null,
+                                        snapshot,
+                                        op,
+                                        false);
 
-                                break;
+                                    break;
 
-                            default:
-                                throw new IgniteSQLException("Cannot acquire lock for operation [op= "
-                                    + op + "]" + "Operation is unsupported at the moment ",
-                                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                                default:
+                                    throw new IgniteSQLException("Cannot acquire lock for operation [op= "
+                                        + op + "]" + "Operation is unsupported at the moment ",
+                                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                            }
                         }
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        entry = dht.entryExx(key);
-                    }
-                    finally {
-                        ctx.shared().database().checkpointReadUnlock();
-                    }
-                }
-
-                assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
-
-                ptr = updRes.loggedPointer();
-            }
-            finally {
-                locPart.release();
-            }
-        }
-
-        if (ptr != null && !ctx.tm().logTxRecords())
-            ctx.shared().wal().flush(ptr, true);
-    }
-
-    /**
-     *
-     * @param ctx Cache context.
-     * @param op Cache operation.
-     * @param keys Keys.
-     * @param entries Entries collection per key.
-     * @param snapshot Mvcc snapshot.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void mvccEnlistPreloadInfoBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
-        List<CacheEntryInfoCollection> entries, MvccSnapshot snapshot) throws IgniteCheckedException {
-        WALPointer ptr = null;
-
-        GridDhtCacheAdapter dht = ctx.dht();
-
-        for (int i = 0; i < keys.size(); i++) {
-            KeyCacheObject key = keys.get(i);
-
-            assert key != null;
-
-            int part = ctx.affinity().partition(key);
-
-            GridDhtLocalPartition locPart = ctx.topology().localPartition(part, topologyVersion(), false);
-
-            if (locPart == null || !locPart.reserve())
-                throw new ClusterTopologyException("Can not reserve partition. Please retry on stable topology.");
-
-            try {
-                GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
-
-                GridCacheUpdateTxResult updRes;
-
-                while (true) {
-                    ctx.shared().database().checkpointReadLock();
-
-                    try {
-                        updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
-                            ctx.localNodeId(),
-                            topologyVersion(),
-                            null,
-                            entries.get(i).infos(),
-                            op,
-                            snapshot);
+                        else {
+                            updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
+                                ctx.localNodeId(),
+                                topologyVersion(),
+                                null,
+                                entries.infos(),
+                                op,
+                                snapshot);
+                        }
 
                         break;
                     }

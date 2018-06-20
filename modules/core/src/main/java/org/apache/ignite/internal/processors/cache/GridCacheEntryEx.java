@@ -733,7 +733,9 @@ public interface GridCacheEntryEx {
      * @param preload Flag indicating whether entry is being preloaded.
      * @param topVer Topology version.
      * @param drType DR type.
-     * @param fromStore {@code True} if value was loaded from store.       @return {@code True} if initial value was set.       @throws IgniteCheckedException In case of error.
+     * @param fromStore {@code True} if value was loaded from store.
+     * @return {@code True} if initial value was set.
+     * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public boolean initialValue(CacheObject val,

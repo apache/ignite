@@ -29,9 +29,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -51,8 +49,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
@@ -290,7 +288,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         assert dhtFutId != null;
 
         final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
-        final ArrayList<CacheObject> vals = (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ) ? null :
+        final ArrayList<Message> vals = (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ) ? null :
             new ArrayList<>(rows.size());
 
         for (Object row : rows) {
@@ -318,7 +316,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param dhtVer Dht version.
      * @param dhtFutId Dht future id.
      */
-    private void processBatchLocalBackupKeys0(UUID primaryId, List<KeyCacheObject> keys, List<CacheObject> vals,
+    private void processBatchLocalBackupKeys0(UUID primaryId, List<KeyCacheObject> keys, List<Message> vals,
         GridCacheVersion dhtVer, IgniteUuid dhtFutId) {
         try {
             GridDhtTxRemote dhtTx = cctx.tm().tx(dhtVer);

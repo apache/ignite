@@ -37,7 +37,7 @@ public interface MvccUpdateResult {
 
     /**
      *
-     * @retunr Collection of row created or affected by the current tx.
+     * @return Collection of row created or affected by the current tx.
      */
     public List<MvccLinkAwareSearchRow> history();
 }
