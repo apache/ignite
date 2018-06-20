@@ -230,6 +230,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** WAL marker prefix for meta store. */
     private static final String WAL_KEY_PREFIX = "grp-wal-";
 
+    /** */
+    private static final String WAL_DISABLED = "wal-disabled";
+
     /** Prefix for meta store records which means that WAL was disabled globally for some group. */
     private static final String WAL_GLOBAL_KEY_PREFIX = WAL_KEY_PREFIX + "disabled-";
 
@@ -2124,6 +2127,48 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return (PageMemoryEx)sharedCtx.database().dataRegion(memPlcName).pageMemory();
     }
 
+    private interface Closure {
+        void apply() throws IgniteCheckedException;
+    }
+
+    private void runWithDisabeledWAL(Closure cls) throws IgniteCheckedException {
+        waitForCheckpoint("Checkpoint before apply updates on recovery.");
+
+        boolean successWALDisabled;
+
+        checkpointReadLock();
+
+        try {
+            successWALDisabled = cctx.wal().disableWal(true);
+
+            if (successWALDisabled)
+                metaStorage.write(WAL_DISABLED, Boolean.TRUE);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+
+        try {
+            cls.apply();
+        }
+        finally {
+            if (successWALDisabled) {
+                checkpointReadLock();
+
+                try {
+                    cctx.wal().disableWal(false);
+
+                    metaStorage.write(WAL_DISABLED, Boolean.FALSE);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                waitForCheckpoint("Checkpoint after apply updates on recovery.");
+            }
+        }
+    }
+
     /**
      * Apply update from some iterator and with specific filters.
      *
@@ -2138,13 +2183,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        waitForCheckpoint("Checkpoint before apply updates on recovery.");
-
-        cctx.wal().disableWal(true);
-
-        boolean successApply = false;
-
-        try {
+        runWithDisabeledWAL(() -> {
             if (it != null) {
                 while (it.hasNextX()) {
                     IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
@@ -2201,16 +2240,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             finally {
                 checkpointReadUnlock();
             }
-
-            successApply = true;
-        }
-        finally {
-            if (successApply) {
-                cctx.wal().disableWal(false);
-
-                waitForCheckpoint("Checkpoint after apply updates on recovery.");
-            }
-        }
+        });
     }
 
     /**
@@ -2337,8 +2367,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param onlyForGroups If not {@code null} restore states only for specified cache groups.
      * @throws IgniteCheckedException If failed to restore partition states.
      */
-    private void restorePartitionStates(Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
-                                       @Nullable Set<Integer> onlyForGroups) throws IgniteCheckedException {
+    private void restorePartitionStates(
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
+        @Nullable Set<Integer> onlyForGroups
+    ) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal() || !grp.affinityNode()) {
                 // Local cache has no partitions and its states.

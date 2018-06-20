@@ -900,10 +900,21 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void disableWal(boolean disable) {
-        this.walDisabled = disable;
+    @Override public boolean disableWal(boolean disable) {
+        try {
+            flush(null, true);
 
-        log.info("WAL logging " + (disable ? "disabled" : "enabled"));
+            walDisabled = disable;
+
+            log.info("WAL logging " + (disable ? "disabled" : "enabled"));
+
+            return true;
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to " + (disable ? "disable" : "enable") + " WAL logging ");
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
