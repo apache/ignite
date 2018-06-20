@@ -290,8 +290,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final Set<String> keys = Collections.singleton("myKey");
 
-        Ignite ignite = ignite(0);
-
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 for (int i = 0; i < cnt; i++) {
@@ -6265,23 +6263,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
     }
 
-    public static AtomicBoolean multipleInvocations = new AtomicBoolean(false);
-
     /**
      *
      */
     private static class IncrementEntryProcessor implements EntryProcessor<String, Integer, String>, Serializable {
         /** {@inheritDoc} */
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
-            //assert multipleInvocations.compareAndSet(false, true);
-
             assertNotNull(e.getKey());
 
             Integer old = e.getValue();
 
             e.setValue(old == null ? 1 : old + 1);
-
-//            multipleInvocations.
 
             return String.valueOf(old);
         }
