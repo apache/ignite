@@ -274,7 +274,7 @@ namespace ignite
             if (status == ResponseStatus::SUCCESS)
                 ReadOnSuccess(reader, ver);
             else
-                utility::ReadString(reader, error);;
+                utility::ReadString(reader, error);
         }
 
         void Response::ReadOnSuccess(impl::binary::BinaryReaderImpl&, const ProtocolVersion&)
