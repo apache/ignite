@@ -79,7 +79,7 @@ public class TensorFlowClusterMaintainer implements Service {
 
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) throws Exception {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (!ctx.isCancelled()) {
             Thread.sleep(1000);
 
             boolean restartRequired = hasAffinityChanged();
