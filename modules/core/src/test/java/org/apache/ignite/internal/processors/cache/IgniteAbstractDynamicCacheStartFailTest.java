@@ -346,7 +346,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         final boolean failOnAllNodes = false;
         final int unluckyNode = 1;
         final int unluckyCfg = 0;
-        final int numOfAttempts = 100;
+        final int numOfAttempts = 15;
 
         CacheConfiguration cfg = createCacheConfigsWithBrokenAffinityFun(
             failOnAllNodes, unluckyNode, unluckyCfg, 1, false).get(0);
