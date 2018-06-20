@@ -857,6 +857,16 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalancedKeys() {
+        return rebalancedKeys.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getKeysToRebalanceLeft() {
         return Math.max(0, estimatedRebalancingKeys.get() - rebalancedKeys.get());
     }
@@ -935,7 +945,10 @@ public class CacheMetricsImpl implements CacheMetrics {
      * First rebalance supply message callback.
      * @param keysCnt Estimated number of keys.
      */
-    public void onRebalancingKeysCountEstimateReceived(long keysCnt) {
+    public void onRebalancingKeysCountEstimateReceived(Long keysCnt) {
+        if (keysCnt == null)
+            return;
+
         estimatedRebalancingKeys.addAndGet(keysCnt);
     }
 
