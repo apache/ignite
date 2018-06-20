@@ -18,6 +18,10 @@
 const IgniteClient = require('apache-ignite-client');
 const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
 
+const ENDPOINT1 = 'localhost:10800';
+const ENDPOINT2 = 'localhost:10801';
+const ENDPOINT3 = 'localhost:10802';
+
 // This example demonstrates failover behavior of the client
 // - configures the client to connect to a set of nodes
 // - connects to a node
@@ -25,9 +29,10 @@ const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
 // - if no specified nodes are available, stops the client
 async function connectClient() {
     const igniteClient = new IgniteClient(onStateChanged);
+    igniteClient.setDebug(true);
     try {
         const igniteClientConfiguration = new IgniteClientConfiguration(
-            '127.0.0.1:10800', '127.0.0.1:10801', '127.0.0.1:10802');
+            ENDPOINT1, ENDPOINT2, ENDPOINT3);
         // connect to Ignite a node
         await igniteClient.connect(igniteClientConfiguration);
     }

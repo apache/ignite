@@ -108,3 +108,19 @@ Follow the [instructions in the main readme](../README.md#installation).
 6. If needed, modify `USER_NAME` and `PASSWORD` constants in the example source file. The default values are the default Ignite username/password.
 
 7. Executes [Setup and Running](#setup-and-running) steps.
+
+## Additional Setup for FailoverExample ##
+
+1. Run three Ignite nodes. See appropriate Ignite documentation for more details.
+
+2. If needed, modify `ENDPOINT1`, `ENDPOINT2`, `ENDPOINT2` constants in an example source file - Ignite node endpoints.
+Default values are `localhost:10800`, `localhost:10801`, `localhost:10802` respectively.
+
+2. Run an example by calling `node FailoverExample.js`. 
+
+3. Shut down the node the client connected to (you can find it out from the client logs in the console).
+
+4. From the logs, you will see that the client automatically reconnects to another node which is available.
+
+5. Shut down all the nodes. You will see the client being stopped after failing to connect to each of the nodes.
+
