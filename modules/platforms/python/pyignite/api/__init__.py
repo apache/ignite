@@ -63,5 +63,6 @@ from .key_value import (
     cache_remove_if_equals,
     cache_remove_keys,
     cache_remove_all,
+    cache_get_size,
 )
 from .result import APIResult, hashcode

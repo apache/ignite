@@ -315,3 +315,13 @@ def test_remove_all(conn, hash_code):
     result = cache_get(conn, hash_code, 'another_test')
     assert result.status == 0
     assert result.value is None
+
+
+def test_cache_get_size(conn, hash_code):
+
+    result = cache_put(conn, hash_code, 'my_test', 42)
+    assert result.status == 0
+
+    result = cache_get_size(conn, hash_code)
+    assert result.status == 0
+    assert result.value == 1

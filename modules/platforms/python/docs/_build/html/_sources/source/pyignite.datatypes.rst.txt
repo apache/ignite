@@ -25,6 +25,14 @@ pyignite.datatypes.complex module
     :undoc-members:
     :show-inheritance:
 
+pyignite.datatypes.key\_value module
+------------------------------------
+
+.. automodule:: pyignite.datatypes.key_value
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyignite.datatypes.null\_object module
 --------------------------------------
 
