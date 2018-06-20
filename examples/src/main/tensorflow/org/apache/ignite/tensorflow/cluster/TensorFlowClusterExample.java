@@ -69,7 +69,9 @@ public class TensorFlowClusterExample {
 
                 builder.append("Specification : ").append('\n');
 
-                TensorFlowServerManager srvMgr = new TensorFlowServerManager((Supplier<Ignite> & Serializable)() -> ignite);
+                TensorFlowServerManager srvMgr = new TensorFlowServerManager(
+                    (Supplier<Ignite> & Serializable)() -> ignite
+                );
 
                 String clusterSpec = srvMgr.formatClusterSpec(cluster.getSpec());
                 builder.append(clusterSpec).append('\n');
