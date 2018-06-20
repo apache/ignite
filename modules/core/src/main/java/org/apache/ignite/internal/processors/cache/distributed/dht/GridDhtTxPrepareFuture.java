@@ -402,9 +402,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             if (txEntry.hasValue())
                                 val = txEntry.value();
                             else if (txEntry.op() == TRANSFORM)
-                                txEntry.value(cacheCtx.toCacheObject(val), false, false);
+                                txEntry.value(cacheCtx.toCacheObject(val), true, false);
 
-                                KeyCacheObject key = txEntry.key();
+                            KeyCacheObject key = txEntry.key();
 
                             Object procRes = null;
                             Exception err = null;
