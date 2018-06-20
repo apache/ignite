@@ -22,20 +22,22 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 /**
  * Tests checks case when one node is unable to connect to next in a ring,
@@ -44,16 +46,25 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
  */
 public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     /** */
-    private Set<InetSocketAddress> failedAddrs = new ConcurrentHashSet<>();
+    private static final int FAILURE_DETECTION_TIMEOUT = 10_000;
+
+    /** */
+    private Set<InetSocketAddress> failedAddrs = new GridConcurrentHashSet<>();
 
     /** */
     private volatile TcpDiscoveryNode compromisedNode;
 
     /** */
-    private volatile boolean forceFail = true;
+    private volatile boolean forceFailConnectivity;
+
+    /** */
+    private volatile boolean failNodes;
 
     /** */
     private long timeout;
+
+    /** */
+    private volatile Set<ClusterNode> failedNodes = Collections.emptySet();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -67,7 +78,23 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         disco.setConnectionRecoveryTimeout(timeout);
 
+        cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
+
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "true");
     }
 
     /** {@inheritDoc} */
@@ -82,6 +109,8 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         timeout = 2_000;
+        failNodes = false;
+        forceFailConnectivity = false;
     }
 
     /**
@@ -89,21 +118,28 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testMassiveFail() throws Exception {
+    public void testMassiveFailDisabledRecovery() throws Exception {
         timeout = 0; // Disable previous node check.
 
+        doFailNodes(false);
+    }
+
+    /**
+     *
+     */
+    private void doFailNodes(boolean simulateNodeFailure) throws Exception {
         startGrids(5);
 
         grid(0).events().enabledEvents();
 
-        Set<ClusterNode> failed = new HashSet<>(Arrays.asList(grid(3).cluster().localNode(), grid(4).cluster().localNode()));
+        failedNodes = new HashSet<>(Arrays.asList(grid(3).cluster().localNode(), grid(4).cluster().localNode()));
 
-        CountDownLatch latch = new CountDownLatch(failed.size());
+        CountDownLatch latch = new CountDownLatch(failedNodes.size());
 
-        grid(0).events().localListen((e) -> {
+        grid(0).events().localListen(e -> {
             DiscoveryEvent evt = (DiscoveryEvent)e;
 
-            if (failed.contains(evt.eventNode()))
+            if (failedNodes.contains(evt.eventNode()))
                 latch.countDown();
 
             return true;
@@ -116,7 +152,12 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         System.out.println(">> Start failing nodes");
 
-        forceFail = true;
+        forceFailConnectivity = true;
+
+        if (simulateNodeFailure) {
+            for (int i = 3; i < 5; i++)
+                ((TcpDiscoverySpi)grid(i).configuration().getDiscoverySpi()).simulateNodeFailure();
+        }
 
         assert latch.await(waitTime(), TimeUnit.MILLISECONDS);
 
@@ -158,7 +199,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         System.out.println(">> Start failing nodes");
 
-        forceFail = true;
+        forceFailConnectivity = true;
 
         assert latch.await(waitTime(), TimeUnit.MILLISECONDS);
 
@@ -177,7 +218,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        grid(0).events().localListen((e) -> {
+        grid(0).events().localListen(e -> {
             DiscoveryEvent evt = (DiscoveryEvent)e;
 
             if (evt.eventNode().equals(compromisedNode))
@@ -193,11 +234,11 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         System.out.println(">> Start failing nodes");
 
-        forceFail = true;
+        forceFailConnectivity = true;
 
         doSleep(timeout / 4); // wait 1 try
 
-        forceFail = false;
+        forceFailConnectivity = false;
 
         System.out.println(">> Stop failing nodes");
 
@@ -209,6 +250,37 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Regular nodes fail by timeout.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMassiveFail() throws Exception {
+        failNodes = true;
+
+        // Must be greater than failureDetectionTimeout / 3 as it calculated into
+        // connection check frequency.
+        timeout = FAILURE_DETECTION_TIMEOUT / 2;
+
+        doFailNodes(false);
+    }
+
+    /**
+     * Regular node fail by crash. Should be faster due to
+     *
+     *
+     * @throws Exception
+     */
+    public void testMassiveFailForceNodeFail() throws Exception {
+        failNodes = true;
+
+        // Must be greater than failureDetectionTimeout / 3 as it calculated into
+        // connection check frequency.
+        timeout = FAILURE_DETECTION_TIMEOUT / 2;
+
+        doFailNodes(true);
+    }
+
+    /**
      *
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
@@ -216,6 +288,9 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
             assertNotFailedNode(sock);
+
+            if (isDrop(msg))
+                return;
 
             super.writeToSocket(sock, msg, data, timeout);
         }
@@ -225,6 +300,9 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             assertNotFailedNode(sock);
 
+            if (isDrop(msg))
+                return;
+
             super.writeToSocket(sock, msg, timeout);
         }
 
@@ -232,6 +310,9 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
             TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
             assertNotFailedNode(sock);
+
+            if (isDrop(msg))
+                return;
 
             super.writeToSocket(node, sock, out, msg, timeout);
         }
@@ -241,13 +322,31 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             assertNotFailedNode(sock);
 
+            if (isDrop(msg))
+                return;
+
             super.writeToSocket(sock, out, msg, timeout);
+        }
+
+        /**
+         *
+         */
+        private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
+            boolean drop = failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
+
+            if (drop)
+                ignite.log().info(">> Drop message " + msg);
+
+            return drop;
         }
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
             long timeout) throws IOException {
             assertNotFailedNode(sock);
+
+            if (isDrop(msg))
+                return;
 
             super.writeToSocket(msg, sock, res, timeout);
         }
@@ -258,7 +357,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
          */
         @SuppressWarnings("SuspiciousMethodCalls")
         private void assertNotFailedNode(Socket sock) throws IOException {
-            if (forceFail && getLocalNode().equals(compromisedNode) && failedAddrs.contains(sock.getRemoteSocketAddress())) {
+            if (forceFailConnectivity && getLocalNode().equals(compromisedNode) && failedAddrs.contains(sock.getRemoteSocketAddress())) {
                 log.info(">> Force fail connection " + sock.getRemoteSocketAddress());
 
                 throw new IOException("Force fail connection " + sock.getRemoteSocketAddress());

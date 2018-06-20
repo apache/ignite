@@ -2492,6 +2492,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         /** {@inheritDoc} */
+        @Override public long getConnectionCheckInterval() {
+            return impl.connectionCheckInterval();
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isClientMode() {
             return TcpDiscoverySpi.this.isClientMode();
         }
