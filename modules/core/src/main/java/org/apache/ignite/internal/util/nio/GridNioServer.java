@@ -52,6 +52,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -1841,8 +1843,13 @@ public class GridNioServer<T> {
                     else
                         lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
                 }
-                else if (err != null)
-                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else if (err != null) {
+                    FailureType ft = err instanceof GridWorkerFailureException
+                        ? ((GridWorkerFailureException)err).failureType()
+                        : SYSTEM_WORKER_TERMINATION;
+
+                    lsnr.onFailure(ft, err);
+                }
             }
         }
 
@@ -2922,9 +2929,13 @@ public class GridNioServer<T> {
 
                 if (err instanceof OutOfMemoryError)
                     lsnr.onFailure(CRITICAL_ERROR, err);
-                else if (err != null)
-                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else if (err != null) {
+                    FailureType ft = err instanceof GridWorkerFailureException
+                        ? ((GridWorkerFailureException)err).failureType()
+                        : SYSTEM_WORKER_TERMINATION;
 
+                    lsnr.onFailure(ft, err);
+                }
             }
         }
 
@@ -2933,7 +2944,7 @@ public class GridNioServer<T> {
          *
          * @throws IgniteCheckedException If failed.
          */
-        private void accept() throws IgniteCheckedException {
+        private void accept() throws IgniteCheckedException, GridWorkerFailureException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
                     updateHeartbeat();

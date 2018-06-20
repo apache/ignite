@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -539,7 +540,7 @@ public class StripedExecutor implements ExecutorService {
                     break;
                 }
                 catch (Throwable e) {
-                    if (e instanceof OutOfMemoryError)
+                    if (e instanceof OutOfMemoryError || e instanceof GridWorkerFailureException)
                         errHnd.apply(e);
 
                     U.error(log, "Failed to execute runnable.", e);

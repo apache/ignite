@@ -112,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1693,8 +1694,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null)
-                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                else if (err != null) {
+                    FailureType ft = err instanceof GridWorkerFailureException
+                        ? ((GridWorkerFailureException)err).failureType()
+                        : SYSTEM_WORKER_TERMINATION;
+
+                    cctx.kernalContext().failure().process(new FailureContext(ft, err));
+                }
             }
         }
 
@@ -3370,8 +3376,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null)
-                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                else if (err != null) {
+                    FailureType ft = err instanceof GridWorkerFailureException
+                        ? ((GridWorkerFailureException)err).failureType()
+                        : SYSTEM_WORKER_TERMINATION;
+
+                    cctx.kernalContext().failure().process(new FailureContext(ft, err));
+                }
             }
         }
 
