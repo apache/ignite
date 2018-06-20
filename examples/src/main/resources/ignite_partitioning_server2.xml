@@ -29,7 +29,7 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
 
-   <import resource="ignite_partitioning.xml"/>
+   <import resource="ignite_partitioning2.xml"/>
 
     <bean parent="ignite.cfg">
         <property name="clientMode" value="false"/>

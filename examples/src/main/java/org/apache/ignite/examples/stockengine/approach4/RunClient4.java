@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.examples.stockengine.approach2.DurableEngine;
 import org.apache.ignite.examples.stockengine.approach2.Engine;
 import org.apache.ignite.examples.stockengine.approach2.OrderKey;
 import org.apache.ignite.examples.stockengine.approach3.ReplicatedEngine;
