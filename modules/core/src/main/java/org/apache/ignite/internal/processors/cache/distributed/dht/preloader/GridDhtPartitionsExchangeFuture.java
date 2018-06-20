@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
+import org.apache.ignite.internal.processors.cache.PartitionRebalanceRequestMessage;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
@@ -497,6 +498,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.firstDiscoEvt= discoEvt;
         this.firstEvtDiscoCache = discoCache;
 
+        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent) discoEvt).customMessage();
+
+            if (customMsg instanceof PartitionRebalanceRequestMessage) {
+                log.error("Receiving custom message");
+            }
+        }
+
         evtLatch.countDown();
     }
 
@@ -665,9 +674,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage) {
+                else if (msg instanceof SnapshotDiscoveryMessage || msg instanceof PartitionRebalanceRequestMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
-                }
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 else {
@@ -2677,9 +2685,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (activateCluster() || changedBaseline())
                     assignPartitionsStates();
 
-                DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
+                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
 
-                if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
+                if (customMsg instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
                         assignPartitionsStates();
 
@@ -2689,8 +2697,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             resetLostPartitions(caches);
                     }
                 }
-                else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
-                        && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
+                else if (customMsg instanceof PartitionRebalanceRequestMessage ||
+                        (customMsg instanceof SnapshotDiscoveryMessage && ((SnapshotDiscoveryMessage)customMsg).needAssignPartitions()))
                     assignPartitionsStates();
             }
             else {

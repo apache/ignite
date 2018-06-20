@@ -3479,8 +3479,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        if (msg instanceof SnapshotDiscoveryMessage &&
-            ((SnapshotDiscoveryMessage)msg).needExchange())
+        if ((msg instanceof SnapshotDiscoveryMessage && ((SnapshotDiscoveryMessage)msg).needExchange())
+                || msg instanceof PartitionRebalanceRequestMessage)
             return true;
 
         if (msg instanceof WalStateAbstractMessage) {
