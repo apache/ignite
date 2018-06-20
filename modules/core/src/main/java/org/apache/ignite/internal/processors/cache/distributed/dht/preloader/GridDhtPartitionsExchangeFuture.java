@@ -1316,14 +1316,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
 
-        boolean rollbackEnabled = txCfg.getTxTimeoutOnPartitionMapExchange() > 0;
+        boolean rolledBack = false;
 
         long waitStart = U.currentTimeMillis();
 
-        while (true) {
-            long waitTimeout = rollbackEnabled && txCfg.getTxTimeoutOnPartitionMapExchange() < 2 * cfg.getNetworkTimeout() ?
-                    txCfg.getTxTimeoutOnPartitionMapExchange() : 2 * cfg.getNetworkTimeout();
+        long waitTimeout = 2 * cfg.getNetworkTimeout();
 
+        while (true) {
             try {
                 partReleaseFut.get(waitTimeout, TimeUnit.MILLISECONDS);
 
@@ -1337,8 +1336,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
                 }
 
-                if (rollbackEnabled && U.currentTimeMillis() - waitStart >= txCfg.getTxTimeoutOnPartitionMapExchange()) {
-                    rollbackEnabled = false;
+                // Read txTimeoutOnPME from configuration after every iteration.
+                long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+
+                if (!rolledBack && curTimeout > 0 && U.currentTimeMillis() - waitStart >= curTimeout) {
+                    rolledBack = true;
 
                     cctx.tm().rollbackOnTopologyChange(initialVersion());
                 }
@@ -1367,8 +1369,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         nextDumpTime = 0;
         dumpCnt = 0;
-
-        long waitTimeout = 2 * cfg.getNetworkTimeout();
 
         while (true) {
             try {

@@ -147,8 +147,6 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         try {
-            A.ensure(timeout >= 0, "txTimeoutOnPartitionMapExchange should be greater than or equal to zero.");
-
             ctx.grid().context().cache().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (Exception e) {

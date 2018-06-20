@@ -506,8 +506,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            A.ensure(timeout >= 0, "txTimeoutOnPartitionMapExchange should be greater than or equal to zero.");
-
             ctx.cache().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (IgniteCheckedException e) {

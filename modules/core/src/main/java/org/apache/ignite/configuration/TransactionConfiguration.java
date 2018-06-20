@@ -19,8 +19,6 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import javax.cache.configuration.Factory;
-
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -229,9 +227,6 @@ public class TransactionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public TransactionConfiguration setTxTimeoutOnPartitionMapExchange(long txTimeoutOnPartitionMapExchange) {
-        A.ensure(txTimeoutOnPartitionMapExchange >= 0, "txTimeoutOnPartitionMapExchange should be greater than " +
-                "or equal to zero.");
-
         this.txTimeoutOnPartitionMapExchange = txTimeoutOnPartitionMapExchange;
 
         return this;
