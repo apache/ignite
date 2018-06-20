@@ -15,37 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.stockengine.domain;
+package org.apache.ignite.examples.stockengine.approach2;
 
-public class User {
-    private final int id;
-    private final String name;
-    private final String language;
-    private double balance = 0.0;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
-    public User(int id, String name, String language) {
+import java.util.Objects;
+
+public class OrderKey {
+    private final long id;
+
+    @AffinityKeyMapped
+    private final int userId;
+
+
+    public OrderKey(long id, int userId) {
         this.id = id;
-        this.name = name;
-        this.language = language;
+        this.userId = userId;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
+    public int getUserId() {
+        return userId;
     }
 
-    public String getLanguage() {
-        return language;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OrderKey orderKey = (OrderKey) o;
+        return id == orderKey.id &&
+                userId == orderKey.userId;
     }
 
-    public void updateBalance(double diff) {
-        balance += diff;
-    }
-
-    public double getBalance() {
-        return balance;
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, userId);
     }
 }

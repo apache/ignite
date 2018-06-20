@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.stockengine.domain;
+package org.apache.ignite.examples.stockengine.approach3;
 
-import org.apache.ignite.examples.stockengine.domain.Instrument;
+import org.apache.ignite.Ignition;
 
-public class Position {
-    private final Instrument instrument;
-    private final double quantity;
-    private final int user;
-
-    public Position(Instrument instrument, double quantity, int user) {
-        this.instrument = instrument;
-        this.quantity = quantity;
-        this.user = user;
+/**
+ *
+ */
+public class RunServer3 {
+    /**
+     * @param args Args.
+     */
+    public static void main(String[] args) {
+        Ignition.start("examples/src/main/resources/ignite_partitioning_server.xml");
     }
 }

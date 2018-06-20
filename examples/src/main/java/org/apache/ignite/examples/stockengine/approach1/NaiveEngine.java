@@ -1,5 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.examples.stockengine.approach1;
 
+import org.apache.ignite.examples.stockengine.QuoteProvider;
+import org.apache.ignite.examples.stockengine.domain.Instrument;
 import org.apache.ignite.examples.stockengine.domain.OptionType;
 import org.apache.ignite.examples.stockengine.domain.Order;
 import org.apache.ignite.examples.stockengine.domain.Quote;
@@ -12,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class NaiveEngine {
-    protected ConcurrentSkipListSet<Order> timeBasedExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
+    protected ConcurrentSkipListSet<Order> timeBasedExpirationOptions = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
         @Override
         public int compare(Order o1, Order o2) {
             long l = o1.getExpirationDate() - o2.getExpirationDate();
@@ -20,7 +39,7 @@ public abstract class NaiveEngine {
         }
     });
 
-    protected ConcurrentSkipListSet<Order> buyOneTouchExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
+    protected ConcurrentSkipListSet<Order> buyTouchOptionExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
         @Override
         public int compare(Order o1, Order o2) {
             double d = o1.getPrice() - o2.getPrice();
@@ -29,7 +48,8 @@ public abstract class NaiveEngine {
         }
     });
 
-    protected ConcurrentSkipListSet<Order> sellOneTouchExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
+    /** Sell one touch expiration. */
+    protected ConcurrentSkipListSet<Order> sellTouchOptionsExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
         @Override
         public int compare(Order o1, Order o2) {
             double d = o2.getPrice() - o1.getPrice();
@@ -38,36 +58,60 @@ public abstract class NaiveEngine {
         }
     });
 
+    /** Quotes queue. */
     protected final BlockingQueue<Quote> quotes = new ArrayBlockingQueue<>(10000);
 
+    /** Stopped flag. */
     protected final AtomicBoolean stopped = new AtomicBoolean();
 
+    /** Quote provider. */
+    private QuoteProvider quoteProvider;
+
+    /**
+     * @param order Order.
+     */
     public void addOrder(Order order) {
         assert order != null && order.getType() != null : order;
 
         if (order.getType() == OptionType.ONE_TOUCH || order.getType() == OptionType.NO_TOUCH) {
             switch (order.getSide()) {
                 case SELL:
-                    sellOneTouchExpiration.add(order);
+                    sellTouchOptionsExpiration.add(order);
 
                     break;
 
                 case BUY:
-                    buyOneTouchExpiration.add(order);
+                    buyTouchOptionExpiration.add(order);
 
                     break;
             }
         }
 
-        timeBasedExpiration.add(order);
+        timeBasedExpirationOptions.add(order);
     }
 
+    /**
+     *
+     */
     public void start() {
+        quoteProvider = new QuoteProvider();
+
+        quoteProvider.registerListener(Instrument.EUR_USD, new QuoteProvider.Listener() {
+            @Override public void listen(Quote quote) {
+                try {
+                    quotes.offer(quote, 1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        quoteProvider.start();
+
         new Thread(new Runnable() {
             private Quote lastQuote = null;
 
-            @Override
-            public void run() {
+            @Override public void run() {
                 try {
                     while (!stopped.get()) {
                         Quote poll = quotes.poll(200, TimeUnit.MILLISECONDS);
@@ -92,10 +136,25 @@ public abstract class NaiveEngine {
         }).start();
     }
 
-    private boolean handleAnyOrder(Quote poll) {
-        Order first = timeBasedExpiration.first();
+    /**
+     *
+     */
+    public void stop() {
+        stopped.set(true);
 
-        if (poll.getQuoteTime() >= first.getExpirationDate()) {
+        quoteProvider.stop();
+    }
+
+    /**
+     * @param quote New quote to process.
+     */
+    private boolean handleAnyOrder(Quote quote) {
+        if (timeBasedExpirationOptions.isEmpty())
+            return false;
+
+        Order first = timeBasedExpirationOptions.first();
+
+        if (quote.getQuoteTime() >= first.getExpirationDate()) {
             switch (first.getType()) {
                 case NO_TOUCH:
                     executeOrder(first, true);
@@ -112,12 +171,12 @@ public abstract class NaiveEngine {
 
                     switch (first.getSide()) {
                         case BUY:
-                            executeOrder(first, orderPrice > poll.getAsk());
+                            executeOrder(first, orderPrice > quote.getAsk());
 
                             break;
 
                         case SELL:
-                            executeOrder(first, orderPrice < poll.getBid());
+                            executeOrder(first, orderPrice < quote.getBid());
 
                             break;
                     }
@@ -132,10 +191,10 @@ public abstract class NaiveEngine {
     }
 
     private boolean handleBuyOrders(Quote poll) {
-        Order first = buyOneTouchExpiration.first();
-
-        if (first == null)
+        if (buyTouchOptionExpiration.isEmpty())
             return false;
+
+        Order first = buyTouchOptionExpiration.first();
 
         double orderPrice = first.getPrice();
 
@@ -159,10 +218,10 @@ public abstract class NaiveEngine {
     }
 
     private boolean handleSellOrders(Quote poll) {
-        Order first = sellOneTouchExpiration.first();
-
-        if (first == null)
+        if (sellTouchOptionsExpiration.isEmpty())
             return false;
+
+        Order first = sellTouchOptionsExpiration.first();
 
         double orderPrice = first.getPrice();
 

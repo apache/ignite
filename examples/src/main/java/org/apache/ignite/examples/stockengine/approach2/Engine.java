@@ -15,18 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.stockengine.domain;
+package org.apache.ignite.examples.stockengine.approach2;
 
-import org.apache.ignite.examples.stockengine.domain.Instrument;
-
-public class Position {
-    private final Instrument instrument;
-    private final double quantity;
-    private final int user;
-
-    public Position(Instrument instrument, double quantity, int user) {
-        this.instrument = instrument;
-        this.quantity = quantity;
-        this.user = user;
-    }
+/**
+ * Service interface which would be exposed for clients.
+ */
+public interface Engine {
+    /**
+     * @return Count of order in work.
+     */
+    int orderInWork();
 }

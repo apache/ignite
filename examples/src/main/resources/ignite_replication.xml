@@ -29,7 +29,7 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
 
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <bean abstract="true" id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
@@ -41,7 +41,7 @@
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="affinity">
-                        <bean class="com.github.kreig133.stockexchange.approach2.OneNodePrimaryAffinityFunction"/>
+                        <bean class="org.apache.ignite.examples.stockengine.approach2.OneNodePrimaryAffinityFunction"/>
                     </property>
                     <!--<property name="DataRegionName" value="Persistent_Region"/>-->
                 </bean>
@@ -52,14 +52,13 @@
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="affinity">
-                        <bean class="com.github.kreig133.stockexchange.approach2.OneNodePrimaryAffinityFunction"/>
+                        <bean class="org.apache.ignite.examples.stockengine.approach2.OneNodePrimaryAffinityFunction"/>
                     </property>
-                    <!--<property name="DataRegionName" value="Persistent_Region"/>-->
                 </bean>
             </list>
         </property>
 
-        <!-- Adding persistent region-->
+        <!-- Make default region persistent one. -->
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">

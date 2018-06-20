@@ -14,19 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.springdata.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.examples.stockengine.approach2;
+
+import org.apache.ignite.Ignition;
 
 /**
- * Spring Data example test.
+ *
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
+public class RunServer2 {
     /**
-     * @throws Exception If failed.
+     * @param args Args.
      */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
+    public static void main(String[] args) {
+        Ignition.start("examples/src/main/resources/ignite_replication_server.xml");
     }
 }
