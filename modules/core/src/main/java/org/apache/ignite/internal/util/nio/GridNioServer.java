@@ -3677,7 +3677,7 @@ public class GridNioServer<T> {
         private boolean readWriteSelectorsAssign;
 
         /** Worker lifecycle listener to be used by server's worker threads. */
-        private GridWorkerListener workerListener;
+        private GridWorkerListener workerLsnr;
 
         /** */
         private GridWorkerIdlenessHandler idleHnd;
@@ -3711,7 +3711,7 @@ public class GridNioServer<T> {
                 skipRecoveryPred,
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
-                workerListener,
+                workerLsnr,
                 idleHnd,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
@@ -3973,7 +3973,7 @@ public class GridNioServer<T> {
          * @return This for chaining.
          */
         public Builder<T> workerListener(GridWorkerListener workerLsnr) {
-            this.workerListener = workerLsnr;
+            this.workerLsnr = workerLsnr;
 
             return this;
         }

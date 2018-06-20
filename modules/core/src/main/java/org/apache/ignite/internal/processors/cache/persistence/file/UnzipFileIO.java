@@ -110,7 +110,7 @@ public class UnzipFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -640,7 +640,14 @@ public class StripedExecutor implements ExecutorService {
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
-            super(igniteInstanceName, poolName, idx, log, errHnd, gridWorkerLsnr, idleHnd);
+            super(
+                igniteInstanceName,
+                poolName,
+                idx,
+                log,
+                errHnd,
+                gridWorkerLsnr,
+                idleHnd);
 
             this.others = others;
 
