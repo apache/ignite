@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
 
 /**
  * Task that starts long running processes by their specifications.
@@ -76,7 +77,9 @@ public class LongRunningProcessStartTask extends LongRunningProcessTask<List<UUI
      * @return Future that allows to interrupt or get the status of the task.
      */
     private Future<?> runTask(Runnable task) {
-        return Executors.newSingleThreadExecutor().submit(task);
+        return Executors
+            .newSingleThreadExecutor(new CustomizableThreadFactory("LONG_RUNNING_PROCESS_TASK", true))
+            .submit(task);
     }
 
     /**

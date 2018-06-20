@@ -27,6 +27,7 @@ import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
 
 /**
  * Task that starts native process by its specification.
@@ -103,11 +104,13 @@ public class NativeProcessStartTask implements IgniteRunnable {
      * @return Future that allows to interrupt forwarding.
      */
     private Future<?> forwardStream(InputStream src, PrintStream dst) {
-        return Executors.newSingleThreadExecutor().submit(() -> {
-            Scanner scanner = new Scanner(src);
+        return Executors
+            .newSingleThreadExecutor(new CustomizableThreadFactory("NATIVE_PROCESS_FORWARD_STREAM", true))
+            .submit(() -> {
+                Scanner scanner = new Scanner(src);
 
-            while (!Thread.currentThread().isInterrupted() && scanner.hasNextLine())
-                dst.println(scanner.nextLine());
-        });
+                while (!Thread.currentThread().isInterrupted() && scanner.hasNextLine())
+                    dst.println(scanner.nextLine());
+            });
     }
 }
