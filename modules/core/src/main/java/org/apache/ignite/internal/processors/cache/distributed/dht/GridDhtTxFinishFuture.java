@@ -26,10 +26,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
@@ -286,6 +286,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     public void finish(boolean commit) {
         boolean sync;
 
+        assert !tx.queryEnlisted() || tx.mvccInfo() != null;
+
         if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
             sync = finish(commit, dhtMap, nearMap);
         else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
@@ -326,7 +328,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
-        if (tx.explicitLock())
+        if (tx.explicitLock() || tx.queryEnlisted())
             sync = true;
 
         boolean res = false;
@@ -417,7 +419,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
-        if (tx.explicitLock())
+        if (tx.explicitLock() || tx.queryEnlisted())
             sync = true;
 
         boolean res = false;
@@ -438,7 +440,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             GridDistributedTxMapping nearMapping = nearMap.get(n.id());
 
-            if (dhtMapping.empty() && nearMapping != null && nearMapping.empty())
+            if (!dhtMapping.queryUpdate() && dhtMapping.empty() && nearMapping != null && nearMapping.empty())
                 // Nothing to send.
                 continue;
 

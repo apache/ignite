@@ -2330,10 +2330,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
         }
 
-        if (res.error() != null)
-            fut.onDone(res.error());
-        else
-            fut.onResult(backup, res);
+        fut.onResult(backup, res);
     }
 
     /**

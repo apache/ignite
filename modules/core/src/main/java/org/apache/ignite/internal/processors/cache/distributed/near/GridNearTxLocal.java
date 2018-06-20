@@ -3739,7 +3739,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private boolean fastFinish() {
         return writeMap().isEmpty()
             && ((optimistic() && !serializable()) || readMap().isEmpty())
-            && (!mappings.single() && F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());
+            && (mappings.single() || F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());
     }
 
     /**
