@@ -246,6 +246,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
 
     /** */
+    private final String DB_URL_PREFIX = "jdbc:h2:file:";
+
+    /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
     /** */
@@ -265,7 +268,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ConcurrentMap<String, H2Schema> schemas = new ConcurrentHashMap<>();
 
     /** */
-    private String dbUrl = "jdbc:h2:file:C:/Personal/h2data/sample";
+    private String dbUrl;
 
     /** */
     private final ConcurrentMap<Thread, Connection> conns = new ConcurrentHashMap<>();
@@ -2517,8 +2520,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
-        dbUrl = "jdbc:h2:file:C:/Personal/h2data/" + dbName + DB_OPTIONS;
-//        dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
+        dbUrl = DB_URL_PREFIX + workDirectory() + dbName + DB_OPTIONS;
 
         org.h2.Driver.load();
 
@@ -3083,6 +3085,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return cacheIds;
         }
     }
+
+    /**
+     * @return
+     */
+    public String workDirectory() {
+        try {
+            return (ctx != null ? ctx.config().getWorkDirectory() : U.defaultWorkDirectory()) + "/h2sql/";
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to resolve Ignite work directory.", e);
+        }
+    }
+
 
     /**
      * Closeable iterator.

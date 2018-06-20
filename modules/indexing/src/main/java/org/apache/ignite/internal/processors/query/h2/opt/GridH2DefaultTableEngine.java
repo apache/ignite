@@ -28,7 +28,7 @@ import org.h2.table.Table;
 public class GridH2DefaultTableEngine implements TableEngine {
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
-        assert !data.persistData && !data.persistIndexes;
+//        assert !data.persistData && !data.persistIndexes;
 
         if (data.isHidden && data.id == 0 && "SYS".equals(data.tableName))
             return new GridH2MetaTable(data);
