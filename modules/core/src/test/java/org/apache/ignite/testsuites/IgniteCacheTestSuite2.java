@@ -229,6 +229,79 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(RendezvousAffinityFunctionBackupFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
         suite.addTest(new TestSuite(CacheLoadingConcurrentGridStartSelfTest.class));
+        suite.addTest(new TestSuite(CacheLoadingConcurrentGridStartSelfTestAllowOverwrite.class));
+        suite.addTest(new TestSuite(CacheTxLoadingConcurrentGridStartSelfTestAllowOverwrite.class));
+        suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
+        suite.addTest(new TestSuite(GridPartitionedBackupLoadSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
+
+        suite.addTest(new TestSuite(GridCachePartitionedTopologyChangeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedUnloadEventsSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheColocatedOptimisticTransactionSelfTest.class));
+        suite.addTestSuite(GridCacheAtomicMessageCountSelfTest.class);
+        suite.addTest(new TestSuite(GridCacheNearPartitionedClearSelfTest.class));
+
+        suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheNearClientHitTest.class));
+        suite.addTest(new TestSuite(GridCacheNearPrimarySyncSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheColocatedPrimarySyncSelfTest.class));
+
+        suite.addTest(new TestSuite(IgniteCachePartitionMapUpdateTest.class));
+        suite.addTest(new TestSuite(IgniteCacheClientNodePartitionsExchangeTest.class));
+        suite.addTest(new TestSuite(IgniteCacheClientNodeChangingTopologyTest.class));
+        suite.addTest(new TestSuite(IgniteCacheServerNodeConcurrentStart.class));
+
+        suite.addTest(new TestSuite(IgniteCacheEntryProcessorNodeJoinTest.class));
+        suite.addTest(new TestSuite(IgniteAtomicCacheEntryProcessorNodeJoinTest.class));
+        suite.addTest(new TestSuite(GridCacheNearTxForceKeyTest.class));
+        suite.addTest(new TestSuite(CrossCacheTxRandomOperationsTest.class));
+        suite.addTest(new TestSuite(CrossCacheTxNearEnabledRandomOperationsTest.class));
+        suite.addTest(new TestSuite(IgniteDynamicCacheAndNodeStop.class));
+        suite.addTest(new TestSuite(CacheLockReleaseNodeLeaveTest.class));
+        suite.addTest(new TestSuite(NearCacheSyncUpdateTest.class));
+        suite.addTest(new TestSuite(CacheConfigurationLeakTest.class));
+        suite.addTest(new TestSuite(MemoryPolicyConfigValidationTest.class));
+        suite.addTest(new TestSuite(MemoryPolicyInitializationTest.class));
+        suite.addTest(new TestSuite(CacheDataRegionConfigurationTest.class));
+        suite.addTest(new TestSuite(CacheGroupLocalConfigurationSelfTest.class));
+        suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
+        suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
+        suite.addTest(new TestSuite(IgniteCacheIncrementTxTest.class));
+        suite.addTest(new TestSuite(IgniteCachePartitionedBackupNodeFailureRecoveryTest.class));
+
+        suite.addTest(new TestSuite(IgniteNoCustomEventsOnNodeStart.class));
+
+        suite.addTest(new TestSuite(CacheExchangeMessageDuplicatedStateTest.class));
+        suite.addTest(new TestSuite(CacheConcurrentReadThroughTest.class));
+
+        suite.addTest(new TestSuite(GridNearCacheStoreUpdateTest.class));
+
+        suite.addTest(new TestSuite(IgniteOnePhaseCommitInvokeTest.class));
+
+        suite.addTest(new TestSuite(IgniteCacheNoSyncForGetTest.class));
+
+        suite.addTest(new TestSuite(IgniteOnePhaseCommitNearReadersTest.class));
+        suite.addTest(new TestSuite(IgniteNearClientCacheCloseTest.class));
+        suite.addTest(new TestSuite(IgniteClientCacheStartFailoverTest.class));
+
+        suite.addTest(new TestSuite(CacheOptimisticTransactionsWithFilterSingleServerTest.class));
+        suite.addTest(new TestSuite(CacheOptimisticTransactionsWithFilterTest.class));
+
+        suite.addTest(new TestSuite(NonAffinityCoordinatorDynamicStartStopTest.class));
+
+        suite.addTest(new TestSuite(IgniteCacheClearDuringRebalanceTest.class));
+
+        suite.addTest(new TestSuite(CachePartitionStateTest.class));
+
+        suite.addTest(new TestSuite(CacheComparatorTest.class));
+
+        suite.addTest(new TestSuite(CachePartitionPartialCountersMapSelfTest.class));
+
+        suite.addTest(new TestSuite(IgniteReflectionFactorySelfTest.class));
 
         return suite;
     }
