@@ -59,6 +59,18 @@ This example demonstrates how to establish a secure connection to an Ignite node
 - get data from the cache
 - destroys the cache
 
+
+### Failover Example ###
+
+Source: [FailoverExample.js](./FailoverExample.js)
+
+This example demonstrates the failover behavior of the client
+- configures the client to connect to a set of nodes
+- connects to a node
+- if connection is broken, the client automatically tries to reconnect to another node
+- if no specified nodes are available, stops the client
+
+
 ## Installation ##
 
 (temporary, while the NPM module is not released on [npmjs](https://www.npmjs.com))
