@@ -150,10 +150,51 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
 
         TransactionsMXBean mxBean = txMXBean(0);
 
-        // Set very long txTimeoutOnPme.
+        // Case 1: set very long txTimeoutOnPME, transaction should be rolled back.
         mxBean.setTxTimeoutOnPartitionMapExchange(longTimeout);
         assertTxTimeoutOnPartitionMapExchange(longTimeout);
 
+        AtomicBoolean rolledBack = new AtomicBoolean(false);
+
+        IgniteInternalFuture<Long> fut = startDeadlock(ig, rolledBack, 0);
+
+        startGridAsync(2);
+
+        waitForExchangeStarted(ig);
+
+        mxBean.setTxTimeoutOnPartitionMapExchange(shortTimeout);
+
+        awaitPartitionMapExchange();
+
+        fut.get();
+
+        assertTrue("Transaction should be rolled back", rolledBack.get());
+
+        // Case 2: txTimeoutOnPME will be set to 0 after starting of PME, transaction should be cancelled on timeout.
+        mxBean.setTxTimeoutOnPartitionMapExchange(longTimeout);
+        assertTxTimeoutOnPartitionMapExchange(longTimeout);
+
+        fut = startDeadlock(ig, rolledBack, 10000L);
+
+        startGridAsync(3);
+
+        waitForExchangeStarted(ig);
+
+        mxBean.setTxTimeoutOnPartitionMapExchange(0);
+
+        fut.get();
+
+        assertFalse("Transaction should be canceled on timeout", rolledBack.get());
+    }
+
+    /**
+     * Start test deadlock
+     *
+     * @param ig Ig.
+     * @param rolledBackFlag Rolled back flag to check.
+     * @param timeout Transaction timeout.
+     */
+    IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicBoolean rolledBackFlag, long timeout) {
         IgniteCache<Object, Object> cache = ig.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
@@ -161,14 +202,11 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        AtomicBoolean rolledBack = new AtomicBoolean(false);
-
-        // Start deadlock.
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        return GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() {
                 int thNum = thCnt.incrementAndGet();
 
-                try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
                     cache.put(thNum, 1);
 
                     barrier.await();
@@ -178,25 +216,14 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
                     tx.commit();
                 } catch (Exception e) {
                     if (hasCause(e, TransactionRollbackException.class))
-                        rolledBack.set(true);
+                        rolledBackFlag.set(true);
+                    else
+                        rolledBackFlag.set(false);
                 }
 
                 return null;
             }
         }, 2, "tx-thread");
-
-        startGridAsync(2);
-
-        waitForExchangeStarted(ig);
-
-        // Set short timeout on PME.
-        mxBean.setTxTimeoutOnPartitionMapExchange(shortTimeout);
-
-        awaitPartitionMapExchange();
-
-        fut.get();
-
-        assertTrue("Transaction should be rolled back", rolledBack.get());
     }
 
     /**
