@@ -137,26 +137,73 @@ class IndexType(Byte):
     GEOSPATIAL = 2
 
 
+class CacheAtomicityMode(Int):
+    TRANSACTIONAL = 0
+    ATOMIC = 1
+
+
+QueryFields = StructArray([
+    ('name', String),
+    ('type_name', String),
+    ('is_key_field', Bool),
+    ('is_notnull_constraint_field', Bool),
+])
+
+
+FieldNameAliases = StructArray([
+    ('field_name', String),
+    ('alias', String),
+])
+
+
+Fields = StructArray([
+    ('name', String),
+    ('is_descending', Bool),
+])
+
+
+QueryIndexes = StructArray([
+    ('index_name', String),
+    ('index_type', IndexType),
+    ('inline_size', Int),
+    ('fields', Fields),
+])
+
+
+QueryEntities = StructArray([
+    ('key_type_name', String),
+    ('value_type_name', String),
+    ('table_name', String),
+    ('key_field_name', String),
+    ('value_field_name', String),
+    ('query_fields', QueryFields),
+    ('field_name_aliases', FieldNameAliases),
+    ('query_indexes', QueryIndexes),
+])
+
+
+CacheKeyConfiguration = StructArray([
+    ('name', String),
+    ('type_name', String),
+    ('is_key_field', Bool),
+    ('is_notnull_constraint_field', Bool),
+])
+
+
 cache_config_struct = Struct([
     ('length', Int),
     ('backups_number', Int),
     ('cache_mode', CacheMode),
-    ('mistery_parameter', Int),
+    ('cache_atomicity_mode', CacheAtomicityMode),
     ('copy_on_read', Bool),
-
     ('data_region_name', String),
-
     ('eager_ttl', Bool),
     ('statistics_enabled', Bool),
-
     ('group_name', String),
-
     ('invalidate', Int),
     ('default_lock_timeout', Long),
     ('max_query_iterators', Int),
-
     ('name', String),
-
     ('is_onheap_cache_enabled', Bool),
     ('partition_loss_policy', PartitionLossPolicy),
     ('query_detail_metric_size', Int),
@@ -171,45 +218,8 @@ cache_config_struct = Struct([
     ('rebalance_timeout', Long),
     ('sql_escape_all', Bool),
     ('sql_index_inline_max_size', Int),
-
     ('sql_schema', String),
-
     ('write_synchronization_mode', WriteSynchronizationMode),
-
-    ('cache_key_configuration', StructArray([
-        ('name', String),
-        ('type_name', String),
-        ('is_key_field', Bool),
-        ('is_notnull_constraint_field', Bool),
-    ])),
-
-    ('query_entity', StructArray([
-        ('key_type_name', String),
-        ('value_type_name', String),
-        ('table_name', String),
-        ('key_field_name', String),
-        ('value_field_name', String),
-
-        ('query_fields', StructArray([
-            ('name', String),
-            ('type_name', String),
-            ('is_key_field', Bool),
-            ('is_notnull_constraint_field', Bool),
-        ])),
-
-        ('field_name_aliases', StructArray([
-            ('field_name', String),
-            ('alias', String),
-        ])),
-
-        ('query_indexes', StructArray([
-            ('index_name', String),
-            ('index_type', IndexType),
-            ('inline_size', Int),
-            ('fields', StructArray([
-                ('name', String),
-                ('is_descending', Bool),
-            ])),
-        ])),
-    ])),
+    ('cache_key_configuration', CacheKeyConfiguration),
+    ('query_entities', QueryEntities),
 ])

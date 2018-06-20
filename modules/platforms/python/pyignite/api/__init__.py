@@ -41,6 +41,7 @@ from .cache_config import (
     cache_get_or_create,
     cache_destroy,
     cache_get_configuration,
+    cache_create_with_config,
 )
 from .key_value import (
     cache_get,

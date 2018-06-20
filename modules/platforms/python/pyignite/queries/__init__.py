@@ -74,6 +74,50 @@ class Query:
         return header.query_id, bytes(header) + buffer
 
 
+class ConfigQuery(Query):
+    """
+    This is a special query, used for creating caches with configuration.
+    """
+
+    @classmethod
+    def build_c_type(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                    ('op_code', ctypes.c_short),
+                    ('query_id', ctypes.c_long),
+                    ('config_length', ctypes.c_int),
+                ],
+            },
+        )
+
+    def from_python(self, values: dict = None):
+        if values is None:
+            values = {}
+        buffer = b''
+
+        header_class = self.build_c_type()
+        header = header_class()
+        header.op_code = self.op_code
+        if self.query_id is None:
+            header.query_id = randint(MIN_LONG, MAX_LONG)
+
+        for name, c_type in self.following:
+            buffer += c_type.from_python(values[name])
+
+        header.length = (
+            len(buffer)
+            + ctypes.sizeof(header_class)
+            - ctypes.sizeof(ctypes.c_int)
+        )
+        header.config_length = header.length - ctypes.sizeof(header_class)
+        return header.query_id, bytes(header) + buffer
+
+
 @attr.s
 class Response:
     following = attr.ib(type=list)

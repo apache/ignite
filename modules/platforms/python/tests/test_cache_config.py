@@ -13,23 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.connection import Connection
-from pyignite.api import (
-    cache_destroy, cache_get_or_create, cache_get_configuration, hashcode,
-)
+from pyignite.api import *
+from pyignite.datatypes.prop_codes import *
 
 
-def test_put_get(ignite_host, ignite_port):
-    conn = Connection()
-    conn.connect(ignite_host, ignite_port)
+def test_get_configuration(conn):
 
-    result = cache_get_or_create(conn, 'my_cache')
+    result = cache_get_or_create(conn, 'my_unique_cache')
     assert result.status == 0
 
-    result = cache_get_configuration(conn, hashcode('my_cache'))
+    result = cache_get_configuration(conn, hashcode('my_unique_cache'))
     assert result.status == 0
-    assert result.value['name'] == 'my_cache'
+    assert result.value['name'] == 'my_unique_cache'
 
-    # cleanup
-    cache_destroy(conn, hashcode('my_cache'))
-    conn.close()
+
+def test_create_with_config(conn):
+
+    cache_name = 'my_very_unique_name'
+
+    result = cache_create_with_config(conn, {
+        PROP_NAME: cache_name,
+
+    })
+    assert result.status == 0
+
+    result = cache_get_names(conn)
+    assert cache_name in result.value

@@ -16,7 +16,7 @@
 import pytest
 
 from pyignite.connection import Connection
-from pyignite.api import cache_create, cache_destroy, hashcode
+from pyignite.api import cache_create, cache_get_names, cache_destroy, hashcode
 
 
 IGNITE_DEFAULT_HOST = 'localhost'
@@ -28,6 +28,8 @@ def conn(ignite_host, ignite_port):
     conn = Connection()
     conn.connect(ignite_host, ignite_port)
     yield conn
+    for cache_name in cache_get_names(conn).value:
+        cache_destroy(conn, hashcode(cache_name))
     conn.close()
 
 
