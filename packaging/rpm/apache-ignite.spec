@@ -64,6 +64,10 @@ echoUpgradeMessage () {
     echo "======================================================================================================="
 }
 
+setPermissions () {
+    chown -R %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+}
+
 case $1 in
     1|configure)
         # DEB postinst upgrade
@@ -75,7 +79,7 @@ case $1 in
         useradd -r -d %{_datadir}/%{name} -s /usr/sbin/nologin %{user}
 
         # Change ownership for work and log directories
-        chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+        setPermissions
 
         # Install alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
@@ -97,8 +101,10 @@ case $1 in
                     cp -rf $file %{_sharedstatedir}/%{name}/
                 fi
             done
-            chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
         fi
+
+        # Change ownership for work and log directories (yum resets permissions on upgrade nevertheless)
+        setPermissions
         ;;
 esac
 
@@ -112,10 +118,19 @@ esac
 #     1 - Upgrade
 #
 
+stopIgniteNodes () {
+    if ! $(grep -q "Microsoft" /proc/version); then
+        systemctl stop 'apache-ignite@*'
+    fi
+    ps ax | grep '\-DIGNITE_HOME' | head -n-1 | awk {'print $1'} | while read pid; do
+        kill -INT ${pid}
+    done
+}
+
 case $1 in
     0|remove)
-        # Stop all nodes
-        systemctl stop 'apache-ignite@*'
+        # Stop all nodes (both service and standalone)
+        stopIgniteNodes
 
         # Remove alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
@@ -125,10 +140,11 @@ case $1 in
         #update-alternatives --display ignitesqlline || true
         ;;
     1|upgrade)
+        # Stop all nodes (both service and standalone)
         echo "=================================================================================="
         echo "  WARNING: All running Apache Ignite's nodes will be stopped upon package update  "
         echo "=================================================================================="
-        systemctl stop 'apache-ignite@*'
+        stopIgniteNodes
         ;;
 esac
 
