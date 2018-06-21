@@ -36,8 +36,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -99,9 +97,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -190,7 +185,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
  * Cache processor.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
-public class GridCacheProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
+public class GridCacheProcessor extends GridProcessorAdapter {
     /** Template of message of conflicts during configuration merge*/
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -258,11 +253,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
-    private final String STORE_CACHE_PREFIX = "cache.";
-
-    /** Meta storage. */
-    private ReadWriteMetastorage metastorage;
-
     /**
      * @param ctx Kernal context.
      */
@@ -275,8 +265,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         internalCaches = new HashSet<>();
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
     /**
@@ -833,31 +821,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
     }
 
-    public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        this.context().database().checkpointReadLock();
-        try {
-            String cacheName = cacheData.config().getName();
-
-            if (metastorage.read(STORE_CACHE_PREFIX + cacheName) == null || overwrite)
-                metastorage.write(STORE_CACHE_PREFIX + cacheName, cacheData);
-        }
-        finally {
-            this.context().database().checkpointReadUnlock();
-        }
-    }
-
-    public void removeCacheData(String cacheName) throws IgniteCheckedException {
-
-        this.context().database().checkpointReadLock();
-        try {
-            this.metastorage.remove(STORE_CACHE_PREFIX + cacheName);
-        }
-        finally {
-            this.context().database().checkpointReadUnlock();
-        }
-
-    }
-
     /**
      * Initialize internal cache names
      */
@@ -1332,7 +1295,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             if (destroy && CU.isPersistenceEnabled(ctx.gridConfig())) {
                 try {
-                    removeCacheData(ctx.name());
+                    sharedCtx.database().removeCacheConfiguration(ctx.config());
                 } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
                             "[cache=" + ctx.name() + "]", e);
@@ -1349,23 +1312,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         finally {
             cleanup(ctx);
         }
-    }
-
-    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-//        if (!ctx.clientNode() && CU.isPersistenceEnabled(ctx.config()))
-//           proceedCacheStart();
-        Map<String, StoredCacheData> data = (Map<String, StoredCacheData>)metastorage.readForPredicate(new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                return s.startsWith(STORE_CACHE_PREFIX);
-            }
-        });
-    }
-
-    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-        if (!ctx.clientNode() && CU.isPersistenceEnabled(ctx.config()))
-            this.metastorage = metastorage;
-        else
-            this.metastorage = null;
     }
 
     /**
@@ -3358,7 +3304,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         if (!sharedCtx.kernalContext().clientNode() &&
                 isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
-            storeCacheData(desc.toStoredData(), true);
+            sharedCtx.database().storeCacheConfiguration(desc.toStoredData(), true);
     }
 
     /**

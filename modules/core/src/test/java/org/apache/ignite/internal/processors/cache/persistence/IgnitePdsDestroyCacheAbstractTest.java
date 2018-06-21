@@ -121,6 +121,8 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         log.warning("Grid started");
 
+        log.error("Caches survives: " + ignite.cacheNames());
+
         assertEquals("Check that caches don't survived", CACHES - 2, ignite.cacheNames().size());
 
         for(Ignite ig: G.allGrids()) {

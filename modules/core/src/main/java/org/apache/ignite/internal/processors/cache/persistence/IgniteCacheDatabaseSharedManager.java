@@ -30,10 +30,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -851,6 +848,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     public Map<String, StoredCacheData> readStoredCacheConfiguration() throws IgniteCheckedException {
         // No-op
         return Collections.emptyMap();
+    }
+
+    /**
+     * Store cache configuration.
+     *
+     * @param cacheData Cache data.
+     * @param overwrite Overwrite.
+     */
+    public void storeCacheConfiguration(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+        // No-op
+    }
+
+    /**
+     * Remove stored cache configuration.
+     *
+     * @param cacheConfig Cache configuration to remove.
+     */
+    public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheConfig) throws IgniteCheckedException {
+        //No-op
     }
 
     /**

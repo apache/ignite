@@ -2713,7 +2713,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 data.sql(sql);
 
-                cctx.cache().storeCacheData(data, false);
+                cctx.database().storeCacheConfiguration(data, false);
             }
             catch (IgniteCheckedException e) {
                 U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);
