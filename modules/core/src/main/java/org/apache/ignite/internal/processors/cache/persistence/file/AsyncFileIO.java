@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  * File I/O implementation based on {@link AsynchronousFileChannel}.
  */
-public class AsyncFileIO implements FileIO {
+public class AsyncFileIO extends AbstractFileIO {
     /**
      * File channel associated with {@code file}
      */

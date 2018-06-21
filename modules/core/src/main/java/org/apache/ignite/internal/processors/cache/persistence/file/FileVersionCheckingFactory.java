@@ -86,8 +86,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
+            fileIO.readFully(hdr);
 
             hdr.rewind();
 

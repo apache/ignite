@@ -234,7 +234,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         long size = fileIO.size();
 
-        fileIO.write(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
+        fileIO.writeFully(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
 
         fileIO.force();
     }

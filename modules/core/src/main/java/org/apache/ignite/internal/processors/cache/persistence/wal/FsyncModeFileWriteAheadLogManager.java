@@ -1218,13 +1218,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC) {
-                while (left > 0) {
-                    int toWrite = Math.min(FILL_BUF.length, left);
-
-                    fileIO.write(FILL_BUF, 0, toWrite);
-
-                    left -= toWrite;
-                }
+                while ((left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left))) > 0)
+                    ;
 
                 fileIO.force();
             }
@@ -1967,9 +1962,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                          FileIO io = ioFactory.create(unzipTmp)) {
                         zis.getNextEntry();
 
-                        int bytesRead;
-                        while ((bytesRead = zis.read(arr)) > 0)
-                            io.write(arr, 0, bytesRead);
+                        while (io.writeFully(arr, 0, zis.read(arr)) > 0)
+                            ;
                     }
 
                     try {
@@ -2088,10 +2082,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     public static long writeSerializerVersion(FileIO io, long idx, int version, WALMode mode) throws IOException {
         ByteBuffer buffer = prepareSerializerVersionBuffer(idx, version, false);
 
-        do {
-            io.write(buffer);
-        }
-        while (buffer.hasRemaining());
+        io.writeFully(buffer);
 
         // Flush
         if (mode == WALMode.FSYNC)
@@ -2826,15 +2817,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                                 buf.rewind();
 
-                                int rem = buf.remaining();
-
-                                while (rem > 0) {
-                                    int written0 = fileIO.write(buf, written);
-
-                                    written += written0;
-
-                                    rem -= written0;
-                                }
+                                written += fileIO.writeFully(buf, written);
                             }
                         }
                         catch (IgniteCheckedException e) {
@@ -2976,10 +2959,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 try {
                     assert written == fileIO.position();
 
-                    do {
-                        fileIO.write(buf);
-                    }
-                    while (buf.hasRemaining());
+                    fileIO.writeFully(buf);
 
                     written += size;
 

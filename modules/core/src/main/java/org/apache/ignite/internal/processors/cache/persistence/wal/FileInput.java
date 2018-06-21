@@ -119,17 +119,9 @@ public final class FileInput implements ByteBufferBackedDataInput {
 
         buf.compact();
 
-        do {
-            int read = io.read(buf);
+        io.readFully(buf);
 
-            if (read == -1)
-                throw new EOFException("EOF at position [" + io.position() + "] expected to read [" + requested + "] bytes");
-
-            available += read;
-
-            pos += read;
-        }
-        while (available < requested);
+        pos += requested;
 
         buf.flip();
     }

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -537,7 +538,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      *
      */
-    private static class TestFileIO implements FileIO {
+    private static class TestFileIO extends AbstractFileIO {
         /** */
         private final FileIO delegate;
 

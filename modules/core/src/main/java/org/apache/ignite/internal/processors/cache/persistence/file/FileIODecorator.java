@@ -52,8 +52,18 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int readFully(ByteBuffer destBuf) throws IOException {
+        return delegate.readFully(destBuf);
+    }
+
+    /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf, long position) throws IOException {
         return delegate.read(destBuf, position);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
+        return delegate.readFully(destBuf, position);
     }
 
     /** {@inheritDoc} */
@@ -62,8 +72,18 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int readFully(byte[] buf, int off, int len) throws IOException {
+        return delegate.readFully(buf, off, len);
+    }
+
+    /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
         return delegate.write(srcBuf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+        return delegate.writeFully(srcBuf);
     }
 
     /** {@inheritDoc} */
@@ -72,8 +92,18 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
+        return delegate.writeFully(srcBuf, position);
+    }
+
+    /** {@inheritDoc} */
     @Override public int write(byte[] buf, int off, int len) throws IOException {
         return delegate.write(buf, off, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(byte[] buf, int off, int len) throws IOException {
+        return delegate.writeFully(buf, off, len);
     }
 
     /** {@inheritDoc} */
