@@ -633,7 +633,6 @@ public class ZookeeperClient implements Watcher {
                 try {
                     zk.multi(ops);
 
-                    System.out.println("MYsizesize="+ops.size());
                     break;
                 }
                 catch (KeeperException.NoNodeException e) {
