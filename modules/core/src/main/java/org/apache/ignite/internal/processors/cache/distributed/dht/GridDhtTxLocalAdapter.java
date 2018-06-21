@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -228,10 +229,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /**
      *
-     * @param queryEnlisted Whwthwr thwrw arw entries6 enlisted by query.
+     * @param ver Mvcc version.
      */
-    public void queryEnlisted(boolean queryEnlisted) {
-        this.queryEnlisted = queryEnlisted;
+    public void markQueryEnlisted(MvccVersion ver) {
+        if (!queryEnlisted) {
+            cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
+
+            queryEnlisted = true;
+        }
     }
 
     /**

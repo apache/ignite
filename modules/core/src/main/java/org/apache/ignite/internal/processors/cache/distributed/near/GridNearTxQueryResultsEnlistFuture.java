@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -414,11 +415,36 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 tx.taskNameHash(),
                 batchFut.rows(),
                 op);
-            cctx.io().send(nodeId, req, cctx.ioPolicy());
+
+            sendRequest(req, nodeId);
         }
         catch (IgniteCheckedException ex) {
             onDone(ex);
         }
+    }
+
+    /**
+     *
+     * @param req Request.
+     * @param nodeId Remote node ID
+     * @throws IgniteCheckedException if failed to send.
+     */
+    private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
+        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
+
+        if (txSync == null || txSync.isDone())
+            cctx.io().send(nodeId, req, cctx.ioPolicy());
+        else
+            txSync.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> future) {
+                    try {
+                        cctx.io().send(nodeId, req, cctx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        GridNearTxQueryResultsEnlistFuture.this.onDone(e);
+                    }
+                }
+            });
     }
 
     /**

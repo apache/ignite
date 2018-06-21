@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -172,7 +173,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
                     clientFirst
                 );
 
-                cctx.io().send(node.id(), req, cctx.ioPolicy());
+                sendRequest(req, node.id(), mini);
             }
 
             if (locallyMapped) {
@@ -225,6 +226,31 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
         }
 
         markInitialized();
+    }
+
+    /**
+     *
+     * @param req Request.
+     * @param nodeId Remote node ID.
+     * @param fut Result future.
+     * @throws IgniteCheckedException if failed to send.
+     */
+    private void sendRequest(GridCacheMessage req, UUID nodeId, MiniFuture fut) throws IgniteCheckedException {
+        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
+
+        if (txSync == null || txSync.isDone())
+            cctx.io().send(nodeId, req, cctx.ioPolicy());
+        else
+            txSync.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
+                    try {
+                        cctx.io().send(nodeId, req, cctx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onResult(null, e);
+                    }
+                }
+            });
     }
 
     /**
