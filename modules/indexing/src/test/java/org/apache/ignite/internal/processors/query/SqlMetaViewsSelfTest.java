@@ -47,7 +47,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
      * @param args Args.
      */
     private List<List<?>> execSql(Ignite ignite, String sql, Object ... args) {
-        IgniteCache cache = ignite.getOrCreateCache("cache");
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
@@ -114,6 +114,34 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test different query modes.
+     */
+    public void testQueryModes() throws Exception {
+        Ignite ignite = startGrid(0);
+        startGrid(1);
+
+        UUID nodeId = ignite.cluster().localNode().id();
+
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        String sql = "SELECT ID FROM IGNITE.NODES WHERE IS_LOCAL = true";
+
+        SqlFieldsQuery qry;
+
+        qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
+
+        assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+
+        qry = new SqlFieldsQuery(sql).setReplicatedOnly(true);
+
+        assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+
+        qry = new SqlFieldsQuery(sql).setLocal(true);
+
+        assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+    }
+
+    /**
      * Test that we can't use cache tables and meta views in the same query.
      */
     public void testCacheToViewJoin() throws Exception {
@@ -149,7 +177,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_LOCAL, IS_CLIENT, IS_DAEMON, " +
-                "STARTUP_ORDER, ADDRESSES, HOST_NAMES FROM IGNITE.NODES");
+                "NODE_ORDER, ADDRESSES, HOST_NAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
             Boolean.class, Integer.class, String.class, String.class);
@@ -157,7 +185,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(3, resAll.size());
 
         List<List<?>> resSrv = execSql(
-                "SELECT ID, IS_LOCAL, STARTUP_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
+                "SELECT ID, IS_LOCAL, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
         );
 
         assertEquals(1, resSrv.size());
@@ -169,7 +197,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(1, resSrv.get(0).get(2));
 
         List<List<?>> resCli = execSql(
-            "SELECT ID, IS_LOCAL, STARTUP_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = TRUE");
+            "SELECT ID, IS_LOCAL, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = TRUE");
 
         assertEquals(1, resCli.size());
 
@@ -180,7 +208,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(2, resCli.get(0).get(2));
 
         List<List<?>> resDaemon = execSql(
-            "SELECT ID, IS_LOCAL, STARTUP_ORDER FROM IGNITE.NODES WHERE IS_DAEMON = TRUE");
+            "SELECT ID, IS_LOCAL, NODE_ORDER FROM IGNITE.NODES WHERE IS_DAEMON = TRUE");
 
         assertEquals(1, resDaemon.size());
 
@@ -206,8 +234,8 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.NODES").get(0).get(0));
 
         // Check joins
-        assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 " +
-            "JOIN IGNITE.NODES N2 ON N1.ID = N2.ID JOIN IGNITE.NODES N3 ON N2.ID = N3.ID WHERE N3.IS_LOCAL = true")
+        assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 JOIN " +
+            "IGNITE.NODES N2 ON N1.IS_LOCAL = N2.IS_LOCAL JOIN IGNITE.NODES N3 ON N2.ID = N3.ID WHERE N3.IS_LOCAL = true")
             .get(0).get(0));
 
         // Check sub-query

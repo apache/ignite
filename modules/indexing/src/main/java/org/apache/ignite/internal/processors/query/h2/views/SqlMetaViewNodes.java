@@ -45,7 +45,7 @@ public class SqlMetaViewNodes extends SqlAbstractLocalMetaView {
             newColumn("IS_LOCAL", Value.BOOLEAN),
             newColumn("IS_CLIENT", Value.BOOLEAN),
             newColumn("IS_DAEMON", Value.BOOLEAN),
-            newColumn("STARTUP_ORDER", Value.INT),
+            newColumn("NODE_ORDER", Value.INT),
             newColumn("ADDRESSES"),
             newColumn("HOST_NAMES")
         );
