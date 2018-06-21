@@ -109,7 +109,7 @@ public class Step_9_Change_algorithm {
                     double avg = Double.MIN_VALUE;
 
                     for(int p: pSet){
-                        for(int maxDeep: maxDeepSet){
+                        //for(int maxDeep: maxDeepSet){
 
                             IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                                 .withP(p)
@@ -147,11 +147,11 @@ public class Step_9_Change_algorithm {
                             if(currAvg > avg) {
                                 avg = currAvg;
                                 bestP = p;
-                                bestMaxDeep = maxDeep;
+                                //bestMaxDeep = maxDeep;
                             }
 
-                            System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
-                        }
+                           // System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
+                       // }
                     }
 
                     System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);

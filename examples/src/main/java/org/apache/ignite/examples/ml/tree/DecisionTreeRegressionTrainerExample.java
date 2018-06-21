@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -74,7 +75,7 @@ public class DecisionTreeRegressionTrainerExample {
 
                 // Calculate score.
                 for (int x = 0; x < 10; x++) {
-                    double predicted = mdl.apply(new double[] {x});
+                    double predicted = mdl.apply(new DenseLocalOnHeapVector(new double[] {x}));
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
                 }
