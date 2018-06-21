@@ -46,3 +46,34 @@ def test_create_with_config(conn):
 
     result = cache_get_names(conn)
     assert cache_name in result.value
+
+    result = cache_create_with_config(conn, {
+        PROP_NAME: cache_name,
+    })
+    assert result.status != 0
+
+
+def test_get_or_create_with_config(conn):
+
+    cache_name = 'my_very_unique_name'
+
+    result = cache_get_or_create_with_config(conn, {
+        PROP_NAME: cache_name,
+        PROP_CACHE_KEY_CONFIGURATION: [
+            {
+                'name': '123_key',
+                'type_name': 'blah',
+                'is_key_field': False,
+                'is_notnull_constraint_field': False,
+            }
+        ],
+    })
+    assert result.status == 0
+
+    result = cache_get_names(conn)
+    assert cache_name in result.value
+
+    result = cache_get_or_create_with_config(conn, {
+        PROP_NAME: cache_name,
+    })
+    assert result.status == 0
