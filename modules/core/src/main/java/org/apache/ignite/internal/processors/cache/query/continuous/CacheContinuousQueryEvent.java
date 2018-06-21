@@ -38,6 +38,12 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     @GridToStringExclude
     private final CacheContinuousQueryEntry e;
 
+    /** Store value for optimization by using benign races trick. */
+    private volatile V val = null;
+
+    /** Store old value for optimization by using benign races trick. */
+    private volatile V oldVal = null;
+
     /**
      * @param src Source cache.
      * @param cctx Cache context.
@@ -71,18 +77,39 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
 
     /** {@inheritDoc} */
     @Override public V getValue() {
+        if (e.value() == null)
+            return null;
+
+        V locVal = val;
+        if (locVal != null)
+            return locVal;
+
         if (getEventType() == EventType.REMOVED || getEventType() == EventType.EXPIRED) {
             assert e.value() == e.oldValue();
-            
-            return getOldValue();
-        }
 
-        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false);
+            locVal = getOldValue();
+        }
+        else
+            locVal = (V) cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false);
+
+        val = locVal;
+
+        return locVal;
     }
 
     /** {@inheritDoc} */
     @Override public V getOldValue() {
-        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.oldValue(), e.isKeepBinary(), false);
+        if (e.oldValue() == null)
+            return null;
+
+        V locVal = oldVal;
+        if (locVal != null)
+            return locVal;
+
+        locVal = (V) cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.oldValue(), e.isKeepBinary(), false);
+        oldVal = locVal;
+
+        return locVal;
     }
 
     /** {@inheritDoc} */

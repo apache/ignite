@@ -320,7 +320,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
             new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, Integer>() {
                 @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
                     if (evt.getEventType() == EventType.REMOVED || evt.getEventType() == EventType.EXPIRED)
-                        assertEquals(evt.getOldValue(), evt.getValue());
+                        assertNotNull(evt.getValue());
                     else
                         assertNull(evt.getValue());
 
