@@ -3996,7 +3996,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>) jCacheProxies.get(name);
 
-        if (cache == null && CU.isSystemCache(name)) {
+        if (cache == null) {
             GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
             if (cacheAdapter != null)
