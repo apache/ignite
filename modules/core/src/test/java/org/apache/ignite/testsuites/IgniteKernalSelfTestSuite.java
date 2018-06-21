@@ -97,6 +97,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
 
+/*
         suite.addTestSuite(GridSameVmStartupSelfTest.class);
         suite.addTestSuite(GridSpiExceptionSelfTest.class);
         suite.addTestSuite(GridRuntimeExceptionSelfTest.class);
@@ -144,7 +145,9 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProxyNodeStopSelfTest.class);
         suite.addTestSuite(GridServiceProxyClientReconnectSelfTest.class);
         suite.addTestSuite(IgniteServiceReassignmentTest.class);
+*/
         suite.addTestSuite(IgniteServiceProxyTimeoutInitializedTest.class);
+/*
         suite.addTestSuite(IgniteServiceDynamicCachesSelfTest.class);
         suite.addTestSuite(GridServiceContinuousQueryRedeployTest.class);
         suite.addTestSuite(ServiceThreadPoolSelfTest.class);
@@ -157,6 +160,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
+*/
 
         return suite;
     }
