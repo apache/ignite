@@ -498,7 +498,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         Collection<Object> rows = batch.rows();
 
         try {
-            GridDhtTxQueryResultsEnlistFuture fut = new GridDhtTxQueryResultsEnlistFuture(nodeId,
+            localEnlistFuture = new GridDhtTxQueryResultsEnlistFuture(nodeId,
                 lockVer,
                 topVer,
                 mvccSnapshot,
@@ -511,9 +511,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 rows,
                 op);
 
-            fut.listen(new CI1<IgniteInternalFuture<GridNearTxQueryResultsEnlistResponse>>() {
+            localEnlistFuture.listen(new CI1<IgniteInternalFuture<GridNearTxQueryResultsEnlistResponse>>() {
                 @Override public void apply(IgniteInternalFuture<GridNearTxQueryResultsEnlistResponse> fut) {
                     assert fut.error() != null || fut.result() != null : fut;
+
+                    localEnlistFuture = null;
 
                     try {
                         if (checkResponse(nodeId, true, fut.result(), fut.error()))
@@ -525,7 +527,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 }
             });
 
-            fut.init();
+            localEnlistFuture.init();
         }
         catch (IgniteTxTimeoutCheckedException e) {
             onDone(e);
