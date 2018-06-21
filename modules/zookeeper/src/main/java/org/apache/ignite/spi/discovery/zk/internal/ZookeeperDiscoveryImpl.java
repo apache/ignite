@@ -1362,8 +1362,16 @@ public class ZookeeperDiscoveryImpl {
 
                 if (prevEvts.clusterId.equals(newEvts.clusterId)) {
                     U.warn(log, "All server nodes failed, notify all clients [locId=" + locNode.id() + ']');
+                    try {
+                        generateNoServersEvent(newEvts, stat);
+                    }
+                    catch (KeeperException.BadVersionException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to save no servers message. Path version changed.");
 
-                    generateNoServersEvent(newEvts, stat);
+                        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null,
+                            new CheckClientsStatusCallback(rtState));
+                    }
                 }
                 else
                     U.warn(log, "All server nodes failed (received events from new cluster).");
@@ -1423,14 +1431,7 @@ public class ZookeeperDiscoveryImpl {
 
         byte[] newEvtsBytes = marshalZip(evtsData);
 
-        try {
-            rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
-        }
-        catch (KeeperException.BadVersionException e) {
-            // Version can change if new cluster started and saved new events.
-            if (log.isDebugEnabled())
-                log.debug("Failed to save no servers message");
-        }
+        rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
     }
 
     /**
