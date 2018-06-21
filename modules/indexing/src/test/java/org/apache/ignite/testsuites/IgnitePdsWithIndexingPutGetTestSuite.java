@@ -20,30 +20,26 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
-import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
-import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest;
-import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
 
 /**
  *
  */
-public class IgnitePdsWithIndexingTestSuite extends TestSuite {
+public class IgnitePdsWithIndexingPutGetTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
+        TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Put&Get Test Suite");
 
-        suite.addTestSuite(IgniteDbSingleNodeWithIndexingWalRestoreTest.class);
         suite.addTestSuite(IgniteDbSingleNodeWithIndexingPutGetTest.class);
         suite.addTestSuite(IgniteDbMultiNodeWithIndexingPutGetTest.class);
         suite.addTestSuite(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreSchemaLoadTest.class);
-        suite.addTestSuite(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class);
+        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
 
         return suite;
     }
