@@ -369,7 +369,6 @@ namespace ignite
                 /**
                  * Write request using provided writer.
                  * @param writer Writer.
-                 * @param ver Version.
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
                 {
@@ -415,6 +414,15 @@ namespace ignite
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
+                /** Cache ID. */
+                int32_t cacheId;
+
+                /** Binary flag. */
+                bool binary;
+
+                /** Key. */
+                const Writable& key;
+
                 /** Value. */
                 const Writable& value;
             };

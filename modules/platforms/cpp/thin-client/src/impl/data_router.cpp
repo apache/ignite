@@ -19,16 +19,13 @@
 #include <cstddef>
 
 #include <sstream>
+#include <iterator>
 #include <algorithm>
-
-#include <ignite/common/fixed_size_array.h>
 
 #include <ignite/impl/thin/utility.h>
 #include <ignite/impl/thin/data_router.h>
 #include <ignite/impl/thin/message.h>
 #include <ignite/impl/thin/ssl/ssl_gateway.h>
-#include <ignite/impl/thin/ssl/secure_socket_client.h>
-#include <ignite/impl/thin/net/tcp_socket_client.h>
 #include <ignite/impl/thin/net/remote_type_updater.h>
 
 
@@ -38,26 +35,10 @@ namespace ignite
     {
         namespace thin
         {
-            /** Version 1.1.0. */
-            const ProtocolVersion DataRouter::VERSION_1_1_0(1, 1, 0);
-
-            /** Current version. */
-            const ProtocolVersion DataRouter::VERSION_CURRENT(VERSION_1_1_0);
-
-            DataRouter::VersionSet::value_type supportedArray[] = {
-                DataRouter::VERSION_1_1_0,
-            };
-
-            const DataRouter::VersionSet DataRouter::supportedVersions(supportedArray,
-                supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
-
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
                 ioTimeout(DEFALT_IO_TIMEOUT),
                 connectionTimeout(DEFALT_CONNECT_TIMEOUT),
-                socket(),
                 config(cfg),
-                currentVersion(VERSION_CURRENT),
-                reqIdCounter(0),
                 typeUpdater(),
                 typeMgr()
             {
@@ -73,342 +54,135 @@ namespace ignite
             {
                 using ignite::thin::SslMode;
 
-                if (socket.get() != 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Already connected.");
-
                 if (config.GetEndPoints().empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
 
-                SslMode::Type sslMode = config.GetSslMode();
+                std::vector<net::TcpRange> ranges;
 
-                if (sslMode != SslMode::DISABLE)
+                CollectAddresses(config.GetEndPoints(), ranges);
+
+                SP_DataChannel channel(new DataChannel(config, typeMgr));
+
+                bool connected = false;
+
+                for (std::vector<net::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
                 {
-                    ssl::SslGateway::GetInstance().LoadAll();
+                    net::TcpRange& range = *it;
 
-                    socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
-                        config.GetSslKeyFile(), config.GetSslCaFile()));
+                    for (uint16_t port = range.port; port <= range.port + range.range; ++port)
+                    {
+                        connected = channel.Get()->Connect(range.host, port, connectionTimeout);
+
+                        if (connected)
+                            break;
+                    }
                 }
-                else
-                    socket.reset(new net::TcpSocketClient());
-
-                bool connected = TryRestoreConnection();
 
                 if (!connected)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with the host.");
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
+
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                channels[channel.Get()->GetAddress()].Swap(channel);
             }
 
             void DataRouter::Close()
             {
                 typeMgr.SetUpdater(0);
 
-                if (socket.get() != 0)
-                {
-                    socket->Close();
+                std::map<net::EndPoint, SP_DataChannel>::iterator it;
 
-                    socket.reset();
+                common::concurrent::CsLockGuard lock(channelsMutex);
+
+                for (it = channels.begin(); it != channels.end(); ++it)
+                {
+                    DataChannel* channel = it->second.Get();
+
+                    if (channel)
+                        channel->Close();
                 }
             }
 
-            void DataRouter::InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout)
+            SP_DataChannel DataRouter::GetRandomChannel()
             {
-                common::concurrent::CsLockGuard lock(ioMutex);
+                int r = rand();
 
-                bool success = Send(mem.Data(), mem.Length(), timeout);
+                common::concurrent::CsLockGuard lock(channelsMutex);
 
-                if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message to remote host: timeout");
+                size_t idx = r % channels.size();
 
-                success = Receive(mem, timeout);
+                std::map<net::EndPoint, SP_DataChannel>::iterator it = channels.begin();
 
-                if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message to remote host: timeout");
+                std::advance(it, idx);
+
+                return it->second;
             }
 
-            bool DataRouter::Send(const int8_t* data, size_t len, int32_t timeout)
+            bool DataRouter::IsLocalHost(const std::vector<net::EndPoint>& hint)
             {
-                if (socket.get() == 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
+                // TODO
 
-                OperationResult::T res = SendAll(data, len, timeout);
-
-                if (res == OperationResult::TIMEOUT)
-                    return false;
-
-                if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Can not send message due to connection failure");
-
-                return true;
+                return false;
             }
 
-            DataRouter::OperationResult::T DataRouter::SendAll(const int8_t* data, size_t len, int32_t timeout)
+            bool DataRouter::IsLocalAddress(const std::string& host)
             {
-                int sent = 0;
+                // TODO
 
-                while (sent != static_cast<int64_t>(len))
+                return false;
+            }
+
+            bool DataRouter::IsProvidedByUser(const net::EndPoint& endPoint)
+            {
+                // TODO
+
+                return false;
+            }
+
+            SP_DataChannel DataRouter::GetBestChannel(const std::vector<net::EndPoint>& hint)
+            {
+                if (hint.empty())
+                    return GetRandomChannel();
+
+                bool localHost = IsLocalHost(hint);
+
+                for (std::vector<net::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
                 {
-                    int res = socket->Send(data + sent, len - sent, timeout);
+                    if (IsLocalAddress(it->host) && !localHost)
+                        continue;
 
-                    if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
+                    if (!IsProvidedByUser(*it))
+                        continue;
+
+                    common::concurrent::CsLockGuard lock(channelsMutex);
+
+                    SP_DataChannel& dst = channels[*it];
+
+                    if (dst.IsValid())
+                        return dst;
+
+                    SP_DataChannel channel(new DataChannel(config, typeMgr));
+
+                    bool connected = channel.Get()->Connect(it->host, it->port, connectionTimeout);
+
+                    if (connected)
                     {
-                        Close();
+                        dst.Swap(channel);
 
-                        return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
+                        return dst;
                     }
-
-                    sent += res;
                 }
 
-                assert(static_cast<size_t>(sent) == len);
-
-                return OperationResult::SUCCESS;
+                return GetRandomChannel();
             }
 
-            bool DataRouter::Receive(interop::InteropMemory& msg, int32_t timeout)
+            void DataRouter::CollectAddresses(const std::string& str, std::vector<net::TcpRange>& ranges)
             {
-                assert(msg.Capacity() > 4);
+                ranges.clear();
 
-                if (socket.get() == 0)
-                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "DataRouter is not established");
+                utility::ParseAddress(str, ranges, DEFAULT_PORT);
 
-                // Message size
-                msg.Length(4);
-
-                OperationResult::T res = ReceiveAll(msg.Data(), static_cast<size_t>(msg.Length()), timeout);
-
-                if (res == OperationResult::TIMEOUT)
-                    return false;
-
-                if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
-
-                interop::InteropInputStream inStream(&msg);
-
-                int32_t msgLen = inStream.ReadInt32();
-
-                if (msgLen < 0)
-                {
-                    Close();
-
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol error: Message length is negative");
-                }
-
-                if (msgLen == 0)
-                    return true;
-
-                if (msg.Capacity() < msgLen + 4)
-                    msg.Reallocate(msgLen + 4);
-
-                msg.Length(4 + msgLen);
-
-                res = ReceiveAll(msg.Data() + 4, msgLen, timeout);
-
-                if (res == OperationResult::TIMEOUT)
-                    return false;
-
-                if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Connection failure: Can not receive message body");
-
-                return true;
-            }
-
-            DataRouter::OperationResult::T DataRouter::ReceiveAll(void* dst, size_t len, int32_t timeout)
-            {
-                size_t remain = len;
-                int8_t* buffer = reinterpret_cast<int8_t*>(dst);
-
-                while (remain)
-                {
-                    size_t received = len - remain;
-
-                    int res = socket->Receive(buffer + received, remain, timeout);
-
-                    if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
-                    {
-                        Close();
-
-                        return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
-                    }
-
-                    remain -= static_cast<size_t>(res);
-                }
-
-                return OperationResult::SUCCESS;
-            }
-
-            bool DataRouter::MakeRequestHandshake(const ProtocolVersion& propVer, ProtocolVersion& resVer)
-            {
-                currentVersion = propVer;
-
-                resVer = ProtocolVersion();
-                bool accepted = false;
-
-                try
-                {
-                    // Workaround for some Linux systems that report connection on non-blocking
-                    // sockets as successful but fail to establish real connection.
-                    accepted = Handshake(propVer, resVer);
-                }
-                catch (const IgniteError&)
-                {
-                    // TODO: implement logging
-                    //std::cout << err.GetText() << std::endl;
-                    return false;
-                }
-
-                if (!accepted)
-                    return false;
-
-                resVer = propVer;
-
-                return true;
-            }
-
-            bool DataRouter::Handshake(const ProtocolVersion& propVer, ProtocolVersion& resVer)
-            {
-                // Allocating 4KB to lessen number of reallocations.
-                enum { BUFFER_SIZE = 1024 * 4 };
-
-                common::concurrent::CsLockGuard lock(ioMutex);
-
-                interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-                interop::InteropOutputStream outStream(&mem);
-                binary::BinaryWriterImpl writer(&outStream, 0);
-
-                int32_t lenPos = outStream.Reserve(4);
-                writer.WriteInt8(RequestType::HANDSHAKE);
-
-                writer.WriteInt16(propVer.GetMajor());
-                writer.WriteInt16(propVer.GetMinor());
-                writer.WriteInt16(propVer.GetMaintenance());
-
-                writer.WriteInt8(ClientType::THIN_CLIENT);
-
-                writer.WriteString(config.GetUser());
-                writer.WriteString(config.GetPassword());
-
-                outStream.WriteInt32(lenPos, outStream.Position() - 4);
-
-                bool success = Send(mem.Data(), outStream.Position(), connectionTimeout);
-
-                if (!success)
-                    return false;
-
-                success = Receive(mem, connectionTimeout);
-
-                if (!success)
-                    return false;
-
-                interop::InteropInputStream inStream(&mem);
-
-                inStream.Position(4);
-
-                binary::BinaryReaderImpl reader(&inStream);
-
-                bool accepted = reader.ReadBool();
-
-                if (!accepted)
-                {
-                    int16_t major = reader.ReadInt16();
-                    int16_t minor = reader.ReadInt16();
-                    int16_t maintenance = reader.ReadInt16();
-
-                    resVer = ProtocolVersion(major, minor, maintenance);
-
-                    std::string error;
-                    reader.ReadString(error);
-
-                    reader.ReadInt32();
-
-                    return false;
-                }
-
-                return true;
-            }
-
-            void DataRouter::EnsureConnected()
-            {
-                if (socket.get() != 0)
-                    return;
-
-                bool success = TryRestoreConnection();
-
-                if (!success)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Failed to establish connection with any provided hosts");
-            }
-
-            bool DataRouter::NegotiateProtocolVersion()
-            {
-                ProtocolVersion resVer;
-                ProtocolVersion propVer = VERSION_CURRENT;
-
-                bool success = MakeRequestHandshake(propVer, resVer);
-
-                while (!success)
-                {
-                    if (resVer == propVer || !IsVersionSupported(resVer))
-                        return false;
-
-                    propVer = resVer;
-
-                    success = MakeRequestHandshake(propVer, resVer);
-                }
-
-                return true;
-            }
-
-            bool DataRouter::TryRestoreConnection()
-            {
-                std::vector<net::EndPoint> addrs;
-
-                CollectAddresses(config.GetEndPoints(), addrs);
-
-                bool connected = false;
-
-                while (!addrs.empty() && !connected)
-                {
-                    const net::EndPoint& addr = addrs.back();
-
-                    for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
-                    {
-                        connected = socket->Connect(addr.host.c_str(), port, connectionTimeout);
-
-                        if (connected)
-                        {
-                            connected = NegotiateProtocolVersion();
-
-                            if (connected)
-                                break;
-                        }
-                    }
-
-                    addrs.pop_back();
-                }
-
-                if (!connected)
-                    Close();
-
-                typeMgr.SetUpdater(typeUpdater.get());
-
-                return connected;
-            }
-
-            void DataRouter::CollectAddresses(const std::string& str, std::vector<net::EndPoint>& endPoints)
-            {
-                endPoints.clear();
-
-                utility::ParseAddress(str, endPoints, DEFAULT_PORT);
-
-                std::random_shuffle(endPoints.begin(), endPoints.end());
-            }
-
-            bool DataRouter::IsVersionSupported(const ProtocolVersion& ver)
-            {
-                return supportedVersions.find(ver) != supportedVersions.end();
+                std::random_shuffle(ranges.begin(), ranges.end());
             }
         }
     }

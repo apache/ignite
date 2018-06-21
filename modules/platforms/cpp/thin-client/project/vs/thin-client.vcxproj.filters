@@ -58,6 +58,9 @@
     <ClCompile Include="..\..\src\impl\net\remote_type_updater.cpp">
       <Filter>Code\impl\net</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\data_channel.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -125,6 +128,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\connectable_node_partitions.h">
       <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\data_channel.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_range.h">
+      <Filter>Code\impl\net</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

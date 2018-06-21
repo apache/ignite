@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <ignite/impl/binary/binary_object_impl.h>
+
 #include <ignite/impl/thin/response_status.h>
 #include <ignite/impl/thin/message.h>
 
@@ -28,12 +30,30 @@ namespace ignite
         {
             namespace cache
             {
+                CacheClientImpl::CacheClientImpl(const SP_DataRouter& router, const std::string& name, int32_t id):
+                    router(router),
+                    name(name),
+                    id(id),
+                    binary(false),
+                    assignment(),
+                    mask(-1)
+                {
+                    // No-op.
+                }
+
+                CacheClientImpl::~CacheClientImpl()
+                {
+                    // No-op.
+                }
+
                 void CacheClientImpl::Put(const Writable& key, const Writable& value)
                 {
                     CachePutRequest req(id, binary, key, value);
                     Response rsp;
 
-                    router.Get()->SyncMessage(req, rsp);
+                    const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
+
+                    router.Get()->SyncMessage(req, rsp, endPoints);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -43,8 +63,10 @@ namespace ignite
                 {
                     CacheKeyRequest<RequestType::CACHE_GET> req(id, binary, key);
                     CacheGetResponse rsp(value);
+                    
+                    const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
 
-                    router.Get()->SyncMessage(req, rsp);
+                    router.Get()->SyncMessage(req, rsp, endPoints);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -54,8 +76,10 @@ namespace ignite
                 {
                     CacheKeyRequest<RequestType::CACHE_CONTAINS_KEY> req(id, binary, key);
                     BoolResponse rsp;
+                    
+                    const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
 
-                    router.Get()->SyncMessage(req, rsp);
+                    router.Get()->SyncMessage(req, rsp, endPoints);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -70,7 +94,7 @@ namespace ignite
                     CacheRequest<RequestType::CACHE_NODE_PARTITIONS> req(id, binary);
                     ClientCacheNodePartitionsResponse rsp(nodeParts);
 
-                    router.Get()->SyncMessage(req, rsp);
+                    router.Get()->SyncMessageNoMetaUpdate(req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -98,6 +122,55 @@ namespace ignite
                             dst.insert(dst.end(), endPoints.begin(), endPoints.end());
                         }
                     }
+
+                    int32_t parts = static_cast<int32_t>(assignment.size());
+
+                    mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+
+                    for (size_t i = 0; i < assignment.size(); ++i)
+                    {
+                        std::cout << assignment[i].size() << " ";
+
+                        for (size_t j = 0; j < assignment[i].size(); ++j)
+                            std::cout << assignment[i][j].host << " ";
+                        
+                        std::cout << assignment[i][0].port << std::endl;
+                    }
+                }
+
+                const std::vector<net::EndPoint>& CacheClientImpl::GetEndPointsForKey(const Writable& key) const
+                {
+                    assert(!assignment.empty());
+                    
+                    int32_t hash = GetHash(key);
+                    int32_t part = 0;
+
+                    if (mask >= 0)
+                        part = (hash ^ (static_cast<uint32_t>(hash) >> 16)) & mask;
+                    else
+                    {
+                        part = std::abs(hash % static_cast<int32_t>(assignment.size()));
+
+                        if (part < 0)
+                            part = 0;
+                    }
+
+                    return assignment[part];
+                }
+
+                int32_t CacheClientImpl::GetHash(const Writable& key) const
+                {
+                    enum { BUFFER_SIZE = 1024 };
+
+                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
+                    interop::InteropOutputStream stream(&mem);
+                    binary::BinaryWriterImpl writer(&stream, 0);
+
+                    key.Write(writer);
+
+                    binary::BinaryObjectImpl binaryKey(mem, 0, 0, 0);
+
+                    return binaryKey.GetHashCode();
                 }
             }
         }

@@ -59,6 +59,11 @@ namespace ignite
                 {
                     return GetCacheImpl(impl).ContainsKey(key);
                 }
+
+                void CacheClientProxy::UpdatePartitions()
+                {
+                    GetCacheImpl(impl).UpdatePartitions();
+                }
             }
         }
     }

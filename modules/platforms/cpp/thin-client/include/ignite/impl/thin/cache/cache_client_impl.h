@@ -53,23 +53,12 @@ namespace ignite
                      * @param name Cache name.
                      * @param id Cache ID.
                      */
-                    CacheClientImpl(const SP_DataRouter& router, const std::string& name, int32_t id) :
-                        router(router),
-                        name(name),
-                        id(id),
-                        binary(false),
-                        assignment()
-                    {
-                        // No-op.
-                    }
+                    CacheClientImpl(const SP_DataRouter& router, const std::string& name, int32_t id);
 
                     /**
                      * Destructor.
                      */
-                    ~CacheClientImpl()
-                    {
-                        // No-op.
-                    }
+                    ~CacheClientImpl();
 
                     /**
                      * Put value to cache.
@@ -101,6 +90,21 @@ namespace ignite
                     void UpdatePartitions();
 
                 private:
+                    /**
+                     * Get end points for the key.
+                     * Always using Rendezvous Affinity Function algorithm for now.
+                     *
+                     * @param key Key.
+                     */
+                    const std::vector<net::EndPoint>& GetEndPointsForKey(const Writable& key) const;
+
+                    /**
+                     * Get hash of the writable value.
+                     *
+                     * @return Object hash in binary format.
+                     */
+                    int32_t GetHash(const Writable & key) const;
+
                     /** Data router. */
                     SP_DataRouter router;
 
@@ -115,6 +119,9 @@ namespace ignite
 
                     /** Partitions assignment. */
                     std::vector< std::vector<net::EndPoint> > assignment;
+
+                    /** Rendezvous Affinity Function mask. */
+                    int32_t mask;
                 };
             }
         }

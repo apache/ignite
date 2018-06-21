@@ -35,9 +35,14 @@ using namespace boost::unit_test;
 class CacheClientTestSuiteFixture
 {
 public:
+    static ignite::Ignite StartNode(const char* name)
+    {
+        return ignite_test::StartCrossPlatformServerNode("cache.xml", name);
+    }
+
     CacheClientTestSuiteFixture()
     {
-        serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
+        serverNode = StartNode("ServerNode");
     }
 
     ~CacheClientTestSuiteFixture()
@@ -291,6 +296,25 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsComplexKey)
     cache.Put(key, valIn);
     
     BOOST_CHECK(cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientUpdatePartitions)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, int32_t> cache = client.GetCache<int32_t, int32_t>("partitioned");
+
+    for (int32_t i = 0; i < 1024; ++i)
+        cache.Put(i, i * 10);
+
+    cache.UpdatePartitions();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

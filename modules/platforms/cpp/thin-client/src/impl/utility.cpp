@@ -19,9 +19,10 @@
 #include <algorithm>
 #include <sstream>
 
+#include <ignite/binary/binary.h>
+
 #include <ignite/common/utils.h>
 #include <ignite/impl/thin/utility.h>
-#include "ignite/binary/binary.h"
 
 namespace ignite
 {
@@ -31,14 +32,15 @@ namespace ignite
         {
             namespace utility
             {
-                bool ParseSingleAddress(const std::string& value, net::EndPoint& endPoint, uint16_t dfltPort)
+                bool ParseSingleAddress(const std::string& value, net::TcpRange& tcpRange, uint16_t dfltPort)
                 {
                     int64_t colonNum = std::count(value.begin(), value.end(), ':');
 
                     if (colonNum == 0)
                     {
-                        endPoint.host = value;
-                        endPoint.port = dfltPort;
+                        tcpRange.host = value;
+                        tcpRange.port = dfltPort;
+                        tcpRange.range = 0;
 
                         return true;
                     }
@@ -54,7 +56,7 @@ namespace ignite
 
                     size_t colonPos = value.find(':');
 
-                    endPoint.host = value.substr(0, colonPos);
+                    tcpRange.host = value.substr(0, colonPos);
 
                     if (colonPos == value.size() - 1)
                     {
@@ -66,10 +68,10 @@ namespace ignite
 
                     std::string portRange = value.substr(colonPos + 1);
 
-                    return ParsePortRange(portRange, endPoint.port, endPoint.range);
+                    return ParsePortRange(portRange, tcpRange.port, tcpRange.range);
                 }
 
-                void ParseAddress(const std::string& value, std::vector<net::EndPoint>& endPoints, uint16_t dfltPort)
+                void ParseAddress(const std::string& value, std::vector<net::TcpRange>& endPoints, uint16_t dfltPort)
                 {
                     size_t addrNum = std::count(value.begin(), value.end(), ',') + 1;
 
@@ -93,12 +95,12 @@ namespace ignite
 
                         if (!addr.empty())
                         {
-                            net::EndPoint endPoint;
+                            net::TcpRange tcpRange;
 
-                            bool success = ParseSingleAddress(addr, endPoint, dfltPort);
+                            bool success = ParseSingleAddress(addr, tcpRange, dfltPort);
 
                             if (success)
-                                endPoints.push_back(endPoint);
+                                endPoints.push_back(tcpRange);
                         }
 
                         if (!addrBeginPos)

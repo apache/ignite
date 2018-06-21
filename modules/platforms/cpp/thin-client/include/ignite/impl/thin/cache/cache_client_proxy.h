@@ -81,6 +81,11 @@ namespace ignite
                      */
                     bool ContainsKey(const Writable& key);
 
+                    /**
+                     * Update cache partitions info.
+                     */
+                    void UpdatePartitions();
+
                 private:
                     /** Implementation. */
                     common::concurrent::SharedPointer<void> impl;

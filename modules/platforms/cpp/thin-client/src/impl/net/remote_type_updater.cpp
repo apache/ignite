@@ -17,7 +17,7 @@
 
 #include <ignite/impl/thin/data_router.h>
 #include <ignite/impl/thin/net/remote_type_updater.h>
-#include "ignite/impl/thin/message.h"
+#include <ignite/impl/thin/message.h>
 
 namespace ignite
 {    

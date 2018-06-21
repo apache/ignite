@@ -34,8 +34,7 @@ namespace ignite
                 // No-op.
             }
 
-            void GetOrCreateCacheWithNameRequest::Write(binary::BinaryWriterImpl& writer,
-                const ProtocolVersion&) const
+            void GetOrCreateCacheWithNameRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteString(name);
             }
@@ -73,20 +72,16 @@ namespace ignite
             }
 
             CachePutRequest::CachePutRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
-                cacheId(cacheId),
-                binary(binary),
-                key(key),
+                CacheKeyRequest<RequestType::CACHE_PUT>(cacheId, binary, key),
                 value(value)
             {
                 // No-op.
             }
 
-            void CachePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            void CachePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                writer.WriteInt32(cacheId);
-                writer.WriteBool(binary);
+                CacheKeyRequest<RequestType::CACHE_PUT>::Write(writer, ver);
 
-                key.Write(writer);
                 value.Write(writer);
             }
 

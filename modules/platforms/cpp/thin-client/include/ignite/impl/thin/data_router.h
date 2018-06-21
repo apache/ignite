@@ -20,17 +20,18 @@
 
 #include <stdint.h>
 
+#include <map>
 #include <vector>
 #include <memory>
 
 #include <ignite/common/concurrent.h>
 
-#include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include <ignite/impl/thin/protocol_version.h>
+#include <ignite/impl/thin/data_channel.h>
 #include <ignite/impl/thin/net/end_point.h>
-#include <ignite/impl/thin/socket_client.h>
+#include <ignite/impl/thin/net/tcp_range.h>
 
 #include <ignite/thin/ignite_client_configuration.h>
 
@@ -55,14 +56,6 @@ namespace ignite
             class DataRouter
             {
             public:
-                /** Version 1.1.0. */
-                static const ProtocolVersion VERSION_1_1_0;
-
-                /** Current version. */
-                static const ProtocolVersion VERSION_CURRENT;
-
-                typedef std::set<ProtocolVersion> VersionSet;
-
                 /** Connection establishment timeout in seconds. */
                 enum { DEFALT_CONNECT_TIMEOUT = 5 };
 
@@ -71,19 +64,6 @@ namespace ignite
 
                 /** Default port. */
                 enum { DEFAULT_PORT = 10800 };
-
-                /**
-                 * Operation with timeout result.
-                 */
-                struct OperationResult
-                {
-                    enum T
-                    {
-                        SUCCESS,
-                        FAIL,
-                        TIMEOUT
-                    };
-                };
 
                 /**
                  * Constructor.
@@ -119,12 +99,40 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void SyncMessage(const ReqT& req, RspT& rsp)
                 {
-                    EnsureConnected();
-                    
+                    SP_DataChannel channel = GetRandomChannel();
+
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    InternalSyncMessage(req, rsp, ioTimeout);
-                    
+                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
+
+                    if (typeMgr.IsUpdatedSince(metaVer))
+                    {
+                        IgniteError err;
+
+                        if (!typeMgr.ProcessPendingUpdates(err))
+                            throw err;
+                    }
+                }
+
+                /**
+                 * Synchronously send request message and receive response.
+                 * Uses provided timeout.
+                 *
+                 * @param req Request message.
+                 * @param rsp Response message.
+                 * @param hint End points of the preferred server node to use.
+                 * @return @c true on success, @c false on timeout.
+                 * @throw IgniteError on error.
+                 */
+                template<typename ReqT, typename RspT>
+                void SyncMessage(const ReqT& req, RspT& rsp, const std::vector<net::EndPoint>& hint)
+                {
+                    SP_DataChannel channel = GetBestChannel(hint);
+
+                    int32_t metaVer = typeMgr.GetVersion();
+
+                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
+
                     if (typeMgr.IsUpdatedSince(metaVer))
                     {
                         IgniteError err;
@@ -147,202 +155,60 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void SyncMessageNoMetaUpdate(const ReqT& req, RspT& rsp)
                 {
-                    EnsureConnected();
+                    SP_DataChannel channel = GetRandomChannel();
 
-                    InternalSyncMessage(req, rsp, ioTimeout);
+                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
                 }
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
 
                 /**
-                 * Generate request ID.
+                 * Get random data channel.
                  *
-                 * Atomicaly generates and returns new Request ID.
-                 *
-                 * @return Unique Request ID.
+                 * @return Random data channel.
                  */
-                int64_t GenerateRequestId()
-                {
-                    return common::concurrent::Atomics::IncrementAndGet64(&reqIdCounter);
-                }
+                SP_DataChannel GetRandomChannel();
 
                 /**
-                 * Generate message to send.
+                 * Check whether the provided address hint is the local host.
                  *
-                 * @param req Request to serialize.
-                 * @param mem Memory to write request to.
-                 * @return Message ID.
+                 * @param hint Hint.
+                 * @return @c true if the local host.
                  */
-                template<typename ReqT>
-                int64_t GenerateRequestMessage(const ReqT& req, interop::InteropUnpooledMemory& mem)
-                {
-                    interop::InteropOutputStream outStream(&mem);
-                    binary::BinaryWriterImpl writer(&outStream, &typeMgr);
-
-                    // Space for RequestSize + OperationCode + RequestID.
-                    outStream.Reserve(4 + 2 + 8);
-
-                    req.Write(writer, currentVersion);
-
-                    int64_t id = GenerateRequestId();
-
-                    outStream.WriteInt32(0, outStream.Position() - 4);
-                    outStream.WriteInt16(4, ReqT::GetOperationCode());
-                    outStream.WriteInt64(6, id);
-
-                    outStream.Synchronize();
-
-                    return id;
-                }
+                bool IsLocalHost(const std::vector<net::EndPoint>& hint);
 
                 /**
-                 * Synchronously send request message and receive response.
-                 * Uses provided timeout. Does not try to restore connection on
-                 * fail.
+                 * Check whether the provided address is the local host.
                  *
-                 * @param req Request message.
-                 * @param rsp Response message.
-                 * @param timeout Timeout.
-                 * @throw IgniteError on error.
+                 * @param host Host.
+                 * @return @c true if the local host.
                  */
-                template<typename ReqT, typename RspT>
-                void InternalSyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
-                {
-                    // Allocating 64KB to lessen number of reallocations.
-                    enum { BUFFER_SIZE = 1024 * 64 };
-
-                    interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-
-                    int64_t id = GenerateRequestMessage(req, mem);
-
-                    InternalSyncMessage(mem, timeout);
-
-                    interop::InteropInputStream inStream(&mem);
-
-                    inStream.Position(4);
-
-                    int64_t rspId = inStream.ReadInt64();
-
-                    if (id != rspId)
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Protocol error: Response message ID does not equal Request ID");
-
-                    binary::BinaryReaderImpl reader(&inStream);
-
-                    rsp.Read(reader, currentVersion);
-                }
+                bool IsLocalAddress(const std::string& host);
 
                 /**
-                 * Send message stored in memory and synchronously receives
-                 * response and stores it in the same memory.
+                 * Check whether the provided end point is provided by user using configuration.
                  *
-                 * @param mem Memory.
-                 * @param timeout Opration timeout.
+                 * @param endPoint End point to check.
+                 * @return @c true if provided by user using configuration. 
                  */
-                void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
+                bool IsProvidedByUser(const net::EndPoint& endPoint);
 
                 /**
-                 * Send data by established connection.
+                 * Get the best data channel.
                  *
-                 * @param data Data buffer.
-                 * @param len Data length.
-                 * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
-                 * @throw IgniteError on error.
+                 * @param hint End points of the preferred server node to use.
+                 * @return The best available data channel.
                  */
-                bool Send(const int8_t* data, size_t len, int32_t timeout);
-
-                /**
-                 * Receive next message.
-                 *
-                 * @param msg Buffer for message.
-                 * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
-                 * @throw IgniteError on error.
-                 */
-                bool Receive(interop::InteropMemory& msg, int32_t timeout);
-
-                /**
-                 * Receive specified number of bytes.
-                 *
-                 * @param dst Buffer for data.
-                 * @param len Number of bytes to receive.
-                 * @param timeout Timeout.
-                 * @return Operation result.
-                 */
-                OperationResult::T ReceiveAll(void* dst, size_t len, int32_t timeout);
-
-                /**
-                 * Send specified number of bytes.
-                 *
-                 * @param data Data buffer.
-                 * @param len Data length.
-                 * @param timeout Timeout.
-                 * @return Operation result.
-                 */
-                OperationResult::T SendAll(const int8_t* data, size_t len, int32_t timeout);
-
-                /**
-                 * Perform handshake request.
-                 *
-                 * @param propVer Proposed protocol version.
-                 * @param resVer Resulted version.
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool MakeRequestHandshake(const ProtocolVersion& propVer, ProtocolVersion& resVer);
-
-                /**
-                 * Synchronously send handshake request message and receive
-                 * handshake response. Uses provided timeout. Does not try to
-                 * restore connection on fail.
-                 *
-                 * @param propVer Proposed protocol version.
-                 * @param resVer Resulted version.
-                 * @return @c true if accepted.
-                 * @throw IgniteError on error.
-                 */
-                bool Handshake(const ProtocolVersion& propVer, ProtocolVersion& resVer);
-
-                /**
-                 * Ensure there is a connection to the cluster.
-                 *
-                 * @throw IgniteError on failure.
-                 */
-                void EnsureConnected();
-
-                /**
-                 * Negotiate protocol version with current host
-                 *
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool NegotiateProtocolVersion();
-
-                /**
-                 * Try to restore connection to the cluster.
-                 *
-                 * @return @c true on success and @c false otherwise.
-                 */
-                bool TryRestoreConnection();
+                SP_DataChannel GetBestChannel(const std::vector<net::EndPoint>& hint);
 
                 /**
                  * Collect all addresses from string.
                  *
                  * @param str String with connection strings to parse.
-                 * @param endPoints End points.
+                 * @param ranges Address ranges.
                  */
-                static void CollectAddresses(const std::string& str, std::vector<net::EndPoint>& endPoints);
-
-                /**
-                 * Check if the version is supported.
-                 *
-                 * @param ver Version.
-                 * @return True if the version is supported.
-                 */
-                static bool IsVersionSupported(const ProtocolVersion& ver);
-
-                /** Set of supported versions. */
-                const static VersionSet supportedVersions;
+                static void CollectAddresses(const std::string& str, std::vector<net::TcpRange>& ranges);
 
                 /** IO timeout in seconds. */
                 int32_t ioTimeout;
@@ -350,26 +216,20 @@ namespace ignite
                 /** Connection timeout in seconds. */
                 int32_t connectionTimeout;
 
-                /** Client Socket. */
-                std::auto_ptr<SocketClient> socket;
-
                 /** Configuration. */
                 ignite::thin::IgniteClientConfiguration config;
-
-                /** Protocol version. */
-                ProtocolVersion currentVersion;
-
-                /** Request ID counter. */
-                int64_t reqIdCounter;
-
-                /** Sync IO mutex. */
-                common::concurrent::CriticalSection ioMutex;
 
                 /** Type updater. */
                 std::auto_ptr<binary::BinaryTypeUpdater> typeUpdater;
 
                 /** Metadata manager. */
                 binary::BinaryTypeManager typeMgr;
+
+                /** Data channels. */
+                std::map<net::EndPoint, SP_DataChannel> channels;
+
+                /** Channels mutex. */
+                common::concurrent::CriticalSection channelsMutex;
             };
 
             /** Shared pointer type. */

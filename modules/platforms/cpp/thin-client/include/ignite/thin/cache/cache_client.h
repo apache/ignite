@@ -119,6 +119,14 @@ namespace ignite
                     return proxy.ContainsKey(wrKey);
                 }
 
+                /**
+                 * Update cache partitions info.
+                 */
+                void UpdatePartitions()
+                {
+                    proxy.UpdatePartitions();
+                }
+
             private:
                 /** Implementation. */
                 impl::thin::cache::CacheClientProxy proxy;

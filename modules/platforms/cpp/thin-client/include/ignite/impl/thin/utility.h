@@ -20,7 +20,7 @@
 
 #include <vector>
 
-#include <ignite/impl/thin/net/end_point.h>
+#include <ignite/impl/thin/net/tcp_range.h>
 
 namespace ignite
 {
@@ -37,7 +37,7 @@ namespace ignite
                  * @param endPoints End ponts list.
                  * @param dfltPort Default port.
                  */
-                void ParseAddress(const std::string& value, std::vector<net::EndPoint>& endPoints, uint16_t dfltPort);
+                void ParseAddress(const std::string& value, std::vector<net::TcpRange>& endPoints, uint16_t dfltPort);
 
                 /**
                  * Parse single address.
@@ -47,7 +47,7 @@ namespace ignite
                  * @param dfltPort Default port.
                  * @return @c true, if parsed successfully, and @c false otherwise.
                  */
-                bool ParseSingleAddress(const std::string& value, net::EndPoint& endPoint, uint16_t dfltPort);
+                bool ParseSingleAddress(const std::string& value, net::TcpRange& endPoint, uint16_t dfltPort);
 
                 /**
                  * Parse single network port.

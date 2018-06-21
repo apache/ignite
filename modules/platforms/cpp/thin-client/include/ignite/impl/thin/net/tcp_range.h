@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_NET_END_POINT
-#define _IGNITE_IMPL_THIN_NET_END_POINT
+#ifndef _IGNITE_IMPL_THIN_NET_TCP_RANGE
+#define _IGNITE_IMPL_THIN_NET_TCP_RANGE
 
 #include <stdint.h>
 #include <string>
@@ -30,15 +30,16 @@ namespace ignite
             namespace net
             {
                 /**
-                 * Connection end point structure.
+                 * TCP port range.
                  */
-                struct EndPoint
+                struct TcpRange
                 {
                     /**
                      * Default constructor.
                      */
-                    EndPoint() :
-                        port(0)
+                    TcpRange() :
+                        port(0),
+                        range(0)
                     {
                         // No-op.
                     }
@@ -48,10 +49,13 @@ namespace ignite
                      *
                      * @param host Host.
                      * @param port Port.
+                     * @param range Number of ports after the @c port that
+                     *    should be tried if the previous are unavailable.
                      */
-                    EndPoint(const std::string& host, uint16_t port) :
+                    TcpRange(const std::string& host, uint16_t port, uint16_t range = 0) :
                         host(host),
-                        port(port)
+                        port(port),
+                        range(range)
                     {
                         // No-op.
                     }
@@ -61,10 +65,16 @@ namespace ignite
 
                     /** TCP port. */
                     uint16_t port;
+
+                    /**
+                     * Number of ports after the port that should be tried if
+                     * the previous are unavailable.
+                     */
+                    uint16_t range;
                 };
             }
         }
     }
 }
 
-#endif //_IGNITE_IMPL_THIN_NET_END_POINT
+#endif //_IGNITE_IMPL_THIN_NET_TCP_RANGE
