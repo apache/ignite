@@ -40,7 +40,12 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
+ * The purpose of cross-validation is model checking, not model building.
+ *
+ * You train kk different models.
+ * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
+ * These models are sometimes called surrogate models because the (average) performance measured for these models
+ * is taken as a surrogate of the performance of the model trained on all cases.
  *
  * @see LogisticRegressionSGDTrainer
  */
@@ -83,30 +88,72 @@ public class Step_8_CV {
                         imputingPreprocessor
                     );
 
+
+                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    int[] pSet = new int[]{1, 2};
+                    int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
+                    int bestP = 1;
+                    int bestMaxDeep = 1;
+                    double avg = Double.MIN_VALUE;
+
+                    for(int p: pSet){
+                        for(int maxDeep: maxDeepSet){
+                            IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                                .withP(p)
+                                .fit(
+                                    ignite,
+                                    dataCache,
+                                    minMaxScalerPreprocessor
+                                );
+
+                            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(maxDeep, 0);
+
+                            CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                                = new CrossValidationScoreCalculator<>();
+
+                            double[] scores = scoreCalculator.score(
+                                trainer,
+                                new AccuracyScoreCalculator<>(),
+                                ignite,
+                                dataCache,
+                                split.getTrainFilter(),
+                                normalizationPreprocessor,
+                                (k, v) -> (double) v[1],
+                                3
+                            );
+
+                            System.out.println("Scores are: " + Arrays.toString(scores));
+
+                            final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
+
+                            if(currAvg > avg) {
+                                avg = currAvg;
+                                bestP = p;
+                                bestMaxDeep = maxDeep;
+                            }
+
+                            System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
+                        }
+                    }
+
                     IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                        .withP(1)
+                        .withP(bestP)
                         .fit(
-                        ignite,
-                        dataCache,
-                        minMaxScalerPreprocessor
-                    );
+                            ignite,
+                            dataCache,
+                            minMaxScalerPreprocessor
+                        );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
 
-                    CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
-                        = new CrossValidationScoreCalculator<>();
-
-                    DecisionTreeNode mdl = scoreCalculator.bestModel(
-                        trainer,
-                        new AccuracyScoreCalculator<>(),
+                    // Train decision tree model.
+                    DecisionTreeNode bestMdl = trainer.fit(
                         ignite,
                         dataCache,
                         split.getTrainFilter(),
                         normalizationPreprocessor,
-                        (k, v) -> (double)v[1],
-                        3
+                        (k, v) -> (double)v[1]
                     );
-
 
                     System.out.println(">>> ----------------------------------------------------------------");
                     System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
@@ -128,7 +175,7 @@ public class Step_8_CV {
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(normalizationPreprocessor.apply(observation.getKey(), val));
+                            double prediction = bestMdl.apply(normalizationPreprocessor.apply(observation.getKey(), val));
 
                             totalAmount++;
                             if (groundTruth != prediction)
