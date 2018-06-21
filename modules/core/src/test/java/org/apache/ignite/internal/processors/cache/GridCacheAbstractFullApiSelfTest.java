@@ -273,19 +273,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * Checks that any invoke returns result.
      *
      * @throws Exception if something goes bad.
-     *
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
      */
     public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
-
-        // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
-        if (atomicityMode() == ATOMIC &&
-            cacheMode() != LOCAL &&
-            false)
-            return;
 
         final Set<String> keys = Collections.singleton("myKey");
 
