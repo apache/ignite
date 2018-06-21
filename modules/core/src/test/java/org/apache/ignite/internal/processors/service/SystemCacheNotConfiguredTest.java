@@ -65,11 +65,18 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** */
     public void test() throws Exception {
         captureErr();
+
         new Thread(this::startServer).start();
+
         Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+
         IgniteServices services = client.services();
         SimpleService service = services.serviceProxy("service", SimpleService.class, false);
+
         Thread.sleep(1000);
+
+        service.test();
+
         assertFalse(getErr().contains("Cache is not configured:"));
     }
 
@@ -86,9 +93,11 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     ServiceConfiguration serviceConfiguration() {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
+
         svcCfg.setName("service");
         svcCfg.setTotalCount(1);
         svcCfg.setService(new SimpleServiceImpl());
+
         return svcCfg;
     }
 
@@ -112,6 +121,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
      */
     private String getErr() {
         System.setErr(new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
+
         return errContent.toString().replaceAll( "\r", "" );
     }
 
