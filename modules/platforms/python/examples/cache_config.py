@@ -15,8 +15,10 @@
 
 from pyignite.connection import Connection
 from pyignite.api import (
-    cache_create, cache_destroy, cache_get_configuration, hashcode,
+    cache_create, cache_create_with_config, cache_destroy,
+    cache_get_configuration, hashcode,
 )
+from pyignite.datatypes.prop_codes import *
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
@@ -61,8 +63,19 @@ print(result.value)
 #     ('query_entity', [])
 # ])
 
-cache_name = 'my cache'
-hash_code = hashcode(cache_name)
+cache_name = 'my_special_cache'
+
+cache_create_with_config(conn, {
+        PROP_NAME: cache_name,
+        PROP_CACHE_KEY_CONFIGURATION: [
+            {
+                'name': '123_key',
+                'type_name': 'blah',
+                'is_key_field': False,
+                'is_notnull_constraint_field': False,
+            }
+        ],
+    })
 
 cache_destroy(conn, hash_code)
 conn.close()

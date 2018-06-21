@@ -37,19 +37,43 @@ cache_put_all(conn, hash_code, {
 #     'key_0': 0,
 #     'key_1': 1,
 #     'key_2': 2,
-#     ...
+#     ... 20 elements in total...
 #     'key_18': 18,
-#     'key_19': 19,
+#     'key_19': 19
 # }
 
 result = scan(conn, hash_code, page_size)
 print(dict(result.value))
+# {
+#     'cursor': 1,
+#     'data': {
+#         'key_4': 4,
+#         'key_2': 2,
+#         'key_8': 8,
+#         ... 10 elements on page...
+#         'key_0': 0,
+#         'key_7': 7
+#     },
+#     'more': True
+# }
 
 cursor = result.value['cursor']
 result = scan_cursor_get_page(conn, cursor)
 print(result.value)
-
-resource_close(conn, cursor)
+# {
+#     'data': {
+#         'key_15': 15,
+#         'key_17': 17,
+#         'key_11': 11,
+#         ... another 10 elements...
+#         'key_19': 19,
+#         'key_16': 16
+#     },
+#     'more': False
+# }
 
 result = scan_cursor_get_page(conn, cursor)
 print(result.message)
+# Failed to find resource with id: 1
+
+resource_close(conn, cursor)

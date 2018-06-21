@@ -44,17 +44,48 @@ Type hints usage
   :language: python
   :lines: 30-49
 
+Scan queries
+------------
+
+Scan queries allows you to browse cache contents with pagination.
+
+.. literalinclude:: ../examples/scans.py
+  :language: python
+  :lines: 30-31, 45-58
+
+Subsequent scans could be made using cursor ID.
+
+.. literalinclude:: ../examples/scans.py
+  :language: python
+  :lines: 60-73
+
+When cursor have no more data, it automatically destroys.
+
+.. literalinclude:: ../examples/scans.py
+  :language: python
+  :lines: 75-77
+
+If your cursor still holds some data, but you have no use of it anymore,
+you may destroy it manually.
+
+.. literalinclude:: ../examples/scans.py
+  :language: python
+  :lines: 79
+
 Inspect cache configuration
 ---------------------------
 
 .. literalinclude:: ../examples/cache_config.py
   :language: python
-  :lines: 29-62
+  :lines: 30-63
 
-Edit cache configuration
-------------------------
+Create cache with a certain configuration
+-----------------------------------------
+You must supply at least cache name.
 
-Not yet implemented.
+.. literalinclude:: ../examples/cache_config.py
+  :language: python
+  :lines: 66-78
 
 Do cleanup
 ----------

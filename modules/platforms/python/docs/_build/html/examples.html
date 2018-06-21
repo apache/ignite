@@ -103,9 +103,60 @@
 </pre></div>
 </div>
 </div>
+<div class="section" id="scan-queries">
+<h2>Scan queries<a class="headerlink" href="#scan-queries" title="Permalink to this headline">¶</a></h2>
+<p>Scan queries allows you to browse cache contents with pagination.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">page_size</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">scan</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">hash_code</span><span class="p">,</span> <span class="n">page_size</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+<span class="c1"># {</span>
+<span class="c1">#     &#39;cursor&#39;: 1,</span>
+<span class="c1">#     &#39;data&#39;: {</span>
+<span class="c1">#         &#39;key_4&#39;: 4,</span>
+<span class="c1">#         &#39;key_2&#39;: 2,</span>
+<span class="c1">#         &#39;key_8&#39;: 8,</span>
+<span class="c1">#         ... 10 elements on page...</span>
+<span class="c1">#         &#39;key_0&#39;: 0,</span>
+<span class="c1">#         &#39;key_7&#39;: 7</span>
+<span class="c1">#     },</span>
+<span class="c1">#     &#39;more&#39;: True</span>
+<span class="c1"># }</span>
+</pre></div>
+</div>
+<p>Subsequent scans could be made using cursor ID.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cursor</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;cursor&#39;</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">scan_cursor_get_page</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">cursor</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># {</span>
+<span class="c1">#     &#39;data&#39;: {</span>
+<span class="c1">#         &#39;key_15&#39;: 15,</span>
+<span class="c1">#         &#39;key_17&#39;: 17,</span>
+<span class="c1">#         &#39;key_11&#39;: 11,</span>
+<span class="c1">#         ... another 10 elements...</span>
+<span class="c1">#         &#39;key_19&#39;: 19,</span>
+<span class="c1">#         &#39;key_16&#39;: 16</span>
+<span class="c1">#     },</span>
+<span class="c1">#     &#39;more&#39;: False</span>
+<span class="c1"># }</span>
+</pre></div>
+</div>
+<p>When cursor have no more data, it automatically destroys.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">scan_cursor_get_page</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">cursor</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+<span class="c1"># Failed to find resource with id: 1</span>
+</pre></div>
+</div>
+<p>If your cursor still holds some data, but you have no use of it anymore,
+you may destroy it manually.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">resource_close</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">cursor</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="inspect-cache-configuration">
 <h2>Inspect cache configuration<a class="headerlink" href="#inspect-cache-configuration" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">cache_get_configuration</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">hash_code</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">cache_get_configuration</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">hash_code</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 <span class="c1"># OrderedDict([</span>
 <span class="c1">#     (&#39;length&#39;, 122),</span>
@@ -138,13 +189,27 @@
 <span class="c1">#     (&#39;write_synchronization_mode&#39;, 2),</span>
 <span class="c1">#     (&#39;cache_key_configuration&#39;, []),</span>
 <span class="c1">#     (&#39;query_entity&#39;, [])</span>
-<span class="c1"># ])</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="edit-cache-configuration">
-<h2>Edit cache configuration<a class="headerlink" href="#edit-cache-configuration" title="Permalink to this headline">¶</a></h2>
-<p>Not yet implemented.</p>
+<div class="section" id="create-cache-with-a-certain-configuration">
+<h2>Create cache with a certain configuration<a class="headerlink" href="#create-cache-with-a-certain-configuration" title="Permalink to this headline">¶</a></h2>
+<p>You must supply at least cache name.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cache_name</span> <span class="o">=</span> <span class="s1">&#39;my_special_cache&#39;</span>
+
+<span class="n">cache_create_with_config</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">{</span>
+        <span class="n">PROP_NAME</span><span class="p">:</span> <span class="n">cache_name</span><span class="p">,</span>
+        <span class="n">PROP_CACHE_KEY_CONFIGURATION</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;123_key&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;type_name&#39;</span><span class="p">:</span> <span class="s1">&#39;blah&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;is_key_field&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+                <span class="s1">&#39;is_notnull_constraint_field&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+    <span class="p">})</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="do-cleanup">
 <h2>Do cleanup<a class="headerlink" href="#do-cleanup" title="Permalink to this headline">¶</a></h2>
@@ -171,8 +236,9 @@
 <li><a class="reference internal" href="#get-value-from-cache">Get value from cache</a></li>
 <li><a class="reference internal" href="#list-keys-in-cache">List keys in cache</a></li>
 <li><a class="reference internal" href="#type-hints-usage">Type hints usage</a></li>
+<li><a class="reference internal" href="#scan-queries">Scan queries</a></li>
 <li><a class="reference internal" href="#inspect-cache-configuration">Inspect cache configuration</a></li>
-<li><a class="reference internal" href="#edit-cache-configuration">Edit cache configuration</a></li>
+<li><a class="reference internal" href="#create-cache-with-a-certain-configuration">Create cache with a certain configuration</a></li>
 <li><a class="reference internal" href="#do-cleanup">Do cleanup</a></li>
 </ul>
 </li>
