@@ -74,7 +74,7 @@ def cache_get_configuration(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
         return result
     result.value = response_struct.to_python(response)['cache_config']
     return result
@@ -111,7 +111,7 @@ def cache_create(conn: Connection, name: str, query_id=None,) -> APIResult:
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -145,7 +145,7 @@ def cache_get_or_create(conn: Connection, name: str, query_id=None,) -> APIResul
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -184,7 +184,7 @@ def cache_destroy(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -218,7 +218,7 @@ def cache_get_names(conn: Connection, query_id=None) -> APIResult:
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
         return result
     result.value = response_struct.to_python(response)['cache_names']
     return result
@@ -269,5 +269,5 @@ def cache_create_with_config(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message.data
+        result.message = String.to_python(response.error_message)
     return result

@@ -19,6 +19,7 @@ from pyignite.datatypes.cache_config import StructArray
 from pyignite.datatypes.complex import AnyDataObject
 from pyignite.datatypes.key_value import PeekModes
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
+from pyignite.datatypes.standard import String
 from pyignite.queries import Query, Response
 from pyignite.utils import is_hinted
 from .result import APIResult
@@ -77,7 +78,8 @@ def cache_put(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)
     return result
 
@@ -132,7 +134,8 @@ def cache_get(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -208,7 +211,8 @@ def cache_get_all(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
 
     result.value = {}
     for i in range(response.data.length):
@@ -290,7 +294,7 @@ def cache_put_all(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -345,7 +349,8 @@ def cache_contains_key(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -417,7 +422,8 @@ def cache_contains_keys(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -479,7 +485,8 @@ def cache_get_and_put(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -541,7 +548,8 @@ def cache_get_and_replace(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -596,7 +604,8 @@ def cache_get_and_remove(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -657,7 +666,8 @@ def cache_put_if_absent(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['success']
     return result
 
@@ -718,7 +728,8 @@ def cache_get_and_put_if_absent(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['value']
     return result
 
@@ -779,7 +790,8 @@ def cache_replace(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['success']
     return result
 
@@ -847,7 +859,8 @@ def cache_replace_if_equals(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['success']
     return result
 
@@ -893,7 +906,7 @@ def cache_clear(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -944,7 +957,7 @@ def cache_clear_key(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -1011,7 +1024,7 @@ def cache_clear_keys(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -1065,7 +1078,8 @@ def cache_remove_key(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['success']
     return result
 
@@ -1128,7 +1142,8 @@ def cache_remove_if_equals(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['success']
     return result
 
@@ -1196,7 +1211,7 @@ def cache_remove_keys(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -1241,7 +1256,7 @@ def cache_remove_all(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
     return result
 
 
@@ -1300,6 +1315,7 @@ def cache_get_size(
         query_id=response.query_id,
     )
     if hasattr(response, 'error_message'):
-        result.message = response.error_message
+        result.message = String.to_python(response.error_message)
+        return result
     result.value = response_struct.to_python(response)['count']
     return result
