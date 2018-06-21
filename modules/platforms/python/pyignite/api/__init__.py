@@ -67,4 +67,9 @@ from .key_value import (
     cache_remove_all,
     cache_get_size,
 )
+from .sql import (
+    scan,
+    scan_cursor_get_page,
+    resource_close,
+)
 from .result import APIResult, hashcode
