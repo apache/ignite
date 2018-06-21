@@ -33,7 +33,14 @@ def test_create_with_config(conn):
 
     result = cache_create_with_config(conn, {
         PROP_NAME: cache_name,
-
+        PROP_CACHE_KEY_CONFIGURATION: [
+            {
+                'name': '123_key',
+                'type_name': 'blah',
+                'is_key_field': False,
+                'is_notnull_constraint_field': False,
+            }
+        ],
     })
     assert result.status == 0
 

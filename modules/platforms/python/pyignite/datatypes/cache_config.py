@@ -37,6 +37,18 @@ class StructArray:
     following = attr.ib(type=list)
     counter_type = attr.ib(default=ctypes.c_int)
 
+    def build_header_class(self):
+        return type(
+            self.__class__.__name__+'Header',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', self.counter_type),
+                ],
+            },
+        )
+
     def parse(self, conn: Connection):
         buffer = conn.recv(ctypes.sizeof(self.counter_type))
         length = int.from_bytes(buffer, byteorder=PROTOCOL_BYTE_ORDER)
@@ -49,12 +61,10 @@ class StructArray:
 
         data_class = type(
             'StructArray',
-            (ctypes.LittleEndianStructure,),
+            (self.build_header_class(),),
             {
                 '_pack_': 1,
-                '_fields_': [
-                    ('length', self.counter_type),
-                ] + fields,
+                '_fields_': fields,
             },
         )
 
@@ -70,6 +80,20 @@ class StructArray:
                 )
             )
         return result
+
+    def from_python(self, value):
+        length = len(value)
+        header_class = self.build_header_class()
+        header = header_class()
+        header.length = length
+        buffer = bytes(header)
+
+        for i, v in enumerate(value):
+            for element in self.following:
+                name, el_class = element
+                buffer += el_class.from_python(v[name])
+
+        return buffer
 
 
 @attr.s
@@ -103,6 +127,14 @@ class Struct:
         for name, c_type in self.fields:
             result[name] = c_type.to_python(getattr(ctype_object, name))
         return result
+
+    def from_python(self, value):
+        buffer = b''
+
+        for name, el_class in self.fields:
+            buffer += el_class.from_python(value[name])
+
+        return buffer
 
 
 class CacheMode(Int):
