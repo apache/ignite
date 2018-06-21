@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 CheckCallbackSingle(key1, Entry(key1), Entry(key1 + 1), CacheEntryEventType.Updated);
 
                 cache1.Remove(key1);
-                CheckCallbackSingle(key1, Entry(key1 + 1), null, CacheEntryEventType.Removed);
+                CheckCallbackSingle(key1, Entry(key1 + 1), Entry(key1 + 1), CacheEntryEventType.Removed);
 
                 // Put from remote node.
                 cache2.GetAndPut(key2, Entry(key2));
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2 + 1), null, CacheEntryEventType.Removed);
+                    CheckCallbackSingle(key2, Entry(key2 + 1), Entry(key2 + 1), CacheEntryEventType.Removed);
             }
 
             cache1.Put(key1, Entry(key1));
