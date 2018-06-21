@@ -14,7 +14,8 @@
 # limitations under the License.
 
 """
-This part of API is not yet implemented.
+Only key-value queries (scan queries) are implemented. SQL part is still
+in progress.
 """
 
 from pyignite.connection import Connection
@@ -51,13 +52,13 @@ def scan(
     :return: API result data object. Contains zero status and a value
      of type dict with results on success, non-zero status and an error
      description otherwise.
+
      Value dict is of following format:
-     {
-       'cursor': <int, cursor ID>,
-       'data': <dict, result rows as key-value pairs>,
-       'more': <bool, True if more data is available for subsequent
-         ‘scan_cursor_get_page’ calls>
-     }
+
+     * `cursor`: int, cursor ID,
+     * `data`: dict, result rows as key-value pairs,
+     * `more`: bool, True if more data is available for subsequent
+       ‘scan_cursor_get_page’ calls.
     """
     class ScanQuery(Query):
         op_code = OP_QUERY_SCAN
@@ -119,12 +120,12 @@ def scan_cursor_get_page(
     :return: API result data object. Contains zero status and a value
      of type dict with results on success, non-zero status and an error
      description otherwise.
+
      Value dict is of following format:
-     {
-       'data': <dict, result rows as key-value pairs>,
-       'more': <bool, True if more data is available for subsequent
-         ‘scan_cursor_get_page’ calls>
-     }
+
+     * `data`: dict, result rows as key-value pairs,
+     * `more`: bool, True if more data is available for subsequent
+       ‘scan_cursor_get_page’ calls.
     """
 
     class ScanCursorGetPageQuery(Query):
