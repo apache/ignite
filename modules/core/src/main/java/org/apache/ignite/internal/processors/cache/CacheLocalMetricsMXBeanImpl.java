@@ -370,6 +370,14 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
         return cache.metrics0().getTotalPartitionsCount();
     }
 
+    @Override public long getRebalancedKeys() {
+        return cache.metrics0().getRebalancedKeys();
+    }
+
+    @Override public long getEstimatedRebalancingKeys() {
+        return cache.metrics0().getEstimatedRebalancingKeys();
+    }
+
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
         return cache.metrics0().getRebalancingPartitionsCount();
