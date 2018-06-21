@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -45,6 +47,10 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
      * @param globalRmvId
      * @param metaPageId
      * @param reuseList
+     * @param rowStore
+     * @param metaPageId
+     * @param initNew
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException
      */
     public MetastorageTree(int cacheId,
@@ -54,9 +60,10 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         ReuseList reuseList,
         MetastorageRowStore rowStore,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        boolean initNew,
+        @Nullable FailureProcessor failureProcessor) throws IgniteCheckedException {
         super("Metastorage", cacheId, pageMem, wal,
-            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS);
+            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS, failureProcessor);
 
         this.rowStore = rowStore;
 
