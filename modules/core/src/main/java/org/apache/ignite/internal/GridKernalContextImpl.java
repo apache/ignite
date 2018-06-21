@@ -999,6 +999,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public StripedExecutor getStripedExecutorService() {
+        assert stripedExecSvc != null;
+
         return stripedExecSvc;
     }
 
@@ -1119,6 +1121,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStripedExecutorDisabled() {
+        return stripedExecSvc == null;
     }
 
     /** {@inheritDoc} */

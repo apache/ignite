@@ -36,6 +36,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -276,11 +277,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             }
                         };
 
-                        if (stripe >= 0)
-                            cctx.kernalContext().getStripedExecutorService().execute(stripe, c);
+                        GridKernalContext kernalContext = cctx.kernalContext();
+
+                        if (stripe >= 0) {
+                            if (!kernalContext.isStripedExecutorDisabled())
+                                kernalContext.getStripedExecutorService().execute(stripe, c);
+                            else
+                                kernalContext.getSystemExecutorService().execute(c);
+                        }
                         else {
                             try {
-                                cctx.kernalContext().pools().poolForPolicy(plc).execute(c);
+                                kernalContext.pools().poolForPolicy(plc).execute(c);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(cacheMsg.messageLogger(cctx), "Failed to get pool for policy: " + plc, e);

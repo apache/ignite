@@ -672,4 +672,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
+
+    /**
+     * @return {@code True} if striped executor is disabled.
+     */
+    public boolean isStripedExecutorDisabled();
 }

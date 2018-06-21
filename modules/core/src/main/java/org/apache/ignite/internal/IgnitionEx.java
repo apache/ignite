@@ -1815,22 +1815,22 @@ public class IgnitionEx {
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
-            validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
-
             WorkersRegistry workerRegistry = new WorkersRegistry();
 
-            stripedExecSvc = new StripedExecutor(
-                cfg.getStripedPoolSize(),
-                cfg.getIgniteInstanceName(),
-                "sys",
-                log,
-                new IgniteInClosure<Throwable>() {
-                    @Override public void apply(Throwable t) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
-                    }
-                },
-                workerRegistry);
+            if (cfg.getStripedPoolSize() > 0) {
+                stripedExecSvc = new StripedExecutor(
+                    cfg.getStripedPoolSize(),
+                    cfg.getIgniteInstanceName(),
+                    "sys",
+                    log,
+                    new IgniteInClosure<Throwable>() {
+                        @Override public void apply(Throwable t) {
+                            if (grid != null)
+                                grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                        }
+                    },
+                    workerRegistry);
+            }
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.

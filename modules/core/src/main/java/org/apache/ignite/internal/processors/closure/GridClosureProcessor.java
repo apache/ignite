@@ -786,8 +786,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public void runLocalWithThreadPolicy(IgniteThread thread, Runnable c) {
         assert thread.stripe() >= 0 || thread.policy() != GridIoPolicy.UNDEFINED : thread;
 
-        if (thread.stripe() >= 0)
-            ctx.getStripedExecutorService().execute(thread.stripe(), c);
+        if (thread.stripe() >= 0) {
+            if (!ctx.isStripedExecutorDisabled())
+                ctx.getStripedExecutorService().execute(thread.stripe(), c);
+            else
+                ctx.getSystemExecutorService().execute(c);
+        }
         else {
             try {
                 ctx.pools().poolForPolicy(thread.policy()).execute(c);

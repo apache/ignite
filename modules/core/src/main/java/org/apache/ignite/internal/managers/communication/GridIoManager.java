@@ -1107,14 +1107,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             if (msg0.processFromNioThread())
                 c.run();
-            else
+            else if (!ctx.isStripedExecutorDisabled())
                 ctx.getStripedExecutorService().execute(-1, c);
+            else
+                ctx.getSystemExecutorService().execute(c);
 
             return;
         }
 
         if (plc == GridIoPolicy.SYSTEM_POOL && msg.partition() != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getStripedExecutorService().execute(msg.partition(), c);
+            if (!ctx.isStripedExecutorDisabled())
+                ctx.getStripedExecutorService().execute(msg.partition(), c);
+            else
+                ctx.getSystemExecutorService().execute(c);
 
             return;
         }
