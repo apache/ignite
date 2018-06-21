@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -477,12 +476,12 @@ public class GridH2Table extends TableBase {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, row0, prevRow0);
+                        addToSecondaryIndex((GridH2IndexBase)idx, row0, prevRow0);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, row0, prevRow0);
+                        addToSecondaryIndex(idx, row0, prevRow0);
                 }
             }
             finally {
@@ -538,14 +537,14 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Add row to index.
+     * Add row to secondary index.
      *
      * @param idx Index to add row to.
      * @param row Row to add to index.
-     * @param prevRow Previous row state, if any.
+     * @param prevRow Previous row state derived from primary index update, if any.
      */
-    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
-        boolean replaced = idx.putx(row);
+    private void addToSecondaryIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
+        boolean replaced = idx.replace(row, prevRow);
 
         // Row was not replaced, need to remove manually.
         if (!replaced && prevRow != null)

@@ -17,6 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -62,22 +77,6 @@ import org.h2.util.DoneFuture;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -205,6 +204,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return {@code True} if existing row row has been replaced.
      */
     public abstract boolean putx(GridH2Row row);
+
+    /**
+     * Puts new row using old row to determine strict row equality.
+     * Is meant to facilitate correct and timely secondary index update in absence of cache key present in every index.
+     *
+     * @param row Row.
+     * @param oldRow Previous row yielded by primary key update or {@code null} if cache key was not previously present.
+     * @return {@code True} if existing row row has been replaced.
+     */
+    public abstract boolean replace(GridH2Row row, @Nullable GridH2Row oldRow);
 
     /**
      * Remove row from index.

@@ -258,6 +258,27 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean replace(GridH2Row row, GridH2Row oldRow) {
+        try {
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+
+            int seg = segmentForRow(row);
+
+            H2Tree tree = treeForRead(seg);
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+            return tree.replace(row, oldRow);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+        finally {
+            InlineIndexHelper.clearCurrentInlineIndexes();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -57,6 +58,10 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
     /** */
     private final List<InlineIndexHelper> inlineIdxs;
+
+    public final static AtomicInteger cnt = new AtomicInteger();
+
+    public static volatile H2Tree instance;
 
     /** */
     private final IndexColumn[] cols;
@@ -136,6 +141,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         setIos(H2ExtrasInnerIO.getVersions(inlineSize), H2ExtrasLeafIO.getVersions(inlineSize));
 
         initTree(initNew, inlineSize);
+
+        if (!getName().toLowerCase().contains("pk"))
+            instance = this;
 
         if (!linksBasedComparison)
             U.warn(log, "Grid has been restored from persistent storage created by older version, falling back " +
@@ -245,10 +253,37 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         }
     }
 
+    /**
+     * Puts new row using old row to determine strict row equality.
+     * Is meant to facilitate correct and timely secondary index update in absence of cache key present in every index.
+     *
+     * @param row Row.
+     * @param oldRow Previous row yielded by primary key update or {@code null} if cache key was not previously present.
+     * @return {@code True} if existing row row has been replaced.
+     * @throws IgniteCheckedException if failed.
+     */
+    public boolean replace(GridH2Row row, @Nullable GridH2Row oldRow) throws IgniteCheckedException {
+        Boolean res = (Boolean)doPut(row, oldRow, false);
+
+        return res != null ? res : false;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
         SearchRow row) throws IgniteCheckedException {
+
+        if (!getName().toLowerCase().contains("pk")) {
+            cnt.incrementAndGet();
+
+            GridH2Row r2 = getRow(io, pageAddr, idx);
+
+            System.out.println("Comparison: " + row.getValue(0).getInt() +
+                " vs " + r2.getValue(0).getInt() + " (" + ((H2RowLinkIO)io).getLink(pageAddr, idx) + ")");
+
+            print();
+        }
+
         if (inlineSize() == 0) {
             int rowsCmpRes = compareRows(getRow(io, pageAddr, idx), row);
 
@@ -357,6 +392,15 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         }
 
         return 0;
+    }
+
+    private static void print() {
+        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        for (int i = 2; i < Math.min(30, elements.length); i++) {
+            StackTraceElement s = elements[i];
+            System.out.println("\tat " + s.getClassName() + "." + s.getMethodName()
+                + "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
+        }
     }
 
     /**

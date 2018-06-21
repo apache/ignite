@@ -2053,8 +2053,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override public final T put(T row) throws IgniteCheckedException {
-        return doPut(row, true);
+        return (T)doPut(row, null, true);
     }
 
     /**
@@ -2063,7 +2064,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return {@code True} if replaced existing row.
      */
     public boolean putx(T row) throws IgniteCheckedException {
-        Boolean res = (Boolean)doPut(row, false);
+        Boolean res = (Boolean)doPut(row, null, false);
 
         return res != null ? res : false;
     }
@@ -2074,7 +2075,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Old row.
      * @throws IgniteCheckedException If failed.
      */
-    private T doPut(T row, boolean needOld) throws IgniteCheckedException {
+    protected Object doPut(T row, T oldRow, boolean needOld) throws IgniteCheckedException {
         checkDestroyed();
 
         Put p = new Put(row, needOld);
@@ -2644,7 +2645,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long rightId;
 
         /** Replaced row if any. */
-        T oldRow;
+        Object oldRow;
 
         /**
          * This page is kept locked after split until insert to the upper level will not be finished.
