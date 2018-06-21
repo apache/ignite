@@ -75,12 +75,12 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
         Thread.sleep(1000);
 
-        service.test();
+        service.isWorking();
 
         assertFalse(getErr().contains("Cache is not configured:"));
     }
 
-    /** {@inheritDoc} */
+    /** Start server node */
     void startServer() {
         try {
             startGrid(getConfiguration("server"));
@@ -90,7 +90,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
+    /** Service configuration */
     ServiceConfiguration serviceConfiguration() {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
 
@@ -150,7 +150,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void test() {
+        @Override public void isWorking() {
             // No-op.
         }
     }
@@ -160,6 +160,6 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
      */
     public interface SimpleService {
         /** */
-        void test();
+        void isWorking();
     }
 }
