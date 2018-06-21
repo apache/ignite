@@ -272,8 +272,9 @@ public class GridDhtPartitionDemander {
      * Update rebalance future topology version e.g. when assignments not changed from previous version.
      */
     public void updateTopology(AffinityTopologyVersion top){
-        if (log.isInfoEnabled())
-            log.info("Updating rebalance future logged [oldTopVer=" + rebalanceFut.topologyVersion() + ", topVer=" + top + "]");
+        if (log.isDebugEnabled())
+            log.debug("Updating rebalance future logged [oldTopVer=" + rebalanceFut.topologyVersion() +
+                ", topVer=" + top + "]");
 
         rebalanceFut.topVer = top;
     }
