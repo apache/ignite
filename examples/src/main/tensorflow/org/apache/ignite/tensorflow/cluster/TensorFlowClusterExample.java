@@ -33,9 +33,12 @@ import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
 import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 
 /**
+ * Prerequisites: be aware that to successfully run this example you need to have Python and TensorFlow installed on
+ * your machine. To find out how to install Python please take a look this page: https://www.python.org/downloads/. To
+ * install TensorFlow see this web site: https://www.tensorflow.org/install/.
+ *
  * Example that shows how to use {@link TensorFlowClusterGatewayManager} and start, maintain and stop TensorFlow
- * cluster. Be aware that to successfully run this example you need to have Python and TensorFlow installed on your
- * machine. Installation instructions you can find on the TensorFlow web site: https://www.tensorflow.org/install/.
+ * cluster.
  */
 public class TensorFlowClusterExample {
     /** Run example. */
