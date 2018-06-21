@@ -26,6 +26,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
@@ -121,7 +122,8 @@ public class Step_7_Split_train_test {
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(normalizationPreprocessor.apply(observation.getKey(), val));
+                            double prediction = mdl.apply(new DenseLocalOnHeapVector(
+                                normalizationPreprocessor.apply(observation.getKey(), val)));
 
                             totalAmount++;
                             if (groundTruth != prediction)

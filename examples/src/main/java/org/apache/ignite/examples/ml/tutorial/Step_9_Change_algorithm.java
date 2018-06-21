@@ -27,26 +27,41 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
+import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
+import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
+ * The purpose of cross-validation is model checking, not model building.
+ *
+ * You train kk different models.
+ * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
+ * These models are sometimes called surrogate models because the (average) performance measured for these models
+ * is taken as a surrogate of the performance of the model trained on all cases.
+ *
+ * All scenarious are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
  *
  * @see LogisticRegressionSGDTrainer
  */
-public class Step_5_Scaling {
+public class Step_9_Change_algorithm {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_5_Scaling.class.getSimpleName(), () -> {
+                Step_9_Change_algorithm.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
@@ -55,6 +70,8 @@ public class Step_5_Scaling {
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
+                    TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                        .split(0.75);
 
                     IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
@@ -78,28 +95,94 @@ public class Step_5_Scaling {
                         imputingPreprocessor
                     );
 
+
+                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    int[] pSet = new int[]{1, 2};
+                    int[] maxIterationsSet = new int[]{100, 1000, 100000};
+                    int[] batchSizeSet = new int[]{100, 10};
+                    int[] locIterationsSet = new int[]{10, 100};
+                    double[] learningRateSet = new double[]{0.1, 0.2, 0.5, 1};
+
+
+                    int bestP = 1;
+                    int bestMaxDeep = 1;
+                    double avg = Double.MIN_VALUE;
+
+                    for(int p: pSet){
+                        for(int maxDeep: maxDeepSet){
+
+                            IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                                .withP(p)
+                                .fit(
+                                    ignite,
+                                    dataCache,
+                                    minMaxScalerPreprocessor
+                                );
+
+
+                            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
+                                new SimpleGDUpdateCalculator(0.2),
+                                SimpleGDParameterUpdate::sumLocal,
+                                SimpleGDParameterUpdate::avg
+                            ), 100000,  10, 100, 123L);
+
+                            CrossValidationScoreCalculator<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
+                                = new CrossValidationScoreCalculator<>();
+
+                            double[] scores = scoreCalculator.score(
+                                trainer,
+                                new AccuracyScoreCalculator<>(),
+                                ignite,
+                                dataCache,
+                                split.getTrainFilter(),
+                                normalizationPreprocessor,
+                                (k, v) -> (double) v[1],
+                                3
+                            );
+
+                            System.out.println("Scores are: " + Arrays.toString(scores));
+
+                            final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
+
+                            if(currAvg > avg) {
+                                avg = currAvg;
+                                bestP = p;
+                                bestMaxDeep = maxDeep;
+                            }
+
+                            System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
+                        }
+                    }
+
+                    System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
+
                     IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                        .withP(1)
+                        .withP(bestP)
                         .fit(
+                            ignite,
+                            dataCache,
+                            minMaxScalerPreprocessor
+                        );
+
+                    LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
+                        new SimpleGDUpdateCalculator(0.2),
+                        SimpleGDParameterUpdate::sumLocal,
+                        SimpleGDParameterUpdate::avg
+                    ), 100000,  10, 100, 123L);
+
+                    System.out.println(">>> Perform the training to get the model.");
+                    LogisticRegressionModel bestMdl = trainer.fit(
                         ignite,
                         dataCache,
-                        minMaxScalerPreprocessor
-                    );
-
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
-
-                    // Train decision tree model.
-                    DecisionTreeNode mdl = trainer.fit(
-                        ignite,
-                        dataCache,
+                        split.getTrainFilter(),
                         normalizationPreprocessor,
                         (k, v) -> (double)v[1]
                     );
 
 
-                    System.out.println(">>> ----------------------------------------------------------------");
-                    System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
-                    System.out.println(">>> ----------------------------------------------------------------");
+                    System.out.println("----------------------------------------------------------------");
+                    System.out.println("| Prediction\t| Ground Truth\t| Name\t|");
+                    System.out.println("----------------------------------------------------------------");
 
                     int amountOfErrors = 0;
                     int totalAmount = 0;
@@ -107,14 +190,17 @@ public class Step_5_Scaling {
                     // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
                     int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    ScanQuery<Integer, Object[]> qry = new ScanQuery<>();
+                    qry.setFilter(split.getTestFilter());
+
+                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(qry)) {
                         for (Cache.Entry<Integer, Object[]> observation : observations) {
 
                             Object[] val = observation.getValue();
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(new DenseLocalOnHeapVector(
+                            double prediction = bestMdl.apply(new DenseLocalOnHeapVector(
                                 normalizationPreprocessor.apply(observation.getKey(), val)));
 
                             totalAmount++;
@@ -126,10 +212,10 @@ public class Step_5_Scaling {
 
                             confusionMtx[idx1][idx2]++;
 
-                            System.out.printf(">>>| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
+                            System.out.printf("| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
                         }
 
-                        System.out.println(">>> ---------------------------------");
+                        System.out.println("---------------------------------");
 
                         System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                         double accuracy = 1 - amountOfErrors / (double)totalAmount;

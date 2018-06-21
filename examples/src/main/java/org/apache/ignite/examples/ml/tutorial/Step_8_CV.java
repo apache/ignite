@@ -26,6 +26,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
@@ -46,6 +47,8 @@ import org.apache.ignite.thread.IgniteThread;
  * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
  * These models are sometimes called surrogate models because the (average) performance measured for these models
  * is taken as a surrogate of the performance of the model trained on all cases.
+ *
+ * All scenarious are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
  *
  * @see LogisticRegressionSGDTrainer
  */
@@ -136,6 +139,8 @@ public class Step_8_CV {
                         }
                     }
 
+                    System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
+
                     IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                         .withP(bestP)
                         .fit(
@@ -155,9 +160,9 @@ public class Step_8_CV {
                         (k, v) -> (double)v[1]
                     );
 
-                    System.out.println(">>> ----------------------------------------------------------------");
-                    System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
-                    System.out.println(">>> ----------------------------------------------------------------");
+                    System.out.println("----------------------------------------------------------------");
+                    System.out.println("| Prediction\t| Ground Truth\t| Name\t|");
+                    System.out.println("----------------------------------------------------------------");
 
                     int amountOfErrors = 0;
                     int totalAmount = 0;
@@ -175,7 +180,8 @@ public class Step_8_CV {
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = bestMdl.apply(normalizationPreprocessor.apply(observation.getKey(), val));
+                            double prediction = bestMdl.apply(new DenseLocalOnHeapVector(
+                                normalizationPreprocessor.apply(observation.getKey(), val)));
 
                             totalAmount++;
                             if (groundTruth != prediction)
@@ -186,10 +192,10 @@ public class Step_8_CV {
 
                             confusionMtx[idx1][idx2]++;
 
-                            System.out.printf(">>>| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
+                            System.out.printf("| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
                         }
 
-                        System.out.println(">>> ---------------------------------");
+                        System.out.println("---------------------------------");
 
                         System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                         double accuracy = 1 - amountOfErrors / (double)totalAmount;
