@@ -84,13 +84,7 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
         if (locVal != null)
             return locVal;
 
-        if (getEventType() == EventType.REMOVED || getEventType() == EventType.EXPIRED) {
-            assert e.value() == e.oldValue();
-
-            locVal = getOldValue();
-        }
-        else
-            locVal = (V) cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false);
+        locVal = (V) cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false);
 
         val = locVal;
 
