@@ -319,7 +319,10 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
             new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, Integer>() {
                 @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
-                    assertNull(evt.getValue());
+                    if (evt.getEventType() == EventType.REMOVED || evt.getEventType() == EventType.EXPIRED)
+                        assertEquals(evt.getOldValue(), evt.getValue());
+                    else
+                        assertNull(evt.getValue());
 
                     assertNotNull(evt.getOldValue());
 

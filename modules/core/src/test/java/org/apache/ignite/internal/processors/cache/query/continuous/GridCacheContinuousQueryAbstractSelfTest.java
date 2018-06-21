@@ -1136,7 +1136,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
                 for (CacheEntryEvent<?, ?> e : evts) {
                     if (e.getEventType() == EventType.EXPIRED) {
-                        assertNull(e.getValue());
+                        assertEquals(e.getOldValue(), e.getValue());
 
                         map.put(e.getKey(), e.getOldValue());
 
