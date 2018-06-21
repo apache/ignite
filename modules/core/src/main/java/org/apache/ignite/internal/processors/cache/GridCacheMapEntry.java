@@ -1398,12 +1398,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Load and remove from swap if it is new.
             if (isNew())
-               unswap(null, false);
+                unswap(null, false);
 
             old = val;
 
             if (expireTimeExtras() > 0 && expireTimeExtras() < U.currentTimeMillis()) {
-                if(onExpired(val, null)) {
+                if (onExpired(val, null)) {
                     assert !deletedUnlocked();
 
                     update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
@@ -2284,8 +2284,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /**
      * <p>
-     * Note that {@link #onMarkedObsolete()} should always be called after this method
-     * returns {@code true}.
+     * Note that {@link #onMarkedObsolete()} should always be called after this method returns {@code true}.
      *
      * @param ver Version.
      * @param clear {@code True} to clear.
@@ -2785,7 +2784,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
             else // Optimization to access storage only once.
-                update = storeValue(val, expTime, ver,  p);
+                update = storeValue(val, expTime, ver, p);
 
             if (update) {
                 update(val, expTime, ttl, ver, true);
@@ -4690,7 +4689,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // unswap
                 entry.update(oldRow.value(), oldRow.expireTime(), 0, oldRow.version(), false);
 
-                if(checkRowExpired(oldRow)){
+                if (checkRowExpired(oldRow)) {
                     oldRowExpiredFlag = true;
 
                     oldRow = null;
