@@ -1681,8 +1681,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             reconnector = null;
                         }
-                        else
-                            assert forceFailMsg != null;
+
+                        sockReader.forceStopRead();
 
                         if (spi.isClientReconnectDisabled()) {
                             if (state != SEGMENTED && state != STOPPED) {
@@ -1811,6 +1811,9 @@ class ClientImpl extends TcpDiscoveryImpl {
          *
          */
         private void onDisconnected() {
+            if (state != CONNECTED)
+                return;
+
             state = DISCONNECTED;
 
             nodeAdded = false;
