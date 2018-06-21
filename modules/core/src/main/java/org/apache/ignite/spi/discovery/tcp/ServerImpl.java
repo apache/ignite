@@ -2925,7 +2925,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug("New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
                     else if (log.isInfoEnabled())
-                        log.debug("New next node [newNext=" + newNext + ']');
+                        log.info("New next node [newNext=" + newNext + ']');
 
                     if (debugMode)
                         debugLog(msg, "New next node [newNext=" + newNext + ", formerNext=" + next +

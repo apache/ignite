@@ -268,7 +268,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      * Regular node fail by crash. Should be faster due to
      *
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testMassiveFailForceNodeFail() throws Exception {
         failNodes = true;
@@ -278,6 +278,27 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         timeout = FAILURE_DETECTION_TIMEOUT / 2;
 
         doFailNodes(true);
+    }
+
+    /**
+     * Check that cluster recovers from temporal connection breakage.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRecoveryOnDisconnect() throws Exception {
+        startGrids(3);
+
+        IgniteEx ignite1 = grid(1);
+        IgniteEx ignite2 = grid(2);
+
+        ((TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi()).brakeConnection();
+        ((TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi()).brakeConnection();
+
+        doSleep(FAILURE_DETECTION_TIMEOUT);
+
+        assertEquals(3, grid(0).cluster().nodes().size());
+        assertEquals(3, grid(1).cluster().nodes().size());
+        assertEquals(3, grid(2).cluster().nodes().size());
     }
 
     /**
