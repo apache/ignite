@@ -325,10 +325,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                         assertNull(old);
 
-                        synchronized (nodeEvts) {
-                            DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
+                        // If the current node has failed, the local join will never happened.
+                        if (evt.type() != EVT_NODE_FAILED ||
+                            discoveryEvt.eventNode().consistentId().equals(ignite.configuration().getConsistentId())) {
+                            synchronized (nodeEvts) {
+                                DiscoveryLocalJoinData locJoin = ((IgniteEx)ignite).context().discovery().localJoin();
 
-                            nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                                nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                            }
                         }
                     }
 
