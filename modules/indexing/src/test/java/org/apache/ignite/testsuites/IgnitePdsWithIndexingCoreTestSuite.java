@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinaryMe
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinarySortObjectFieldsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedIndexTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsMarshallerMappingRestoreOnNodeStartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
@@ -67,7 +66,6 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
 
         suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsTxCacheHistoricalRebalancingTest.class);
         suite.addTestSuite(IgniteWalRebalanceTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
