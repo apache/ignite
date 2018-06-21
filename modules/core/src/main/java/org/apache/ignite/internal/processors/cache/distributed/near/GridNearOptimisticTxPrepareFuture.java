@@ -840,6 +840,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
     }
 
+    /**
+     * Future that completes when keys are locked.
+     */
+    public KeyLockFuture keyLockFut() throws IgniteCheckedException {
+        return keyLockFut;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
