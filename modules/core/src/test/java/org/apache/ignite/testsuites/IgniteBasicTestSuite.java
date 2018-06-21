@@ -110,11 +110,14 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite(@Nullable final Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
+/*
         suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteLangSelfTestSuite.suite());
         suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
+*/
 
         suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
+/*
         suite.addTest(IgniteStartUpTestSuite.suite());
         suite.addTest(IgniteExternalizableSelfTestSuite.suite());
         suite.addTest(IgniteP2PSelfTestSuite.suite(ignoredTests));
@@ -209,6 +212,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IoomFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(AccountTransferTransactionTest.class);
+*/
 
         return suite;
     }
