@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc.txlog;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  *
  */
@@ -65,5 +67,10 @@ public class TxKey {
         int result = (int) (major ^ (major >>> 32));
         result = 31 * result + (int) (minor ^ (minor >>> 32));
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TxKey.class, this);
     }
 }
