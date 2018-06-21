@@ -613,13 +613,6 @@
         </profile>
 
         <profile>
-            <id>tensorflow</id>
-            <modules>
-                <module>modules/tensorflow</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>update-versions</id>
             <!-- updates dotnet & cpp versions -->
             <build>
