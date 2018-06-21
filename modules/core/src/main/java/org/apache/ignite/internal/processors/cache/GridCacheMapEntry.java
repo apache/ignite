@@ -1404,6 +1404,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             old = val;
 
+            if (expireTimeExtras() > 0 && expireTimeExtras() < U.currentTimeMillis()) {
+                if(onExpired(val, null)) {
+                    assert !deletedUnlocked();
+
+                    update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
+
+                    old = null;
+                }
+            }
+
             boolean readFromStore = false;
 
             Object old0 = null;
@@ -4619,6 +4629,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (oldRow != null)
                 oldRow.key(entry.key());
 
+            if (oldRow != null)
+                oldRow = checkRowExpired(oldRow);
+
             this.oldRow = oldRow;
 
             GridCacheContext cctx = entry.context();
@@ -4767,6 +4780,49 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             assert updateRes != null && treeOp != null;
+        }
+
+        /**
+         * Check and process expired row.
+         *
+         * @param row Old row.
+         * @return {@code null} if row was expired, row otherwise.
+         * @throws IgniteCheckedException if failed.
+         */
+        private CacheDataRow checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
+            assert row != null;
+
+            if (!(row.expireTime() > 0 && row.expireTime() < U.currentTimeMillis()))
+                return row;
+
+            GridCacheContext cctx = entry.context();
+
+            CacheObject expiredVal = row.value();
+
+            if(!entry.deletedUnlocked())
+                entry.deletedUnlocked(true);
+
+            if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+                cctx.events().addEvent(entry.partition(),
+                    entry.key(),
+                    cctx.localNodeId(),
+                    null,
+                    EVT_CACHE_OBJECT_EXPIRED,
+                    null,
+                    false,
+                    expiredVal,
+                    expiredVal != null,
+                    null,
+                    null,
+                    null,
+                    true);
+            }
+
+            cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
+
+            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer, true);
+
+            return null;
         }
 
         /**
