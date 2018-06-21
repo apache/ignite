@@ -101,7 +101,11 @@ def scan(
     if hasattr(response, 'error_message'):
         result.message = String.to_python(response.error_message)
         return result
-    result.value = response_struct.to_python(response)
+    result.value = dict(response_struct.to_python(response))
+    data = {}
+    for od in result.value['data']:
+        data[od['key']] = od['value']
+    result.value['data'] = data
     return result
 
 
@@ -158,7 +162,11 @@ def scan_cursor_get_page(
     if hasattr(response, 'error_message'):
         result.message = String.to_python(response.error_message)
         return result
-    result.value = response_struct.to_python(response)
+    result.value = dict(response_struct.to_python(response))
+    data = {}
+    for od in result.value['data']:
+        data[od['key']] = od['value']
+    result.value['data'] = data
     return result
 
 

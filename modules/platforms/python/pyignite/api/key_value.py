@@ -15,7 +15,7 @@
 
 from pyignite.connection import Connection
 from pyignite.queries.op_codes import *
-from pyignite.datatypes.cache_config import StructArray
+from pyignite.datatypes.cache_config import Struct, StructArray
 from pyignite.datatypes.complex import AnyDataObject
 from pyignite.datatypes.key_value import PeekModes
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
@@ -265,11 +265,15 @@ def cache_put_all(
     key_fields = {}
     # structure name: value:
     data = {}
-    for i, pair in enumerate(unrolled):
+    # quad is a ((key, key type hint), (value, value type hint)) tuple
+    for i, quad in enumerate(zip(unrolled[::2], unrolled[1::2])):
         name = 'element_{}'.format(i)
-        value, hint = pair
-        key_fields[name] = hint
-        data[name] = value
+        key_pair, value_pair = quad
+        key_fields[name] = Struct([
+            ('key', key_pair[1]),
+            ('value', value_pair[1]),
+        ])
+        data[name] = {'key': key_pair[0], 'value': value_pair[0]}
 
     query_struct = CachePutAllQuery([
         ('hash_code', Int),
