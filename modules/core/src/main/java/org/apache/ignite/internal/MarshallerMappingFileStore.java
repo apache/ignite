@@ -28,6 +28,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
@@ -45,6 +46,9 @@ import org.apache.ignite.marshaller.MarshallerContext;
  * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
 final class MarshallerMappingFileStore {
+    /** File lock timeout in milliseconds. */
+    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
+
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -92,14 +96,12 @@ final class MarshallerMappingFileStore {
             File file = new File(workDir, fileName);
 
             try (FileOutputStream out = new FileOutputStream(file)) {
-                FileLock fileLock = fileLock(out.getChannel(), false);
-
-                assert fileLock != null : fileName;
-
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(typeName);
+                    try (FileLock fileLock = fileLock(out.getChannel(), false)) {
+                        writer.write(typeName);
 
-                    writer.flush();
+                        writer.flush();
+                    }
                 }
             }
             catch (IOException e) {
@@ -120,11 +122,10 @@ final class MarshallerMappingFileStore {
     }
 
     /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
+     * @param fileName File name.
      */
-    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
-        String fileName = getFileName(platformId, typeId);
+    private String readMapping(String fileName) throws IgniteCheckedException {
+        ThreadLocalRandom rnd = null;
 
         Lock lock = fileLock(fileName);
 
@@ -132,23 +133,43 @@ final class MarshallerMappingFileStore {
 
         try {
             File file = new File(workDir, fileName);
+            long time = 0;
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                FileLock fileLock = fileLock(in.getChannel(), true);
+            while (true) {
+                try (FileInputStream in = new FileInputStream(file)) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                        try (FileLock fileLock = fileLock(in.getChannel(), true)) {
+                            if (file.length() > 0)
+                                return reader.readLine();
 
-                assert fileLock != null : fileName;
+                            if (rnd == null)
+                                rnd = ThreadLocalRandom.current();
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    return reader.readLine();
+                            if (time == 0)
+                                time = U.currentTimeMillis();
+                            else if ((U.currentTimeMillis() - time) >= FILE_LOCK_TIMEOUT_MS)
+                                return null;
+
+                            U.sleep(rnd.nextLong(50));
+                        }
+                    }
                 }
-            }
-            catch (IOException ignored) {
-                return null;
+                catch (IOException ignored) {
+                    return null;
+                }
             }
         }
         finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+        return readMapping(getFileName(platformId, typeId));
     }
 
     /**
@@ -165,22 +186,16 @@ final class MarshallerMappingFileStore {
 
             int typeId = getTypeId(name);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String clsName = reader.readLine();
+            String clsName = readMapping(name);
 
-                    if (clsName == null) {
-                        throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
-                            ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
-                            "Clean up marshaller directory (<work_dir>/marshaller) and restart the node.");
-                    }
+            if (clsName == null) {
+                throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
+                    ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
+                    "Clean up marshaller directory (<work_dir>/marshaller) and restart the node. File name: " + name +
+                    ", FileSize: " + file.length());
+            }
 
-                    marshCtx.registerClassNameLocally(platformId, typeId, clsName);
-                }
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Reading marshaller mapping from file " + name + " failed.", e);
-            }
+            marshCtx.registerClassNameLocally(platformId, typeId, clsName);
         }
     }
 
@@ -276,10 +291,10 @@ final class MarshallerMappingFileStore {
         while (true) {
             FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
 
-            if (fileLock == null)
-                U.sleep(rnd.nextLong(50));
-            else
+            if (fileLock != null)
                 return fileLock;
+
+            U.sleep(rnd.nextLong(50));
         }
     }
 }
