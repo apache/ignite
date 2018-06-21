@@ -66,7 +66,7 @@ class ClientBinaryMarshaller {
      * Serializes Java object into a byte array.
      */
     public byte[] marshal(Object obj) {
-        return impl.marshal(obj);
+        return impl.marshal(obj, false);
     }
 
     /**

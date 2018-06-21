@@ -143,5 +143,5 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @return Binary object (in case binary marshaller is used).
      * @throws IgniteException If failed.
      */
-    public Object marshalToBinary(Object obj) throws IgniteException;
+    public Object marshalToBinary(Object obj, boolean failIfUnregistered) throws IgniteException;
 }
