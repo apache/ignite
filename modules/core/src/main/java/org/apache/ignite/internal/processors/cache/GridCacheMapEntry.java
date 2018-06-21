@@ -413,9 +413,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     update(val, read.expireTime(), 0, read.version(), false);
 
-                    long delta = checkExpire ?
-                        (read.expireTime() == 0 ? 0 : read.expireTime() - U.currentTimeMillis())
-                        : 0;
+                    long delta = checkExpire && read.expireTime() > 0 ? read.expireTime() - U.currentTimeMillis() : 0;
 
                     if (delta >= 0)
                         return read;
@@ -622,7 +620,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (val != null) {
                     long expireTime = expireTimeExtras();
 
-                    if (expireTime > 0 && (expireTime - U.currentTimeMillis() <= 0)) {
+                    if (expireTime > 0 && (expireTime < U.currentTimeMillis())) {
                         if (onExpired((CacheObject)cctx.unwrapTemporary(val), null)) {
                             val = null;
                             evt = false;
@@ -1779,7 +1777,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert updateRes != null : c;
 
-            CacheObject oldVal = c.oldRow != null ? c.oldRow.value() : null;
+            // We should ignore expired old row. Expired oldRow instance is needed for correct row replacement\deletion only.
+            CacheObject oldVal = c.oldRow != null && !c.oldRowExpiredFlag ? c.oldRow.value() : null;
             CacheObject updateVal = null;
             GridCacheVersion updateVer = c.newVer;
 
@@ -2203,7 +2202,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (hasValueUnlocked()) {
                 long expireTime = expireTimeExtras();
 
-                if (expireTime > 0 && (expireTime - U.currentTimeMillis() <= 0)) {
+                if (expireTime > 0 && (expireTime < U.currentTimeMillis())) {
                     if (obsoleteVer == null)
                         obsoleteVer = nextVersion();
 
@@ -2770,9 +2769,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (update) {
                     // If entry is already unswapped and we are modifying it, we must run deletion callbacks for old value.
                     long oldExpTime = expireTimeUnlocked();
-                    long delta = (oldExpTime == 0 ? 0 : oldExpTime - U.currentTimeMillis());
 
-                    if (delta < 0) {
+                    if (oldExpTime > 0 && oldExpTime < U.currentTimeMillis()) {
                         if (onExpired(this.val, null)) {
                             if (cctx.deferredDelete()) {
                                 deferred = true;
@@ -3347,7 +3345,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long expireTime = expireTimeExtras();
 
-            if (expireTime == 0 || (expireTime - U.currentTimeMillis() > 0))
+            if (!(expireTime > 0 && expireTime < U.currentTimeMillis()))
                 return false;
 
             CacheObject expiredVal = this.val;
@@ -4436,8 +4434,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            if (oldRow != null)
+            if (oldRow != null) {
+                oldRow.key(entry.key);
+
                 oldRow = checkRowExpired(oldRow);
+            }
 
             this.oldRow = oldRow;
 
@@ -4446,9 +4447,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 return;
             }
-
-            if (oldRow != null)
-                oldRow.key(entry.key);
 
             if (val != null) {
                 newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
@@ -4481,6 +4479,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return oldRow;
         }
 
+        /**
+         * Checks row for expiration and fire expire events if needed.
+         *
+         * @param row old row.
+         * @return {@code Null} if row was expired, row itself otherwise.
+         * @throws IgniteCheckedException
+         */
         private CacheDataRow checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
             assert row != null;
 
@@ -4491,8 +4496,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             CacheObject expiredVal = row.value();
 
-            if(!entry.deletedUnlocked())
-                entry.deletedUnlocked(true);
+            if (cctx.deferredDelete() && !entry.detached() && !entry.isInternal()) {
+                entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, entry.ver, true);
+
+                if (!entry.deletedUnlocked() && !entry.isStartVersion())
+                    entry.deletedUnlocked(true);
+            }
+            else
+                entry.markObsolete0(cctx.versions().next(), true, null);
 
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                 cctx.events().addEvent(entry.partition(),
@@ -4511,8 +4522,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
-
-            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, row.version(), true);
 
             return null;
         }
@@ -4591,6 +4600,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** */
         private CacheDataRow oldRow;
 
+        /** OldRow expiration flag. */
+        private boolean oldRowExpiredFlag = false;
+
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
             AffinityTopologyVersion topVer,
@@ -4665,26 +4677,27 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             assert entry.isNear() || oldRow == null || oldRow.link() != 0 : oldRow;
 
-            if (oldRow != null)
-                oldRow.key(entry.key());
-
-            if (oldRow != null)
-                oldRow = checkRowExpired(oldRow);
-
-            this.oldRow = oldRow;
-
             GridCacheContext cctx = entry.context();
 
             CacheObject oldVal;
             CacheObject storeLoadedVal = null;
 
-            if (oldRow != null) {
-                oldVal = oldRow.value();
+            this.oldRow = oldRow;
 
-                entry.update(oldVal, oldRow.expireTime(), 0, oldRow.version(), false);
+            if (oldRow != null) {
+                oldRow.key(entry.key());
+
+                // unswap
+                entry.update(oldRow.value(), oldRow.expireTime(), 0, oldRow.version(), false);
+
+                if(checkRowExpired(oldRow)){
+                    oldRowExpiredFlag = true;
+
+                    oldRow = null;
+                }
             }
-            else
-                oldVal = null;
+
+            oldVal = (oldRow != null) ? oldRow.value() : null;
 
             if (oldVal == null && readThrough) {
                 storeLoadedVal = cctx.toCacheObject(cctx.store().load(null, entry.key));
@@ -4822,24 +4835,30 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         /**
-         * Check and process expired row.
+         * Check row expiration and fire expire events if needed.
          *
          * @param row Old row.
-         * @return {@code null} if row was expired, row otherwise.
+         * @return {@code True} if row was expired, {@code False} otherwise.
          * @throws IgniteCheckedException if failed.
          */
-        private CacheDataRow checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
+        private boolean checkRowExpired(CacheDataRow row) throws IgniteCheckedException {
             assert row != null;
 
             if (!(row.expireTime() > 0 && row.expireTime() < U.currentTimeMillis()))
-                return row;
+                return false;
 
             GridCacheContext cctx = entry.context();
 
             CacheObject expiredVal = row.value();
 
-            if(!entry.deletedUnlocked())
-                entry.deletedUnlocked(true);
+            if (cctx.deferredDelete() && !entry.detached() && !entry.isInternal()) {
+                entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, entry.ver, true);
+
+                if (!entry.deletedUnlocked())
+                    entry.deletedUnlocked(true);
+            }
+            else
+                entry.markObsolete0(cctx.versions().next(), true, null);
 
             if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                 cctx.events().addEvent(entry.partition(),
@@ -4859,9 +4878,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
 
-            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, row.version(), true);
-
-            return null;
+            return true;
         }
 
         /**
@@ -5163,7 +5180,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer, true);
 
-            treeOp = (oldVal == null || readFromStore) ? IgniteTree.OperationType.NOOP :
+            treeOp = (oldRow == null || readFromStore) ? IgniteTree.OperationType.NOOP :
                 IgniteTree.OperationType.REMOVE;
 
             UpdateOutcome outcome = oldVal != null ? UpdateOutcome.SUCCESS : UpdateOutcome.REMOVE_NO_VAL;
