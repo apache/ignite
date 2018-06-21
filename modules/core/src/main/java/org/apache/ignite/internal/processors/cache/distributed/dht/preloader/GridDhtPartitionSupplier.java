@@ -381,22 +381,26 @@ class GridDhtPartitionSupplier {
                 info.cacheId(row.cacheId());
 
                 if (grp.mvccEnabled()) {
-                    ((MvccVersionAware)info).mvccVersion(row);
-                    ((MvccUpdateVersionAware)info).newMvccVersion(row);
-
                     byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
                         MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
                         row.mvccOperationCounter());
 
-                    if (txState == TxState.NA || txState == TxState.PREPARED)
+                    if (txState != TxState.COMMITTED)
                         continue;
+
+                    ((MvccVersionAware)info).mvccVersion(row);
+                    ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
 
                     byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
                         MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
                         row.newMvccOperationCounter());
 
-                    ((GridCacheMvccEntryInfo)info).mvccTxState(txState);
-                    ((GridCacheMvccEntryInfo)info).newMvccTxState(newTxState);
+                    if (newTxState != TxState.ABORTED) {
+                        ((MvccUpdateVersionAware)info).newMvccVersion(row);
+
+                        if (newTxState == TxState.COMMITTED)
+                            ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+                    }
                 }
 
                 info.value(row.value());

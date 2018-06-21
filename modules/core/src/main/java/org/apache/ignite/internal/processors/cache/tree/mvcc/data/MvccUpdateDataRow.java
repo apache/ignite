@@ -66,6 +66,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** */
     private static final int REMOVE_OR_LOCK = PRIMARY << 1;
     /** */
+    private static final int NEED_HISTORY = REMOVE_OR_LOCK << 1;
+    /** */
     private static final int BACKUP_FLAGS_SET = FIRST;
     /** */
     private static final int PRIMARY_FLAGS_SET = FIRST | CHECK_VERSION | PRIMARY | CAN_WRITE;
@@ -97,9 +99,6 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** */
     @GridToStringExclude
     private long resCntr;
-
-    /** */
-    private boolean needHistory;
 
     /** */
     private List<MvccLinkAwareSearchRow> historyRows;
@@ -139,7 +138,6 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             newVer);
 
         this.mvccSnapshot = mvccSnapshot;
-        this.needHistory = needHistory;
         this.cctx = cctx;
 
         assert !lockOnly || val == null;
@@ -148,6 +146,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         if (primary && (lockOnly || val == null))
             setFlags(REMOVE_OR_LOCK);
+
+        if (needHistory)
+            setFlags(NEED_HISTORY);
     }
 
     /** {@inheritDoc} */
@@ -336,7 +337,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         }
         else {
             // Row obsoleted by current operation, all rows created or updated with current tx.
-            if (needHistory && (row == oldRow || (rowCrd == mvccCrd && rowCntr == mvccCntr) ||
+            if (isFlagsSet(NEED_HISTORY) && (row == oldRow || (rowCrd == mvccCrd && rowCntr == mvccCntr) ||
                 (rowNewCrd == mvccCrd && rowNewCntr == mvccCntr))) {
                 if (historyRows == null)
                     historyRows = new ArrayList<>();
@@ -406,7 +407,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public List<MvccLinkAwareSearchRow> history() {
-        if (needHistory && historyRows==null)
+        if (isFlagsSet(NEED_HISTORY) && historyRows == null)
             historyRows = new ArrayList<>();
 
         return historyRows;
