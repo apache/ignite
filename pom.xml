@@ -761,6 +761,13 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>tensorflow</id>
+            <modules>
+                <module>modules/tensorflow</module>
+            </modules>
+        </profile>
     </profiles>
 
     <build>
