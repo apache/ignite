@@ -17,6 +17,14 @@ pyignite.datatypes.cache\_config module
     :undoc-members:
     :show-inheritance:
 
+pyignite.datatypes.cache\_properties module
+-------------------------------------------
+
+.. automodule:: pyignite.datatypes.cache_properties
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyignite.datatypes.complex module
 ---------------------------------
 
@@ -61,6 +69,14 @@ pyignite.datatypes.primitive\_objects module
 --------------------------------------------
 
 .. automodule:: pyignite.datatypes.primitive_objects
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+pyignite.datatypes.prop\_codes module
+-------------------------------------
+
+.. automodule:: pyignite.datatypes.prop_codes
     :members:
     :undoc-members:
     :show-inheritance:

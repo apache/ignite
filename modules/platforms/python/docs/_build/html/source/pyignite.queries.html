@@ -34,6 +34,23 @@
 <p>This module is a source of some basic information about the binary protocol.</p>
 <p>Most importantly, it contains <cite>Query</cite> and <cite>Response</cite> base classes.</p>
 <dl class="class">
+<dt id="pyignite.queries.ConfigQuery">
+<em class="property">class </em><code class="descclassname">pyignite.queries.</code><code class="descname">ConfigQuery</code><span class="sig-paren">(</span><em>following: list = []</em>, <em>query_id: int = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.queries.ConfigQuery" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyignite.queries.Query" title="pyignite.queries.Query"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.queries.Query</span></code></a></p>
+<p>This is a special query, used for creating caches with configuration.</p>
+<dl class="classmethod">
+<dt id="pyignite.queries.ConfigQuery.build_c_type">
+<em class="property">classmethod </em><code class="descname">build_c_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.queries.ConfigQuery.build_c_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyignite.queries.ConfigQuery.from_python">
+<code class="descname">from_python</code><span class="sig-paren">(</span><em>values: dict = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.queries.ConfigQuery.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="pyignite.queries.Query">
 <em class="property">class </em><code class="descclassname">pyignite.queries.</code><code class="descname">Query</code><span class="sig-paren">(</span><em>following: list = []</em>, <em>query_id: int = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.queries.Query" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>

@@ -45,6 +45,11 @@ data streams.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Sequence of fields, including variable-sized and nested.</p>
 <dl class="method">
+<dt id="pyignite.datatypes.cache_config.Struct.from_python">
+<code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.Struct.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="pyignite.datatypes.cache_config.Struct.parse">
 <code class="descname">parse</code><span class="sig-paren">(</span><em>conn: pyignite.connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.Struct.parse" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -61,6 +66,16 @@ data streams.</p>
 <em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_config.</code><code class="descname">StructArray</code><span class="sig-paren">(</span><em>following: list</em>, <em>counter_type=&lt;class 'ctypes.c_int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.StructArray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p><cite>counter_type</cite> counter, followed by count*following structure.</p>
+<dl class="method">
+<dt id="pyignite.datatypes.cache_config.StructArray.build_header_class">
+<code class="descname">build_header_class</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.StructArray.build_header_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyignite.datatypes.cache_config.StructArray.from_python">
+<code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.StructArray.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="method">
 <dt id="pyignite.datatypes.cache_config.StructArray.parse">
 <code class="descname">parse</code><span class="sig-paren">(</span><em>conn: pyignite.connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.StructArray.parse" title="Permalink to this definition">¶</a></dt>
@@ -184,6 +199,538 @@ data streams.</p>
 <dl class="attribute">
 <dt id="pyignite.datatypes.cache_config.IndexType.SORTED">
 <code class="descname">SORTED</code><em class="property"> = 0</em><a class="headerlink" href="#pyignite.datatypes.cache_config.IndexType.SORTED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyignite.datatypes.cache_properties">
+<span id="pyignite-datatypes-cache-properties-module"></span><h2>pyignite.datatypes.cache_properties module<a class="headerlink" href="#module-pyignite.datatypes.cache_properties" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropName">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropName</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropName.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 0</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropName.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropName.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropName.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.standard.String" title="pyignite.datatypes.standard.String"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.standard.String</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropCacheMode">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropCacheMode</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCacheMode.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 1</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheMode.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCacheMode.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheMode.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.cache_config.CacheMode" title="pyignite.datatypes.cache_config.CacheMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_config.CacheMode</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropCacheAtomicityMode">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropCacheAtomicityMode</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheAtomicityMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCacheAtomicityMode.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 2</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheAtomicityMode.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCacheAtomicityMode.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheAtomicityMode.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_config.CacheAtomicityMode</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropBackups">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropBackups</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropBackups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropBackups.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 3</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropBackups.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropBackups.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropBackups.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropWriteSynchronizationMode">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropWriteSynchronizationMode</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropWriteSynchronizationMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropWriteSynchronizationMode.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 4</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropWriteSynchronizationMode.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropWriteSynchronizationMode.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropWriteSynchronizationMode.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.cache_config.WriteSynchronizationMode" title="pyignite.datatypes.cache_config.WriteSynchronizationMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_config.WriteSynchronizationMode</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropCopyOnRead">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropCopyOnRead</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCopyOnRead" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCopyOnRead.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 5</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCopyOnRead.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCopyOnRead.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCopyOnRead.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Bool" title="pyignite.datatypes.primitive.Bool"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Bool</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropReadFromBackup">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropReadFromBackup</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropReadFromBackup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropReadFromBackup.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 6</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropReadFromBackup.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropReadFromBackup.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropReadFromBackup.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Bool" title="pyignite.datatypes.primitive.Bool"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Bool</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropDataRegionName">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropDataRegionName</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropDataRegionName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropDataRegionName.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 100</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropDataRegionName.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropDataRegionName.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropDataRegionName.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.standard.String" title="pyignite.datatypes.standard.String"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.standard.String</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropIsOnheapcacheEnabled">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropIsOnheapcacheEnabled</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropIsOnheapcacheEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropIsOnheapcacheEnabled.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 101</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropIsOnheapcacheEnabled.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropIsOnheapcacheEnabled.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropIsOnheapcacheEnabled.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Bool" title="pyignite.datatypes.primitive.Bool"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Bool</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropQueryEntities">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropQueryEntities</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryEntities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropQueryEntities.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 200</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryEntities.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropQueryEntities.prop_data_class">
+<code class="descname">prop_data_class</code><em class="property"> = StructArray(following=[('key_type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('value_type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('table_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('key_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('value_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('query_fields', StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_key_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;), ('is_notnull_constraint_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)), ('field_name_aliases', StructArray(following=[('field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('alias', &lt;class 'pyignite.datatypes.standard.String'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)), ('query_indexes', StructArray(following=[('index_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('index_type', &lt;class 'pyignite.datatypes.cache_config.IndexType'&gt;), ('inline_size', &lt;class 'pyignite.datatypes.primitive.Int'&gt;), ('fields', StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_descending', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;))], counter_type=&lt;class 'ctypes.c_int'&gt;))], counter_type=&lt;class 'ctypes.c_int'&gt;)</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryEntities.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropQueryParallelism">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropQueryParallelism</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryParallelism" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropQueryParallelism.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 201</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryParallelism.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropQueryParallelism.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryParallelism.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropQueryDetailMetricsSize">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropQueryDetailMetricsSize</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryDetailMetricsSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropQueryDetailMetricsSize.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 202</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryDetailMetricsSize.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropQueryDetailMetricsSize.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryDetailMetricsSize.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropSQLSchema">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropSQLSchema</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSQLSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropSQLSchema.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 203</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSQLSchema.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropSQLSchema.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSQLSchema.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.standard.String" title="pyignite.datatypes.standard.String"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.standard.String</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropSQLIndexInlineMaxSize">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropSQLIndexInlineMaxSize</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSQLIndexInlineMaxSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropSQLIndexInlineMaxSize.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 204</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSQLIndexInlineMaxSize.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropSQLIndexInlineMaxSize.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSQLIndexInlineMaxSize.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropSqlEscapeAll">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropSqlEscapeAll</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSqlEscapeAll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropSqlEscapeAll.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 205</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSqlEscapeAll.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropSqlEscapeAll.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropSqlEscapeAll.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Bool" title="pyignite.datatypes.primitive.Bool"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Bool</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropMaxQueryIterators">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropMaxQueryIterators</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropMaxQueryIterators" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropMaxQueryIterators.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 206</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropMaxQueryIterators.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropMaxQueryIterators.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropMaxQueryIterators.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceMode">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceMode</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceMode.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 300</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceMode.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceMode.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceMode.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.cache_config.RebalanceMode" title="pyignite.datatypes.cache_config.RebalanceMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_config.RebalanceMode</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceDelay">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceDelay</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceDelay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceDelay.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 301</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceDelay.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceDelay.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceDelay.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Long" title="pyignite.datatypes.primitive.Long"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Long</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceTimeout">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceTimeout</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceTimeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceTimeout.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 302</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceTimeout.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceTimeout.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceTimeout.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Long" title="pyignite.datatypes.primitive.Long"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Long</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceBatchSize">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceBatchSize</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceBatchSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceBatchSize.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 303</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceBatchSize.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceBatchSize.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceBatchSize.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceBatchesPrefetchCount">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceBatchesPrefetchCount</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceBatchesPrefetchCount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceBatchesPrefetchCount.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 304</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceBatchesPrefetchCount.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceBatchesPrefetchCount.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceBatchesPrefetchCount.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Long" title="pyignite.datatypes.primitive.Long"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Long</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceOrder">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceOrder</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceOrder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceOrder.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 305</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceOrder.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceOrder.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceOrder.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceThrottle">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropRebalanceThrottle</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceThrottle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceThrottle.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 306</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceThrottle.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropRebalanceThrottle.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropRebalanceThrottle.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Long" title="pyignite.datatypes.primitive.Long"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Long</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropGroupName">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropGroupName</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropGroupName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropGroupName.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 400</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropGroupName.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropGroupName.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropGroupName.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.standard.String" title="pyignite.datatypes.standard.String"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.standard.String</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropCacheKeyConfiguration">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropCacheKeyConfiguration</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheKeyConfiguration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 401</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_data_class">
+<code class="descname">prop_data_class</code><em class="property"> = StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_key_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;), ('is_notnull_constraint_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropDefaultLockTimeout">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropDefaultLockTimeout</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropDefaultLockTimeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropDefaultLockTimeout.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 402</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropDefaultLockTimeout.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropDefaultLockTimeout.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropDefaultLockTimeout.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Long" title="pyignite.datatypes.primitive.Long"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Long</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropMaxConcurrentAsyncOperation">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropMaxConcurrentAsyncOperation</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropMaxConcurrentAsyncOperation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropMaxConcurrentAsyncOperation.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 403</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropMaxConcurrentAsyncOperation.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropMaxConcurrentAsyncOperation.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropMaxConcurrentAsyncOperation.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Int" title="pyignite.datatypes.primitive.Int"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Int</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropPartitionLossPolicy">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropPartitionLossPolicy</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropPartitionLossPolicy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropPartitionLossPolicy.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 404</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropPartitionLossPolicy.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropPartitionLossPolicy.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropPartitionLossPolicy.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.cache_config.PartitionLossPolicy" title="pyignite.datatypes.cache_config.PartitionLossPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_config.PartitionLossPolicy</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropEagerTTL">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropEagerTTL</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropEagerTTL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropEagerTTL.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 405</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropEagerTTL.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropEagerTTL.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropEagerTTL.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Bool" title="pyignite.datatypes.primitive.Bool"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Bool</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.PropStatisticsEnabled">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">PropStatisticsEnabled</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropStatisticsEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropStatisticsEnabled.prop_code">
+<code class="descname">prop_code</code><em class="property"> = 406</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropStatisticsEnabled.prop_code" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.cache_properties.PropStatisticsEnabled.prop_data_class">
+<code class="descname">prop_data_class</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropStatisticsEnabled.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyignite.datatypes.primitive.Bool" title="pyignite.datatypes.primitive.Bool"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Bool</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pyignite.datatypes.cache_properties.prop_map">
+<code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">prop_map</code><span class="sig-paren">(</span><em>code: int</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_properties.prop_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.cache_properties.AnyProperty">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_properties.</code><code class="descname">AnyProperty</code><a class="headerlink" href="#pyignite.datatypes.cache_properties.AnyProperty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.cache_properties.PropBase</span></code></p>
+<dl class="classmethod">
+<dt id="pyignite.datatypes.cache_properties.AnyProperty.from_python">
+<em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_properties.AnyProperty.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyignite.datatypes.cache_properties.AnyProperty.to_python">
+<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_properties.AnyProperty.to_python" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1006,6 +1553,9 @@ though: decoded character may take 1..4 bytes in UTF-8.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-pyignite.datatypes.prop_codes">
+<span id="pyignite-datatypes-prop-codes-module"></span><h2>pyignite.datatypes.prop_codes module<a class="headerlink" href="#module-pyignite.datatypes.prop_codes" title="Permalink to this headline">¶</a></h2>
+</div>
 <div class="section" id="module-pyignite.datatypes.standard">
 <span id="pyignite-datatypes-standard-module"></span><h2>pyignite.datatypes.standard module<a class="headerlink" href="#module-pyignite.datatypes.standard" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
@@ -1502,12 +2052,14 @@ The only <cite>type_id</cite> value of -1 (user type) works from Python perspect
 <li><a class="reference internal" href="#">pyignite.datatypes package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.cache_config">pyignite.datatypes.cache_config module</a></li>
+<li><a class="reference internal" href="#module-pyignite.datatypes.cache_properties">pyignite.datatypes.cache_properties module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.complex">pyignite.datatypes.complex module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.key_value">pyignite.datatypes.key_value module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.null_object">pyignite.datatypes.null_object module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.primitive">pyignite.datatypes.primitive module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.primitive_arrays">pyignite.datatypes.primitive_arrays module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.primitive_objects">pyignite.datatypes.primitive_objects module</a></li>
+<li><a class="reference internal" href="#module-pyignite.datatypes.prop_codes">pyignite.datatypes.prop_codes module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.standard">pyignite.datatypes.standard module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.type_codes">pyignite.datatypes.type_codes module</a></li>
 </ul>
