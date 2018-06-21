@@ -647,8 +647,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 activeFuts.add(internalFut);
 
                 // Initial capacity should be more than batch by 12.5% in order to avoid resizing.
-                threadBuf = new ThreadBuffer(fut, new ArrayList<>(bufLdrSzPerThread +
-                    (bufLdrSzPerThread >> 3)));
+                threadBuf = new ThreadBuffer(fut,
+                    new ArrayList<>(bufLdrSzPerThread + (bufLdrSzPerThread >> 3)));
 
                 threadBufMap.put(threadId, threadBuf);
             }
@@ -1450,25 +1450,23 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          */
         private ThreadBuffer(IgniteCacheFutureImpl fut, List<DataStreamerEntry> entries) {
             assert fut != null;
-
             assert entries != null;
 
             this.fut = fut;
-
             this.entries = entries;
         }
 
         /**
          * @return DataStreamerEntry list.
          */
-        public List<DataStreamerEntry> getEntries() {
+        private List<DataStreamerEntry> getEntries() {
             return entries;
         }
 
         /**
          * @return Future.
          */
-        public IgniteCacheFutureImpl getFut() {
+        private IgniteCacheFutureImpl getFut() {
             return fut;
         }
     }
