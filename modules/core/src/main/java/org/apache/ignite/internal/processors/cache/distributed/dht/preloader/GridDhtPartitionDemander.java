@@ -264,8 +264,8 @@ public class GridDhtPartitionDemander {
      * @param fut Rebalancing future to evaluate on.
      * @return {@code True} if topology version changes has valuable cause to process.
      */
-    private boolean topologyChanged(RebalanceFuture fut) {
-        return fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+    private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
+        return !rebalanceFut.topologyVersion().equals(topVer) || fut != rebalanceFut;
     }
 
     /**
@@ -488,12 +488,6 @@ public class GridDhtPartitionDemander {
      */
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assignments) {
         assert fut != null;
-
-        if (topologyChanged(fut)) {
-            fut.cancel();
-
-            return;
-        }
 
         if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
@@ -744,7 +738,7 @@ public class GridDhtPartitionDemander {
         if (node == null)
             return;
 
-        if (topologyChanged(fut)) // Topology already changed (for the future that supply message based on).
+        if (topologyChanged(fut, topVer)) // Topology already changed (for the future that supply message based on).
             return;
 
         if (!fut.isActual(supply.rebalanceId())) {
@@ -886,7 +880,7 @@ public class GridDhtPartitionDemander {
 
             d.topic(rebalanceTopics.get(topicId));
 
-            if (!topologyChanged(fut) && !fut.isDone()) {
+            if (!topologyChanged(fut, topVer) && !fut.isDone()) {
                 // Send demand message.
                 try {
                     ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
