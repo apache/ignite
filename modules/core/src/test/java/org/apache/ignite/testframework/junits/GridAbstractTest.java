@@ -126,6 +126,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIEN
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
@@ -545,9 +546,24 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // Will clean and re-create marshaller directory from scratch.
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    protected void cleanPersistenceDir() throws Exception {
+        info("Clean persistence directories. [workDir=" + U.defaultWorkDirectory() + ']');
+
+        // Temporary for test run
+        System.setProperty("h2.maxMemoryRows", Integer.toString(10));
+        System.setProperty("h2.mvStore", "false");
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "h2sql", false));
     }
 
     /**
@@ -591,6 +607,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            cleanPersistenceDir();
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())

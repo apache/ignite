@@ -33,6 +33,9 @@ public class GridH2DefaultTableEngine implements TableEngine {
         if (data.isHidden && data.id == 0 && "SYS".equals(data.tableName))
             return new GridH2MetaTable(data);
 
+        if (data.tableName.startsWith("TEMP_RESULT_SET_"))
+            data.persistIndexes = true;
+
         return new RegularTable(data);
     }
 }

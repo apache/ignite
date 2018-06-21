@@ -1720,16 +1720,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     *
-     */
-    protected void cleanPersistenceDir() throws Exception {
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
-
-    /**
      * @param aff Affinity.
      * @param key Counter.
      * @param node Target node.
