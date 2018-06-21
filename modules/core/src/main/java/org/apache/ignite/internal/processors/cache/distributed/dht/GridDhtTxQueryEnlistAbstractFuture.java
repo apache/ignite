@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -480,26 +481,23 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
                     }
 
                     if (!F.isEmpty(batches)) {
-                        Map<UUID, Batch> remains = null;
-
                         // Flush incomplete batches.
                         // Need to skip batches for nodes where first request (contains tx info) is still in-flight.
                         // Otherwise, the regular enlist request (without tx info) may beat it to the primary node.
-                        for (Batch batch : batches.values()) {
+                        Iterator<Map.Entry<UUID, Batch>> it = batches.entrySet().iterator();
+
+                        while (it.hasNext()) {
+                            Map.Entry<UUID, Batch> e = it.next();
+
                             ConcurrentMap<Integer, Batch> pending0 =
-                                pending == null ? null : pending.get(batch.node().id());
+                                pending == null ? null : pending.get(e.getKey());
 
-                            if (pending0 != null && pending0.containsKey(FIRST_BATCH_ID)) {
-                                if (remains == null)
-                                    remains = new HashMap<>();
+                            if (pending0 == null || !pending0.containsKey(FIRST_BATCH_ID)) {
+                                it.remove();
 
-                                remains.put(batch.node().id(), batch);
+                                sendBatch(e.getValue());
                             }
-                            else
-                                sendBatch(batch);
                         }
-
-                        batches = remains;
                     }
 
                     if (noPendingRequests()) {
