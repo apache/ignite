@@ -109,7 +109,7 @@ public class GridDhtPartitionDemander {
      * keep latest running rebalance routine and stop all stale supply-demand messages.
      */
     @GridToStringInclude
-    private volatile AffinityTopologyVersion rebalanceTopVer = AffinityTopologyVersion.ZERO;
+    private volatile AffinityTopologyVersion rebalanceTopVer;
 
     /** Last timeout object. */
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
@@ -378,8 +378,6 @@ public class GridDhtPartitionDemander {
                         }
                     });
 
-                rebalanceTopVer = assignments.topologyVersion();
-
                 requestPartitions(fut, assignments);
             };
         }
@@ -435,12 +433,6 @@ public class GridDhtPartitionDemander {
      */
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assignments) {
         assert fut != null;
-
-        if (topologyChanged(fut, assignments.topologyVersion())) {
-            fut.cancel();
-
-            return;
-        }
 
         if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
@@ -507,6 +499,8 @@ public class GridDhtPartitionDemander {
             Iterator<Integer> it = parts.fullSet().iterator();
             for (int i = 0; it.hasNext(); i++)
                 stripePartitions.get(i % stripes).addFull(it.next());
+
+            rebalanceTopVer = assignments.topologyVersion();
 
             for (int stripe = 0; stripe < totalStripes; stripe++) {
                 if (!stripePartitions.get(stripe).isEmpty()) {
