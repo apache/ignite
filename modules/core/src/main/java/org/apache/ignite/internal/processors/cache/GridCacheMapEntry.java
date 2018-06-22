@@ -1444,9 +1444,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             // Apply metrics.
-            if (metrics && cctx.statisticsEnabled() && needVal) {
+            if (metrics && cctx.statisticsEnabled() && needVal)
                 cctx.cache().metrics0().onRead(old != null);
-            }
 
             // Check filter inside of synchronization.
             if (!F.isEmpty(filter)) {
