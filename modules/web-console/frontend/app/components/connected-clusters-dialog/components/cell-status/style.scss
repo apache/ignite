@@ -15,16 +15,32 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+connected-clusters-cell-status {
+    $color-active: #417505;
+    $color-not-active: #ee2b27;
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+    display: block;
 
-import clusterLogin from './components/cluster-login';
+    div {
+        display: flex;
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+        &:before {
+            content: '●';
+
+            position: relative;
+            height: 16px;
+            margin-right: 10px;
+            
+            font-size: 24px;
+            line-height: 19px;
+        }
+    }
+
+    .#{&}-active {
+        color: $color-active;
+    }
+
+    .#{&}-not-active {
+        color: $color-not-active;
+    }
+}

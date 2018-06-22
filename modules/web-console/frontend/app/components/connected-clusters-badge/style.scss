@@ -15,16 +15,29 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+connected-clusters {
+    @import "./../../../public/stylesheets/variables.scss";
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+    div {
+        position: absolute;
+        top: 0;
+        right: 0;
 
-import clusterLogin from './components/cluster-login';
+        display: flex;
+        align-items: center;
+        padding: 3px 10px;
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+        cursor: pointer;
+        color: white;
+        font-size: 12px;
+        line-height: 12px;
+
+        background-color: $text-color;
+
+        border-radius: 0 0 4px 4px;
+
+        [ignite-icon] {
+            margin-right: 6px;
+        }
+    }
+}

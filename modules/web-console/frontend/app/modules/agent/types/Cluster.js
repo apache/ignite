@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+class Cluster {
+    /** @type {String} */
+    id;
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+    /** @type {String} */
+    name;
 
-import clusterLogin from './components/cluster-login';
+    /** @type {Boolean} */
+    connected = true;
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+    /** @type {Boolean} */
+    secured;
+
+    constructor({id, name, secured = false}) {
+        this.id = id;
+        this.name = name;
+        this.secured = secured;
+    }
+}
+

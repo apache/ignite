@@ -17,14 +17,17 @@
 
 import angular from 'angular';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+import './style.scss';
+import template from './template.pug';
+import controller from './controller';
 
-import clusterLogin from './components/cluster-login';
+import connectedClustersDialog from '../connected-clusters-dialog';
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
+export default angular
+    .module('ignite-console.connected-clusters-badge', [
+        connectedClustersDialog.name
     ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+    .component('connectedClusters', {
+        template,
+        controller
+    });
