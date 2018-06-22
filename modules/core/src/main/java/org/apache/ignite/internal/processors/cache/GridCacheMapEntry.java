@@ -1434,11 +1434,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             // Apply metrics.
-            if (metrics && cctx.statisticsEnabled() && needVal) {
-                // PutIfAbsent methods mustn't update hit/miss statistics
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
-                    cctx.cache().metrics0().onRead(old != null);
-            }
+            if (metrics && cctx.statisticsEnabled() && needVal)
+                cctx.cache().metrics0().onRead(old != null);
 
             // Check filter inside of synchronization.
             if (!F.isEmpty(filter)) {
@@ -1769,11 +1766,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (metrics &&
                 updateRes.outcome().updateReadMetrics() &&
                 cctx.statisticsEnabled() &&
-                needVal) {
-                // PutIfAbsent methods must not update hit/miss statistics.
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
+                needVal)
                     cctx.cache().metrics0().onRead(oldVal != null);
-            }
 
             switch (updateRes.outcome()) {
                 case VERSION_CHECK_FAILED: {
