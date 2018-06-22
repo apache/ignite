@@ -104,13 +104,6 @@ public class GridDhtPartitionDemander {
     @GridToStringInclude
     private volatile RebalanceFuture rebalanceFut;
 
-    /**
-     * Due to {@link RebalanceFuture#topVer} can be updated if assignments not changed we need to
-     * keep latest running rebalance routine and stop all stale supply-demand messages.
-     */
-    @GridToStringInclude
-    private volatile AffinityTopologyVersion rebalanceTopVer;
-
     /** Last timeout object. */
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
 
@@ -196,7 +189,7 @@ public class GridDhtPartitionDemander {
     AffinityTopologyVersion lastRebalanceTopVer() {
         final RebalanceFuture fut = rebalanceFut;
 
-        return fut.isDone() && !fut.result() ? null : rebalanceTopVer;
+        return fut.isDone() && !fut.result() ? null : fut.topVer;
     }
 
     /**
@@ -256,7 +249,7 @@ public class GridDhtPartitionDemander {
      * @return {@code True} if topology changed.
      */
     private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
-        return !rebalanceTopVer.equals(topVer) || // Ignore stale supply messages.
+        return !fut.topVer.equals(topVer) || // Ignore stale supply messages.
                 fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
@@ -275,11 +268,13 @@ public class GridDhtPartitionDemander {
      * @param topVer New topology to update.
      */
     public void updateTopology(AffinityTopologyVersion topVer){
-        if (log.isDebugEnabled())
-            log.debug("Updating rebalance future [oldTopVer=" + rebalanceFut.topologyVersion() +
-                ", topVer=" + topVer + "]");
+        final RebalanceFuture fut = rebalanceFut;
 
-        rebalanceFut.topVer = topVer;
+        if (log.isDebugEnabled())
+            log.debug("Updating rebalance future [topVer=" + fut.topVer +
+                ", latestTopVer=" + fut.latestTopVer + ", newTopVer=" + topVer + "]");
+
+        fut.latestTopVer = topVer;
     }
 
     /**
@@ -451,6 +446,12 @@ public class GridDhtPartitionDemander {
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assignments) {
         assert fut != null;
 
+        if (topologyChanged(fut, assignments.topologyVersion())) {
+            fut.cancel();
+
+            return;
+        }
+
         if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
                 log.debug("Cancel partition demand because rebalance disabled on current node.");
@@ -516,8 +517,6 @@ public class GridDhtPartitionDemander {
             Iterator<Integer> it = parts.fullSet().iterator();
             for (int i = 0; it.hasNext(); i++)
                 stripePartitions.get(i % stripes).addFull(it.next());
-
-            rebalanceTopVer = assignments.topologyVersion();
 
             for (int stripe = 0; stripe < totalStripes; stripe++) {
                 if (!stripePartitions.get(stripe).isEmpty()) {
@@ -974,8 +973,14 @@ public class GridDhtPartitionDemander {
         @GridToStringExclude
         private final GridDhtPartitionExchangeId exchId;
 
-        /** Topology version. */
-        private volatile AffinityTopologyVersion topVer;
+        /**
+         * Due to topology version can be updated if assignments not changed we need to
+         * keep initial version of rebalance routine to control all stale supply-demand messages.
+         */
+        private final AffinityTopologyVersion topVer;
+
+        /** Topology version updated from discovery thread. */
+        private volatile AffinityTopologyVersion latestTopVer;
 
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;
@@ -995,6 +1000,7 @@ public class GridDhtPartitionDemander {
 
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
+            latestTopVer = topVer;
 
             this.grp = grp;
             this.log = log;
@@ -1009,6 +1015,7 @@ public class GridDhtPartitionDemander {
         RebalanceFuture() {
             this.exchId = null;
             this.topVer = null;
+            this.latestTopVer = null;
             this.ctx = null;
             this.grp = null;
             this.log = null;
@@ -1019,7 +1026,7 @@ public class GridDhtPartitionDemander {
          * @return Topology version.
          */
         public AffinityTopologyVersion topologyVersion() {
-            return topVer;
+            return latestTopVer;
         }
 
         /**
@@ -1071,7 +1078,7 @@ public class GridDhtPartitionDemander {
                     return;
 
                 U.log(log, ("Cancelled rebalancing [cache=" + grp.cacheOrGroupName() +
-                    ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
+                    ", fromNode=" + nodeId + ", topology=" + topVer + ", latestTopVer=" + latestTopVer +
                     ", time=" + (U.currentTimeMillis() - remaining.get(nodeId).get1()) + " ms]"));
 
                 cleanupRemoteContexts(nodeId);
@@ -1162,7 +1169,8 @@ public class GridDhtPartitionDemander {
                     U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
                             "rebalancing [fromNode=" + nodeId +
                             ", cacheOrGroup=" + grp.cacheOrGroupName() +
-                            ", topology=" + topologyVersion() +
+                            ", topology=" + topVer +
+                            ", latestTopVer" + latestTopVer +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
