@@ -76,6 +76,10 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // Set network timeout to ROLLBACK_TIMEOUT in order
+        // to descrease time of waiting on exchange future.
+        cfg.setNetworkTimeout(ROLLBACK_TIMEOUT);
+
         cfg.setTransactionConfiguration(new TransactionConfiguration().
             setTxTimeoutOnPartitionMapExchange(ROLLBACK_TIMEOUT));
 

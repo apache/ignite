@@ -185,6 +185,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     private AtomicBoolean added = new AtomicBoolean(false);
 
+    /** Tx rollback flag, avoiding multiple rollbacks. */
+    private AtomicBoolean txRolledBack = new AtomicBoolean(false);
+
     /**
      * Discovery event receive latch. There is a race between discovery event processing and single message
      * processing, so it is possible to create an exchange future before the actual discovery event is received.
@@ -1177,7 +1180,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         waitPartitionRelease(distributed);
 
         // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
-        waitPartitionRelease(false);
+        if (distributed)
+            waitPartitionRelease(false);
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
@@ -1314,10 +1318,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         IgniteConfiguration cfg = cctx.gridConfig();
 
-        TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
-
-        boolean rolledBack = false;
-
         long waitStart = U.currentTimeMillis();
 
         long waitTimeout = 2 * cfg.getNetworkTimeout();
@@ -1329,18 +1329,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 break;
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
+                // Read txTimeoutOnPME from configuration after every iteration.
+                long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+
                 // Print pending transactions and locks that might have led to hang.
                 if (nextDumpTime <= U.currentTimeMillis()) {
-                    dumpPendingObjects(partReleaseFut);
+                    dumpPendingObjects(partReleaseFut, curTimeout <= 0 && !txRolledBack.get());
 
                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
                 }
 
-                // Read txTimeoutOnPME from configuration after every iteration.
-                long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
-                if (!rolledBack && curTimeout > 0 && U.currentTimeMillis() - waitStart >= curTimeout) {
-                    rolledBack = true;
+                if (!txRolledBack.get() && curTimeout > 0 && U.currentTimeMillis() - waitStart >= curTimeout) {
+                    txRolledBack.set(true);
 
                     cctx.tm().rollbackOnTopologyChange(initialVersion());
                 }
@@ -1449,11 +1449,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param partReleaseFut Partition release future.
+     * @param txTimeoutNotifyFlag whether print transaction rollback timeout on PME notification or not.
      */
-    private void dumpPendingObjects(IgniteInternalFuture<?> partReleaseFut) {
+    private void dumpPendingObjects(IgniteInternalFuture<?> partReleaseFut, boolean txTimeoutNotifyFlag) {
         U.warn(cctx.kernalContext().cluster().diagnosticLog(),
             "Failed to wait for partition release future [topVer=" + initialVersion() +
             ", node=" + cctx.localNodeId() + "]");
+
+        if (txTimeoutNotifyFlag)
+            U.warn(log, "Consider changing TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
+                    " to non default value to avoid this message.");
 
         U.warn(log, "Partition release future: " + partReleaseFut);
 
