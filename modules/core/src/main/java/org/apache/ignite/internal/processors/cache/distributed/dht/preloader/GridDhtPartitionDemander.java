@@ -981,7 +981,7 @@ public class GridDhtPartitionDemander {
          */
         private final AffinityTopologyVersion topVer;
 
-        /** Topology version updated from discovery thread. */
+        /** Topology version updated from exchange thread. */
         private volatile AffinityTopologyVersion latestTopVer;
 
         /** Unique (per demander) rebalance id. */
