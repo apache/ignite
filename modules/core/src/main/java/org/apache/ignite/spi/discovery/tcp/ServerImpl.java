@@ -4257,7 +4257,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    spi.collectExchangeData(dataPacket);
+                    if (!node.isDaemon())
+                        spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
