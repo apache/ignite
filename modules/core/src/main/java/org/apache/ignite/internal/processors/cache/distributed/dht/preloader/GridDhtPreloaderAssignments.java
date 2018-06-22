@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -40,6 +41,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     private boolean cancelled;
 
     /** Default {@code True} for empty and cancelled assignments. */
+    @GridToStringInclude
     private boolean changed = true;
 
     /**
