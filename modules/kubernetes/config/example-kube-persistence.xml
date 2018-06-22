@@ -48,7 +48,6 @@
                     -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder">
                         <property name="namespace" value="ignite"/>
-                        <property name="serviceName" value="ignite-service"/>
                     </bean>
                 </property>
             </bean>
