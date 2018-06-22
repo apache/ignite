@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
