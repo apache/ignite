@@ -99,7 +99,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -110,7 +110,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000L;
+        return 10L * 60 * 1000;
     }
 
     /** {@inheritDoc} */

@@ -83,7 +83,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
                 plcs = createValidUserDefault();
 
                 memCfg.setDefaultMemoryPolicyName(VALID_DEFAULT_MEM_PLC_NAME);
-                memCfg.setDefaultMemoryPolicySize(10 * 1014 * 1024);
+                memCfg.setDefaultMemoryPolicySize(10L * 1014 * 1024);
 
                 break;
 
@@ -119,7 +119,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createSubIntervalsIsNegative() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100L * 1024 * 1024, 100L * 1024 * 1024);
         res[0].setSubIntervals(-10);
 
         return res;
@@ -131,7 +131,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createRateTimeIntervalIsNegative() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100L * 1024 * 1024, 100L * 1024 * 1024);
         res[0].setRateTimeInterval(-10);
 
         return res;
@@ -143,7 +143,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createValidUserDefault() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100L * 1024 * 1024, 100L * 1024 * 1024);
 
         return res;
     }
@@ -154,7 +154,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createMissingUserDefinedDefault() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_USER_MEM_PLC_NAME, 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_USER_MEM_PLC_NAME, 10L * 1024 * 1024, 10L * 1024 * 1024);
 
         return res;
     }
@@ -165,7 +165,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithNullName() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(null, 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy(null, 10L * 1024 * 1024, 10L * 1024 * 1024);
 
         return res;
     }
@@ -187,7 +187,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithReservedNameMisuseCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("sysMemPlc", 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy("sysMemPlc", 10L * 1024 * 1024, 10L * 1024 * 1024);
 
         return res;
     }
@@ -198,8 +198,8 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcsWithNamesConflictCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
-        res[1] = createMemoryPolicy("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy("cflt0", 10L * 1024 * 1024, 10L * 1024 * 1024);
+        res[1] = createMemoryPolicy("cflt0", 10L * 1024 * 1024, 10L * 1024 * 1024);
 
         return res;
     }
@@ -210,7 +210,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createMaxSizeSmallerThanInitialSize() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("invalidSize", 100 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy("invalidSize", 100L * 1024 * 1024, 10L * 1024 * 1024);
 
         return res;
     }

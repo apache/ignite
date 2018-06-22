@@ -473,11 +473,12 @@ public class ExchangeLatchManager {
                             io.sendToGridTopic(node, GridTopic.TOPIC_EXCHANGE, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
 
                             if (log.isDebugEnabled())
-                                log.debug("Final ack is ackSent [latch=" + latchId() + ", to=" + node.id() + "]");
+                                log.debug("Final ack has sent [latch=" + latchId() + ", to=" + node.id() + "]");
                         }
-                    } catch (IgniteCheckedException e) {
+                    }
+                    catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
-                            log.debug("Unable to send final ack [latch=" + latchId() + ", to=" + node.id() + "]");
+                            log.debug("Failed to send final ack [latch=" + latchId() + ", to=" + node.id() + "]: " + e.getMessage());
                     }
                 }
             });
@@ -521,7 +522,7 @@ public class ExchangeLatchManager {
             int remaining = permits.decrementAndGet();
 
             if (log.isDebugEnabled())
-                log.debug("Count down + [latch=" + latchId() + ", remaining=" + remaining + "]");
+                log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
 
             if (remaining == 0)
                 complete();
@@ -584,7 +585,7 @@ public class ExchangeLatchManager {
          */
         private void newCoordinator(ClusterNode coordinator) {
             if (log.isDebugEnabled())
-                log.debug("Coordinator is changed [latch=" + latchId() + ", crd=" + coordinator.id() + "]");
+                log.debug("Coordinator is changed [latch=" + latchId() + ", newCrd=" + coordinator.id() + "]");
 
             synchronized (this) {
                 this.coordinator = coordinator;
@@ -606,11 +607,12 @@ public class ExchangeLatchManager {
                 io.sendToGridTopic(coordinator, GridTopic.TOPIC_EXCHANGE, new LatchAckMessage(id, topVer, false), GridIoPolicy.SYSTEM_POOL);
 
                 if (log.isDebugEnabled())
-                    log.debug("Ack is ackSent + [latch=" + latchId() + ", to=" + coordinator.id() + "]");
-            } catch (IgniteCheckedException e) {
+                    log.debug("Ack has sent [latch=" + latchId() + ", to=" + coordinator.id() + "]");
+            }
+            catch (IgniteCheckedException e) {
                 // Coordinator is unreachable. On coodinator node left discovery event ack will be resent.
                 if (log.isDebugEnabled())
-                    log.debug("Unable to send ack [latch=" + latchId() + ", to=" + coordinator.id() + "]: " + e.getMessage());
+                    log.debug("Failed to send ack [latch=" + latchId() + ", to=" + coordinator.id() + "]: " + e.getMessage());
             }
         }
 

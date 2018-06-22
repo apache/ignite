@@ -21,15 +21,20 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import junit.framework.TestCase;
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
 
@@ -49,6 +54,88 @@ public class CommandHandlerParsingTest extends TestCase {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         super.tearDown();
+    }
+
+    /**
+     * validate_indexes command arguments parsing and validation
+     */
+    public void testValidateIndexArguments() {
+        CommandHandler hnd = new CommandHandler();
+
+        //happy case for all parameters
+        try {
+            int expectedCheckFirst = 10;
+            int expectedCheckThrough = 11;
+            UUID nodeId = UUID.randomUUID();
+
+            CacheArguments args = hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    "cache1, cache2",
+                    nodeId.toString(),
+                    VI_CHECK_FIRST,
+                    Integer.toString(expectedCheckFirst),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedCheckThrough)
+                )
+            ).cacheArgs();
+
+            assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
+            assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedCheckThrough, args.checkThrough());
+        }
+        catch (IllegalArgumentException e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        try {
+            int expectedParam = 11;
+            UUID nodeId = UUID.randomUUID();
+
+            CacheArguments args = hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    nodeId.toString(),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedParam)
+                )
+            ).cacheArgs();
+
+            assertNull("caches weren't specified, null value expected", args.caches());
+            assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
+            assertEquals("checkFirst parameter unexpected value", -1, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedParam, args.checkThrough());
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VI_CHECK_FIRST,
+                    "0"
+                )
+            );
+
+            fail("Expected exception hasn't been thrown");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(CACHE.text(), CacheCommand.VALIDATE_INDEXES.text(), VI_CHECK_THROUGH));
+
+            fail("Expected exception hasn't been thrown");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

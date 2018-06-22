@@ -138,7 +138,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(20 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(20L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 

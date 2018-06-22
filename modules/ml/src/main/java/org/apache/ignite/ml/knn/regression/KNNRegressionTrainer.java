@@ -20,11 +20,12 @@ package org.apache.ignite.ml.knn.regression;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * kNN algorithm trainer to solve regression task.
  */
-public class KNNRegressionTrainer{
+public class KNNRegressionTrainer implements SingleLabelDatasetTrainer<KNNRegressionModel> {
     /**
      * Trains model based on the specified data.
      *

@@ -25,4 +25,11 @@ public class IgfsPrimaryMultiNodeSelfTest extends IgfsPrimarySelfTest {
     @Override protected int nodeCount() {
         return 4;
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Override public void testCreateConsistencyMultithreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8823");
+    }
 }

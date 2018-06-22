@@ -76,8 +76,8 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(400 * 1024 * 1024)
-                .setCheckpointPageBufferSize(200 * 1000 * 1000)
+                .setMaxSize(400L * 1024 * 1024)
+                .setCheckpointPageBufferSize(200L * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
@@ -311,11 +311,11 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                     return delegate.write(srcBuf, position);
                 }
 
-                @Override public void write(byte[] buf, int off, int len) throws IOException {
+                @Override public int write(byte[] buf, int off, int len) throws IOException {
                     if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(5_000_000);
 
-                    delegate.write(buf, off, len);
+                    return delegate.write(buf, off, len);
                 }
 
                 /** {@inheritDoc} */

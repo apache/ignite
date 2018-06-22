@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
+import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
@@ -84,6 +85,7 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Test custom binary protocol with test client.
         suite.addTestSuite(RestBinaryProtocolSelfTest.class);
+        suite.addTestSuite(TcpRestUnmarshalVulnerabilityTest.class);
 
         // Test jetty rest processor
         suite.addTestSuite(JettyRestProcessorSignedSelfTest.class);

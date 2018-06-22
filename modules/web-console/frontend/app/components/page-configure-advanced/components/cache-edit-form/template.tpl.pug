@@ -18,7 +18,6 @@ form(
     name='ui.inputForm'
     id='cache'
     novalidate
-    ng-submit='$ctrl.save($ctrl.clonedCache)'
 )
     include ./templates/general
     include ./templates/memory
@@ -40,7 +39,4 @@ form(
         ng-click='$ctrl.confirmAndReset()'
     )
         | Cancel
-    button.btn-ignite.btn-ignite--success(
-        form='cache'
-        type='submit'
-    ) Save
+    pc-split-button(actions=`::$ctrl.formActions`)
