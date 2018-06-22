@@ -31,8 +31,8 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteLock;
+import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -40,10 +40,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.datastructures.DataStructureType;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -404,34 +400,6 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
             assertEquals(3, createdCnt);
 
             dataStructure.close();
-
-            if (dataStructure instanceof IgniteSet && !collocated)
-                waitSetResourcesCleared(singleGrid ? 1 : gridCount(), name);
         }
-    }
-
-    /**
-     * Wait until all set caches will be destroyed.
-     *
-     * @param gridCnt Grid count.
-     * @param name Data structure name,
-     * @throws IgniteInterruptedCheckedException If thread was interrupted.
-     */
-    private void waitSetResourcesCleared(int gridCnt, String name) throws IgniteInterruptedCheckedException {
-        boolean noCaches = GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                for (int i = 0; i < gridCnt; i++) {
-                    for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
-                        if (cache.context().dataStructuresCache() &&
-                            cache.name().contains("_" + DataStructureType.SET.name() + "_" + name + "@"))
-                            return false;
-                    }
-                }
-
-                return true;
-            }
-        }, 5_000);
-
-        assertTrue(noCaches);
     }
 }

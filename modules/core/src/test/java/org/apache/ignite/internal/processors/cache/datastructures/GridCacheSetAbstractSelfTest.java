@@ -814,7 +814,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
-        boolean separatedCacheMode = separatedCacheMode(set0);
+        boolean separatedCacheMode = separated(set0);
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
@@ -1046,7 +1046,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        if (separatedCacheMode(set4))
+        if (separated(set4))
             assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
         else
             assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
@@ -1069,7 +1069,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        if (separatedCacheMode(set8))
+        if (separated(set8))
             assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
         else
             assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());

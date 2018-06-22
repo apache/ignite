@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.datastructures.DataStructureType;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -386,27 +385,31 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
+     * @param separated Use separate cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
-        final boolean create)
+        boolean create,
+        boolean separated)
         throws IgniteCheckedException {
-        return set0(name, colloc, create);
+        return set0(name, colloc, create, separated);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
+     * @param separated Use separate cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
-        boolean create)
+        boolean create,
+        boolean separated)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -419,9 +422,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                boolean separatedCacheMode = cctx.name().contains(DataStructureType.SET.name() + "_" + name + "@");
-
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, separatedCacheMode);
+                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, separated);
 
                 GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 

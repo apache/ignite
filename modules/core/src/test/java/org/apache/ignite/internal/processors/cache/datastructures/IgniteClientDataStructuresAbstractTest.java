@@ -34,11 +34,8 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.datastructures.DataStructureType;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -233,10 +230,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
 
-        testSet(clientNode, srvNode, true);
-        testSet(srvNode, clientNode, true);
-        testSet(clientNode, srvNode, false);
-        testSet(srvNode, clientNode, false);
+        testSet(clientNode, srvNode);
+        testSet(srvNode, clientNode);
     }
 
     /**
@@ -244,11 +239,11 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      * @param other Other node.
      * @throws Exception If failed.
      */
-    private void testSet(Ignite creator, Ignite other, boolean collocated) throws Exception {
+    private void testSet(Ignite creator, Ignite other) throws Exception {
         assertNull(creator.set("set1", null));
         assertNull(other.set("set1", null));
 
-        CollectionConfiguration colCfg = new CollectionConfiguration().setCollocated(collocated);
+        CollectionConfiguration colCfg = new CollectionConfiguration();
 
         try (IgniteSet<Integer> set = creator.set("set1", colCfg)) {
             assertNotNull(set);
@@ -274,22 +269,6 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertNull(creator.set("set1", null));
         assertNull(other.set("set1", null));
-
-        // Wait until all set caches will be destroyed.
-        boolean noCaches = GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                for (int i = 0; i < NODE_CNT; i++) {
-                    for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
-                        if (cache.name().contains("_" + DataStructureType.SET.name() + "_"))
-                            return false;
-                    }
-                }
-
-                return true;
-            }
-        }, 5_000);
-
-        assertTrue(noCaches);
     }
 
     /**

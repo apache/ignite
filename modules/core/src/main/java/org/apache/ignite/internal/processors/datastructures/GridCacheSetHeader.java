@@ -40,8 +40,8 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /** */
     private boolean collocated;
 
-    /** {@code True} If this version of IgniteSet uses separated cache. */
-    private boolean separatedCache;
+    /** */
+    private boolean separated;
 
     /**
      * Required by {@link Externalizable}.
@@ -53,14 +53,14 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /**
      * @param id Set UUID.
      * @param collocated Collocation flag.
-     * @param separatedCache {@code True} If this version of IgniteSet uses separated cache.
+     * @param separated {@code True} If this version of IgniteSet uses separated cache.
      */
-    public GridCacheSetHeader(IgniteUuid id, boolean collocated, boolean separatedCache) {
-        assert !(separatedCache && collocated);
+    public GridCacheSetHeader(IgniteUuid id, boolean collocated, boolean separated) {
+        assert !(separated && collocated);
 
         this.id = id;
         this.collocated = collocated;
-        this.separatedCache = separatedCache;
+        this.separated = separated;
     }
 
     /**
@@ -81,14 +81,14 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
      * @return {@code True} If this version uses separated cache.
      */
     public boolean separatedCache() {
-        return separatedCache;
+        return separated;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         out.writeBoolean(collocated);
-        out.writeBoolean(separatedCache);
+        out.writeBoolean(separated);
     }
 
     /** {@inheritDoc} */
@@ -96,7 +96,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
         try {
             id = U.readGridUuid(in);
             collocated = in.readBoolean();
-            separatedCache = in.readBoolean();
+            separated = in.readBoolean();
         }
         catch (EOFException ignore) {
             // No-op.

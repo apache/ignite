@@ -99,7 +99,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private final IgniteCompute compute;
 
     /** {@code True} If IgniteSet instance uses a separate cache to store its elements. */
-    private final boolean separatedCache;
+    private final boolean separated;
 
     /**
      * @param ctx Cache context.
@@ -119,7 +119,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         this.setKey = new GridCacheSetHeaderKey(name);
         this.log = ctx.logger(GridCacheSetImpl.class);
         this.hdrPart = ctx.affinity().partition(setKey);
-        this.separatedCache = hdr.separatedCache();
+        this.separated = hdr.separatedCache();
     }
 
     /** {@inheritDoc} */
@@ -150,13 +150,20 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         return hdr != null && id.equals(hdr.id());
     }
 
+    /**
+     * @return {@code True} If IgniteSet instance uses a separate cache to store its elements.
+     */
+    boolean separated() {
+        return separated;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
         try {
             onAccess();
 
-            if (separatedCache) {
+            if (separated) {
                 // Non collocated IgniteSet uses a separate cache which contains additional header element.
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
@@ -406,9 +413,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return;
 
             ctx.kernalContext().dataStructures().removeSet(name, ctx);
-
-            if (separatedCache)
-                ctx.kernalContext().cache().dynamicDestroyCache(ctx.cache().name(), false, true, false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -419,7 +423,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Closeable iterator.
      */
     protected GridCloseableIterator<T> iterator0() {
-        return separatedCache ? cacheIterator() : sharedCacheIterator();
+        return separated ? cacheIterator() : sharedCacheIterator();
     }
 
     /**
@@ -623,7 +627,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     private SetItemKey itemKey(Object item) {
         return collocated ? new CollocatedSetItemKey(name, id, item) :
-            new GridCacheSetItemKey(separatedCache ? null : id, item);
+            new GridCacheSetItemKey(separated ? null : id, item);
     }
 
     /** {@inheritDoc} */
