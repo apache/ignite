@@ -254,7 +254,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @return {@code True} if existing row row has been replaced.
      * @throws IgniteCheckedException if failed.
      */
-    public boolean replace(GridH2Row row, @Nullable GridH2Row oldRow) throws IgniteCheckedException {
+    public boolean update(GridH2Row row, @Nullable GridH2Row oldRow) throws IgniteCheckedException {
         Boolean res = (Boolean)doPut(row, oldRow, false);
 
         return res != null ? res : false;

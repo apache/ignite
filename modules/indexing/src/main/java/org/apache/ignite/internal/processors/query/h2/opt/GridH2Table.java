@@ -544,7 +544,7 @@ public class GridH2Table extends TableBase {
      * @param prevRow Previous row state derived from primary index update, if any.
      */
     private void addToSecondaryIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
-        boolean replaced = idx.replace(row, prevRow);
+        boolean replaced = idx.update(row, prevRow);
 
         // Row was not replaced, need to remove manually.
         if (!replaced && prevRow != null)

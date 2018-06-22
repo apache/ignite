@@ -2078,7 +2078,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     protected Object doPut(T row, T oldRow, boolean needOld) throws IgniteCheckedException {
         checkDestroyed();
 
-        Put p = new Put(row, needOld);
+        Put p = new Put(row, oldRow, needOld);
 
         try {
             for (;;) { // Go down with retries.
@@ -2452,7 +2452,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param row Row.
          * @param findLast find last row.
          */
-        Get(L row, boolean findLast) {
+        Get(L row, L oldRow, boolean findLast) {
             assert findLast ^ row != null;
 
             this.row = row;
@@ -2585,7 +2585,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param findLast Ignore row passed, find last row
          */
         private GetOne(L row, Object x, boolean findLast) {
-            super(row, findLast);
+            super(row, null, findLast);
 
             this.x = x;
         }
@@ -2616,7 +2616,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cursor Cursor.
          */
         GetCursor(L lower, int shift, ForwardCursor cursor) {
-            super(lower, false);
+            super(lower, null, false);
 
             assert shift != 0; // Either handle range of equal rows or find a greater row after concurrent merge.
 
@@ -2679,7 +2679,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Put(T row, boolean needOld) {
-            super(row, false);
+            super(row, null, false);
+
+            this.needOld = needOld;
+        }
+
+        /**
+         * @param row Row.
+         * @param needOld {@code True} If need return old value.
+         */
+        private Put(T row, T oldRow, boolean needOld) {
+            super(row, oldRow, false);
 
             this.needOld = needOld;
         }
@@ -3000,7 +3010,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param clo Closure.
          */
         private Invoke(L row, Object x, final InvokeClosure<T> clo) {
-            super(row, false);
+            super(row, null, false);
 
             assert clo != null;
 
@@ -3300,7 +3310,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Remove(L row, boolean needOld) {
-            super(row, false);
+            super(row, null, false);
 
             this.needOld = needOld;
         }
@@ -4460,7 +4470,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract int compare(BPlusIO<L> io, long pageAddr, int idx, L row, L oldRow)
+    protected abstract int compare(BPlusIO<L> io, long pageAddr, int idx, L row, @Nullable L oldRow)
         throws IgniteCheckedException;
 
     /**
@@ -4473,7 +4483,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */
-    protected int compare(int lvl, BPlusIO<L> io, long pageAddr, int idx, L row, L oldRow)
+    protected int compare(int lvl, BPlusIO<L> io, long pageAddr, int idx, L row, @Nullable L oldRow)
         throws IgniteCheckedException {
         return compare(io, pageAddr, idx, row, oldRow);
     }

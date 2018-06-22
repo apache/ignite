@@ -140,11 +140,11 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(GridH2Row row, @Nullable GridH2Row oldRow) {
+    @Override public boolean update(GridH2Row row, @Nullable GridH2Row oldRow) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;
 
-        throw DbException.getUnsupportedException("replace");
+        throw DbException.getUnsupportedException("update");
     }
 
     /** {@inheritDoc} */

@@ -258,7 +258,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(GridH2Row row, GridH2Row oldRow) {
+    @Override public boolean update(GridH2Row row, @Nullable GridH2Row oldRow) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
@@ -268,7 +268,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-            return tree.replace(row, oldRow);
+            return tree.update(row, oldRow);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

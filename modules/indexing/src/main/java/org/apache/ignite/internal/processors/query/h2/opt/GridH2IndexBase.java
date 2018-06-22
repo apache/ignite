@@ -213,7 +213,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param oldRow Previous row yielded by primary key update or {@code null} if cache key was not previously present.
      * @return {@code True} if existing row row has been replaced.
      */
-    public abstract boolean replace(GridH2Row row, @Nullable GridH2Row oldRow);
+    public abstract boolean update(GridH2Row row, @Nullable GridH2Row oldRow);
 
     /**
      * Remove row from index.
