@@ -175,6 +175,12 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Total number of partitions on current node. */
     private int totalPartsCnt;
 
+    /** Number of already rebalanced keys. */
+    private long rebalancedKeys;
+
+    /** Number estimated to rebalance keys. */
+    private long estimatedRebalancingKeys;
+
     /** Number of currently rebalancing partitions on current node. */
     private int rebalancingPartsCnt;
 
@@ -276,6 +282,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
 
         totalPartsCnt = m.getTotalPartitionsCount();
+        rebalancedKeys = m.getRebalancedKeys();
+        estimatedRebalancingKeys = m.getEstimatedRebalancingKeys();
         rebalancingPartsCnt = m.getRebalancingPartitionsCount();
         keysToRebalanceLeft = m.getKeysToRebalanceLeft();
         rebalancingKeysRate = m.getRebalancingKeysRate();
@@ -623,6 +631,20 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of already rebalanced keys.
+     */
+    public long getRebalancedKeys() {
+        return rebalancedKeys;
+    }
+
+    /**
+     * @return Number estimated to rebalance keys.
+     */
+    public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys;
+    }
+
+    /**
      * @return Number of currently rebalancing partitions on current node.
      */
     public int getRebalancingPartitionsCount() {
@@ -648,6 +670,11 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      */
     public long getRebalancingBytesRate() {
         return rebalancingBytesRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -708,6 +735,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeObject(qryMetrics);
 
         out.writeLong(cacheSize);
+
+        out.writeLong(rebalancedKeys);
+        out.writeLong(estimatedRebalancingKeys);
     }
 
     /** {@inheritDoc} */
@@ -768,6 +798,11 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         if (in.available() > 0)
             cacheSize = in.readLong();
+
+        if (protoVer > V1) {
+            rebalancedKeys = in.readLong();
+            estimatedRebalancingKeys = in.readLong();
+        }
     }
 
     /** {@inheritDoc} */
