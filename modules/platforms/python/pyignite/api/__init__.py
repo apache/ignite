@@ -71,7 +71,9 @@ from .sql import (
     scan,
     scan_cursor_get_page,
     sql,
+    sql_cursor_get_page,
     sql_fields,
+    sql_fields_cursor_get_page,
     resource_close,
 )
 from .result import APIResult, hashcode
