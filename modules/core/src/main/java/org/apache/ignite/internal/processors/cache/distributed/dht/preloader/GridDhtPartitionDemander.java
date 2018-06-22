@@ -184,7 +184,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * @return {@code null} if rebalance has initial state or cancelled.
-     * Otherwise return {@link AffinityTopologyVersion} of current active rebalance.
+     * Otherwise return {@link AffinityTopologyVersion} of current rebalance future.
      */
     AffinityTopologyVersion lastRebalanceTopVer() {
         final RebalanceFuture fut = rebalanceFut;
@@ -249,8 +249,10 @@ public class GridDhtPartitionDemander {
      * @return {@code True} if topology changed.
      */
     private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
-        return !fut.topVer.equals(topVer) || // Ignore stale supply messages.
-                fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+        final RebalanceFuture oldFut = rebalanceFut;
+
+        return !topVer.equals(oldFut.topVer) || // To ignore stale supply messages.
+                fut != oldFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
@@ -272,7 +274,7 @@ public class GridDhtPartitionDemander {
 
         if (log.isDebugEnabled())
             log.debug("Updating rebalance future [topVer=" + fut.topVer +
-                ", latestTopVer=" + fut.latestTopVer + ", newTopVer=" + topVer + "]");
+                ", latestTopVer=" + fut.topologyVersion() + ", newTopVer=" + topVer + "]");
 
         fut.latestTopVer = topVer;
     }
@@ -1078,7 +1080,7 @@ public class GridDhtPartitionDemander {
                     return;
 
                 U.log(log, ("Cancelled rebalancing [cache=" + grp.cacheOrGroupName() +
-                    ", fromNode=" + nodeId + ", topology=" + topVer + ", latestTopVer=" + latestTopVer +
+                    ", fromNode=" + nodeId + ", topology=" + topVer + ", latestTopVer=" + topologyVersion() +
                     ", time=" + (U.currentTimeMillis() - remaining.get(nodeId).get1()) + " ms]"));
 
                 cleanupRemoteContexts(nodeId);
@@ -1170,7 +1172,7 @@ public class GridDhtPartitionDemander {
                             "rebalancing [fromNode=" + nodeId +
                             ", cacheOrGroup=" + grp.cacheOrGroupName() +
                             ", topology=" + topVer +
-                            ", latestTopVer" + latestTopVer +
+                            ", latestTopVer" + topologyVersion() +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
