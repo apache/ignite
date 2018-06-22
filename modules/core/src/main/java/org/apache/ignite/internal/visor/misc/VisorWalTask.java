@@ -238,7 +238,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
             dbMgr.onWalTruncated(lowBoundForTruncate);
 
-            int num = wal.truncate(null, lowBoundForTruncate);
+            int num = wal.truncate(null, lowBoundForTruncate, null);
 
             if (walFiles != null) {
                 sortWalFiles(walFiles);

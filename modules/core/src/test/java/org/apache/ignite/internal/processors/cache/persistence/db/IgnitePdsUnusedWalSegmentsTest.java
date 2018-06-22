@@ -146,7 +146,7 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
             // Reserve previous WAL segment.
             wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
 
-            int numDel = wal.truncate(null, lowPtr);
+            int numDel = wal.truncate(null, lowPtr, null);
 
             int expNumDel = (int)resIdx - 1;
 

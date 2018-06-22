@@ -202,6 +202,8 @@ public class CheckpointHistory {
 
         int deleted = 0;
 
+        final List<String> walNames = new ArrayList<>();
+
         while (histMap.size() > maxCpHistMemSize) {
             Map.Entry<Long, CheckpointEntry> entry = histMap.firstEntry();
 
@@ -214,8 +216,14 @@ public class CheckpointHistory {
                 break;
             }
 
-            if (truncateWal)
-                deleted += cctx.wal().truncate(null, cpEntry.checkpointMark());
+            if (truncateWal) {
+                final ArrayList<String> names0 = new ArrayList<>();
+
+                deleted += cctx.wal().truncate(null, cpEntry.checkpointMark(), names0);
+
+                walNames.addAll(names0);
+            }
+
 
             histMap.remove(entry.getKey());
 
@@ -223,6 +231,8 @@ public class CheckpointHistory {
         }
 
         chp.walFilesDeleted(deleted);
+
+        chp.walNamesDeleted(walNames);
 
         return removed;
     }

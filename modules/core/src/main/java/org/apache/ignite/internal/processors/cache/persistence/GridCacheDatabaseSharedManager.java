@@ -3197,12 +3197,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (printCheckpointStats) {
                         if (log.isInfoEnabled())
                             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                                    "walSegmentsCleared=%d, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
+                                    "walSegmentsCleared=%d, walSegmentNamesCleared=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
                                 chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                                 chp.pagesSize,
                                 chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
                                 chp.walFilesDeleted,
+                                chp.walNamesDeleted,
                                 tracker.markDuration(),
                                 tracker.pagesWriteDuration(),
                                 tracker.fsyncDuration(),
@@ -3874,6 +3875,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Number of deleted WAL files. */
         private int walFilesDeleted;
 
+        /** Names of deleted WAL files. */
+        private List<String> walNamesDeleted;
+
         /** */
         private final int pagesSize;
 
@@ -3906,6 +3910,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public void walFilesDeleted(int walFilesDeleted) {
             this.walFilesDeleted = walFilesDeleted;
+        }
+
+        /**
+         * @param walNamesDeleted WAL names deleted.
+         */
+        public void walNamesDeleted(final List<String> walNamesDeleted) {
+            this.walNamesDeleted = walNamesDeleted;
         }
     }
 

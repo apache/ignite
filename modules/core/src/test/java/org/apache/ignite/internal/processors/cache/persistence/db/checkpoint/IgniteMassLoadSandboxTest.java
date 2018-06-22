@@ -29,6 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.cache.Cache;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
@@ -47,9 +49,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -296,6 +300,65 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
+
+    /**
+     * Test that WAL segments that are fully covered by checkpoint are logged
+     * @throws Exception if failed.
+     */
+    public void testClearedWalsLogged() throws Exception {
+        try {
+            final GridStringLogger log0 = new GridStringLogger();
+
+            final IgniteConfiguration cfg = getConfiguration("testClearedWalsLogged");
+
+            cfg.setGridLogger(log0);
+
+            cfg.getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(10);
+
+            final Ignite ignite = G.start(cfg);
+
+            ignite.cluster().active(true);
+
+            final IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
+
+            cache.put(1, new byte[1024]);
+
+            forceCheckpoint();
+
+            Thread.sleep(200); // needed by GridStringLogger
+
+            final String log = log0.toString();
+
+            System.out.println(log);
+
+            String lines[] = log.split("\\r?\\n");
+
+            Pattern numPtrn = Pattern.compile("walSegmentsCleared=([0-9]+),");
+
+            Pattern namesPtrn = Pattern.compile("walSegmentNamesCleared=\\[(.*)\\], ");
+
+            boolean found = false;
+
+            for (String line : lines) {
+                Matcher num = numPtrn.matcher(line);
+
+                Matcher names = namesPtrn.matcher(line);
+
+                if (num.find() && names.find() && names.group(1).length() > 0) {
+                    assertEquals(Integer.valueOf(num.group(1)), Integer.valueOf(names.group(1).split(",").length));
+
+                    found = true;
+                }
+            }
+
+            assertTrue(found);
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
 
 
     /**

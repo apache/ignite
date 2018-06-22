@@ -228,7 +228,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private final int serializerVersion =
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
-    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer)}. */
+    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer, Collection<String>)}. */
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
@@ -782,7 +782,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer low, WALPointer high) {
+    @Override public int truncate(final WALPointer low, final WALPointer high, final Collection<String> names) {
         if (high == null)
             return 0;
 
@@ -813,8 +813,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 if (!desc.file.delete())
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
-                else
+                else {
+                    if (names != null)
+                        names.add(desc.file.getName());
+
                     deleted++;
+                }
 
                 // Bump up the oldest archive segment index.
                 if (lastTruncatedArchiveIdx < desc.idx)
@@ -1642,8 +1646,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             File dstFile = new File(walArchiveDir, name);
 
-            if (log.isDebugEnabled())
-                log.debug("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
+            if (log.isInfoEnabled())
+                log.info("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
                     ", origFile=" + origFile.getAbsolutePath() + ", dstFile=" + dstFile.getAbsolutePath() + ']');
 
             try {
@@ -1665,8 +1669,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Copied file [src=" + origFile.getAbsolutePath() +
+            if (log.isInfoEnabled())
+                log.info("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
 
             return new SegmentArchiveResult(absIdx, origFile, dstFile);
