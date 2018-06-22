@@ -2024,4 +2024,39 @@ BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBoth)
     InsertTestBatch(11, 20, 9);
 }
 
+BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i32Field) VALUES(?, ?)";
+
+    SQLRETURN ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 0;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int32_t data = 0;
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &data, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        key = i;
+        data = i * 10;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

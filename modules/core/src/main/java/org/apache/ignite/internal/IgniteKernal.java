@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
 import java.io.Externalizable;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -197,6 +193,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -274,8 +271,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
-import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
-import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
 /**
  * Ignite kernal.
@@ -764,6 +759,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param schemaExecSvc Schema executor service.
      * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
+     * @param workerRegistry Worker registry.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
@@ -785,7 +781,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
-        GridAbsClosure errHnd
+        GridAbsClosure errHnd,
+        WorkersRegistry workerRegistry
     )
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
@@ -902,7 +899,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 schemaExecSvc,
                 customExecSvcs,
                 plugins,
-                classNameFilter()
+                MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
+                workerRegistry
             );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -1765,105 +1763,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
-        }
-    }
-
-    /**
-     * Returns class name filter for marshaller.
-     *
-     * @return Class name filter for marshaller.
-     */
-    private IgnitePredicate<String> classNameFilter() throws IgniteCheckedException {
-        ClassSet whiteList = classWhiteList();
-        ClassSet blackList = classBlackList();
-
-        return new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                // Allows all primitive arrays and checks arrays' type.
-                if ((blackList != null || whiteList != null) && s.charAt(0) == '[') {
-                    if (s.charAt(1) == 'L' && s.length() > 2)
-                        s = s.substring(2, s.length() - 1);
-                    else
-                        return true;
-                }
-
-                return (blackList == null || !blackList.contains(s)) && (whiteList == null || whiteList.contains(s));
-            }
-        };
-    }
-
-    /**
-     * @return White list of classes.
-     */
-    private ClassSet classWhiteList() throws IgniteCheckedException {
-        ClassSet clsSet = null;
-
-        String fileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_WHITELIST);
-
-        if (fileName != null) {
-            clsSet = new ClassSet();
-
-            addClassNames(JDK_CLS_NAMES_FILE, clsSet);
-            addClassNames(CLS_NAMES_FILE, clsSet);
-            addClassNames(fileName, clsSet);
-        }
-
-        return clsSet;
-    }
-
-    /**
-     * @return Black list of classes.
-     */
-    private ClassSet classBlackList() throws IgniteCheckedException {
-        ClassSet clsSet = null;
-
-        String blackListFileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST);
-
-        if (blackListFileName != null)
-            addClassNames(blackListFileName, clsSet = new ClassSet());
-
-        return clsSet;
-    }
-
-    /**
-     * Reads class names from resource referred by given system property name and returns set of classes.
-     *
-     * @param fileName File name containing list of classes.
-     * @param clsSet Class set for update.
-     * @return Set of classes.
-     */
-    private void addClassNames(String fileName, ClassSet clsSet) throws IgniteCheckedException {
-        InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
-
-        if (is == null) {
-            try {
-                is = new FileInputStream(new File(fileName));
-            }
-            catch (FileNotFoundException e) {
-                throw new IgniteCheckedException("File " + fileName + " not found.");
-            }
-        }
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line;
-
-            for (int i = 1; (line = reader.readLine()) != null; i++) {
-                String s = line.trim();
-
-                if (!s.isEmpty() && s.charAt(0) != '#' && s.charAt(0) != '[') {
-                    try {
-                        clsSet.add(s);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new IgniteCheckedException("Exception occurred while reading list of classes" +
-                            "[path=" + fileName + ", row=" + i + ", line=" + s + ']', e);
-                    }
-                }
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Exception occurred while reading and creating list of classes " +
-                "[path=" + fileName + ']', e);
         }
     }
 
