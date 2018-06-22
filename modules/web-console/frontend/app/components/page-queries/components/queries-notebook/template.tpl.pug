@@ -117,6 +117,14 @@ mixin query-settings
                     <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.' data-trigger='hover')
                     input(type='checkbox' ng-model='paragraph.nonCollocatedJoins')
                     span Allow non-collocated joins
+            .row(ng-if='collocatedJoinsAvailable(paragraph)')
+                label.tipLabel(bs-tooltip data-placement='bottom' data-title='Used For Optimization Purposes Of Queries With GROUP BY Statements.<br/>\
+                    <b>NOTE:</b> Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.<br/>\
+                    If you know in advance that the elements of your query selection are collocated together on the same node\
+                    and you group by collocated key (primary or affinity key), then Ignite can make significant performance and\
+                    network optimizations by grouping data on remote nodes.' data-trigger='hover')
+                    input(type='checkbox' ng-model='paragraph.collocated')
+                    span Collocated Query
             .row(ng-if='enforceJoinOrderAvailable(paragraph)')
                 label.tipLabel(bs-tooltip data-placement='bottom' data-title='Enforce join order of tables in the query.<br/>\
                     If <b>set</b>, then query optimizer will not reorder tables within join.<br/>\

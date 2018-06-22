@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
-import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessor;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerPreprocessor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;

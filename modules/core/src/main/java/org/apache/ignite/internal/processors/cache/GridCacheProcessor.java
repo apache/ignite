@@ -749,9 +749,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        boolean template = cacheName.endsWith("*");
-
-        if (!template) {
+        if (GridCacheUtils.isCacheTemplateName(cacheName))
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+        else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
                     "assign unique name to each cache): " + cacheName);
@@ -764,8 +764,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
-        else
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
     }
 
     /**
@@ -2023,9 +2021,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getDataRegionName();
 
-        DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
+        DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
+
+        boolean persistenceEnabled = sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
+            dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
@@ -2033,11 +2034,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheType,
             cfg,
             affNode,
-            memPlc,
+            dataRegion,
             cacheObjCtx,
             freeList,
             reuseList,
             exchTopVer,
+            persistenceEnabled,
             desc.walEnabled()
         );
 
@@ -2427,12 +2429,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
-            pageStoreMgr = new FilePageStoreManager(ctx);
+            pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
-            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
-                walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
-            else
-                walMgr = new FileWriteAheadLogManager(ctx);
+            if (pageStoreMgr == null)
+                pageStoreMgr = new FilePageStoreManager(ctx);
+
+            walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
+
+            if (walMgr == null) {
+                if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC &&
+                    !walFsyncWithDedicatedWorker)
+                    walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
+                else
+                    walMgr = new FileWriteAheadLogManager(ctx);
+            }
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
@@ -2798,7 +2808,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (cfg.getName() != null) {
-                if (cfg.getName().endsWith("*")) {
+                if (GridCacheUtils.isCacheTemplateName(cfg.getName())) {
                     if (cfg.getName().length() > 1) {
                         if (wildcardNameCfgs == null)
                             wildcardNameCfgs = new ArrayList<>();
