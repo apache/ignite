@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -105,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -497,14 +500,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.exchId.discoveryEvent(discoEvt);
         this.firstDiscoEvt= discoEvt;
         this.firstEvtDiscoCache = discoCache;
-
-        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-            DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent) discoEvt).customMessage();
-
-            if (customMsg instanceof PartitionRebalanceRequestMessage) {
-                log.error("Receiving custom message");
-            }
-        }
 
         evtLatch.countDown();
     }
@@ -1188,6 +1183,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
+        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+                ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() instanceof PartitionRebalanceRequestMessage)
+            processPartitionRebalanceRequest(((DiscoveryCustomEvent)firstDiscoEvt));
+
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || cacheStopping(cacheCtx.cacheId()))
                 continue;
@@ -1662,6 +1662,70 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", exchId=" + exchId + ']', e);
             }
         }
+    }
+
+    /**
+     * Reset states of request partitions in order to rebalancer them.
+     *
+     * @param evt Discovery event that triggers partition rebalance.
+     */
+    private void processPartitionRebalanceRequest(DiscoveryCustomEvent evt) {
+        PartitionRebalanceRequestMessage msg = (PartitionRebalanceRequestMessage)evt.customMessage();
+
+        ClusterNode locNode = cctx.localNode();
+
+        for(Map.Entry<Integer, Map<Integer, Set<UUID>>> grpReq: msg.partitions().entrySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpReq.getKey());
+
+            if (grp == null || grp.topology().localPartitions().isEmpty())
+                continue;
+
+            Map<Integer,Long> resParts = partHistReserved.get(grp.groupId());
+
+            GridDhtPartitionMap locParts = grp.topology().localPartitionMap();
+
+            List<List<ClusterNode>> allPartOwners = grp.topology().allOwners();
+
+            Map<Integer, Set<UUID>> reqParts = grpReq.getValue();
+
+            for (Map.Entry<Integer, Set<UUID>> pReq: reqParts.entrySet()) {
+                int pId = pReq.getKey();
+
+                Set<UUID> nodes = pReq.getValue();
+
+                Set<UUID> owners = allPartOwners.get(pId).stream().map(ClusterNode::id).collect(Collectors.toSet());
+
+                if (!locParts.containsKey(pId) || !nodes.contains(locNode.id())
+                        || !isSafePartitionToRebalance(nodes, owners))
+                    continue;
+
+                GridDhtPartitionState pState = locParts.get(pId);
+
+                if (pState != GridDhtPartitionState.MOVING && pState== GridDhtPartitionState.OWNING)  {
+                    if (resParts != null)
+                        resParts.remove(pId);
+
+                    GridDhtLocalPartition p = grp.topology().localPartition(pId);
+
+                    if (p != null) {
+                        p.moving();
+
+                        if (p.dataStore() != null)
+                            p.dataStore().updateCounter(0, true);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param reqNodes Request nodes.
+     * @param owners Owners.
+     */
+    private boolean isSafePartitionToRebalance(Set<UUID> reqNodes, Set<UUID> owners) {
+        owners.removeAll(reqNodes);
+
+        return owners.size() > 0;
     }
 
     /**

@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -39,12 +40,12 @@ public class PartitionRebalanceRequestMessage implements DiscoveryCustomMessage 
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Partitions. */
-    private final Map<UUID, IgniteBiTuple<Integer, List<Integer>>> partitions;
+    private final Map<Integer, Map<Integer, Set<UUID>>> partitions;
 
     /**
      * @param partitions Partitions.
      */
-    public PartitionRebalanceRequestMessage(Map<UUID, IgniteBiTuple<Integer, List<Integer>>> partitions ) {
+    public PartitionRebalanceRequestMessage(Map<Integer, Map<Integer, Set<UUID>>> partitions ) {
         this.partitions = partitions;
     }
 
@@ -56,7 +57,7 @@ public class PartitionRebalanceRequestMessage implements DiscoveryCustomMessage 
     /**
      *
      */
-    public Map<UUID, IgniteBiTuple<Integer, List<Integer>>> partitions() {
+    public Map<Integer, Map<Integer, Set<UUID>>> partitions() {
         return partitions;
     }
 
@@ -78,6 +79,6 @@ public class PartitionRebalanceRequestMessage implements DiscoveryCustomMessage 
     /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
                                                  DiscoCache discoCache) {
-        return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
+        return discoCache.copy(topVer, null);
     }
 }
