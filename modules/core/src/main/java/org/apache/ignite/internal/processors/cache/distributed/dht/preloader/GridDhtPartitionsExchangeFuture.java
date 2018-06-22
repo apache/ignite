@@ -1459,8 +1459,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             ", node=" + cctx.localNodeId() + "]");
 
         if (txTimeoutNotifyFlag)
-            U.warn(log, "Consider changing TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
-                    " to non default value to avoid this message.");
+            U.warn(cctx.kernalContext().cluster().diagnosticLog(), "Consider changing TransactionConfiguration." +
+                    "txTimeoutOnPartitionMapExchange to non default value to avoid this message.");
 
         U.warn(log, "Partition release future: " + partReleaseFut);
 
