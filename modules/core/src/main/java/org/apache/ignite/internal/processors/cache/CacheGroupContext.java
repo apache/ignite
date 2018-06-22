@@ -580,6 +580,13 @@ public class CacheGroupContext {
         return top;
     }
 
+    public boolean isTopologyLocked() {
+        if (top == null)
+            return false;
+
+        return top.holdsLock();
+    }
+
     /**
      * @return Offheap manager.
      */
