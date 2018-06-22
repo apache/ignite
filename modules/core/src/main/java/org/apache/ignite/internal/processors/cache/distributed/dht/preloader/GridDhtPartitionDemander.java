@@ -251,8 +251,8 @@ public class GridDhtPartitionDemander {
     private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
         final RebalanceFuture oldFut = rebalanceFut;
 
-        return !topVer.equals(oldFut.topVer) || // To ignore stale supply messages.
-                fut != oldFut; // Same topology, but dummy exchange forced because of missing partitions.
+        // To ignore stale supply messages.
+        return !topVer.equals(oldFut.topVer) || fut != oldFut;
     }
 
     /**
