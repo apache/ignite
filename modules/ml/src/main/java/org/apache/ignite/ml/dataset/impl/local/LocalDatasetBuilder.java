@@ -113,6 +113,11 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         return new LocalDataset<>(ctxList, dataList);
     }
 
+    @Override
+    public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filter) {
+        return new LocalDatasetBuilder<>(upstreamMap, filter, partitions);
+    }
+
     /**
      * Utils class that wraps iterator so that it produces only specified number of entries and allows to transform
      * entries from one type to another.

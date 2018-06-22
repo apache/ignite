@@ -110,4 +110,9 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         return new CacheBasedDataset<>(ignite, upstreamCache, filter, datasetCache, partDataBuilder, datasetId);
     }
+
+    @Override
+    public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filter) {
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter);
+    }
 }

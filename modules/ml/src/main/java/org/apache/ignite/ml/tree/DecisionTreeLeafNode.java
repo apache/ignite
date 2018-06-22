@@ -27,13 +27,16 @@ public class DecisionTreeLeafNode implements DecisionTreeNode {
     /** Value of the node. */
     private final double val;
 
+    private final int featuresCount;
+
     /**
      * Constructs a new decision tree leaf node.
      *
      * @param val Value of the node.
      */
-    public DecisionTreeLeafNode(double val) {
+    public DecisionTreeLeafNode(double val, int featuresCount) {
         this.val = val;
+        this.featuresCount = featuresCount;
     }
 
     /** {@inheritDoc} */
@@ -44,5 +47,10 @@ public class DecisionTreeLeafNode implements DecisionTreeNode {
     /** */
     public double getVal() {
         return val;
+    }
+
+    @Override
+    public int getFeaturesCount() {
+        return featuresCount;
     }
 }

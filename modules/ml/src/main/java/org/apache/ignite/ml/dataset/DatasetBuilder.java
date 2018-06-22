@@ -18,6 +18,9 @@
 package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
+import java.util.function.Predicate;
+
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 
@@ -46,4 +49,6 @@ public interface DatasetBuilder<K, V> {
      */
     public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
+
+    public DatasetBuilder<K,V> withFilter(IgniteBiPredicate<K,V> filter);
 }
