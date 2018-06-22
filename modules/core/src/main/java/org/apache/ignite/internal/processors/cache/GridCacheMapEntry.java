@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -138,10 +139,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @GridToStringInclude
     protected CacheObject val;
 
-    /** Start version. */
-    @GridToStringInclude
-    protected final long startVer;
-
     /** Version. */
     @GridToStringInclude
     protected GridCacheVersion ver;
@@ -183,14 +180,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.hash = key.hashCode();
         this.cctx = cctx;
 
-        ver = cctx.versions().next();
-
-        startVer = ver.order();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long startVersion() {
-        return startVer;
+        ver = GridCacheVersionManager.START_VER;
     }
 
     /**
@@ -283,7 +273,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return {@code True} if start version.
      */
     public boolean isStartVersion() {
-        return ver.nodeOrder() == cctx.localNode().order() && ver.order() == startVer;
+        return ver == GridCacheVersionManager.START_VER;
     }
 
     /** {@inheritDoc} */

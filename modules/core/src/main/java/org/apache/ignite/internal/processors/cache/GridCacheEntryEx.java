@@ -98,11 +98,6 @@ public interface GridCacheEntryEx {
     public int partition();
 
     /**
-     * @return Start version.
-     */
-    public long startVersion();
-
-    /**
      * @return Key.
      */
     public KeyCacheObject key();
