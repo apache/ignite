@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -60,23 +59,18 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
 
-    /** Connection ID. */
-    private UUID connID;
-
     /**
      * Ctor.
-     *
-     * @param ctx Kernal context.
+     *  @param ctx Kernal context.
+     * @param connId
      * @param maxCursors Max active cursors.
      */
-    public ClientConnectionContext(GridKernalContext ctx, int maxCursors) {
-        super(ctx);
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
+        super(ctx, connId);
 
         parser = new ClientMessageParser(ctx);
 
         this.maxCursors = maxCursors;
-
-        connID = UUID.randomUUID();
     }
 
     /**
@@ -86,11 +80,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      */
     public ClientResourceRegistry resources() {
         return resReg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID connectionId() {
-        return connID;
     }
 
     /** {@inheritDoc} */

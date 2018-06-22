@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -479,15 +480,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean dropConnectionById(UUID id) {
-            assert id != null;
+        @Override public boolean dropConnectionById(long id) {
+            assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
 
             Collection<? extends GridNioSession> sessions = srv.sessions();
 
             for (GridNioSession ses : sessions) {
                 ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-                if (connCtx == null || !connCtx.connectionId().equals(id))
+                if (connCtx == null || connCtx.connectionId() != id)
                     continue;
 
                 if (ses.closeTime() != 0) {
@@ -514,16 +515,19 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
          * @return connection description
          */
         private String clientConnectionDescription(GridNioSession ses, ClientListenerConnectionContext ctx) {
+            AuthorizationContext authCtx = ctx.authorizationContext();
+
             StringBuilder sb = new StringBuilder();
 
             if(ctx instanceof JdbcConnectionContext)
                 sb.append("JdbcClient [");
-            else if(ctx instanceof OdbcConnectionContext)
+            else if (ctx instanceof OdbcConnectionContext)
                 sb.append("OdbcClient [");
             else
                 sb.append("PlatformClient [");
 
-            sb.append("id="+ctx.connectionId());
+            sb.append("id=" + ctx.connectionId());
+            sb.append("user=").append(authCtx == null ? "<anonymous>" : authCtx.userName());
             sb.append(", rmtAddr="+ses.remoteAddress().toString());
             sb.append(", locAddr="+ses.localAddress().toString());
 

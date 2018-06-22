@@ -52,5 +52,5 @@ public interface ClientProcessorMXBean {
     @MXBeanParametersDescriptions(
         "Client connection id."
     )
-    public boolean dropConnectionById(UUID id);
+    public boolean dropConnectionById(long id);
 }

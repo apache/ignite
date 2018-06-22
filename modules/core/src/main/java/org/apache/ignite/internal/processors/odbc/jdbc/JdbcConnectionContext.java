@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -76,9 +75,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Request handler. */
     private JdbcRequestHandler handler = null;
 
-    /** Connection ID. */
-    private UUID connID;
-
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_5_0);
@@ -90,27 +86,21 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /**
      * Constructor.
-     *
-     * @param ctx Kernal Context.
+     *  @param ctx Kernal Context.
      * @param ses Session.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, int maxCursors) {
-        super(ctx);
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
+        int maxCursors) {
+        super(ctx, connId);
 
         this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
-        connID = UUID.randomUUID();
-
         log = ctx.log(getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID connectionId() {
-        return connID;
     }
 
     /** {@inheritDoc} */

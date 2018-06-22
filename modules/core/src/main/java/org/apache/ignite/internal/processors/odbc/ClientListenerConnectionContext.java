@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL listener connection context.
@@ -28,7 +29,7 @@ public interface ClientListenerConnectionContext {
     /**
      * @return Current connection id.
      */
-    UUID connectionId();
+    long connectionId();
 
     /**
      * @param ver Version to check.
@@ -68,4 +69,11 @@ public interface ClientListenerConnectionContext {
      * or due to {@code IOException} during network operations.
      */
     void onDisconnected();
+
+    /**
+     * Return connection authorization context.
+     *
+     * @return authorization context.
+     */
+    @Nullable AuthorizationContext authorizationContext();
 }
