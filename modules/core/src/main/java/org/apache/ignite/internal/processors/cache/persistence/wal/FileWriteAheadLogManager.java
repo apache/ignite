@@ -742,8 +742,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 currWrHandle = rollOver(currWrHandle);
 
-                if (log != null && log.isDebugEnabled())
-                    log.debug("Rollover segment [" + idx + " to " + currWrHandle.idx + "], recordType=" + rec.type());
+                if (log != null && log.isInfoEnabled())
+                    log.info("Rollover segment [" + idx + " to " + currWrHandle.idx + "], recordType=" + rec.type());
             }
 
             WALPointer ptr = currWrHandle.addRecord(rec);
@@ -1811,8 +1811,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             File dstFile = new File(walArchiveDir, name);
 
-            if (log.isDebugEnabled())
-                log.debug("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
+            if (log.isInfoEnabled())
+                log.info("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
                     ", origFile=" + origFile.getAbsolutePath() + ", dstFile=" + dstFile.getAbsolutePath() + ']');
 
             try {
@@ -1834,8 +1834,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Copied file [src=" + origFile.getAbsolutePath() +
+            if (log.isInfoEnabled())
+                log.info("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
 
             return new SegmentArchiveResult(absIdx, origFile, dstFile);
