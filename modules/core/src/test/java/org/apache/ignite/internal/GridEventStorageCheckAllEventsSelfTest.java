@@ -387,6 +387,15 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         return pullEvents(since, evtCnt, GridAllEventsTestTask.class.getName());
     }
 
+    /**
+     * Pull all test task related events since the given moment.
+     *
+     * @param since Earliest time to pulled events.
+     * @param evtCnt Expected event count.
+     * @param taskName Name of the task.
+     * @return List of events.
+     * @throws Exception If failed.
+     */
     private List<Event> pullEvents(long since, int evtCnt, String taskName) throws Exception {
         IgnitePredicate<Event> filter = new CustomEventFilter(taskName, since);
 
