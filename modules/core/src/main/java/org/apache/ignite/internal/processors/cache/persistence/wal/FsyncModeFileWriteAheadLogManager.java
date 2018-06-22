@@ -1014,7 +1014,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * @param cur Handle that failed to fit the given entry.
      * @return Handle that will fit the entry.
      */
-    private FileWriteHandle rollOver(FileWriteHandle cur) throws StorageException, IgniteInterruptedCheckedException {
+    private FileWriteHandle rollOver(FileWriteHandle cur) throws IgniteCheckedException {
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1120,10 +1120,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      *
      * @param curIdx current absolute segment released by WAL writer
      * @return Initialized file handle.
-     * @throws StorageException If IO exception occurred.
-     * @throws IgniteInterruptedCheckedException If interrupted.
+     * @throws IgniteCheckedException If exception occurred.
      */
-    private FileWriteHandle initNextWriteHandle(long curIdx) throws StorageException, IgniteInterruptedCheckedException {
+    private FileWriteHandle initNextWriteHandle(long curIdx) throws IgniteCheckedException {
+        IgniteCheckedException error = null;
+
         try {
             File nextFile = pollNextFile(curIdx);
 
@@ -1143,12 +1144,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             return hnd;
         }
+        catch (IgniteCheckedException e) {
+            throw error = e;
+        }
         catch (IOException e) {
-            StorageException se = new StorageException("Unable to initialize WAL segment", e);
-
-            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
-
-            throw se;
+            throw error = new StorageException("Unable to initialize WAL segment", e);
+        }
+        finally {
+            if (error != null)
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, error));
         }
     }
 
@@ -2423,9 +2427,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Write serializer version to current handle.
          * NOTE: Method mutates {@code fileIO} position, written and lastFsyncPos fields.
          *
-         * @throws StorageException If fail to write serializer version.
+         * @throws IOException If fail to write serializer version.
          */
-        private void writeSerializerVersion() throws StorageException {
+        private void writeSerializerVersion() throws IOException {
             try {
                 assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
                     fileIO.position();
@@ -2438,7 +2442,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 head.set(new FakeRecord(new FileWALPointer(idx, (int)updatedPosition, 0), false));
             }
             catch (IOException e) {
-                throw new StorageException("Unable to write serializer version for segment " + idx, e);
+                throw new IOException("Unable to write serializer version for segment " + idx, e);
             }
         }
 
@@ -2837,18 +2841,18 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             throw new IOException(e);
                         }
                         finally {
-                            // Do the final fsync.
-                            if (mode == WALMode.FSYNC) {
-                                fileIO.force();
+                            assert mode == WALMode.FSYNC;
 
-                                lastFsyncPos = written;
-                            }
+                            // Do the final fsync.
+                            fileIO.force();
+
+                            lastFsyncPos = written;
 
                             fileIO.close();
                         }
                     }
                     catch (IOException e) {
-                        throw new StorageException(e);
+                        throw new StorageException("Failed to close WAL write handle [idx=" + idx + "]", e);
                     }
 
                     if (log.isDebugEnabled())
@@ -2879,9 +2883,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                     assert written == lastFsyncPos || mode != WALMode.FSYNC :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
-                }
 
-                fileIO = null;
+                    fileIO = null;
+                }
+                else {
+                    try {
+                        fileIO.close();
+                    }
+                    catch (IOException e) {
+                        U.error(log, "Failed to close WAL file [idx=" + idx + ", fileIO=" + fileIO + "]", e);
+                    }
+                }
 
                 nextSegment.signalAll();
             }
