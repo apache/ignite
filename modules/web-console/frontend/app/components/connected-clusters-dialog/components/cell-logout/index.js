@@ -15,16 +15,29 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import template from './template.pug';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 
-import clusterLogin from './components/cluster-login';
+class controller {
+    static $inject = [AgentManager.name];
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+    /**
+     * @param {AgentManager} agentMgr
+     */
+    constructor(agentMgr) {
+        this.agentMgr = agentMgr;
+    }
+
+    logout() {
+        this.agentMgr.clustersSecrets.reset(this.clusterId);
+    }
+}
+
+export default {
+    controller,
+    template,
+    bindings: {
+        clusterId: '<'
+    }
+};

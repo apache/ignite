@@ -15,16 +15,10 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export default class {
+    static $inject = ['clusters'];
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
-
-import clusterLogin from './components/cluster-login';
-
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+    constructor(clusters) {
+        this.clusters = clusters;
+    }
+}

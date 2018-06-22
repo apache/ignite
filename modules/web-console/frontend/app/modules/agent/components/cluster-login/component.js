@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import template from './template.pug';
+import {ClusterSecrets} from '../../types/ClusterSecrets';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+export const component = {
+    name: 'clusterLogin',
+    bindings: {
+        secrets: '=',
+        onLogin: '&',
+        onHide: '&'
+    },
+    controller: class {
+        /** @type {ClusterSecrets} */
+        secrets;
 
-import clusterLogin from './components/cluster-login';
+        login() {
+            if (this.form.$invalid)
+                return;
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+            this.onLogin();
+        }
+    },
+    template
+};

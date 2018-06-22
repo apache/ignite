@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import './style.scss';
+import templateUrl from './template.tpl.pug';
+import controller from './controller';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
-
-import clusterLogin from './components/cluster-login';
-
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+export default {
+    controller,
+    templateUrl,
+    bindings: {
+        gridApi: '=?',
+        data: '<?options'
+    }
+};
