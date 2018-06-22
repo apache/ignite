@@ -2450,12 +2450,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /**
          * @param row Row.
+         * @param oldRow Previous row for correct secondary index update, if needed, or {@code null} if not applicable.
          * @param findLast find last row.
          */
-        Get(L row, L oldRow, boolean findLast) {
+        Get(L row, @Nullable L oldRow, boolean findLast) {
             assert findLast ^ row != null;
 
             this.row = row;
+            this.oldRow = oldRow;
             this.findLast = findLast;
         }
 
