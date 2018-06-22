@@ -42,6 +42,9 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private final PrintStream originalErr = System.err;
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 60 * 1000;
@@ -58,7 +61,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
         if("server".equals(igniteInstanceName))
             cfg.setServiceConfiguration(serviceConfiguration());
-        
+
         return cfg;
     }
 
@@ -110,13 +113,15 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        System.setErr(originalErr);
     }
 
     /**
      * Turns on stdErr output capture.
      */
     private void captureErr() {
-        System.setErr( new PrintStream( errContent ) );
+        System.setErr(new PrintStream(errContent));
     }
 
     /**
@@ -125,9 +130,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
      * @return String of captured stdErr.
      */
     private String getErr() {
-        System.setErr(new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
-
-        return errContent.toString().replaceAll( "\r", "" );
+        return errContent.toString().replaceAll("\r", "");
     }
 
     /**
