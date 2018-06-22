@@ -2620,7 +2620,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                if (skipAssigns || forcePreload)
+                                if (skipAssigns && !forcePreload)
                                     grp.preloader().updateTopology(assigns.topologyVersion());
                                 else {
                                     // Cancels previous rebalance future (in case it's not done yet).
