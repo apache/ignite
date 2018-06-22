@@ -448,12 +448,6 @@ public class GridDhtPartitionDemander {
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assignments) {
         assert fut != null;
 
-        if (topologyChanged(fut, assignments.topologyVersion())) {
-            fut.cancel();
-
-            return;
-        }
-
         if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
                 log.debug("Cancel partition demand because rebalance disabled on current node.");
