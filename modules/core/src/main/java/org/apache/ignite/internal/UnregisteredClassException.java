@@ -4,6 +4,8 @@ import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
 public class UnregisteredClassException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     private final Class cls;
 
