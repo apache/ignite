@@ -110,6 +110,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
@@ -340,7 +341,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         msgWorker = new RingMessageWorker(log);
 
-        new MessageWorkerThread(msgWorker, log).start();
+        new MessageWorkerDiscoveryThread(msgWorker, log).start();
 
         if (tcpSrvr == null)
             tcpSrvr = new TcpServer(log);
@@ -6818,6 +6819,14 @@ class ServerImpl extends TcpDiscoveryImpl {
             super.cleanup();
 
             worker.tearDown();
+        }
+    }
+
+    /** */
+    private class MessageWorkerDiscoveryThread extends MessageWorkerThread implements IgniteDiscoveryThread {
+        /** {@inheritDoc} */
+        private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
+            super(worker, log);
         }
     }
 
