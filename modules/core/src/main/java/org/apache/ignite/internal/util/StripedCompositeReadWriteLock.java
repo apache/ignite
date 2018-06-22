@@ -85,12 +85,12 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         else
             idx = IDX.get();
 
-        return idx;
+        return idx % locks.length;
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Lock readLock() {
-        return locks[curIdx() % locks.length].readLock();
+        return locks[curIdx()].readLock();
     }
 
     /** {@inheritDoc} */
