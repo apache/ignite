@@ -90,8 +90,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
-        throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row,
+        CacheSearchRow oldRow) throws IgniteCheckedException {
         RowLinkIO io = (RowLinkIO)iox;
 
         int cmp;

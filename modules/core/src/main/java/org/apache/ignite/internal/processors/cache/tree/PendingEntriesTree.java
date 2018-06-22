@@ -70,7 +70,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<PendingRow> iox, long pageAddr, int idx, PendingRow row)
+    @Override protected int compare(BPlusIO<PendingRow> iox, long pageAddr, int idx, PendingRow row, PendingRow oldRow)
         throws IgniteCheckedException {
         PendingRowIO io = (PendingRowIO)iox;
 

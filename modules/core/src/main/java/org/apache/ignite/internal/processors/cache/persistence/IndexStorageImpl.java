@@ -194,7 +194,7 @@ public class IndexStorageImpl implements IndexStorage {
 
         /** {@inheritDoc} */
         @Override protected int compare(final BPlusIO<IndexItem> io, final long pageAddr, final int idx,
-            final IndexItem row) throws IgniteCheckedException {
+            final IndexItem row, IndexItem oldRow) throws IgniteCheckedException {
             final int off = ((IndexIO)io).getOffset(pageAddr, idx);
 
             int shift = 0;

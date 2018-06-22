@@ -43,6 +43,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -136,6 +137,14 @@ public class H2PkHashIndex extends GridH2IndexBase {
         assert false;
 
         throw DbException.getUnsupportedException("putx");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean replace(GridH2Row row, @Nullable GridH2Row oldRow) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("replace");
     }
 
     /** {@inheritDoc} */
