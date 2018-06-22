@@ -82,7 +82,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_INVALIDATE_INTERVAL;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
@@ -102,11 +102,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Delay between sessions timeout checks. */
     private static final int SES_TIMEOUT_CHECK_DELAY = 1_000;
 
-    /** Default session timeout. */
-    private static final int DFLT_SES_TIMEOUT = 30_000;
+    /** Default session timeout, in seconds. */
+    private static final int DFLT_SES_TIMEOUT = 30;
 
-    /** The default interval used to invalidate sessions, in milliseconds. */
-    private static final long DFLT_SES_INVALIDATE_INTERVAL = 5 * 60 * 1000L;
+    /** The default interval used to invalidate sessions, in seconds. */
+    private static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
 
     /** Index of task name wrapped by VisorGatewayTask */
     private static final int WRAPPED_TASK_IDX = 1;
@@ -132,9 +132,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** SessionId-Session map. */
     private final ConcurrentMap<UUID, Session> sesId2Ses = new ConcurrentHashMap<>();
 
-    /** SessionId-Credentials map. */
-    private final ConcurrentMap<UUID, SecurityCredentials> sesId2Creds = new ConcurrentHashMap<>();
-
     /** */
     private final Thread sesTimeoutCheckerThread;
 
@@ -152,8 +149,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Session time to live. */
     private final long sesTtl;
 
-    /** Interval that should be used for invalidate session tokens. */
-    private final long sesInvalidateInterval;
+    /** Interval to invalidate session tokens. */
+    private final long sesTokTtl;
 
     /**
      * @param req Request.
@@ -267,7 +264,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 SecurityContext secCtx0 = ses.secCtx;
 
                 try {
-                    if (secCtx0 == null || ses.shouldBeInvalidated(sesInvalidateInterval))
+                    if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
                     authorize(req, secCtx0);
@@ -441,7 +438,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 UUID sesId = clientId2SesId.get(clientId);
 
                 if (sesId == null || !sesId.equals(U.bytesToUuid(sesTok, 0)))
-                    throw new IgniteCheckedException("Failed to handle request - unsupported case (misamatched " +
+                    throw new IgniteCheckedException("Failed to handle request - unsupported case (mismatched " +
                         "clientId and session token) [clientId=" + clientId + ", sesTok=" +
                         U.byteArray2HexString(sesTok) + "]");
 
@@ -467,8 +464,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     public GridRestProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        sesTtl = IgniteSystemProperties.getLong(IGNITE_REST_SESSION_TIMEOUT, 1000, DFLT_SES_TIMEOUT);
-        sesInvalidateInterval = IgniteSystemProperties.getLong(IGNITE_REST_SESSION_INVALIDATE_INTERVAL, 1000, DFLT_SES_INVALIDATE_INTERVAL);
+        sesTtl = IgniteSystemProperties.getLong(IGNITE_REST_SESSION_TIMEOUT, DFLT_SES_TIMEOUT) * 1000;
+        sesTokTtl = IgniteSystemProperties.getLong(IGNITE_REST_SECURITY_TOKEN_TIMEOUT, DFLT_SES_TOKEN_INVALIDATE_INTERVAL) * 100;
 
         sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
             new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
@@ -482,7 +479,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             if (ses.isTimedOut(sesTtl)) {
                                 clientId2SesId.remove(ses.clientId, ses.sesId);
                                 sesId2Ses.remove(ses.sesId, ses);
-                                sesId2Creds.remove(ses.sesId, ses);
                             }
                         }
                     }
@@ -770,10 +766,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         SecurityCredentials creds = credentials(req);
 
-        if (creds.getLogin() == null && sesId2Creds.containsKey(ses.sesId))
-            creds = sesId2Creds.get(ses.sesId);
+        if (creds.getLogin() == null) {
+            SecurityCredentials sesCreds = ses.creds;
+
+            if (sesCreds != null)
+                creds = ses.creds;
+        }
         else
-            sesId2Creds.put(ses.sesId, creds);
+            ses.creds = creds;
 
         authCtx.credentials(creds);
 
@@ -988,7 +988,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * Session.
      */
     private static class Session {
-        /** Expiration flag. It's a final state of lastToucnTime. */
+        /** Expiration flag. It's a final state of lastTouchTime. */
         private static final Long TIMEDOUT_FLAG = 0L;
 
         /** Client id. */
@@ -1011,6 +1011,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         /** Authorization context. */
         private volatile AuthorizationContext authCtx;
+
+        /** Credentials that can be used for security token invalidation.*/
+        private volatile SecurityCredentials creds;
 
         /**
          * @param clientId Client ID.
@@ -1067,13 +1070,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * Invalidate session.
+         * Checks if session token should be invalidated.
          *
-         * @param sesInvalidateInterval Session invalidate interval.
-         * @return {@code true} if session should be invalidated.
+         * @param sesTokTtl Session token expire time.
+         * @return {@code true} if session token should be invalidated.
          */
-        boolean shouldBeInvalidated(long sesInvalidateInterval) {
-            return U.currentTimeMillis() - lastInvalidateTime.get() > sesInvalidateInterval;
+        boolean isTokenExpired(long sesTokTtl) {
+            return U.currentTimeMillis() - lastInvalidateTime.get() > sesTokTtl;
         }
 
         /**
