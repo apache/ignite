@@ -58,8 +58,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
         if("server".equals(igniteInstanceName))
             cfg.setServiceConfiguration(serviceConfiguration());
-
-
+        
         return cfg;
     }
 
