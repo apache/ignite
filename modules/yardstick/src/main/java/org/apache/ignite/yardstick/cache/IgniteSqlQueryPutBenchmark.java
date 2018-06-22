@@ -20,12 +20,10 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.yardstick.cache.model.Person;
 
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -40,43 +38,31 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
     /** */
     private AtomicInteger qryCnt = new AtomicInteger();
 
-    private final AtomicBoolean warmupFinished = new AtomicBoolean();
-
-    private int cnt;
-
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
-        if (!warmupFinished.get()) {
-            if (rnd.nextBoolean()) {
-                double salary = rnd.nextDouble() * args.range() * 1000;
+        if (rnd.nextBoolean()) {
+            double salary = rnd.nextDouble() * args.range() * 1000;
 
-                double maxSalary = salary + 1000;
+            double maxSalary = salary + 1000;
 
-                Collection<Cache.Entry<Integer, Object>> entries = executeQuery(salary, maxSalary);
+            Collection<Cache.Entry<Integer, Object>> entries = executeQuery(salary, maxSalary);
 
-                for (Cache.Entry<Integer, Object> entry : entries) {
-                    Person p = (Person) entry.getValue();
+            for (Cache.Entry<Integer, Object> entry : entries) {
+                Person p = (Person)entry.getValue();
 
-                    if (p.getSalary() < salary || p.getSalary() > maxSalary)
-                        throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
+                if (p.getSalary() < salary || p.getSalary() > maxSalary)
+                    throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
                             ", person=" + p + ']');
-                }
-
-                qryCnt.getAndIncrement();
-            } else {
-                int i = rnd.nextInt(args.range());
-
-                cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
-
-                putCnt.getAndIncrement();
             }
+
+            qryCnt.getAndIncrement();
         }
         else {
-            int i = rnd.nextInt(1);
+            int i = rnd.nextInt(args.range());
 
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
 
@@ -88,10 +74,6 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
 
     /** {@inheritDoc} */
     @Override public void onWarmupFinished() {
-        warmupFinished.set(true);
-
-        cnt = H2Tree.cnt.get();
-
         super.onWarmupFinished();
     }
 
@@ -117,8 +99,6 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         println(cfg, "Finished sql query put benchmark [putCnt=" + putCnt.get() + ", qryCnt=" + qryCnt.get() + ']');
-
-        System.out.println("Comparisons: " + (H2Tree.cnt.get() - cnt));
 
         super.tearDown();
     }

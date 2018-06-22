@@ -4377,7 +4377,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param low Start index.
      * @param cnt Row count.
      * @param row Lookup row.
-     * @param oldRow Old row to correctly detect insertion point based on links or {@code null} if not applicable.
+     * @param oldRow Old row to correctly detect insertion point or {@code null} if not applicable.
      * @param shift Shift if equal.
      * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
      * @throws IgniteCheckedException If failed.
@@ -4456,7 +4456,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param pageAddr Page address.
      * @param idx Index of row in the given buffer.
      * @param row Lookup row.
-     * @param oldRow Old row to correctly detect insertion point based on links or {@code null} if not applicable.
+     * @param oldRow Old row to correctly detect insertion point or {@code null} if not applicable.
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */
@@ -4469,7 +4469,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param pageAddr Page address.
      * @param idx Index of row in the given buffer.
      * @param row Lookup row.
-     * @param oldRow Old row to correctly detect insertion point based on links or {@code null} if not applicable.
+     * @param oldRow Old row to correctly detect insertion point or {@code null} if not applicable.
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */

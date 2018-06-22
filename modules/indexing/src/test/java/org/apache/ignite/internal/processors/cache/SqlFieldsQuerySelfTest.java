@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -44,7 +45,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If error.
      */
     public void testSqlFieldsQuery() throws Exception {
-        startGrids(1);
+        startGrids(2);
 
         createAndFillCache();
 
@@ -111,50 +112,27 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private void executeQuery() throws IgniteCheckedException {
-        IgniteCache<Integer, Object> cache = grid(0).cache("person");
+    private void executeQuery() {
+        IgniteCache<?, ?> cache = grid(1).cache("person");
 
-        int cnt = H2Tree.cnt.get();
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name as \"Full Name\", age from person where age > 10");
 
-        for (int i = 2; i <= 2; i++) {
-            cache.put(i, new Person("sun", i * 10));
+        FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
 
-            int nextCnt = H2Tree.cnt.get();
+        assertEquals(2, qryCursor.getAll().size());
 
-            System.out.println("Comparisons to put " + i + ": " + (nextCnt - cnt));
-            System.out.println("Size: " + H2Tree.instance.size());
+        assertEquals(2, qryCursor.getColumnsCount()); // Row contains "name" and "age" fields.
 
-            cnt = nextCnt;
-        }
+        assertEquals("Full Name", qryCursor.getFieldName(0));
 
-        for (int i = 2; i <= 2; i++) {
-            cache.put(i, new Person("sun", i * 10));
-
-            int nextCnt = H2Tree.cnt.get();
-
-            System.out.println("Comparisons to put " + i + ": " + (nextCnt - cnt));
-            System.out.println("Size: " + H2Tree.instance.size());
-
-            cnt = nextCnt;
-        }
-
-        for (int i = 2; i <= 2; i++) {
-            cache.put(i, new Person("sun", i * 10));
-
-            int nextCnt = H2Tree.cnt.get();
-
-            System.out.println("Comparisons to put " + i + ": " + (nextCnt - cnt));
-            System.out.println("Size: " + H2Tree.instance.size());
-
-            cnt = nextCnt;
-        }
+        assertEquals("AGE", qryCursor.getFieldName(1));
     }
 
 
     /**
      *
      */
-    private IgniteCache<Integer, Person> createAndFillCache() throws IgniteCheckedException {
+    private IgniteCache<Integer, Person> createAndFillCache() {
         CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheConf.setCacheMode(CacheMode.PARTITIONED);
@@ -166,18 +144,8 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Person> cache = grid(0).createCache(cacheConf);
 
-        int cnt = H2Tree.cnt.get();
-
-        for (int i = 1; i <= 2; i++) {
-            cache.put(i, new Person("sun", i * 10));
-
-            int nextCnt = H2Tree.cnt.get();
-
-            System.out.println("Comparisons to put " + i + ": " + (nextCnt - cnt));
-            System.out.println("Size: " + H2Tree.instance.size());
-
-            cnt = nextCnt;
-        }
+        cache.put(1, new Person("sun", 100));
+        cache.put(2, new Person("moon", 50));
 
         return cache;
     }
@@ -195,7 +163,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         private String name;
 
         /** Age. */
-        @QuerySqlField(index = true)
+        @QuerySqlField
         private int age;
 
         /**

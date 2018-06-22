@@ -32,11 +32,11 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  */
 public class Person implements Externalizable, Binarylizable {
     /** Person ID. */
-    @QuerySqlField//(index = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Organization ID. */
-    @QuerySqlField//(index = true)
+    @QuerySqlField(index = true)
     private int orgId;
 
     /** First name (not-indexed). */
