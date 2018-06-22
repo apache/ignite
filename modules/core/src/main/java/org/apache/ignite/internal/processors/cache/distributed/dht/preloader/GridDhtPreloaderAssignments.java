@@ -38,7 +38,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private boolean cancelled;
 
-    /** */
+    /** Default {@code True} for empty and cancelled assignments. */
     private boolean changed = true;
 
     /**
@@ -75,7 +75,6 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     }
 
     /**
-     *
      * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
     public boolean changed() {
@@ -83,7 +82,6 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     }
 
     /**
-     *
      * @param changed {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
     void changed(boolean changed) {

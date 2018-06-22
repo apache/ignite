@@ -252,10 +252,11 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
+     * @param topVer Topology version to compare with currently active.
      * @return {@code True} if topology changed.
      */
     private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
-        return !rebalanceTopVer.equals(topVer) || // Topology changed.
+        return !rebalanceTopVer.equals(topVer) || // Ignore stale supply messages.
                 fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
@@ -270,13 +271,15 @@ public class GridDhtPartitionDemander {
 
     /**
      * Update rebalance future topology version e.g. when assignments not changed from previous version.
+     *
+     * @param topVer New topology to update.
      */
-    public void updateTopology(AffinityTopologyVersion top){
+    public void updateTopology(AffinityTopologyVersion topVer){
         if (log.isDebugEnabled())
-            log.debug("Updating rebalance future logged [oldTopVer=" + rebalanceFut.topologyVersion() +
-                ", topVer=" + top + "]");
+            log.debug("Updating rebalance future [oldTopVer=" + rebalanceFut.topologyVersion() +
+                ", topVer=" + topVer + "]");
 
-        rebalanceFut.topVer = top;
+        rebalanceFut.topVer = topVer;
     }
 
     /**

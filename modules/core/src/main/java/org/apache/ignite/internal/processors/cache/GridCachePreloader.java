@@ -114,8 +114,8 @@ public interface GridCachePreloader {
      * Future result is {@code false} in case rebalancing cancelled or finished with missed partitions and will be
      * restarted at current or pending topology.
      *
-     * Note that topology change creates new futures which may waits for previous futures to finish (previous future
-     * does not cancel if assignments not changed).
+     * Note that topology change creates new futures and finishes previous. Previous future
+     * does not cancelled if assignments not changed, only topology version updated.
      */
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 
@@ -190,7 +190,7 @@ public interface GridCachePreloader {
     /**
      * Update topology version e.g. when assignments not changed from previous version.
      *
-     * @param top New topology version.
+     * @param topVer New topology version.
      */
-    public void updateTopology(AffinityTopologyVersion top);
+    public void updateTopology(AffinityTopologyVersion topVer);
 }

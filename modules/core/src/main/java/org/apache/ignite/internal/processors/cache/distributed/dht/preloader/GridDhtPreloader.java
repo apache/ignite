@@ -402,8 +402,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
     }
 
-    @Override public void updateTopology(AffinityTopologyVersion top) {
-        demander.updateTopology(top);
+    /** {@inheritDoc} */
+    @Override public void updateTopology(AffinityTopologyVersion topVer) {
+        demander.updateTopology(topVer);
     }
 
     /**
