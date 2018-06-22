@@ -37,7 +37,7 @@ docs_requirements = [
 
 setuptools.setup(
     name='pyignite',
-    version='0.1.3',
+    version='0.1.4',
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
     description='Apache Ignite binary client Python API',

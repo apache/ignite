@@ -70,6 +70,8 @@ from .key_value import (
 from .sql import (
     scan,
     scan_cursor_get_page,
+    sql,
+    sql_fields,
     resource_close,
 )
 from .result import APIResult, hashcode

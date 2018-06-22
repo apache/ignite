@@ -23,6 +23,7 @@ from pyignite.datatypes.cache_config import StructArray
 from pyignite.datatypes.complex import AnyDataObject
 from pyignite.datatypes.null_object import Null
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
+from pyignite.datatypes.sql import StatementType
 from pyignite.datatypes.standard import String
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
@@ -166,6 +167,181 @@ def scan_cursor_get_page(
     data = {}
     for od in result.value['data']:
         data[od['key']] = od['value']
+    result.value['data'] = data
+    return result
+
+
+def sql(
+    conn: Connection, hash_code: int,
+    table_name: str, query_str: str, page_size: int, query_args=None,
+    distributed_joins: bool=False, replicated_only: bool=False,
+    local: bool=False, timeout: int=0, binary: bool=False, query_id=None
+) -> APIResult:
+    """
+
+    :param conn:
+    :param hash_code:
+    :param table_name:
+    :param query_str:
+    :param query_args:
+    :param page_size:
+    :param distributed_joins:
+    :param replicated_only:
+    :param local:
+    :param timeout:
+    :param binary:
+    :param query_id:
+    :return:
+    """
+
+    if query_args is None:
+        query_args = []
+
+    class SQLQuery(Query):
+        op_code = OP_QUERY_SQL
+
+    query_struct = SQLQuery([
+        ('hash_code', Int),
+        ('flag', Byte),
+        ('table_name', String),
+        ('query_str', String),
+        ('query_args', StructArray([
+            ('arg', AnyDataObject),
+        ])),
+        ('distributed_joins', Bool),
+        ('local', Bool),
+        ('replicated_only', Bool),
+        ('page_size', Int),
+        ('timeout', Long),
+    ], query_id=query_id)
+
+    _, send_buffer = query_struct.from_python({
+        'hash_code': hash_code,
+        'flag': 1 if binary else 0,
+        'table_name': table_name,
+        'query_str': query_str,
+        'query_args': query_args,
+        'distributed_joins': 1 if distributed_joins else 0,
+        'local': 1 if local else 0,
+        'replicated_only': 1 if replicated_only else 0,
+        'page_size': page_size,
+        'timeout': timeout,
+    })
+
+    conn.send(send_buffer)
+
+    response_struct = Response([
+        ('cursor', Long),
+        ('data', StructArray([
+            ('key', AnyDataObject),
+            ('value', AnyDataObject),
+        ])),
+        ('more', Bool),
+    ])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = String.to_python(response.error_message)
+        return result
+    result.value = dict(response_struct.to_python(response))
+    data = {}
+    for od in result.value['data']:
+        data[od['key']] = od['value']
+    result.value['data'] = data
+    return result
+
+
+def sql_fields(
+    conn: Connection, hash_code: int,
+    query_str: str, page_size: int, query_args=None, schema: str=None,
+    statement_type: int=StatementType.ANY, distributed_joins: bool=False,
+    local: bool=False, replicated_only: bool=False,
+    enforce_join_order: bool=False, collocated: bool=False, lazy: bool=False,
+    include_field_names: bool=False, max_rows: int=-1, timeout: int=0,
+    binary: bool=False, query_id=None
+) -> APIResult:
+    if query_args is None:
+        query_args = []
+
+    class SQLFieldsQuery(Query):
+        op_code = OP_QUERY_SQL_FIELDS
+
+    def fields_or_field_count():
+        if include_field_names:
+            return 'fields', StructArray([
+                ('field_name', String),
+            ])
+        return 'field_count', Int
+
+    query_struct = SQLFieldsQuery([
+        ('hash_code', Int),
+        ('flag', Byte),
+        ('schema', String),
+        ('page_size', Int),
+        ('max_rows', Int),
+        ('query_str', String),
+        ('query_args', StructArray([
+            ('arg', AnyDataObject),
+        ])),
+        ('statement_type', Byte),
+        ('distributed_joins', Bool),
+        ('local', Bool),
+        ('replicated_only', Bool),
+        ('enforce_join_order', Bool),
+        ('collocated', Bool),
+        ('lazy', Bool),
+        ('timeout', Long),
+        ('include_field_names', Bool),
+    ], query_id=query_id)
+
+    _, send_buffer = query_struct.from_python({
+        'hash_code': hash_code,
+        'flag': 1 if binary else 0,
+        'schema': schema,
+        'page_size': page_size,
+        'max_rows': max_rows,
+        'query_str': query_str,
+        'query_args': query_args,
+        'statement_type': statement_type,
+        'distributed_joins': distributed_joins,
+        'local': local,
+        'replicated_only': replicated_only,
+        'enforce_join_order': enforce_join_order,
+        'collocated': collocated,
+        'lazy': lazy,
+        'timeout': timeout,
+        'include_field_names': include_field_names,
+    })
+
+    conn.send(send_buffer)
+
+    response_struct = Response([
+        ('cursor', Long),
+        fields_or_field_count(),
+        ('data', StructArray([
+            ('value', AnyDataObject),
+        ])),
+        ('more', Bool),
+    ])
+    response_class, recv_buffer = response_struct.parse(conn)
+    response = response_class.from_buffer_copy(recv_buffer)
+
+    result = APIResult(
+        status=response.status_code,
+        query_id=response.query_id,
+    )
+    if hasattr(response, 'error_message'):
+        result.message = String.to_python(response.error_message)
+        return result
+    result.value = dict(response_struct.to_python(response))
+    data = []
+    for od in result.value['data']:
+        data.append(od['value'])
     result.value['data'] = data
     return result
 
