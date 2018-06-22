@@ -473,6 +473,25 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that node attributes returned through public API are presented in standard form.
+     *
+     * It means there is no exotic classes that may unnecessary capture other classes from the context.
+     *
+     * For more information about the problem refer to
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-8857">IGNITE-8857</a>.
+     */
+    public void testNodeAttributesNotReferencingZookeeperClusterNode() throws Exception {
+        userAttrs = new HashMap<>();
+        userAttrs.put("testAttr", "testAttr");
+
+        IgniteEx ignite = startGrid(0);
+
+        assertTrue(ignite.cluster().localNode().attributes() instanceof HashMap);
+
+        userAttrs = null;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testZkRootNotExists() throws Exception {
