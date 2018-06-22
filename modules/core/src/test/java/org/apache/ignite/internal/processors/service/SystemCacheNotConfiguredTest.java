@@ -33,14 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Tests if system cache was started before deploying of service.
  */
 public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** */
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 
     /** */
-    TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -55,14 +55,16 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         discoverySpi.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(discoverySpi);
 
-        if("server".equals(igniteInstanceName)) {
+        if("server".equals(igniteInstanceName))
             cfg.setServiceConfiguration(serviceConfiguration());
-        }
+
 
         return cfg;
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     * */
     public void test() throws Exception {
         captureErr();
 
@@ -71,17 +73,17 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         Ignite client = startGrid(getConfiguration("client").setClientMode(true));
 
         IgniteServices services = client.services();
-        SimpleService service = services.serviceProxy("service", SimpleService.class, false);
+        SimpleService srvc = services.serviceProxy("service", SimpleService.class, false);
 
         Thread.sleep(1000);
 
-        service.isWorking();
+        srvc.isWorking();
 
         assertFalse(getErr().contains("Cache is not configured:"));
     }
 
     /** Start server node */
-    void startServer() {
+    private void startServer() {
         try {
             startGrid(getConfiguration("server"));
         }
@@ -91,7 +93,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     }
 
     /** Service configuration */
-    ServiceConfiguration serviceConfiguration() {
+    private ServiceConfiguration serviceConfiguration() {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
 
         svcCfg.setName("service");
@@ -117,7 +119,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
      * Turns off stdErr capture and returns the contents
      * that have been captured
      *
-     * @return
+     * @return String of captured stdErr
      */
     private String getErr() {
         System.setErr(new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
@@ -130,7 +132,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
      */
     public static class SimpleServiceImpl implements Service, SimpleService {
         /** {@inheritDoc} */
-        public SimpleServiceImpl() {
+        SimpleServiceImpl() {
             // No-op.
         }
 
