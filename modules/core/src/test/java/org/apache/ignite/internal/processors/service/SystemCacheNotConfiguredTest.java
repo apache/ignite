@@ -52,6 +52,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+
         discoverySpi.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(discoverySpi);
 
@@ -64,7 +65,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
     /**
      * @throws Exception If failed.
-     * */
+     */
     public void test() throws Exception {
         captureErr();
 
@@ -82,7 +83,9 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         assertFalse(getErr().contains("Cache is not configured:"));
     }
 
-    /** Start server node */
+    /**
+     * Start server node.
+     */
     private void startServer() {
         try {
             startGrid(getConfiguration("server"));
@@ -92,7 +95,9 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Service configuration */
+    /**
+     * Service configuration.
+     */
     private ServiceConfiguration serviceConfiguration() {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
 
@@ -109,17 +114,16 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Turns on stdErr output capture
+     * Turns on stdErr output capture.
      */
     private void captureErr() {
         System.setErr( new PrintStream( errContent ) );
     }
 
     /**
-     * Turns off stdErr capture and returns the contents
-     * that have been captured
+     * Turns off stdErr capture and returns the contents that have been captured.
      *
-     * @return String of captured stdErr
+     * @return String of captured stdErr.
      */
     private String getErr() {
         System.setErr(new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
@@ -128,7 +132,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Simple service implementation for test
+     * Simple service implementation for test.
      */
     public static class SimpleServiceImpl implements Service, SimpleService {
         /** {@inheritDoc} */
@@ -137,17 +141,17 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public void cancel(ServiceContext ctx) {
+        @Override public void cancel(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        public void init(ServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) throws Exception {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        public void execute(ServiceContext ctx) throws Exception {
+        @Override public void execute(ServiceContext ctx) throws Exception {
             // No-op.
         }
 
@@ -158,7 +162,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Simple service interface for test
+     * Simple service interface for test.
      */
     public interface SimpleService {
         /** */
