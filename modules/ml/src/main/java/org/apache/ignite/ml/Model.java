@@ -35,8 +35,4 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
         return v -> combiner.apply(apply(v), other.apply(v));
     }
-
-    default int getFeaturesCount() {
-        return -1;
-    }
 }

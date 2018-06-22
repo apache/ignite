@@ -1,26 +1,39 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.composition.BaggingClassifierTrainer;
+import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.answercomputer.ModelsCompositionAnswerComputer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
-public abstract class RandomForestTrainer extends BaggingClassifierTrainer<DecisionTreeNode> {
+public abstract class RandomForestTrainer extends BaggingModelTrainer<DecisionTreeNode> {
     protected final int maxDeep;
     protected final double minImpurityDecrease;
 
     public RandomForestTrainer(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer,
                                int maximumFeaturesCountPerModel,
+                               int featureVectorSize,
                                int countOfModels,
                                double samplePartSizePerModel,
                                int maxDeep,
                                double minImpurityDecrease) {
-        super(modelsCompositionAnswerComputer, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel);
+        super(modelsCompositionAnswerComputer, featureVectorSize, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel);
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
-    }
-
-    @Override
-    protected int getFeaturesVectorSize(DecisionTreeNode model) {
-        return model.getFeaturesCount();
     }
 }

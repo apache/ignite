@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.composition;
 
 import org.apache.ignite.ml.Model;
@@ -12,40 +29,45 @@ import org.apache.ignite.ml.util.Utils;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public abstract class BaggingClassifierTrainer<M extends Model<double[], Double>> implements DatasetTrainer<ModelsComposition<M>, Double> {
+public abstract class BaggingModelTrainer<M extends Model<double[], Double>> implements DatasetTrainer<ModelsComposition<M>, Double> {
     private final ModelsCompositionAnswerComputer modelsCompositionAnswerComputer;
     private final int maximumFeaturesCountPerModel;
     private final int countOfModels;
     private final double samplePartSizePerModel;
+    private final int featureVectorSize;
 
-    public BaggingClassifierTrainer(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer, int maximumFeaturesCountPerModel, int countOfModels, double samplePartSizePerModel) {
+    public BaggingModelTrainer(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer,
+                               int featureVectorSize,
+                               int maximumFeaturesCountPerModel, int countOfModels,
+                               double samplePartSizePerModel) {
         this.modelsCompositionAnswerComputer = modelsCompositionAnswerComputer;
         this.maximumFeaturesCountPerModel = maximumFeaturesCountPerModel;
         this.countOfModels = countOfModels;
         this.samplePartSizePerModel = samplePartSizePerModel;
+        this.featureVectorSize = featureVectorSize;
     }
 
     @Override
     public <K, V> ModelsComposition<M> fit(DatasetBuilder<K, V> datasetBuilder,
                                            IgniteBiFunction<K, V, double[]> featureExtractor,
                                            IgniteBiFunction<K, V, Double> lbExtractor) {
-        List<ModelsComposition.ModelWithFeatureMapping<M>> learnedModels = new ArrayList<>();
+        List<ModelsComposition.ModelOnFeaturesSubspace<M>> learnedModels = new ArrayList<>();
 
         for(int i = 0; i < countOfModels; i++) {
             final Random rnd = new Random();
             final SHA256UniformMapper<K, V> sampleFilter = new SHA256UniformMapper<>(rnd);
             final long featureExtractorSeed = rnd.nextLong();
+            Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
             M model = buildDatasetTrainerForModel().fit(
                     datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerModel),
-                    wrapFeatureExtractor(featureExtractor, featureExtractorSeed),
+                    wrapFeatureExtractor(featureExtractor, featuresMapping),
                     lbExtractor);
 
-            Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, getFeaturesVectorSize(model));
-            learnedModels.add(new ModelsComposition.ModelWithFeatureMapping<>(featuresMapping, model));
+            learnedModels.add(new ModelsComposition.ModelOnFeaturesSubspace<>(featuresMapping, model));
         }
 
-        return new ModelsComposition<M>(modelsCompositionAnswerComputer, learnedModels);
+        return new ModelsComposition<>(modelsCompositionAnswerComputer, learnedModels);
     }
 
     private Map<Integer, Integer> createFeaturesMapping(long featureExtractorSeed, int featuresVectorSize) {
@@ -62,21 +84,10 @@ public abstract class BaggingClassifierTrainer<M extends Model<double[], Double>
 
     protected abstract DatasetTrainer<M, Double> buildDatasetTrainerForModel();
 
-    protected abstract int getFeaturesVectorSize(M model);
-
-    private <K, V> IgniteBiFunction<K, V, double[]> wrapFeatureExtractor(IgniteBiFunction<K, V, double[]> featureExtractor, long featureExtractorSeed) {
+    private <K, V> IgniteBiFunction<K, V, double[]> wrapFeatureExtractor(IgniteBiFunction<K, V, double[]> featureExtractor, Map<Integer, Integer> featureMapping) {
         return featureExtractor.andThen((IgniteFunction<double[], double[]>) featureValues -> {
-            double[] newFeaturesValues = new double[maximumFeaturesCountPerModel];
-            int ptr = 0;
-            int[] featureIdxs = Utils.selectKDistinct(featureValues.length,
-                    maximumFeaturesCountPerModel,
-                    new Random(featureExtractorSeed)
-            );
-            for (int featureId : featureIdxs) {
-                newFeaturesValues[ptr] = featureValues[featureId];
-                ptr++;
-            }
-
+            double[] newFeaturesValues = new double[featureMapping.size()];
+            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues[featureValueId]);
             return newFeaturesValues;
         });
     }

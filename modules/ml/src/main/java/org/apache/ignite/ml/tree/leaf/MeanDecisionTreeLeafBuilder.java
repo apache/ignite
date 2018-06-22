@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.tree.leaf;
 
-import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
@@ -32,8 +30,7 @@ public class MeanDecisionTreeLeafBuilder implements DecisionTreeLeafBuilder {
     /** {@inheritDoc} */
     @Override public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter pred) {
-
-        IgniteBiTuple<double[], Integer> aa = dataset.compute(part -> {
+        double[] aa = dataset.compute(part -> {
             double mean = 0;
             int cnt = 0;
 
@@ -47,30 +44,30 @@ public class MeanDecisionTreeLeafBuilder implements DecisionTreeLeafBuilder {
             if (cnt != 0) {
                 mean = mean / cnt;
 
-                return new IgniteBiTuple<>(new double[]{mean, cnt}, part.getFeatures().length);
+                return new double[] {mean, cnt};
             }
 
             return null;
         }, this::reduce);
 
-        return aa != null ? new DecisionTreeLeafNode(aa.get1()[0], aa.get2()) : null;
+        return aa != null ? new DecisionTreeLeafNode(aa[0]) : null;
     }
 
     /** */
-    private IgniteBiTuple<double[], Integer> reduce(IgniteBiTuple<double[], Integer> a, IgniteBiTuple<double[], Integer> b) {
+    private double[] reduce(double[] a, double[] b) {
         if (a == null)
             return b;
         else if (b == null)
             return a;
         else {
-            double aMean = a.get1()[0];
-            double aCnt = a.get1()[1];
-            double bMean = b.get1()[0];
-            double bCnt = b.get1()[1];
+            double aMean = a[0];
+            double aCnt = a[1];
+            double bMean = b[0];
+            double bCnt = b[1];
 
             double mean = (aMean * aCnt + bMean * bCnt) / (aCnt + bCnt);
 
-            return new IgniteBiTuple<>(new double[] {mean, aCnt + bCnt}, a.get2());
+            return new double[] {mean, aCnt + bCnt};
         }
     }
 }

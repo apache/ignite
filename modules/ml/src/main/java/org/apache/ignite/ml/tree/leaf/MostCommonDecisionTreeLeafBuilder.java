@@ -19,8 +19,6 @@ package org.apache.ignite.ml.tree.leaf;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
@@ -34,7 +32,8 @@ public class MostCommonDecisionTreeLeafBuilder implements DecisionTreeLeafBuilde
     /** {@inheritDoc} */
     @Override public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter pred) {
-        IgniteBiTuple<Map<Double, Integer>, Integer> cnt = dataset.compute(part -> {
+        Map<Double, Integer> cnt = dataset.compute(part -> {
+
             if (part.getFeatures() != null) {
                 Map<Double, Integer> map = new HashMap<>();
 
@@ -49,7 +48,7 @@ public class MostCommonDecisionTreeLeafBuilder implements DecisionTreeLeafBuilde
                     }
                 }
 
-                return new IgniteBiTuple<>(map, part.getFeatures().length);
+                return map;
             }
 
             return null;
@@ -58,28 +57,28 @@ public class MostCommonDecisionTreeLeafBuilder implements DecisionTreeLeafBuilde
         double bestVal = 0;
         int bestCnt = -1;
 
-        for (Map.Entry<Double, Integer> e : cnt.get1().entrySet()) {
+        for (Map.Entry<Double, Integer> e : cnt.entrySet()) {
             if (e.getValue() > bestCnt) {
                 bestCnt = e.getValue();
                 bestVal = e.getKey();
             }
         }
 
-        return new DecisionTreeLeafNode(bestVal, cnt.get2());
+        return new DecisionTreeLeafNode(bestVal);
     }
 
     /** */
-    private IgniteBiTuple<Map<Double, Integer>, Integer> reduce(IgniteBiTuple<Map<Double, Integer>, Integer> a, IgniteBiTuple<Map<Double, Integer>, Integer> b) {
+    private Map<Double, Integer> reduce(Map<Double, Integer> a, Map<Double, Integer> b) {
         if (a == null)
             return b;
         else if (b == null)
             return a;
         else {
-            for (Map.Entry<Double, Integer> e : b.get1().entrySet()) {
-                if (a.get1().containsKey(e.getKey()))
-                    a.get1().put(e.getKey(), a.get1().get(e.getKey()) + e.getValue());
+            for (Map.Entry<Double, Integer> e : b.entrySet()) {
+                if (a.containsKey(e.getKey()))
+                    a.put(e.getKey(), a.get(e.getKey()) + e.getValue());
                 else
-                    a.get1().put(e.getKey(), e.getValue());
+                    a.put(e.getKey(), e.getValue());
             }
             return a;
         }

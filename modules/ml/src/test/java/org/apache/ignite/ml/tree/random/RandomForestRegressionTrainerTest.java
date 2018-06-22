@@ -1,0 +1,62 @@
+package org.apache.ignite.ml.tree.random;
+
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.answercomputer.MeanValueModelsCompositionAnswerCalculator;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
+
+@RunWith(Parameterized.class)
+public class RandomForestRegressionTrainerTest {
+    /**
+     * Number of parts to be tested.
+     */
+    private static final int[] partsToBeTested = new int[]{1, 2, 3, 4, 5, 7};
+
+    /**
+     * Number of partitions.
+     */
+    @Parameterized.Parameter
+    public int parts;
+
+    @Parameterized.Parameters(name = "Data divided on {0} partitions")
+    public static Iterable<Integer[]> data() {
+        List<Integer[]> res = new ArrayList<>();
+        for (int part : partsToBeTested)
+            res.add(new Integer[]{part});
+
+        return res;
+    }
+
+    @Test
+    public void testFit() {
+        int sampleSize = 1000;
+        Map<Double, double[]> sample = new HashMap<>();
+        for (int i = 0; i < sampleSize; i++) {
+            double x1 = i;
+            double x2 = x1 / 10.0;
+            double x3 = x2 / 10.0;
+            double x4 = x3 / 10.0;
+
+            sample.put(x1 * x2 + x3 * x4, new double[]{x1, x2, x3, x4});
+        }
+
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4,3, 3, 0.3, 4, 0.1);
+        ModelsComposition<DecisionTreeNode> model = trainer.fit(sample, parts, (k, v) -> v, (k, v) -> k);
+
+        assertTrue(model.getModelsCompositionAnswerComputer() instanceof MeanValueModelsCompositionAnswerCalculator);
+        assertEquals(3, model.getModels().size());
+
+        for(ModelsComposition.ModelOnFeaturesSubspace<DecisionTreeNode> tree : model.getModels())
+            assertEquals(3, tree.getFeaturesMapping().size());
+    }
+}
