@@ -297,9 +297,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Separator for formatted coordinator properties. */
     public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
-    static {
-        LongJVMPauseDetector.start();
-    }
+    /** Long jvm pause detector. */
+    private LongJVMPauseDetector longJVMPauseDetector;
 
     /** */
     @GridToStringExclude
@@ -472,17 +471,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesCount() {
-        return LongJVMPauseDetector.longPausesCount();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesCount() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesTotalDuration() {
-        return LongJVMPauseDetector.longPausesTotalDuration();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesTotalDuration() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
-        return LongJVMPauseDetector.longPauseEvents();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPauseEvents() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -831,6 +830,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
+
+        longJVMPauseDetector = new LongJVMPauseDetector(log);
+        longJVMPauseDetector.start();
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
