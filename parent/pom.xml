@@ -55,9 +55,9 @@
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
         <aws.sdk.version>1.10.29</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
-        <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
-        <commons.beanutils.version>1.8.3</commons.beanutils.version>
-        <commons.codec.version>1.6</commons.codec.version>
+        <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
+        <commons.beanutils.version>1.9.2</commons.beanutils.version>
+        <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <cron4j.version>2.2.5</cron4j.version>
