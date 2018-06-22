@@ -1375,7 +1375,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 loadMissed = true;
                             else {
                                 assert !implicit() || !transform : this;
-                                assert txEntry.op() != TRANSFORM : txEntry;
 
                                 if (retval)
                                     ret.set(cacheCtx, null, true, keepBinary);

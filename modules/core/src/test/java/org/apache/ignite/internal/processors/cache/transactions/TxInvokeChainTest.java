@@ -29,6 +29,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Tests a chain of invokes under a tx.
@@ -50,45 +52,53 @@ public class TxInvokeChainTest extends GridCacheAbstractSelfTest {
      *
      */
     public void testInvokeChain() throws Exception {
-        int invokeCnt = 3;
+        int invokeCnt = 100;
 
-        int expCnt = invokeCnt * 2; // 1 primary + 1 backup.
+        int expCnt = invokeCnt * 3; // get() + 1 primary + 1 backup.
 
-        startGrid("client");
+        Ignite client = startGrid("client");
 
-        doTestInvokeChain(0, invokeCnt, new IgniteOutClosure<CacheEntryProcessor<Integer, Integer, ?>>() {
-            @Override public CacheEntryProcessor<Integer, Integer, ?> apply() {
-                return new CacheEntryProcessor<Integer, Integer, Void>() {
-                    @Override public Void process(MutableEntry<Integer, Integer> entry,
-                        Object... arguments) throws EntryProcessorException {
-                        cnt.incrementAndGet();
+        int k = 0;
 
-                        entry.setValue(entry.getValue() + 1);
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                doTestInvokeChain(client, k++, invokeCnt, concurrency, isolation,
+                    new IgniteOutClosure<CacheEntryProcessor<Integer, Integer, ?>>() {
+                        @Override public CacheEntryProcessor<Integer, Integer, ?> apply() {
+                            return new CacheEntryProcessor<Integer, Integer, Void>() {
+                                @Override public Void process(MutableEntry<Integer, Integer> entry,
+                                    Object... arguments) throws EntryProcessorException {
+                                    cnt.incrementAndGet();
 
-                        return null;
-                    }
-                };
+                                    entry.setValue(entry.getValue() + 1);
+
+                                    return null;
+                                }
+                            };
+                        }
+                    });
+
+                assertEquals(expCnt, cnt.get());
+
+                doTestInvokeChain(client, k++, invokeCnt, concurrency, isolation,
+                    new IgniteOutClosure<CacheEntryProcessor<Integer, Integer, ?>>() {
+                        @Override public CacheEntryProcessor<Integer, Integer, ?> apply() {
+                            return new CacheEntryProcessor<Integer, Integer, Integer>() {
+                                @Override public Integer process(MutableEntry<Integer, Integer> entry,
+                                    Object... arguments) throws EntryProcessorException {
+                                    cnt.incrementAndGet();
+
+                                    entry.setValue(entry.getValue() + 1);
+
+                                    return entry.getValue();
+                                }
+                            };
+                        }
+                    });
+
+                assertTrue(expCnt < cnt.get());
             }
-        });
-
-        assertEquals(expCnt, cnt.get());
-
-        doTestInvokeChain(1, invokeCnt, new IgniteOutClosure<CacheEntryProcessor<Integer, Integer, ?>>() {
-            @Override public CacheEntryProcessor<Integer, Integer, ?> apply() {
-                return new CacheEntryProcessor<Integer, Integer, Integer>() {
-                    @Override public Integer process(MutableEntry<Integer, Integer> entry,
-                        Object... arguments) throws EntryProcessorException {
-                        cnt.incrementAndGet();
-
-                        entry.setValue(entry.getValue() + 1);
-
-                        return entry.getValue();
-                    }
-                };
-            }
-        });
-
-        assertTrue(expCnt < cnt.get());
+        }
     }
 
     /**
@@ -96,19 +106,19 @@ public class TxInvokeChainTest extends GridCacheAbstractSelfTest {
      *
      * @throws Exception
      */
-    private void doTestInvokeChain(int key, int invokeCnt,
+    private void doTestInvokeChain(Ignite client, int key, int invokeCnt, TransactionConcurrency conc, TransactionIsolation isolation,
         IgniteOutClosure<CacheEntryProcessor<Integer, Integer, ?>> factoryClo) throws Exception {
         cnt.set(0);
 
-        Ignite client = grid("client");
-
         client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
-        try (Transaction tx = client.transactions().txStart()) {
+        try (Transaction tx = client.transactions().txStart(conc, isolation)) {
             IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < invokeCnt; i++)
                 cache.invoke(key, factoryClo.apply());
+
+            assertEquals(invokeCnt, cache.get(key).intValue());
 
             tx.commit();
         }
@@ -123,7 +133,7 @@ public class TxInvokeChainTest extends GridCacheAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void initStoreStrategy() throws IgniteCheckedException {
-        // No-op.
+        storeStgy = null;
     }
 
     /** {@inheritDoc} */
