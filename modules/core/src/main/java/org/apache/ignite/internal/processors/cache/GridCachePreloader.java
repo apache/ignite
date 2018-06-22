@@ -87,6 +87,13 @@ public interface GridCachePreloader {
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
 
     /**
+     * Update topology version e.g. when assignments not changed from previous version.
+     *
+     * @param topVer New topology version.
+     */
+    public void updateAssignments(AffinityTopologyVersion topVer);
+
+    /**
      * @param p Preload predicate.
      */
     public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> p);
@@ -186,11 +193,4 @@ public interface GridCachePreloader {
      * Dumps debug information.
      */
     public void dumpDebugInfo();
-
-    /**
-     * Update topology version e.g. when assignments not changed from previous version.
-     *
-     * @param topVer New topology version.
-     */
-    public void updateTopology(AffinityTopologyVersion topVer);
 }

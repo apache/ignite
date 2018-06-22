@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -190,7 +189,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        final AffinityTopologyVersion rebTopVer = demander.lastRebalanceTopVer();
+        final AffinityTopologyVersion rebTopVer = demander.activeRebalanceTopVer();
 
         // We should get assigns based on previous rebalance with successfull result to calculate difference.
         // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
@@ -403,8 +402,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTopology(AffinityTopologyVersion topVer) {
-        demander.updateTopology(topVer);
+    @Override public void updateAssignments(AffinityTopologyVersion topVer) {
+        demander.updateRebalanceTopVer(topVer);
     }
 
     /**

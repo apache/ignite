@@ -183,16 +183,6 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return {@code null} if last rebalance has {@link RebalanceFuture#isInitial()} state or cancelled.
-     * Otherwise return {@link AffinityTopologyVersion} of current rebalance future.
-     */
-    AffinityTopologyVersion lastRebalanceTopVer() {
-        final RebalanceFuture fut = rebalanceFut;
-
-        return fut.isDone() && !fut.result() ? null : fut.topVer;
-    }
-
-    /**
      * Sets preload predicate for demand pool.
      *
      * @param preloadPred Preload predicate.
@@ -265,11 +255,21 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * @return {@code null} if last rebalance has {@link RebalanceFuture#isInitial()} state or cancelled.
+     * Otherwise return {@link AffinityTopologyVersion} of current rebalance future.
+     */
+    AffinityTopologyVersion activeRebalanceTopVer() {
+        final RebalanceFuture fut = rebalanceFut;
+
+        return fut.isDone() && !fut.result() ? null : fut.topVer;
+    }
+
+    /**
      * Update rebalance future topology version e.g. when assignments not changed from previous version.
      *
      * @param topVer New topology to update.
      */
-    public void updateTopology(AffinityTopologyVersion topVer){
+    void updateRebalanceTopVer(AffinityTopologyVersion topVer){
         final RebalanceFuture fut = rebalanceFut;
 
         if (log.isDebugEnabled())
