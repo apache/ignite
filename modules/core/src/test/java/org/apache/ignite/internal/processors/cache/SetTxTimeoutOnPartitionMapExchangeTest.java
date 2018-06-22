@@ -194,7 +194,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      * @param rolledBackFlag Rolled back flag to check.
      * @param timeout Transaction timeout.
      */
-    IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicBoolean rolledBackFlag, long timeout) {
+    private IgniteInternalFuture<Long> startDeadlock(Ignite ig, AtomicBoolean rolledBackFlag, long timeout) {
         IgniteCache<Object, Object> cache = ig.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
