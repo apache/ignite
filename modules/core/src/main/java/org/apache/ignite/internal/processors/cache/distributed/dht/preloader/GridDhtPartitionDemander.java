@@ -183,7 +183,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return {@code null} if rebalance has initial state or cancelled.
+     * @return {@code null} if last rebalance has {@link RebalanceFuture#isInitial()} state or cancelled.
      * Otherwise return {@link AffinityTopologyVersion} of current rebalance future.
      */
     AffinityTopologyVersion lastRebalanceTopVer() {
