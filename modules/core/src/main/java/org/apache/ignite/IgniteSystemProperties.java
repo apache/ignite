@@ -117,8 +117,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
-    /** This property allow rewriting default ({@code 30}) rest session expire time (in seconds). */
+    /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
     public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
+
+    /** This property allow rewriting default ({@code 300}) REST session security token expire time (in seconds). */
+    public static final String IGNITE_REST_SECURITY_TOKEN_TIMEOUT = "IGNITE_REST_SECURITY_TOKEN_TIMEOUT";
 
     /**
      * This property allows to override maximum count of task results stored on one node
@@ -919,7 +922,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -947,7 +950,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Float value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -975,7 +978,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code long} using {@code Long.parseLong()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1003,7 +1006,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code double} using {@code Double.parseDouble()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
