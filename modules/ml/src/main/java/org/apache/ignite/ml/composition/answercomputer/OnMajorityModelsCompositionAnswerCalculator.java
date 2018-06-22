@@ -1,15 +1,12 @@
-package org.apache.ignite.ml.tree.random.answercalculator;
-
-import org.apache.ignite.ml.tree.random.RandomForestAnswerCalculator;
+package org.apache.ignite.ml.composition.answercomputer;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
-public class OnMajorityAnswerCalculator extends RandomForestAnswerCalculator {
+public class OnMajorityModelsCompositionAnswerCalculator implements ModelsCompositionAnswerComputer {
     @Override
-    public Double compute(double[] estimations) {
+    public Double apply(double[] estimations) {
         Map<Double, Integer> countersByClass = new HashMap<>();
         for (Double predictedValue : estimations) {
             Integer counterValue = countersByClass.getOrDefault(predictedValue, 0) + 1;

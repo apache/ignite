@@ -1,31 +1,24 @@
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.tree.DecisionTree;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
-import org.apache.ignite.ml.tree.random.answercalculator.MeanValueAnswerCalculator;
-import org.apache.ignite.ml.tree.random.answercalculator.OnMajorityAnswerCalculator;
+import org.apache.ignite.ml.composition.answercomputer.MeanValueModelsCompositionAnswerCalculator;
 
-import java.util.List;
-import java.util.function.Function;
-
-public class RandomForestRegressionTrainer extends RandomForestTrainer<MSEImpurityMeasure> {
-    private final MeanValueAnswerCalculator answerCalculator = new MeanValueAnswerCalculator();
-
-    public RandomForestRegressionTrainer(int maxDeep, int minImpurityDecrease,
-                                         int treesCount, double learningBatchSize,
-                                         int featuresPartSize) {
-        super(maxDeep, minImpurityDecrease, treesCount, learningBatchSize, featuresPartSize);
+public class RandomForestRegressionTrainer extends RandomForestTrainer {
+    public RandomForestRegressionTrainer(int maximumFeaturesCountPerModel,
+                                         int countOfModels,
+                                         double samplePartSizePerModel,
+                                         int maxDeep, double minImpurityDecrease) {
+        super(new MeanValueModelsCompositionAnswerCalculator(),
+                maximumFeaturesCountPerModel,
+                countOfModels,
+                samplePartSizePerModel,
+                maxDeep, minImpurityDecrease);
     }
 
     @Override
-    protected DecisionTree<MSEImpurityMeasure> buildDecisionTreeTrainer() {
+    protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
         return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease);
-    }
-
-    @Override
-    protected RandomForestAnswerCalculator getAnswerCalculator() {
-        return answerCalculator;
     }
 }
