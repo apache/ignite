@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.LargeEntryUpdateTest;
+import org.apache.ignite.internal.MemoryLeaksOnRestartNodeTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakLargeObjectsTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakLargePagesTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakNonTransactionalTest;
@@ -41,6 +42,7 @@ public class IgniteDbMemoryLeakTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDbMemoryLeakLargePagesTest.class);
         suite.addTestSuite(IgniteDbMemoryLeakLargeObjectsTest.class);
         suite.addTestSuite(IgniteDbMemoryLeakNonTransactionalTest.class);
+        suite.addTestSuite(MemoryLeaksOnRestartNodeTest .class); //TODO persistent
 
         suite.addTestSuite(LargeEntryUpdateTest.class);
 

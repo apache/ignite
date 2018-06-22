@@ -206,9 +206,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(FailureHandlerTriggeredTest.class);
         suite.addTestSuite(StopNodeFailureHandlerTest.class);
         suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
-        suite.addTestSuite(IoomFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
-        suite.addTestSuite(AccountTransferTransactionTest.class);
 
         return suite;
     }

@@ -103,11 +103,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
 
-        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
-        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
-        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
-        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
-        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
 
         suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
         suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);

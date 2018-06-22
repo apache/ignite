@@ -125,7 +125,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridTaskInstanceExecutionSelfTest.class);
         suite.addTestSuite(ClusterNodeMetricsSelfTest.class);
         suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
-        suite.addTestSuite(ClusterBaselineNodesMetricsSelfTest.class);
         suite.addTestSuite(GridNonHistoryMetricsSelfTest.class);
         suite.addTestSuite(GridCancelledJobsMetricsSelfTest.class);
         suite.addTestSuite(GridCollisionJobsContextSelfTest.class);

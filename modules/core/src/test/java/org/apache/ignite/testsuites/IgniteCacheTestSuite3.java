@@ -18,23 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CacheStartupInDeploymentModesTest;
-import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymentSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheReferenceCleanupSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheReloadSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheReplicatedSynchronousCommitTest;
-import org.apache.ignite.internal.processors.cache.GridCacheTransactionalEntryProcessorDeploymentSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalNearEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionTopologyChangeTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeploymentSelfTest;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
@@ -125,10 +109,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
 
-        // TODO GG-11141.
-//        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
-//        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
-//        suite.addTestSuite(GridCacheDeploymentOffHeapValuesSelfTest.class);
+        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
         suite.addTestSuite(CacheStartupInDeploymentModesTest.class);
         suite.addTestSuite(GridCacheConditionalDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);

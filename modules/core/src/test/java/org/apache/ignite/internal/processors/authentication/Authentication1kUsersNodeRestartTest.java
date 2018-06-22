@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
  */
+
+//TODO persistent
 public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
