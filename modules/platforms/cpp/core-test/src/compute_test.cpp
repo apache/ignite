@@ -513,7 +513,7 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastLocalSync)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");;
+    BOOST_CHECKPOINT("Broadcasting");
     std::vector<std::string> res = compute.Broadcast<std::string>(Func2(8, 5));
 
     BOOST_CHECK_EQUAL(res.size(), 1);
@@ -524,7 +524,7 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastLocalAsync)
 {
     Compute compute = node.GetCompute();
 
-    BOOST_CHECKPOINT("Broadcasting");;
+    BOOST_CHECKPOINT("Broadcasting");
     Future< std::vector<std::string> > res = compute.BroadcastAsync<std::string>(Func2(312, 245));
 
     BOOST_CHECK(!res.IsReady());

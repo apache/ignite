@@ -25,4 +25,9 @@ public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends L
     @Override protected int getKeysCount() {
         return 1_000;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testWithExchangesMerge() throws Exception {
+        super.testWithExchangesMerge();
+    }
 }

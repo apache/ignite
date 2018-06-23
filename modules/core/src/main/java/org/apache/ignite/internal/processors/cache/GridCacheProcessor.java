@@ -2429,12 +2429,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
-            pageStoreMgr = new FilePageStoreManager(ctx);
+            pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
-            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
-                walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
-            else
-                walMgr = new FileWriteAheadLogManager(ctx);
+            if (pageStoreMgr == null)
+                pageStoreMgr = new FilePageStoreManager(ctx);
+
+            walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
+
+            if (walMgr == null) {
+                if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC &&
+                    !walFsyncWithDedicatedWorker)
+                    walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
+                else
+                    walMgr = new FileWriteAheadLogManager(ctx);
+            }
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
@@ -3987,6 +3995,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert name != null;
 
         IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>) jCacheProxies.get(name);
+
+        if (cache == null) {
+            GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
+
+            if (cacheAdapter != null)
+                cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
+        }
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);

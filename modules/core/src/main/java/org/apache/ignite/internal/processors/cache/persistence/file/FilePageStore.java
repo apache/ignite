@@ -279,7 +279,7 @@ public class FilePageStore implements PageStore {
             throw new PersistentStorageIOException("Failed to delete partition file: " + cfgFile.getPath(), e);
         }
         finally {
-            allocatedTracker.updateTotalAllocatedPages(-1L * pages());
+            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.get() / pageSize);
 
             allocated.set(0);
 
@@ -440,11 +440,7 @@ public class FilePageStore implements PageStore {
 
                         assert allocated.get() == 0;
 
-                        long delta = newSize - headerSize();
-
-                        assert delta % pageSize == 0;
-
-                        allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+                        allocatedTracker.updateTotalAllocatedPages(newSize / pageSize);
 
                         allocated.set(newSize);
 

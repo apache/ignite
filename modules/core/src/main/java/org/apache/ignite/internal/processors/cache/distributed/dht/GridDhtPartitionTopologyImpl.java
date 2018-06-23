@@ -138,6 +138,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private final CachePartitionFullCountersMap cntrMap;
 
     /** */
+    private volatile Map<Integer, Long> globalPartSizes;
+
+    /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
     /**
@@ -1329,6 +1332,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap incomeCntrMap,
         Set<Integer> partsToReload,
+        @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer) {
         if (log.isDebugEnabled()) {
             log.debug("Updating full partition map [grp=" + grp.cacheOrGroupName() + ", exchVer=" + exchangeVer +
@@ -1543,6 +1547,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     updateRebalanceVersion(aff.assignment());
                 }
+
+                if (partSizes != null)
+                    this.globalPartSizes = partSizes;
 
                 consistencyCheck();
 
@@ -2621,6 +2628,33 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Long> globalPartSizes() {
+        lock.readLock().lock();
+
+        try {
+            if (globalPartSizes == null)
+                return Collections.emptyMap();
+
+            return Collections.unmodifiableMap(globalPartSizes);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void globalPartSizes(@Nullable Map<Integer, Long> partSizes) {
+        lock.writeLock().lock();
+
+        try {
+            this.globalPartSizes = partSizes;
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
