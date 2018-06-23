@@ -133,7 +133,8 @@ import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
-import connectedClusters from './components/connected-clusters';
+import connectedClusters from './components/connected-clusters-badge';
+import connectedClustersDialog from './components/connected-clusters-dialog';
 import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
 import progressLine from './components/progress-line';
@@ -232,6 +233,7 @@ angular.module('ignite-console', [
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,
+    connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
     exposeInput.name,
