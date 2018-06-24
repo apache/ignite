@@ -925,13 +925,15 @@ public abstract class GridAbstractTest extends TestCase {
 
             DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-            assertFalse(errorMsg, dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled());
+            if (dsCfg != null) {
+                assertFalse(errorMsg, dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled());
 
-            DataRegionConfiguration[] dataRegionConfigurations = dsCfg.getDataRegionConfigurations();
+                DataRegionConfiguration[] dataRegionConfigurations = dsCfg.getDataRegionConfigurations();
 
-            if (dataRegionConfigurations != null)
-                for (DataRegionConfiguration dataRegionConfiguration : dataRegionConfigurations)
-                    assertFalse(errorMsg, dataRegionConfiguration.isPersistenceEnabled());
+                if (dataRegionConfigurations != null)
+                    for (DataRegionConfiguration dataRegionConfiguration : dataRegionConfigurations)
+                        assertFalse(errorMsg, dataRegionConfiguration.isPersistenceEnabled());
+            }
         }
     }
 
