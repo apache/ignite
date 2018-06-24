@@ -1734,6 +1734,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
+        // Dump tx messages.
+        if (found) {
+            cctx.io().dumpIn();
+
+            cctx.io().dumpOut();
+        }
+
         return found;
     }
 

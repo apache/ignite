@@ -1270,8 +1270,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         if (invalidParts.contains(entry.partition())) {
                             it.remove();
 
-                            if (log.isDebugEnabled())
-                                log.debug("Removed mapping for entry [nodeId=" + node.id() + ", entry=" + entry +
+                            if (log.isInfoEnabled())
+                                log.info("Removed mapping for entry [nodeId=" + node.id() + ", entry=" + entry +
                                     ", fut=" + GridDhtLockFuture.this + ']');
 
                             if (tx != null)

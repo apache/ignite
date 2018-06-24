@@ -1377,6 +1377,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("Rolled back from TM: " + tx);
+
+
         }
         else if (log.isDebugEnabled())
             log.debug("Did not rollback from TM (was already rolled back): " + tx);
