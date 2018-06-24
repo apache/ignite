@@ -35,7 +35,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <flink.version>1.6-SNAPSHOT</flink.version>
+        <flink.version>1.5.0</flink.version>
         <kryo-serializers.version>0.42</kryo-serializers.version>
     </properties>
 
@@ -152,20 +152,6 @@
                     <artifactId>zookeeper</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-streaming-contrib_2.11</artifactId>
-            <version>${flink.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
