@@ -19,7 +19,9 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
  * PDS test for WAL and recovery.
  */
 public class IgnitePdsWithIndexingWalAndRecoveryTestSuite extends TestSuite {
-
+    /**
+     *
+     */
     public static TestSuite suite() {
         System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 

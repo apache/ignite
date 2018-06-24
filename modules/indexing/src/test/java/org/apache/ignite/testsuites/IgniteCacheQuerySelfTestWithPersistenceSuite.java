@@ -39,13 +39,9 @@ public class IgniteCacheQuerySelfTestWithPersistenceSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCheckClusterStateBeforeExecuteQueryTest.class);
         suite.addTestSuite(IgniteDynamicSqlRestoreTest.class);
-
         suite.addTestSuite(H2RowCachePageEvictionTest.class);
-
         suite.addTestSuite(OptimizedMarshallerIndexNameTest.class);
-
         suite.addTestSuite(SqlUserCommandSelfTest.class);
-
         suite.addTestSuite(IgniteStableBaselineBinObjFieldsQuerySelfTest.class);
 
 
