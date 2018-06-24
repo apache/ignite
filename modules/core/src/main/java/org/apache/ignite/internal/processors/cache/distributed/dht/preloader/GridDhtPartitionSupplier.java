@@ -171,15 +171,6 @@ class GridDhtPartitionSupplier {
         AffinityTopologyVersion curTop = grp.affinity().lastVersion();
         AffinityTopologyVersion demTop = d.topologyVersion();
 
-        if (curTop.compareTo(demTop) > 0) {
-            if (log.isDebugEnabled())
-                log.debug("Demand request outdated [grp=" + grp.cacheOrGroupName()
-                        + ", currentTopVer=" + curTop
-                        + ", demandTopVer=" + demTop
-                        + ", from=" + nodeId
-                        + ", topicId=" + topicId + "]");
-        }
-
         T3<UUID, Integer, AffinityTopologyVersion> contextId = new T3<>(nodeId, topicId, demTop);
 
         if (d.rebalanceId() < 0) { // Demand node requested context cleanup.
