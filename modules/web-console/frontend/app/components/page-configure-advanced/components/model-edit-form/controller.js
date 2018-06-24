@@ -28,6 +28,9 @@ import {Confirm} from 'app/services/Confirm.service';
 export default class ModelEditFormController {
     /** @type {ig.config.model.DomainModel} */
     model;
+    /** @type {ng.ICompiledExpression} */
+    onSave;
+
     static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', Confirm.name, 'ConfigChangesGuard', IgniteVersion.name, '$scope', Models.name, 'IgniteFormUtils'];
     /**
      * @param {ModalImportModels} ModalImportModels
@@ -54,6 +57,11 @@ export default class ModelEditFormController {
         this.$scope.javaBuiltInClasses = this.LegacyUtils.javaBuiltInClasses;
         this.$scope.supportedJdbcTypes = this.LegacyUtils.mkOptions(this.LegacyUtils.SUPPORTED_JDBC_TYPES);
         this.$scope.supportedJavaTypes = this.LegacyUtils.mkOptions(this.LegacyUtils.javaBuiltInTypes);
+
+        this.formActions = [
+            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+        ];
     }
 
     /**
@@ -172,11 +180,11 @@ export default class ModelEditFormController {
     getValuesToCompare() {
         return [this.model, this.$scope.backupItem].map(this.Models.normalize);
     }
-    save() {
+    save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
         if (!this.validate(this.$scope.backupItem)) return;
-        this.onSave({$event: cloneDeep(this.$scope.backupItem)});
+        this.onSave({$event: {model: cloneDeep(this.$scope.backupItem), download}});
     }
     reset = (forReal) => forReal ? this.$scope.backupItem = cloneDeep(this.model) : void 0;
     confirmAndReset() {

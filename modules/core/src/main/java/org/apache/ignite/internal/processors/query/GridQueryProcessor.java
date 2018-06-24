@@ -39,6 +39,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -200,6 +202,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private boolean skipFieldLookup;
+
+    /** Cache name - value typeId pairs for which type mismatch message was logged. */
+    private final Set<Long> missedCacheTypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * @param ctx Kernal context.
@@ -1689,6 +1694,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             cacheNames.remove(cacheName);
+
+            Iterator<Long> missedCacheTypeIter = missedCacheTypes.iterator();
+
+            while (missedCacheTypeIter.hasNext()) {
+                long key = missedCacheTypeIter.next();
+
+                if (missedCacheTypeKeyMatches(key, cacheName))
+                    missedCacheTypeIter.remove();
+            }
         }
     }
 
@@ -1827,9 +1841,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
+        CacheObject val = newRow.value();
 
         if (log.isDebugEnabled())
-            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + newRow.value() + "]");
+            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + val + "]");
 
         if (idx == null)
             return;
@@ -1842,7 +1857,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
+            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
 
             if (prevRowAvailable && prevRow != null) {
                 QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
@@ -1860,13 +1875,70 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            if (desc == null)
+            if (desc == null) {
+                int typeId = ctx.cacheObjects().typeId(val);
+
+                long missedCacheTypeKey = missedCacheTypeKey(cacheName, typeId);
+
+                if (!missedCacheTypes.contains(missedCacheTypeKey)) {
+                    if (missedCacheTypes.add(missedCacheTypeKey)) {
+                        LT.warn(log, "Key-value pair is not inserted into any SQL table [cacheName=" + cacheName +
+                            ", " + describeTypeMismatch(cacheName, val) + "]");
+
+                        LT.warn(log, "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
+                        LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache");
+                        LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
+                    }
+                }
+
                 return;
+            }
 
             idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Pretty-prints difference between expected and actual value types.
+     *
+     * @param cacheName Cache name.
+     * @param val Value object.
+     * @return Human readable type difference.
+     */
+    private String describeTypeMismatch(String cacheName, Object val) {
+        try {
+            QueryTypeDescriptorImpl indexedType = null;
+
+            for (QueryTypeIdKey typeKey : types.keySet()) {
+                if (typeKey.cacheName().equals(cacheName)) {
+                    if (indexedType != null) {
+                        // More than one type for table - simplified message.
+                        indexedType = null;
+                        break;
+                    }
+
+                    indexedType = types.get(typeKey);
+                }
+            }
+
+            boolean bin = ctx.cacheObjects().isBinaryObject(val);
+
+            if (indexedType != null && bin &&
+                !indexedType.valueTypeName().equals(((BinaryObject)val).type().typeName())) {
+
+                return "expValType=" + indexedType.valueTypeName()
+                    + ", actualValType=" + ((BinaryObject)val).type().typeName();
+            }
+            else if (bin)
+                return "valType=" + ((BinaryObject)val).type().typeName();
+            else
+                return "val=" + val.toString();
+        }
+        catch (Exception e) {
+            return val.getClass().getName();
         }
     }
 
@@ -2416,7 +2488,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param d Type descriptor to update.
      * @param cols Columns to remove.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void processDynamicDropColumn(QueryTypeDescriptorImpl d, List<String> cols)
         throws IgniteCheckedException {
@@ -2795,6 +2867,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * Create missed cache type key.
+     *
+     * @param cacheName Cache name.
+     * @param typeId Type ID.
+     * @return Key.
+     */
+    private static long missedCacheTypeKey(String cacheName, int typeId) {
+        return ((long)CU.cacheId(cacheName) << 32) | typeId;
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return {@code True} if matches.
+     */
+    private static boolean missedCacheTypeKeyMatches(long key, String cacheName) {
+        int cacheId = CU.cacheId(cacheName);
+
+        long cacheIdShifted = ((long)cacheId << 32);
+
+        return (key & cacheIdShifted) == cacheIdShifted;
     }
 
     /**

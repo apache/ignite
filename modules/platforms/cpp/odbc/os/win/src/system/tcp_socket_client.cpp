@@ -148,9 +148,11 @@ namespace ignite
                 std::stringstream converter;
                 converter << port;
 
+                std::string strPort = converter.str();
+
                 // Resolve the server address and port
                 addrinfo *result = NULL;
-                int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
+                int res = getaddrinfo(hostname, strPort.c_str(), &hints, &result);
 
                 if (res != 0)
                 {

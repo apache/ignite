@@ -27,15 +27,11 @@ import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerTrainer;
-import org.apache.ignite.ml.preprocessing.imputer.ImputingStrategy;
+import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
+import org.apache.ignite.ml.preprocessing.imputing.ImputingStrategy;
 
 /**
- * Example that shows how to use binarization preprocessor to binarize data.
- *
- * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
- * in this example. The second preprocessor here is a normalization preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
+ * Example that shows how to use Imputing preprocessor to impute the missing values in the given data.
  */
 public class ImputingExampleWithMostFrequentValues {
     /** Run example. */

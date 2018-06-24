@@ -173,7 +173,7 @@ public class ComputeUtils {
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
-                        "Cache expected to be not modified during dataset data building");
+                        "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
                     return partDataBuilder.build(iter, cnt, ctx);
                 }
@@ -215,7 +215,7 @@ public class ComputeUtils {
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
-                    "Cache expected to be not modified during dataset context building");
+                    "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
                 ctx = ctxBuilder.build(iter, cnt);
             }

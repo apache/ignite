@@ -31,10 +31,6 @@ import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 
 /**
  * Example that shows how to use binarization preprocessor to binarize data.
- *
- * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
- * in this example. The second preprocessor here is a normalization preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
  */
 public class BinarizationExample {
     /** Run example. */
@@ -53,8 +49,6 @@ public class BinarizationExample {
             IgniteBiFunction<Integer, Person, double[]> preprocessor = new BinarizationTrainer<Integer, Person>()
                 .withThreshold(40)
                 .fit(ignite, persons, featureExtractor);
-
-
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {

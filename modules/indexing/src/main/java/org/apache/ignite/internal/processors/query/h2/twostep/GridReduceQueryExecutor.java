@@ -452,6 +452,21 @@ public class GridReduceQueryExecutor {
         List<Integer> cacheIds, int[] parts) {
         GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
 
+        // If the first cache is not partitioned, find it (if it's present) and move it to index 0.
+        if (!cctx.isPartitioned()) {
+            for (int cacheId = 1; cacheId < cacheIds.size(); cacheId++) {
+                GridCacheContext<?, ?> currCctx = cacheContext(cacheIds.get(cacheId));
+
+                if (currCctx.isPartitioned()) {
+                    Collections.swap(cacheIds, 0, cacheId);
+
+                    cctx = currCctx;
+
+                    break;
+                }
+            }
+        }
+
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
 
         Set<ClusterNode> nodes = map.keySet();

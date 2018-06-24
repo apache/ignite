@@ -28,6 +28,8 @@ export default class CacheEditFormController {
      * @type {Array<string>}
      */
     igfsIDs;
+    /** @type {ng.ICompiledExpression} */
+    onSave;
 
     static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'IgniteFormUtils'];
     constructor(IgniteConfirm, IgniteVersion, $scope, Caches, IgniteFormUtils) {
@@ -66,6 +68,11 @@ export default class CacheEditFormController {
 
         // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();
+
+        this.formActions = [
+            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+        ];
     }
     $onDestroy() {
         this.subscription.unsubscribe();
@@ -90,10 +97,10 @@ export default class CacheEditFormController {
     getValuesToCompare() {
         return [this.cache, this.clonedCache].map(this.Caches.normalize);
     }
-    save() {
+    save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        this.onSave({$event: cloneDeep(this.clonedCache)});
+        this.onSave({$event: {cache: cloneDeep(this.clonedCache), download}});
     }
     reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
     confirmAndReset() {

@@ -46,7 +46,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicUpdateTimeoutException;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
@@ -119,6 +118,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME;
 
 /**
  * Cache utility methods.
@@ -826,7 +826,9 @@ public class GridCacheUtils {
             ", rollbackOnly=" + tx.isRollbackOnly() +
             ", nodeId=" + tx.nodeId() +
             ", timeout=" + tx.timeout() +
-            ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
+            ", duration=" + (U.currentTimeMillis() - tx.startTime()) +
+            (tx instanceof GridNearTxLocal ? ", label=" + ((GridNearTxLocal)tx).label() : "") +
+            ']';
     }
 
     /**
@@ -1280,8 +1282,6 @@ public class GridCacheUtils {
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
-            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
         else if (e instanceof ClusterTopologyServerNotFoundException)
             return new CacheServerNotFoundException(e.getMessage(), e);
         else if (e instanceof SchemaOperationException)
@@ -1800,7 +1800,7 @@ public class GridCacheUtils {
             return false;
 
         // Special handling for system cache is needed.
-        if (isSystemCache(ccfg.getName())) {
+        if (isSystemCache(ccfg.getName()) || isIgfsCacheInSystemRegion(ccfg)) {
             if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
                 return true;
 
@@ -1829,6 +1829,15 @@ public class GridCacheUtils {
         return false;
     }
 
+    /**
+     * Checks whether cache configuration represents IGFS cache that will be placed in system memory region.
+     *
+     * @param ccfg Cache config.
+     */
+    private static boolean isIgfsCacheInSystemRegion(CacheConfiguration ccfg) {
+        return IgfsUtils.matchIgfsCacheName(ccfg.getName()) &&
+            (SYSTEM_DATA_REGION_NAME.equals(ccfg.getDataRegionName()) || ccfg.getDataRegionName() == null);
+    }
 
     /**
      * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
