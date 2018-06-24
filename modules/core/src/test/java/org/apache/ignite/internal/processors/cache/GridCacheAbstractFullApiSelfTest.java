@@ -368,10 +368,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cfg.setCacheConfiguration();
 
+        cfg = optimize(cfg);
+
         if (!isRemoteJvm(igniteInstanceName))
-            return IgnitionEx.start(optimize(cfg), ctx);
+            return IgnitionEx.start(cfg, ctx);
         else
-            return startRemoteGrid(igniteInstanceName, optimize(cfg), ctx);
+            return startRemoteGrid(igniteInstanceName, cfg, ctx);
     }
 
     /** {@inheritDoc} */
