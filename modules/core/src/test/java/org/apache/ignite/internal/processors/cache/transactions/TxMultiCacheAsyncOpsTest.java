@@ -90,9 +90,6 @@ public class TxMultiCacheAsyncOpsTest extends GridCommonAbstractTest {
 
                 tx.commit();
             }
-            catch (Exception e) {
-                System.out.println();
-            }
 
             for (int i = 0; i < caches.length; i++)
                 assertEquals((i + 1) * 10, grid(0).cache(caches[i].getName()).get(1));

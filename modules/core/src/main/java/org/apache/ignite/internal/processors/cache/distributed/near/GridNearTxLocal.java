@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -434,13 +435,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         K key,
         EntryProcessor<K, V, Object> entryProcessor,
         Object... invokeArgs) {
+        boolean needVal = true;
+        Method[] methods = entryProcessor.getClass().getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.getReturnType().equals(Void.class)) {
+                needVal = false;
+
+                break;
+            }
+        }
+
         return (IgniteInternalFuture)putAsync0(cacheCtx,
             entryTopVer,
             key,
             null,
             entryProcessor,
             invokeArgs,
-            true,
+            needVal,
             null);
     }
 
@@ -624,7 +635,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             /*read*/false,
                             -1L,
                             filters,
-                            /*computeInvoke*/true);
+                            needRetVal);
 
                         return ret;
                     }
@@ -803,7 +814,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             /*read*/false,
                             -1L,
                             CU.filterArray(null),
-                            /*computeInvoke*/true);
+                            needRetVal);
 
                         return ret;
                     }
@@ -1364,7 +1375,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 loadMissed = true;
                             else {
                                 assert !implicit() || !transform : this;
-                                assert txEntry.op() != TRANSFORM : txEntry;
 
                                 if (retval)
                                     ret.set(cacheCtx, null, true, keepBinary);
@@ -1382,7 +1392,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             if (retval && !transform)
                                 ret.set(cacheCtx, old, true, keepBinary);
                             else {
-                                if (txEntry.op() == TRANSFORM) {
+                                if (txEntry.op() == TRANSFORM && needVal) {
                                     GridCacheVersion ver;
 
                                     try {
@@ -1465,7 +1475,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (enlisted != null)
                     enlisted.add(cacheKey);
 
-                if (txEntry.op() == TRANSFORM) {
+                // For pessimistic closure is applied after lock acquisition.
+                if (txEntry.op() == TRANSFORM && optimistic() && needVal) {
                     GridCacheVersion ver;
 
                     try {
