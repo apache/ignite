@@ -38,11 +38,12 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite for cache metrics.
  */
-public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
+public class IgniteCacheMetricsSelfTestWithPersistenceSuite extends TestSuite {
     /**
      * @return Cache metrics test suite.
      * @throws Exception If failed.
@@ -50,30 +51,10 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
-        suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class);
-        suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
-        // Atomic cache.
-        suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
-        suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
-
-        suite.addTestSuite(CacheGroupsMetricsRebalanceTest.class);
-        suite.addTestSuite(CacheValidatorMetricsTest.class);
-        suite.addTestSuite(CacheMetricsEntitiesCountTest.class);
-
-        // Cluster wide metrics.
-        suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
-        suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
-
-        suite.addTestSuite(TransactionMetricsMxBeanImplTest.class);
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
+        suite.addTestSuite(CacheMetricsEnableRuntimeTest.class);
 
         return suite;
     }

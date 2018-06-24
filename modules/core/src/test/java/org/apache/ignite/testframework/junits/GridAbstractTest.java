@@ -55,6 +55,8 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
@@ -138,6 +140,9 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "JUnitTestCaseWithNonTrivialConstructors"
 })
 public abstract class GridAbstractTest extends TestCase {
+    /** Persistence in tests allowed property. */
+    public static final String PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY = "PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY";
+
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -194,6 +199,12 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** Number of tests. */
     private int testCnt;
+
+    /**
+     *
+     */
+    private static final boolean PERSISTENCE_ALLOWED =
+            IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, false);
 
     /**
      *
@@ -855,6 +866,18 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
+
+        if (!PERSISTENCE_ALLOWED) {
+            String errorMsg = "PERSISTENCE IS NOT ALLOWED IN THIS SUITE, PUT YOUR TEST in ANOTHER ONE!";
+
+            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+            assertFalse(errorMsg, dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled());
+
+            for (DataRegionConfiguration dataRegionConfiguration : dsCfg.getDataRegionConfigurations())
+                assertFalse(errorMsg, dataRegionConfiguration.isPersistenceEnabled());
+        }
+
         if (!isRemoteJvm(igniteInstanceName)) {
             startingIgniteInstanceName.set(igniteInstanceName);
 

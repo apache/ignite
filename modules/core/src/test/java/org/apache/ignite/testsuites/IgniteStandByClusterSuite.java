@@ -67,8 +67,6 @@ public class IgniteStandByClusterSuite extends TestSuite {
         suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
         suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
 
-        suite.addTestSuite(CacheBaselineTopologyTest.class);
-        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
 
         return suite;
     }

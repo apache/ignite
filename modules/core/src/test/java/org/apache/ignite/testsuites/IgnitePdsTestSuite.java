@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTes
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  *
@@ -59,6 +60,8 @@ public class IgnitePdsTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
+
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
         addRealPageStoreTests(suite);
         addRealPageStoreTestsLongRunning(suite);

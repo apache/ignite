@@ -102,8 +102,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
-        suite.addTestSuite(Cache64kPartitionsTest.class);
-
         return suite;
     }
 }

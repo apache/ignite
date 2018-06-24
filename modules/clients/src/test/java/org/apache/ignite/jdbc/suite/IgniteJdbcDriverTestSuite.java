@@ -196,7 +196,6 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinLocalQueriesSelfTest.class));
 
         // Various commands.
-        suite.addTest(new TestSuite(JdbcThinWalModeChangeSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinAuthenticateConnectionSelfTest.class));
 
         return suite;

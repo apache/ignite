@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompact
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  *
@@ -68,6 +69,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
+
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
         // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);

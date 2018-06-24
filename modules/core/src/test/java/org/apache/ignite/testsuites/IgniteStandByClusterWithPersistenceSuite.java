@@ -48,6 +48,10 @@ public class IgniteStandByClusterWithPersistenceSuite extends TestSuite {
         suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
         suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
 
+        suite.addTestSuite(CacheBaselineTopologyTest.class);
+
+        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
+
 
         return suite;
     }

@@ -79,7 +79,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
-        suite.addTestSuite(TxRollbackAsyncTest.class);
         suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
         suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
@@ -92,11 +91,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(TxOnCachesStartTest.class);
 
-        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
-
-        suite.addTestSuite(WalModeChangeSelfTest.class);
-        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
-        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
 
         suite.addTestSuite(IgniteCache150ClientsTest.class);
 
