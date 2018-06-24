@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -467,11 +468,22 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
 
                     if (!F.isEmpty(batches)) {
                         // Flush incomplete batches.
-                        for (Batch batch : batches.values()) {
-                            sendBatch(batch);
-                        }
+                        // Need to skip batches for nodes where first request (contains tx info) is still in-flight.
+                        // Otherwise, the regular enlist request (without tx info) may beat it to the primary node.
+                        Iterator<Map.Entry<UUID, Batch>> it = batches.entrySet().iterator();
 
-                        batches = null;
+                        while (it.hasNext()) {
+                            Map.Entry<UUID, Batch> e = it.next();
+
+                            ConcurrentMap<Integer, Batch> pending0 =
+                                pending == null ? null : pending.get(e.getKey());
+
+                            if (pending0 == null || !pending0.containsKey(FIRST_BATCH_ID)) {
+                                it.remove();
+
+                                sendBatch(e.getValue());
+                            }
+                        }
                     }
 
                     if (noPendingRequests()) {
@@ -655,9 +667,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      *
      * @param batch Batch.
      */
-    private synchronized void sendBatch(Batch batch) throws IgniteCheckedException {
-        checkCompleted();
-
+    private void sendBatch(Batch batch) throws IgniteCheckedException {
         assert batch != null && !batch.node().isLocal();
 
         ClusterNode node = batch.node();
@@ -715,7 +725,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
     }
 
     /** */
-    private void updateMappings(ClusterNode node) {
+    private synchronized void updateMappings(ClusterNode node) throws IgniteCheckedException {
+        checkCompleted();
+
         Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
 
         GridDistributedTxMapping mapping = m.get(node.id());

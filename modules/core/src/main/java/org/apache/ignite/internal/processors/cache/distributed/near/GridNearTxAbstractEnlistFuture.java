@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
@@ -29,8 +31,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistAbstractFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -91,12 +94,13 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
     protected final GridCacheVersion lockVer;
 
     /** */
-    protected volatile GridDhtTxQueryResultsEnlistFuture localEnlistFuture;
+    @GridToStringExclude
+    private GridDhtTxQueryEnlistAbstractFuture localEnlistFuture;
 
     /** */
     @SuppressWarnings("unused")
     @GridToStringExclude
-    private volatile Throwable ex;
+    protected volatile Throwable ex;
 
     /** */
     @SuppressWarnings("unused")
@@ -104,7 +108,8 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
     private volatile int done;
 
     /** Timeout object. */
-    @GridToStringExclude protected LockTimeoutObject timeoutObj;
+    @GridToStringExclude
+    protected LockTimeoutObject timeoutObj;
 
     /**
      * @param cctx Cache context.
@@ -212,6 +217,56 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
     }
 
     /**
+     * @param node Primary node.
+     * @throws IgniteCheckedException if future is already completed.
+     */
+    protected synchronized void updateMappings(ClusterNode node) throws IgniteCheckedException {
+        checkCompleted();
+
+        IgniteTxMappings m = tx.mappings();
+
+        GridDistributedTxMapping mapping = m.get(node.id());
+
+        if (mapping == null)
+            m.put(mapping = new GridDistributedTxMapping(node));
+
+        mapping.markQueryUpdate();
+
+        if (node.isLocal())
+            tx.colocatedLocallyMapped(true);
+    }
+
+    /**
+     * @param fut Local enlist future.
+     * @throws IgniteCheckedException if future is already completed.
+     */
+    protected synchronized void updateLocalFuture(GridDhtTxQueryEnlistAbstractFuture<?> fut) throws IgniteCheckedException {
+        checkCompleted();
+
+        assert localEnlistFuture == null;
+
+        localEnlistFuture = fut;
+
+        fut.listen(new CI1<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture future) {
+                synchronized (GridNearTxAbstractEnlistFuture.this) {
+                    localEnlistFuture = null;
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws IgniteCheckedException if future is already completed.
+     */
+    protected void checkCompleted() throws IgniteCheckedException {
+        if (isDone())
+            throw new IgniteCheckedException("Future is done.");
+    }
+
+
+
+    /**
      */
     private void mapOnTopology() {
         cctx.topology().readLock();
@@ -296,26 +351,24 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
         else
             tx.setRollbackOnly();
 
-        boolean done = super.onDone(res, err, cancelled);
+        synchronized (this) {
+            boolean done = super.onDone(res, err, cancelled);
 
-        assert done;
+            assert done;
 
-        GridDhtTxQueryResultsEnlistFuture localFuture0 = localEnlistFuture;
+            GridDhtTxQueryEnlistAbstractFuture localFuture0 = localEnlistFuture;
 
-        if (localFuture0 != null) {
-            assert err != null;
+            if (localFuture0 != null && (err != null || cancelled))
+                localFuture0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + localFuture0) : err);
 
-            localFuture0.onDone(err);
+            // Clean up.
+            cctx.mvcc().removeVersionedFuture(this);
+
+            if (timeoutObj != null)
+                cctx.time().removeTimeoutObject(timeoutObj);
+
+            return true;
         }
-
-        // Clean up.
-        cctx.mvcc().removeVersionedFuture(this);
-
-        if (timeoutObj != null)
-            cctx.time().removeTimeoutObject(timeoutObj);
-
-        return true;
-
     }
 
     /** {@inheritDoc} */
