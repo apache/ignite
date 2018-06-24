@@ -57,7 +57,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private UUID rmtLsnrId;
 
     /** Flag for stopped state. */
-    private static transient volatile boolean stopped = false;
+    public transient volatile boolean stopped = false;
 
     /** Max number of events taken from the buffer at once. */
     private int evtBatchSize = DFLT_EVT_BATCH_SIZE;
@@ -128,7 +128,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         try {
             rmtLsnrId = ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                    .remoteListen(locLsnr, rmtLsnr, cacheEvts);
+                .remoteListen(locLsnr, rmtLsnr, cacheEvts);
         }
         catch (IgniteException e) {
             log.error("Failed to register event listener!", e);
