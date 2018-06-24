@@ -15,26 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.suite;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
+import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
+import org.apache.ignite.testframework.GridTestUtils;
+
+import java.util.Set;
 
 /**
- * JDBC driver test suite.
+ * Test suite for all marshallers.
  */
-public class IgniteJdbcDriverTestWithPersistenceSuite extends TestSuite {
+public class IgniteMarshallerSelfTestWithPersistenceSuite extends TestSuite {
     /**
-     * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
+     * @return Kernal test suite.
+     * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
+        return suite(null);
+    }
 
-        // Various commands.
-        suite.addTest(new TestSuite(JdbcThinAuthenticateConnectionSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinWalModeChangeSelfTest.class));
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+        TestSuite suite = new TestSuite("Ignite Marshaller Test Suite");
+
+        GridTestUtils.addTestIfNeeded(suite, GridMarshallerMappingConsistencyTest.class, ignoredTests);
 
         return suite;
     }

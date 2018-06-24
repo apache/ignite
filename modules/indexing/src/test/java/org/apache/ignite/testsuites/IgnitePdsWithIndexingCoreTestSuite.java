@@ -19,7 +19,13 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
-import org.apache.ignite.internal.processors.cache.persistence.*;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheHistoricalRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinarySortObjectFieldsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsMarshallerMappingRestoreOnNodeStartTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
+import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
@@ -28,6 +34,7 @@ import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndex
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest;
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
@@ -38,6 +45,8 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
+
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
         suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);

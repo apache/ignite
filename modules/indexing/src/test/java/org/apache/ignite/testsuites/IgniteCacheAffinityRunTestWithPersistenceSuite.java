@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.suite;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.database.baseline.IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest;
+import org.apache.ignite.internal.processors.database.baseline.IgniteBaselineLockPartitionOnAffinityRunTxCacheTest;
 
 /**
- * JDBC driver test suite.
+ * Compute and Cache tests for affinityRun/Call. These tests is extracted into separate suite
+ * because ones take a lot of time.
  */
-public class IgniteJdbcDriverTestWithPersistenceSuite extends TestSuite {
+public class IgniteCacheAffinityRunTestWithPersistenceSuite extends TestSuite {
     /**
-     * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
+        TestSuite suite = new TestSuite("Ignite Compute and Cache Affinity Run Test Suite");
 
-        // Various commands.
-        suite.addTest(new TestSuite(JdbcThinAuthenticateConnectionSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinWalModeChangeSelfTest.class));
+        suite.addTestSuite(IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest.class);
+        suite.addTestSuite(IgniteBaselineLockPartitionOnAffinityRunTxCacheTest.class);
 
         return suite;
     }

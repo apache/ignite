@@ -17,7 +17,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsReplacementNativeIoTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
@@ -28,6 +30,8 @@ public class IgnitePdsNativeIoTestSuite extends TestSuite {
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with Direct IO)");
+
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 

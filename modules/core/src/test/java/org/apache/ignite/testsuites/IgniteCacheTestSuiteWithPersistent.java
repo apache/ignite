@@ -18,13 +18,21 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.authentication.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.authentication.Authentication1kUsersNodeRestartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
+import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
+import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
-import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
@@ -58,7 +66,7 @@ public class IgniteCacheTestSuiteWithPersistent extends TestSuite {
         suite.addTestSuite(GridCacheRebalancingWithAsyncClearingTest.class);
 
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
-        suite.addTestSuite(TxRollbackAsyncTest.class);
+        suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
 
         return suite;
     }

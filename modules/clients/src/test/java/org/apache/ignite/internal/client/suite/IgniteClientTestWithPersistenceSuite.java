@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.suite;
+package org.apache.ignite.internal.client.suite;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
- * JDBC driver test suite.
+ * Test suite includes all test that concern REST processors.
  */
-public class IgniteJdbcDriverTestWithPersistenceSuite extends TestSuite {
+public class IgniteClientTestWithPersistenceSuite extends TestSuite {
     /**
-     * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
+     * @return Suite that contains all tests for REST.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
+    public static TestSuite suite() {
+        TestSuite suite = new IgniteTestSuite("Ignite Clients Test Suite");
 
-        // Various commands.
-        suite.addTest(new TestSuite(JdbcThinAuthenticateConnectionSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinWalModeChangeSelfTest.class));
+        suite.addTestSuite(JettyRestProcessorAuthenticationWithTokenSelfTest.class);
+        suite.addTestSuite(JettyRestProcessorAuthenticationWithCredsSelfTest.class);
 
         return suite;
     }

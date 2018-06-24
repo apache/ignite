@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
  * Page replacement light variant of test for native direct IO (wastes real IOPs on agents)
  */
 public class IgnitePdsReplacementNativeIoTest extends IgnitePdsPageReplacementTest {
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 15 * 60 * 1000;

@@ -20,6 +20,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
@@ -31,6 +32,8 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
+
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
         IgnitePdsTestSuite2.addRealPageStoreTests(suite);
 

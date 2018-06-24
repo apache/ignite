@@ -15,26 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.suite;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
+
+import java.util.Set;
 
 /**
- * JDBC driver test suite.
+ * Kernal self test suite.
  */
-public class IgniteJdbcDriverTestWithPersistenceSuite extends TestSuite {
+public class IgniteKernalSelfTestWithPersistenceSuite extends TestSuite {
     /**
-     * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
+     * @return Kernal test suite.
+     * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
+        return suite(null);
+    }
 
-        // Various commands.
-        suite.addTest(new TestSuite(JdbcThinAuthenticateConnectionSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinWalModeChangeSelfTest.class));
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+        TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
+
+        suite.addTestSuite(ServiceDeploymentOnActivationTest.class);
+        suite.addTestSuite(ServiceDeploymentOutsideBaselineTest.class);
 
         return suite;
     }
