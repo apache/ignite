@@ -4406,12 +4406,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return rec;
             }
             catch (IgniteCheckedException e) {
+                boolean throwsCRCError = throwsCRCError();
+
                 if (X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
-                    if (throwsCRCError())
+                    if (throwsCRCError)
                         throw e;
                     else
                         return null;
                 }
+
+                log.error("Catch error during restore state, throwsCRCError=" + throwsCRCError, e);
 
                 throw e;
             }
@@ -4465,7 +4469,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return WALRecord entry.
          * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
          */
-        public WALRecord next(WALIterator it) throws IgniteCheckedException {
+        @Override public WALRecord next(WALIterator it) throws IgniteCheckedException {
             WALRecord rec = super.next(it);
 
             if (rec == null)
@@ -4501,7 +4505,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @return Flag indicates need throws CRC exception or not.
          */
-        public boolean throwsCRCError() {
+        @Override public boolean throwsCRCError() {
             if (needApplyBinaryUpdates)
                 return true;
 
