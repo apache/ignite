@@ -75,6 +75,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             Integer.class, Test.class
         );
 
+        cache.setSqlFunctionClasses(JdbcThinStatementSelfTest.class);
+
         cfg.setCacheConfiguration(cache);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -387,9 +389,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testExecuteQueryTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "select sleep_func(3)";
+        final String sqlText = "select * from test t0, test t1, test t2, test t3, test t4, test t5, test t6, test t7";
 
         stmt.setQueryTimeout(1);
 
@@ -401,7 +401,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 }
             },
             SQLTimeoutException.class,
-            "Timeout"
+            "The query was cancelled while executing"
         );
     }
 

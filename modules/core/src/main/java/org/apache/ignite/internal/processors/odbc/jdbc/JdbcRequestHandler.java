@@ -526,7 +526,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
-                Set<JdbcQueryCursor> jdbcCurs = new HashSet<>(results.size());
+                Set<JdbcQueryCursor> jdbcCurs = new LinkedHashSet<>(results.size());
                 List<List<Object>> items = null;
                 boolean last = true;
 
@@ -552,11 +552,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     JdbcResultInfo jdbcRes;
 
                     if (c.isQuery()) {
-                        jdbcRes = new JdbcResultInfo(true, -1, curId);
+                        jdbcRes = new JdbcResultInfo(true, -1, c.cursorId());
 
                         c.openIterator();
 
-                        qryCursors.put(curId, c);
+                        qryCursors.put(c.cursorId(), c);
 
                         if (items == null) {
                             items = c.fetchRows();

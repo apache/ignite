@@ -459,6 +459,8 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
+        ensureNotClosed();
+
         conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(queryId));
     }
 

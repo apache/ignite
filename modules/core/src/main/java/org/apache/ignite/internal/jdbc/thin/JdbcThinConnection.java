@@ -29,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Savepoint;
@@ -749,8 +750,12 @@ public class JdbcThinConnection implements Connection {
         try {
             JdbcResponse res = cliIo.sendRequest(req);
 
-            if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
-                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+            if (res.status() != ClientListenerResponse.STATUS_SUCCESS) {
+                if (res.status() == IgniteQueryErrorCode.QUERY_CANCELED)
+                    throw new SQLTimeoutException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+                else
+                    throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+            }
 
             return (R)res.response();
         }
