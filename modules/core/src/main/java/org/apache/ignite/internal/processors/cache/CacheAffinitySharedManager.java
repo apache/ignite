@@ -2707,14 +2707,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param sql SQL flag.
      */
     private void saveCacheConfiguration(CacheConfiguration<?, ?> cfg, boolean sql) {
-        if (cctx.pageStore() != null && CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration()) &&
-            !cctx.kernalContext().clientNode()) {
+        if (CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration())
+                && !cctx.kernalContext().clientNode()) {
             try {
                 StoredCacheData data = new StoredCacheData(cfg);
 
                 data.sql(sql);
 
-                cctx.pageStore().storeCacheData(data, false);
+                cctx.database().storeCacheConfiguration(data, false);
             }
             catch (IgniteCheckedException e) {
                 U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);

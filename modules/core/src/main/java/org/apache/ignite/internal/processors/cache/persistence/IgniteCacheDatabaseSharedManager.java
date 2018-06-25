@@ -30,10 +30,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -42,10 +39,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -64,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -845,6 +840,33 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void releaseHistoryForPreloading() {
         // No-op
+    }
+
+    /*
+     * Return stored cache configurations.
+     */
+    public Map<String, StoredCacheData> readStoredCacheConfiguration() throws IgniteCheckedException {
+        // No-op
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Store cache configuration.
+     *
+     * @param cacheData Cache data.
+     * @param overwrite Overwrite.
+     */
+    public void storeCacheConfiguration(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+        // No-op
+    }
+
+    /**
+     * Remove stored cache configuration.
+     *
+     * @param cacheConfig Cache configuration to remove.
+     */
+    public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheConfig) throws IgniteCheckedException {
+        //No-op
     }
 
     /**

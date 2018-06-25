@@ -348,6 +348,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
 
+    /** Metastorage config prefix. */
+    private final String STORE_CACHE_PREFIX = "cache.";
+
+    /** Future that will be done when stored cache configurations from metastore were read. */
+    private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheConfigFut = new GridFutureAdapter<>();
     /**
      * @param ctx Kernal context.
      */
@@ -641,6 +646,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 fillWalDisabledGroups();
 
                 notifyMetastorageReadyForRead();
+
+                readStoredCacheConfigFut.onDone(readStoredCacheConfiguration0());
             }
             finally {
                 checkpointReadUnlock();
@@ -1440,20 +1447,106 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (cctx.pageStore() != null) {
-            for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
-                CacheGroupContext grp = tup.get1();
 
-                if (grp.affinityNode()) {
-                    try {
-                        cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
-                            "[cache=" + grp.cacheOrGroupName() + "]", e);
-                    }
+        for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
+            CacheGroupContext grp = tup.get1();
+
+            if (tup.get2())
+                removeCacheConfiguration(grp);
+
+            if (grp.affinityNode() && cctx.pageStore() != null) {
+                try {
+                    cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                        "[cache=" + grp.cacheOrGroupName() + "]", e);
                 }
             }
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public Map<String, StoredCacheData> readStoredCacheConfiguration() throws IgniteCheckedException {
+        return readStoredCacheConfigFut.get();
+    }
+
+    private Map<String, StoredCacheData> readStoredCacheConfiguration0() throws IgniteCheckedException {
+        Map<String, StoredCacheData> storedCaches = new HashMap<>();
+
+        Map<String, StoredCacheData> readCacheData = (Map<String, StoredCacheData>) metaStorage.readForPredicate(new IgnitePredicate<String>() {
+            @Override public boolean apply(String key) {
+                return key != null && key.startsWith(STORE_CACHE_PREFIX);
+            }
+        });
+
+        for (StoredCacheData cacheData : readCacheData.values())
+            storedCaches.put(cacheData.config().getName(), cacheData);
+
+        return storedCaches;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void storeCacheConfiguration(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+        this.context().database().checkpointReadLock();
+
+        try {
+            String key = getCacheConfigMetastoreKey(cacheData.config());
+
+            if (metaStorage.read(key) == null || overwrite)
+                metaStorage.write(key, cacheData);
+        }
+        finally {
+            this.context().database().checkpointReadUnlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheConfig) throws IgniteCheckedException {
+        this.context().database().checkpointReadLock();
+
+        try {
+            String key = getCacheConfigMetastoreKey(cacheConfig);
+
+            log.error("Remove data " + key);
+
+            this.metaStorage.remove(key);
+        }
+        finally {
+            this.context().database().checkpointReadUnlock();
+        }
+    }
+
+    private String getCacheConfigMetastoreKey(CacheConfiguration<?, ?> cacheConfig) {
+        String cacheName = cacheConfig.getName();
+        String cacheGroupName = cacheConfig.getGroupName() != null ?
+                cacheConfig.getGroupName() : cacheName ;
+
+        return STORE_CACHE_PREFIX + cacheGroupName + "." + cacheName;
+    }
+
+    /**
+     * @param grp Group.
+     */
+    private void removeCacheConfiguration(CacheGroupContext grp) {
+        checkpointReadLock();
+
+        try {
+            Map<String, StoredCacheData> cacheData = (Map<String, StoredCacheData>) metaStorage.readForPredicate(new IgnitePredicate<String>() {
+                @Override public boolean apply(String key) {
+                    return key != null && key.startsWith(STORE_CACHE_PREFIX + grp.cacheOrGroupName());
+                }
+            });
+
+            for(String key: cacheData.keySet())
+                this.metaStorage.remove(key);
+
+        } catch (IgniteCheckedException e) {
+            log.error("Failed to clean cache group configuration from metastorage [group=" + grp.cacheOrGroupName() + "]", e);
+        }
+        finally {
+            checkpointReadUnlock();
         }
     }
 

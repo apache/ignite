@@ -808,7 +808,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
-            Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+            Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
 
             if (!F.isEmpty(storedCaches))
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
@@ -1293,11 +1293,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            IgnitePageStoreManager pageStore;
-
-            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
+            if (destroy && CU.isPersistenceEnabled(ctx.gridConfig())) {
                 try {
-                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                    sharedCtx.database().removeCacheConfiguration(ctx.config());
                 } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
                             "[cache=" + ctx.name() + "]", e);
@@ -3304,9 +3302,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
         assert desc != null;
 
-        if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
-            isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
-            sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
+        if (!sharedCtx.kernalContext().clientNode() &&
+                isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            sharedCtx.database().storeCacheConfiguration(desc.toStoredData(), true);
     }
 
     /**
