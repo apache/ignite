@@ -232,7 +232,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    public void stop(boolean cleanFile) throws PersistentStorageIOException {
+    @Override public void stop(boolean cleanFile) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
@@ -255,7 +255,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    public void truncate(int tag) throws PersistentStorageIOException {
+    @Override public void truncate(int tag) throws PersistentStorageIOException {
         init();
 
         lock.writeLock().lock();
@@ -284,7 +284,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    public void beginRecover() {
+    @Override public void beginRecover() {
         lock.writeLock().lock();
 
         try {
@@ -296,7 +296,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    public void finishRecover() throws PersistentStorageIOException {
+    @Override public void finishRecover() throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {

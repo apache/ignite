@@ -125,7 +125,7 @@ public interface PageStore {
      * Truncates and deletes partition file.
      *
      * @param tag New partition tag.
-     * @throws PersistentStorageIOException If failed
+     * @throws PersistentStorageIOException If failed.
      */
     public void truncate(int tag) throws PersistentStorageIOException;
 }

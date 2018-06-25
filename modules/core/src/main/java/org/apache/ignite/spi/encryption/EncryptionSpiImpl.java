@@ -50,7 +50,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static javax.crypto.Cipher.DECRYPT_MODE;
@@ -73,7 +72,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     /**
      * Algorithm supported by implementation.
      */
-    public static final String CYPHER_ALGO = "AES";
+    public static final String CIPHER_ALGO = "AES";
 
     /**
      * Encryption key size;
@@ -95,6 +94,9 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
      */
     private static final byte[] INIT_VECTOR;
 
+    /**
+     * Create {@code INIT_VECTOR} from constant string.
+     */
     static {
         try {
             INIT_VECTOR = "ApacheIgniteTDE!".getBytes("UTF-8");
@@ -112,7 +114,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     /**
      * Key store password.
      */
-    private char[] keyStorePassword;
+    private char[] keyStorePwd;
 
     /**
      * Master key.
@@ -130,7 +132,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(keyStorePath), "KeyStorePath shouldn't be empty");
-        assertParameter(keyStorePassword != null && keyStorePassword.length > 0, 
+        assertParameter(keyStorePwd != null && keyStorePwd.length > 0,
             "KeyStorePassword shouldn't be empty");
 
         try (InputStream keyStoreFile = keyStoreFile()) {
@@ -138,12 +140,12 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
-            ks.load(keyStoreFile, keyStorePassword);
+            ks.load(keyStoreFile, keyStorePwd);
 
             if (log != null)
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
-            masterKey = new EncryptionKeyImpl(ks.getKey(MASTER_KEY_NAME, keyStorePassword));
+            masterKey = new EncryptionKeyImpl(ks.getKey(MASTER_KEY_NAME, keyStorePwd));
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
@@ -176,7 +178,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
         ensureStarted();
 
         try {
-            KeyGenerator gen = KeyGenerator.getInstance(CYPHER_ALGO);
+            KeyGenerator gen = KeyGenerator.getInstance(CIPHER_ALGO);
 
             gen.init(KEY_SIZE);
 
@@ -245,7 +247,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
         try {
             IvParameterSpec initVector = new IvParameterSpec(INIT_VECTOR);
 
-            SecretKeySpec keySpec = new SecretKeySpec(key.key().getEncoded(), CYPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(key.key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
 
@@ -328,6 +330,6 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
         assert keyStorePassword != null && keyStorePassword.length > 0;
         assert !started() : "Spi already started";
 
-        this.keyStorePassword = keyStorePassword;
+        this.keyStorePwd = keyStorePassword;
     }
 }

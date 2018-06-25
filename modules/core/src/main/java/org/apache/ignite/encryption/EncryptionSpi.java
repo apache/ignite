@@ -80,8 +80,8 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
     K decryptAndCheckKey(byte[] key);
 
     /**
-     * @param dataSize Size of clear data in bytes
-     * @return Size of encrypted data in bytes
+     * @param dataSize Size of clear data in bytes.
+     * @return Size of encrypted data in bytes.
      */
     int encryptedSize(int dataSize);
 }

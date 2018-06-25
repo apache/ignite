@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
-import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.CYPHER_ALGO;
+import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.CIPHER_ALGO;
 import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.MASTER_KEY_NAME;
 
 /**
@@ -104,8 +104,6 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             int grpId = CU.cacheGroupId(cacheName, encrypted0.configuration().getGroupName());
 
             assertNotNull(encrypted0);
-
-            assertTrue(encrypted0.configuration().isEncrypted());
 
             IgniteInternalCache<?, ?> encrypted1 = grid1.cachex(cacheName);
 
@@ -180,7 +178,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         ks.load(null, null);
 
-        KeyGenerator gen = KeyGenerator.getInstance(CYPHER_ALGO);
+        KeyGenerator gen = KeyGenerator.getInstance(CIPHER_ALGO);
 
         gen.init(192);
 

@@ -376,8 +376,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
 
     /**
-     * {@code true} if cache encrypted, {@code false} otherwise.
-     * Please, note, only data persisted to the disk will be encrypted
+     * {@code True} if cache encrypted, {@code false} otherwise.
+     * Please, note, only data persisted to the disk will be encrypted.
      * 
      * @see EncryptionSpi
      * @see EncryptionSpiImpl

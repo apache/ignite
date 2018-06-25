@@ -34,7 +34,7 @@ public class EncryptionKeyImpl implements EncryptionKey<Key> {
     /**
      * Encryption key.
      */
-    private Key k;
+    private final Key k;
 
     /**
      * Key digest.
