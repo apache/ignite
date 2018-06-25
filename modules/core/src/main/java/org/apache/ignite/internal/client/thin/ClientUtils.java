@@ -57,7 +57,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
-import static java.lang.Integer.MAX_VALUE;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
 
 /**

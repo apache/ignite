@@ -18,7 +18,6 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -51,7 +50,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
-import static java.lang.Integer.MAX_VALUE;
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
