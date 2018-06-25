@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['AgentManager'];
-
-    constructor(agentMgr) {
-        Object.assign(this, { agentMgr });
-
-        this.connectedClusters = 0;
-    }
-
-    $onInit() {
-        this.connectedClusters$ = this.agentMgr.connectionSbj
-            .do(({ clusters }) => this.connectedClusters = clusters.length)
-            .subscribe();
-    }
-
-    $onDestroy() {
-        this.connectedClusters$.unsubscribe();
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Util package that contains util classes used in long-running tasks.
+ */
+package org.apache.ignite.tensorflow.core.longrunning.task.util;

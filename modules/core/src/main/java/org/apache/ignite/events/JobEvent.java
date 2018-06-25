@@ -19,41 +19,44 @@ package org.apache.ignite.events;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid job event.
  * <p>
- * Grid events are used for notification about what happens within the grid. Note that by
- * design Ignite keeps all events generated on the local node locally and it provides
- * APIs for performing a distributed queries across multiple nodes:
+ * Grid events are used for notification about what happens within the grid. Note that by design Ignite keeps all events
+ * generated on the local node locally and it provides APIs for performing a distributed queries across multiple nodes:
  * <ul>
- *      <li>
- *          {@link org.apache.ignite.IgniteEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} -
- *          asynchronously querying events occurred on the nodes specified, including remote nodes.
- *      </li>
- *      <li>
- *          {@link org.apache.ignite.IgniteEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} -
- *          querying only local events stored on this local node.
- *      </li>
- *      <li>
- *          {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} -
- *          listening to local grid events (events from remote nodes not included).
- *      </li>
+ * <li>
+ * {@link org.apache.ignite.IgniteEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} -
+ * asynchronously querying events occurred on the nodes specified, including remote nodes.
+ * </li>
+ * <li>
+ * {@link org.apache.ignite.IgniteEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} - querying only
+ * local events stored on this local node.
+ * </li>
+ * <li>
+ * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} - listening to
+ * local grid events (events from remote nodes not included).
+ * </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate,
+ * int...)}.
  * <h1 class="header">Events and Performance</h1>
- * Note that by default all events in Ignite are enabled and therefore generated and stored
- * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
- * under the load and therefore it creates a significant additional load on the system. If these events are
- * not needed by the application this load is unnecessary and leads to significant performance degradation.
+ * Note that by default all events in Ignite are enabled and therefore generated and stored by whatever event storage
+ * SPI is configured. Ignite can and often does generate thousands events per seconds under the load and therefore it
+ * creates a significant additional load on the system. If these events are not needed by the application this load is
+ * unnecessary and leads to significant performance degradation.
  * <p>
- * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in Ignite configuration.
+ * It is <b>highly recommended</b> to enable only those events that your application logic requires by using {@link
+ * org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that
+ * certain events are required for Ignite's internal operations and such events will still be generated but not stored
+ * by event storage SPI if they are disabled in Ignite configuration.
+ *
  * @see EventType#EVT_JOB_CANCELLED
  * @see EventType#EVT_JOB_FAILED
  * @see EventType#EVT_JOB_FAILED_OVER
@@ -87,6 +90,9 @@ public class JobEvent extends EventAdapter {
 
     /** */
     private UUID taskSubjId;
+
+    /** */
+    private ComputeJobResultPolicy resPlc;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -223,6 +229,25 @@ public class JobEvent extends EventAdapter {
      */
     public void taskSubjectId(UUID taskSubjId) {
         this.taskSubjId = taskSubjId;
+    }
+
+    /**
+     * Gets job result policy. Not null for {@link EventType#EVT_JOB_RESULTED}
+     * and {@link EventType#EVT_JOB_FAILED_OVER} event types.
+     *
+     * @return Result policy.
+     */
+    @Nullable public ComputeJobResultPolicy resultPolicy() {
+        return resPlc;
+    }
+
+    /**
+     * Sets job result policy.
+     *
+     * @param resPlc New result policy.
+     */
+    public void resultPolicy(@Nullable ComputeJobResultPolicy resPlc) {
+        this.resPlc = resPlc;
     }
 
     /** {@inheritDoc} */
