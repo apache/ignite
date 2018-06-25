@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Descriptor of type.
@@ -55,11 +54,11 @@ public class QueryEntityTypeDescriptor {
     /** */
     private Set<String> notNullFields = new HashSet<>();
 
-    /** Decimal fields information. */
-    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+    /** Precision information. */
+    private Map<String, Integer> fieldsPrecision = new HashMap<>();
 
-    /** Maximum length information. */
-    private Map<String, Integer> maxLengthInfo = new HashMap<>();
+    /** Scale information. */
+    private Map<String, Integer> fieldsScale = new HashMap<>();
 
     /** */
     private QueryEntityIndexDescriptor fullTextIdx;
@@ -194,23 +193,23 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * Adds decimal info.
+     * Adds fieldsPrecision info.
      *
      * @param field Field.
-     * @param info Decimal column info.
+     * @param precision Precision.
      */
-    public void addDecimalInfo(String field, IgniteBiTuple<Integer, Integer> info) {
-        decimalInfo.put(field, info);
+    public void addPrecision(String field, Integer precision) {
+        fieldsPrecision.put(field, precision);
     }
 
     /**
-     * Adds maximum length info.
+     * Adds fieldsScale info.
      *
      * @param field Field.
-     * @param maxLength Maximum column value length.
+     * @param scale Scale.
      */
-    public void addMaxLengthInfo(String field, int maxLength) {
-        maxLengthInfo.put(field, maxLength);
+    public void addScale(String field, int scale) {
+        fieldsScale.put(field, scale);
     }
 
     /**
@@ -221,17 +220,17 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * @return Decimal info for fields.
+     * @return Precision info for fields.
      */
-    public Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo() {
-        return decimalInfo;
+    public Map<String, Integer> fieldsPrecision() {
+        return fieldsPrecision;
     }
 
     /**
-     * @return Maximum length info for fields.
+     * @return Scale info for fields.
      */
-    public Map<String, Integer> maxLengthInfo() {
-        return maxLengthInfo;
+    public Map<String, Integer> fieldsScale() {
+        return fieldsScale;
     }
 
     /**

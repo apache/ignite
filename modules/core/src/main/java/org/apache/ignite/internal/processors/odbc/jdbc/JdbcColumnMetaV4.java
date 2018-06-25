@@ -31,9 +31,6 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
     /** Decimal field scale. */
     private int scale;
 
-    /** Maximum length. */
-    private int maxLength;
-
     /**
      * Default constructor is used for serialization.
      */
@@ -50,15 +47,13 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
      * @param dfltVal Default value.
      * @param precision Decimal column precision.
      * @param scale Decimal column scale.
-     * @param maxLength Maximum column length.
      */
     public JdbcColumnMetaV4(String schemaName, String tblName, String colName, Class<?> cls, boolean nullable,
-        Object dfltVal, int precision, int scale, int maxLength) {
+        Object dfltVal, int precision, int scale) {
         super(schemaName, tblName, colName, cls, nullable, dfltVal);
 
         this.precision = precision;
         this.scale = scale;
-        this.maxLength = maxLength;
     }
 
     /** {@inheritDoc} */
@@ -72,17 +67,11 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
     }
 
     /** {@inheritDoc} */
-    @Override public int maxLength() {
-        return maxLength;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         super.writeBinary(writer);
 
         writer.writeInt(precision);
         writer.writeInt(scale);
-        writer.writeInt(maxLength);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +80,6 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
 
         precision = reader.readInt();
         scale = reader.readInt();
-        maxLength = reader.readInt();
     }
 
     /** {@inheritDoc} */

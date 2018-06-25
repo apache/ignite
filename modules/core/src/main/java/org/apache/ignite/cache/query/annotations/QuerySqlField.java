@@ -80,13 +80,6 @@ public @interface QuerySqlField {
     int scale() default -1;
 
     /**
-     * Specifies maximum length for a String field.
-     *
-     * @return Maximum length for a String field.
-     */
-    int maxLength() default MAX_VALUE;
-
-    /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,
      * whenever index should be created on more than one field. All fields within the same
      * group will belong to the same index.

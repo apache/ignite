@@ -460,8 +460,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                         NotNull = attr.NotNull,
                         DefaultValue = attr.DefaultValue,
                         Precision = attr.Precision,
-                        Scale = attr.Scale,
-                        MaxLength = attr.MaxLength
+                        Scale = attr.Scale
                     });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);

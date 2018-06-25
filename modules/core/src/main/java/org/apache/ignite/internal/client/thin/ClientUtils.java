@@ -56,8 +56,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static java.lang.Integer.MAX_VALUE;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
@@ -319,7 +317,6 @@ final class ClientUtils {
                                 if (ver.compareTo(VER_1_2_0) >= 0) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
-                                    w.writeInt(qf.getMaxLength());
                                 }
                             }
                         );
@@ -409,7 +406,6 @@ final class ClientUtils {
                                 Object dfltVal = reader.readObject();
                                 int precision = isCliVer1_2 ? reader.readInt() : -1;
                                 int scale = isCliVer1_2 ? reader.readInt() : -1; 
-                                int maxLength = isCliVer1_2 ? reader.readInt() : MAX_VALUE;
 
                                 return new QueryField(name,
                                     typeName,
@@ -417,8 +413,7 @@ final class ClientUtils {
                                     isNotNull,
                                     dfltVal,
                                     precision,
-                                    scale,
-                                    maxLength);
+                                    scale);
                             }
                         );
 
@@ -440,14 +435,13 @@ final class ClientUtils {
                                 .filter(f -> f.getDefaultValue() != null)
                                 .collect(Collectors.toMap(QueryField::getName, QueryField::getDefaultValue))
                             )
-                            .setDecimalInfo(qryFields.stream()
-                                .filter(f -> f.getPrecision() != -1 || f.getScale() != -1)
-                                .collect(Collectors.toMap(QueryField::getName, 
-                                    f -> F.t(f.getScale(), f.getPrecision())))
+                            .setFieldsPrecision(qryFields.stream()
+                                .filter(f -> f.getPrecision() != -1)
+                                .collect(Collectors.toMap(QueryField::getName, QueryField::getPrecision))
                             )
-                            .setMaxLengthInfo(qryFields.stream()
-                                .filter(f -> f.getMaxLength() != MAX_VALUE)
-                                .collect(Collectors.toMap(QueryField::getName, QueryField::getMaxLength))
+                            .setFieldsScale(qryFields.stream()
+                                .filter(f -> f.getScale() != -1)
+                                .collect(Collectors.toMap(QueryField::getName, QueryField::getScale))
                             )
                             .setAliases(ClientUtils.collection(
                                 in,
@@ -535,9 +529,6 @@ final class ClientUtils {
         /** Scale. */
         private final int scale;
 
-        /** MaxLength. */
-        private final int maxLength;
-
         /** Serialization constructor. */
         QueryField(QueryEntity e, Map.Entry<String, String> nameAndTypeName) {
             name = nameAndTypeName.getKey();
@@ -546,25 +537,19 @@ final class ClientUtils {
             Set<String> keys = e.getKeyFields();
             Set<String> notNulls = e.getNotNullFields();
             Map<String, Object> dflts = e.getDefaultFieldValues();
-            Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = e.getDecimalInfo();
-            Map<String, Integer> maxLengthInfo = e.getMaxLengthInfo();
+            Map<String, Integer> fldsPrecision = e.getFieldsPrecision();
+            Map<String, Integer> fldsScale = e.getFieldsScale();
 
             isKey = keys != null && keys.contains(name);
             isNotNull = notNulls != null && notNulls.contains(name);
             dfltVal = dflts == null ? null : dflts.get(name);
-
-            IgniteBiTuple<Integer, Integer> precisionAndScale = decimalInfo == null ? null : decimalInfo.get(name);
-
-            precision = precisionAndScale == null? -1 : precisionAndScale.get1();
-            scale = precisionAndScale == null? -1 : precisionAndScale.get2();
-            
-            maxLength = maxLengthInfo == null ? 
-                MAX_VALUE : maxLengthInfo.getOrDefault(name, MAX_VALUE);
+            precision = fldsPrecision == null ? -1 : fldsPrecision.getOrDefault(name, -1);
+            scale = fldsScale == null? -1 : fldsScale.getOrDefault(name, -1);
         }
 
         /** Deserialization constructor. */
         public QueryField(String name, String typeName, boolean isKey, boolean isNotNull, Object dfltVal,
-            int precision, int scale, int maxLength) {
+            int precision, int scale) {
             this.name = name;
             this.typeName = typeName;
             this.isKey = isKey;
@@ -572,7 +557,6 @@ final class ClientUtils {
             this.dfltVal = dfltVal;
             this.precision = precision;
             this.scale = scale;
-            this.maxLength = maxLength;
         }
 
         /**
@@ -622,13 +606,6 @@ final class ClientUtils {
          */
         public int getScale() {
             return scale;
-        }
-
-        /**
-         * @return Maximum length.
-         */
-        public int getMaxLength() {
-            return maxLength;
         }
     }
 

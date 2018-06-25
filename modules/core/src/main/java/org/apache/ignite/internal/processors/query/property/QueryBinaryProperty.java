@@ -87,9 +87,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** */
     private final int scale;
 
-    /** */
-    private final int maxLength;
-
     /**
      * Constructor.
      *
@@ -104,11 +101,10 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param defaultValue Default value.
      * @param precision Precision.
      * @param scale Scale.
-     * @param maxLength Maximum length.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String cacheName, String propName, QueryBinaryProperty parent,
         Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue,
-        int precision, int scale, int maxLength) {
+        int precision, int scale) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
@@ -126,7 +122,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
         this.defaultValue = defaultValue;
         this.precision = precision;
         this.scale = scale;
-        this.maxLength = maxLength;
     }
 
     /** {@inheritDoc} */
@@ -334,10 +329,5 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public int scale() {
         return scale;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int maxLength() {
-        return maxLength;
     }
 }

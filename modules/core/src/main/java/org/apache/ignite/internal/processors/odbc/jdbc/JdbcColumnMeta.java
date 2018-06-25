@@ -151,13 +151,6 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Column's maximum length.
-     */
-    public int maxLength() {
-        return MAX_VALUE;
-    }
-
-    /**
      * Return 'nullable' flag in compatibility mode (according with column name and column type).
      *
      * @return {@code true} in case the column allows null values. Otherwise returns {@code false}

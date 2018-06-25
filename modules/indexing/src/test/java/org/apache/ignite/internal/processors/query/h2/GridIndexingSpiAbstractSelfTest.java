@@ -577,10 +577,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public int scale() {
                     return -1;
                 }
-
-                @Override public int maxLength() {
-                    return MAX_VALUE;
-                }
             };
         }
 

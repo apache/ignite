@@ -389,7 +389,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             validateProps.add(prop);
         }
-        else if (prop.maxLength() != MAX_VALUE) {
+        else if (prop.precision() != -1) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 
@@ -407,15 +407,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
-     * Adds {@code _KEY} or {@code _VAL} validate property to the type descriptor.
+     * Adds validate property to the type descriptor.
      *
      * @param prop Property.
      */
-    void addSpecialValidateProperty(GridQueryProperty prop) {
-        String name = prop.name();
-
-        assert name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME);
-
+    void addValidateProperty(GridQueryProperty prop) {
         if (validateProps == null)
             validateProps = new ArrayList<>();
 
@@ -573,12 +569,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (prop.maxLength() < MAX_VALUE && 
+            if (prop.precision() != -1 &&
                 propVal != null &&
                 String.class == propVal.getClass() && 
-                ((String)propVal).length() > prop.maxLength()) {
+                ((String)propVal).length() > prop.precision()) {
                 throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
-                    "Maximum length: " + prop.maxLength() + ", actual length: " + ((CharSequence)propVal).length(), 
+                    "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
                     isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
             }
         }

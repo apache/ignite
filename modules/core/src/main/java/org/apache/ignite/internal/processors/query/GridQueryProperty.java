@@ -91,11 +91,4 @@ public interface GridQueryProperty {
      * @return Scale for a decimal property or -1.
      */
     public int scale();
-
-    /**
-     * Gets maximum length for this property.
-     *
-     * @return Maximum length for a property or {@code Integer.MAX_VALUE}.
-     */
-    public int maxLength();
 }

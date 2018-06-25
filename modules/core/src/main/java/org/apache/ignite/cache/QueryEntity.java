@@ -20,7 +20,6 @@ package org.apache.ignite.cache;
 import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,12 +48,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static java.lang.Integer.MAX_VALUE;
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -101,11 +96,11 @@ public class QueryEntity implements Serializable {
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
 
-    /** Decimal fields information. */
-    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+    /** Precision(Maximum length) for fields. */
+    private Map<String, Integer> fieldsPrecision = new HashMap<>();
 
-    /** Maximum length information for a {@code String} fields. */
-    private Map<String, Integer> maxLengthInfo = new HashMap<>();
+    /** Scale for fields. */
+    private Map<String, Integer> fieldsScale = new HashMap<>();
 
     /**
      * Creates an empty query entity.
@@ -139,9 +134,9 @@ public class QueryEntity implements Serializable {
         defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
             : new HashMap<String, Object>();
 
-        decimalInfo = other.decimalInfo != null ? new HashMap<>(other.decimalInfo) : new HashMap<>();
+        fieldsPrecision = other.fieldsPrecision != null ? new HashMap<>(other.fieldsPrecision) : new HashMap<>();
 
-        maxLengthInfo = other.maxLengthInfo != null ? new HashMap<>(other.maxLengthInfo) : new HashMap<>();
+        fieldsScale = other.fieldsScale != null ? new HashMap<>(other.fieldsScale) : new HashMap<>();
     }
 
     /**
@@ -267,6 +262,7 @@ public class QueryEntity implements Serializable {
             String targetFieldName = targetField.getKey();
             String targetFieldType = targetField.getValue();
 
+            //TODO: add fieldsPrecision and fieldsScale check.
             if (getFields().containsKey(targetFieldName)) {
                 checkEquals(
                     conflicts,
@@ -579,44 +575,40 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Gets set of field name to precision and scale.
-     *
-     * @return Set of names of fields that must have non-null values.
+     * @return Precision map for a fields.
      */
-    public Map<String, IgniteBiTuple<Integer, Integer>> getDecimalInfo() {
-        return decimalInfo == null ? Collections.emptyMap() : unmodifiableMap(decimalInfo);
+    public Map<String, Integer> getFieldsPrecision() {
+        return fieldsPrecision;
     }
 
     /**
-     * Sets decimal fields info.
+     * Sets fieldsPrecision map for a fields.
      *
-     * @param decimalInfo Set of name to precision and scale for decimal fields.
-     * @return {@code this} for chaining.
+     * @param fieldsPrecision Precision map for a fields.
+     * @return {@code This} for chaining.
      */
-    public QueryEntity setDecimalInfo(Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo) {
-        this.decimalInfo = decimalInfo;
+    public QueryEntity setFieldsPrecision(Map<String, Integer> fieldsPrecision) {
+        this.fieldsPrecision = fieldsPrecision;
 
         return this;
     }
 
     /**
-     * Gets set of field name to maximum length.
-     * 
-     * @return Set of field name to maximum length.
+     * @return Scale map for a fields.
      */
-    public Map<String, Integer> getMaxLengthInfo() {
-        return maxLengthInfo == null ? Collections.emptyMap() : unmodifiableMap(maxLengthInfo);
+    public Map<String, Integer> getFieldsScale() {
+        return fieldsScale;
     }
 
     /**
-     * Sets maximum length info.
-     * 
-     * @param maxLengthInfo Set of field name to maximum length.
-     * @return {@code this} for chaining.
+     * Sets fieldsScale map for a fields.
+     *
+     * @param fieldsScale Scale map for a fields.
+     * @return {@code This} for chaining.
      */
-    public QueryEntity setMaxLengthInfo(Map<String, Integer> maxLengthInfo) {
-        this.maxLengthInfo = maxLengthInfo;
-        
+    public QueryEntity setFieldsScale(Map<String, Integer> fieldsScale) {
+        this.fieldsScale = fieldsScale;
+
         return this;
     }
 
@@ -734,11 +726,11 @@ public class QueryEntity implements Serializable {
         if (!F.isEmpty(desc.notNullFields()))
             entity.setNotNullFields(desc.notNullFields());
 
-        if (!F.isEmpty(desc.decimalInfo()))
-            entity.setDecimalInfo(desc.decimalInfo());
+        if (!F.isEmpty(desc.fieldsPrecision()))
+            entity.setFieldsPrecision(desc.fieldsPrecision());
 
-        if (!F.isEmpty(desc.maxLengthInfo()))
-            entity.setMaxLengthInfo(desc.maxLengthInfo());
+        if (!F.isEmpty(desc.fieldsScale()))
+            entity.setFieldsScale(desc.fieldsScale());
 
         return entity;
     }
@@ -865,11 +857,11 @@ public class QueryEntity implements Serializable {
             if (sqlAnn.notNull())
                 desc.addNotNullField(prop.fullName());
 
-            if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
-                desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
+            if (sqlAnn.precision() != -1)
+                desc.addPrecision(prop.fullName(), sqlAnn.precision());
 
-            if (String.class == fldCls && sqlAnn.maxLength() != MAX_VALUE)
-                desc.addMaxLengthInfo(prop.fullName(), sqlAnn.maxLength());
+            if (sqlAnn.scale() != -1)
+                desc.addScale(prop.fullName(), sqlAnn.scale());
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
@@ -913,14 +905,14 @@ public class QueryEntity implements Serializable {
             F.eq(tableName, entity.tableName) &&
             F.eq(_notNullFields, entity._notNullFields) &&
             F.eq(defaultFieldValues, entity.defaultFieldValues) &&
-            F.eq(decimalInfo, entity.decimalInfo) &&
-            F.eq(maxLengthInfo, entity.maxLengthInfo);
+            F.eq(fieldsPrecision, entity.fieldsPrecision) &&
+            F.eq(fieldsScale, entity.fieldsScale);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues, decimalInfo, maxLengthInfo);
+            tableName, _notNullFields, defaultFieldValues, fieldsPrecision, fieldsScale);
     }
 
     /** {@inheritDoc} */

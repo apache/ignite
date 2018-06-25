@@ -267,8 +267,8 @@ public class QueryUtils {
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
-        normalEntity.setDecimalInfo(entity.getDecimalInfo());
-        normalEntity.setMaxLengthInfo(entity.getMaxLengthInfo());
+        normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
+        normalEntity.setFieldsScale(entity.getFieldsScale());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -547,8 +547,8 @@ public class QueryUtils {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
-        Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
+        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
         // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
@@ -579,32 +579,33 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
-            IgniteBiTuple<Integer, Integer> precisionAndScale =
-                decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
-
-            int maxLength = maxLengthInfo != null ? 
-                maxLengthInfo.getOrDefault(entry.getKey(), MAX_VALUE) : MAX_VALUE;
-
             QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
-                precisionAndScale != null ? precisionAndScale.get1() : -1,
-                precisionAndScale != null ? precisionAndScale.get2() : -1,
-                maxLength);
+                precision == null ? -1 : precision.getOrDefault(entry.getKey(), -1),
+                scale == null ? -1 : scale.getOrDefault(entry.getKey(), -1));
 
             d.addProperty(prop, false);
         }
 
-        //Only if constraints applied to {@code _KEY}.
-        if (!F.isEmpty(maxLengthInfo) && maxLengthInfo.containsKey(KEY_FIELD_NAME) && 
-            !fields.containsKey(KEY_FIELD_NAME)) {
-            addKeyValueValidationProperty(ctx, qryEntity, d, KEY_FIELD_NAME);
+        String keyFieldName = qryEntity.getKeyFieldName();
+
+        if (keyFieldName == null)
+            keyFieldName = KEY_FIELD_NAME;
+
+        if (!F.isEmpty(precision) && precision.containsKey(keyFieldName) &&
+            !fields.containsKey(keyFieldName)) {
+            addKeyValueValidationProperty(ctx, qryEntity, d, keyFieldName, true);
         }
 
-        //Only if constraints applied to {@code _VAL}.
-        if (!F.isEmpty(maxLengthInfo) && maxLengthInfo.containsKey(VAL_FIELD_NAME) &&
-            !fields.containsKey(VAL_FIELD_NAME)) {
-            addKeyValueValidationProperty(ctx, qryEntity, d, VAL_FIELD_NAME);
+        String valFieldName = qryEntity.getValueFieldName();
+
+        if (valFieldName == null)
+            valFieldName = VAL_FIELD_NAME;
+
+        if (!F.isEmpty(precision) && precision.containsKey(valFieldName) &&
+            !fields.containsKey(valFieldName)) {
+            addKeyValueValidationProperty(ctx, qryEntity, d, valFieldName, false);
         }
 
         processIndexes(qryEntity, d);
@@ -620,20 +621,11 @@ public class QueryUtils {
      * @throws IgniteCheckedException
      */
     private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
-        String name) throws IgniteCheckedException {
+        String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
-        Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
-        
-        Integer maxLength = maxLengthInfo.get(name);
-
-        IgniteBiTuple<Integer, Integer> precisionAndScale = decimalInfo.get(name);
-
-        if (maxLength == null && precisionAndScale == null) 
-            return;
-
-        boolean isKey = name.equals(KEY_FIELD_NAME);
+        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
 
@@ -648,11 +640,10 @@ public class QueryUtils {
             isKey, 
             true, 
             dfltVal,
-            precisionAndScale != null ? precisionAndScale.get1() : -1,
-            precisionAndScale != null ? precisionAndScale.get2() : -1,
-            maxLength != null ? maxLength : MAX_VALUE);
+            precision == null ? -1 : precision.getOrDefault(name, -1),
+            scale == null ? -1 : scale.getOrDefault(name, -1));
 
-        d.addSpecialValidateProperty(prop);
+        d.addValidateProperty(prop);
     }
 
     /**
@@ -794,13 +785,12 @@ public class QueryUtils {
      * @param dlftVal Default value.
      * @param precision Precision.
      * @param scale Scale.
-     * @param maxLength Maximum length.
      * @return Binary property.
      * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String cacheName, String pathStr, 
         Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
-        int precision, int scale, int maxLength) throws IgniteCheckedException {
+        int precision, int scale) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -817,7 +807,7 @@ public class QueryUtils {
 
             // The key flag that we've found out is valid for the whole path.
             res = new QueryBinaryProperty(ctx, cacheName, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                precision, scale, maxLength);
+                precision, scale);
         }
 
         return res;
@@ -1282,10 +1272,10 @@ public class QueryUtils {
         }
 
         Map<String, Object> dfltVals = entity.getDefaultFieldValues();
-        Map<String, Integer> maxLengthInfo = entity.getMaxLengthInfo();
+        Map<String, Integer> precision = entity.getFieldsPrecision();
 
-        if (!F.isEmpty(maxLengthInfo)) {
-            for (String fld : maxLengthInfo.keySet()) {
+        if (!F.isEmpty(precision)) {
+            for (String fld : precision.keySet()) {
                 if (!dfltVals.containsKey(fld))
                     continue;
 
@@ -1294,9 +1284,9 @@ public class QueryUtils {
                 if (dfltVal == null)
                     continue;
 
-                if (dfltVal.toString().length() > maxLengthInfo.get(fld)) {
+                if (dfltVal.toString().length() > precision.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal +
-                        "' is longer than maximum length " + maxLengthInfo.get(fld));
+                        "' is longer than maximum length " + precision.get(fld));
                 }
             }
         }
@@ -1509,11 +1499,6 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public int scale() {
             return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int maxLength() {
-            return MAX_VALUE;
         }
     }
 }

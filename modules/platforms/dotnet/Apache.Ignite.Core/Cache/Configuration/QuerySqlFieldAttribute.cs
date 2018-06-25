@@ -37,7 +37,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             IndexInlineSize = QueryIndex.DefaultInlineSize;
             Precision = -1;
             Scale = -1;
-            MaxLength = Int32.MaxValue;
         }
 
         /// <summary>
@@ -94,10 +93,5 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the scale for the field.
         /// </summary>
         public int Scale { get; set; }
-
-        /// <summary>
-        /// Gets or sets the maximum length for the field.
-        /// </summary>
-        public int MaxLength { get; set; }
     }
 }

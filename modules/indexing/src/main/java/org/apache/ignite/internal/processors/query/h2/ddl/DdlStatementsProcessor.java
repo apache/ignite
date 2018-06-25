@@ -423,7 +423,7 @@ public class DdlStatementsProcessor {
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
                             col.column().isNullable(), col.defaultValue(),
-                            col.precision(), col.scale(), col.maxLength());
+                            col.precision(), col.scale());
 
                         cols.add(field);
 
@@ -598,8 +598,8 @@ public class DdlStatementsProcessor {
 
         HashMap<String, Object> dfltValues = new HashMap<>();
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
-        Map<String, Integer> maxLengthInfo = new HashMap<>();
+        Map<String, Integer> precision = new HashMap<>();
+        Map<String, Integer> scale = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
@@ -620,24 +620,27 @@ public class DdlStatementsProcessor {
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
 
-            if (col.getType() == Value.DECIMAL)
-                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
+            if (col.getType() == Value.DECIMAL) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+
+                scale.put(e.getKey(), col.getScale());
+            }
 
             if (col.getType() == Value.STRING || 
                 col.getType() == Value.STRING_FIXED || 
                 col.getType() == Value.STRING_IGNORECASE) {
-                maxLengthInfo.put(e.getKey(), (int)col.getPrecision());
+                precision.put(e.getKey(), (int)col.getPrecision());
             }
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
 
-        if (!F.isEmpty(decimalInfo))
-            res.setDecimalInfo(decimalInfo);
+        if (!F.isEmpty(precision))
+            res.setFieldsPrecision(precision);
 
-        if (!F.isEmpty(maxLengthInfo))
-            res.setMaxLengthInfo(maxLengthInfo);
+        if (!F.isEmpty(scale))
+            res.setFieldsScale(scale);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

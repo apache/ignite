@@ -2483,8 +2483,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     !col.isNullable(), 
                     null, 
                     col.precision(), 
-                    col.scale(), 
-                    col.maxLength()));
+                    col.scale()));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());

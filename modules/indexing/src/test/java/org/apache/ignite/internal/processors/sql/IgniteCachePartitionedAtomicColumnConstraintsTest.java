@@ -68,35 +68,35 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        Map<String, Integer> strStrMaxLengthInfo = new HashMap<>();
+        Map<String, Integer> strStrPrecision = new HashMap<>();
 
-        strStrMaxLengthInfo.put(KEY_FIELD_NAME, 5);
-        strStrMaxLengthInfo.put(VAL_FIELD_NAME, 5);
+        strStrPrecision.put(KEY_FIELD_NAME, 5);
+        strStrPrecision.put(VAL_FIELD_NAME, 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), String.class.getName())
-            .setMaxLengthInfo(strStrMaxLengthInfo)), STR_CACHE_NAME);
+            .setFieldsPrecision(strStrPrecision)), STR_CACHE_NAME);
 
-        Map<String, Integer> orgAddressMaxLengthInfo = new HashMap<>();
+        Map<String, Integer> orgAddressPrecision = new HashMap<>();
 
-        orgAddressMaxLengthInfo.put("name", 5);
-        orgAddressMaxLengthInfo.put("address", 5);
+        orgAddressPrecision.put("name", 5);
+        orgAddressPrecision.put("address", 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(Organization.class.getName(), Address.class.getName())
             .addQueryField("name", "java.lang.String", "name")
             .addQueryField("address", "java.lang.String", "address")
-            .setMaxLengthInfo(orgAddressMaxLengthInfo)), OBJ_CACHE_NAME);
+            .setFieldsPrecision(orgAddressPrecision)), OBJ_CACHE_NAME);
 
-        Map<String, Integer> strOrgMaxLengthInfo = new HashMap<>();
+        Map<String, Integer> strOrgPrecision = new HashMap<>();
 
-        strOrgMaxLengthInfo.put(KEY_FIELD_NAME, 5);
+        strOrgPrecision.put(KEY_FIELD_NAME, 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
-            .setMaxLengthInfo(strOrgMaxLengthInfo)), STR_ORG_CACHE_NAME);
+            .setFieldsPrecision(strOrgPrecision)), STR_ORG_CACHE_NAME);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
             .addQueryField("name", "java.lang.String", "name")
             .addQueryField("address", "java.lang.String", "address")
-            .setMaxLengthInfo(strOrgMaxLengthInfo)), STR_ORG_WITH_FIELDS_CACHE_NAME);
+            .setFieldsPrecision(strOrgPrecision)), STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
 
     /**

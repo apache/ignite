@@ -826,7 +826,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                             columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
                                 field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue(),
-                                prop.precision(), prop.scale(), prop.maxLength());
+                                prop.precision(), prop.scale());
                         }
                         else if (protocolVer.compareTo(VER_2_4_0) >= 0) {
                             GridQueryProperty prop = table.property(colName);

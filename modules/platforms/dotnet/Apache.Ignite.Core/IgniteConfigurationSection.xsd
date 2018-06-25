@@ -350,11 +350,6 @@
                                                                                             <xs:documentation>Scale of field</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
-                                                                                    <xs:attribute name="maxLength" type="xs:int">
-                                                                                        <xs:annotation>
-                                                                                            <xs:documentation>Maximum length of field</xs:documentation>
-                                                                                        </xs:annotation>
-                                                                                    </xs:attribute>
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>

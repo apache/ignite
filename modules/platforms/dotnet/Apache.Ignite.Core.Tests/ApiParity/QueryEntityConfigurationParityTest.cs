@@ -33,8 +33,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "KeyFields",
             "NotNullFields",
             "DefaultFieldValues",
-            "DecimalInfo",
-            "MaxLengthInfo"
+            "FieldsPrecision", //TODO: FIXME IGNITE-6055.
+            "FieldsScale"
         };
 
         /// <summary>

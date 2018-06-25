@@ -103,15 +103,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
         startGridsMultiThreaded(3);
 
-        Map<String, Integer> orgMaxLengthInfo = new HashMap<>();
+        Map<String, Integer> orgPrecision = new HashMap<>();
         
-        orgMaxLengthInfo.put("name", 42);
+        orgPrecision.put("name", 42);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0),
             cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
                 .addQueryField("id", Integer.class.getName(), null)
                 .addQueryField("name", String.class.getName(), null)
-                .setMaxLengthInfo(orgMaxLengthInfo)
+                .setFieldsPrecision(orgPrecision)
                 .setIndexes(Arrays.asList(
                     new QueryIndex("id"),
                     new QueryIndex("name", false, "org_name_index")
@@ -701,7 +701,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** Name. */
-        @QuerySqlField(maxLength = 43)
+        @QuerySqlField(precision = 43)
         private final String name;
 
         /**

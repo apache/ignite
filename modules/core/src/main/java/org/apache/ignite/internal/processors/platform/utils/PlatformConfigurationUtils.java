@@ -505,8 +505,8 @@ public class PlatformConfigurationUtils {
         Set<String> keyFields = new HashSet<>(cnt);
         Set<String> notNullFields = new HashSet<>(cnt);
         Map<String, Object> defVals = new HashMap<>(cnt);
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>(cnt);
-        Map<String, Integer> maxLengthInfo = new HashMap<>(cnt);
+        Map<String, Integer> fieldsPrecision = new HashMap<>(cnt);
+        Map<String, Integer> fieldsScale = new HashMap<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -530,15 +530,13 @@ public class PlatformConfigurationUtils {
                 if (ver.compareTo(VER_1_2_0) >= 0) {
                     int precision = in.readInt();
 
+                    if (precision != -1)
+                        fieldsPrecision.put(fieldName, precision);
+
                     int scale = in.readInt();
 
-                    if (precision != -1 || scale != -1)
-                        decimalInfo.put(fieldName, F.t(precision, scale));
-
-                    int maxLength = in.readInt();
-
-                    if (maxLength != MAX_VALUE)
-                        maxLengthInfo.put(fieldName, maxLength);
+                    if (scale != -1)
+                        fieldsScale.put(fieldName, scale);
                 }
             }
 
@@ -553,11 +551,11 @@ public class PlatformConfigurationUtils {
             if (!defVals.isEmpty())
                 res.setDefaultFieldValues(defVals);
 
-            if (!decimalInfo.isEmpty())
-                res.setDecimalInfo(decimalInfo);
+            if (!fieldsPrecision.isEmpty())
+                res.setFieldsPrecision(fieldsPrecision);
 
-            if (!maxLengthInfo.isEmpty())
-                res.setMaxLengthInfo(maxLengthInfo);
+            if (!fieldsScale.isEmpty())
+                res.setFieldsScale(fieldsScale);
         }
 
         // Aliases
@@ -1075,8 +1073,8 @@ public class PlatformConfigurationUtils {
             Set<String> keyFields = qryEntity.getKeyFields();
             Set<String> notNullFields = qryEntity.getNotNullFields();
             Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
-            Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = qryEntity.getDecimalInfo();
-            Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
+            Map<String, Integer> fieldsPrecision = qryEntity.getFieldsPrecision();
+            Map<String, Integer> fieldsScale = qryEntity.getFieldsScale();
 
             writer.writeInt(fields.size());
 
@@ -1088,14 +1086,8 @@ public class PlatformConfigurationUtils {
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
 
                 if (ver.compareTo(VER_1_2_0) >= 0) {
-                    IgniteBiTuple<Integer, Integer> precisionAndScale =
-                        decimalInfo == null ? null : decimalInfo.get(field.getKey());
-
-                    writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
-                    writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
-
-                    writer.writeInt(maxLengthInfo == null ?
-                        MAX_VALUE : maxLengthInfo.getOrDefault(field.getKey(), MAX_VALUE));
+                    writer.writeInt(fieldsPrecision == null ? -1 : fieldsPrecision.getOrDefault(field.getKey(), -1));
+                    writer.writeInt(fieldsScale == null ? -1 : fieldsScale.getOrDefault(field.getKey(), -1));
                 }
             }
         }
