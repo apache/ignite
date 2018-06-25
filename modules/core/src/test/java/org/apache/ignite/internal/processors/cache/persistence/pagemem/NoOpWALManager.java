@@ -153,6 +153,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
-        return 0;
+        return -1L;
     }
 }

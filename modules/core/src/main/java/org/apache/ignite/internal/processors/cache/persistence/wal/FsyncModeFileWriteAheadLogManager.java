@@ -847,9 +847,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
-        long lastArchived = archiver.lastArchivedAbsoluteIndex();
-
-        return lastArchived == -1 ? 0 : lastArchived;
+        return archiver.lastArchivedAbsoluteIndex();
     }
 
     /** {@inheritDoc} */
