@@ -19,6 +19,8 @@ package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.function.Predicate;
+
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -38,7 +40,7 @@ import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
  *
  * @param <T> Type of impurity measure.
  */
-abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrainer<DecisionTreeNode, Double> {
+public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrainer<DecisionTreeNode, Double> {
     /** Max tree deep. */
     private final int maxDeep;
 
@@ -65,6 +67,7 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
         this.compressor = compressor;
         this.decisionTreeLeafBuilder = decisionTreeLeafBuilder;
     }
+
 
     /** {@inheritDoc} */
     @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
