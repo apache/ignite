@@ -27,7 +27,6 @@ from pyignite.datatypes.sql import StatementType
 from pyignite.datatypes.standard import String
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
-from pyignite.utils import is_hinted
 from .result import APIResult
 
 
@@ -224,9 +223,7 @@ def sql(
         ('flag', Byte),
         ('table_name', String),
         ('query_str', String),
-        ('query_args', StructArray([
-            ('arg', AnyDataObject),
-        ])),
+        ('query_args', AnyDataArray()),
         ('distributed_joins', Bool),
         ('local', Bool),
         ('replicated_only', Bool),
