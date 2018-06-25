@@ -29,7 +29,6 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;

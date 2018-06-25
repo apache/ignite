@@ -34,9 +34,6 @@ import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTr
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
