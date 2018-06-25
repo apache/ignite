@@ -330,7 +330,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Object marshalToBinary(@Nullable Object obj, boolean failIfUnregistered) throws BinaryObjectException {
+    @Override public Object marshalToBinary(
+        @Nullable Object obj,
+        boolean failIfUnregistered
+    ) throws BinaryObjectException {
         if (obj == null)
             return null;
 
@@ -352,9 +355,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             IgniteBiTuple tup = (IgniteBiTuple)obj;
 
             if (obj instanceof T2)
-                return new T2<>(marshalToBinary(tup.get1(), failIfUnregistered), marshalToBinary(tup.get2(), failIfUnregistered));
+                return new T2<>(marshalToBinary(tup.get1(), failIfUnregistered),
+                    marshalToBinary(tup.get2(), failIfUnregistered));
 
-            return new IgniteBiTuple<>(marshalToBinary(tup.get1(), failIfUnregistered), marshalToBinary(tup.get2(), failIfUnregistered));
+            return new IgniteBiTuple<>(marshalToBinary(tup.get1(), failIfUnregistered),
+                marshalToBinary(tup.get2(), failIfUnregistered));
         }
 
         {
@@ -377,7 +382,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 Map<?, ?> map = (Map<?, ?>)obj;
 
                 for (Map.Entry<?, ?> e : map.entrySet())
-                    pMap.put(marshalToBinary(e.getKey(), failIfUnregistered), marshalToBinary(e.getValue(), failIfUnregistered));
+                    pMap.put(marshalToBinary(e.getKey(), failIfUnregistered),
+                        marshalToBinary(e.getValue(), failIfUnregistered));
 
                 return pMap;
             }
@@ -386,7 +392,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj instanceof Map.Entry) {
             Map.Entry<?, ?> e = (Map.Entry<?, ?>)obj;
 
-            return new GridMapEntry<>(marshalToBinary(e.getKey(), failIfUnregistered), marshalToBinary(e.getValue(), failIfUnregistered));
+            return new GridMapEntry<>(marshalToBinary(e.getKey(), failIfUnregistered),
+                marshalToBinary(e.getValue(), failIfUnregistered));
         }
 
         if (binaryMarsh.mustDeserialize(obj))
@@ -875,7 +882,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode,
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
         IgniteNodeValidationResult res;
 
         if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) || !(marsh instanceof BinaryMarshaller))

@@ -1186,8 +1186,8 @@ public class BinaryContext {
     /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#descriptorForClass(Class, boolean, boolean)} already call this functionality so use this method
-     * only when registering class names whose {@link Class} is unknown.
+     * {@link BinaryContext#descriptorForClass(Class, boolean, boolean)} already call this functionality
+     * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
