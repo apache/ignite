@@ -154,6 +154,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -161,6 +162,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
+import static java.lang.Boolean.TRUE;
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.newDirectoryStream;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -632,6 +636,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             checkpointReadLock();
 
+            // Need to clean up work directory.
+            boolean cleanUpWorkDirectory = false;
+
             try {
                 restoreMemory(status, true, storePageMem);
 
@@ -643,6 +650,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 fillWalDisabledGroups();
 
+                // Node crash when WAL was disabled.
+                Boolean disabled = (Boolean)metaStorage.read(WAL_DISABLED);
+
+                if (disabled != null && disabled)
+                    cleanUpWorkDirectory = true;
+
                 notifyMetastorageReadyForRead();
             }
             finally {
@@ -652,6 +665,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             metaStorage = null;
 
             storePageMem.stop();
+
+            if (cleanUpWorkDirectory){
+                cctx.pageStore().cleanupPersistentSpace();
+
+                try {
+                    try (DirectoryStream<Path> files = newDirectoryStream(
+                        cpDir.toPath(), entry -> true
+                    )) {
+                        for (Path path : files)
+                            delete(path);
+                    }
+                }
+                catch (IOException e) {
+                    throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
+                }
+            }
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -826,8 +855,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
-            metaStorage = new MetaStorage(cctx, dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
+            metaStorage = new MetaStorage(
+                cctx,
+                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
+            );
 
             WALPointer restore = restoreMemory(status);
 
@@ -2127,44 +2159,57 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return (PageMemoryEx)sharedCtx.database().dataRegion(memPlcName).pageMemory();
     }
 
-    private interface Closure {
-        void apply() throws IgniteCheckedException;
-    }
+    /**
+     *
+     * @param cls Closure for execute.
+     * @throws IgniteCheckedException If exception according.
+     */
+    private void disabeledWALScope(IgniteRunnable cls) throws IgniteCheckedException {
+        checkpointReadLock();
 
-    private void runWithDisabeledWAL(Closure cls) throws IgniteCheckedException {
+        try {
+            metaStorage.write(WAL_DISABLED, TRUE);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+
         waitForCheckpoint("Checkpoint before apply updates on recovery.");
-
-        boolean successWALDisabled;
 
         checkpointReadLock();
 
         try {
-            successWALDisabled = cctx.wal().disableWal(true);
-
-            if (successWALDisabled)
-                metaStorage.write(WAL_DISABLED, Boolean.TRUE);
+            cctx.wal().disableWal(true);
         }
         finally {
             checkpointReadUnlock();
         }
 
         try {
-            cls.apply();
+            cls.run();
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         finally {
-            if (successWALDisabled) {
-                checkpointReadLock();
+            checkpointReadLock();
 
-                try {
-                    cctx.wal().disableWal(false);
+            try {
+                cctx.wal().disableWal(false);
+            }
+            finally {
+                checkpointReadUnlock();
+            }
 
-                    metaStorage.write(WAL_DISABLED, Boolean.FALSE);
-                }
-                finally {
-                    checkpointReadUnlock();
-                }
+            waitForCheckpoint("Checkpoint after apply updates on recovery.");
 
-                waitForCheckpoint("Checkpoint after apply updates on recovery.");
+            checkpointReadLock();
+
+            try {
+                metaStorage.remove(WAL_DISABLED);
+            }
+            finally {
+                checkpointReadUnlock();
             }
         }
     }
@@ -2183,10 +2228,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        runWithDisabeledWAL(() -> {
+        disabeledWALScope(() -> {
             if (it != null) {
-                while (it.hasNextX()) {
-                    IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+                while (it.hasNext()) {
+                    IgniteBiTuple<WALPointer, WALRecord> next = it.next();
 
                     WALRecord rec = next.get2();
 
@@ -2220,6 +2265,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     }
                                 }
                             }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
                             finally {
                                 checkpointReadUnlock();
                             }
@@ -2237,11 +2285,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 restorePartitionStates(partStates, null);
             }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
             finally {
                 checkpointReadUnlock();
             }
         });
     }
+
 
     /**
      * @param status Last registered checkpoint status.

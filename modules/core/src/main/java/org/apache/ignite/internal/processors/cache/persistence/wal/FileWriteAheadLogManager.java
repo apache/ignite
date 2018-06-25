@@ -1001,21 +1001,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disableWal(boolean disable) {
-        try {
-            flush(null, true);
+    @Override public void disableWal(boolean disable) throws IgniteCheckedException {
+        flush(null, true);
 
-            walDisabled = disable;
+        walDisabled = disable;
 
-            log.info("WAL logging " + (disable ? "disabled" : "enabled"));
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to " + (disable ? "disable" : "enable") + " WAL logging ");
-
-            return false;
-        }
+        log.info("WAL logging " + (disable ? "disabled" : "enabled"));
     }
 
     /**

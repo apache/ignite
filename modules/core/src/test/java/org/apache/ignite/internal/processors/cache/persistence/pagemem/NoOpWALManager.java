@@ -152,7 +152,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disableWal(boolean disable) {
-        return true;
+    @Override public void disableWal(boolean disable) {
+        // No-op.
     }
 }
