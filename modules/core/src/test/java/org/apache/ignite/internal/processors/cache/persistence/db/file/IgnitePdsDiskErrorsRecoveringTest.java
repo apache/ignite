@@ -429,11 +429,12 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] buf, int off, int len) throws IOException {
-            super.write(buf, off, len);
+        @Override public int write(byte[] buf, int off, int len) throws IOException {
+            final int num = super.write(buf, off, len);
             availableSpaceBytes.addAndGet(-len);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
+            return num;
         }
 
         /** {@inheritDoc} */
