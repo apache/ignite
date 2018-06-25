@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Insert into inner or leaf page.
  */
-public class InsertRecord<L> extends PageDeltaRecord {
+public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedRecord {
     /** */
     private int idx;
 
@@ -41,6 +42,9 @@ public class InsertRecord<L> extends PageDeltaRecord {
     /** */
     private BPlusIO<L> io;
 
+    /** If {@code true} this record should be encrypted. */
+    private boolean needEncryption;
+
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
@@ -48,6 +52,7 @@ public class InsertRecord<L> extends PageDeltaRecord {
      * @param idx Index.
      * @param rowBytes Row bytes.
      * @param rightId Right ID.
+     * @param needEncryption If {@code true} this record should be encrypted.
      */
     public InsertRecord(
         int grpId,
@@ -55,7 +60,8 @@ public class InsertRecord<L> extends PageDeltaRecord {
         BPlusIO<L> io,
         int idx,
         byte[] rowBytes,
-        long rightId
+        long rightId,
+        boolean needEncryption
     ) {
         super(grpId, pageId);
 
@@ -63,6 +69,7 @@ public class InsertRecord<L> extends PageDeltaRecord {
         this.idx = idx;
         this.rowBytes = rowBytes;
         this.rightId = rightId;
+        this.needEncryption = needEncryption;
     }
 
     /** {@inheritDoc} */
@@ -101,6 +108,11 @@ public class InsertRecord<L> extends PageDeltaRecord {
      */
     public byte[] rowBytes() {
         return rowBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needEncryption() {
+        return needEncryption;
     }
 
     /** {@inheritDoc} */

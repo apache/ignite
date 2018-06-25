@@ -36,6 +36,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.encryption.EncryptionKey;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -881,13 +884,32 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
 
+        Map<Integer, byte[]> encKeys = null;
+
+        for (DynamicCacheDescriptor cache : ctx.cache().cacheDescriptors().values()) {
+            if (!cache.cacheConfiguration().isEncrypted())
+                continue;
+
+            EncryptionSpi encSpi = sharedCtx.gridConfig().getEncryptionSpi();
+
+            EncryptionKey grpKey = sharedCtx.database().groupKey(cache.groupId());
+
+            byte[] encGrpKey = encSpi.encryptKey(grpKey != null ? grpKey : encSpi.create());
+
+            if (encKeys == null)
+                encKeys = new HashMap<>();
+
+            encKeys.put(cache.groupId(), encGrpKey);
+        }
+
         ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(startedFut.requestId,
             ctx.localNodeId(),
             storedCfgs,
             activate,
             blt,
             forceChangeBaselineTopology,
-            System.currentTimeMillis());
+            System.currentTimeMillis(),
+            encKeys);
 
         try {
             if (log.isInfoEnabled())

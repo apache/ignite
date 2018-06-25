@@ -136,12 +136,12 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!empty) {
             freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+                reuseListRoot.isAllocated(), false);
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
             tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
+                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), false);
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
@@ -468,8 +468,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         /** {@inheritDoc} */
         FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
             ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew,
+            boolean encrypted) throws IgniteCheckedException {
+            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew, encrypted);
         }
 
         /** {@inheritDoc} */

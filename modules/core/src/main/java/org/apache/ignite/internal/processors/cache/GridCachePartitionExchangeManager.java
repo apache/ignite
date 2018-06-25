@@ -47,6 +47,8 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.encryption.EncryptionKey;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -1118,7 +1120,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         compress,
                         grp.groupId(),
                         locMap,
-                        affCache.similarAffinityKey());
+                        affCache.similarAffinityKey(),
+                        grp.encrypted());
                 }
 
                 m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
@@ -1141,12 +1144,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             GridDhtPartitionFullMap map = top.partitionMap(true);
 
             if (map != null) {
+                boolean isEncrypted = false;
+
+                CacheGroupContext grpCtx = cctx.cache().cacheGroup(top.groupId());
+
+                if (grpCtx != null)
+                    isEncrypted = grpCtx.encrypted();
+
                 addFullPartitionsMap(m,
                     dupData,
                     compress,
                     top.groupId(),
                     map,
-                    top.similarAffinityKey());
+                    top.similarAffinityKey(),
+                    isEncrypted);
             }
 
             if (exchId != null) {
@@ -1177,7 +1188,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean compress,
         Integer grpId,
         GridDhtPartitionFullMap map,
-        Object affKey) {
+        Object affKey,
+        boolean isEncrypted) {
         assert map != null;
 
         Integer dupDataCache = null;
@@ -1201,7 +1213,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 dupData.put(affKey, new T2<>(grpId, map));
         }
 
-        m.addFullPartitionsMap(grpId, map, dupDataCache);
+        byte[] encGrpKey = null;
+
+        if (isEncrypted) {
+            EncryptionSpi encSpi = cctx.gridConfig().getEncryptionSpi();
+
+            EncryptionKey grpKey = cctx.database().groupKey(grpId);
+
+            if (grpKey == null) {
+
+                encGrpKey = encSpi.encryptKey(encSpi.create());
+
+                cctx.database().groupKey(grpId, encGrpKey);
+            }
+            else
+                encGrpKey = encSpi.encryptKey(grpKey);
+        }
+
+        m.addFullPartitionsMap(grpId, map, dupDataCache, encGrpKey);
     }
 
     /**
@@ -1463,6 +1492,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
 
         try {
+            for (Map.Entry<Integer, byte[]> encKey : msg.encryptionKeys().entrySet())
+                cctx.database().groupKey(encKey.getKey(), encKey.getValue());
+
             if (msg.exchangeId() == null) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');

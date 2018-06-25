@@ -101,6 +101,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -975,6 +976,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
+            startManager(new GridEncryptionManager(ctx));
 
             ackSecurity();
 

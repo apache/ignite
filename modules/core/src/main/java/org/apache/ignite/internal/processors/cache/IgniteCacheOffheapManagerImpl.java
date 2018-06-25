@@ -169,7 +169,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 grp.dataRegion().pageMemory(),
                 rootPage,
                 grp.reuseList(),
-                true);
+                true,
+                cctx.config().isEncrypted());
         }
     }
 
@@ -967,7 +968,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             grp.reuseList(),
             rowStore,
             rootPage,
-            true);
+            true,
+            grp.encrypted());
 
         return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);
     }

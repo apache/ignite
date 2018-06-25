@@ -359,6 +359,9 @@ class ClusterCachesInfo {
                     rmtAttr.affinityKeyBackups(), true);
             }
         }
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "isEncrypted",
+            "Cache encrypted", locAttr.isEncrypted(), rmtAttr.isEncrypted(), true);
     }
 
     /**
@@ -1897,6 +1900,9 @@ class ClusterCachesInfo {
             CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "backups", "Backups",
                 cfg.getBackups(), startCfg.getBackups(), true);
         }
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "encrypted", "Encrypted",
+            cfg.isEncrypted(), startCfg.isEncrypted(), true);
     }
 
     /**

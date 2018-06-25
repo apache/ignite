@@ -79,6 +79,9 @@ public class FilePageStore implements PageStore {
     private final int pageSize;
 
     /** */
+    private final int pageSizeOnDisk;
+
+    /** */
     private volatile boolean inited;
 
     /** */
@@ -108,6 +111,7 @@ public class FilePageStore implements PageStore {
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
+        this.pageSizeOnDisk = ioFactory.dataSizeOnDisk(pageSize);
         this.allocatedTracker = allocatedTracker;
     }
 
@@ -133,11 +137,9 @@ public class FilePageStore implements PageStore {
     /**
      * Creates header for current version file store. Doesn't init the store.
      *
-     * @param type Type.
-     * @param pageSize Page size.
      * @return Byte buffer instance.
      */
-    public ByteBuffer header(byte type, int pageSize) {
+    public ByteBuffer header() {
         ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
         hdr.putLong(SIGNATURE);
@@ -160,13 +162,13 @@ public class FilePageStore implements PageStore {
      * @throws IOException If initialization is failed.
      */
     private long initFile() throws IOException {
-        ByteBuffer hdr = header(type, dbCfg.getPageSize());
+        ByteBuffer hdr = header();
 
         while (hdr.remaining() > 0)
             fileIO.write(hdr);
 
         //there is 'super' page in every file
-        return headerSize() + dbCfg.getPageSize();
+        return headerSize() + pageSizeOnDisk;
     }
 
     /**
@@ -215,12 +217,12 @@ public class FilePageStore implements PageStore {
             long fileSize = cfgFile.length();
 
             if (fileSize == headerSize()) // Every file has a special meta page.
-                fileSize = pageSize + headerSize();
+                fileSize = pageSizeOnDisk + headerSize();
 
-            if ((fileSize - headerSize()) % pageSize != 0)
+            if ((fileSize - headerSize()) % pageSizeOnDisk != 0)
                 throw new IOException("Failed to verify store file (invalid file size)" +
                     " [fileSize=" + U.hexLong(fileSize) +
-                    ", pageSize=" + U.hexLong(pageSize) + ']');
+                    ", pageSizeOnDisk=" + U.hexLong(pageSizeOnDisk) + ']');
 
             return fileSize;
         }
@@ -229,10 +231,7 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * @param cleanFile {@code True} to delete file.
-     * @throws PersistentStorageIOException If failed.
-     */
+    /** {@inheritDoc} */
     public void stop(boolean cleanFile) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
@@ -255,12 +254,7 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * Truncates and deletes partition file.
-     *
-     * @param tag New partition tag.
-     * @throws PersistentStorageIOException If failed
-     */
+    /** {@inheritDoc} */
     public void truncate(int tag) throws PersistentStorageIOException {
         init();
 
@@ -279,7 +273,7 @@ public class FilePageStore implements PageStore {
             throw new PersistentStorageIOException("Failed to delete partition file: " + cfgFile.getPath(), e);
         }
         finally {
-            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.get() / pageSize);
+            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.get() / pageSizeOnDisk);
 
             allocated.set(0);
 
@@ -289,9 +283,7 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     public void beginRecover() {
         lock.writeLock().lock();
 
@@ -303,9 +295,7 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     public void finishRecover() throws PersistentStorageIOException {
         lock.writeLock().lock();
 
@@ -313,13 +303,13 @@ public class FilePageStore implements PageStore {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
             // header + page.
             if (inited) {
-                long newSize = Math.max(headerSize() + pageSize, fileIO.size());
+                long newSize = Math.max(headerSize() + pageSizeOnDisk, fileIO.size());
 
                 long delta = newSize - allocated.getAndSet(newSize);
 
-                assert delta % pageSize == 0;
+                assert delta % pageSizeOnDisk == 0;
 
-                allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+                allocatedTracker.updateTotalAllocatedPages(delta / pageSizeOnDisk);
             }
 
             recover = false;
@@ -359,7 +349,7 @@ public class FilePageStore implements PageStore {
 
                 off += n;
 
-                len -= n;
+                len -= pageSize;
             }
             while (len > 0);
 
@@ -429,18 +419,16 @@ public class FilePageStore implements PageStore {
 
             try {
                 if (!inited) {
-                    FileIO fileIO = null;
-
                     PersistentStorageIOException err = null;
 
                     try {
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+                        this.fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
                         long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
 
                         assert allocated.get() == 0;
 
-                        allocatedTracker.updateTotalAllocatedPages(newSize / pageSize);
+                        allocatedTracker.updateTotalAllocatedPages(newSize / pageSizeOnDisk);
 
                         allocated.set(newSize);
 
@@ -508,7 +496,7 @@ public class FilePageStore implements PageStore {
             do {
                 int n = fileIO.write(pageBuf, off);
 
-                off += n;
+                off += pageSizeOnDisk;
 
                 len -= n;
             }
@@ -542,7 +530,7 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public long pageOffset(long pageId) {
-        return (long) PageIdUtils.pageIndex(pageId) * pageSize + headerSize();
+        return (long) PageIdUtils.pageIndex(pageId) * ioFactory.dataSizeOnDisk(pageSize) + headerSize();
     }
 
     /** {@inheritDoc} */
@@ -573,19 +561,21 @@ public class FilePageStore implements PageStore {
 
         long off = allocPage();
 
-        return (off - headerSize()) / pageSize;
+        return (off - headerSize()) / pageSizeOnDisk;
     }
 
     /**
      *
      */
     private long allocPage() {
+        int pageSizeOnDisk = ioFactory.dataSizeOnDisk(pageSize);
+
         long off;
 
         do {
             off = allocated.get();
 
-            if (allocated.compareAndSet(off, off + pageSize)) {
+            if (allocated.compareAndSet(off, off + pageSizeOnDisk)) {
                 allocatedTracker.updateTotalAllocatedPages(1);
 
                 break;
@@ -601,6 +591,6 @@ public class FilePageStore implements PageStore {
         if (!inited)
             return 0;
 
-        return (int)((allocated.get() - headerSize()) / pageSize);
+        return (int)((allocated.get() - headerSize()) / pageSizeOnDisk);
     }
 }

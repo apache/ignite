@@ -49,6 +49,9 @@ public abstract class DataStructure implements PageLockListener {
     /** */
     protected final int grpId;
 
+    /** {@code True} if cache encrypted. */
+    protected final boolean encrypted;
+
     /** */
     protected final PageMemory pageMem;
 
@@ -62,15 +65,18 @@ public abstract class DataStructure implements PageLockListener {
      * @param cacheId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @param encrypted {@code True} if cache encrypted.
      */
     public DataStructure(
         int cacheId,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal
+        IgniteWriteAheadLogManager wal,
+        boolean encrypted
     ) {
         assert pageMem != null;
 
         this.grpId = cacheId;
+        this.encrypted = encrypted;
         this.pageMem = pageMem;
         this.wal = wal;
     }

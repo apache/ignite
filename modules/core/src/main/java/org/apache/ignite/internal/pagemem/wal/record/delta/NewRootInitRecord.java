@@ -19,13 +19,15 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Initialize new root page.
  */
-public class NewRootInitRecord<L> extends PageDeltaRecord {
+public class NewRootInitRecord<L> extends PageDeltaRecord implements WalEncryptedRecord {
+
     /** */
     private long newRootId;
 
@@ -41,13 +43,18 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
     /** */
     private long rightChildId;
 
+    /** If {@code true} this record should be encrypted. */
+    private boolean needEncryption;
+
     /**
      * @param grpId Cache group ID.
      * @param pageId  Page ID.
+     * @param newRootId New root ID.
      * @param io IO.
      * @param leftChildId Left child ID.
      * @param rowBytes Row.
      * @param rightChildId Right child ID.
+     * @param needEncryption If {@code true} this record should be encrypted.
      */
     public NewRootInitRecord(
         int grpId,
@@ -56,7 +63,8 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         BPlusInnerIO<L> io,
         long leftChildId,
         byte[] rowBytes,
-        long rightChildId
+        long rightChildId,
+        boolean needEncryption
     ) {
         super(grpId, pageId);
 
@@ -67,6 +75,7 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         this.leftChildId = leftChildId;
         this.rowBytes = rowBytes;
         this.rightChildId = rightChildId;
+        this.needEncryption = needEncryption;
     }
 
     /** {@inheritDoc} */
@@ -112,6 +121,11 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
      */
     public byte[] rowBytes() {
         return rowBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needEncryption() {
+        return needEncryption;
     }
 
     /** {@inheritDoc} */

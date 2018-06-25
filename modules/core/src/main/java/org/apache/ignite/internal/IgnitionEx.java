@@ -112,6 +112,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
@@ -2435,6 +2436,9 @@ public class IgnitionEx {
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
+
+            if (cfg.getEncryptionSpi() == null)
+                cfg.setEncryptionSpi(new NoopEncryptionSpi());
         }
 
         /**

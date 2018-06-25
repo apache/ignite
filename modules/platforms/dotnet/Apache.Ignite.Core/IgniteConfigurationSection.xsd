@@ -862,6 +862,11 @@
                                             <xs:documentation>Desired query parallelism within a single node.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="isEncrypted" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Cache encryption flag.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>

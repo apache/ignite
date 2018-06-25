@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -69,6 +70,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.encryption.EncryptionKey;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureContext;
@@ -122,6 +125,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.PersistentStorageIOException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -230,6 +234,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** WAL marker prefix for meta store. */
     private static final String WAL_KEY_PREFIX = "grp-wal-";
 
+    /** Prefix for a encryption group key in meta store. */
+    public static final String ENCRYPTION_KEY_PREFIX = "grp-encryption-key-";
+
     /** Prefix for meta store records which means that WAL was disabled globally for some group. */
     private static final String WAL_GLOBAL_KEY_PREFIX = WAL_KEY_PREFIX + "disabled-";
 
@@ -245,6 +252,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return key.startsWith(WAL_KEY_PREFIX);
         }
     };
+
+    /** Encryption key predicate for meta store. */
+    private static final IgnitePredicate<String> ENCRYPTION_KEY_PREFIX_PRED =
+        (IgnitePredicate<String>)key -> key.startsWith(ENCRYPTION_KEY_PREFIX);
 
     /** Timeout between partition file destroy and checkpoint to handle it. */
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
@@ -344,6 +355,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Initially local wal disabled groups. */
     private Collection<Integer> initiallyLocalWalDisabledGrps = new HashSet<>();
+
+    /** Group encryption keys. */
+    private Map<Integer, EncryptionKey<?>> grpEncryptionKeys = new HashMap<>();
 
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
@@ -638,7 +652,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 applyLastUpdates(status, true);
 
-                fillWalDisabledGroups();
+                fillWalDisabledGroups(metaStorage);
+
+                fillGroupsEncKey(metaStorage);
 
                 notifyMetastorageReadyForRead();
             }
@@ -1421,6 +1437,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             grpIds.add(tup.get1().groupId());
 
             pageMem.onCacheGroupDestroyed(tup.get1().groupId());
+
+            if (gctx.encrypted()) {
+                checkpointReadLock();
+
+                try {
+                    grpEncryptionKeys.remove(gctx.groupId());
+
+                    metaStorage.remove(ENCRYPTION_KEY_PREFIX + gctx.groupId());
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to clear meta storage", e);
+                } finally {
+                    checkpointReadUnlock();
+                }
+            }
         }
 
         Collection<IgniteInternalFuture<Void>> clearFuts = new ArrayList<>(destroyed.size());
@@ -4262,6 +4293,38 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override @Nullable public EncryptionKey<?> groupKey(int grpId) {
+        return grpEncryptionKeys.get(grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void groupKey(int grpId, byte[] encGrpKey) {
+        EncryptionSpi encSpi = cctx.gridConfig().getEncryptionSpi();
+
+        assert !grpEncryptionKeys.containsKey(grpId) ||
+            Arrays.equals(encSpi.encryptKey(grpEncryptionKeys.get(grpId)), encGrpKey);
+
+        if (grpEncryptionKeys.containsKey(grpId))
+            return;
+
+        checkpointReadLock();
+
+        try {
+            metaStorage.write(ENCRYPTION_KEY_PREFIX + grpId, encGrpKey);
+
+            EncryptionKey encKey = encSpi.decryptAndCheckKey(encGrpKey);
+
+            grpEncryptionKeys.put(grpId, encKey);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+    }
+
     /**
      * Checks that checkpoint with timestamp {@code cpTs} is inapplicable as start point for WAL rebalance for given group {@code grpId}.
      *
@@ -4300,9 +4363,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    private void fillWalDisabledGroups() {
-        MetaStorage meta = cctx.database().metaStorage();
-
+    private void fillWalDisabledGroups(ReadOnlyMetastorage meta) {
         try {
             Set<String> keys = meta.readForPredicate(WAL_KEY_PREFIX_PRED).keySet();
 
@@ -4324,6 +4385,35 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to read cache groups WAL state.", e);
+        }
+    }
+
+    /**
+     *
+     */
+    private void fillGroupsEncKey(ReadOnlyMetastorage meta) {
+        try {
+            Map<String, ? extends Serializable> encKeys = meta.readForPredicate(ENCRYPTION_KEY_PREFIX_PRED);
+
+            if (encKeys.isEmpty())
+                return;
+
+            EncryptionSpi encSpi = cctx.gridConfig().getEncryptionSpi();
+
+            for (String key : encKeys.keySet()) {
+                Integer grpId = Integer.valueOf(key.replace(ENCRYPTION_KEY_PREFIX, ""));
+
+                byte[] encGrpKey = (byte[])encKeys.get(key);
+
+                EncryptionKey<?> grpKey = encSpi.decryptAndCheckKey(encGrpKey);
+
+                EncryptionKey<?> old = grpEncryptionKeys.putIfAbsent(grpId, grpKey);
+
+                assert old == null;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to read encryption keys state.", e);
         }
     }
 

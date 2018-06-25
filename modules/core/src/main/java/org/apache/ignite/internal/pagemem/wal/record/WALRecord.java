@@ -35,10 +35,10 @@ public abstract class WALRecord {
         TX_RECORD,
 
         /** */
-        PAGE_RECORD,
+        PAGE_RECORD(true),
 
         /** */
-        DATA_RECORD,
+        DATA_RECORD(true),
 
         /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,
@@ -52,10 +52,10 @@ public abstract class WALRecord {
         INIT_NEW_PAGE_RECORD,
 
         /** */
-        DATA_PAGE_INSERT_RECORD,
+        DATA_PAGE_INSERT_RECORD(true),
 
         /** */
-        DATA_PAGE_INSERT_FRAGMENT_RECORD,
+        DATA_PAGE_INSERT_FRAGMENT_RECORD(true),
 
         /** */
         DATA_PAGE_REMOVE_RECORD,
@@ -73,13 +73,13 @@ public abstract class WALRecord {
         BTREE_META_PAGE_CUT_ROOT,
 
         /** */
-        BTREE_INIT_NEW_ROOT,
+        BTREE_INIT_NEW_ROOT(true),
 
         /** */
         BTREE_PAGE_RECYCLE,
 
         /** */
-        BTREE_PAGE_INSERT,
+        BTREE_PAGE_INSERT(true),
 
         /** */
         BTREE_FIX_LEFTMOST_CHILD,
@@ -88,7 +88,7 @@ public abstract class WALRecord {
         BTREE_FIX_COUNT,
 
         /** */
-        BTREE_PAGE_REPLACE,
+        BTREE_PAGE_REPLACE(true),
 
         /** */
         BTREE_PAGE_REMOVE,
@@ -163,7 +163,7 @@ public abstract class WALRecord {
         SWITCH_SEGMENT_RECORD,
 
         /** */
-        DATA_PAGE_UPDATE_RECORD,
+        DATA_PAGE_UPDATE_RECORD(true),
 
         /** init */
         BTREE_META_PAGE_INIT_ROOT2,
@@ -184,7 +184,10 @@ public abstract class WALRecord {
         RESERVED,
 
         /** Rotated id part record. */
-        ROTATED_ID_PART_RECORD;
+        ROTATED_ID_PART_RECORD,
+
+        /** Encrypted WAL-record. Should be used only for a standalone WAL iteration. */
+        ENCRYPTED_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -200,6 +203,28 @@ public abstract class WALRecord {
          * For {@link WALMode#FSYNC} this value is at least came from padding
          */
         public static final int STOP_ITERATION_RECORD_TYPE = 0;
+
+        /**
+         * If {@code true} this record should be encrypted for an encrypted cache.
+         */
+        private boolean mayBeEncrypted;
+
+        /**
+         * @return {@code True} if this record should be encrypted for an encrypted cache
+         */
+        public boolean mayBeEncrypted() {
+            return mayBeEncrypted;
+        }
+
+        /** */
+        RecordType() {}
+
+        /**
+         * @param mayBeEncrypted If {@code true} this record should be encrypted for an encrypted cache.
+         */
+        RecordType(boolean mayBeEncrypted) {
+            this.mayBeEncrypted = mayBeEncrypted;
+        }
     }
 
     /** */

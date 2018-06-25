@@ -60,6 +60,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
@@ -525,8 +526,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageIO.getType(pageAddr) == 0) {
                     trackingIO.initNewPage(pageAddr, pageId, pageSize());
 
-                    if (!ctx.wal().disabled(fullId.groupId()))
-                        if (!ctx.wal().isAlwaysWriteFullPages())
+                    if (!ctx.wal().disabled(fullId.groupId())) {
+                        if (!ctx.wal().isAlwaysWriteFullPages()) {
                             ctx.wal().log(
                                 new InitNewPageRecord(
                                     grpId,
@@ -535,8 +536,12 @@ public class PageMemoryImpl implements PageMemoryEx {
                                     trackingIO.getVersion(), pageId
                                 )
                             );
-                        else
-                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
+                        }
+                        else {
+                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize(),
+                                ctx.cache().cacheGroup(fullId.groupId()).encrypted()));
+                        }
+                    }
                 }
             }
 
@@ -1608,7 +1613,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) {
         if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages()) && !walMgr.disabled(pageId.groupId())) {
             try {
-                walMgr.log(new PageSnapshot(pageId, ptr, pageSize()));
+                CacheGroupContext grpCtx = ctx.cache().cacheGroup(pageId.groupId());
+
+                boolean encrypted = grpCtx != null && grpCtx.encrypted();
+
+                walMgr.log(new PageSnapshot(pageId, ptr, pageSize(), encrypted));
             }
             catch (IgniteCheckedException e) {
                 // TODO ignite-db.

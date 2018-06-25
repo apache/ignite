@@ -38,6 +38,12 @@ import org.apache.ignite.internal.GridVersionSelfTest;
 import org.apache.ignite.internal.IgniteConcurrentEntryProcessorAccessStopTest;
 import org.apache.ignite.internal.IgniteConnectionConcurrentReserveAndRemoveTest;
 import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheCreateGroupTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
+import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
@@ -159,6 +165,13 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
+
+        suite.addTestSuite(EncryptedCacheDestroyTest.class);
+        suite.addTestSuite(EncryptedCacheCreateTest.class);
+        suite.addTestSuite(EncryptedCacheCreateGroupTest.class);
+        suite.addTestSuite(EncryptedCacheRestartTest.class);
+        suite.addTestSuite(EncryptedCachePreconfiguredRestartTest.class);
+        suite.addTestSuite(EncryptedCacheNodeJoinTest.class);
 
         return suite;
     }

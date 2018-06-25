@@ -394,7 +394,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             byte[] newRowBytes = io.store(pageAddr, idx, newRow, null, needWal);
 
             if (needWal)
-                wal.log(new ReplaceRecord<>(grpId, pageId, io, newRowBytes, idx));
+                wal.log(new ReplaceRecord<>(grpId, pageId, io, newRowBytes, idx, encrypted));
 
             return FOUND;
         }
@@ -720,6 +720,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -731,9 +732,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
-        IOVersions<? extends BPlusLeafIO<L>> leafIos
+        IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        boolean encrypted
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, encrypted);
         setIos(innerIos, leafIos);
     }
 
@@ -745,6 +747,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -754,9 +757,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
-        ReuseList reuseList
+        ReuseList reuseList,
+        boolean encrypted
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal);
+        super(cacheId, pageMem, wal, encrypted);
 
         assert !F.isEmpty(name);
 
@@ -2780,7 +2784,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             byte[] rowBytes = io.insert(pageAddr, idx, row, null, rightId, needWal);
 
             if (needWal)
-                wal.log(new InsertRecord<>(grpId, pageId, io, idx, rowBytes, rightId));
+                wal.log(new InsertRecord<>(grpId, pageId, io, idx, rowBytes, rightId, encrypted));
         }
 
         /**
@@ -2871,7 +2875,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                                 if (needWal)
                                     wal.log(new NewRootInitRecord<>(grpId, newRootId, newRootId,
-                                        inner(io), pageId, moveUpRowBytes, fwdId));
+                                        inner(io), pageId, moveUpRowBytes, fwdId, encrypted));
                             }
                             finally {
                                 writeUnlock(newRootId, newRootPage, newRootAddr, newRootPageWalPlc, true);

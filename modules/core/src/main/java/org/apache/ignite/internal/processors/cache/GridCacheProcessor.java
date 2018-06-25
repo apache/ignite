@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -157,6 +158,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -543,6 +545,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
+
+        if (cc.isEncrypted()) {
+            if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration()))
+                throw new IgniteCheckedException("Using encryption is not allowed" +
+                    " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
+                    ", cacheType=" + cacheType + "]");
+
+            EncryptionSpi encSpi = c.getEncryptionSpi();
+
+            if (cc.isEncrypted() && (encSpi == null || encSpi instanceof NoopEncryptionSpi))
+                throw new IgniteCheckedException("EncryptionSpi should be configured to use encrypted cache " +
+                    "[cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
+                    ", cacheType=" + cacheType + "]");
+        }
     }
 
     /**
@@ -2040,7 +2056,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             reuseList,
             exchTopVer,
             persistenceEnabled,
-            desc.walEnabled()
+            desc.walEnabled(),
+            desc.config().isEncrypted()
         );
 
         for (Object obj : grp.configuredUserObjects())

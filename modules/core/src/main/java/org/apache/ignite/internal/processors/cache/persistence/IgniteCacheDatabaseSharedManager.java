@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -189,7 +190,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     null,
                     persistenceEnabled ? cctx.wal() : null,
                     0L,
-                    true);
+                    true, false);
 
             freeListMap.put(memPlcCfg.getName(), freeList);
         }
@@ -1105,6 +1106,26 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void walEnabled(int grpId, boolean enabled, boolean local) {
         // No-op.
+    }
+
+    /**
+     * Store group encryption key.
+     *
+     * @param grpId Group id.
+     * @param encGrpKey Encrypted group key.
+     */
+    public void groupKey(int grpId, byte[] encGrpKey) {
+        // No-op.
+    }
+
+    /**
+     * Returns group encryption key.
+     *
+     * @param grpId Group id.
+     * @return Group encryption key.
+     */
+    @Nullable public EncryptionKey groupKey(int grpId) {
+        return null;
     }
 
     /**

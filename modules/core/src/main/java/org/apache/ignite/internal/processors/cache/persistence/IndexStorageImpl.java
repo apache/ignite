@@ -68,6 +68,14 @@ public class IndexStorageImpl implements IndexStorage {
     /**
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @param globalRmvId
+     * @param grpId
+     * @param allocPartId
+     * @param allocSpace
+     * @param reuseList
+     * @param rootPageId
+     * @param initNew
+     * @param encrypted {@code True} if cache encrypted.
      */
     public IndexStorageImpl(
         final PageMemory pageMem,
@@ -78,7 +86,8 @@ public class IndexStorageImpl implements IndexStorage {
         final byte allocSpace,
         final ReuseList reuseList,
         final long rootPageId,
-        final boolean initNew
+        final boolean initNew,
+        final boolean encrypted
     ) {
         try {
             this.pageMem = pageMem;
@@ -88,7 +97,7 @@ public class IndexStorageImpl implements IndexStorage {
             this.reuseList = reuseList;
 
             metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
-                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
+                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew, encrypted);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -164,6 +173,8 @@ public class IndexStorageImpl implements IndexStorage {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
+         * @param initNew Init new flag.
+         * @param encrypted {@code True} if cache encrypted.
          * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
@@ -177,9 +188,11 @@ public class IndexStorageImpl implements IndexStorage {
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
-            final boolean initNew
+            final boolean initNew,
+            final boolean encrypted
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList,
+                innerIos, leafIos, encrypted);
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;

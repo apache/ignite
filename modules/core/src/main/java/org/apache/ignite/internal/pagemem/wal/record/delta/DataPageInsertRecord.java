@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -26,23 +27,29 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Insert into data page.
  */
-public class DataPageInsertRecord extends PageDeltaRecord {
+public class DataPageInsertRecord extends PageDeltaRecord implements WalEncryptedRecord {
     /** */
     private byte[] payload;
+
+    /** If {@code true} this record should be encrypted. */
+    private final boolean needEncryption;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param payload Remainder of the record.
+     * @param needEncryption If {@code true} this record should be encrypted.
      */
     public DataPageInsertRecord(
         int grpId,
         long pageId,
-        byte[] payload
+        byte[] payload,
+        boolean needEncryption
     ) {
         super(grpId, pageId);
 
         this.payload = payload;
+        this.needEncryption = needEncryption;
     }
 
     /**
@@ -64,6 +71,11 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needEncryption() {
+        return needEncryption;
     }
 
     /** {@inheritDoc} */

@@ -219,6 +219,7 @@ public class PlatformConfigurationUtils {
         ccfg.setQueryDetailMetricsSize(in.readInt());
         ccfg.setQueryParallelism(in.readInt());
         ccfg.setSqlSchema(in.readString());
+        ccfg.setEncrypted(in.readBoolean());
 
         int qryEntCnt = in.readInt();
 
@@ -969,6 +970,7 @@ public class PlatformConfigurationUtils {
         writer.writeInt(ccfg.getQueryDetailMetricsSize());
         writer.writeInt(ccfg.getQueryParallelism());
         writer.writeString(ccfg.getSqlSchema());
+        writer.writeBoolean(ccfg.isEncrypted());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 

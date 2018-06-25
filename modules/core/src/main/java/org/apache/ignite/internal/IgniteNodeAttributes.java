@@ -199,6 +199,9 @@ public final class IgniteNodeAttributes {
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
+    /** Encryption master key digest. */
+    public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
+
     /**
      * Enforces singleton.
      */

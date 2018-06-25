@@ -28,17 +28,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.encryption.EncryptionKey;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
@@ -88,11 +93,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInputImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Record data V1 serializer.
@@ -113,6 +121,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
 
+    /** Encryption SPI instance. */
+    private final EncryptionSpi<EncryptionKey<?>> encryptionSpi;
+
+    /** */
+    public static final byte ENCRYPTED = 1;
+
+    /** */
+    public static final byte CLEAR = 0;
+
     /**
      * @param cctx Cache shared context.
      */
@@ -121,10 +138,148 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.txRecordSerializer = new TxRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
+        this.encryptionSpi = cctx.gridConfig().getEncryptionSpi();
     }
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
+        int clearSize = clearSize(record);
+
+        if (record.type().mayBeEncrypted()) {
+            assert record instanceof WalEncryptedRecord :
+                "Record of type " + record.type() + " should implements WalEncryptedRecord";
+
+            if (((WalEncryptedRecord)record).needEncryption())
+                return encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* groupId */
+                    + 4 /* data size */;
+
+            return clearSize + 1 /* encrypted flag */;
+        }
+
+        return clearSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in)
+        throws IOException, IgniteCheckedException {
+        boolean needDecryption = false;
+
+        if (type.mayBeEncrypted())
+            needDecryption = in.readByte() == ENCRYPTED;
+
+        if (needDecryption) {
+            if (encryptionSpi == null)
+                return readEncryptedRecordWithoutDecryption(in, type);
+
+            T2<ByteBufferBackedDataInput, Integer> clearData = readEncryptedData(in);
+
+            if (clearData.get1() == null)
+                return new EncryptedRecord(clearData.get2(), type);
+
+            return readClearRecord(type, clearData.get1());
+        }
+
+        return readClearRecord(type, in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        if (rec.type().mayBeEncrypted()) {
+            assert rec instanceof WalEncryptedRecord :
+                "Record of type " + rec.type() + " should implements WalEncryptedRecord";
+
+            if (((WalEncryptedRecord)rec).needEncryption()) {
+                int clearSize = clearSize(rec);
+
+                ByteBuffer clearData = ByteBuffer.allocate(clearSize);
+
+                writeClearRecord(rec, clearData);
+
+                int grpId = ((WalEncryptedRecord)rec).groupId();
+
+                writeEncryptedData(grpId, clearData, buf);
+
+                return;
+            }
+            else
+                buf.put(CLEAR);
+        }
+
+        writeClearRecord(rec, buf);
+    }
+
+    /**
+     * Reads and decrypt data from {@code in} stream.
+     *
+     * @param in Input stream.
+     * @return Clear data stream.
+     * @throws IOException If failed.
+     */
+    @Nullable T2<ByteBufferBackedDataInput, Integer> readEncryptedData(ByteBufferBackedDataInput in)
+        throws IOException {
+        int grpId = in.readInt();
+        int encryptedRecSize = in.readInt();
+
+        byte[] encryptedData = new byte[encryptedRecSize];
+
+        in.readFully(encryptedData);
+
+        EncryptionKey key = cctx.database().groupKey(grpId);
+
+        if (key == null)
+            return new T2<>(null, grpId);
+
+        byte[] clearData = encryptionSpi.decrypt(encryptedData, key);
+
+        return new T2<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clearData)), grpId);
+    }
+
+    /**
+     * Reads encrypted record without decryption.
+     * Should be used only for a offline WAL iteration.
+     *
+     * @param in Data stream.
+     * @return Encrypted record.
+     */
+    EncryptedRecord readEncryptedRecordWithoutDecryption(ByteBufferBackedDataInput in, RecordType clearRecordType)
+        throws IOException {
+        int grpId = in.readInt();
+        int encryptedRecSize = in.readInt();
+
+        int skipped = in.skipBytes(encryptedRecSize);
+
+        assert skipped == encryptedRecSize;
+
+        return new EncryptedRecord(grpId, clearRecordType);
+    }
+
+    /**
+     * Writes encrypted {@code clearData} to {@code dst} stream.
+     *
+     * @param grpId Group id;
+     * @param clearData Clear data.
+     * @param dst Destination buffer.
+     */
+    void writeEncryptedData(int grpId, ByteBuffer clearData, ByteBuffer dst) {
+        int dataSize = encryptionSpi.encryptedSize(clearData.capacity());
+
+        dst.put(ENCRYPTED);
+        dst.putInt(grpId);
+        dst.putInt(dataSize);
+
+        EncryptionKey key = cctx.database().groupKey(grpId);
+
+        assert key != null;
+
+        dst.put(encryptionSpi.encrypt(clearData.array(), key));
+    }
+
+    /**
+     * @param record Record to measure.
+     * @return Clear(without encryption) size of serialized record in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    int clearSize(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
             case PAGE_RECORD:
                 assert record instanceof PageSnapshot;
@@ -301,8 +456,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    /**
+     * Reads {@code WalRecord} of {@code type} from input.
+     * Input should be clear(not encrypted).
+     *
+     * @param type Record type.
+     * @param in Input
+     * @return Deserialized record.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    WALRecord readClearRecord(RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
@@ -314,7 +478,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(arr);
 
-                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr);
+                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr, false);
 
                 break;
 
@@ -391,7 +555,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readDataEntry(in));
 
-                res = new DataRecord(entries, 0L);
+                res = new DataRecord(entries, 0L, false, -1);
 
                 break;
 
@@ -444,7 +608,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageInsertRecord(cacheId, pageId, payload);
+                res = new DataPageInsertRecord(cacheId, pageId, payload, false);
 
                 break;
             }
@@ -463,7 +627,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageUpdateRecord(cacheId, pageId, itemId, payload);
+                res = new DataPageUpdateRecord(cacheId, pageId, itemId, payload, false);
 
                 break;
             }
@@ -479,7 +643,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink);
+                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink, false);
 
                 break;
             }
@@ -571,7 +735,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(rowBytes);
 
-                res = new NewRootInitRecord<>(cacheId, pageId, rootId, (BPlusInnerIO<?>)io, leftId, rowBytes, rightId);
+                res = new NewRootInitRecord<>(cacheId, pageId, rootId, (BPlusInnerIO<?>)io, leftId, rowBytes, rightId,
+                    false);
 
                 break;
 
@@ -600,7 +765,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(rowBytes);
 
-                res = new InsertRecord<>(cacheId, pageId, io, itemIdx, rowBytes, rightId);
+                res = new InsertRecord<>(cacheId, pageId, io, itemIdx, rowBytes, rightId, false);
 
                 break;
 
@@ -638,7 +803,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(rowBytes);
 
-                res = new ReplaceRecord<>(cacheId, pageId, io, rowBytes, itemIdx);
+                res = new ReplaceRecord<>(cacheId, pageId, io, rowBytes, itemIdx, false);
 
                 break;
 
@@ -864,8 +1029,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    /**
+     * Write {@code rec} to {@code buf} without encryption.
+     *
+     * @param rec Record to serialize.
+     * @param buf Output buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    void writeClearRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         switch (rec.type()) {
             case PAGE_RECORD:
                 PageSnapshot snap = (PageSnapshot)rec;

@@ -952,6 +952,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
 
                         cctx.database().readCheckpointAndRestoreMemory(startDescs);
+
+                        Map<Integer, byte[]> encKeys = exchActions.stateChangeRequest().encryptionKeys();
+
+                        for (Map.Entry<Integer, byte[]> encKey : encKeys.entrySet())
+                            cctx.database().groupKey(encKey.getKey(), encKey.getValue());
                     }
 
                     cctx.affinity().onCacheChangeRequest(this, crd, exchActions);

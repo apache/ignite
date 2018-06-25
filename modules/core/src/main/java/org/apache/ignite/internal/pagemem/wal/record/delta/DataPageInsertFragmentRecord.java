@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Insert fragment (part of big object which is bigger than page size) to data page record.
  */
-public class DataPageInsertFragmentRecord extends PageDeltaRecord {
+public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WalEncryptedRecord {
     /** Link to the last entry fragment. */
     private final long lastLink;
 
@@ -35,22 +36,28 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     @GridToStringExclude
     private final byte[] payload;
 
+    /** If {@code true} this record should be encrypted. */
+    private final boolean needEncryption;
+
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param payload Fragment payload.
      * @param lastLink Link to the last entry fragment.
+     * @param needEncryption If {@code true} this record should be encrypted.
      */
     public DataPageInsertFragmentRecord(
         final int grpId,
         final long pageId,
         final byte[] payload,
-        final long lastLink
+        final long lastLink,
+        final boolean needEncryption
     ) {
         super(grpId, pageId);
 
         this.lastLink = lastLink;
         this.payload = payload;
+        this.needEncryption = needEncryption;
     }
 
     /** {@inheritDoc} */
@@ -84,6 +91,11 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
      */
     public long lastLink() {
         return lastLink;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needEncryption() {
+        return needEncryption;
     }
 
     /** {@inheritDoc} */

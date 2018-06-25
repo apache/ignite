@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 
 /**
@@ -62,16 +64,8 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         this.memCfg = memCfg;
     }
 
-    /**
-     * @param fileIOFactory File IO factory for V1 & V2 page store and for version checking.
-     * @param memCfg Memory configuration.
-     */
-    public FileVersionCheckingFactory(FileIOFactory fileIOFactory, DataStorageConfiguration memCfg) {
-        this(fileIOFactory, fileIOFactory, memCfg);
-    }
-
     /** {@inheritDoc} */
-    @Override public FilePageStore createPageStore(
+    @Override public PageStore createPageStore(
         byte type,
         File file,
         AllocatedPageTracker allocatedTracker) throws IgniteCheckedException {
@@ -125,7 +119,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param ver Version.
      * @param allocatedTracker Metrics updater
      */
-    public FilePageStore createPageStore(
+    public PageStore createPageStore(
         byte type,
         File file,
         int ver,
@@ -139,6 +133,23 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             default:
                 throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + file.getAbsolutePath() + "]");
+        }
+    }
+
+    /**
+     * @param ver Version.
+     * @return Header size.
+     */
+    public int headerSize(int ver) {
+        switch (ver) {
+            case FilePageStore.VERSION:
+                return FilePageStore.HEADER_SIZE;
+
+            case FilePageStoreV2.VERSION:
+                return memCfg.getPageSize();
+
+            default:
+                throw new IllegalArgumentException("Unknown version of file page store.");
         }
     }
 }

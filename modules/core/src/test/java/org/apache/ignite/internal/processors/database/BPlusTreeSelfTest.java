@@ -2383,7 +2383,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
             super("test", cacheId, pageMem, null, new AtomicLong(), metaPageId, reuseList,
-                new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
+                new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()), false);
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 

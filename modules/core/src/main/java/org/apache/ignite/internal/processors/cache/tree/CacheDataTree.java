@@ -52,6 +52,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param rowStore Row store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataTree(
@@ -60,7 +61,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         ReuseList reuseList,
         CacheDataRowStore rowStore,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        boolean encrypted
     ) throws IgniteCheckedException {
         super(name,
             grp.groupId(),
@@ -70,7 +72,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             metaPageId,
             reuseList,
             grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS);
+            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS,
+            encrypted);
 
         assert rowStore != null;
 

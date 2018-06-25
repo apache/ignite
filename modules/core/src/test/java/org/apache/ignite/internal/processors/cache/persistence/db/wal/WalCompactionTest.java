@@ -130,7 +130,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         // Spam WAL to move all data records to compressible WAL zone.
         for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1),
+                new byte[DFLT_PAGE_SIZE], false));
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
@@ -326,7 +327,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         // Spam WAL to move all data records to compressible WAL zone.
         for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1),
+                new byte[DFLT_PAGE_SIZE], false));
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();

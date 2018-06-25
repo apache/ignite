@@ -32,10 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -10205,6 +10208,43 @@ public abstract class IgniteUtils {
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Serialize object to byte array.
+     *
+     * @param obj Object.
+     * @return Serialized object.
+     */
+    public static byte[] toBytes(Serializable obj) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            
+            oos.writeObject(obj);
+            oos.flush();
+
+            return bos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Deserialize object from byte array.
+     *
+     * @param data Serialized object.
+     * @return Object.
+     */
+    public static <T> T fromBytes(byte[] data) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
         }
     }
 

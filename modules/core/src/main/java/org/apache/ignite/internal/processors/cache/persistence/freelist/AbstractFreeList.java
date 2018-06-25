@@ -120,7 +120,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     cacheId,
                     pageId,
                     itemId,
-                    payload));
+                    payload,
+                    encrypted));
             }
 
             return updated;
@@ -204,7 +205,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 wal.log(new DataPageInsertRecord(
                     grpId,
                     pageId,
-                    payload));
+                    payload,
+                    encrypted));
             }
 
             return rowSize;
@@ -245,7 +247,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink, encrypted));
             }
 
             return written + payloadSize;
@@ -330,6 +332,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     public AbstractFreeList(
@@ -340,8 +343,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+        boolean initNew,
+        boolean encrypted) throws IgniteCheckedException {
+        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, encrypted);
 
         rmvRow = new RemoveRowHandler(cacheId == 0);
 

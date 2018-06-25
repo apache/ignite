@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalI
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteEncryptedWalReaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 
@@ -155,6 +156,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Test suite uses Standalone WAL iterator to verify PDS content.
         suite.addTestSuite(IgniteWalReaderTest.class);
+        suite.addTestSuite(IgniteEncryptedWalReaderTest.class);
 
         suite.addTestSuite(IgnitePdsExchangeDuringCheckpointTest.class);
 

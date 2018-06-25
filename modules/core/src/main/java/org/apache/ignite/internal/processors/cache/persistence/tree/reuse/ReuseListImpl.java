@@ -41,6 +41,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param wal       Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     public ReuseListImpl(int cacheId,
@@ -48,8 +49,9 @@ public class ReuseListImpl extends PagesList implements ReuseList {
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, 1, wal, metaPageId);
+        boolean initNew,
+        boolean encrypted) throws IgniteCheckedException {
+        super(cacheId, name, pageMem, 1, wal, metaPageId, encrypted);
 
         reuseList = this;
 

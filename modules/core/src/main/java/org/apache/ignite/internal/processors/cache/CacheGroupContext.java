@@ -160,6 +160,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** */
+    private volatile boolean encrypted;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -174,6 +177,7 @@ public class CacheGroupContext {
      * @param locStartVer Topology version when group was started on local node.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
+     * @param encrypted Encrypted enabled flag.
      */
     CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -188,7 +192,8 @@ public class CacheGroupContext {
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
-        boolean walEnabled
+        boolean walEnabled,
+        boolean encrypted
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -208,6 +213,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
+        this.encrypted = encrypted;
 
         persistGlobalWalState(walEnabled);
 
@@ -1073,5 +1079,12 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
+    }
+
+    /**
+     * @return Encrypted flag.
+     */
+    public boolean encrypted() {
+        return encrypted;
     }
 }
