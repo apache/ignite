@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import org.scalatest.Suites
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec,
-    new IgniteOptimizationSpec,
-    new IgniteOptimizationStringFuncSpec,
-    new IgniteOptimizationMathFuncSpec,
-    new IgniteOptimizationAggregationFuncSpec,
-    new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec,
-    new IgniteOptimizationDateFuncSpec,
-    new IgniteOptimizationDisableEnableSpec
-)
+ * Predictions aggregator interface.
+ */
+public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
+}

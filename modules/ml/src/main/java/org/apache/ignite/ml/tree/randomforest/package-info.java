@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
-
-import org.scalatest.Suites
-
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec,
-    new IgniteOptimizationSpec,
-    new IgniteOptimizationStringFuncSpec,
-    new IgniteOptimizationMathFuncSpec,
-    new IgniteOptimizationAggregationFuncSpec,
-    new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec,
-    new IgniteOptimizationDateFuncSpec,
-    new IgniteOptimizationDisableEnableSpec
-)
+ * <!-- Package description. -->
+ * Contains random forest implementation classes.
+ */
+package org.apache.ignite.ml.tree.randomforest;

@@ -15,26 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import org.scalatest.Suites
+import org.junit.Test;
 
-/**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec,
-    new IgniteOptimizationSpec,
-    new IgniteOptimizationStringFuncSpec,
-    new IgniteOptimizationMathFuncSpec,
-    new IgniteOptimizationAggregationFuncSpec,
-    new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec,
-    new IgniteOptimizationDateFuncSpec,
-    new IgniteOptimizationDisableEnableSpec
-)
+import static org.junit.Assert.assertEquals;
+
+public class MeanValuePredictionsAggregatorTest {
+    private PredictionsAggregator aggregator = new MeanValuePredictionsAggregator();
+
+    /** */
+    @Test public void testApply() {
+        assertEquals(0.75, aggregator.apply(new double[]{1.0, 1.0, 1.0, 0.0}), 0.001);
+    }
+}

@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import org.scalatest.Suites
+import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec,
-    new IgniteOptimizationSpec,
-    new IgniteOptimizationStringFuncSpec,
-    new IgniteOptimizationMathFuncSpec,
-    new IgniteOptimizationAggregationFuncSpec,
-    new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec,
-    new IgniteOptimizationDateFuncSpec,
-    new IgniteOptimizationDisableEnableSpec
-)
+ * Predictions aggregator returning the mean value of predictions.
+ */
+public class MeanValuePredictionsAggregator implements PredictionsAggregator {
+    /** {@inheritDoc} */
+    @Override public Double apply(double[] estimations) {
+        A.notEmpty(estimations, "estimations vector");
+        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
+    }
+}
