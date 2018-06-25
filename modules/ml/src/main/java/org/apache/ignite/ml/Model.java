@@ -18,17 +18,14 @@
 package org.apache.ignite.ml;
 
 import java.util.function.BiFunction;
-
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-/**
- * Basic interface for all models.
- */
+/** Basic interface for all models. */
 public interface Model<T, V> extends IgniteFunction<T, V> {
     /**
      * Combines this model with other model via specified combiner
      *
-     * @param other    Other model.
+     * @param other Other model.
      * @param combiner Combiner.
      * @return Combination of models.
      */
