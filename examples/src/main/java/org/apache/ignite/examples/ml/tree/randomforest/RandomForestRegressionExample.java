@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tree.random;
+package org.apache.ignite.examples.ml.tree.randomforest;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -25,8 +25,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.tree.random.RandomForestClassifierTrainer;
-import org.apache.ignite.ml.tree.random.RandomForestRegressionTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 import javax.cache.Cache;
@@ -37,9 +38,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Run Random Forest regression trainer over distributed dataset.
+ * Example represents a solution for the task of price predictions for houses in Boston based on RandomForest
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainer} with
+ * thread pool for multi-thread learning, initialization of Ignite Cache,
+ * learning step and evaluation of model quality in terms of
+ * Mean Squared Error (MSE) and Mean Absolute Error (MAE).
  *
- * @see RandomForestClassifierTrainer
+ * (dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/)
+ * @see RandomForestRegressionTrainer
  */
 public class RandomForestRegressionExample {
     /**

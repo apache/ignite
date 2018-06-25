@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tree.random;
+package org.apache.ignite.examples.ml.tree.randomforest;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -25,7 +25,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.tree.random.RandomForestClassifierTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 import javax.cache.Cache;
@@ -36,8 +37,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Run Random Forest multi-classification trainer over distributed dataset.
+ * Example represents a solution for the task of wine classification based on RandomForest
+ * implementation for multi-classification. It shows an initialization of {@link RandomForestTrainer} with
+ * thread pool for multi-thread learning, initialization of Ignite Cache,
+ * learning step and evaluation of accuracy of model.
  *
+ * (dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/wine/)
  * @see RandomForestClassifierTrainer
  */
 public class RandomForestClassificationExample {

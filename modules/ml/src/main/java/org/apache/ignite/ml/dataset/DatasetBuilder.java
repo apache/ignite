@@ -50,5 +50,10 @@ public interface DatasetBuilder<K, V> {
     public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
 
-    public DatasetBuilder<K,V> withFilter(IgniteBiPredicate<K,V> filter);
+
+    /**
+     * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.
+     * @param filterToAdd Additional filter.
+     */
+    public DatasetBuilder<K,V> withFilter(IgniteBiPredicate<K,V> filterToAdd);
 }

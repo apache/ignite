@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.random;
+package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
@@ -48,7 +48,9 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer {
         int maxDeep,
         double minImpurityDecrease,
         ExecutorService threadPool) {
-        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, threadPool);
+
+        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl,
+            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, threadPool);
     }
 
     /**
@@ -68,7 +70,9 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer {
         double samplePartSizePerMdl,
         int maxDeep, double minImpurityDecrease,
         ExecutorService threadPool) {
-        this(new OnMajorityPredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, threadPool);
+
+        this(new OnMajorityPredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl,
+            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, threadPool);
     }
 
     /**
@@ -87,7 +91,9 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer {
         double samplePartSizePerMdl,
         int maxDeep,
         double minImpurityDecrease) {
-        this(new OnMajorityPredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, null);
+
+        this(new OnMajorityPredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl,
+            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, null);
     }
 
     /** {@inheritDoc} */

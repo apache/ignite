@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.predictionsaggregator;
-
-import java.util.Arrays;
-import org.apache.ignite.internal.util.typedef.internal.A;
-
 /**
- * Predictions aggregator returning the mean value of predictions.
+ * <!-- Package description. -->
+ * Random forest examples.
  */
-public class MeanValuePredictionsAggregator implements PredictionsAggregator {
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] estimations) {
-        A.notEmpty(estimations, "estimations vector");
-        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
-    }
-}
+package org.apache.ignite.examples.ml.tree.randomforest;

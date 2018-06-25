@@ -20,6 +20,7 @@ package org.apache.ignite.ml.composition.predictionsaggregator;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Predictions aggregator returning the most frequently prediction.
@@ -27,7 +28,10 @@ import java.util.Map;
 public class OnMajorityPredictionsAggregator implements PredictionsAggregator {
     /** {@inheritDoc} */
     @Override public Double apply(double[] estimations) {
+        A.notEmpty(estimations, "estimations vector");
+
         Map<Double, Integer> cntrsByCls = new HashMap<>();
+
         for (Double predictedValue : estimations) {
             Integer cntrVal = cntrsByCls.getOrDefault(predictedValue, 0) + 1;
             cntrsByCls.put(predictedValue, cntrVal);

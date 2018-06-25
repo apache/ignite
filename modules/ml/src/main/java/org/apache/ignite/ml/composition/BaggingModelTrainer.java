@@ -79,7 +79,9 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         int maximumFeaturesCntPerMdl,
         int ensembleSize,
         double samplePartSizePerMdl) {
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, null);
+
+        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize,
+            samplePartSizePerMdl, null);
     }
 
     /**
@@ -98,6 +100,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         int ensembleSize,
         double samplePartSizePerMdl,
         ExecutorService threadPool) {
+
         this.predictionsAggregator = predictionsAggregator;
         this.maximumFeaturesCntPerMdl = maximumFeaturesCntPerMdl;
         this.ensembleSize = ensembleSize;
@@ -110,9 +113,10 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
-        List<ModelsComposition.ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
 
+        List<ModelsComposition.ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
         List<Future<ModelsComposition.ModelOnFeaturesSubspace>> futures = new ArrayList<>();
+
         for (int i = 0; i < ensembleSize; i++) {
             if (threadPool == null)
                 learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
@@ -150,9 +154,10 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
-        final Random rnd = new Random();
-        final SHA256UniformMapper<K, V> sampleFilter = new SHA256UniformMapper<>(rnd);
-        final long featureExtractorSeed = rnd.nextLong();
+
+        Random rnd = new Random();
+        SHA256UniformMapper<K, V> sampleFilter = new SHA256UniformMapper<>(rnd);
+        long featureExtractorSeed = rnd.nextLong();
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         Model<double[], Double> model = buildDatasetTrainerForModel().fit(
@@ -170,12 +175,9 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * @param featuresVectorSize Features vector size.
      */
     private Map<Integer, Integer> createFeaturesMapping(long seed, int featuresVectorSize) {
-        final int[] featureIdxs = Utils.selectKDistinct(
-            featuresVectorSize,
-            maximumFeaturesCntPerMdl,
-            new Random(seed)
-        );
-        final Map<Integer, Integer> locFeaturesMapping = new HashMap<>();
+        int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
+        Map<Integer, Integer> locFeaturesMapping = new HashMap<>();
+
         IntStream.range(0, maximumFeaturesCntPerMdl)
             .forEach(localId -> locFeaturesMapping.put(localId, featureIdxs[localId]));
 
@@ -196,6 +198,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
     private <K, V> IgniteBiFunction<K, V, double[]> wrapFeatureExtractor(
         IgniteBiFunction<K, V, double[]> featureExtractor,
         Map<Integer, Integer> featureMapping) {
+
         return featureExtractor.andThen((IgniteFunction<double[], double[]>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.size()];
             featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues[featureValueId]);

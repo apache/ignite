@@ -55,6 +55,7 @@ public class ModelsComposition implements Model<double[], Double> {
      */
     @Override public Double apply(double[] features) {
         double[] predictions = new double[models.size()];
+
         for (int i = 0; i < models.size(); i++)
             predictions[i] = models.get(i).apply(features);
 
