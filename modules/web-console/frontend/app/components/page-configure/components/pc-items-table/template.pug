@@ -17,7 +17,7 @@
 include /app/helpers/jade/mixins
 
 .panel--ignite
-    .panel-heading.ui-grid-settings(ng-if='!$ctrl.hideHeader')
+    .panel-heading.ui-grid-settings.ui-grid-ignite__panel(ng-if='!$ctrl.hideHeader')
         .panel-title
             .pc-items-table__table-name.ng-animate-disabled(
                 ng-hide='$ctrl.gridAPI.selection.getSelectedCount()'

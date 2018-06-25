@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-connected-clusters {
-    @import "./../../../public/stylesheets/variables.scss";
-
-    position: absolute;
-    top: 0;
-    right: 0;
-
-    display: flex;
-    align-items: center;
-    padding: 3px 10px;
-
-    color: white;
-    font-size: 12px;
-    line-height: 12px;
-
-    background-color: $text-color;
-
-    border-radius: 0 0 4px 4px;
-
-    [ignite-icon] {
-        margin-right: 6px;
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Contains specifications that describes TensorFlow cluster configuration.
+ */
+package org.apache.ignite.tensorflow.cluster.spec;
