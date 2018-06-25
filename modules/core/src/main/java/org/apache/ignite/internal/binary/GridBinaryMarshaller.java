@@ -240,6 +240,7 @@ public class GridBinaryMarshaller {
 
     /**
      * @param obj Object to marshal.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Byte array.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */

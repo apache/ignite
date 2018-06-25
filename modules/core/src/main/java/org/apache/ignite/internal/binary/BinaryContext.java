@@ -611,6 +611,7 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */

@@ -580,6 +580,9 @@ public class CacheGroupContext {
         return top;
     }
 
+    /**
+     * @return {@code True} if current thread holds lock on topology.
+     */
     public boolean isTopologyLocked() {
         if (top == null)
             return false;

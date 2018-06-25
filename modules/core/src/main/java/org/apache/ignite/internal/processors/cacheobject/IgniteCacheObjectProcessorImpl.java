@@ -228,6 +228,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return toCacheObject(ctx, obj, userObj, false);
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
         boolean failIfUnregistered) {
         if (obj == null || obj instanceof CacheObject)
