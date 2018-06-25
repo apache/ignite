@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-import './style.scss';
-import template from './template.pug';
-import controller from './controller';
-
-export default angular
-    .module('ignite-console.connected-clusters', [])
-    .component('connectedClusters', {
-        template,
-        controller
-    });
+/**
+ * <!-- Package description. -->
+ * Util components that are used in TensorFlow cluster package.
+ */
+package org.apache.ignite.tensorflow.cluster.util;
