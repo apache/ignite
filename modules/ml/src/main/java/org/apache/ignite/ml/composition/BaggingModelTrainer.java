@@ -160,6 +160,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         long featureExtractorSeed = rnd.nextLong();
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
+        //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
         Model<double[], Double> model = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
