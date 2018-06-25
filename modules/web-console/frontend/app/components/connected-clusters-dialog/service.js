@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-connected-clusters {
-    @import "./../../../public/stylesheets/variables.scss";
+import './style.scss';
+import controller from './controller';
+import templateUrl from './template.tpl.pug';
 
-    position: absolute;
-    top: 0;
-    right: 0;
+export default class {
+    static $inject = ['$modal'];
 
-    display: flex;
-    align-items: center;
-    padding: 3px 10px;
+    /**
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
+     */
+    constructor($modal) {
+        this.$modal = $modal;
+    }
 
-    color: white;
-    font-size: 12px;
-    line-height: 12px;
+    show({ clusters }) {
+        const modal = this.$modal({
+            templateUrl,
+            resolve: {
+                clusters: () => clusters
+            },
+            controller,
+            controllerAs: '$ctrl'
+        });
 
-    background-color: $text-color;
-
-    border-radius: 0 0 4px 4px;
-
-    [ignite-icon] {
-        margin-right: 6px;
+        return modal.$promise;
     }
 }

@@ -15,22 +15,35 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['AgentManager'];
+connected-clusters-list {
+    position: relative;
+    display: block;
 
-    constructor(agentMgr) {
-        Object.assign(this, { agentMgr });
-
-        this.connectedClusters = 0;
+    .ui-grid-cell--status {
+        display: flex;
+        justify-content: space-between;
     }
 
-    $onInit() {
-        this.connectedClusters$ = this.agentMgr.connectionSbj
-            .do(({ clusters }) => this.connectedClusters = clusters.length)
-            .subscribe();
+    .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+        border-right: none;
     }
 
-    $onDestroy() {
-        this.connectedClusters$.unsubscribe();
+    .ui-grid-viewport {
+        overflow: auto !important;
+    }
+
+    connected-clusters-cell-logout {
+        margin-top: -8px;
+        margin-right: -10px;
+    }
+
+    grid-no-data {
+        position: absolute;
+        top: 50%;
+
+        width: 100%;
+        padding: 0 20px;
+
+        text-align: center;
     }
 }

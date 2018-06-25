@@ -16,14 +16,11 @@
  */
 
 import angular from 'angular';
-
-import './style.scss';
-import template from './template.pug';
-import controller from './controller';
+import {component} from './component';
+import service from './service';
 
 export default angular
-    .module('ignite-console.connected-clusters', [])
-    .component('connectedClusters', {
-        template,
-        controller
-    });
+    .module('ignite-console.agent.cluster-login', [
+    ])
+    .service(service.name, service)
+    .component(component.name, component);
