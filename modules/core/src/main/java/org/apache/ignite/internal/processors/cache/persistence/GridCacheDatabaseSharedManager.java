@@ -1473,6 +1473,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquireSnapshotWorker memory
      * state.
+     * @throws IgniteException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override public void checkpointReadLock() {
@@ -1485,7 +1486,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (stopping) {
                 checkpointLock.readLock().unlock();
 
-                throw new RuntimeException("Failed to perform cache update: node is stopping.");
+                throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
             }
 
             if (safeToUpdatePageMemories() || checkpointLock.getReadHoldCount() > 1)
