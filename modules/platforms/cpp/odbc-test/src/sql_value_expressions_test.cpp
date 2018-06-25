@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(TestCase)
                 "THEN (i32Field / 2) "
                 "ELSE (i32Field / 3) "
             "END "
-        "FROM TestType", in.i32Field / 3);;
+        "FROM TestType", in.i32Field / 3);
 }
 
 BOOST_AUTO_TEST_CASE(TestCast)

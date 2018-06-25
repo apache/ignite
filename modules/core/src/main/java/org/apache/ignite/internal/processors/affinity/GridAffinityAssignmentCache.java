@@ -42,6 +42,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -277,16 +278,19 @@ public class GridAffinityAssignmentCache {
      * Calculates affinity cache for given topology version.
      *
      * @param topVer Topology version to calculate affinity cache for.
-     * @param discoEvt Discovery event that caused this topology version change.
+     * @param events Discovery events that caused this topology version change.
      * @param discoCache Discovery cache.
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, @Nullable DiscoveryEvent discoEvt,
-        @Nullable DiscoCache discoCache) {
+    public List<List<ClusterNode>> calculate(
+        AffinityTopologyVersion topVer,
+        @Nullable ExchangeDiscoveryEvents events,
+        @Nullable DiscoCache discoCache
+    ) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
-                ", discoEvt=" + discoEvt + ']');
+                ", discoEvts=" + events + ']');
 
         List<List<ClusterNode>> prevAssignment = idealAssignment;
 
@@ -313,42 +317,60 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
-        if (prevAssignment != null && discoEvt != null) {
-            boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter)
-                || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT;
+        if (prevAssignment != null && events != null) {
+            /* Skip affinity calculation only when all nodes triggered exchange
+               don't belong to affinity for current group (client node or filtered by nodeFilter). */
+            boolean skipCalculation = true;
 
-            if (!affNode)
+            for (DiscoveryEvent event : events.events()) {
+                boolean affinityNode = CU.affinityNode(event.eventNode(), nodeFilter);
+
+                if (affinityNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                    skipCalculation = false;
+
+                    break;
+                }
+            }
+
+            if (skipCalculation)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
                     baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                         discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                        prevAssignment, discoEvt, topVer, backups));
+                        prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
             else if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, discoEvt, topVer, backups));
+                    prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
-            else
+            else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    events.lastEvent(), topVer, backups));
+            }
         }
         else {
+            DiscoveryEvent event = null;
+
+            if (events != null)
+                event = events.lastEvent();
+
             if (hasBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, discoEvt, topVer, backups));
+                    prevAssignment, event, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
-            else
+            else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    event, topVer, backups));
+            }
         }
 
         assert assignment != null;

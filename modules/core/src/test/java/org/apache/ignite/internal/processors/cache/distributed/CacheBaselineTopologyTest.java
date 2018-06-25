@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -82,6 +83,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private boolean delayRebalance;
 
     /** */
+    private boolean disableAutoActivation;
+
+    /** */
     private Map<String, Object> userAttrs;
 
     /** */
@@ -106,6 +110,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         client = false;
+
+        disableAutoActivation = false;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +124,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setConsistentId(igniteInstanceName);
+
+        if (disableAutoActivation)
+            cfg.setAutoActivationEnabled(false);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
@@ -454,6 +463,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
                 .setPartitionLossPolicy(READ_ONLY_SAFE)
         );
 
+        for (int i = 0; i < NODE_COUNT; i++)
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
         int key = -1;
 
         for (int k = 0; k < 100_000; k++) {
@@ -575,6 +587,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx backup = null;
 
         for (int i = 0; i < NODE_COUNT; i++) {
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
             if (grid(i).localNode().equals(affNodes.get(0))) {
                 primaryIdx = i;
                 primary = grid(i);
@@ -601,6 +615,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         }
 
         primary.close();
+
+        backup.context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(5, 0)).get();
 
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
@@ -657,6 +673,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx backup = null;
 
         for (int i = 0; i < NODE_COUNT; i++) {
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
             if (grid(i).localNode().equals(affNodes.get(0))) {
                 primaryIdx = i;
                 primary = grid(i);
@@ -685,6 +703,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         }
 
         stopGrid(primaryIdx, false);
+
+        backup.context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(5, 0)).get();
 
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
@@ -872,11 +892,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         delayRebalance = true;
 
+        /* There is a problem with handling simultaneous auto activation after restart and manual activation.
+           To properly catch the moment when cluster activation has finished we temporary disable auto activation. */
+        disableAutoActivation = true;
+
         startGrids(4);
 
         ig = grid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         cache = ig.cache(cacheName);
 
@@ -978,7 +1002,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void reset() {
-            delegate.reset();;
+            delegate.reset();
         }
 
         /** {@inheritDoc} */
