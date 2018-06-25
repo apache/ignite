@@ -20,13 +20,14 @@ in progress.
 
 from pyignite.connection import Connection
 from pyignite.datatypes.cache_config import StructArray
-from pyignite.datatypes.complex import AnyDataObject
+from pyignite.datatypes.complex import AnyDataArray, AnyDataObject
 from pyignite.datatypes.null_object import Null
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
 from pyignite.datatypes.sql import StatementType
 from pyignite.datatypes.standard import String
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
+from pyignite.utils import is_hinted
 from .result import APIResult
 
 
@@ -351,7 +352,8 @@ def sql_fields(
      the `hashcode()` function to the cache name,
     :param query_str: SQL query string,
     :param page_size: cursor page size,
-    :param query_args: (optional) query arguments,
+    :param query_args: (optional) query arguments. List of values or
+     (value, type hint) tuples,
     :param schema: (optional) schema for the query. Defaults to `PUBLIC`,
     :param statement_type: (optional) statement type. Can be:
 
@@ -411,9 +413,7 @@ def sql_fields(
         ('page_size', Int),
         ('max_rows', Int),
         ('query_str', String),
-        ('query_args', StructArray([
-            ('arg', AnyDataObject),
-        ])),
+        ('query_args', AnyDataArray()),
         ('statement_type', StatementType),
         ('distributed_joins', Bool),
         ('local', Bool),
@@ -465,6 +465,13 @@ def sql_fields(
         result.message = String.to_python(response.error_message)
         return result
     result.value = dict(response_struct.to_python(response))
+    if include_field_names:
+        # flatten field names
+        field_names = []
+        for od in result.value['fields']:
+            field_names.append(od['field_name'])
+        result.value['fields'] = field_names
+    # flatten data
     data = []
     for od in result.value['data']:
         data.append(od['value'])

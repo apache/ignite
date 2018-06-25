@@ -34,7 +34,7 @@ __all__ = [
 @attr.s
 class StructArray:
     """ `counter_type` counter, followed by count*following structure. """
-    following = attr.ib(type=list)
+    following = attr.ib(type=list, factory=list)
     counter_type = attr.ib(default=ctypes.c_int)
 
     def build_header_class(self):

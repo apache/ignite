@@ -34,7 +34,7 @@ from .op_codes import *
 @attr.s
 class Query:
     op_code = None
-    following = attr.ib(type=list, default=[])
+    following = attr.ib(type=list, factory=list)
     query_id = attr.ib(type=int, default=None)
 
     @classmethod
@@ -120,7 +120,7 @@ class ConfigQuery(Query):
 
 @attr.s
 class Response:
-    following = attr.ib(type=list)
+    following = attr.ib(type=list, factory=list)
 
     @staticmethod
     def build_header():

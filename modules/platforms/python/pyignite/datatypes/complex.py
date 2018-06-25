@@ -19,9 +19,11 @@ import decimal
 from datetime import date, datetime, timedelta
 import uuid
 
+import attr
+
 from pyignite.connection import Connection, PrefetchConnection
 from pyignite.constants import *
-from pyignite.utils import is_iterable
+from pyignite.utils import is_hinted, is_iterable
 from .primitive_arrays import *
 from .primitive_objects import *
 from .standard import *
@@ -30,7 +32,8 @@ from .type_codes import *
 
 
 __all__ = [
-    'AnyDataObject', 'ObjectArrayObject', 'CollectionObject', 'MapObject',
+    'AnyDataObject', 'AnyDataArray',
+    'ObjectArrayObject', 'CollectionObject', 'MapObject',
 ]
 
 
@@ -195,6 +198,77 @@ class AnyDataObject:
         raise TypeError(
             'Type `{}` is invalid.'.format(value_type)
         )
+
+
+@attr.s
+class AnyDataArray(AnyDataObject):
+    """
+    Sequence of AnyDataObjects, payload-only.
+    """
+    counter_type = attr.ib(default=ctypes.c_int)
+
+    def build_header(self):
+        return type(
+            self.__class__.__name__+'Header',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', self.counter_type),
+                ],
+            }
+        )
+
+    def parse(self, conn: Connection):
+        header_class = self.build_header()
+        buffer = conn.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+        fields = []
+
+        for i in range(header.length):
+            c_type, buffer_fragment = super().parse(conn)
+            buffer += buffer_fragment
+            fields.append(('element_{}'.format(i), c_type))
+
+        final_class = type(
+            self.__class__.__name__,
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': fields,
+            }
+        )
+        return final_class, buffer
+
+    @classmethod
+    def to_python(cls, ctype_object):
+        result = []
+        for i in range(ctype_object.length):
+            result.append(
+                super().to_python(
+                    getattr(ctype_object, 'element_{}'.format(i))
+                )
+            )
+        return result
+
+    def from_python(self, value):
+        header_class = self.build_header()
+        header = header_class()
+
+        try:
+            length = len(value)
+        except TypeError:
+            value = [value]
+            length = 1
+        header.length = length
+        buffer = bytes(header)
+
+        for x in value:
+            if is_hinted(x):
+                buffer += x[1].from_python(x[0])
+            else:
+                buffer += super().from_python(x)
+        return buffer
 
 
 class ObjectArrayObject(AnyDataObject):
