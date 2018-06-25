@@ -2474,8 +2474,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             try {
                 props.add(new QueryBinaryProperty(
                     ctx, 
-                    d.cacheName(), 
-                    col.name(), 
+                    col.name(),
                     null, 
                     Class.forName(col.typeName()), 
                     false, 

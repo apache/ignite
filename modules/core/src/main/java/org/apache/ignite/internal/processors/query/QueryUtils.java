@@ -407,7 +407,7 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
 
         desc.schemaName(schemaName);
 
@@ -786,11 +786,10 @@ public class QueryUtils {
      * @param precision Precision.
      * @param scale Scale.
      * @return Binary property.
-     * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String cacheName, String pathStr, 
         Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
-        int precision, int scale) throws IgniteCheckedException {
+        int precision, int scale) {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -806,7 +805,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, cacheName, prop, res, resType, isKeyField, alias, notNull, dlftVal,
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
                 precision, scale);
         }
 

@@ -21,13 +21,16 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -267,13 +270,21 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         cache.put(k, okVal);
 
+        CacheEntryProcessor<K, V, ?> entryProcessor = (e, arguments) -> {
+            e.setValue((V)arguments[0]);
+
+            return null;
+        };
+
         Stream<Runnable> ops = Stream.of(
             () -> cache.replace(k, v),
             () -> cache.getAndReplace(k, v),
             () -> cache.replace(k, okVal, v),
+            () -> cache.invoke(k, entryProcessor, v),
             () -> cache.replaceAsync(k, v).get(FUT_TIMEOUT),
             () -> cache.getAndReplaceAsync(k, v).get(FUT_TIMEOUT),
-            () -> cache.replaceAsync(k, okVal, v).get(FUT_TIMEOUT)
+            () -> cache.replaceAsync(k, okVal, v).get(FUT_TIMEOUT),
+            () -> cache.invokeAsync(k, entryProcessor, v).get(FUT_TIMEOUT)
         );
 
         ops.forEach(checker);
@@ -300,9 +311,34 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
     /** */
     private <K, V> void checkPutAll(Consumer<Runnable> checker, IgniteCache<K, V> cache, T2<K, V>... entries) {
+        CacheEntryProcessor<K, V, ?> entryProcessor = (e, arguments) -> {
+            e.setValue(((Iterator<V>)arguments[0]).next());
+
+            return null;
+        };
+
         Map<K, V> vals = Arrays.stream(entries).collect(Collectors.toMap(T2::get1, T2::get2));
 
-        checker.accept(() -> cache.putAll(vals));
+        Stream<Runnable> ops = Stream.of(
+            () -> cache.putAll(vals),
+            () -> cache.putAllAsync(vals).get(FUT_TIMEOUT),
+            () -> {
+                Map<K, ? extends EntryProcessorResult<?>> map =
+                    cache.invokeAll(vals.keySet(), entryProcessor, vals.values().iterator());
+
+                for (EntryProcessorResult<?> result : map.values())
+                    log.info(">>> " + result.get());
+            },
+            () -> {
+                Map<K, ? extends EntryProcessorResult<?>> map =
+                    cache.invokeAllAsync(vals.keySet(), entryProcessor, vals.values().iterator()).get(FUT_TIMEOUT);
+
+                for (EntryProcessorResult<?> result : map.values())
+                    log.info(">>> " + result.get());
+            }
+        );
+
+        ops.forEach(checker);
     }
 
     /**

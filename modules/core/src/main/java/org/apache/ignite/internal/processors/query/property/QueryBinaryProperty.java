@@ -26,17 +26,10 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Binary property.
@@ -47,9 +40,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Cache name. */
-    private String cacheName;
 
     /** Property name. */
     private String propName;
@@ -91,7 +81,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param cacheName Cache name.
      * @param propName Property name.
      * @param parent Parent property.
      * @param type Result type.
@@ -102,14 +91,13 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param precision Precision.
      * @param scale Scale.
      */
-    public QueryBinaryProperty(GridKernalContext ctx, String cacheName, String propName, QueryBinaryProperty parent,
+    public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
         Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue,
         int precision, int scale) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
 
-        this.cacheName = cacheName;
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;
@@ -139,17 +127,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
         }
         else {
-            if (propName.equalsIgnoreCase(KEY_FIELD_NAME)) {
-                CacheObjectContext coCtx = ctx.cache().internalCache(cacheName).context().cacheObjectContext();
-
-                return key instanceof KeyCacheObject ? ((KeyCacheObject)key).value(coCtx, true) : key;
-            } 
-            else if (propName.equalsIgnoreCase(VAL_FIELD_NAME)) {
-                CacheObjectContext coCtx = ctx.cache().internalCache(cacheName).context().cacheObjectContext();
-
-                return val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
-            }
-
             int isKeyProp0 = isKeyProp;
 
             if (isKeyProp0 == 0) {

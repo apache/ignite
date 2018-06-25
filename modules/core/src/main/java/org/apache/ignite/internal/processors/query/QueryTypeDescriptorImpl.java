@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Integer.MAX_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_KEY;
@@ -117,13 +119,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private List<GridQueryProperty> propsWithDefaultValue;
 
+    /** */
+    @Nullable private CacheObjectContext coCtx;
+
     /**
      * Constructor.
      *
      * @param cacheName Cache name.
+     * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName) {
+    public QueryTypeDescriptorImpl(String cacheName, @Nullable CacheObjectContext coCtx) {
         this.cacheName = cacheName;
+        this.coCtx = coCtx;
     }
 
     /**
@@ -552,13 +559,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldName)) {
-                propVal = key;
+            if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                propVal = key instanceof KeyCacheObject && coCtx != null ?
+                    ((KeyCacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
-            else if (F.eq(prop.name(), valFieldName)) {
-                propVal = val;
+            else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
+                propVal = val instanceof CacheObject && coCtx != null ?
+                    ((CacheObject)val).value(coCtx, true) : val;
             }
             else {
                 propVal = prop.value(key, val);
