@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +49,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
     /** Model for inference. */
-    private final Model<T, L> mdl;
+    private final Model<Vector, L> mdl;
 
     /**
      * Constructs a new instance of local truth with prediction cursor.
@@ -60,7 +62,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
      */
     public LocalTruthWithPredictionCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<T, L> mdl) {
+        Model<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.featureExtractor = featureExtractor;
@@ -117,7 +119,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
 
             nextEntry = null;
 
-            return new TruthWithPrediction<>(lb, mdl.apply((T)features));
+            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
         }
 
         /**
