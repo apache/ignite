@@ -17,57 +17,81 @@
 
 package org.apache.ignite.ml.tree.random;
 
+import java.util.concurrent.ExecutorService;
+import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 
-import java.util.concurrent.ExecutorService;
-
+/**
+ * Random forest regression trainer.
+ */
 public class RandomForestRegressionTrainer extends RandomForestTrainer {
+    /**
+     * Constructs new instance of RandomForestRegressionTrainer.
+     *
+     * @param predictionsAggregator Predictions aggregator.
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     * @param maxDeep Max decision tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     * @param threadPool Learning thread pool.
+     */
     public RandomForestRegressionTrainer(PredictionsAggregator predictionsAggregator,
-                                         int featureVectorSize, int maximumFeaturesCountPerModel,
-                                         int countOfModels, double samplePartSizePerModel,
-                                         int maxDeep, double minImpurityDecrease,
-                                         ExecutorService threadPool) {
-        super(predictionsAggregator,
-                featureVectorSize,
-                maximumFeaturesCountPerModel,
-                countOfModels,
-                samplePartSizePerModel,
-                maxDeep, minImpurityDecrease, threadPool);
+        int featureVectorSize,
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl,
+        int maxDeep,
+        double minImpurityDecrease,
+        ExecutorService threadPool) {
+        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, threadPool);
     }
 
+    /**
+     * Constructs new instance of RandomForestRegressionTrainer.
+     *
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     * @param maxDeep Max decision tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     * @param threadPool Learning thread pool.
+     */
     public RandomForestRegressionTrainer(int featureVectorSize,
-                                         int maximumFeaturesCountPerModel,
-                                         int countOfModels,
-                                         double samplePartSizePerModel,
-                                         int maxDeep, double minImpurityDecrease,
-                                         ExecutorService threadPool) {
-        this(new MeanValuePredictionsAggregator(),
-                featureVectorSize,
-                maximumFeaturesCountPerModel,
-                countOfModels,
-                samplePartSizePerModel,
-                maxDeep, minImpurityDecrease, threadPool);
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl,
+        int maxDeep,
+        double minImpurityDecrease,
+        ExecutorService threadPool) {
+        this(new MeanValuePredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, threadPool);
     }
 
+    /**
+     * Constructs new instance of RandomForestRegressionTrainer.
+     *
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     * @param maxDeep Max decision tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     */
     public RandomForestRegressionTrainer(int featureVectorSize,
-                                         int maximumFeaturesCountPerModel,
-                                         int countOfModels,
-                                         double samplePartSizePerModel,
-                                         int maxDeep, double minImpurityDecrease) {
-        this(new MeanValuePredictionsAggregator(),
-                featureVectorSize,
-                maximumFeaturesCountPerModel,
-                countOfModels,
-                samplePartSizePerModel,
-                maxDeep, minImpurityDecrease, null);
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl,
+        int maxDeep, double minImpurityDecrease) {
+        this(new MeanValuePredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, null);
     }
 
-    @Override
-    protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
+    /** {@inheritDoc} */
+    @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
         return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease);
     }
 }

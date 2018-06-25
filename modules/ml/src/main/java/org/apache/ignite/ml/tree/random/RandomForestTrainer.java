@@ -21,29 +21,57 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 
+/**
+ * Abstract random forest trainer.
+ */
 public abstract class RandomForestTrainer extends BaggingModelTrainer {
+    /** Max decision tree deep. */
     protected final int maxDeep;
+    /** Min impurity decrease. */
     protected final double minImpurityDecrease;
 
+    /**
+     * Constructs new instance of BaggingModelTrainer.
+     *
+     * @param predictionsAggregator Predictions aggregator.
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     * @param maxDeep Max decision tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     */
     public RandomForestTrainer(PredictionsAggregator predictionsAggregator,
-                               int featureVectorSize,
-                               int maximumFeaturesCountPerModel,
-                               int countOfModels,
-                               double samplePartSizePerModel,
-                               int maxDeep,
-                               double minImpurityDecrease) {
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel, maxDeep, minImpurityDecrease, null);
+        int featureVectorSize,
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl,
+        int maxDeep,
+        double minImpurityDecrease) {
+        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, null);
     }
 
+    /**
+     * Constructs new instance of BaggingModelTrainer.
+     *
+     * @param predictionsAggregator Predictions aggregator.
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     * @param maxDeep Max decision tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     * @param threadPool Learning thread pool.
+     */
     public RandomForestTrainer(PredictionsAggregator predictionsAggregator,
-                               int featureVectorSize,
-                               int maximumFeaturesCountPerModel,
-                               int countOfModels,
-                               double samplePartSizePerModel,
-                               int maxDeep,
-                               double minImpurityDecrease,
-                               ExecutorService threadPool) {
-        super(predictionsAggregator, featureVectorSize, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel, threadPool);
+        int featureVectorSize,
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl,
+        int maxDeep,
+        double minImpurityDecrease,
+        ExecutorService threadPool) {
+        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, threadPool);
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
     }
