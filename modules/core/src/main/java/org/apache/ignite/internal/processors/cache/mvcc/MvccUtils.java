@@ -157,6 +157,9 @@ public class MvccUtils {
      * @throws IgniteCheckedException If failed.
      */
     private static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
+            return TxState.COMMITTED; // Initial version is always committed;
+
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 

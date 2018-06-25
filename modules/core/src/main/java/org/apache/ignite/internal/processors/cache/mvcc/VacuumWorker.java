@@ -135,7 +135,7 @@ public class VacuumWorker extends GridWorker {
                     cctx = part.group().shared().cacheContext(curCacheId);
                 }
 
-                if (!prevKey.equals(row.key())) {
+                if (!prevKey.equals(row.key()) || (shared && curCacheId != row.cacheId())) {
                     if (rest != null || !F.isEmpty(cleanupRows))
                         cleanup(part, prevKey, cleanupRows, rest, cctx, metrics);
 
