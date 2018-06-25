@@ -220,9 +220,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setFailureDetectionTimeout(6_000);
 
             cfg.setGridLogger(strLog = new GridStringLogger());
+
+            strLog.logLength(300_000);
         }
-        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
+        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode")) {
             cfg.setGridLogger(strLog = new GridStringLogger());
+
+            strLog.logLength(300_000);
+        }
 
         cfg.setClientMode(client);
 

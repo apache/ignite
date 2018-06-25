@@ -29,25 +29,34 @@ button.btn-ignite.btn-ignite--primary(
 button.btn-ignite.btn-ignite--primary(
     data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
 )
+    cluster-security-icon(secured='$ctrl.cluster.secured')
     | {{ $ctrl.cluster.name }}
 
-div.btn-ignite.btn-ignite--primary(
-    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1'
+span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
+    div.btn-ignite.btn-ignite--primary(
+        ng-model='$ctrl.cluster'
 
-    data-ng-model='$ctrl.cluster'
+        bs-dropdown=''
+        data-trigger='click'
+        data-container='body'
 
-    bs-select=''
-    bs-options='item as item.name for item in $ctrl.clusters'
-    data-trigger='click'
-    data-container='body'
+        tabindex='0'
+        aria-haspopup='true'
+        aria-expanded='false'
+    )
+        span(ng-if='!$ctrl.cluster') No clusters available
+        
+        span(ng-if='$ctrl.cluster')
+            cluster-security-icon(secured='$ctrl.cluster.secured')
+            | {{ $ctrl.cluster.name }}
+            span.icon-right.fa.fa-caret-down
 
-    data-ng-change='$ctrl.change()'
-
-    protect-from-bs-select-render
-)
-    span(ng-if='!$ctrl.cluster') No clusters available
-    span(ng-if='$ctrl.cluster') {{ $ctrl.cluster.name }}
-        span.icon-right.fa.fa-caret-down
+    ul.bs-select-menu.dropdown-menu(role='menu')
+        li(ng-repeat='item in $ctrl.clusters')
+            button.btn-ignite.bssm-item-button(ng-click='$ctrl.cluster = item; $ctrl.change()')
+                span.icon-left
+                    svg(ignite-icon='{{ item.secured ? "lockClosed" : "lockOpened" }}')
+                | {{ item.name }}
 
 svg(
     ng-if='!$ctrl.isDemo'
