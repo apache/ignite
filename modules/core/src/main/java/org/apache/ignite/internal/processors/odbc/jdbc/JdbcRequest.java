@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 
 /**
@@ -69,9 +70,6 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Ordered batch request. */
     static final byte QRY_CANCEL = 15;
 
-    /** Execute sql query request v2. */
-    static final byte QRY_EXEC_V2 = 16;
-
     /** Request type. */
     private byte type;
 
@@ -83,12 +81,12 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) {
         writer.writeByte(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) {
         // No-op.
     }
 
@@ -101,10 +99,11 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /**
      * @param reader Binary reader.
+     * @param ver Protocol version.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcRequest readRequest(BinaryReaderExImpl reader) throws BinaryObjectException {
+    public static JdbcRequest readRequest(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         int reqType = reader.readByte();
 
         JdbcRequest req;
@@ -180,16 +179,11 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
-            case QRY_EXEC_V2:
-                req = new JdbcQueryExecuteRequestV2();
-
-                break;
-
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
 
-        req.readBinary(reader);
+        req.readBinary(reader, ver);
 
         return req;
     }

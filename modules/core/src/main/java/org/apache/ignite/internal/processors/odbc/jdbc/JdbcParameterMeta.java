@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -133,7 +133,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) {
         writer.writeInt(isNullable);
         writer.writeBoolean(signed);
         writer.writeInt(precision);
@@ -145,7 +145,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) {
         isNullable = reader.readInt();
         signed = reader.readBoolean();
         precision = reader.readInt();

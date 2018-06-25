@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -76,14 +76,14 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) {
         writer.writeInt(status());
 
         if (status() == STATUS_SUCCESS) {
             writer.writeBoolean(res != null);
 
             if (res != null)
-                res.writeBinary(writer);
+                res.writeBinary(writer, ver);
         }
         else
             writer.writeString(error());
@@ -91,12 +91,12 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) {
         status(reader.readInt());
 
         if (status() == STATUS_SUCCESS) {
             if (reader.readBoolean())
-                res = JdbcResult.readResult(reader);
+                res = JdbcResult.readResult(reader, ver);
         }
         else
             error(reader.readString());

@@ -23,7 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_5_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_5_1;
 
 /**
  * Various JDBC utility methods.
@@ -104,5 +108,25 @@ public class JdbcUtils {
         }
         else
             return Collections.emptyList();
+    }
+
+    /**
+     * @param ver Protocol version.
+     * @return {@code true} If the unordered streaming supported.
+     */
+    public static boolean isUnorderedStreamSupported(ClientListenerProtocolVersion ver) {
+        assert ver != null;
+
+        return ver.compareTo(VER_2_5_0) >= 0;
+    }
+
+    /**
+     * @param ver Protocol version.
+     * @return {@code true} If the query cancel is supported by the server.
+     */
+    public static boolean isQueryCancelSupported(ClientListenerProtocolVersion ver) {
+        assert ver != null;
+
+        return ver.compareTo(VER_2_5_1) >= 0;
     }
 }

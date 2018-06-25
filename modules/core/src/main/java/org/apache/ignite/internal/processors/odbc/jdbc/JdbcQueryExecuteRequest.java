@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -51,6 +52,12 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Expected statement type. */
     private JdbcStatementType stmtType;
 
+    /** Query ID. */
+    private long qryId;
+
+    /** Query timeout. */
+    private int timeout;
+
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -58,44 +65,27 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @param type Child request type.
-     */
-    protected JdbcQueryExecuteRequest(byte type) {
-        super(type);
-    }
-
-    /**
+     * @param qryId Query ID.
      * @param stmtType Expected statement type.
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
+     * @param timeout Query timeout.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        String sqlQry, Object[] args) {
-        this(QRY_EXEC, stmtType, schemaName, pageSize, maxRows, sqlQry, args);
-    }
+    public JdbcQueryExecuteRequest(long qryId, JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
+        int timeout, String sqlQry, Object[] args) {
+        super(QRY_EXEC);
 
-    /**
-     * @param type Child request type.
-     * @param stmtType Expected statement type.
-     * @param schemaName Cache name.
-     * @param pageSize Fetch size.
-     * @param maxRows Max rows.
-     * @param sqlQry SQL query.
-     * @param args Arguments list.
-     */
-    protected JdbcQueryExecuteRequest(byte type, JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        String sqlQry, Object[] args) {
-        super(type);
-
+        this.qryId = qryId;
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.sqlQry = sqlQry;
         this.args = args;
         this.stmtType = stmtType;
+        this.timeout = timeout;
     }
 
     /**
@@ -140,9 +130,23 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return stmtType;
     }
 
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return qryId;
+    }
+
+    /**
+     * @return Query timeout.
+     */
+    public int timeout() {
+        return timeout;
+    }
+
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) {
+        super.writeBinary(writer, ver);
 
         writer.writeString(schemaName);
         writer.writeInt(pageSize);
@@ -157,11 +161,16 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         }
 
         writer.writeByte((byte)stmtType.ordinal());
+
+        if (JdbcUtils.isQueryCancelSupported(ver)) {
+            writer.writeLong(qryId);
+            writer.writeInt(timeout);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) {
+        super.readBinary(reader, ver);
 
         schemaName = reader.readString();
         pageSize = reader.readInt();
@@ -180,9 +189,15 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
                 stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
             else
                 stmtType = JdbcStatementType.ANY_STATEMENT_TYPE;
+
         }
         catch (IOException e) {
             throw new BinaryObjectException(e);
+        }
+
+        if (JdbcUtils.isQueryCancelSupported(ver)) {
+            qryId = reader.readLong();
+            timeout = reader.readInt();
         }
     }
 

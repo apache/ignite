@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,6 +46,12 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      */
     private boolean lastStreamBatch;
 
+    /** Query ID. */
+    private long qryId;
+
+    /** Query timeout. */
+    private int timeout;
+
     /**
      * Default constructor.
      */
@@ -61,11 +68,18 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * @param qryId Query ID.
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param timeout Query timeout;
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean lastStreamBatch) {
+    public JdbcBatchExecuteRequest(
+        long qryId,
+        String schemaName,
+        List<JdbcQuery> queries,
+        int timeout,
+        boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
         assert lastStreamBatch || !F.isEmpty(queries);
@@ -73,17 +87,27 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         this.schemaName = schemaName;
         this.queries = queries;
         this.lastStreamBatch = lastStreamBatch;
+        this.qryId = qryId;
+        this.timeout = timeout;
     }
 
     /**
      * Constructor for child requests.
      *
      * @param type Request type.
+     * @param qryId Query ID.
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param timeout Query timeout.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean lastStreamBatch) {
+    protected JdbcBatchExecuteRequest(
+        byte type,
+        long qryId,
+        String schemaName,
+        List<JdbcQuery> queries,
+        int timeout,
+        boolean lastStreamBatch) {
         super(type);
 
         assert lastStreamBatch || !F.isEmpty(queries);
@@ -91,6 +115,8 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         this.schemaName = schemaName;
         this.queries = queries;
         this.lastStreamBatch = lastStreamBatch;
+        this.qryId = qryId;
+        this.timeout = timeout;
     }
 
     /**
@@ -114,9 +140,23 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return lastStreamBatch;
     }
 
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return qryId;
+    }
+
+    /**
+     * @return Query timeout.
+     */
+    public int timeout() {
+        return timeout;
+    }
+
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) {
+        super.writeBinary(writer, ver);
 
         writer.writeString(schemaName);
 
@@ -124,17 +164,22 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
             writer.writeInt(queries.size());
 
             for (JdbcQuery q : queries)
-                q.writeBinary(writer);
+                q.writeBinary(writer, ver);
         }
         else
             writer.writeInt(0);
 
         writer.writeBoolean(lastStreamBatch);
+
+        if (JdbcUtils.isQueryCancelSupported(ver)) {
+            writer.writeLong(qryId);
+            writer.writeInt(timeout);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) {
+        super.readBinary(reader, ver);
 
         schemaName = reader.readString();
 
@@ -145,7 +190,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         for (int i = 0; i < n; ++i) {
             JdbcQuery qry = new JdbcQuery();
 
-            qry.readBinary(reader);
+            qry.readBinary(reader, ver);
 
             queries.add(qry);
         }
@@ -156,6 +201,11 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         }
         catch (IOException e) {
             throw new BinaryObjectException(e);
+        }
+
+        if (JdbcUtils.isQueryCancelSupported(ver)) {
+            qryId = reader.readLong();
+            timeout = reader.readInt();
         }
     }
 

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.List;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -66,8 +66,8 @@ public class JdbcQueryFetchResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) {
+        super.writeBinary(writer, ver);
 
         writer.writeBoolean(last);
 
@@ -75,8 +75,8 @@ public class JdbcQueryFetchResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) {
+        super.readBinary(reader, ver);
 
         last = reader.readBoolean();
 

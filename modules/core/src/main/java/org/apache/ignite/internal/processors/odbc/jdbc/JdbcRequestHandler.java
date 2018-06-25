@@ -86,7 +86,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_T
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CANCEL;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC_V2;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 
@@ -210,7 +209,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             switch (req.type()) {
                 case QRY_EXEC:
-                case QRY_EXEC_V2:
                     return executeQuery((JdbcQueryExecuteRequest)req);
 
                 case QRY_FETCH:
@@ -414,14 +412,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
         int cursorCnt = qryCursors.size();
 
-        long queryId = 0;
-        int timeout = 0;
-
-        if (req instanceof JdbcQueryExecuteRequestV2) {
-            queryId = ((JdbcQueryExecuteRequestV2)req).queryId();
-            timeout = ((JdbcQueryExecuteRequestV2)req).timeout();
-        }
-
         if (maxCursors > 0 && cursorCnt >= maxCursors)
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close other " +
                 "open cursors or increase the limit through " +
@@ -464,7 +454,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setCollocated(cliCtx.isCollocated());
             qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
             qry.setLazy(cliCtx.isLazy());
-            qry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+            qry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -498,9 +488,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(),
                     (QueryCursorImpl)fieldsCur);
 
-                if (queryId != 0) {
+                if (req.queryId() != 0) {
 
-                    Set<JdbcQueryCursor> prev = qryId2Cursors.put(queryId, Collections.singleton(cur));
+                    Set<JdbcQueryCursor> prev = qryId2Cursors.put(req.queryId(), Collections.singleton(cur));
 
                     if (QUERY_ALREADY_CANCELED == prev) {
                         cur.close();
@@ -548,8 +538,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         (QueryCursorImpl)c));
                 }
 
-                if (queryId != 0) {
-                    if (qryId2Cursors.put(queryId, jdbcCurs) == QUERY_ALREADY_CANCELED) {
+                if (req.queryId() != 0) {
+                    if (qryId2Cursors.put(req.queryId(), jdbcCurs) == QUERY_ALREADY_CANCELED) {
                         for (JdbcQueryCursor c : jdbcCurs)
                             c.close();
 
@@ -709,7 +699,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         for (JdbcQuery q : req.queries()) {
             if (q.sql() != null) { // If we have a new query string in the batch,
                 if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
-                    executeBatchedQuery(qry, updCntsAcc, firstErr);
+                    executeBatchedQuery(req.queryId(), qry, updCntsAcc, firstErr);
 
                 qry = new SqlFieldsQueryEx(q.sql(), false);
 
@@ -720,6 +710,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setLazy(cliCtx.isLazy());
 
                 qry.setSchema(schemaName);
+                qry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
             }
 
             assert qry != null;
@@ -728,7 +719,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         if (qry != null)
-            executeBatchedQuery(qry, updCntsAcc, firstErr);
+            executeBatchedQuery(req.queryId(), qry, updCntsAcc, firstErr);
 
         if (req.isLastStreamBatch())
             cliCtx.disableStreaming();
@@ -744,12 +735,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /**
      * Executes query and updates result counters.
      *
+     * @param qryId Query ID.
      * @param qry Query.
      * @param updCntsAcc Per query rows updates counter.
      * @param firstErr First error data - code and message.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
+    private void executeBatchedQuery(long qryId, SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
         try {
             if (cliCtx.isStream()) {
@@ -767,6 +759,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
                     throw new IgniteSQLException("COPY command cannot be executed in batch mode.");
+
+                if (qryId != 0) {
+                    if (qryId2Cursors.get(qryId) == QUERY_ALREADY_CANCELED) {
+                        throw new IgniteSQLException("The query was cancelled while executing",
+                            IgniteQueryErrorCode.QUERY_CANCELED);
+                    }
+                }
 
                 assert !((QueryCursorImpl)cur).isQuery();
 

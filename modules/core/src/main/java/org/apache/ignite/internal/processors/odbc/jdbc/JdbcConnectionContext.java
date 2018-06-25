@@ -151,7 +151,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         AuthorizationContext actx = authenticate(user, passwd);
 
-        parser = new JdbcMessageParser(ctx);
+        parser = new JdbcMessageParser(ctx, ver);
 
         JdbcResponseSender sender = new JdbcResponseSender() {
             @Override public void send(ClientListenerResponse resp) {

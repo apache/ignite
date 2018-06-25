@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
@@ -447,7 +448,7 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            if (!isUnorderedStreamSupported()) {
+            if (!JdbcUtils.isUnorderedStreamSupported(srvProtocolVer)) {
                 throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
@@ -472,7 +473,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
             null, null);
 
-        req.writeBinary(writer);
+        req.writeBinary(writer, srvProtocolVer);
 
         send(writer.array());
     }
@@ -517,11 +518,10 @@ public class JdbcThinTcpIo {
 
         JdbcResponse res = new JdbcResponse();
 
-        res.readBinary(reader);
+        res.readBinary(reader, srvProtocolVer);
 
         return res;
     }
-
 
     /**
      * Try to guess request capacity.
@@ -636,20 +636,9 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return {@code true} If the unordered streaming supported.
+     * @return Ignite server version.
      */
-    boolean isUnorderedStreamSupported() {
-        assert srvProtocolVer != null;
-
-        return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} If the query cancel is supported by the server.
-     */
-    public boolean isQueryCancelSupported() {
-        assert srvProtocolVer != null;
-
-        return srvProtocolVer.compareTo(VER_2_5_1) >= 0;
+    ClientListenerProtocolVersion protocolVersion() {
+        return srvProtocolVer;
     }
 }

@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequestV2;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
@@ -217,17 +216,10 @@ public class JdbcThinStatement implements Statement {
             return;
         }
 
-        JdbcRequest req;
-        if (conn.io().isQueryCancelSupported()) {
-            queryId = QUERY_ID_GEN.getAndIncrement();
+        queryId = QUERY_ID_GEN.getAndIncrement();
 
-            req = new JdbcQueryExecuteRequestV2(queryId, stmtType, schema, pageSize,
-                maxRows, sql, args == null ? null : args.toArray(new Object[args.size()]), timeout);
-        }
-        else {
-            req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-                maxRows, sql, args == null ? null : args.toArray(new Object[args.size()]));
-        }
+        JdbcRequest req = new JdbcQueryExecuteRequest(queryId, stmtType, schema, pageSize,
+            maxRows, timeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
 
         JdbcResult res0 = conn.sendRequest(req);
 
@@ -669,7 +661,10 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch, false));
+            queryId = QUERY_ID_GEN.getAndIncrement();
+
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(queryId, conn.getSchema(),
+                batch, timeout, false));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

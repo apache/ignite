@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -190,13 +191,13 @@ public class JdbcThinConnection implements Connection {
 
             // Actual ON, if needed.
             if (newVal) {
-                if (!cmd0.isOrdered()  && !cliIo.isUnorderedStreamSupported()) {
+                if (!cmd0.isOrdered()  && !JdbcUtils.isUnorderedStreamSupported(cliIo.protocolVersion())) {
                     throw new SQLException("Streaming without order doesn't supported by server [remoteNodeVer="
                         + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
                 }
 
-                sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, sql, null));
+                sendRequest(new JdbcQueryExecuteRequest(0, JdbcStatementType.ANY_STATEMENT_TYPE,
+                    schema, 1, 1, 0, sql, null));
 
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
             }
@@ -1056,12 +1057,5 @@ public class JdbcThinConnection implements Connection {
                 err = e;
             }
         }
-    }
-
-    /**
-     * @return Client I/O.
-     */
-    JdbcThinTcpIo io() {
-        return cliIo;
     }
 }
