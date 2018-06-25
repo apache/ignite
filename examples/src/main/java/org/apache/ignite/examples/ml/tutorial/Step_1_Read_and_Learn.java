@@ -26,15 +26,14 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
+ * Usage of DecisionTreeClassificationTrainer to predict death in the disaster.
  *
- * @see LogisticRegressionSGDTrainer
+ * Extract 3 features "pclass", "sibsp", "parch" to use in prediction.
  */
 public class Step_1_Read_and_Learn {
     /** Run example. */
@@ -45,7 +44,6 @@ public class Step_1_Read_and_Learn {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                     // Train decision tree model.
@@ -55,7 +53,6 @@ public class Step_1_Read_and_Learn {
                         (k, v) -> new double[]{(double)v[0], (double)v[5], (double)v[6]}, // "pclass", "sibsp", "parch"
                         (k, v) -> (double)v[1]
                     );
-
 
                     System.out.println(">>> ----------------------------------------------------------------");
                     System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
@@ -105,7 +102,6 @@ public class Step_1_Read_and_Learn {
             });
 
             igniteThread.start();
-
             igniteThread.join();
         }
     }

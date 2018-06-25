@@ -12,7 +12,17 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 
+/**
+ * The utility class.
+ */
 public class TitanicUtils {
+    /**
+     * Read passengers data from csv file.
+     *
+     * @param ignite The ignite.
+     * @return The filled cache.
+     * @throws FileNotFoundException
+     */
     public static IgniteCache<Integer, Object[]> readPassengers(Ignite ignite)
         throws FileNotFoundException {
         IgniteCache<Integer, Object[]> cache = getCache(ignite);
@@ -59,8 +69,6 @@ public class TitanicUtils {
         cacheConfiguration.setName("TUTORIAL_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-        IgniteCache<Integer, Object[]> cache = ignite.createCache(cacheConfiguration);
-
-        return cache;
+        return ignite.createCache(cacheConfiguration);
     }
 }

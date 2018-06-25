@@ -29,15 +29,14 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
+ * Let's add two categorial features "sex", "embarked" to predict more precisely.
  *
- * @see LogisticRegressionSGDTrainer
+ * To encode categorial features the StringEncoderTrainer will be used.
  */
 public class Step_3_Categorial {
     /** Run example. */

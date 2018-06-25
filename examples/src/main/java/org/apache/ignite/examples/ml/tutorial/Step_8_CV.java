@@ -31,7 +31,6 @@ import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTr
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
 import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
@@ -41,16 +40,18 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
+ * To choose the best hyperparameters the cross-validation will be used in this example.
+ *
  * The purpose of cross-validation is model checking, not model building.
  *
- * You train kk different models.
+ * We train k different models.
+ *
  * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
+ *
  * These models are sometimes called surrogate models because the (average) performance measured for these models
  * is taken as a surrogate of the performance of the model trained on all cases.
  *
- * All scenarious are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
- *
- * @see LogisticRegressionSGDTrainer
+ * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
  */
 public class Step_8_CV {
     /** Run example. */
@@ -83,14 +84,12 @@ public class Step_8_CV {
                             strEncoderPreprocessor
                         );
 
-
                     IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
-
 
                     // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
                     int[] pSet = new int[]{1, 2};

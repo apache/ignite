@@ -39,9 +39,9 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
+ * The highest accuracy in the previous example is the result of overfitting.
  *
- * @see LogisticRegressionSGDTrainer
+ * For real model estimation is better to use test-train split via TrainTestDatasetSplitter.
  */
 public class Step_7_Split_train_test {
     /** Run example. */

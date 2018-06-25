@@ -37,9 +37,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
- *
- * @see LogisticRegressionSGDTrainer
+ * MinMaxScalerTrainer and NormalizationTrainer are used in this example due to different values distribution in columns and rows.
  */
 public class Step_5_Scaling {
     /** Run example. */

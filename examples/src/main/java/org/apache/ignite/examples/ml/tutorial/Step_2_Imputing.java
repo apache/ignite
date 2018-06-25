@@ -25,19 +25,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
- *
- * @see LogisticRegressionSGDTrainer
+ * Usage of imputer to fill missed data (Double.NaN) values in the chosen columns.
  */
 public class Step_2_Imputing {
     /** Run example. */
@@ -63,7 +59,6 @@ public class Step_2_Imputing {
                         imputingPreprocessor,
                         (k, v) -> (double)v[1]
                     );
-
 
                     System.out.println(">>> ----------------------------------------------------------------");
                     System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");

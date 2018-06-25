@@ -40,9 +40,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
- *
- * @see LogisticRegressionSGDTrainer
+ * Sometimes is better to change algorithm, let's say on kNN.
  */
 public class Step_6_KNN {
     /** Run example. */

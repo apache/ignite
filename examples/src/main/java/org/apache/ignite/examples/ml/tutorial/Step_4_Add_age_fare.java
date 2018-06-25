@@ -35,9 +35,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
- *
- * @see LogisticRegressionSGDTrainer
+ * Add yet two numerical features "age", "fare" to improve our model.
  */
 public class Step_4_Add_age_fare {
     /** Run example. */

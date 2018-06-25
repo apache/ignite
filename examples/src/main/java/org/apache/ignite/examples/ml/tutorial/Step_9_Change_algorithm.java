@@ -40,21 +40,12 @@ import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
 import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * The purpose of cross-validation is model checking, not model building.
+ * Maybe the another algorithm can give us the higher accuracy?
  *
- * You train kk different models.
- * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
- * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.
- *
- * All scenarious are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
- *
- * @see LogisticRegressionSGDTrainer
+ * Let's win with the LogisticRegressionSGDTrainer!
  */
 public class Step_9_Change_algorithm {
     /** Run example. */
@@ -87,7 +78,6 @@ public class Step_9_Change_algorithm {
                             strEncoderPreprocessor
                         );
 
-
                     IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
                         ignite,
@@ -95,66 +85,88 @@ public class Step_9_Change_algorithm {
                         imputingPreprocessor
                     );
 
-
                     // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
                     int[] pSet = new int[]{1, 2};
-                    int[] maxIterationsSet = new int[]{100, 1000, 100000};
+                    int[] maxIterationsSet = new int[]{ 100, 1000};
                     int[] batchSizeSet = new int[]{100, 10};
                     int[] locIterationsSet = new int[]{10, 100};
-                    double[] learningRateSet = new double[]{0.1, 0.2, 0.5, 1};
+                    double[] learningRateSet = new double[]{0.1, 0.2, 0.5};
 
 
                     int bestP = 1;
-                    int bestMaxDeep = 1;
+                    int bestMaxIterations = 100;
+                    int bestBatchSize = 10;
+                    int bestLocIterations = 10;
+                    double bestLearningRate = 0.0;
                     double avg = Double.MIN_VALUE;
 
                     for(int p: pSet){
-                        //for(int maxDeep: maxDeepSet){
+                        for(int maxIterations: maxIterationsSet) {
+                            for (int batchSize : batchSizeSet) {
+                                for (int locIterations : locIterationsSet) {
+                                    for (double learningRate : learningRateSet) {
 
-                            IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                                .withP(p)
-                                .fit(
-                                    ignite,
-                                    dataCache,
-                                    minMaxScalerPreprocessor
-                                );
+                                        IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                                            .withP(p)
+                                            .fit(
+                                                ignite,
+                                                dataCache,
+                                                minMaxScalerPreprocessor
+                                            );
 
+                                        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
+                                            new SimpleGDUpdateCalculator(learningRate),
+                                            SimpleGDParameterUpdate::sumLocal,
+                                            SimpleGDParameterUpdate::avg
+                                        ), maxIterations, batchSize, locIterations, 123L);
 
-                            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                                new SimpleGDUpdateCalculator(0.2),
-                                SimpleGDParameterUpdate::sumLocal,
-                                SimpleGDParameterUpdate::avg
-                            ), 100000,  10, 100, 123L);
+                                        CrossValidationScoreCalculator<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
+                                            = new CrossValidationScoreCalculator<>();
 
-                            CrossValidationScoreCalculator<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
-                                = new CrossValidationScoreCalculator<>();
+                                        double[] scores = scoreCalculator.score(
+                                            trainer,
+                                            new AccuracyScoreCalculator<>(),
+                                            ignite,
+                                            dataCache,
+                                            split.getTrainFilter(),
+                                            normalizationPreprocessor,
+                                            (k, v) -> (double)v[1],
+                                            3
+                                        );
 
-                            double[] scores = scoreCalculator.score(
-                                trainer,
-                                new AccuracyScoreCalculator<>(),
-                                ignite,
-                                dataCache,
-                                split.getTrainFilter(),
-                                normalizationPreprocessor,
-                                (k, v) -> (double) v[1],
-                                3
-                            );
+                                        System.out.println("Scores are: " + Arrays.toString(scores));
 
-                            System.out.println("Scores are: " + Arrays.toString(scores));
+                                        final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
 
-                            final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
+                                        if (currAvg > avg) {
+                                            avg = currAvg;
+                                            bestP = p;
+                                            bestMaxIterations = maxIterations;
+                                            bestBatchSize = batchSize;
+                                            bestLearningRate = learningRate;
+                                            bestLocIterations = locIterations;
+                                        }
 
-                            if(currAvg > avg) {
-                                avg = currAvg;
-                                bestP = p;
-                                //bestMaxDeep = maxDeep;
+                                        System.out.println("Avg is: " + currAvg
+                                            + " with p: " + p
+                                            + " with maxIterations: " + maxIterations
+                                            + " with batchSize: " + batchSize
+                                            + " with learningRate: " + learningRate
+                                            + " with locIterations: " + locIterations
+                                        );
+                                    }
+                                }
                             }
-
-                           // System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
-                       // }
+                        }
                     }
 
-                    System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
+                    System.out.println("Train "
+                        + " with p: " + bestP
+                        + " with maxIterations: " + bestMaxIterations
+                        + " with batchSize: " + bestBatchSize
+                        + " with learningRate: " + bestLearningRate
+                        + " with locIterations: " + bestLocIterations
+                    );
 
                     IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                         .withP(bestP)
@@ -165,10 +177,10 @@ public class Step_9_Change_algorithm {
                         );
 
                     LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                        new SimpleGDUpdateCalculator(0.2),
+                        new SimpleGDUpdateCalculator(bestLearningRate),
                         SimpleGDParameterUpdate::sumLocal,
                         SimpleGDParameterUpdate::avg
-                    ), 100000,  10, 100, 123L);
+                    ), bestMaxIterations,  bestBatchSize, bestLocIterations, 123L);
 
                     System.out.println(">>> Perform the training to get the model.");
                     LogisticRegressionModel bestMdl = trainer.fit(

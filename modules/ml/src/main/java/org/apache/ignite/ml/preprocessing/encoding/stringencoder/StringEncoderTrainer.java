@@ -46,6 +46,9 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
     /** {@inheritDoc} */
     @Override public StringEncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+        if(handledIndices.isEmpty())
+            throw new RuntimeException("Add indices of handled features");
+
         try (Dataset<EmptyContext, StringEncoderPartitionData> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
@@ -184,7 +187,7 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
      * @param idx The index of encoded feature.
      * @return The changed trainer.
      */
-    public  StringEncoderTrainer<K, V> encodeFeature(int idx){
+    public StringEncoderTrainer<K, V> encodeFeature(int idx){
         handledIndices.add(idx);
         return this;
     }
