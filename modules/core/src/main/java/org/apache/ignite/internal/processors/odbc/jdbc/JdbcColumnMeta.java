@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static java.lang.Integer.MAX_VALUE;
-
 /**
  * JDBC column metadata.
  */

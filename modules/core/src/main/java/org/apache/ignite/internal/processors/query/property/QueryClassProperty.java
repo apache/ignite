@@ -25,8 +25,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Integer.MAX_VALUE;
-
 /**
  * Description of type property.
  */

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.readQueryEntity;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.writeEnumInt;

@@ -60,8 +60,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Integer.MAX_VALUE;
-
 /**
  * Tests for all SQL based indexing SPI implementations.
  */

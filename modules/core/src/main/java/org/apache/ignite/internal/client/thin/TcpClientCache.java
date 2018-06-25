@@ -38,7 +38,6 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;

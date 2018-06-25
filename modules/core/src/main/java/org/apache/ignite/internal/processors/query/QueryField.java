@@ -21,8 +21,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
 
-import static java.lang.Integer.MAX_VALUE;
-
 /**
  * Query field metadata.
  */

@@ -53,6 +53,7 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
         super(schemaName, tblName, colName, cls, nullable, dfltVal);
 
         this.precision = precision;
+
         this.scale = scale;
     }
 
