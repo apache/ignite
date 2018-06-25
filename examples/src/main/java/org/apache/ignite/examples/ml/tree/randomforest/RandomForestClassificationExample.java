@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * thread pool for multi-thread learning, initialization of Ignite Cache,
  * learning step and evaluation of accuracy of model.
  *
- * (dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/wine/)
+ * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/wine/
  * @see RandomForestClassifierTrainer
  */
 public class RandomForestClassificationExample {

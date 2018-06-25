@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  * learning step and evaluation of model quality in terms of
  * Mean Squared Error (MSE) and Mean Absolute Error (MAE).
  *
- * (dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/)
+ * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
  * @see RandomForestRegressionTrainer
  */
 public class RandomForestRegressionExample {
