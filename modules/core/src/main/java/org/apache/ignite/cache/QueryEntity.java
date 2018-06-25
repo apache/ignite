@@ -262,7 +262,6 @@ public class QueryEntity implements Serializable {
             String targetFieldName = targetField.getKey();
             String targetFieldType = targetField.getValue();
 
-            //TODO: add fieldsPrecision and fieldsScale check.
             if (getFields().containsKey(targetFieldName)) {
                 checkEquals(
                     conflicts,
@@ -284,13 +283,26 @@ public class QueryEntity implements Serializable {
                     getFromMap(getDefaultFieldValues(), targetFieldName),
                     getFromMap(target.getDefaultFieldValues(), targetFieldName)
                 );
+
+                checkEquals(conflicts,
+                    "precision of " + targetFieldName,
+                    getFromMap(getFieldsPrecision(), targetFieldName),
+                    getFromMap(target.getFieldsPrecision(), targetFieldName));
+
+                checkEquals(
+                    conflicts,
+                    "scale of " + targetFieldName,
+                    getFromMap(getFieldsScale(), targetFieldName),
+                    getFromMap(target.getFieldsScale(), targetFieldName));
             }
             else {
                 queryFieldsToAdd.add(new QueryField(
                     targetFieldName,
                     targetFieldType,
                     !contains(target.getNotNullFields(),targetFieldName),
-                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName),
+                    getFromMap(target.getFieldsPrecision(), targetFieldName),
+                    getFromMap(target.getFieldsScale(), targetFieldName)
                 ));
             }
         }
@@ -310,7 +322,7 @@ public class QueryEntity implements Serializable {
     /**
      * @return Value from sourceMap or null if map is null.
      */
-    private static Object getFromMap(Map<String, Object> sourceMap, String key) {
+    private static <V> V getFromMap(Map<String, V> sourceMap, String key) {
         return sourceMap == null ? null : sourceMap.get(key);
     }
 
@@ -322,7 +334,7 @@ public class QueryEntity implements Serializable {
      * @param local Local object.
      * @param received Received object.
      */
-    private void checkEquals(StringBuilder conflicts, String name, Object local, Object received) {
+    private <V> void checkEquals(StringBuilder conflicts, String name, V local, V received) {
         if (!Objects.equals(local, received))
             conflicts.append(String.format("%s is different: local=%s, received=%s\n", name, local, received));
     }
