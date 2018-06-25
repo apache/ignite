@@ -395,7 +395,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "org.ORGANIZATION.NAME.null.42",
                 "pers.PERSON.ORGID.null",
                 "pers.PERSON.AGE.null",
-                "pers.PERSON.NAME.null." + MAX_VALUE,
+                "pers.PERSON.NAME.null",
                 "dep.DEPARTMENT.ID.null",
                 "dep.DEPARTMENT.NAME.null.43",
                 "PUBLIC.TEST.ID.null",
