@@ -120,6 +120,17 @@ web-console-header {
             margin-right: $nav-item-margin;
         }
 
+        .dropdown-menu {
+            a {
+                &:hover, &:focus {
+                    color: inherit;
+                }
+            }
+            li.active a {
+                color: inherit;
+            }
+        }
+
         .user-name-wrapper {
             display: flex;
             align-items: center;
