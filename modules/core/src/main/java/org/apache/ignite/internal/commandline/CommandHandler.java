@@ -1088,11 +1088,19 @@ public class CommandHandler {
                         ", concurrency=" + info.getConcurrency() +
                         ", timeout=" + info.getTimeout() +
                         ", size=" + info.getSize() +
-                        ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                        @Override public String apply(UUID id) {
-                            return U.id8(id);
-                        }
-                    }) +
+                        ", dhtNodes=" + (info.getPrimaryNodes() == null ? "N/A" :
+                        F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                            @Override public String apply(UUID id) {
+                                return U.id8(id);
+                            }
+                        })) +
+                        ", nearXid=" + info.getNearXid() +
+                        ", parentNodeIds=" + (info.getMasterNodeIds() == null ? "N/A" :
+                        F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                            @Override public String apply(UUID id) {
+                                return U.id8(id);
+                            }
+                        })) +
                         ']');
             }
         }

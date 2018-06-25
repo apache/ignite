@@ -443,7 +443,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @return Estimated keys count.
      */
     public long estimatedKeysCount() {
-        return estimatedKeysCnt;
+        return -1;
     }
 
     /**
@@ -457,12 +457,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @return Estimated keys count for a given cache ID.
      */
     public long keysForCache(int cacheId) {
-        if (this.keysPerCache == null)
-            return -1;
-
-        Long cnt = this.keysPerCache.get(cacheId);
-
-        return cnt != null ? cnt : 0;
+        return -1;
     }
 
     /**

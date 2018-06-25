@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -75,6 +76,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private int size;
 
+    /** */
+    private IgniteUuid nearXid;
+
+    /** */
+    private Collection<UUID> masterNodeIds;
+
     /**
      * Default constructor.
      */
@@ -96,7 +103,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
      */
     public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size) {
+        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds) {
         this.xid = xid;
         this.startTime = startTime;
         this.duration = duration;
@@ -107,6 +114,13 @@ public class VisorTxInfo extends VisorDataTransferObject {
         this.primaryNodes = primaryNodes;
         this.state = state;
         this.size = size;
+        this.nearXid = nearXid;
+        this.masterNodeIds = masterNodeIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** */
@@ -164,9 +178,14 @@ public class VisorTxInfo extends VisorDataTransferObject {
         return size;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
+    /** */
+    public @Nullable IgniteUuid getNearXid() {
+        return nearXid;
+    }
+
+    /** */
+    public @Nullable Collection<UUID> getMasterNodeIds() {
+        return masterNodeIds;
     }
 
     /** {@inheritDoc} */
@@ -180,12 +199,13 @@ public class VisorTxInfo extends VisorDataTransferObject {
         U.writeCollection(out, primaryNodes);
         U.writeEnum(out, state);
         out.writeInt(size);
+        U.writeGridUuid(out, nearXid);
+        U.writeCollection(out, masterNodeIds);
         out.writeLong(startTime);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         xid = U.readGridUuid(in);
         duration = in.readLong();
         isolation = TransactionIsolation.fromOrdinal(in.readByte());
@@ -195,7 +215,14 @@ public class VisorTxInfo extends VisorDataTransferObject {
         primaryNodes = U.readCollection(in);
         state = TransactionState.fromOrdinal(in.readByte());
         size = in.readInt();
-        startTime = protoVer >= V2 ? in.readLong() : 0L;
+        if (protoVer >= V2) {
+            nearXid = U.readGridUuid(in);
+
+            masterNodeIds = U.readCollection(in);
+
+            startTime = in.readLong();
+        }
+
     }
 
     /** {@inheritDoc} */

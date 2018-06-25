@@ -1120,6 +1120,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         affCache.similarAffinityKey());
                 }
 
+                m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
+
                 if (exchId != null) {
                     CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
 
@@ -1153,6 +1155,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     m.addPartitionUpdateCounters(top.groupId(), cntrsMap);
                 else
                     m.addPartitionUpdateCounters(top.groupId(), CachePartitionFullCountersMap.toCountersMap(cntrsMap));
+
+                m.addPartitionSizes(top.groupId(), top.globalPartSizes());
             }
         }
 
@@ -1263,9 +1267,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                    m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
                 }
+
+                m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
             }
         }
 
@@ -1287,9 +1291,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                m.addPartitionSizes(top.groupId(), top.partitionSizes());
             }
+
+            m.addPartitionSizes(top.groupId(), top.partitionSizes());
         }
 
         return m;
@@ -1481,6 +1485,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
+                            msg.partitionSizes(grpId),
                             msg.topologyVersion());
                     }
                 }
