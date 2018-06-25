@@ -107,7 +107,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -669,7 +668,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage || msg instanceof PartitionRebalanceRequestMessage)
+                else if (msg instanceof SnapshotDiscoveryMessage)
+                    exchange = onCustomMessageNoAffinityChange(crdNode);
+                else if (msg instanceof PartitionRebalanceRequestMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
@@ -1680,7 +1681,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (grp == null || grp.topology().localPartitions().isEmpty())
                 continue;
 
-            Map<Integer,Long> resParts = partHistReserved.get(grp.groupId());
 
             GridDhtPartitionMap locParts = grp.topology().localPartitionMap();
 
@@ -1696,15 +1696,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Set<UUID> owners = allPartOwners.get(pId).stream().map(ClusterNode::id).collect(Collectors.toSet());
 
                 if (!locParts.containsKey(pId) || !nodes.contains(locNode.id())
-                        || !isSafePartitionToRebalance(nodes, owners))
+                        || !isPartitionSafeToRebalance(nodes, owners))
                     continue;
 
                 GridDhtPartitionState pState = locParts.get(pId);
 
-                if (pState != GridDhtPartitionState.MOVING && pState== GridDhtPartitionState.OWNING)  {
-                    if (resParts != null)
-                        resParts.remove(pId);
-
+                if (pState== GridDhtPartitionState.OWNING)  {
                     GridDhtLocalPartition p = grp.topology().localPartition(pId);
 
                     if (p != null) {
@@ -1719,13 +1716,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param reqNodes Request nodes.
-     * @param owners Owners.
+     * @param reqNodes Nodes from rebalance request.
+     * @param owners Owners nodes.
      */
-    private boolean isSafePartitionToRebalance(Set<UUID> reqNodes, Set<UUID> owners) {
-        owners.removeAll(reqNodes);
-
-        return owners.size() > 0;
+    private boolean isPartitionSafeToRebalance(Set<UUID> reqNodes, Set<UUID> owners) {
+        return owners.stream().filter(o -> !reqNodes.contains(o)).collect(Collectors.toSet()).size() > 0;
     }
 
     /**
@@ -2761,8 +2756,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             resetLostPartitions(caches);
                     }
                 }
-                else if (customMsg instanceof PartitionRebalanceRequestMessage ||
-                        (customMsg instanceof SnapshotDiscoveryMessage && ((SnapshotDiscoveryMessage)customMsg).needAssignPartitions()))
+                else if (customMsg instanceof PartitionRebalanceRequestMessage)
+                    assignPartitionsStates();
+                else if (customMsg instanceof SnapshotDiscoveryMessage && ((SnapshotDiscoveryMessage)customMsg).needAssignPartitions())
                     assignPartitionsStates();
             }
             else {

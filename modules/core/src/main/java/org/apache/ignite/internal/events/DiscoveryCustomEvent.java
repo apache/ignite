@@ -109,8 +109,10 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
         if (msg == null)
             return false;
 
-        if ((msg instanceof ChangeGlobalStateMessage && ((ChangeGlobalStateMessage)msg).activate()) ||
-                msg instanceof PartitionRebalanceRequestMessage)
+        if (msg instanceof ChangeGlobalStateMessage && ((ChangeGlobalStateMessage)msg).activate())
+            return true;
+
+        if (msg instanceof PartitionRebalanceRequestMessage)
             return true;
 
         if (msg instanceof SnapshotDiscoveryMessage) {

@@ -49,7 +49,7 @@ import java.util.concurrent.CountDownLatch;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * Test correcness of forced PME for rebalancing selected subset of partitions on some nodes.
+ * Test correctness of forced PME and rebalancing selected subset of partitions on some nodes.
  */
 public class PartitionRebalanceRequestTest extends GridCommonAbstractTest {
     /** Partitions count. */
@@ -132,7 +132,7 @@ public class PartitionRebalanceRequestTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     CacheRebalancingEvent rebEvt = (CacheRebalancingEvent)evt;
 
-                    log.info("Received rebEvt " + rebEvt);
+                    log.info("Received " + rebEvt);
 
                     if(rebEvt.cacheName().equals(DEFAULT_CACHE_NAME)) {
                         if (rebEvt.type() == EVT_CACHE_REBALANCE_PART_LOADED)
