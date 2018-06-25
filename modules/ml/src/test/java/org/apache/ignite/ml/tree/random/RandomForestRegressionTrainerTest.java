@@ -1,8 +1,7 @@
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.answercomputer.MeanValueModelsCompositionAnswerCalculator;
+import org.apache.ignite.ml.composition.answercomputer.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class RandomForestRegressionTrainerTest {
@@ -50,11 +50,11 @@ public class RandomForestRegressionTrainerTest {
             sample.put(x1 * x2 + x3 * x4, new double[]{x1, x2, x3, x4});
         }
 
-        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4,3, 3, 0.3, 4, 0.1);
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4,3, 5, 0.3, 4, 0.1);
         ModelsComposition<DecisionTreeNode> model = trainer.fit(sample, parts, (k, v) -> v, (k, v) -> k);
 
-        assertTrue(model.getModelsCompositionAnswerComputer() instanceof MeanValueModelsCompositionAnswerCalculator);
-        assertEquals(3, model.getModels().size());
+        assertTrue(model.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
+        assertEquals(5, model.getModels().size());
 
         for(ModelsComposition.ModelOnFeaturesSubspace<DecisionTreeNode> tree : model.getModels())
             assertEquals(3, tree.getFeaturesMapping().size());

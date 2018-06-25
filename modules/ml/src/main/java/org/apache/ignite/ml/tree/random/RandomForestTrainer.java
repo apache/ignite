@@ -18,21 +18,34 @@
 package org.apache.ignite.ml.tree.random;
 
 import org.apache.ignite.ml.composition.BaggingModelTrainer;
-import org.apache.ignite.ml.composition.answercomputer.ModelsCompositionAnswerComputer;
+import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+
+import java.util.concurrent.ExecutorService;
 
 public abstract class RandomForestTrainer extends BaggingModelTrainer<DecisionTreeNode> {
     protected final int maxDeep;
     protected final double minImpurityDecrease;
 
-    public RandomForestTrainer(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer,
-                               int maximumFeaturesCountPerModel,
+    public RandomForestTrainer(PredictionsAggregator predictionsAggregator,
                                int featureVectorSize,
+                               int maximumFeaturesCountPerModel,
                                int countOfModels,
                                double samplePartSizePerModel,
                                int maxDeep,
                                double minImpurityDecrease) {
-        super(modelsCompositionAnswerComputer, featureVectorSize, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel);
+        this(predictionsAggregator, featureVectorSize, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel, maxDeep, minImpurityDecrease, null);
+    }
+
+    public RandomForestTrainer(PredictionsAggregator predictionsAggregator,
+                               int featureVectorSize,
+                               int maximumFeaturesCountPerModel,
+                               int countOfModels,
+                               double samplePartSizePerModel,
+                               int maxDeep,
+                               double minImpurityDecrease,
+                               ExecutorService threadPool) {
+        super(predictionsAggregator, featureVectorSize, maximumFeaturesCountPerModel, countOfModels, samplePartSizePerModel, threadPool);
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
     }

@@ -18,32 +18,43 @@
 package org.apache.ignite.ml.composition;
 
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.composition.answercomputer.ModelsCompositionAnswerComputer;
+import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Model consisting of several models and prediction aggregation strategy.
+ *
+ * @param <M> Type of containing model.
+ */
 public class ModelsComposition<M extends Model<double[], Double>> implements Model<double[], Double> {
-    private final ModelsCompositionAnswerComputer modelsCompositionAnswerComputer;
+    private final PredictionsAggregator predictionsAggregator;
     private final List<ModelOnFeaturesSubspace<M>> models;
 
-    public ModelsComposition(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer, List<ModelOnFeaturesSubspace<M>> models) {
-        this.modelsCompositionAnswerComputer = modelsCompositionAnswerComputer;
+    /**
+     * Constructs a new instance of model composition
+     *
+     * @param models Basic models.
+     * @param predictionsAggregator Predictions aggregator.
+     */
+    public ModelsComposition(List<ModelOnFeaturesSubspace<M>> models, PredictionsAggregator predictionsAggregator) {
+        this.predictionsAggregator = predictionsAggregator;
         this.models = Collections.unmodifiableList(models);
     }
 
     @Override
     public Double apply(double[] features) {
         double[] predictions = new double[models.size()];
-        for(int i = 0; i < models.size(); i++)
+        for (int i = 0; i < models.size(); i++)
             predictions[i] = models.get(i).apply(features);
 
-        return modelsCompositionAnswerComputer.apply(predictions);
+        return predictionsAggregator.apply(predictions);
     }
 
-    public ModelsCompositionAnswerComputer getModelsCompositionAnswerComputer() {
-        return modelsCompositionAnswerComputer;
+    public PredictionsAggregator getPredictionsAggregator() {
+        return predictionsAggregator;
     }
 
     public List<ModelOnFeaturesSubspace<M>> getModels() {

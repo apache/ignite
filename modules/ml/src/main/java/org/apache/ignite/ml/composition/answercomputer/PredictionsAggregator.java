@@ -17,11 +17,7 @@
 
 package org.apache.ignite.ml.composition.answercomputer;
 
-import java.util.Arrays;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-public class MeanValueModelsCompositionAnswerCalculator implements ModelsCompositionAnswerComputer {
-    @Override
-    public Double apply(double[] estimations) {
-        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
-    }
+public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
 }

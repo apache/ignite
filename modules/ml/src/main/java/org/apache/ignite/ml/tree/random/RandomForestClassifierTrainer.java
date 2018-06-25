@@ -17,33 +17,50 @@
 
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.composition.answercomputer.ModelsCompositionAnswerComputer;
-import org.apache.ignite.ml.composition.answercomputer.OnMajorityModelsCompositionAnswerCalculator;
+import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
+import org.apache.ignite.ml.composition.answercomputer.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
+import java.util.concurrent.ExecutorService;
+
 public class RandomForestClassifierTrainer extends RandomForestTrainer {
-    public RandomForestClassifierTrainer(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer,
-                                         int maximumFeaturesCountPerModel, int featureVectorSize,
+    public RandomForestClassifierTrainer(PredictionsAggregator predictionsAggregator,
+                                         int featureVectorSize, int maximumFeaturesCountPerModel,
                                          int countOfModels, double samplePartSizePerModel,
-                                         int maxDeep, double minImpurityDecrease) {
-        super(modelsCompositionAnswerComputer, maximumFeaturesCountPerModel,
-                featureVectorSize, countOfModels, samplePartSizePerModel,
-                maxDeep, minImpurityDecrease);
+                                         int maxDeep, double minImpurityDecrease,
+                                         ExecutorService threadPool) {
+        super(predictionsAggregator, featureVectorSize, maximumFeaturesCountPerModel,
+                countOfModels, samplePartSizePerModel,
+                maxDeep, minImpurityDecrease, threadPool);
     }
 
-    public RandomForestClassifierTrainer(int featureVectorSize,
-                                         int maximumFeaturesCountPerModel,
+    public RandomForestClassifierTrainer(int featureVectorSize, int maximumFeaturesCountPerModel,
                                          int countOfModels, double samplePartSizePerModel,
-                                         int maxDeep, double minImpurityDecrease) {
-        super(new OnMajorityModelsCompositionAnswerCalculator(),
-                maximumFeaturesCountPerModel,
+                                         int maxDeep, double minImpurityDecrease,
+                                         ExecutorService threadPool) {
+        this(new OnMajorityPredictionsAggregator(),
                 featureVectorSize,
+                maximumFeaturesCountPerModel,
                 countOfModels,
                 samplePartSizePerModel,
                 maxDeep,
-                minImpurityDecrease);
+                minImpurityDecrease,
+                threadPool);
+    }
+
+    public RandomForestClassifierTrainer(int featureVectorSize, int maximumFeaturesCountPerModel,
+                                         int countOfModels, double samplePartSizePerModel,
+                                         int maxDeep, double minImpurityDecrease) {
+        this(new OnMajorityPredictionsAggregator(),
+                featureVectorSize,
+                maximumFeaturesCountPerModel,
+                countOfModels,
+                samplePartSizePerModel,
+                maxDeep,
+                minImpurityDecrease,
+                null);
     }
 
     @Override

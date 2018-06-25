@@ -114,8 +114,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     @Override
-    public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filter) {
-        return new LocalDatasetBuilder<>(upstreamMap, filter, partitions);
+    public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
+        return new LocalDatasetBuilder<>(upstreamMap, (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
     }
 
     /**

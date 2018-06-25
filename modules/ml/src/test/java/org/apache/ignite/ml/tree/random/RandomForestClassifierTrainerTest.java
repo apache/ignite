@@ -1,7 +1,7 @@
 package org.apache.ignite.ml.tree.random;
 
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.answercomputer.OnMajorityModelsCompositionAnswerCalculator;
+import org.apache.ignite.ml.composition.answercomputer.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,11 +50,11 @@ public class RandomForestClassifierTrainerTest {
             sample.put(new double[]{x1, x2, x3, x4}, (double)(i % 2));
         }
 
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4,3, 3, 0.3, 4, 0.1);
+        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4,3, 5, 0.3, 4, 0.1);
         ModelsComposition<DecisionTreeNode> model = trainer.fit(sample, parts, (k, v) -> k, (k, v) -> v);
 
-        assertTrue(model.getModelsCompositionAnswerComputer() instanceof OnMajorityModelsCompositionAnswerCalculator);
-        assertEquals(3, model.getModels().size());
+        assertTrue(model.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
+        assertEquals(5, model.getModels().size());
 
         for(ModelsComposition.ModelOnFeaturesSubspace<DecisionTreeNode> tree : model.getModels())
             assertEquals(3, tree.getFeaturesMapping().size());

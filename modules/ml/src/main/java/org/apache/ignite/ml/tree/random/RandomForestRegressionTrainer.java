@@ -17,21 +17,40 @@
 
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.composition.answercomputer.ModelsCompositionAnswerComputer;
+import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.composition.answercomputer.MeanValueModelsCompositionAnswerCalculator;
+import org.apache.ignite.ml.composition.answercomputer.MeanValuePredictionsAggregator;
+
+import java.util.concurrent.ExecutorService;
 
 public class RandomForestRegressionTrainer extends RandomForestTrainer {
-    public RandomForestRegressionTrainer(ModelsCompositionAnswerComputer modelsCompositionAnswerComputer,
-                                         int maximumFeaturesCountPerModel, int featureVectorSize,
+    public RandomForestRegressionTrainer(PredictionsAggregator predictionsAggregator,
+                                         int featureVectorSize, int maximumFeaturesCountPerModel,
                                          int countOfModels, double samplePartSizePerModel,
-                                         int maxDeep, double minImpurityDecrease) {
-        super(modelsCompositionAnswerComputer, maximumFeaturesCountPerModel,
-                featureVectorSize, countOfModels,
+                                         int maxDeep, double minImpurityDecrease,
+                                         ExecutorService threadPool) {
+        super(predictionsAggregator,
+                featureVectorSize,
+                maximumFeaturesCountPerModel,
+                countOfModels,
                 samplePartSizePerModel,
-                maxDeep, minImpurityDecrease);
+                maxDeep, minImpurityDecrease, threadPool);
+    }
+
+    public RandomForestRegressionTrainer(int featureVectorSize,
+                                         int maximumFeaturesCountPerModel,
+                                         int countOfModels,
+                                         double samplePartSizePerModel,
+                                         int maxDeep, double minImpurityDecrease,
+                                         ExecutorService threadPool) {
+        this(new MeanValuePredictionsAggregator(),
+                featureVectorSize,
+                maximumFeaturesCountPerModel,
+                countOfModels,
+                samplePartSizePerModel,
+                maxDeep, minImpurityDecrease, threadPool);
     }
 
     public RandomForestRegressionTrainer(int featureVectorSize,
@@ -39,11 +58,12 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer {
                                          int countOfModels,
                                          double samplePartSizePerModel,
                                          int maxDeep, double minImpurityDecrease) {
-        super(new MeanValueModelsCompositionAnswerCalculator(),
-                maximumFeaturesCountPerModel, featureVectorSize,
+        this(new MeanValuePredictionsAggregator(),
+                featureVectorSize,
+                maximumFeaturesCountPerModel,
                 countOfModels,
                 samplePartSizePerModel,
-                maxDeep, minImpurityDecrease);
+                maxDeep, minImpurityDecrease, null);
     }
 
     @Override
