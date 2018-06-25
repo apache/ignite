@@ -153,7 +153,7 @@ public class GridDhtPartitionsEvictor {
 
                 evictionFut = new GridFutureAdapter<>();
 
-                ctx.kernalContext().closure().callLocalSafe(new PartitionEvictionTask(next), true);
+                ctx.kernalContext().closure().callLocalSafe(new PartitionEvictionTask(next, () -> stop), true);
             }
             else
                 evictionRunning = false;
@@ -179,14 +179,19 @@ public class GridDhtPartitionsEvictor {
      * Task for self-scheduled partition eviction / clearing.
      */
     private class PartitionEvictionTask implements Callable<Boolean> {
-        /** Partition. */
+        /** Partition to evict. */
         private final GridDhtLocalPartition part;
+
+        /** Eviction context. */
+        private final EvictionContext evictionCtx;
 
         /**
          * @param part Partition.
+         * @param evictionCtx Eviction context.
          */
-        public PartitionEvictionTask(GridDhtLocalPartition part) {
+        public PartitionEvictionTask(GridDhtLocalPartition part, EvictionContext evictionCtx) {
             this.part = part;
+            this.evictionCtx = evictionCtx;
         }
 
         /** {@inheritDoc} */
@@ -198,7 +203,7 @@ public class GridDhtPartitionsEvictor {
             }
 
             try {
-                boolean success = part.tryClear();
+                boolean success = part.tryClear(evictionCtx);
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())

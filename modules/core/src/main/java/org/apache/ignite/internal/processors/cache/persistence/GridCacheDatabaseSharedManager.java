@@ -703,8 +703,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        if (log.isInfoEnabled())
-            log.info("DeActivate database manager [id=" + cctx.localNodeId() +
+        if (log.isDebugEnabled())
+            log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         onKernalStop0(false);
