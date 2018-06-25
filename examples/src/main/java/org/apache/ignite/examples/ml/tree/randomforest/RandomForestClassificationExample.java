@@ -64,9 +64,7 @@ public class RandomForestClassificationExample {
 
                 RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(13, 4, 101, 0.3, 2, 0, threadPool);
 
-                ModelsComposition knnMdl = trainer.fit(
-                        ignite,
-                        dataCache,
+                ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                         (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                         (k, v) -> v[0]
                 );
@@ -80,7 +78,7 @@ public class RandomForestClassificationExample {
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = knnMdl.apply(inputs);
+                        double prediction = randomForest.apply(inputs);
 
                         totalAmount++;
                         if (groundTruth != prediction)

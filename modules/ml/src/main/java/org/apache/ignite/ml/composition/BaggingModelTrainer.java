@@ -161,12 +161,12 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
-        Model<double[], Double> model = buildDatasetTrainerForModel().fit(
+        Model<double[], Double> mdl = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
 
-        return new ModelsComposition.ModelOnFeaturesSubspace(featuresMapping, model);
+        return new ModelsComposition.ModelOnFeaturesSubspace(featuresMapping, mdl);
     }
 
     /**
