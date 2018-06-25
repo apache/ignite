@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.composition.BaggingModelTrainer;
-import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
-
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.ml.composition.BaggingModelTrainer;
+import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 
-public abstract class RandomForestTrainer extends BaggingModelTrainer<DecisionTreeNode> {
+public abstract class RandomForestTrainer extends BaggingModelTrainer {
     protected final int maxDeep;
     protected final double minImpurityDecrease;
 

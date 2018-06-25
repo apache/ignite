@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.answercomputer;
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 
-public class OnMajorityPredictionsAggregator implements PredictionsAggregator {
-    @Override
-    public Double apply(double[] estimations) {
-        Map<Double, Integer> countersByClass = new HashMap<>();
-        for (Double predictedValue : estimations) {
-            Integer counterValue = countersByClass.getOrDefault(predictedValue, 0) + 1;
-            countersByClass.put(predictedValue, counterValue);
-        }
-
-        return countersByClass.entrySet().stream()
-                .max(Comparator.comparing(Map.Entry::getValue))
-                .get().getKey();
+/**
+ * Predictions aggregator returning the mean value of predictions.
+ */
+public class MeanValuePredictionsAggregator implements PredictionsAggregator {
+    /** {@inheritDoc} */
+    @Override public Double apply(double[] estimations) {
+        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
     }
 }

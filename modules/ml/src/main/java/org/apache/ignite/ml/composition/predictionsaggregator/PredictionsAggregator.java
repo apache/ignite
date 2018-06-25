@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.answercomputer;
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import java.util.Arrays;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-public class MeanValuePredictionsAggregator implements PredictionsAggregator {
-    @Override
-    public Double apply(double[] estimations) {
-        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
-    }
+/**
+ * Predictions aggregator interface.
+ */
+public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
 }

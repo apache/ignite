@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
-import org.apache.ignite.ml.composition.answercomputer.OnMajorityPredictionsAggregator;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
+import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -63,8 +64,7 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer {
                 null);
     }
 
-    @Override
-    protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
+    @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
         return new DecisionTreeClassificationTrainer(maxDeep, minImpurityDecrease);
     }
 }

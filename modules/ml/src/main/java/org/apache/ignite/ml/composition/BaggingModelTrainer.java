@@ -17,8 +17,17 @@
 
 package org.apache.ignite.ml.composition;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
+import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -27,104 +36,167 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.IntStream;
-
-public abstract class BaggingModelTrainer<M extends Model<double[], Double>> implements DatasetTrainer<ModelsComposition<M>, Double> {
+/**
+ * Abstract trainer implementing bagging logic.
+ */
+public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsComposition, Double> {
+    /**
+     * Predictions aggregator.
+     */
     private final PredictionsAggregator predictionsAggregator;
+    /**
+     * Number of features to draw from original features vector to train each model.
+     */
     private final int maximumFeaturesCntPerMdl;
-    private final int cntOfModels;
+    /**
+     * Ensemble size.
+     */
+    private final int ensembleSize;
+    /**
+     * Size of sample part in percent to train one model.
+     */
     private final double samplePartSizePerMdl;
+    /**
+     * Feature vector size.
+     */
     private final int featureVectorSize;
+    /**
+     * Learning thread pool.
+     */
     private final ExecutorService threadPool;
 
+    /**
+     * Constructs new instance of BaggingModelTrainer.
+     *
+     * @param predictionsAggregator Predictions aggregator.
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     */
     public BaggingModelTrainer(PredictionsAggregator predictionsAggregator,
-                               int featureVectorSize,
-                               int maximumFeaturesCntPerMdl,
-                               int cntOfModels,
-                               double samplePartSizePerMdl) {
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, cntOfModels, samplePartSizePerMdl, null);
+        int featureVectorSize,
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl) {
+        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize, samplePartSizePerMdl, null);
     }
 
+    /**
+     * Constructs new instance of BaggingModelTrainer.
+     *
+     * @param predictionsAggregator Predictions aggregator.
+     * @param featureVectorSize Feature vector size.
+     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
+     * @param ensembleSize Ensemble size.
+     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
+     * @param threadPool Learning thread pool.
+     */
     public BaggingModelTrainer(PredictionsAggregator predictionsAggregator,
-                               int featureVectorSize,
-                               int maximumFeaturesCntPerMdl,
-                               int cntOfModels,
-                               double samplePartSizePerMdl,
-                               ExecutorService threadPool) {
+        int featureVectorSize,
+        int maximumFeaturesCntPerMdl,
+        int ensembleSize,
+        double samplePartSizePerMdl,
+        ExecutorService threadPool) {
         this.predictionsAggregator = predictionsAggregator;
         this.maximumFeaturesCntPerMdl = maximumFeaturesCntPerMdl;
-        this.cntOfModels = cntOfModels;
+        this.ensembleSize = ensembleSize;
         this.samplePartSizePerMdl = samplePartSizePerMdl;
         this.featureVectorSize = featureVectorSize;
         this.threadPool = threadPool;
     }
 
-    @Override
-    public <K, V> ModelsComposition<M> fit(DatasetBuilder<K, V> datasetBuilder,
-                                           IgniteBiFunction<K, V, double[]> featureExtractor,
-                                           IgniteBiFunction<K, V, Double> lbExtractor) {
-        List<ModelsComposition.ModelOnFeaturesSubspace<M>> learnedModels = new ArrayList<>();
+    /** {@inheritDoc} */
+    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+        List<ModelsComposition.ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
 
-        List<Future<ModelsComposition.ModelOnFeaturesSubspace<M>>> futures = new ArrayList<>();
-        for (int i = 0; i < cntOfModels; i++) {
+        List<Future<ModelsComposition.ModelOnFeaturesSubspace>> futures = new ArrayList<>();
+        for (int i = 0; i < ensembleSize; i++) {
             if (threadPool == null)
-                learnedModels.add(buildModel(datasetBuilder, featureExtractor, lbExtractor));
+                learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
             else {
-                Future<ModelsComposition.ModelOnFeaturesSubspace<M>> future = threadPool.submit(() -> {
-                    return buildModel(datasetBuilder, featureExtractor, lbExtractor);
+                Future<ModelsComposition.ModelOnFeaturesSubspace> fut = threadPool.submit(() -> {
+                    return learnModel(datasetBuilder, featureExtractor, lbExtractor);
                 });
 
-                futures.add(future);
+                futures.add(fut);
             }
         }
 
         if (threadPool != null) {
-            for (Future<ModelsComposition.ModelOnFeaturesSubspace<M>> future : futures) {
+            for (Future<ModelsComposition.ModelOnFeaturesSubspace> future : futures) {
                 try {
                     learnedModels.add(future.get());
-                } catch (InterruptedException | ExecutionException e) {
+                }
+                catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
             }
         }
 
-        return new ModelsComposition<>(learnedModels, predictionsAggregator);
+        return new ModelsComposition(learnedModels, predictionsAggregator);
     }
 
-    @NotNull
-    private <K, V> ModelsComposition.ModelOnFeaturesSubspace<M> buildModel(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    /**
+     * Trains one model on part of sample and features subspace.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
+    @NotNull private <K, V> ModelsComposition.ModelOnFeaturesSubspace learnModel(
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
         final Random rnd = new Random();
         final SHA256UniformMapper<K, V> sampleFilter = new SHA256UniformMapper<>(rnd);
         final long featureExtractorSeed = rnd.nextLong();
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
-        M model = buildDatasetTrainerForModel().fit(
-                datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
-                wrapFeatureExtractor(featureExtractor, featuresMapping),
-                lbExtractor);
+        Model<double[], Double> model = buildDatasetTrainerForModel().fit(
+            datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
+            wrapFeatureExtractor(featureExtractor, featuresMapping),
+            lbExtractor);
 
-        return new ModelsComposition.ModelOnFeaturesSubspace<>(featuresMapping, model);
+        return new ModelsComposition.ModelOnFeaturesSubspace(featuresMapping, model);
     }
 
-    private Map<Integer, Integer> createFeaturesMapping(long featureExtractorSeed, int featuresVectorSize) {
-        final int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize,
-                maximumFeaturesCntPerMdl,
-                new Random(featureExtractorSeed)
+    /**
+     * Constructs mapping from original feature vector to subspace.
+     *
+     * @param seed Seed.
+     * @param featuresVectorSize Features vector size.
+     */
+    private Map<Integer, Integer> createFeaturesMapping(long seed, int featuresVectorSize) {
+        final int[] featureIdxs = Utils.selectKDistinct(
+            featuresVectorSize,
+            maximumFeaturesCntPerMdl,
+            new Random(seed)
         );
         final Map<Integer, Integer> locFeaturesMapping = new HashMap<>();
         IntStream.range(0, maximumFeaturesCntPerMdl)
-                .forEach(localId -> locFeaturesMapping.put(localId, featureIdxs[localId]));
+            .forEach(localId -> locFeaturesMapping.put(localId, featureIdxs[localId]));
 
         return locFeaturesMapping;
     }
 
-    protected abstract DatasetTrainer<M, Double> buildDatasetTrainerForModel();
+    /**
+     * Creates trainer specific to ensemble.
+     */
+    protected abstract DatasetTrainer<? extends Model<double[], Double>, Double> buildDatasetTrainerForModel();
 
+    /**
+     * Wraps the original feature extractor with features subspace mapping applying.
+     *
+     * @param featureExtractor Feature extractor.
+     * @param featureMapping Feature mapping.
+     */
     private <K, V> IgniteBiFunction<K, V, double[]> wrapFeatureExtractor(
-            IgniteBiFunction<K, V, double[]> featureExtractor, Map<Integer, Integer> featureMapping) {
-        return featureExtractor.andThen((IgniteFunction<double[], double[]>) featureValues -> {
+        IgniteBiFunction<K, V, double[]> featureExtractor,
+        Map<Integer, Integer> featureMapping) {
+        return featureExtractor.andThen((IgniteFunction<double[], double[]>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.size()];
             featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues[featureValueId]);
             return newFeaturesValues;

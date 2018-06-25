@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.tree.random;
 
-import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
+import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.composition.answercomputer.MeanValuePredictionsAggregator;
+import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 
 import java.util.concurrent.ExecutorService;
 

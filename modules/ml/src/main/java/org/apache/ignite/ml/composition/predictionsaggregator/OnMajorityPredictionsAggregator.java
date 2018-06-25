@@ -15,9 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.answercomputer;
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
-public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
+/**
+ * Predictions aggregator returning the most frequently prediction.
+ */
+public class OnMajorityPredictionsAggregator implements PredictionsAggregator {
+    /** {@inheritDoc} */
+    @Override public Double apply(double[] estimations) {
+        Map<Double, Integer> cntrsByCls = new HashMap<>();
+        for (Double predictedValue : estimations) {
+            Integer cntrVal = cntrsByCls.getOrDefault(predictedValue, 0) + 1;
+            cntrsByCls.put(predictedValue, cntrVal);
+        }
+
+        return cntrsByCls.entrySet().stream()
+            .max(Comparator.comparing(Map.Entry::getValue))
+            .get().getKey();
+    }
 }

@@ -17,35 +17,43 @@
 
 package org.apache.ignite.ml.composition;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.composition.answercomputer.PredictionsAggregator;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 
 /**
  * Model consisting of several models and prediction aggregation strategy.
- *
- * @param <M> Type of containing model.
  */
-public class ModelsComposition<M extends Model<double[], Double>> implements Model<double[], Double> {
+public class ModelsComposition implements Model<double[], Double> {
+    /**
+     * Predictions aggregator.
+     */
     private final PredictionsAggregator predictionsAggregator;
-    private final List<ModelOnFeaturesSubspace<M>> models;
+    /**
+     * Models.
+     */
+    private final List<ModelOnFeaturesSubspace> models;
 
     /**
-     * Constructs a new instance of model composition
+     * Constructs a new instance of composition of models.
      *
      * @param models Basic models.
      * @param predictionsAggregator Predictions aggregator.
      */
-    public ModelsComposition(List<ModelOnFeaturesSubspace<M>> models, PredictionsAggregator predictionsAggregator) {
+    public ModelsComposition(List<ModelOnFeaturesSubspace> models, PredictionsAggregator predictionsAggregator) {
         this.predictionsAggregator = predictionsAggregator;
         this.models = Collections.unmodifiableList(models);
     }
 
-    @Override
-    public Double apply(double[] features) {
+    /**
+     * Applies containing models to features and aggregate them to one prediction.
+     *
+     * @param features Features vector.
+     * @return Estimation.
+     */
+    @Override public Double apply(double[] features) {
         double[] predictions = new double[models.size()];
         for (int i = 0; i < models.size(); i++)
             predictions[i] = models.get(i).apply(features);
@@ -53,32 +61,68 @@ public class ModelsComposition<M extends Model<double[], Double>> implements Mod
         return predictionsAggregator.apply(predictions);
     }
 
+    /**
+     * Returns predictions aggregator.
+     */
     public PredictionsAggregator getPredictionsAggregator() {
         return predictionsAggregator;
     }
 
-    public List<ModelOnFeaturesSubspace<M>> getModels() {
+    /**
+     * Returns containing models.
+     */
+    public List<ModelOnFeaturesSubspace> getModels() {
         return models;
     }
 
-    public static class ModelOnFeaturesSubspace<M extends Model<double[], Double>> implements Model<double[], Double> {
+    /**
+     * Model trained on a features subspace with mapping from original features space to subspace.
+     */
+    public static class ModelOnFeaturesSubspace implements Model<double[], Double> {
+        /**
+         * Features mapping to subspace.
+         */
         private final Map<Integer, Integer> featuresMapping;
-        private final M model;
+        /**
+         * Trained model of features subspace.
+         */
+        private final Model<double[], Double> model;
 
-        public ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, M model) {
+        /**
+         * Constructs new instance of ModelOnFeaturesSubspace.
+         *
+         * @param featuresMapping Features mapping to subspace.
+         * @param mdl Learned model.
+         */
+        ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<double[], Double> mdl) {
             this.featuresMapping = Collections.unmodifiableMap(featuresMapping);
-            this.model = model;
+            this.model = mdl;
         }
 
-        @Override
-        public Double apply(double[] features) {
+        /**
+         * Projects features vector to subspace in according to mapping and apply model to it.
+         *
+         * @param features Features vector.
+         * @return Estimation.
+         */
+        @Override public Double apply(double[] features) {
             double[] newFeatures = new double[featuresMapping.size()];
             featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features[featureVectorId]);
             return model.apply(newFeatures);
         }
 
+        /**
+         * Returns features mapping.
+         */
         public Map<Integer, Integer> getFeaturesMapping() {
             return featuresMapping;
+        }
+
+        /**
+         * Returns model.
+         */
+        public Model<double[], Double> getModel() {
+            return model;
         }
     }
 }
