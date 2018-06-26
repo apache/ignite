@@ -484,11 +484,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         userAttrs = new HashMap<>();
         userAttrs.put("testAttr", "testAttr");
 
-        IgniteEx ignite = startGrid(0);
+        try {
+            IgniteEx ignite = startGrid(0);
 
-        assertTrue(ignite.cluster().localNode().attributes() instanceof HashMap);
-
-        userAttrs = null;
+            assertTrue(ignite.cluster().localNode().attributes() instanceof HashMap);
+        }
+        finally {
+            userAttrs = null;
+        }
     }
 
     /**
