@@ -566,9 +566,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testExecuteUpdateTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "update test set val=1 where _key=sleep_func(3)";
+        final String sqlText = "update test set val=1 where _key in " +
+            "(select t0._key from test t0, test t1, test t2, test t3, test t4, test t5, test t6, test t7)";
 
         stmt.setQueryTimeout(1);
 
@@ -580,7 +579,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 }
             },
             SQLTimeoutException.class,
-            "Timeout"
+            "The query was cancelled while executing"
         );
     }
 
