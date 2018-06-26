@@ -1,0 +1,3 @@
+# these pip packages are necessary for the pyignite to run
+
+attrs==18.1.0

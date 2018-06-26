@@ -63,7 +63,7 @@ data streams.</p>
 
 <dl class="class">
 <dt id="pyignite.datatypes.cache_config.StructArray">
-<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_config.</code><code class="descname">StructArray</code><span class="sig-paren">(</span><em>following: list</em>, <em>counter_type=&lt;class 'ctypes.c_int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.StructArray" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.cache_config.</code><code class="descname">StructArray</code><span class="sig-paren">(</span><em>following: list = NOTHING</em>, <em>counter_type=&lt;class 'ctypes.c_int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.cache_config.StructArray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p><cite>counter_type</cite> counter, followed by count*following structure.</p>
 <dl class="method">
@@ -762,6 +762,33 @@ on serializing Python data or parsing an unknown Ignite data object.</p>
 <dl class="classmethod">
 <dt id="pyignite.datatypes.complex.AnyDataObject.to_python">
 <em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.AnyDataObject.to_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyignite.datatypes.complex.AnyDataArray">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.complex.</code><code class="descname">AnyDataArray</code><span class="sig-paren">(</span><em>counter_type=&lt;class 'ctypes.c_int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.AnyDataArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyignite.datatypes.complex.AnyDataObject" title="pyignite.datatypes.complex.AnyDataObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.complex.AnyDataObject</span></code></a></p>
+<p>Sequence of AnyDataObjects, payload-only.</p>
+<dl class="method">
+<dt id="pyignite.datatypes.complex.AnyDataArray.build_header">
+<code class="descname">build_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.AnyDataArray.build_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyignite.datatypes.complex.AnyDataArray.from_python">
+<code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.AnyDataArray.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyignite.datatypes.complex.AnyDataArray.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><em>conn: pyignite.connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.AnyDataArray.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyignite.datatypes.complex.AnyDataArray.to_python">
+<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.AnyDataArray.to_python" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1556,6 +1583,30 @@ though: decoded character may take 1..4 bytes in UTF-8.</p>
 <div class="section" id="module-pyignite.datatypes.prop_codes">
 <span id="pyignite-datatypes-prop-codes-module"></span><h2>pyignite.datatypes.prop_codes module<a class="headerlink" href="#module-pyignite.datatypes.prop_codes" title="Permalink to this headline">¶</a></h2>
 </div>
+<div class="section" id="module-pyignite.datatypes.sql">
+<span id="pyignite-datatypes-sql-module"></span><h2>pyignite.datatypes.sql module<a class="headerlink" href="#module-pyignite.datatypes.sql" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyignite.datatypes.sql.StatementType">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.sql.</code><code class="descname">StatementType</code><a class="headerlink" href="#pyignite.datatypes.sql.StatementType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyignite.datatypes.primitive.Byte" title="pyignite.datatypes.primitive.Byte"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.primitive.Byte</span></code></a></p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.sql.StatementType.ANY">
+<code class="descname">ANY</code><em class="property"> = 0</em><a class="headerlink" href="#pyignite.datatypes.sql.StatementType.ANY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.sql.StatementType.SELECT">
+<code class="descname">SELECT</code><em class="property"> = 1</em><a class="headerlink" href="#pyignite.datatypes.sql.StatementType.SELECT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.sql.StatementType.UPDATE">
+<code class="descname">UPDATE</code><em class="property"> = 2</em><a class="headerlink" href="#pyignite.datatypes.sql.StatementType.UPDATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-pyignite.datatypes.standard">
 <span id="pyignite-datatypes-standard-module"></span><h2>pyignite.datatypes.standard module<a class="headerlink" href="#module-pyignite.datatypes.standard" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
@@ -2060,6 +2111,7 @@ The only <cite>type_id</cite> value of -1 (user type) works from Python perspect
 <li><a class="reference internal" href="#module-pyignite.datatypes.primitive_arrays">pyignite.datatypes.primitive_arrays module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.primitive_objects">pyignite.datatypes.primitive_objects module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.prop_codes">pyignite.datatypes.prop_codes module</a></li>
+<li><a class="reference internal" href="#module-pyignite.datatypes.sql">pyignite.datatypes.sql module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.standard">pyignite.datatypes.standard module</a></li>
 <li><a class="reference internal" href="#module-pyignite.datatypes.type_codes">pyignite.datatypes.type_codes module</a></li>
 </ul>

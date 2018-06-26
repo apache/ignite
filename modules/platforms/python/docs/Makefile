@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = ApacheIgnitebinaryclientPythonAPI
 SOURCEDIR     = .
-BUILDDIR      = _build
+BUILDDIR      = generated
 
 # Put it first so that "make" without argument is like "make help".
 help:

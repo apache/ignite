@@ -1,0 +1,4 @@
+# these packages are required for documentation building
+# (look up the prebuilt docs in `docs/generated`)
+
+Sphinx==1.7.5

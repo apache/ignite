@@ -1,0 +1,4 @@
+# these packages are used for testing
+
+pytest==3.6.1
+pytest-cov==2.5.1

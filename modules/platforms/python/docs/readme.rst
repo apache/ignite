@@ -20,21 +20,16 @@ through a raw TCP socket.
 Prerequisites
 -------------
 
-- *Python 3.4+*
-- attrs_
-- *Sphinx* for documentation
-- *pytest* for tests
-- *pytest-runner* for `distutils` test integration
-- *pytest-cov* for measuring test coverage (optional)
-
-Licensing
----------
-
-This is a free software, brought to you on terms of the `Apache License v2`_.
+- *Python 3.4* or above (3.6 is tested),
+- Access to *Apache Ignite 2.5* node, local or remote. Higher versions
+  of Ignite may or may not work.
 
 
 Installation
 ------------
+
+for end user
+""""""""""""
 
 If you want to use *pyignite* in your project, you may install it from PyPI:
 
@@ -42,14 +37,43 @@ If you want to use *pyignite* in your project, you may install it from PyPI:
 
 $ pip install pyignite
 
-If you want to develop, test or build documents for *pyignite*, you may clone
-it from repository:
+for developer
+"""""""""""""
+
+If you want to run tests, examples or build documentation, clone
+the whole repository:
 
 ::
 
 $ git clone git@github.com:nobitlost/ignite.git
 $ git checkout ignite-7782
 $ cd ignite/modules/platforms/python
+
+Then run through the contents of `requirements` folder to install
+the necessary prerequisites into your working Python environment using
+
+::
+
+$ pip install -r requirements/install.txt
+
+You may also want to consult the `setuptools`_ manual about using `setup.py`.
+
+Examples
+--------
+
+Some examples of using pyignite are provided in
+`ignite/modules/platforms/python/examples` folder.
+
+This code implies that it is run in the environment with `pyignite` package
+installed. If you want to play with the repository clone of `pyignite`, run
+
+::
+
+$ cd ignite/modules/platforms/python
+$ pip install -e .
+
+to install the package code in your environment without actually copying it
+to `site-packages` folder.
 
 Testing
 -------
@@ -81,10 +105,13 @@ To recompile this documentation, do this from your virtualenv_ environment:
 
 ::
 
-$ cd ignite/modules/platforms/python/docs
+$ cd ignite/modules/platforms/python
+$ pip install -r requirements/docs.txt
+$ cd docs
 $ make html
 
-Then open `docs/_build/html/index.html` in your browser.
+Then open `ignite/modules/platforms/python/docs/generated/html/index.html`
+in your browser.
 
 If you feel that old version is stuck, do
 
@@ -97,8 +124,13 @@ $ make html
 
 And that should be it.
 
+Licensing
+---------
+
+This is a free software, brought to you on terms of the `Apache License v2`_.
+
 .. _Apache Ignite: https://apacheignite.readme.io/docs/what-is-ignite
 .. _binary client protocol: https://apacheignite.readme.io/docs/binary-client-protocol
 .. _Apache License v2: http://www.apache.org/licenses/LICENSE-2.0
-.. _attrs: http://www.attrs.org/
 .. _virtualenv: https://virtualenv.pypa.io/
+.. _setuptools: https://setuptools.readthedocs.io/

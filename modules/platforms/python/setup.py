@@ -13,31 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 import setuptools
+
+
+def is_a_requirement(line: str) -> bool:
+    return not any([
+        line.startswith('#'),
+        len(line) == 0,
+    ])
+
+
+requirement_sections = [
+    'install',
+    'setup',
+    'tests',
+    'docs',
+]
+requirements = defaultdict(list)
+
+for section in requirement_sections:
+    with open('requirements/{}.txt'.format(section), 'r') as requirements_file:
+        for line in requirements_file.readlines():
+            line = line.strip('\n')
+            if is_a_requirement(line):
+                requirements[section].append(line)
 
 with open('README.md', 'r') as readme_file:
     long_description = readme_file.read()
 
-requirements = [
-    'attrs==18.1.0',
-]
-
-setup_requirements=[
-    'pytest-runner==4.2',
-]
-
-test_requirements = [
-    'pytest==3.6.1',
-    'pytest-runner==4.2',
-]
-
-docs_requirements = [
-    'Sphinx==1.7.5',
-]
-
 setuptools.setup(
     name='pyignite',
-    version='0.1.4',
+    version='0.1.5',
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
     description='Apache Ignite binary client Python API',
@@ -48,11 +55,11 @@ setuptools.setup(
         '/ignite/tree/ignite-7782/modules/platforms/python'
     ),
     packages=setuptools.find_packages(),
-    install_requires=requirements,
-    tests_require=test_requirements,
-    setup_requires=setup_requirements,
+    install_requires=requirements['install'],
+    tests_require=requirements['tests'],
+    setup_requires=requirements['setup'],
     extras_require={
-        'docs': docs_requirements,
+        'docs': requirements['docs'],
     },
     classifiers=[
         'Programming Language :: Python :: 3',
