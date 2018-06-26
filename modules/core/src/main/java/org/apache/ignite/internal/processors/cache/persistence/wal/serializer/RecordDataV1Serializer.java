@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Record data V1 serializer.
@@ -215,7 +214,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Clear data stream.
      * @throws IOException If failed.
      */
-    @Nullable T2<ByteBufferBackedDataInput, Integer> readEncryptedData(ByteBufferBackedDataInput in)
+    T2<ByteBufferBackedDataInput, Integer> readEncryptedData(ByteBufferBackedDataInput in)
         throws IOException {
         int grpId = in.readInt();
         int encryptedRecSize = in.readInt();
