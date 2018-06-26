@@ -55,14 +55,14 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringRPad(str, len, pad) ⇒
             checkChild(str) && checkChild(len) && checkChild(pad)
 
-        case StringTrimLeft(child, trimStr) ⇒
-            checkChild(child) && checkChild(trimStr.get)
+        case StringTrimLeft(child, Some(trimStr)) ⇒
+            checkChild(child) && checkChild(trimStr)
 
-        case StringTrimRight(child, trimStr) ⇒
-            checkChild(child) && checkChild(trimStr.get)
+        case StringTrimRight(child,  Some(trimStr)) ⇒
+            checkChild(child) && checkChild(trimStr)
 
-        case StringTrim(child, trimStr) ⇒
-            checkChild(child) && checkChild(trimStr.get)
+        case StringTrim(child,  Some(trimStr)) ⇒
+            checkChild(child) && checkChild(trimStr)
 
         case RegExpReplace(subject, regexp, rep) ⇒
             checkChild(subject) && checkChild(regexp) && checkChild(rep)
@@ -121,14 +121,14 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringRPad(str, len, pad) ⇒
             Some(s"RPAD(${childToString(str)}, ${childToString(len)}, ${childToString(pad)})")
 
-        case StringTrimLeft(child, trimStr) ⇒
-            Some(s"LTRIM(${childToString(child)}, ${childToString(trimStr.get)})")
+        case StringTrimLeft(child,  Some(trimStr)) ⇒
+            Some(s"LTRIM(${childToString(child)}, ${childToString(trimStr)})")
 
-        case StringTrimRight(child, trimStr) ⇒
-            Some(s"RTRIM(${childToString(child)}, ${childToString(trimStr.get)})")
+        case StringTrimRight(child,  Some(trimStr)) ⇒
+            Some(s"RTRIM(${childToString(child)}, ${childToString(trimStr)})")
 
-        case StringTrim(child, trimStr) ⇒
-            Some(s"TRIM(${childToString(child)}, ${childToString(trimStr.get)})")
+        case StringTrim(child,  Some(trimStr)) ⇒
+            Some(s"TRIM(${childToString(child)}, ${childToString(trimStr)})")
 
         case RegExpReplace(subject, regexp, rep) ⇒
             Some(s"REGEXP_REPLACE(${childToString(subject)}, ${childToString(regexp)}, ${childToString(rep)})")
