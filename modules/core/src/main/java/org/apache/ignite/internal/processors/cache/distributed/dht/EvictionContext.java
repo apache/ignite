@@ -15,26 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
-
-import org.scalatest.Suites
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 /**
-  * Test suite for Spark DataFrame API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec,
-    new IgniteOptimizationSpec,
-    new IgniteOptimizationStringFuncSpec,
-    new IgniteOptimizationMathFuncSpec,
-    new IgniteOptimizationAggregationFuncSpec,
-    new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec,
-    new IgniteOptimizationDateFuncSpec,
-    new IgniteOptimizationDisableEnableSpec
-)
+ * Additional context for partition eviction process.
+ */
+public interface EvictionContext {
+    /**
+     * @return {@code true} If eviction process should be stopped.
+     */
+    public boolean shouldStop();
+}
