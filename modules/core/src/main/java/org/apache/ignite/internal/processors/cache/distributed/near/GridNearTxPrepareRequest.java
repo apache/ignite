@@ -417,6 +417,11 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         StringBuilder flags = new StringBuilder();
 
@@ -432,10 +437,5 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return S.toString(GridNearTxPrepareRequest.class, this,
             "flags", flags.toString(),
             "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public int partition() {
-        return U.safeAbs(version().hashCode());
     }
 }

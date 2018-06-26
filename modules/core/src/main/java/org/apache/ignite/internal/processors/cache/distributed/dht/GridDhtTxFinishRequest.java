@@ -475,12 +475,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxFinishRequest.class, this, super.toString());
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return U.safeAbs(version().hashCode());
+    @Override public String toString() {
+        return S.toString(GridDhtTxFinishRequest.class, this, super.toString());
     }
 }

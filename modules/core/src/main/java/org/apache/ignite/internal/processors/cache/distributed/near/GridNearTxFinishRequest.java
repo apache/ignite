@@ -218,12 +218,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return GridToStringBuilder.toString(GridNearTxFinishRequest.class, this, "super", super.toString());
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return U.safeAbs(version().hashCode());
+    @Override public String toString() {
+        return GridToStringBuilder.toString(GridNearTxFinishRequest.class, this, "super", super.toString());
     }
 }

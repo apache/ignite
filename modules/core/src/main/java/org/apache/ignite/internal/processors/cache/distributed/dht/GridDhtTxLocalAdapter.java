@@ -408,7 +408,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private boolean removeMapping(UUID nodeId, @Nullable GridCacheEntryEx entry,
         Map<UUID, GridDistributedTxMapping> map) {
         if (entry != null) {
-            log.error("Removing mapping for entry [nodeId=" + nodeId + ", entry=" + entry + ']', new Exception());
+            if (log.isDebugEnabled())
+                log.debug("Removing mapping for entry [nodeId=" + nodeId + ", entry=" + entry + ']');
 
             IgniteTxEntry txEntry = entry(entry.txKey());
 

@@ -66,60 +66,60 @@ public class IgniteCacheTestSuite6 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
-//        suite.addTestSuite(CachePartitionStateTest.class);
-//
-//        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
-//        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
-//        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
-//        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
-//
+        suite.addTestSuite(CachePartitionStateTest.class);
+
+        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
+        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
+
         suite.addTestSuite(CacheExchangeMergeTest.class);
 
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
-//        suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
-//        suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
-//        suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
-//        suite.addTestSuite(TxRollbackAsyncTest.class);
-//        suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
-//        suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
-//        suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
-//
-//        suite.addTestSuite(TxOptimisticPrepareOnUnstableTopologyTest.class);
-//
-//        suite.addTestSuite(TxLabelTest.class);
-//
-//        suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
-//
-//        suite.addTestSuite(TxOnCachesStartTest.class);
-//
-//        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
-//
-//        suite.addTestSuite(WalModeChangeSelfTest.class);
-//        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
-//        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
-//
-//        suite.addTestSuite(IgniteCache150ClientsTest.class);
-//
-////        TODO enable this test after IGNITE-6753, now it takes too long
-////        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
-//
-//        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
-//        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
-//        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
-//        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
-//        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
-//
-//        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
-//        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
-//        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
-//
-//        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
-//        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
-//        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
-//
-//        suite.addTestSuite(TxOptimisticOnPartitionExchangeTest.class);
-//
-//        suite.addTestSuite(IgniteExchangeLatchManagerCoordinatorFailTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
+        suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
+        suite.addTestSuite(TxRollbackAsyncTest.class);
+        suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
+        suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
+        suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
+
+        suite.addTestSuite(TxOptimisticPrepareOnUnstableTopologyTest.class);
+
+        suite.addTestSuite(TxLabelTest.class);
+
+        suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
+
+        suite.addTestSuite(TxOnCachesStartTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
+
+        suite.addTestSuite(WalModeChangeSelfTest.class);
+        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
+        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
+
+        suite.addTestSuite(IgniteCache150ClientsTest.class);
+
+//        TODO enable this test after IGNITE-6753, now it takes too long
+//        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+
+        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
+        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
+        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
+
+        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(TxOptimisticOnPartitionExchangeTest.class);
+
+        suite.addTestSuite(IgniteExchangeLatchManagerCoordinatorFailTest.class);
 
         return suite;
     }

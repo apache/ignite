@@ -43,18 +43,14 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -86,16 +82,12 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -273,7 +265,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                                 if (log.isDebugEnabled()) {
                                     StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
-                                        "affinity topology version [");
+                                            "affinity topology version [");
 
                                     appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
 
@@ -688,16 +680,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (cacheMsg instanceof GridNearAtomicAbstractUpdateRequest)
             return ((GridNearAtomicAbstractUpdateRequest)cacheMsg).futureId();
         else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
-            return ((GridNearAtomicUpdateResponse)cacheMsg).futureId();
+            return ((GridNearAtomicUpdateResponse) cacheMsg).futureId();
         else if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest)
             return ((GridDhtAtomicAbstractUpdateRequest)cacheMsg).futureId();
         else if (cacheMsg instanceof GridDhtAtomicUpdateResponse)
-            return ((GridDhtAtomicUpdateResponse)cacheMsg).futureId();
+            return ((GridDhtAtomicUpdateResponse) cacheMsg).futureId();
         else if (cacheMsg instanceof GridNearAtomicCheckUpdateRequest)
             return ((GridNearAtomicCheckUpdateRequest)cacheMsg).futureId();
 
         return null;
     }
+
 
     /**
      * @param cacheMsg Cache message.
@@ -1059,8 +1052,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     private void processMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c) {
         try {
-            addIn(nodeId, msg);
-
             c.apply(nodeId, msg);
 
             if (log.isDebugEnabled())
@@ -1141,8 +1132,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * @param nodeId Node ID.
      * @param sndErr Send error.
-     * @param ping {@code True} if try ping node.
      * @return {@code True} if node left.
+     * @param ping {@code True} if try ping node.
      * @throws IgniteClientDisconnectedCheckedException If ping failed.
      */
     public boolean checkNodeLeft(UUID nodeId, IgniteCheckedException sndErr, boolean ping)
@@ -1176,8 +1167,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 cnt++;
 
                 cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
-
-                addOut(node, msg);
 
                 return;
             }
@@ -1450,8 +1439,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheHandler(GridCacheSharedContext cctx, Object topic,
-        IgniteBiInClosure<UUID, ? extends GridCacheIdMessage> c) {
+    public void addOrderedCacheHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheIdMessage> c) {
         addOrderedHandler(cctx, false, topic, c);
     }
 
@@ -1460,8 +1448,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheGroupHandler(GridCacheSharedContext cctx, Object topic,
-        IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+    public void addOrderedCacheGroupHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
         addOrderedHandler(cctx, true, topic, c);
     }
 
@@ -1474,8 +1461,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic,
-        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
         IgniteLogger log0 = log;
@@ -1579,73 +1565,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         X.println(">>>   cacheGrpClsHandlersSize: " + grpHandlers.clsHandlers.size());
         X.println(">>>   cacheGrpOrderedHandlersSize: " + grpHandlers.orderedHandlers.size());
     }
-
-    /** */
-    private GridBoundedConcurrentLinkedHashSet<T2<UUID, GridCacheMessage>> inQueue = new GridBoundedConcurrentLinkedHashSet<>(500);
-
-    /** */
-    private GridBoundedConcurrentLinkedHashSet<T2<UUID, GridCacheMessage>> outQueue = new GridBoundedConcurrentLinkedHashSet<>(500);
-
-    /** */
-    public void dumpIn() {
-        if (log.isInfoEnabled()) {
-            log.info("Dumping tx incoming messages:");
-
-            for (Map.Entry<UUID, GridCacheMessage> entry : inQueue)
-                log.info("    Message: [from=" + entry.getKey() + ", msg=" + entry.getValue() + ']');
-        }
-    }
-
-    /** */
-    public void dumpOut() {
-        if (log.isInfoEnabled()) {
-            log.info("Dumping tx outgoing messages:");
-
-            for (Map.Entry<UUID, GridCacheMessage> entry : outQueue)
-                log.info("    Message: [to=" + entry.getKey() + ", msg=" + entry.getValue() + ']');
-        }
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param msg Message.
-     */
-    public void addIn(UUID nodeId, GridCacheMessage msg) {
-        if (TX_MSG_PREDICATE.apply(msg))
-            inQueue.add(new T2<>(nodeId, msg));
-    }
-
-    /**
-     * @param node Node.
-     * @param msg Message.
-     */
-    public void addOut(ClusterNode node, GridCacheMessage msg) {
-        if (TX_MSG_PREDICATE.apply(msg))
-            outQueue.add(new T2<>(node.id(), msg));
-    }
-
-    /** Tx message predicate. */
-    private static final IgnitePredicate<GridCacheMessage> TX_MSG_PREDICATE = new IgnitePredicate<GridCacheMessage>() {
-        @Override public boolean apply(GridCacheMessage msg) {
-            return msg instanceof GridNearLockRequest ||
-                msg instanceof GridNearLockResponse ||
-                msg instanceof GridNearTxPrepareRequest ||
-                msg instanceof GridNearTxPrepareResponse ||
-                msg instanceof GridNearTxFinishRequest ||
-                msg instanceof GridNearTxFinishResponse ||
-                msg instanceof GridDhtLockRequest ||
-                msg instanceof GridDhtLockResponse ||
-                msg instanceof GridDhtTxPrepareRequest ||
-                msg instanceof GridDhtTxPrepareResponse ||
-                msg instanceof GridDhtTxFinishRequest ||
-                msg instanceof GridDhtTxFinishResponse ||
-                msg instanceof GridDhtUnlockRequest ||
-                msg instanceof GridDhtTxOnePhaseCommitAckRequest ||
-                msg instanceof GridCacheTxRecoveryRequest ||
-                msg instanceof GridCacheTxRecoveryResponse;
-
-        }
-    };
 
     /**
      *
