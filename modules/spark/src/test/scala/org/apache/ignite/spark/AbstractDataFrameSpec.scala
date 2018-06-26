@@ -206,7 +206,7 @@ object AbstractDataFrameSpec {
         val plan = df.queryExecution.optimizedPlan
 
         val cnt = plan.collectLeaves.count {
-            case LogicalRelation(relation: IgniteSQLAccumulatorRelation[_, _], _, _) ⇒
+            case LogicalRelation(relation: IgniteSQLAccumulatorRelation[_, _], _, _, false) ⇒
                 if (qry != "")
                     assert(qry.toLowerCase == relation.acc.compileQuery().toLowerCase,
                         s"Generated query should be equal to expected.\nexpected  - $qry\ngenerated - ${relation.acc.compileQuery()}")
