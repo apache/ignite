@@ -40,6 +40,7 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
+    /** {@inheritDoc} */
     @Override public byte[] masterKeyDigest() {
         return new byte[0];
     }
