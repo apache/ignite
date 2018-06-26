@@ -385,7 +385,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param separated Use separate cache flag.
+     * @param separated Separated cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -401,7 +401,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param separated Use separate cache flag.
+     * @param separated Separated cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */

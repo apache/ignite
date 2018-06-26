@@ -119,7 +119,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         this.setKey = new GridCacheSetHeaderKey(name);
         this.log = ctx.logger(GridCacheSetImpl.class);
         this.hdrPart = ctx.affinity().partition(setKey);
-        this.separated = hdr.separatedCache();
+        this.separated = hdr.separated();
     }
 
     /** {@inheritDoc} */

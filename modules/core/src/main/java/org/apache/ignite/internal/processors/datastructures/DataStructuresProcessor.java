@@ -44,7 +44,6 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CX1;
-import org.apache.ignite.internal.util.typedef.CX2;
 import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -854,13 +852,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
 
-        final boolean collocated = create && (cfg.isCollocated() || cfg.getCacheMode() != CacheMode.PARTITIONED);
-
         return getCollection(new IgniteClosureX<GridCacheContext, IgniteQueue<T>>() {
             @Override public IgniteQueue<T> applyx(GridCacheContext ctx) throws IgniteCheckedException {
-                return ctx.dataStructures().queue(name, cap0, collocated, create);
+                return ctx.dataStructures().queue(name, cap0, isCollocated(cfg), create);
             }
-        }, cfg, name, grpName, QUEUE, create, null);
+        }, cfg, name, grpName, QUEUE, create, new T1<>(false));
+    }
+
+    /**
+     * Non-collocated mode only makes sense for and is only supported for PARTITIONED caches, so
+     * collocated mode should be enabled for non-partitioned cache by default.
+     *
+     * @param cfg Collection configuration.
+     * @return {@code True} If collocated mode should be enabled.
+     */
+    private boolean isCollocated(CollectionConfiguration cfg) {
+        return cfg != null && (cfg.isCollocated() || cfg.getCacheMode() != PARTITIONED);
     }
 
     /**
@@ -927,21 +934,29 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      * @param cfg Collection configuration.
      * @param grpName Group name.
-     * @param cacheNameClo Cache name closure.
+     * @param dsType Data structure type.
+     * @param dsName Data structure name.
+     * @param separated Separated cache required.
      * @return Data structure cache.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName,
-        CX2<String, CollectionConfiguration, String> cacheNameClo)
+        DataStructureType dsType, String dsName, T1<Boolean> separated)
         throws IgniteCheckedException
     {
-        String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
-            cfg.getBackups() + "@" + grpName;
+        String pref = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +  cfg.getBackups();
 
-        if (cacheNameClo != null)
-            cacheName = cacheNameClo.apply(cacheName, cfg);
+        String cacheName = pref + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
+
+        if (separated.get() && cache != null && cache.containsKey(new GridCacheSetHeaderKey(dsName))) {
+            cacheName = pref + "_" + dsType.name() + "_" + dsName + "@" + grpName;
+
+            cache = ctx.cache().cache(cacheName);
+        }
+        else
+            separated.set(false);
 
         if (cache == null) {
             ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
@@ -1009,7 +1024,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param grpName Cache group name.
      * @param type Data structure type.
      * @param create Create flag.
-     * @param cacheNameClo Cache name transform closure.
+     * @param separated Separated cache required.
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
      */
@@ -1019,7 +1034,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable String grpName,
         final DataStructureType type,
         boolean create,
-        CX2<String, CollectionConfiguration, String> cacheNameClo)
+        T1<Boolean> separated)
         throws IgniteCheckedException
     {
         awaitInitialization();
@@ -1070,7 +1085,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         AtomicDataStructureValue oldVal = metaCache0.get(new GridCacheInternalKeyImpl(name, grpName));
 
         if (oldVal == null && create) {
-            cache = compatibleCache(cfg, grpName, cacheNameClo);
+            cache = compatibleCache(cfg, grpName, type, name, separated);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
@@ -1550,35 +1565,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
 
-        final boolean collocated = create && (cfg.isCollocated() || cfg.getCacheMode() != CacheMode.PARTITIONED);
+        final boolean collocated = isCollocated(cfg);
 
-        final T1<Boolean> separated = new T1<>(false);
-
-        CX2<String, CollectionConfiguration, String> cacheNameClo = new CX2<String, CollectionConfiguration, String>() {
-            @Override public String applyx(String cacheName, CollectionConfiguration cfg0) {
-                IgniteInternalCache cache0 = ctx.cache().cache(cacheName);
-
-                if (collocated)
-                    return cacheName;
-
-                if (cache0 != null && cache0.containsKey(new GridCacheSetHeaderKey(name)))
-                    return cacheName;
-
-                if (!U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOC_SET_SINCE, ctx.grid().cluster().nodes()))
-                    return cacheName;
-
-                separated.set(true);
-
-                return DS_CACHE_NAME_PREFIX + cfg0.getAtomicityMode() + "_" + cfg0.getCacheMode() + "_" +
-                    cfg0.getBackups() + "_" + SET.name() + "_" + name + "@" + grpName;
-            }
-        };
+        final T1<Boolean> separated = new T1<>(!collocated &&
+            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOC_SET_SINCE,  ctx.grid().cluster().nodes()));
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
                 return cctx.dataStructures().set(name, collocated, create, separated.get());
             }
-        }, cfg, name, grpName, SET, create, cacheNameClo);
+        }, cfg, name, grpName, SET, create, separated);
     }
 
     /**

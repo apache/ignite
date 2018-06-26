@@ -34,13 +34,13 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Set unique ID. */
     private IgniteUuid id;
 
-    /** */
+    /** Collocation flag. */
     private boolean collocated;
 
-    /** */
+    /** Separated cache flag. */
     private boolean separated;
 
     /**
@@ -78,9 +78,9 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @return {@code True} If this version uses separated cache.
+     * @return Separated cache flag.
      */
-    public boolean separatedCache() {
+    public boolean separated() {
         return separated;
     }
 
