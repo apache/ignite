@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -51,6 +52,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
@@ -1075,7 +1077,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
 
                             // Exists possibility that exception raised on interruption.
-                            if (X.hasCause(e, InterruptedException.class))
+                            if (X.hasCause(e, InterruptedException.class, InterruptedIOException.class,
+                                IgniteInterruptedCheckedException.class, IgniteInterruptedException.class))
                                 interrupt();
 
                             IOException ioEx = X.cause(e, IOException.class);
