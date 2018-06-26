@@ -70,7 +70,7 @@ class IgniteOptimizationStringFuncSpec extends AbstractDataFrameSpec {
         it("RTRIM") {
             val df = igniteSession.sql("SELECT RTRIM(str) FROM strings WHERE id = 3")
 
-            checkOptimizationResult(df, "SELECT str, id FROM strings WHERE id = 3")
+            checkOptimizationResult(df, "SELECT RTRIM(str) FROM strings WHERE id = 3")
 
             val data = Tuple1("AAA")
 
@@ -90,7 +90,7 @@ class IgniteOptimizationStringFuncSpec extends AbstractDataFrameSpec {
         it("LTRIM") {
             val df = igniteSession.sql("SELECT LTRIM(str) FROM strings WHERE id = 4")
 
-            checkOptimizationResult(df, "SELECT str, id FROM strings WHERE id = 4")
+            checkOptimizationResult(df, "SELECT LTRIM(str) FROM strings WHERE id = 4")
 
             val data = Tuple1("AAA")
 
@@ -110,7 +110,7 @@ class IgniteOptimizationStringFuncSpec extends AbstractDataFrameSpec {
         it("TRIM") {
             val df = igniteSession.sql("SELECT TRIM(str) FROM strings WHERE id = 5")
 
-            checkOptimizationResult(df, "SELECT str, id FROM strings WHERE id = 5")
+            checkOptimizationResult(df, "SELECT TRIM(str) FROM strings WHERE id = 5")
 
             val data = Tuple1("AAA")
 
@@ -180,7 +180,7 @@ class IgniteOptimizationStringFuncSpec extends AbstractDataFrameSpec {
         it("LOWER(RTRIM)") {
             val df = igniteSession.sql("SELECT LOWER(RTRIM(str)) FROM strings WHERE id = 3")
 
-            checkOptimizationResult(df, "SELECT str, id FROM strings WHERE id = 3")
+            checkOptimizationResult(df, "SELECT LOWER(RTRIM(str)) FROM strings WHERE id = 3")
 
             val data = Tuple1("aaa")
 

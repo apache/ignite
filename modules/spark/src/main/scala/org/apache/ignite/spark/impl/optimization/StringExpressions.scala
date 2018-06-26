@@ -55,6 +55,15 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringRPad(str, len, pad) ⇒
             checkChild(str) && checkChild(len) && checkChild(pad)
 
+        case StringTrimLeft(child, None) ⇒
+            checkChild(child)
+
+        case StringTrimRight(child, None) ⇒
+            checkChild(child)
+
+        case StringTrim(child, None) ⇒
+            checkChild(child)
+
         case StringTrimLeft(child, Some(trimStr)) ⇒
             checkChild(child) && checkChild(trimStr)
 
@@ -120,6 +129,15 @@ private[optimization] object StringExpressions extends SupportedExpressions {
 
         case StringRPad(str, len, pad) ⇒
             Some(s"RPAD(${childToString(str)}, ${childToString(len)}, ${childToString(pad)})")
+
+        case StringTrimLeft(child, None) ⇒
+            Some(s"LTRIM(${childToString(child)})")
+
+        case StringTrimRight(child, None) ⇒
+            Some(s"RTRIM(${childToString(child)})")
+
+        case StringTrim(child, None) ⇒
+            Some(s"TRIM(${childToString(child)})")
 
         case StringTrimLeft(child,  Some(trimStr)) ⇒
             Some(s"LTRIM(${childToString(child)}, ${childToString(trimStr)})")
