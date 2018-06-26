@@ -381,7 +381,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 //
 //        TestRecordingCommunicationSpi.spi(prim).stopBlock(false);
 
-        while(U.currentTimeMillis() - duration < start) {
+        //while(U.currentTimeMillis() - duration < start) {
             try {
                 startGridsMultiThreaded(GRID_CNT);
 
@@ -393,7 +393,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             finally {
                 stopAllGrids();
             }
-        }
+        //}
     }
 
     @Override protected long getTestTimeout() {

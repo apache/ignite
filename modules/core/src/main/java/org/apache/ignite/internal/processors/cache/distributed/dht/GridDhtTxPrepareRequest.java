@@ -612,4 +612,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public byte fieldsCount() {
         return 33;
     }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
+    }
 }
