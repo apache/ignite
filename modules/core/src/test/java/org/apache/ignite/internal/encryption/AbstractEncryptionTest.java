@@ -172,7 +172,10 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         return ENCRYPTED_CACHE;
     }
 
-    /** */
+    /**
+     * Method to create new keystore.
+     * Use it whenever you need special keystore for a encryption tests.
+     */
     protected File createKeyStore() throws Exception {
         KeyStore ks = KeyStore.getInstance("PKCS12");
 

@@ -207,7 +207,7 @@ public abstract class WALRecord {
         /**
          * If {@code true} this record should be encrypted for an encrypted cache.
          */
-        private boolean mayBeEncrypted;
+        private final boolean mayBeEncrypted;
 
         /**
          * @return {@code True} if this record should be encrypted for an encrypted cache
@@ -217,7 +217,9 @@ public abstract class WALRecord {
         }
 
         /** */
-        RecordType() {}
+        RecordType() {
+            this.mayBeEncrypted = false;
+        }
 
         /**
          * @param mayBeEncrypted If {@code true} this record should be encrypted for an encrypted cache.
