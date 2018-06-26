@@ -2,8 +2,8 @@
 Basic Information
 =================
 
-What it is?
------------
+What it is
+----------
 
 This is an Apache Ignite lightweight (binary protocol) client library,
 written in Python, abbreviated as *pyignite*.
