@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Initialize new root page.
  */
 public class NewRootInitRecord<L> extends PageDeltaRecord implements WalEncryptedRecord {
-
     /** */
     private long newRootId;
 
