@@ -47,7 +47,7 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
      * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
-     * @param handledIndices
+     * @param handledIndices Handled indices.
      */
     public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
         IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
@@ -68,15 +68,16 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
         double[] res = new double[tmp.length];
 
         for (int i = 0; i < res.length; i++) {
+            Object tmpObj = tmp[i];
             if(handledIndices.contains(i)){
-                if(tmp[i].equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
+                if(tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
                     res[i] = encodingValues[i].get(KEY_FOR_NULL_VALUES);
-                else if (encodingValues[i].containsKey(tmp[i]))
-                    res[i] = encodingValues[i].get(tmp[i]);
+                else if (encodingValues[i].containsKey(tmpObj))
+                    res[i] = encodingValues[i].get(tmpObj);
                 else
-                    throw new UnknownStringValue(tmp[i].toString());
+                    throw new UnknownStringValue(tmpObj.toString());
             } else
-                res[i] = (double)tmp[i];
+                res[i] = (double)tmpObj;
         }
         return res;
     }

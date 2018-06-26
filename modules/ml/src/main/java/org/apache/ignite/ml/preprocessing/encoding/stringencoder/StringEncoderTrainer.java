@@ -143,8 +143,8 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
         if (categoryFrequencies == null)
             categoryFrequencies = initializeCategoryFrequencies(row);
         else
-            assert categoryFrequencies.length == row.length : "Base preprocessor must return exactly " + categoryFrequencies.length
-                + " features";
+            assert categoryFrequencies.length == row.length : "Base preprocessor must return exactly "
+                + categoryFrequencies.length + " features";
 
         for (int i = 0; i < categoryFrequencies.length; i++) {
             if(handledIndices.contains(i)){
@@ -174,11 +174,12 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
      * @return The array contains not null values for handled indices.
      */
     @NotNull private Map<String, Integer>[] initializeCategoryFrequencies(Object[] row) {
-        Map<String, Integer>[] categoryFrequencies;
-        categoryFrequencies = new HashMap[row.length];
+        Map<String, Integer>[] categoryFrequencies = new HashMap[row.length];
+
         for (int i = 0; i < categoryFrequencies.length; i++)
             if(handledIndices.contains(i))
                 categoryFrequencies[i] = new HashMap<>();
+
         return categoryFrequencies;
     }
 
