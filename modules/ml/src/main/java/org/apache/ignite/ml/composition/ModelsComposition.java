@@ -22,11 +22,13 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Model consisting of several models and prediction aggregation strategy.
  */
-public class ModelsComposition implements Model<double[], Double> {
+public class ModelsComposition implements Model<Vector, Double> {
     /**
      * Predictions aggregator.
      */
@@ -53,7 +55,7 @@ public class ModelsComposition implements Model<double[], Double> {
      * @param features Features vector.
      * @return Estimation.
      */
-    @Override public Double apply(double[] features) {
+    @Override public Double apply(Vector features) {
         double[] predictions = new double[models.size()];
 
         for (int i = 0; i < models.size(); i++)
@@ -79,7 +81,7 @@ public class ModelsComposition implements Model<double[], Double> {
     /**
      * Model trained on a features subspace with mapping from original features space to subspace.
      */
-    public static class ModelOnFeaturesSubspace implements Model<double[], Double> {
+    public static class ModelOnFeaturesSubspace implements Model<Vector, Double> {
         /**
          * Features mapping to subspace.
          */
@@ -87,7 +89,7 @@ public class ModelsComposition implements Model<double[], Double> {
         /**
          * Trained model of features subspace.
          */
-        private final Model<double[], Double> model;
+        private final Model<Vector, Double> mdl;
 
         /**
          * Constructs new instance of ModelOnFeaturesSubspace.
@@ -95,9 +97,9 @@ public class ModelsComposition implements Model<double[], Double> {
          * @param featuresMapping Features mapping to subspace.
          * @param mdl Learned model.
          */
-        ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<double[], Double> mdl) {
+        ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<Vector, Double> mdl) {
             this.featuresMapping = Collections.unmodifiableMap(featuresMapping);
-            this.model = mdl;
+            this.mdl = mdl;
         }
 
         /**
@@ -106,10 +108,10 @@ public class ModelsComposition implements Model<double[], Double> {
          * @param features Features vector.
          * @return Estimation.
          */
-        @Override public Double apply(double[] features) {
+        @Override public Double apply(Vector features) {
             double[] newFeatures = new double[featuresMapping.size()];
-            featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features[featureVectorId]);
-            return model.apply(newFeatures);
+            featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features.get(featureVectorId));
+            return mdl.apply(new DenseLocalOnHeapVector(newFeatures));
         }
 
         /**
@@ -122,8 +124,8 @@ public class ModelsComposition implements Model<double[], Double> {
         /**
          * Returns model.
          */
-        public Model<double[], Double> getModel() {
-            return model;
+        public Model<Vector, Double> getMdl() {
+            return mdl;
         }
     }
 }
