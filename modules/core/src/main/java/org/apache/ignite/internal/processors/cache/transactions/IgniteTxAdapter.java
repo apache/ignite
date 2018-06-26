@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -82,9 +83,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -93,7 +92,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
-import static org.apache.ignite.events.EventType.EVT_TX_PREPARED;
 import static org.apache.ignite.events.EventType.EVT_TX_RESUMED;
 import static org.apache.ignite.events.EventType.EVT_TX_ROLLED_BACK;
 import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
@@ -1017,8 +1015,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected final boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
-        int evtType = -1;
-
         TransactionState prev;
 
         boolean notify = false;
@@ -1032,8 +1028,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 case ACTIVE: {
                     valid = prev == SUSPENDED;
 
-                    evtType = EVT_TX_RESUMED;
-
                     break;
                 }
                 case PREPARING: {
@@ -1043,8 +1037,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
                 case PREPARED: {
                     valid = prev == PREPARING;
-
-                    evtType = EVT_TX_PREPARED;
 
                     break;
                 }
@@ -1069,8 +1061,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     valid = prev == COMMITTING;
 
-                    evtType = EVT_TX_COMMITTED;
-
                     break;
                 }
 
@@ -1079,8 +1069,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         notify = true;
 
                     valid = prev == ROLLING_BACK;
-
-                    evtType = EVT_TX_ROLLED_BACK;
 
                     break;
                 }
@@ -1101,8 +1089,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 case SUSPENDED: {
                     valid = prev == ACTIVE;
 
-                    evtType = EVT_TX_SUSPENDED;
-
                     break;
                 }
             }
@@ -1116,8 +1102,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
 
-                if (evtType != -1)
-                    recordStateChangedEvent(evtType);
+                recordStateChanged(state);
 
                 notifyAll();
             }
@@ -1184,6 +1169,41 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return valid;
     }
 
+    /** */
+    private void recordStateChanged(TransactionState state){
+        if (!near() || !local()) // Covers only GridNearTxLocal's state changes.
+            return;
+
+        switch (state) {
+            case ACTIVE: {
+                recordStateChangedEvent(EVT_TX_RESUMED);
+
+                break;
+            }
+
+            case COMMITTED: {
+                recordStateChangedEvent(EVT_TX_COMMITTED);
+
+                break;
+            }
+
+            case ROLLED_BACK: {
+                recordStateChangedEvent(EVT_TX_ROLLED_BACK);
+
+                break;
+            }
+
+            case SUSPENDED: {
+                recordStateChangedEvent(EVT_TX_SUSPENDED);
+
+                break;
+            }
+
+            default:
+                return;
+        }
+    }
+
     /**
      * @param type Event type.
      */
@@ -1191,7 +1211,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridEventStorageManager evtMgr = cctx.gridEvents();
 
         if (!system() /* ignoring system tx */ && evtMgr.isRecordable(type))
-            evtMgr.record(new TransactionStateChangedEvent(cctx.discovery().localNode(), null, type, proxy()));
+            evtMgr.record(new TransactionStateChangedEvent(
+                cctx.discovery().localNode(), null, type, ((GridNearTxLocal)this).proxy()));
     }
 
     /** {@inheritDoc} */
@@ -1235,13 +1256,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public final void systemInvalidate(boolean sysInvalidate) {
         this.sysInvalidate = sysInvalidate;
-    }
-
-    /**
-     * @return Public API proxy.
-     */
-    public TransactionProxy proxy() {
-        return new DefaultTransactionProxyImpl(this);
     }
 
     /** {@inheritDoc} */
@@ -2451,141 +2465,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             long duration = ct - tx.startTime();
 
             return S.toString(TxFinishFuture.class, this, "duration", duration);
-        }
-    }
-
-    /**
-     * Default proxy.
-     */
-    private static class DefaultTransactionProxyImpl implements TransactionProxy{
-        /** Tx. */
-        private IgniteTxAdapter tx;
-
-        /**
-         * @param tx Tx.
-         */
-        public DefaultTransactionProxyImpl(IgniteTxAdapter tx) {
-            this.tx = tx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid xid() {
-            return tx.xid();
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID nodeId() {
-            return tx.nodeId();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long threadId() {
-            return tx.threadId();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long startTime() {
-            return tx.startTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionIsolation isolation() {
-            return tx.isolation();
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionConcurrency concurrency() {
-            return tx.concurrency();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean implicit() {
-            return tx.implicit();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isInvalidate() {
-            return tx.isInvalidate();
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionState state() {
-            return tx.state();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long timeout() {
-            return tx.timeout();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long timeout(long timeout) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean setRollbackOnly() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRollbackOnly() {
-            return tx.isRollbackOnly();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commit() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rollback() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resume() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void suspend() throws IgniteException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String label() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport withAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
-            throw new UnsupportedOperationException();
         }
     }
 }

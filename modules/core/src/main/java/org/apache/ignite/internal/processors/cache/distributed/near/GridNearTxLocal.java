@@ -47,10 +47,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -3981,8 +3981,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         return hasRemoteLocks;
     }
 
-    /** {@inheritDoc} */
-    @Override public TransactionProxy proxy() {
+    /**
+     * @return Public API proxy.
+     */
+    public TransactionProxy proxy() {
         if (proxy == null)
             proxy = new TransactionProxyImpl(this, cctx, false);
 

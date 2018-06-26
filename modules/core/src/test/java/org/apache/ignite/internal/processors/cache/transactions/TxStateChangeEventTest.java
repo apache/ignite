@@ -33,7 +33,6 @@ import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
-import static org.apache.ignite.events.EventType.EVT_TX_PREPARED;
 import static org.apache.ignite.events.EventType.EVT_TX_RESUMED;
 import static org.apache.ignite.events.EventType.EVT_TX_ROLLED_BACK;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
@@ -63,9 +62,6 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
     /** Resume. */
     private AtomicBoolean resume = new AtomicBoolean();
-
-    /** Prepare. */
-    private AtomicBoolean prepare = new AtomicBoolean();
 
     /**
      *
@@ -125,8 +121,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
                 commit.get() &&
                 !rollback.get() &&
                 !suspend.get() &&
-                !resume.get() &&
-                prepare.get());
+                !resume.get());
 
         clear();
 
@@ -149,8 +144,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
                 commit.get() &&
                 !rollback.get() &&
                 suspend.get() &&
-                resume.get()&&
-                prepare.get());
+                resume.get());
 
         clear();
 
@@ -165,8 +159,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
                 !commit.get() &&
                 rollback.get() &&
                 !suspend.get() &&
-                !resume.get()&&
-                !prepare.get());
+                !resume.get());
     }
 
     /**
@@ -178,7 +171,6 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
         rollback.set(false);
         suspend.set(false);
         resume.set(false);
-        prepare.set(false);
     }
 
     /**
@@ -187,15 +179,14 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     private void checkEvent(TransactionStateChangedEvent evt) {
         Transaction tx = evt.tx();
 
-        assertTrue(tx.timeout() > 0); // Remote tx has relative timeout
+        assertEquals(timeout, tx.timeout());
+        assertEquals(lb, tx.label());
 
         switch (evt.type()) {
             case EVT_TX_STARTED: {
-                assertEquals(lb, tx.label());
-                assertFalse(creation.get());
                 assertEquals(tx.state(), TransactionState.ACTIVE);
 
-                creation.set(true);
+                assertFalse(creation.getAndSet(true));
 
                 break;
             }
@@ -203,7 +194,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
             case EVT_TX_COMMITTED: {
                 assertEquals(tx.state(), TransactionState.COMMITTED);
 
-                commit.set(true);
+                assertFalse(commit.getAndSet(true));
 
                 break;
             }
@@ -211,35 +202,23 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
             case EVT_TX_ROLLED_BACK: {
                 assertEquals(tx.state(), TransactionState.ROLLED_BACK);
 
-                rollback.set(true);
+                assertFalse(rollback.getAndSet(true));
 
                 break;
             }
 
             case EVT_TX_SUSPENDED: {
-                assertEquals(lb, tx.label());
-                assertFalse(commit.get());
                 assertEquals(tx.state(), TransactionState.SUSPENDED);
 
-                suspend.set(true);
+                assertFalse(suspend.getAndSet(true));
 
                 break;
             }
 
             case EVT_TX_RESUMED: {
-                assertEquals(lb, tx.label());
-                assertFalse(commit.get());
                 assertEquals(tx.state(), TransactionState.ACTIVE);
 
-                resume.set(true);
-
-                break;
-            }
-
-            case EVT_TX_PREPARED: {
-                assertEquals(tx.state(), TransactionState.PREPARED);
-
-                prepare.set(true);
+                assertFalse(resume.getAndSet(true));
 
                 break;
             }
