@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.performance;
 
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -60,7 +61,7 @@ public class DecisionTreeMNISTTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
-            double res = mdl.apply(e.getPixels());
+            double res = mdl.apply(new DenseLocalOnHeapVector(e.getPixels()));
 
             if (res == e.getLabel())
                 correctAnswers++;

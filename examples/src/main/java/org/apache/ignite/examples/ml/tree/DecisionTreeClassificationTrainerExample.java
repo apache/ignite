@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
@@ -76,7 +77,7 @@ public class DecisionTreeClassificationTrainerExample {
                 for (int i = 0; i < 1000; i++) {
                     LabeledPoint pnt = generatePoint(rnd);
 
-                    double prediction = mdl.apply(new double[]{pnt.x, pnt.y});
+                    double prediction = mdl.apply(new DenseLocalOnHeapVector(new double[]{pnt.x, pnt.y}));
 
                     if (prediction == pnt.lb)
                         correctPredictions++;
