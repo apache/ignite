@@ -110,7 +110,7 @@ $ pip install -r requirements/docs.txt
 $ cd docs
 $ make html
 
-Then open `ignite/modules/platforms/python/docs/generated/html/index.html`
+Then open `ignite/modules/platforms/python/docs/generated/html/index.html`_
 in your browser.
 
 If you feel that old version is stuck, do
@@ -134,3 +134,4 @@ This is a free software, brought to you on terms of the `Apache License v2`_.
 .. _Apache License v2: http://www.apache.org/licenses/LICENSE-2.0
 .. _virtualenv: https://virtualenv.pypa.io/
 .. _setuptools: https://setuptools.readthedocs.io/
+.. _ignite/modules/platforms/python/docs/generated/html/index.html: .
