@@ -75,6 +75,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -253,8 +254,11 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
 
         putDummyRecords(ignite, 500);
 
+        boolean res = GridTestUtils.waitForCondition(() -> evtRecorded.get(), 10_000);
+
+        assertTrue(res);
+
         stopGrid("node0");
-        assertTrue(evtRecorded.get());
     }
 
     /**
