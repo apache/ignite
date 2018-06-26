@@ -61,6 +61,9 @@
     <ClCompile Include="..\..\src\impl\data_channel.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\os\win\src\net\net_utils.cpp">
+      <Filter>Code\impl\net</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -133,6 +136,9 @@
       <Filter>Code\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_range.h">
+      <Filter>Code\impl\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\net\net_utils.h">
       <Filter>Code\impl\net</Filter>
     </ClInclude>
   </ItemGroup>

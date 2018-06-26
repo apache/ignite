@@ -21,14 +21,15 @@
 #include <stdint.h>
 
 #include <map>
+#include <set>
 #include <vector>
 #include <memory>
+#include <string>
 
 #include <ignite/common/concurrent.h>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include <ignite/impl/thin/protocol_version.h>
 #include <ignite/impl/thin/data_channel.h>
 #include <ignite/impl/thin/net/end_point.h>
 #include <ignite/impl/thin/net/tcp_range.h>
@@ -184,7 +185,7 @@ namespace ignite
                  * @param host Host.
                  * @return @c true if the local host.
                  */
-                bool IsLocalAddress(const std::string& host);
+                static bool IsLocalAddress(const std::string& host);
 
                 /**
                  * Check whether the provided end point is provided by user using configuration.
@@ -203,6 +204,11 @@ namespace ignite
                 SP_DataChannel GetBestChannel(const std::vector<net::EndPoint>& hint);
 
                 /**
+                 * Update local addresses.
+                 */
+                void UpdateLocalAddresses();
+
+                /**
                  * Collect all addresses from string.
                  *
                  * @param str String with connection strings to parse.
@@ -218,6 +224,12 @@ namespace ignite
 
                 /** Configuration. */
                 ignite::thin::IgniteClientConfiguration config;
+
+                /** Address ranges. */
+                std::vector<net::TcpRange> ranges;
+
+                /** Local addresses. */
+                std::set<std::string> localAddresses;
 
                 /** Type updater. */
                 std::auto_ptr<binary::BinaryTypeUpdater> typeUpdater;

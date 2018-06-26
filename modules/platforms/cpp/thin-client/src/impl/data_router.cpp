@@ -27,6 +27,7 @@
 #include <ignite/impl/thin/message.h>
 #include <ignite/impl/thin/ssl/ssl_gateway.h>
 #include <ignite/impl/thin/net/remote_type_updater.h>
+#include <ignite/impl/thin/net/net_utils.h>
 
 
 namespace ignite
@@ -39,10 +40,14 @@ namespace ignite
                 ioTimeout(DEFALT_IO_TIMEOUT),
                 connectionTimeout(DEFALT_CONNECT_TIMEOUT),
                 config(cfg),
+                ranges(),
+                localAddresses(),
                 typeUpdater(),
                 typeMgr()
             {
                 typeUpdater.reset(new net::RemoteTypeUpdater(*this));
+
+                CollectAddresses(config.GetEndPoints(), ranges);
             }
 
             DataRouter::~DataRouter()
@@ -56,10 +61,6 @@ namespace ignite
 
                 if (config.GetEndPoints().empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
-
-                std::vector<net::TcpRange> ranges;
-
-                CollectAddresses(config.GetEndPoints(), ranges);
 
                 SP_DataChannel channel(new DataChannel(config, typeMgr));
 
@@ -120,21 +121,41 @@ namespace ignite
 
             bool DataRouter::IsLocalHost(const std::vector<net::EndPoint>& hint)
             {
-                // TODO
+                for (std::vector<net::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
+                {
+                    const std::string& host = it->host;
 
-                return false;
+                    if (IsLocalAddress(host))
+                        continue;
+
+                    if (localAddresses.find(host) == localAddresses.end())
+                        return false;
+                }
+
+                return true;
             }
 
             bool DataRouter::IsLocalAddress(const std::string& host)
             {
-                // TODO
+                static const std::string s127("127");
 
-                return false;
+                bool ipv4 = std::count(host.begin(), host.end(), '.') == 3;
+
+                if (ipv4)
+                    return host.compare(0, 3, s127) == 0;
+
+                return host == "::1" || host == "0:0:0:0:0:0:0:1" || common::ToLower(host) == "localhost";
             }
 
             bool DataRouter::IsProvidedByUser(const net::EndPoint& endPoint)
             {
-                // TODO
+                for (std::vector<net::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
+                {
+                    if (it->host == endPoint.host &&
+                        endPoint.port >= it->port &&
+                        endPoint.port <= it->port + it->range)
+                        return true;
+                }
 
                 return false;
             }
@@ -145,6 +166,8 @@ namespace ignite
                     return GetRandomChannel();
 
                 bool localHost = IsLocalHost(hint);
+
+                UpdateLocalAddresses();
 
                 for (std::vector<net::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
                 {
@@ -176,13 +199,18 @@ namespace ignite
                 return GetRandomChannel();
             }
 
+            void DataRouter::UpdateLocalAddresses()
+            {
+                localAddresses.clear();
+
+                net::net_utils::GetLocalAddresses(localAddresses);
+            }
+
             void DataRouter::CollectAddresses(const std::string& str, std::vector<net::TcpRange>& ranges)
             {
                 ranges.clear();
 
                 utility::ParseAddress(str, ranges, DEFAULT_PORT);
-
-                std::random_shuffle(ranges.begin(), ranges.end());
             }
         }
     }

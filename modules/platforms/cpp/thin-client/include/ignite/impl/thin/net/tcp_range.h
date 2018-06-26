@@ -60,6 +60,103 @@ namespace ignite
                         // No-op.
                     }
 
+                    /**
+                     * Compare to another instance.
+                     *
+                     * @param other Another instance.
+                     * @return Negative value if less, positive if larger and
+                     *    zero, if equals another instance.
+                     */
+                    int Compare(const TcpRange& other) const
+                    {
+                        if (port < other.port)
+                            return -1;
+
+                        if (port > other.port)
+                            return 1;
+
+                        if (range < other.range)
+                            return -1;
+
+                        if (range > other.range)
+                            return 1;
+
+                        return host.compare(other.host);
+                    }
+
+                    /**
+                     * Comparison operator.
+                     *
+                     * @param val1 First value.
+                     * @param val2 Second value.
+                     * @return True if equal.
+                     */
+                    friend bool operator==(const TcpRange& val1, const TcpRange& val2)
+                    {
+                        return val1.port == val2.port && val1.range == val2.range && val1.host == val2.host;
+                    }
+
+
+                    /**
+                     * Comparison operator.
+                     *
+                     * @param val1 First value.
+                     * @param val2 Second value.
+                     * @return True if not equal.
+                     */
+                    friend bool operator!=(const TcpRange& val1, const TcpRange& val2)
+                    {
+                        return !(val1 == val2);
+                    }
+
+                    /**
+                     * Comparison operator.
+                     *
+                     * @param val1 First value.
+                     * @param val2 Second value.
+                     * @return True if less.
+                     */
+                    friend bool operator<(const TcpRange& val1, const TcpRange& val2)
+                    {
+                        return val1.Compare(val2) < 0;
+                    }
+
+                    /**
+                     * Comparison operator.
+                     *
+                     * @param val1 First value.
+                     * @param val2 Second value.
+                     * @return True if less or equal.
+                     */
+                    friend bool operator<=(const TcpRange& val1, const TcpRange& val2)
+                    {
+                        return val1.Compare(val2) <= 0;
+                    }
+
+                    /**
+                     * Comparison operator.
+                     *
+                     * @param val1 First value.
+                     * @param val2 Second value.
+                     * @return True if gretter.
+                     */
+                    friend bool operator>(const TcpRange& val1, const TcpRange& val2)
+                    {
+                        return val1.Compare(val2) > 0;
+                    }
+
+                    /**
+                     * Comparison operator.
+                     *
+                     * @param val1 First value.
+                     * @param val2 Second value.
+                     * @return True if gretter or equal.
+                     */
+                    friend bool operator>=(const TcpRange& val1, const TcpRange& val2)
+                    {
+                        return val1.Compare(val2) >= 0;
+                    }
+
                     /** Remote host. */
                     std::string host;
 

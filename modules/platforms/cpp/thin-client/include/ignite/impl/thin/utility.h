@@ -43,11 +43,11 @@ namespace ignite
                  * Parse single address.
                  *
                  * @param value String value to parse.
-                 * @param endPoint End pont.
+                 * @param tcpRange TCP range.
                  * @param dfltPort Default port.
                  * @return @c true, if parsed successfully, and @c false otherwise.
                  */
-                bool ParseSingleAddress(const std::string& value, net::TcpRange& endPoint, uint16_t dfltPort);
+                bool ParseSingleAddress(const std::string& value, net::TcpRange& tcpRange, uint16_t dfltPort);
 
                 /**
                  * Parse single network port.

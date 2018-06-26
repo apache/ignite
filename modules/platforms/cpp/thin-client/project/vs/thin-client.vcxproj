@@ -98,7 +98,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
     </Link>
@@ -113,7 +113,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
     </Link>
@@ -132,7 +132,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -149,11 +149,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp" />
+    <ClCompile Include="..\..\os\win\src\net\net_utils.cpp" />
     <ClCompile Include="..\..\src\ignite_client.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\net\remote_type_updater.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_range.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\net\net_utils.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\protocol_version.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\readable.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\response_status.h" />
