@@ -919,6 +919,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
+     * This property allows to set timeout for JVM to be forcefully closed if calling close fails to stop gracefully.
+     * Default value is {@code -1ms}, property has to be set explicitly.
+     */
+    public static final String IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT = "IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
