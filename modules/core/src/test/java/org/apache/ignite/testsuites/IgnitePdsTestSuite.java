@@ -21,10 +21,12 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDuplicatedCacheConfigurationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
@@ -35,8 +37,12 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFacto
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SysPropWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
@@ -59,6 +65,7 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Basic PageMemory tests.
         suite.addTestSuite(PageMemoryImplNoLoadTest.class);
+        suite.addTestSuite(PageMemoryNoStoreLeakTest.class);
         suite.addTestSuite(IndexStoragePageMemoryImplTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);
 
@@ -73,6 +80,11 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
+
+        // WAL delta consistency
+        suite.addTestSuite(CpTriggeredWalDeltaConsistencyTest.class);
+        suite.addTestSuite(ExplicitWalDeltaConsistencyTest.class);
+        suite.addTestSuite(SysPropWalDeltaConsistencyTest.class);
 
         return suite;
     }
@@ -90,6 +102,8 @@ public class IgnitePdsTestSuite extends TestSuite {
 
     /**
      * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * NOTE: These tests are also executed using I/O plugins.
      *
      * @param suite suite to add tests into.
      */
@@ -110,6 +124,7 @@ public class IgnitePdsTestSuite extends TestSuite {
         // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-7510 is fixed
         // suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
         suite.addTestSuite(IgniteDbPutGetWithCacheStoreTest.class);
+        suite.addTestSuite(IgnitePdsWithTtlTest.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
 
@@ -118,6 +133,7 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgnitePdsDestroyCacheTest.class);
         suite.addTestSuite(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
+        suite.addTestSuite(IgnitePdsDuplicatedCacheConfigurationTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
 

@@ -217,6 +217,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** For tests only. */
     private volatile AffinityTopologyVersion exchMergeTestWaitVer;
 
+    /** For tests only. */
+    private volatile List mergedEvtsForTest;
+
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
@@ -1118,6 +1121,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         affCache.similarAffinityKey());
                 }
 
+                m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
+
                 if (exchId != null) {
                     CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
 
@@ -1151,6 +1156,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     m.addPartitionUpdateCounters(top.groupId(), cntrsMap);
                 else
                     m.addPartitionUpdateCounters(top.groupId(), CachePartitionFullCountersMap.toCountersMap(cntrsMap));
+
+                m.addPartitionSizes(top.groupId(), top.globalPartSizes());
             }
         }
 
@@ -1261,9 +1268,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                    m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
                 }
+
+                m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
             }
         }
 
@@ -1285,9 +1292,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                m.addPartitionSizes(top.groupId(), top.partitionSizes());
             }
+
+            m.addPartitionSizes(top.groupId(), top.partitionSizes());
         }
 
         return m;
@@ -1479,6 +1486,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
+                            msg.partitionSizes(grpId),
                             msg.topologyVersion());
                     }
                 }
@@ -1549,8 +1557,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (updated)
                     scheduleResendPartitions();
             }
-            else
-                exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveSingleMessage(node, msg);
+            else {
+                GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(), null, null, null, null);
+
+                if (log.isDebugEnabled())
+                    log.debug("Notifying exchange future about single message: " + exchFut);
+
+                if (msg.client() && !exchFut.isDone()) {
+                    if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
+                        U.warn(log, "Client node tries to connect but its exchange " +
+                            "info is cleaned up from exchange history." +
+                            " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
+                            "or start clients in  smaller batches."
+                        );
+
+                        exchFut.forceClientReconnect(node, msg);
+
+                        return;
+                    }
+                }
+
+                exchFut.onReceiveSingleMessage(node, msg);
+            }
         }
         finally {
             leaveBusy();
@@ -1879,9 +1907,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * For testing only.
      *
      * @param exchMergeTestWaitVer Version to wait for.
+     * @param mergedEvtsForTest List to collect discovery events with merged exchanges.
      */
-    public void mergeExchangesTestWaitVersion(AffinityTopologyVersion exchMergeTestWaitVer) {
+    public void mergeExchangesTestWaitVersion(
+        AffinityTopologyVersion exchMergeTestWaitVer,
+        @Nullable List mergedEvtsForTest
+    ) {
         this.exchMergeTestWaitVer = exchMergeTestWaitVer;
+        this.mergedEvtsForTest = mergedEvtsForTest;
     }
 
     /**
@@ -1968,46 +2001,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         AffinityTopologyVersion exchMergeTestWaitVer = this.exchMergeTestWaitVer;
 
-        if (exchMergeTestWaitVer != null) {
-            if (log.isInfoEnabled()) {
-                log.info("Exchange merge test, waiting for version [exch=" + curFut.initialVersion() +
-                    ", waitVer=" + exchMergeTestWaitVer + ']');
-            }
-
-            long end = U.currentTimeMillis() + 10_000;
-
-            while (U.currentTimeMillis() < end) {
-                boolean found = false;
-
-                for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
-                    if (task instanceof GridDhtPartitionsExchangeFuture) {
-                        GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
-
-                        if (exchMergeTestWaitVer.equals(fut.initialVersion())) {
-                            if (log.isInfoEnabled())
-                                log.info("Exchange merge test, found awaited version: " + exchMergeTestWaitVer);
-
-                            found = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (found)
-                    break;
-                else {
-                    try {
-                        U.sleep(100);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        break;
-                    }
-                }
-            }
-
-            this.exchMergeTestWaitVer = null;
-        }
+        if (exchMergeTestWaitVer != null)
+            waitForTestVersion(exchMergeTestWaitVer, curFut);
 
         synchronized (curFut.mutex()) {
             int awaited = 0;
@@ -2048,6 +2043,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
                     }
 
+                    addDiscoEvtForTest(fut.firstEvent());
+
                     curFut.context().events().addEvent(fut.initialVersion(),
                         fut.firstEvent(),
                         fut.firstEventCache());
@@ -2069,6 +2066,67 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             return awaited == 0;
         }
+    }
+
+
+    /**
+     * For testing purposes. Stores discovery events with merged exchanges to enable examining them later.
+     *
+     * @param discoEvt Discovery event.
+     */
+    private void addDiscoEvtForTest(DiscoveryEvent discoEvt) {
+        List mergedEvtsForTest = this.mergedEvtsForTest;
+
+        if (mergedEvtsForTest != null)
+            mergedEvtsForTest.add(discoEvt);
+    }
+
+    /**
+     * For testing purposes. Method allows to wait for an exchange future of specific version
+     * to appear in exchange worker queue.
+     *
+     * @param exchMergeTestWaitVer Topology Version to wait for.
+     * @param curFut Current Exchange Future.
+     */
+    private void waitForTestVersion(AffinityTopologyVersion exchMergeTestWaitVer, GridDhtPartitionsExchangeFuture curFut) {
+        if (log.isInfoEnabled()) {
+            log.info("Exchange merge test, waiting for version [exch=" + curFut.initialVersion() +
+                ", waitVer=" + exchMergeTestWaitVer + ']');
+        }
+
+        long end = U.currentTimeMillis() + 10_000;
+
+        while (U.currentTimeMillis() < end) {
+            boolean found = false;
+
+            for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
+                if (task instanceof GridDhtPartitionsExchangeFuture) {
+                    GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
+
+                    if (exchMergeTestWaitVer.equals(fut.initialVersion())) {
+                        if (log.isInfoEnabled())
+                            log.info("Exchange merge test, found awaited version: " + exchMergeTestWaitVer);
+
+                        found = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (found)
+                break;
+            else {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    break;
+                }
+            }
+        }
+
+        this.exchMergeTestWaitVer = null;
     }
 
     /**
@@ -2319,7 +2377,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          *
          */
-        private void body0() throws InterruptedException, IgniteInterruptedCheckedException {
+        private void body0() throws InterruptedException, IgniteCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             long cnt = 0;
@@ -2609,20 +2667,26 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     throw e;
                 }
                 catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
-                    assert cctx.discovery().reconnectSupported();
+                    if (cctx.discovery().reconnectSupported()) {
+                        U.warn(log, "Local node failed to complete partition map exchange due to " +
+                            "exception, will try to reconnect to cluster: " + e.getMessage(), e);
 
-                    U.warn(log,"Local node failed to complete partition map exchange due to " +
-                        "network issues, will try to reconnect to cluster", e);
+                        cctx.discovery().reconnect();
 
-                    cctx.discovery().reconnect();
-
-                    reconnectNeeded = true;
+                        reconnectNeeded = true;
+                    }
+                    else
+                        U.warn(log, "Local node received IgniteClientDisconnectedCheckedException or " +
+                            " IgniteNeedReconnectException exception but doesn't support reconnect, stopping node: " +
+                            e.getMessage(), e);
 
                     return;
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + task, e);
+
+                    throw e;
                 }
             }
         }

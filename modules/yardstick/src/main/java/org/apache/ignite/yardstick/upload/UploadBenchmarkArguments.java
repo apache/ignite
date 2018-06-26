@@ -74,6 +74,10 @@ public class UploadBenchmarkArguments implements StreamerParams {
         description = "Streamer benchmarks only: set allowOverwrite streamer parameter.")
     private Boolean streamerAllowOverwrite = null;
 
+    @Parameter(names = {"--streamer-ordered"}, arity = 1,
+        description = "Streamer benchmarks only: set streamer ordered flag.")
+    private boolean streamerOrdered = true;
+
     /** How many rows to upload during warmup. */
     @Parameter(names = {"--upload-warmup-rows"})
     private long warmupRowsCnt = 3_000_000;
@@ -111,14 +115,14 @@ public class UploadBenchmarkArguments implements StreamerParams {
     /**
      * @return Value for {@link IgniteDataStreamer#perNodeBufferSize(int)}.
      */
-    @Nullable public Integer streamerPerNodeBufferSize() {
+    @Override @Nullable public Integer streamerPerNodeBufferSize() {
         return streamerNodeBufSize;
     }
 
     /**
      * @return Value for {@link IgniteDataStreamer#perNodeParallelOperations(int)}.
      */
-    @Nullable public Integer streamerPerNodeParallelOperations() {
+    @Override @Nullable public Integer streamerPerNodeParallelOperations() {
         return streamerNodeParOps;
     }
 
@@ -128,15 +132,22 @@ public class UploadBenchmarkArguments implements StreamerParams {
      * or set STREAMING sql command parameter. <br/>
      * If set to 1, {@link IgniteDataStreamer#addData(Object, Object)} method will be used.
      */
-    @Nullable public Integer streamerLocalBatchSize() {
+    @Override @Nullable public Integer streamerLocalBatchSize() {
         return streamerLocBatchSize;
     }
 
     /**
      * Bypass corresponding parameter to streamer.
      */
-    @Nullable public Boolean streamerAllowOverwrite() {
+    @Override @Nullable public Boolean streamerAllowOverwrite() {
         return streamerAllowOverwrite;
+    }
+
+    /**
+     * Bypass corresponding parameter to streamer.
+     */
+    @Override public boolean streamerOrdered() {
+        return streamerOrdered;
     }
 
     /**

@@ -96,8 +96,8 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         physicalMemoryPages = m.getPhysicalMemoryPages();
         totalAllocatedSz = m.getTotalAllocatedSize();
         physicalMemSz = m.getPhysicalMemorySize();
-        cpBufPages = m.getCheckpointBufferPages();
-        cpBufSz = m.getCheckpointBufferSize();
+        cpBufPages = m.getUsedCheckpointBufferPages();
+        cpBufSz = m.getUsedCheckpointBufferSize();
         pageSize = m.getPageSize();
     }
 

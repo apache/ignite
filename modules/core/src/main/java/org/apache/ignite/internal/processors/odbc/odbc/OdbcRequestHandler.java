@@ -643,8 +643,18 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Whether string matches pattern.
      */
     private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
+        if (F.isEmpty(ptrn))
+            return true;
+
+        if (str == null)
+            return false;
+
+        String pattern = ptrn.toUpperCase().replace("%", ".*").replace("_", ".");
+
+        if (pattern.length() >= 2 && pattern.matches("['\"].*['\"]"))
+            pattern = pattern.substring(1, pattern.length() - 1);
+
+        return str.toUpperCase().matches(pattern);
     }
 
     /**

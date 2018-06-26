@@ -34,13 +34,19 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
-    private Map<PartitionKey, ValidateIndexesPartitionResult> res;
+    private Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
+
+    /** Results of reverse indexes validation from node. */
+    private Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /**
-     * @param res Results of indexes validation from node.
+     * @param partRes Results of indexes validation from node.
+     * @param idxRes Results of reverse indexes validation from node.
      */
-    public VisorValidateIndexesJobResult(Map<PartitionKey, ValidateIndexesPartitionResult> res) {
-        this.res = res;
+    public VisorValidateIndexesJobResult(Map<PartitionKey, ValidateIndexesPartitionResult> partRes,
+        Map<String, ValidateIndexesPartitionResult> idxRes) {
+        this.partRes = partRes;
+        this.idxRes = idxRes;
     }
 
     /**
@@ -49,21 +55,37 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
     public VisorValidateIndexesJobResult() {
     }
 
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /**
      * @return Results of indexes validation from node.
      */
-    public Map<PartitionKey, ValidateIndexesPartitionResult> response() {
-        return res;
+    public Map<PartitionKey, ValidateIndexesPartitionResult> partitionResult() {
+        return partRes;
+    }
+
+    /**
+     * @return Results of reverse indexes validation from node.
+     */
+    public Map<String, ValidateIndexesPartitionResult> indexResult() {
+        return idxRes;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, res);
+        U.writeMap(out, partRes);
+        U.writeMap(out, idxRes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        res = U.readMap(in);
+        partRes = U.readMap(in);
+
+        if (protoVer >= V2)
+            idxRes = U.readMap(in);
     }
 
     /** {@inheritDoc} */

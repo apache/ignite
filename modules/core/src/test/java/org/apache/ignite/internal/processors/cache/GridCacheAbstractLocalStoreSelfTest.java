@@ -201,11 +201,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      */
     protected abstract CacheMode getCacheMode();
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

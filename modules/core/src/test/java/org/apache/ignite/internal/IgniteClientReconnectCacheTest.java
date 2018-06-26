@@ -73,6 +73,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -384,6 +386,45 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
             tx0.commit();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxStateAfterClientReconnect() throws Exception {
+        clientMode = true;
+
+        IgniteEx client = startGrid(SRV_CNT);
+
+        Ignite srv = ignite(0);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
+
+        final IgniteTransactions txs = client.transactions();
+
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                Transaction tx = txs.txStart(concurrency, isolation);
+
+                cache.put(1, 1);
+
+                reconnectClientNode(client, srv, null);
+
+                GridTestUtils.assertThrowsWithCause(() -> {
+                    tx.commit();
+
+                    return null;
+                }, TransactionRollbackException.class);
+            }
+        }
+
+        clientMode = false;
     }
 
     /**

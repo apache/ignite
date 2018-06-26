@@ -66,13 +66,6 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         execCntr.set(0);
         exec = Executors.newSingleThreadExecutor(new ThreadFactory() {

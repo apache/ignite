@@ -57,8 +57,6 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         TestReconnectPluginProvider.enabled = false;
         TestReconnectProcessor.enabled = false;
-
-        stopAllGrids();
     }
 
     /**

@@ -136,7 +136,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      * @param parts Partitions to hold.
      */
     public GridPartitionStateMap(int parts) {
-        states = new BitSet(parts);
+        states = new BitSet(parts * BITS);
     }
 
     /**

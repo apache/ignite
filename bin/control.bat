@@ -104,7 +104,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\build-classpath.bat"
-set CP=%IGNITE_LIBS%
+set CP=%IGNITE_LIBS%;%IGNITE_HOME%\libs\optional\ignite-zookeeper\*
 
 ::
 :: Process 'restart'.

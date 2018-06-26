@@ -90,6 +90,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     private static final String TRANSACTIONAL_CACHE_NAME = "tx_cache";
 
     /** */
+    private static final String CLIENT_INSTANCE_NAME = "client";
+
+    /** */
     private static final int TOP_CHANGE_CNT = 2;
 
     /** */
@@ -158,6 +161,16 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }
 
         return cfg;
+    }
+
+    /**
+     * Starts client node.
+     *
+     * @return client node.
+     * @throws Exception If failed.
+     */
+    protected IgniteEx startClient() throws Exception {
+        return startGrid(getConfiguration(CLIENT_INSTANCE_NAME).setClientMode(true));
     }
 
     /**
@@ -1219,7 +1232,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicSequenceConstantTopologyChange() throws Exception {
-        doTestAtomicSequence(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
+        doTestAtomicSequence(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT, true));
     }
 
     /**
@@ -1236,7 +1249,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     private void doTestAtomicSequence(ConstantTopologyChangeWorker topWorker) throws Exception {
-        try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 1, true)) {
+        try (IgniteAtomicSequence s = startClient().atomicSequence(STRUCTURE_NAME, 1, true)) {
             IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
                 @Override public Object apply(Ignite ignite) {
                     assertTrue(ignite.atomicSequence(STRUCTURE_NAME, 1, false).get() > 0);
@@ -1314,11 +1327,23 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         /** */
         private final int topChangeThreads;
 
+        /** Flag to enable circular topology change. */
+        private boolean circular;
+
         /**
          * @param topChangeThreads Number of topology change threads.
          */
         public ConstantTopologyChangeWorker(int topChangeThreads) {
             this.topChangeThreads = topChangeThreads;
+        }
+
+        /**
+         * @param topChangeThreads Number of topology change threads.
+         * @param circular flag to enable circular topology change.
+         */
+        public ConstantTopologyChangeWorker(int topChangeThreads, boolean circular) {
+            this.topChangeThreads = topChangeThreads;
+            this.circular = circular;
         }
 
         /**
@@ -1349,7 +1374,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 cb.apply(g);
                             }
                             finally {
-                                stopGrid(idx);
+                                if(circular)
+                                    stopGrid(G.allGrids().get(0).configuration().getIgniteInstanceName());
+                                else
+                                    stopGrid(idx);
                             }
                         }
                     }

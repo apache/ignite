@@ -74,13 +74,6 @@ public class TxMultiCacheAsyncOpsTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(GRID_COUNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      *
      */

@@ -39,9 +39,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -133,6 +133,9 @@ public class CacheGroupContext {
     /** */
     private final DataRegion dataRegion;
 
+    /** Persistence enabled flag. */
+    private final boolean persistenceEnabled;
+
     /** */
     private final CacheObjectContext cacheObjCtx;
 
@@ -158,8 +161,8 @@ public class CacheGroupContext {
     private volatile boolean globalWalEnabled;
 
     /**
-     * @param grpId Group ID.
      * @param ctx Context.
+     * @param grpId Group ID.
      * @param rcvdFrom Node ID cache group was received from.
      * @param cacheType Cache type.
      * @param ccfg Cache configuration.
@@ -169,6 +172,7 @@ public class CacheGroupContext {
      * @param freeList Free list.
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
+     * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
      */
     CacheGroupContext(
@@ -183,7 +187,9 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walEnabled) {
+        boolean persistenceEnabled,
+        boolean walEnabled
+    ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -200,6 +206,7 @@ public class CacheGroupContext {
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
         this.globalWalEnabled = walEnabled;
+        this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
 
         persistGlobalWalState(walEnabled);
@@ -313,7 +320,7 @@ public class CacheGroupContext {
             drEnabled = true;
 
         this.caches = caches;
-   }
+    }
 
     /**
      * @param cctx Cache context.
@@ -372,8 +379,8 @@ public class CacheGroupContext {
         List<GridCacheContext> caches = this.caches;
 
         assert !sharedGroup() && caches.size() == 1 :
-            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
-            ", caches=" + caches;
+            "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+                ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -434,6 +441,7 @@ public class CacheGroupContext {
             }
         }
     }
+
     /**
      * Adds partition unload event.
      *
@@ -511,13 +519,6 @@ public class CacheGroupContext {
      */
     public boolean queriesEnabled() {
         return qryEnabled;
-    }
-
-    /**
-     * @return {@code True} if fast eviction is allowed.
-     */
-    public boolean allowFastEviction() {
-        return persistenceEnabled() && !queriesEnabled();
     }
 
     /**
@@ -722,6 +723,8 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
+        evictor.stop();
+
         aff.cancelFutures(err);
 
         preldr.onKernalStop();
@@ -918,7 +921,7 @@ public class CacheGroupContext {
      * @return Persistence enabled flag.
      */
     public boolean persistenceEnabled() {
-        return dataRegion != null && dataRegion.config().isPersistenceEnabled();
+        return persistenceEnabled;
     }
 
     /**

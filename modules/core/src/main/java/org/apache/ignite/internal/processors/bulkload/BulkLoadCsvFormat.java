@@ -22,7 +22,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Pattern;
 
-/** A placeholder for bulk load CSV format parser options. */
+/**
+ * A placeholder for bulk load CSV format parser options.
+ */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Line separator pattern. */
     @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
@@ -56,6 +58,9 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
 
     /** Set of escape start characters. */
     @Nullable private String escapeChars;
+
+    /** File charset. */
+    @Nullable private String inputCharsetName;
 
     /**
      * Returns the name of the format.
@@ -154,5 +159,23 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      */
     public void escapeChars(@Nullable String escapeChars) {
         this.escapeChars = escapeChars;
+    }
+
+    /**
+     * Returns the input file charset name, null if not specified.
+     *
+     * @return The input file charset name, null if not specified.
+     */
+    @Nullable public String inputCharsetName() {
+        return inputCharsetName;
+    }
+
+    /**
+     * Sets the input file charset name. The null here means "not specified".
+     *
+     * @param inputCharsetName The input file charset name.
+     */
+    public void inputCharsetName(@Nullable String inputCharsetName) {
+        this.inputCharsetName = inputCharsetName;
     }
 }

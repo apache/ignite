@@ -73,8 +73,6 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         ctx.destroy();
     }
 

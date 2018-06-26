@@ -24,8 +24,12 @@ import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
 
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 /** CSV parser for COPY command. */
 public class BulkLoadCsvParser extends BulkLoadParser {
@@ -41,7 +45,20 @@ public class BulkLoadCsvParser extends BulkLoadParser {
      *  @param format Format options (parsed from COPY command).
      */
     public BulkLoadCsvParser(BulkLoadCsvFormat format) {
-        inputBlock = new CharsetDecoderBlock(BulkLoadFormat.DEFAULT_INPUT_CHARSET);
+        try {
+            Charset charset = format.inputCharsetName() == null ? BulkLoadFormat.DEFAULT_INPUT_CHARSET :
+                Charset.forName(format.inputCharsetName());
+
+            inputBlock = new CharsetDecoderBlock(charset);
+        }
+        catch (IllegalCharsetNameException e) {
+            throw new IgniteSQLException("Unknown charset name: '" + format.inputCharsetName() + "': " +
+                e.getMessage());
+        }
+        catch (UnsupportedCharsetException e) {
+            throw new IgniteSQLException("Charset is not supported: '" + format.inputCharsetName() + "': " +
+                e.getMessage());
+        }
 
         collectorBlock = new StrListAppenderBlock();
 

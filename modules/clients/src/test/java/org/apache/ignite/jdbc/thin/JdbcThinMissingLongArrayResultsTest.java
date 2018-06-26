@@ -158,11 +158,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             }
             streamer.flush();
         }
-        ignite.active(true);    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        ignite.active(true);
     }
 
     /**

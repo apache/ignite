@@ -64,8 +64,6 @@ public class TcpRouterMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest 
         info("Routers stopped.");
 
         routers.clear();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

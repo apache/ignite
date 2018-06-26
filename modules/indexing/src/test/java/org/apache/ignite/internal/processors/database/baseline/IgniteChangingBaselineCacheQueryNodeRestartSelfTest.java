@@ -42,7 +42,7 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
@@ -65,8 +65,6 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

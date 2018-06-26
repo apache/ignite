@@ -71,8 +71,6 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         if (tempProp != null)
             System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, tempProp);
     }

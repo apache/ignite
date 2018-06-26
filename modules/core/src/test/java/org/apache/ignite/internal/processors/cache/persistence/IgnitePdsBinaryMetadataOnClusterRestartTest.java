@@ -84,7 +84,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
                 .setWalMode(WALMode.LOG_ONLY)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
-                    .setMaxSize(100 * 1024 * 1024))
+                    .setMaxSize(100L * 1024 * 1024))
         );
 
         BinaryConfiguration bCfg = new BinaryConfiguration();

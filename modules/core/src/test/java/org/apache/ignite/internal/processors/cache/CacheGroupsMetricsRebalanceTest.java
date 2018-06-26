@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -159,12 +160,12 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertTrue(rate1 > 0);
         assertTrue(rate2 > 0);
 
-        // rate1 has to be roughly twice more than rate2.
-        double ratio = ((double)rate2 / rate1) * 100;
+        // rate1 has to be roughly the same as rate2
+        double ratio = ((double)rate2 / rate1);
 
         log.info("Ratio: " + ratio);
 
-        assertTrue(ratio > 40 && ratio < 60);
+        assertTrue(ratio > 0.9 && ratio < 1.1);
     }
 
     /**
@@ -176,8 +177,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         Ignite ig1 = startGrid(1);
 
         final int KEYS = 4_000_000;
-
-        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE1);
 
         try (IgniteDataStreamer<Integer, String> st = ig1.dataStreamer(CACHE1)) {
             for (int i = 0; i < KEYS; i++)
@@ -193,7 +192,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 CacheRebalancingEvent rebEvent = (CacheRebalancingEvent)evt;
 
                 if (rebEvent.cacheName().equals(CACHE1)) {
-                    System.out.println("CountDown rebalance stop latch:" + rebEvent.cacheName());
+                    log.info("CountDown rebalance stop latch: " + rebEvent.cacheName());
 
                     finishRebalanceLatch.countDown();
                 }
@@ -211,10 +210,10 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         CacheMetrics metrics = ig2.cache(CACHE1).localMetrics();
 
         long startTime = metrics.getRebalancingStartTime();
+        long currTime = U.currentTimeMillis();
 
-        assertTrue(startTime > 0);
-        assertTrue((U.currentTimeMillis() - startTime) < 5000);
-        assertTrue((U.currentTimeMillis() - startTime) > 0);
+        assertTrue("Invalid start time [startTime=" + startTime + ", currTime=" + currTime + ']',
+            startTime > 0L && (currTime - startTime) >= 0L && (currTime - startTime) <= 5000L);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -223,63 +222,77 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 // Waiting 25% keys will be rebalanced.
                 int partKeys = KEYS / 2;
 
-                final long keysLine = (long)(partKeys - (partKeys * 0.25));
+                final long keysLine = partKeys * 3L / 4L;
 
-                System.out.println("Wait until keys left will be less " + keysLine);
+                log.info("Wait until keys left will be less than: " + keysLine);
 
-                try {
-                    while (finishRebalanceLatch.getCount() != 0) {
-                        CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+                while (true) {
+                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                        long keyLeft = m.getKeysToRebalanceLeft();
+                    long keyLeft = m.getKeysToRebalanceLeft();
 
-                        if (keyLeft > 0 && keyLeft < keysLine)
-                            latch.countDown();
+                    if (keyLeft > 0 && keyLeft < keysLine) {
+                        latch.countDown();
 
-                        System.out.println("Keys left: " + m.getKeysToRebalanceLeft());
-
-                        try {
-                            Thread.sleep(1_000);
-                        }
-                        catch (InterruptedException e) {
-                            System.out.println("Interrupt thread: " + e.getMessage());
-
-                            Thread.currentThread().interrupt();
-                        }
+                        break;
                     }
-                }
-                finally {
-                    latch.countDown();
+
+                    log.info("Keys left: " + m.getKeysToRebalanceLeft());
+
+                    try {
+                        Thread.sleep(1_000);
+                    }
+                    catch (InterruptedException e) {
+                        log.warning("Interrupt thread", e);
+
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         });
 
         assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
+        waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime() != -1L;
+            }
+        }, 5_000L);
+
         long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
-        assertTrue(finishTime > 0);
+        assertTrue("Not a positive estimation of rebalancing finish time: " + finishTime,
+            finishTime > 0L);
 
-        long timePassed = U.currentTimeMillis() - startTime;
-        long timeLeft = finishTime - System.currentTimeMillis();
+        currTime = U.currentTimeMillis();
 
-        assertTrue(finishRebalanceLatch.await(timeLeft + 2_000, TimeUnit.SECONDS));
+        long timePassed = currTime - startTime;
+        long timeLeft = finishTime - currTime;
 
-        System.out.println(
-            "TimePassed:" + timePassed +
-                "\nTimeLeft:" + timeLeft +
-                "\nTime to rebalance: " + (finishTime - startTime) +
-                "\nStartTime: " + startTime +
-                "\nFinishTime: " + finishTime
+        // TODO: finishRebalanceLatch gets countdown much earlier because of ForceRebalanceExchangeTask triggered by cache with delay
+//        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
+//            finishRebalanceLatch.await(timeLeft + 10_000L, TimeUnit.MILLISECONDS));
+
+        waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
+            }
+        }, timeLeft + 10_000L);
+
+        log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
+                ", Time to rebalance=" + (finishTime - startTime) +
+                ", startTime=" + startTime + ", finishTime=" + finishTime + ']'
         );
 
         System.clearProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL);
 
-        System.out.println("Rebalance time:" + (U.currentTimeMillis() - startTime));
+        currTime = U.currentTimeMillis();
 
-        long diff = finishTime - U.currentTimeMillis();
+        log.info("Rebalance time: " + (currTime - startTime));
 
-        assertTrue("Expected less 5000, Actual:" + diff, Math.abs(diff) < 10_000);
+        long diff = finishTime - currTime;
+
+        assertTrue("Expected less than 10000, but actual: " + diff, Math.abs(diff) < 10_000L);
     }
 
     /**

@@ -95,11 +95,6 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test cache.
      *

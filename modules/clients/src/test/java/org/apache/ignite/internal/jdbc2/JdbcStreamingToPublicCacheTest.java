@@ -78,11 +78,6 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param cacheName Cache name.
      * @param streaming Streaming mode flag.

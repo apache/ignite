@@ -25,6 +25,8 @@ export default class ClusterEditFormController {
     caches;
     /** @type {ig.menu<string>} */
     cachesMenu;
+    /** @type {ng.ICompiledExpression} */
+    onSave;
 
     static $inject = ['IgniteLegacyUtils', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
     constructor(IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils) {
@@ -89,6 +91,11 @@ export default class ClusterEditFormController {
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
         this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration', 'odbcConfiguration'];
+
+        this.formActions = [
+            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+        ];
     }
 
     $onChanges(changes) {
@@ -120,10 +127,10 @@ export default class ClusterEditFormController {
         return [this.cluster, this.clonedCluster].map(this.Clusters.normalize);
     }
 
-    save() {
+    save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        this.onSave({$event: cloneDeep(this.clonedCluster)});
+        this.onSave({$event: {cluster: cloneDeep(this.clonedCluster), download}});
     }
 
     reset = () => this.clonedCluster = cloneDeep(this.cluster);
