@@ -99,11 +99,22 @@ namespace ignite
                     const std::vector<net::EndPoint>& GetEndPointsForKey(const Writable& key) const;
 
                     /**
+                     * Synchronously send request message and receive response.
+                     *
+                     * @param key Key.
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    void SyncCacheKeyMessage(const Writable& key, const ReqT& req, RspT& rsp);
+
+                    /**
                      * Get hash of the writable value.
                      *
                      * @return Object hash in binary format.
                      */
-                    int32_t GetHash(const Writable & key) const;
+                    static int32_t GetHash(const Writable & key);
 
                     /** Data router. */
                     SP_DataRouter router;
@@ -123,6 +134,8 @@ namespace ignite
                     /** Rendezvous Affinity Function mask. */
                     int32_t mask;
                 };
+
+                typedef common::concurrent::SharedPointer<CacheClientImpl> SP_CacheClientImpl;
             }
         }
     }

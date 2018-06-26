@@ -104,7 +104,11 @@ namespace ignite
                 CsLockGuard guard(cs);
 
                 if (!updater)
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Updater is not set");
+
                     return false;
+                }
 
                 for (std::vector<SPSnap>::iterator it = pending->begin(); it != pending->end(); ++it)
                 {
@@ -114,7 +118,11 @@ namespace ignite
                         continue; // Snapshot has been processed already.
 
                     if (!updater->Update(*pendingSnap, err))
+                    {
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not send update");
+
                         return false; // Stop as we cannot move further.
+                    }
 
                     std::map<int32_t, SPSnap>::iterator elem = snapshots->lower_bound(pendingSnap->GetTypeId());
 

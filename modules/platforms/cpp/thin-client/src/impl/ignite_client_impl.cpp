@@ -20,7 +20,6 @@
 #include <ignite/impl/thin/cache/cache_client_impl.h>
 #include <ignite/impl/thin/message.h>
 #include <ignite/impl/thin/response_status.h>
-#include "..\..\include\ignite\impl\thin\ignite_client_impl.h"
 
 namespace ignite
 {
@@ -45,16 +44,20 @@ namespace ignite
                 router.Get()->Connect();
             }
 
-            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::GetCache(const char* name)
+            cache::SP_CacheClientImpl IgniteClientImpl::GetCache(const char* name) const
             {
                 CheckCacheName(name);
 
                 int32_t cacheId = utility::GetCacheId(name);
 
-                return new cache::CacheClientImpl(router, name, cacheId);
+                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, cacheId));
+
+                cache.Get()->UpdatePartitions();
+
+                return cache;
             }
 
-            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::GetOrCreateCache(const char* name)
+            cache::SP_CacheClientImpl IgniteClientImpl::GetOrCreateCache(const char* name)
             {
                 CheckCacheName(name);
                 
@@ -67,11 +70,15 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+
+                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, cacheId));
                 
-                return new cache::CacheClientImpl(router, name, cacheId);
+                cache.Get()->UpdatePartitions();
+
+                return cache;
             }
 
-            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::CreateCache(const char* name)
+            cache::SP_CacheClientImpl IgniteClientImpl::CreateCache(const char* name)
             {
                 CheckCacheName(name);
 
@@ -85,7 +92,11 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
 
-                return new cache::CacheClientImpl(router, name, cacheId);
+                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, cacheId));
+                
+                cache.Get()->UpdatePartitions();
+
+                return cache;
             }
 
             void IgniteClientImpl::DestroyCache(const char* name)

@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(CacheClientGetCacheNonxisting)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    client.GetCache<int32_t, std::string>("unknown");
+    BOOST_REQUIRE_THROW((client.GetCache<int32_t, std::string>("unknown")), ignite::IgniteError);
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetOrCreateCacheExisting)
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPutGetComplexValue)
     valIn.strField = "Test value";
     valIn.objField.f1 = 42;
     valIn.objField.f2 = "Inner value";
-    
+
     cache.Put(key, valIn);
 
     ignite::ComplexType valOut = cache.Get(key);
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(CacheClientUpdatePartitions)
     cache::CacheClient<int32_t, int32_t> cache = client.GetCache<int32_t, int32_t>("partitioned");
 
     for (int32_t i = 0; i < 1024; ++i)
-        cache.Put(i, i * 10);
+        cache.Put(i, i * 10);   
 
     cache.UpdatePartitions();
 }

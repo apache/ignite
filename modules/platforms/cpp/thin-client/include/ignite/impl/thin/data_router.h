@@ -94,7 +94,6 @@ namespace ignite
                  *
                  * @param req Request message.
                  * @param rsp Response message.
-                 * @return @c true on success, @c false on timeout.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
@@ -117,12 +116,10 @@ namespace ignite
 
                 /**
                  * Synchronously send request message and receive response.
-                 * Uses provided timeout.
                  *
                  * @param req Request message.
                  * @param rsp Response message.
                  * @param hint End points of the preferred server node to use.
-                 * @return @c true on success, @c false on timeout.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
@@ -137,7 +134,7 @@ namespace ignite
                     if (typeMgr.IsUpdatedSince(metaVer))
                     {
                         IgniteError err;
-
+                        
                         if (!typeMgr.ProcessPendingUpdates(err))
                             throw err;
                     }
@@ -150,7 +147,6 @@ namespace ignite
                  *
                  * @param req Request message.
                  * @param rsp Response message.
-                 * @return @c true on success, @c false on timeout.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>

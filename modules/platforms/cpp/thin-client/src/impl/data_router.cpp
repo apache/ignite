@@ -47,6 +47,8 @@ namespace ignite
             {
                 typeUpdater.reset(new net::RemoteTypeUpdater(*this));
 
+                typeMgr.SetUpdater(typeUpdater.get());
+
                 CollectAddresses(config.GetEndPoints(), ranges);
             }
 

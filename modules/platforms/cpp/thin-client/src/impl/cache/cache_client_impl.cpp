@@ -46,14 +46,27 @@ namespace ignite
                     // No-op.
                 }
 
+                template<typename ReqT, typename RspT>
+                void CacheClientImpl::SyncCacheKeyMessage(const Writable& key, const ReqT & req, RspT & rsp)
+                {
+                    if (assignment.empty())
+                    {
+                        router.Get()->SyncMessage(req, rsp);
+                    }
+                    else
+                    {
+                        const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
+                        
+                        router.Get()->SyncMessage(req, rsp, endPoints);
+                    }
+                }
+
                 void CacheClientImpl::Put(const Writable& key, const Writable& value)
                 {
                     CachePutRequest req(id, binary, key, value);
                     Response rsp;
 
-                    const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
-
-                    router.Get()->SyncMessage(req, rsp, endPoints);
+                    SyncCacheKeyMessage(key, req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -63,10 +76,8 @@ namespace ignite
                 {
                     CacheKeyRequest<RequestType::CACHE_GET> req(id, binary, key);
                     CacheGetResponse rsp(value);
-                    
-                    const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
 
-                    router.Get()->SyncMessage(req, rsp, endPoints);
+                    SyncCacheKeyMessage(key, req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -76,10 +87,8 @@ namespace ignite
                 {
                     CacheKeyRequest<RequestType::CACHE_CONTAINS_KEY> req(id, binary, key);
                     BoolResponse rsp;
-                    
-                    const std::vector<net::EndPoint>& endPoints = GetEndPointsForKey(key);
 
-                    router.Get()->SyncMessage(req, rsp, endPoints);
+                    SyncCacheKeyMessage(key, req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
@@ -98,6 +107,8 @@ namespace ignite
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    assignment.clear();
 
                     std::vector<ConnectableNodePartitions>::const_iterator it;
 
@@ -126,16 +137,6 @@ namespace ignite
                     int32_t parts = static_cast<int32_t>(assignment.size());
 
                     mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
-
-                    for (size_t i = 0; i < assignment.size(); ++i)
-                    {
-                        std::cout << assignment[i].size() << " ";
-
-                        for (size_t j = 0; j < assignment[i].size(); ++j)
-                            std::cout << assignment[i][j].host << " ";
-                        
-                        std::cout << assignment[i][0].port << std::endl;
-                    }
                 }
 
                 const std::vector<net::EndPoint>& CacheClientImpl::GetEndPointsForKey(const Writable& key) const
@@ -158,7 +159,7 @@ namespace ignite
                     return assignment[part];
                 }
 
-                int32_t CacheClientImpl::GetHash(const Writable& key) const
+                int32_t CacheClientImpl::GetHash(const Writable& key)
                 {
                     enum { BUFFER_SIZE = 1024 };
 

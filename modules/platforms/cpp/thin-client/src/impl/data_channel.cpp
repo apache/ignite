@@ -363,7 +363,11 @@ namespace ignite
                 connected = socket->Connect(address.host.c_str(), address.port, timeout);
 
                 if (!connected)
+                {
+                    Close();
+
                     return false;
+                }
 
                 connected = NegotiateProtocolVersion(timeout);
 

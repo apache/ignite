@@ -64,7 +64,7 @@ namespace ignite
                  * @param name Cache name.
                  * @return Cache.
                  */
-                common::concurrent::SharedPointer<cache::CacheClientImpl> GetCache(const char* name);
+                common::concurrent::SharedPointer<cache::CacheClientImpl> GetCache(const char* name) const;
 
                 /**
                  * Get or create cache.
