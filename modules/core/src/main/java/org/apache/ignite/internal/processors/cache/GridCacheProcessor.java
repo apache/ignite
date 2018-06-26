@@ -3508,7 +3508,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
-            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage) msg);
+            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage) msg, topVer);
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);

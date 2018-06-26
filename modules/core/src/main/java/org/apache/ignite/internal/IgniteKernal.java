@@ -1676,6 +1676,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
         // Whether rollback of dynamic cache start is supported or not.
+        // This property is added because of backward compatibility.
         add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Save data storage configuration.

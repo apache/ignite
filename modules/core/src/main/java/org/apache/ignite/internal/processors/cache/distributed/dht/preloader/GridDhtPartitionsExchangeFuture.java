@@ -516,10 +516,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code True} if this exchange was triggered by DynamicCacheChangeBatch message (dynamic start cache(s)).
+     * @return {@code True} if this exchange was triggered by DynamicCacheChangeBatch message
+     * in order to start cache(s).
      */
-    private boolean dynamicCacheChangeExchange() {
-        return exchActions != null && !exchActions.cacheStartRequests().isEmpty();
+    private boolean dynamicCacheStartExchange() {
+        return exchActions != null && !exchActions.cacheStartRequests().isEmpty()
+            && exchActions.cacheStopRequests().isEmpty();
     }
 
     /**
@@ -1535,7 +1537,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 resetLostPartitions(caches);
         }
 
-        if (cctx.kernalContext().clientNode() || (dynamicCacheChangeExchange() && exchangeLocE != null)) {
+        if (cctx.kernalContext().clientNode() || (dynamicCacheStartExchange() && exchangeLocE != null)) {
             msg = new GridDhtPartitionsSingleMessage(exchangeId(),
                 cctx.kernalContext().clientNode(),
                 cctx.versions().last(),
@@ -1554,7 +1556,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 msg.partitionHistoryCounters(partHistReserved0);
         }
 
-        if ((stateChangeExchange() || dynamicCacheChangeExchange()) && exchangeLocE != null)
+        if ((stateChangeExchange() || dynamicCacheStartExchange()) && exchangeLocE != null)
             msg.setError(exchangeLocE);
         else if (localJoinExchange())
             msg.cacheGroupsAffinityRequest(exchCtx.groupsAffinityRequestOnJoin());
@@ -1788,7 +1790,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.kernalContext().authentication().onActivate();
 
         if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx);
+            exchActions.completeRequestFutures(cctx, null);
 
         if (stateChangeExchange() && err == null)
             cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
@@ -2290,7 +2292,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         pendingSingleUpdates++;
 
-                        if ((stateChangeExchange() || dynamicCacheChangeExchange()) && msg.getError() != null)
+                        if ((stateChangeExchange() || dynamicCacheStartExchange()) && msg.getError() != null)
                             exchangeGlobalExceptions.put(nodeId, msg.getError());
 
                         allReceived = remaining.isEmpty();
@@ -2645,21 +2647,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Returns {@code true} if the given {@code discoEvt} supports the rollback procedure.
-     *
      * @return {@code true} if the given {@code discoEvt} supports the rollback procedure.
      */
     private boolean isRollbackSupported() {
-        boolean rollbackSupported = false;
-
         if (!firstEvtDiscoCache.checkAttribute(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE))
             return false;
 
         // Currently the rollback process is supported for dynamically started caches only.
-        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheChangeExchange())
-            rollbackSupported = true;
+        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange())
+            return true;
 
-        return rollbackSupported;
+        return false;
     }
 
     /**
@@ -2672,7 +2670,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert isRollbackSupported();
 
         // Rollback dynamically started caches.
-        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheChangeExchange())
+        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange())
             cctx.affinity().forceCloseCaches(this, crd.isLocal(), msg.exchangeActions());
     }
 
@@ -2723,14 +2721,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!exchCtx.mergeExchanges() && !crd.equals(events().discoveryCache().serverNodes().get(0))) {
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal())
-                        continue;;
+                        continue;
 
                     // It is possible affinity is not initialized.
                     // For example, dynamic cache start failed.
                     if (grp.affinity().lastVersion().topologyVersion() > 0)
                         grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
                     else
-                        assert exchangeLocE != null;
+                        assert exchangeLocE != null :
+                            "Affinity is not calculated for the cache group [groupName=" + grp.name() + "]";
                 }
             }
 
@@ -2759,7 +2758,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void finishExchangeOnCoordinator(@Nullable Collection<ClusterNode> sndResNodes) {
         try {
-            if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheChangeExchange() && isRollbackSupported()) {
+            if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheStartExchange() && isRollbackSupported()) {
                 sendExchangeFailureMessage();
 
                 return;
@@ -3265,7 +3264,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 GridDhtPartitionsSingleMessage res;
 
-                if (hasCachesToStart() && exchangeLocE != null) {
+                if (dynamicCacheStartExchange() && exchangeLocE != null) {
                     res = new GridDhtPartitionsSingleMessage(msg.restoreExchangeId(),
                         cctx.kernalContext().clientNode(),
                         cctx.versions().last(),
@@ -3445,7 +3444,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else if (forceAffReassignment)
                 cctx.affinity().applyAffinityFromFullMessage(this, msg);
 
-            if (dynamicCacheChangeExchange() && !F.isEmpty(exchangeGlobalExceptions)) {
+            if (dynamicCacheStartExchange() && !F.isEmpty(exchangeGlobalExceptions)) {
                 assert cctx.localNode().isClient();
 
                 // TODO: https://issues.apache.org/jira/browse/IGNITE-8796
@@ -3978,7 +3977,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!msg.client()) {
                         msgs.put(e.getKey().id(), e.getValue());
 
-                        if (hasCachesToStart() && msg.getError() != null)
+                        if (dynamicCacheStartExchange() && msg.getError() != null)
                             exchangeGlobalExceptions.put(e.getKey().id(), msg.getError());
 
                         updatePartitionSingleMap(e.getKey().id(), msg);

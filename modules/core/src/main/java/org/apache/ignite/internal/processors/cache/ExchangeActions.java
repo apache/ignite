@@ -99,17 +99,8 @@ public class ExchangeActions {
     /**
      * @return Stop cache requests.
      */
-    Collection<CacheActionData> cacheStopRequests() {
+    public Collection<CacheActionData> cacheStopRequests() {
         return cachesToStop != null ? cachesToStop.values() : Collections.<CacheActionData>emptyList();
-    }
-
-    /**
-     * @param ctx Context.
-     */
-    public void completeRequestFutures(GridCacheSharedContext ctx) {
-        completeRequestFutures(cachesToStart, ctx, null);
-        completeRequestFutures(cachesToStop, ctx, null);
-        completeRequestFutures(cachesToResetLostParts, ctx, null);
     }
 
     /**
@@ -143,7 +134,8 @@ public class ExchangeActions {
     private void completeRequestFutures(
         Map<String, CacheActionData> map,
         GridCacheSharedContext ctx,
-        @Nullable Throwable err) {
+        @Nullable Throwable err
+    ) {
         if (map != null) {
             for (CacheActionData req : map.values())
                 ctx.cache().completeCacheStartFuture(req.req, (err == null), err);

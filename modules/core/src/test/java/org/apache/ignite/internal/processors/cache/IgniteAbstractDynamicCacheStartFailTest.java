@@ -378,8 +378,8 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
             }
         }, CacheException.class, null);
 
-        // Correct the cache configuration.
-        cfg.setAffinity(new RendezvousAffinityFunction(false, PARTITION_COUNT));
+        // Correct the cache configuration. Default constructor creates a good affinity function.
+        cfg.setAffinity(new BrokenAffinityFunction());
 
         IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
 
@@ -544,7 +544,8 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         CacheConfiguration cfg = new CacheConfiguration()
             .setName(cacheName)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new BrokenAffinityFunction());
 
         return cfg;
     }
@@ -599,7 +600,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *
      * @return List of cache configurations.
      */
-    protected Collection<CacheConfiguration> createCacheConfigsWithBrokenCacheStore(
+    protected List<CacheConfiguration> createCacheConfigsWithBrokenCacheStore(
         boolean failOnAllNodes,
         int unluckyNode,
         int unluckyCfg,
@@ -710,7 +711,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         private String gridName;
 
         /**
-         * Default constructor.
+         * Constructs a good affinity function.
          */
         public BrokenAffinityFunction() {
             super(false, PARTITION_COUNT);

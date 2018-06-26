@@ -396,43 +396,26 @@ class ClusterCachesInfo {
     }
 
     /**
+     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped
+     * due to dynamic cache start failure.
+     *
      * @param failMsg Dynamic change request fail message.
+     * @param topVer Topology version.
      */
-    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
         ExchangeActions exchangeActions = new ExchangeActions();
 
-        Set<Integer> groupsTobeDestroyed = new HashSet<>();
+        List<DynamicCacheChangeRequest> requests = new ArrayList<>(failMsg.cacheNames().size());
 
         for (String cacheName : failMsg.cacheNames()) {
-            DynamicCacheDescriptor cacheDescr = registeredCaches.remove(cacheName);
+            DynamicCacheDescriptor cacheDescr = registeredCaches.get(cacheName);
 
-            ctx.discovery().removeCacheFilter(cacheName);
+            assert cacheDescr != null : "Dynamic cache descriptor is missing [cacheName=" + cacheName + "]";
 
-            exchangeActions.addCacheToStop(
-                DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true), cacheDescr);
-
-            CacheGroupDescriptor grpDescr = registeredCacheGrps.get(cacheDescr.groupId());
-
-            grpDescr.onCacheStopped(cacheDescr.cacheName(), cacheDescr.groupId());
-
-            if (!grpDescr.hasCaches()) {
-                registeredCacheGrps.remove(grpDescr.groupId());
-
-                ctx.discovery().removeCacheGroup(grpDescr);
-
-                exchangeActions.addCacheGroupToStop(grpDescr, true);
-
-                groupsTobeDestroyed.add(grpDescr.groupId());
-            }
+            requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
         }
 
-        // If all caches in a group will be destroyed
-        // it is not necessary to destroy a single cache that resides in that group
-        // because the group will be stopped anyway.
-        for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
-            if (groupsTobeDestroyed.contains(action.descriptor().groupId()))
-                action.request().destroy(false);
-        }
+        processCacheChangeRequests(exchangeActions, requests, topVer,false);
 
         failMsg.exchangeActions(exchangeActions);
     }
