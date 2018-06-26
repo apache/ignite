@@ -15,26 +15,14 @@
  * limitations under the License.
  */
 
-connected-clusters {
-    @import "./../../../public/stylesheets/variables.scss";
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-    position: absolute;
-    top: 0;
-    right: 0;
-
-    display: flex;
-    align-items: center;
-    padding: 3px 10px;
-
-    color: white;
-    font-size: 12px;
-    line-height: 12px;
-
-    background-color: $text-color;
-
-    border-radius: 0 0 4px 4px;
-
-    [ignite-icon] {
-        margin-right: 6px;
-    }
+/**
+ * Additional context for partition eviction process.
+ */
+public interface EvictionContext {
+    /**
+     * @return {@code true} If eviction process should be stopped.
+     */
+    public boolean shouldStop();
 }

@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['AgentManager'];
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-    constructor(agentMgr) {
-        Object.assign(this, { agentMgr });
+import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
-        this.connectedClusters = 0;
-    }
-
-    $onInit() {
-        this.connectedClusters$ = this.agentMgr.connectionSbj
-            .do(({ clusters }) => this.connectedClusters = clusters.length)
-            .subscribe();
-    }
-
-    $onDestroy() {
-        this.connectedClusters$.unsubscribe();
+/**
+ * Predictions aggregator returning the mean value of predictions.
+ */
+public class MeanValuePredictionsAggregator implements PredictionsAggregator {
+    /** {@inheritDoc} */
+    @Override public Double apply(double[] estimations) {
+        A.notEmpty(estimations, "estimations vector");
+        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
     }
 }
