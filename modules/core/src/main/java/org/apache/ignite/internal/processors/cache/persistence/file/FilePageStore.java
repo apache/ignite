@@ -349,7 +349,7 @@ public class FilePageStore implements PageStore {
 
                 off += n;
 
-                len -= pageSize;
+                len -= n;
             }
             while (len > 0);
 
@@ -496,7 +496,7 @@ public class FilePageStore implements PageStore {
             do {
                 int n = fileIO.write(pageBuf, off);
 
-                off += pageSizeOnDisk;
+                off += n;
 
                 len -= n;
             }
