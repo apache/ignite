@@ -730,6 +730,8 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
+        evictor.stop();
+
         aff.cancelFutures(err);
 
         preldr.onKernalStop();
