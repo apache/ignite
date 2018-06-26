@@ -854,14 +854,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Tries to start partition clear process {@link GridDhtLocalPartition#clearAll()}).
+     * Tries to start partition clear process {@link GridDhtLocalPartition#clearAll(EvictionContext)}).
      * Only one thread is allowed to do such process concurrently.
      * At the end of clearing method completes {@code clearFuture}.
      *
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
-    public boolean tryClear() throws NodeStoppingException {
+    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
         if (clearFuture.isDone())
             return true;
 
@@ -873,7 +873,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (addEvicting()) {
             try {
                 // Attempt to evict partition entries from cache.
-                long clearedEntities = clearAll();
+                long clearedEntities = clearAll(evictionCtx);
 
                 if (log.isDebugEnabled())
                     log.debug("Partition is cleared [clearedEntities=" + clearedEntities + ", part=" + this + "]");
@@ -989,7 +989,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Number of rows cleared from page memory.
      * @throws NodeStoppingException If node stopping.
      */
-    private long clearAll() throws NodeStoppingException {
+    private long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
         GridCacheVersion clearVer = ctx.versions().next();
 
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
@@ -1004,6 +1004,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             clear(singleCacheEntryMap.map, extras, rec);
 
         long cleared = 0;
+
+        final long stopCheckFreq = 1000;
 
         if (!grp.allowFastEviction()) {
             CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
@@ -1056,34 +1058,38 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                             cleared++;
                         }
+
+                        if (cleared % stopCheckFreq == 0 && evictionCtx.shouldStop())
+                            return cleared;
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                    break; // Partition is already concurrently cleared and evicted.
+                        break; // Partition is already concurrently cleared and evicted.
+                    }
+                    finally {
+                        ctx.database().checkpointReadUnlock();
+                    }
                 }
-                finally {
-                    ctx.database().checkpointReadUnlock();
+
+                if (forceTestCheckpointOnEviction) {
+                    if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
+                        ctx.database().forceCheckpoint("test").finishFuture().get();
+
+                        log.warning("Forced checkpoint by test reasons for partition: " + this);
+
+                        partWhereTestCheckpointEnforced = id;
+                    }
                 }
             }
+            catch (NodeStoppingException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to get iterator for evicted partition: " + id);
 
-        if (forceTestCheckpointOnEviction) {
-                if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
-                    ctx.database().forceCheckpoint("test").finishFuture().get();
-
-                    log.warning("Forced checkpoint by test reasons for partition: " + this);
-
-                    partWhereTestCheckpointEnforced = id;
-                }
-            }
-        }catch (NodeStoppingException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to get iterator for evicted partition: " + id);
-
-                throw e;
+                    throw e;
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to get iterator for evicted partition: " + id, e);
+                    U.error(log, "Failed to get iterator for evicted partition: " + id, e);
             }
         }
 
