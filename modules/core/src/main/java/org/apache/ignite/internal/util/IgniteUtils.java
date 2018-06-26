@@ -7698,7 +7698,10 @@ public abstract class IgniteUtils {
      * @param t Thread.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(Thread t) throws IgniteInterruptedCheckedException {
+    public static void join(@Nullable Thread t) throws IgniteInterruptedCheckedException {
+        if (t == null)
+            return;
+
         try {
             t.join();
         }
