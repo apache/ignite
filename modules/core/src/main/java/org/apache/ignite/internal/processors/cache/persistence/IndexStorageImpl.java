@@ -68,13 +68,13 @@ public class IndexStorageImpl implements IndexStorage {
     /**
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
-     * @param globalRmvId
-     * @param grpId
-     * @param allocPartId
-     * @param allocSpace
-     * @param reuseList
-     * @param rootPageId
-     * @param initNew
+     * @param globalRmvId Global rmv id.
+     * @param grpId Group id.
+     * @param allocPartId Alloc part id.
+     * @param allocSpace Alloc space.
+     * @param reuseList Reuse list.
+     * @param rootPageId Root page id.
+     * @param initNew Init new flag.
      * @param encrypted {@code True} if cache encrypted.
      */
     public IndexStorageImpl(

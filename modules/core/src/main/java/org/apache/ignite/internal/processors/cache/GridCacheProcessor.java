@@ -547,17 +547,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", cacheType=" + cacheType + "]");
 
         if (cc.isEncrypted()) {
-            if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration()))
+            if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
                 throw new IgniteCheckedException("Using encryption is not allowed" +
                     " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                     ", cacheType=" + cacheType + "]");
+            }
 
             EncryptionSpi encSpi = c.getEncryptionSpi();
 
-            if (cc.isEncrypted() && (encSpi == null || encSpi instanceof NoopEncryptionSpi))
+            if (encSpi == null || encSpi instanceof NoopEncryptionSpi) {
                 throw new IgniteCheckedException("EncryptionSpi should be configured to use encrypted cache " +
                     "[cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                     ", cacheType=" + cacheType + "]");
+            }
         }
     }
 
