@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 /**
- * Native IO version of test
+ * <!-- Package description. -->
+ * Contains classes for several predictions aggregation strategies
+ * working with predictions vector from models ensemble.
  */
-public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
-}
+package org.apache.ignite.ml.composition.predictionsaggregator;

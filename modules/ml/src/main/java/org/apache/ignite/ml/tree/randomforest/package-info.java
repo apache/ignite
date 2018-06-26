@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 /**
- * Native IO version of test
+ * <!-- Package description. -->
+ * Contains random forest implementation classes.
  */
-public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
-}
+package org.apache.ignite.ml.tree.randomforest;

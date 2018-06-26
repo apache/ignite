@@ -14,10 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+
+package org.apache.ignite.ml.composition.predictionsaggregator;
+
+import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Native IO version of test
+ * Predictions aggregator returning the mean value of predictions.
  */
-public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
+public class MeanValuePredictionsAggregator implements PredictionsAggregator {
+    /** {@inheritDoc} */
+    @Override public Double apply(double[] estimations) {
+        A.notEmpty(estimations, "estimations vector");
+        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
+    }
 }
