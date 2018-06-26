@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(CacheClientUpdatePartitions)
     cache::CacheClient<int32_t, int32_t> cache = client.GetCache<int32_t, int32_t>("partitioned");
 
     for (int32_t i = 0; i < 1024; ++i)
-        cache.Put(i, i * 10);   
+        cache.Put(i * 131, i * 10);
 
     cache.UpdatePartitions();
 }

@@ -118,6 +118,8 @@ namespace ignite
 
                 std::advance(it, idx);
 
+                std::cout << "Random: " << it->second.Get()->GetAddress().host << ":" << it->second.Get()->GetAddress().port << std::endl;
+
                 return it->second;
             }
 
@@ -184,7 +186,11 @@ namespace ignite
                     SP_DataChannel& dst = channels[*it];
 
                     if (dst.IsValid())
-                        return dst;
+                    {
+                        std::cout << "Old: " << dst.Get()->GetAddress().host << ":" << dst.Get()->GetAddress().port << std::endl;
+
+                        return dst;   
+                    }
 
                     SP_DataChannel channel(new DataChannel(config, typeMgr));
 
@@ -193,6 +199,8 @@ namespace ignite
                     if (connected)
                     {
                         dst.Swap(channel);
+
+                        std::cout << "New: " << dst.Get()->GetAddress().host << ":" << dst.Get()->GetAddress().port << std::endl;
 
                         return dst;
                     }

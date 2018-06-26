@@ -21,6 +21,7 @@
 #include <ignite/common/concurrent.h>
 
 #include <ignite/impl/thin/writable.h>
+#include <ignite/impl/thin/writable_key.h>
 #include <ignite/impl/thin/readable.h>
 
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
@@ -71,7 +72,7 @@ namespace ignite
                  */
                 void Put(const KeyType& key, const ValueType& value)
                 {
-                    impl::thin::WritableImpl<KeyType> wrKey(key);
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
                     impl::thin::WritableImpl<ValueType> wrValue(value);
 
                     proxy.Put(wrKey, wrValue);
@@ -85,7 +86,7 @@ namespace ignite
                  */
                 void Get(const KeyType& key, ValueType& value)
                 {
-                    impl::thin::WritableImpl<KeyType> wrKey(key);
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
                     impl::thin::ReadableImpl<ValueType> rdValue(value);
                     
                     proxy.Get(wrKey, rdValue);
@@ -114,7 +115,7 @@ namespace ignite
                  */
                 bool ContainsKey(const KeyType& key)
                 {
-                    impl::thin::WritableImpl<KeyType> wrKey(key);
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
 
                     return proxy.ContainsKey(wrKey);
                 }

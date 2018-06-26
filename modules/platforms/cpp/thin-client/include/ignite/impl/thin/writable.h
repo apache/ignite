@@ -88,7 +88,7 @@ namespace ignite
                 }
 
             private:
-                /** Data router. */
+                /** Value. */
                 const ValueType& value;
             };
         }

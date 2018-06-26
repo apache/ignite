@@ -141,5 +141,8 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\net\net_utils.h">
       <Filter>Code\impl\net</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

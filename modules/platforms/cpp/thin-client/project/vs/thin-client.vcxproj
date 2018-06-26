@@ -190,6 +190,7 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\utility.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\writable.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h" />
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />

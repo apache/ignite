@@ -45,17 +45,17 @@ namespace ignite
         {
             namespace cache
             {
-                void CacheClientProxy::Put(const Writable& key, const Writable& value)
+                void CacheClientProxy::Put(const WritableKey& key, const Writable& value)
                 {
                     GetCacheImpl(impl).Put(key, value);
                 }
 
-                void CacheClientProxy::Get(const Writable& key, Readable& value)
+                void CacheClientProxy::Get(const WritableKey& key, Readable& value)
                 {
                     GetCacheImpl(impl).Get(key, value);
                 }
 
-                bool CacheClientProxy::ContainsKey(const Writable & key)
+                bool CacheClientProxy::ContainsKey(const WritableKey & key)
                 {
                     return GetCacheImpl(impl).ContainsKey(key);
                 }
