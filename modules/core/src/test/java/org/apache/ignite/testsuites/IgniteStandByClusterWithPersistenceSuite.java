@@ -18,14 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteBaselineAffinityTopologyActivationTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.*;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinInActiveNodeToActiveCluster;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinInActiveNodeToInActiveCluster;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinActiveNodeToActiveClusterWithPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinActiveNodeToInActiveClusterWithPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinInActiveNodeToActiveClusterWithPersistence;
@@ -52,6 +47,9 @@ public class IgniteStandByClusterWithPersistenceSuite extends TestSuite {
 
         suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
 
+        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
+        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+        suite.addTestSuite(IgniteStandByClusterTest.class);
 
         return suite;
     }

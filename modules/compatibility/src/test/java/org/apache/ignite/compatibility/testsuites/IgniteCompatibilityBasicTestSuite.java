@@ -22,6 +22,7 @@ import org.apache.ignite.compatibility.PdsWithTtlCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Compatibility tests basic test suite.
@@ -32,6 +33,8 @@ public class IgniteCompatibilityBasicTestSuite {
      * @throws Exception In case of an error.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
+
         TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
 
         suite.addTestSuite(PersistenceBasicCompatibilityTest.class);

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
@@ -37,9 +36,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCacheRemoveFailoverTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCacheRemoveFailoverTest;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import java.util.Set;
 
 /**
  * Test suite.
@@ -76,8 +75,6 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
         suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
-        suite.addTestSuite(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
