@@ -14,10 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-/**
- * Native IO version of test
- */
-public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
+package org.apache.ignite.ml.composition.predictionsaggregator;
+
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
+public class OnMajorityPredictionsAggregatorTest {
+    private PredictionsAggregator aggregator = new OnMajorityPredictionsAggregator();
+
+    /** */
+    @Test public void testApply() {
+        assertEquals(1.0, aggregator.apply(new double[]{1.0, 1.0, 1.0, 0.0}), 0.001);
+    }
 }

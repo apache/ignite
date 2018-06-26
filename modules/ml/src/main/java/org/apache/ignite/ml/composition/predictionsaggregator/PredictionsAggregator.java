@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+
+package org.apache.ignite.ml.composition.predictionsaggregator;
+
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Native IO version of test
+ * Predictions aggregator interface.
  */
-public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
+public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
 }

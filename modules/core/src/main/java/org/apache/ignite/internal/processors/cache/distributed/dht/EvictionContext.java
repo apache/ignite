@@ -14,10 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 /**
- * Native IO version of test
+ * Additional context for partition eviction process.
  */
-public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
+public interface EvictionContext {
+    /**
+     * @return {@code true} If eviction process should be stopped.
+     */
+    public boolean shouldStop();
 }
