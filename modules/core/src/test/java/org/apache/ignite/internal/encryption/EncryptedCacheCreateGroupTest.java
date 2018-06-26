@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  */
 public class EncryptedCacheCreateGroupTest extends AbstractEncryptionTest {
+    /** */
     public static final String ENCRYPTED_GROUP = "encrypted-group";
 
     /** {@inheritDoc} */
@@ -39,6 +40,7 @@ public class EncryptedCacheCreateGroupTest extends AbstractEncryptionTest {
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 

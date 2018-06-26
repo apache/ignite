@@ -36,6 +36,9 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
         cleanPersistenceDir();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testEncryptedCacheDestroy() throws Exception {
         IgniteEx[] grids = startTestGrids(true);
 
@@ -56,6 +59,9 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
         checkCacheDestroyed(grids[0], encryptedCacheName, null, true);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testEncryptedCacheFromGroupDestroy() throws Exception {
         IgniteEx[] grids = startTestGrids(true);
 
@@ -91,6 +97,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
         checkCacheDestroyed(grids[0], encCacheName + "2", grpName, true);
     }
 
+    /** */
     private void checkCacheDestroyed(IgniteEx grid, String encCacheName, String grpName, boolean keyShouldBeEmpty) throws Exception {
         awaitPartitionMapExchange();
 
