@@ -1198,9 +1198,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 break;
             }
-
-            default:
-                return;
         }
     }
 
@@ -1208,6 +1205,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param type Event type.
      */
     protected void recordStateChangedEvent(int type){
+        assert near() && local();
+
         GridEventStorageManager evtMgr = cctx.gridEvents();
 
         if (!system() /* ignoring system tx */ && evtMgr.isRecordable(type))
