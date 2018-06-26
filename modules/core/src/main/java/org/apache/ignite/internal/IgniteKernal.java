@@ -832,6 +832,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
 
         longJVMPauseDetector = new LongJVMPauseDetector(log);
+
         longJVMPauseDetector.start();
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
