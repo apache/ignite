@@ -407,7 +407,7 @@ public final class GridTestUtils {
      * Checks whether callable throws exception, which is itself of a specified
      * class, or has a cause of the specified class.
      *
-     * @param call Runnable.
+     * @param runnable Runnable.
      * @param cls Expected class.
      * @return Thrown throwable.
      */

@@ -205,21 +205,29 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
         try (WALIterator it = walIter) {
             while (it.hasNextX()) {
                 final IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+
                 final WALRecord walRecord = next.get2();
+
                 if (walRecord.type() == WALRecord.RecordType.DATA_RECORD) {
                     final DataRecord record = (DataRecord)walRecord;
+
                     for (DataEntry entry : record.writeEntries()) {
                         final KeyCacheObject key = entry.key();
+
                         final CacheObject val = entry.value();
+
                         if (dumpRecords)
                             log.info("Op: " + entry.op() + ", Key: " + key + ", Value: " + val);
                     }
                 }
+
                 if (dumpRecords)
                     log.info("Record: " + walRecord);
+
                 cnt++;
             }
         }
+
         return cnt;
     }
 
@@ -244,10 +252,12 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
             @Override public boolean apply(Event e) {
                 WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
                 long idx = archComplEvt.getAbsWalSegmentIdx();
+
                 log.info("Finished archive for segment [" + idx + ", " +
                     archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
                 evtRecorded.set(true);
+
                 return true;
             }
         }, EVT_WAL_SEGMENT_ARCHIVED);
@@ -283,9 +293,12 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
      */
     protected IgniteCache<Object, Object> txPutDummyRecords(Ignite ignite, int recordsToWrite, int txCnt) {
         IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
+
         int keysPerTx = recordsToWrite / txCnt;
+
         if (keysPerTx == 0)
             keysPerTx = 1;
+
         for (int t = 0; t < txCnt; t++) {
             try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = t * keysPerTx; i < (t + 1) * keysPerTx; i++)
@@ -294,6 +307,7 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
                 tx.commit();
             }
         }
+
         return cache0;
     }
 
@@ -317,17 +331,21 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
         evts.localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event e) {
                 WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
+
                 long idx = archComplEvt.getAbsWalSegmentIdx();
+
                 log.info("Finished archive for segment [" + idx + ", " +
                     archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
                 if (waitingForEvt.get())
                     archiveSegmentForInactivity.countDown();
+
                 return true;
             }
         }, EVT_WAL_SEGMENT_ARCHIVED);
 
         putDummyRecords(ignite, 100);
+
         waitingForEvt.set(true); //flag for skipping regular log() and rollOver()
 
         log.info("Wait for archiving segment for inactive grid started");
@@ -336,6 +354,7 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
             archiveSegmentForInactivity.await(archiveIncompleteSegmentAfterInactivityMs + 1001, TimeUnit.MILLISECONDS);
 
         stopGrid("node0");
+
         assertTrue(recordedAfterSleep);
     }
 
@@ -395,14 +414,18 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
         final File walArchiveDirWithConsistentId = new File(walArchive, subfolderName);
 
         final File[] files = walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+
         A.notNull(files, "Can't iterate over files [" + walArchiveDirWithConsistentId + "] Directory is N/A");
+
         final WALIterator iter = factory.iteratorArchiveFiles(files);
 
         final Map<GridCacheVersion, Integer> cntArch = iterateAndCountDataRecord(iter, objConsumer, dataRecordHnd);
 
         int txCntObservedArch = cntArch.size();
+
         if (cntArch.containsKey(null))
             txCntObservedArch -= 1; // exclude non transactional updates
+
         final int entriesArch = valuesSum(cntArch.values());
 
         log.info("Total tx found loaded using archive directory (file-by-file): " + txCntObservedArch);
@@ -412,16 +435,20 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
 
         final WALIterator tuples = factory.iteratorWorkFiles(workFiles);
         final Map<GridCacheVersion, Integer> cntWork = iterateAndCountDataRecord(tuples, objConsumer, dataRecordHnd);
+
         int txCntObservedWork = cntWork.size();
+
         if (cntWork.containsKey(null))
             txCntObservedWork -= 1; // exclude non transactional updates
 
         final int entriesWork = valuesSum(cntWork.values());
+
         log.info("Archive directory: Tx found " + txCntObservedWork + " entries " + entriesWork);
 
         assertTrue("entriesArch=" + entriesArch + " + entriesWork=" + entriesWork
                 + " >= minCntEntries=" + minCntEntries,
             entriesArch + entriesWork >= minCntEntries);
+
         assertTrue("txCntObservedWork=" + txCntObservedWork + " + txCntObservedArch=" + txCntObservedArch
                 + " >= minTxCnt=" + minTxCnt,
             txCntObservedWork + txCntObservedArch >= minTxCnt);
@@ -437,7 +464,9 @@ public class AbstractIgniteWalReaderTest extends GridCommonAbstractTest {
         final Map<Object, Object> ctrlMapForBinaryObjects = new HashMap<>();
         final Collection<String> ctrlStringsToSearch = new HashSet<>();
         final Collection<String> ctrlStringsForBinaryObjSearch = new HashSet<>();
+
         final Ignite ignite0 = startGrid("node0");
+
         ignite0.active(true);
 
         final IgniteCache<Object, Object> addlCache = ignite0.getOrCreateCache(CACHE_ADDL_NAME);

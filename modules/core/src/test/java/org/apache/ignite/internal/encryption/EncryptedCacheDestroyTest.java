@@ -98,7 +98,8 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     }
 
     /** */
-    private void checkCacheDestroyed(IgniteEx grid, String encCacheName, String grpName, boolean keyShouldBeEmpty) throws Exception {
+    private void checkCacheDestroyed(IgniteEx grid, String encCacheName, String grpName, boolean keyShouldBeEmpty)
+        throws Exception {
         awaitPartitionMapExchange();
 
         Collection<String> cacheNames = grid.cacheNames();

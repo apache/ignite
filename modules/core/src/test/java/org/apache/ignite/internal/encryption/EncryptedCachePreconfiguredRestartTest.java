@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 /** */
 public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestartTest {
+    /** */
     private boolean differentCachesOnNodes;
 
     /** {@inheritDoc} */
@@ -68,14 +69,14 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     }
 
     /**
-     * @return Cache name
+     * @return Cache name.
      */
     @NotNull @Override protected String cacheName() {
         return ENCRYPTED_CACHE + (differentCachesOnNodes ? "." + GRID_1 : "");
     }
 
     /**
-     * Creates encrypted cache
+     * Creates encrypted cache.
      */
     @Override protected void createEncCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String groupName) {
         IgniteCache<Long, String> cache = grid0.cache(cacheName());

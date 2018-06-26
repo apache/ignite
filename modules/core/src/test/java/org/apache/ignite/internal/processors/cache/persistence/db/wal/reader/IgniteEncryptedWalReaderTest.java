@@ -55,6 +55,9 @@ public class IgniteEncryptedWalReaderTest extends AbstractIgniteWalReaderTest {
         return encSpi;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testFillWalAndReadRecords() throws Exception {
         setWalAndArchiveToSameValue = false;
         int cacheObjectsToWrite = 1000;
