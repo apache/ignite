@@ -201,16 +201,11 @@ def cache_get_all(
     result = APIResult(response)
     if result.status != 0:
         return result
-
-    result.value = {}
-    for i in range(response.data.length):
-        key = AnyDataObject.to_python(
-            getattr(response.data, 'element_{}'.format(i)).key
-        )
-        value = AnyDataObject.to_python(
-            getattr(response.data, 'element_{}'.format(i)).value
-        )
-        result.value[key] = value
+    result.value = dict(response_struct.to_python(response))
+    data = {}
+    for od in result.value['data']:
+        data[od['key']] = od['value']
+    result.value['data'] = data
     return result
 
 
