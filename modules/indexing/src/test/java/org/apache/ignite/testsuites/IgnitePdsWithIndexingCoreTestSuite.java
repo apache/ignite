@@ -20,7 +20,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistoricalRebalancingTest;
 
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
@@ -49,7 +48,7 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
 
         suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
+        //suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
 
 /*        suite.addTestSuite(IgniteWalRebalanceTest.class);
 
