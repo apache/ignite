@@ -49,19 +49,19 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     private final long timeout = 404;
 
     /** Creation. */
-    private AtomicBoolean creation = new AtomicBoolean();
+    private static AtomicBoolean creation = new AtomicBoolean();
 
     /** Commit. */
-    private AtomicBoolean commit = new AtomicBoolean();
+    private static AtomicBoolean commit = new AtomicBoolean();
 
     /** Rollback. */
-    private AtomicBoolean rollback = new AtomicBoolean();
+    private static AtomicBoolean rollback = new AtomicBoolean();
 
     /** Suspend. */
-    private AtomicBoolean suspend = new AtomicBoolean();
+    private static AtomicBoolean suspend = new AtomicBoolean();
 
     /** Resume. */
-    private AtomicBoolean resume = new AtomicBoolean();
+    private static AtomicBoolean resume = new AtomicBoolean();
 
     /**
      *
@@ -83,7 +83,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     private void test(boolean loc) throws Exception {
         Ignite ignite = startGrids(5);
 
-        final IgniteEvents evts = ignite.events();
+        final IgniteEvents evts = loc ? ignite.events() : grid(3).events();
 
         evts.enableLocal(EVTS_TX);
 
@@ -230,5 +230,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        clear();
     }
 }
