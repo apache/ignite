@@ -15,39 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
+package org.apache.ignite.ml.composition.boosting;
 
-/**
- * Decision tree leaf node which contains value.
- */
-public class DecisionTreeLeafNode implements DecisionTreeNode {
-    /** */
-    private static final long serialVersionUID = -472145568088482206L;
-
-    /** Value of the node. */
-    private final Double val;
-
-    /**
-     * Constructs a new decision tree leaf node.
-     *
-     * @param val Value of the node.
-     */
-    public DecisionTreeLeafNode(double val) {
-        this.val = val;
+public class MSELossFunction implements LossFunction {
+    @Override public Double estimate(Double answer, Double prediction) {
+        return Math.pow(answer - prediction, 2);
     }
 
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] doubles) {
-        return val;
+    @Override public Double grad(Long sampleSize, Double answer, Double prediction) {
+        return (2.0 / sampleSize) * (prediction - answer);
     }
 
-    /** */
-    public double getVal() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double applyRegression(double[] features) {
-        return apply(features);
-    }
 }

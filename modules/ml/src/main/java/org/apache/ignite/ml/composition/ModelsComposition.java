@@ -34,7 +34,7 @@ public class ModelsComposition implements Model<double[], Double> {
     /**
      * Models.
      */
-    private final List<ModelOnFeaturesSubspace> models;
+    private final List<Model<double[], Double>> models;
 
     /**
      * Constructs a new instance of composition of models.
@@ -42,7 +42,7 @@ public class ModelsComposition implements Model<double[], Double> {
      * @param models Basic models.
      * @param predictionsAggregator Predictions aggregator.
      */
-    public ModelsComposition(List<ModelOnFeaturesSubspace> models, PredictionsAggregator predictionsAggregator) {
+    public ModelsComposition(List<? extends Model<double[], Double>> models, PredictionsAggregator predictionsAggregator) {
         this.predictionsAggregator = predictionsAggregator;
         this.models = Collections.unmodifiableList(models);
     }
@@ -72,58 +72,8 @@ public class ModelsComposition implements Model<double[], Double> {
     /**
      * Returns containing models.
      */
-    public List<ModelOnFeaturesSubspace> getModels() {
+    public List<Model<double[], Double>> getModels() {
         return models;
     }
 
-    /**
-     * Model trained on a features subspace with mapping from original features space to subspace.
-     */
-    public static class ModelOnFeaturesSubspace implements Model<double[], Double> {
-        /**
-         * Features mapping to subspace.
-         */
-        private final Map<Integer, Integer> featuresMapping;
-        /**
-         * Trained model of features subspace.
-         */
-        private final Model<double[], Double> model;
-
-        /**
-         * Constructs new instance of ModelOnFeaturesSubspace.
-         *
-         * @param featuresMapping Features mapping to subspace.
-         * @param mdl Learned model.
-         */
-        ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<double[], Double> mdl) {
-            this.featuresMapping = Collections.unmodifiableMap(featuresMapping);
-            this.model = mdl;
-        }
-
-        /**
-         * Projects features vector to subspace in according to mapping and apply model to it.
-         *
-         * @param features Features vector.
-         * @return Estimation.
-         */
-        @Override public Double apply(double[] features) {
-            double[] newFeatures = new double[featuresMapping.size()];
-            featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features[featureVectorId]);
-            return model.apply(newFeatures);
-        }
-
-        /**
-         * Returns features mapping.
-         */
-        public Map<Integer, Integer> getFeaturesMapping() {
-            return featuresMapping;
-        }
-
-        /**
-         * Returns model.
-         */
-        public Model<double[], Double> getModel() {
-            return model;
-        }
-    }
 }

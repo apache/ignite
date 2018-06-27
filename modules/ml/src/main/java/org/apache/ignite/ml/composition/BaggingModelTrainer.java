@@ -114,14 +114,14 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        List<ModelsComposition.ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
-        List<Future<ModelsComposition.ModelOnFeaturesSubspace>> futures = new ArrayList<>();
+        List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
+        List<Future<ModelOnFeaturesSubspace>> futures = new ArrayList<>();
 
         for (int i = 0; i < ensembleSize; i++) {
             if (threadPool == null)
                 learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
             else {
-                Future<ModelsComposition.ModelOnFeaturesSubspace> fut = threadPool.submit(() -> {
+                Future<ModelOnFeaturesSubspace> fut = threadPool.submit(() -> {
                     return learnModel(datasetBuilder, featureExtractor, lbExtractor);
                 });
 
@@ -130,7 +130,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         }
 
         if (threadPool != null) {
-            for (Future<ModelsComposition.ModelOnFeaturesSubspace> future : futures) {
+            for (Future<ModelOnFeaturesSubspace> future : futures) {
                 try {
                     learnedModels.add(future.get());
                 }
@@ -150,7 +150,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    @NotNull private <K, V> ModelsComposition.ModelOnFeaturesSubspace learnModel(
+    @NotNull private <K, V> ModelOnFeaturesSubspace learnModel(
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -166,7 +166,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
 
-        return new ModelsComposition.ModelOnFeaturesSubspace(featuresMapping, mdl);
+        return new ModelOnFeaturesSubspace(featuresMapping, mdl);
     }
 
     /**

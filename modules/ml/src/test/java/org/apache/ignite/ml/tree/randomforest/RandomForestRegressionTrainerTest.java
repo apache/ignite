@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
@@ -71,10 +72,5 @@ public class RandomForestRegressionTrainerTest {
 
         assertTrue(model.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
         assertEquals(5, model.getModels().size());
-
-        for (ModelsComposition.ModelOnFeaturesSubspace tree : model.getModels()) {
-            assertTrue(tree.getModel() instanceof DecisionTreeConditionalNode);
-            assertEquals(3, tree.getFeaturesMapping().size());
-        }
     }
 }

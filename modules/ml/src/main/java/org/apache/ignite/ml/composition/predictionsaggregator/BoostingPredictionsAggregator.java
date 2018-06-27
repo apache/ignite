@@ -15,39 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-/**
- * Decision tree leaf node which contains value.
- */
-public class DecisionTreeLeafNode implements DecisionTreeNode {
-    /** */
-    private static final long serialVersionUID = -472145568088482206L;
+import java.util.stream.IntStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
-    /** Value of the node. */
-    private final Double val;
+public class BoostingPredictionsAggregator implements PredictionsAggregator {
+    private final double initialValue;
+    private final double[] weights;
 
-    /**
-     * Constructs a new decision tree leaf node.
-     *
-     * @param val Value of the node.
-     */
-    public DecisionTreeLeafNode(double val) {
-        this.val = val;
+    public BoostingPredictionsAggregator(double initialValue, double[] weights) {
+        this.weights = weights;
+        this.initialValue = initialValue;
     }
 
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] doubles) {
-        return val;
-    }
+    @Override public Double apply(double[] answers) {
+        A.ensure(answers.length == weights.length,
+            "Composition vector must have same size as weights vector");
 
-    /** */
-    public double getVal() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double applyRegression(double[] features) {
-        return apply(features);
+        return initialValue + IntStream.range(0, answers.length)
+            .mapToDouble(i -> weights[i] * answers[i]).sum();
     }
 }

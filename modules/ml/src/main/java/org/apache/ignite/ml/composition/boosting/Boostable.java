@@ -15,39 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
+package org.apache.ignite.ml.composition.boosting;
 
 /**
- * Decision tree leaf node which contains value.
+ * Specifies interface of model returning numerical estimates for feature vector.
+ * Model marked this interface must be regressor.
  */
-public class DecisionTreeLeafNode implements DecisionTreeNode {
-    /** */
-    private static final long serialVersionUID = -472145568088482206L;
-
-    /** Value of the node. */
-    private final Double val;
-
+public interface Boostable {
     /**
-     * Constructs a new decision tree leaf node.
      *
-     * @param val Value of the node.
+     * @param features
+     * @return
      */
-    public DecisionTreeLeafNode(double val) {
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] doubles) {
-        return val;
-    }
-
-    /** */
-    public double getVal() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double applyRegression(double[] features) {
-        return apply(features);
-    }
+    public Double applyRegression(double[] features);
 }

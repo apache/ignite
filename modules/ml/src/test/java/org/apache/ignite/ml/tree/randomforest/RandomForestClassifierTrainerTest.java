@@ -71,10 +71,5 @@ public class RandomForestClassifierTrainerTest {
 
         assertTrue(model.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
         assertEquals(5, model.getModels().size());
-
-        for (ModelsComposition.ModelOnFeaturesSubspace tree : model.getModels()) {
-            assertTrue(tree.getModel() instanceof DecisionTreeConditionalNode);
-            assertEquals(3, tree.getFeaturesMapping().size());
-        }
     }
 }

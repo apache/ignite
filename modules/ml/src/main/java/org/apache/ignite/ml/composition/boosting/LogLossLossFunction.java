@@ -15,39 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
+package org.apache.ignite.ml.composition.boosting;
 
-/**
- * Decision tree leaf node which contains value.
- */
-public class DecisionTreeLeafNode implements DecisionTreeNode {
-    /** */
-    private static final long serialVersionUID = -472145568088482206L;
-
-    /** Value of the node. */
-    private final Double val;
-
-    /**
-     * Constructs a new decision tree leaf node.
-     *
-     * @param val Value of the node.
-     */
-    public DecisionTreeLeafNode(double val) {
-        this.val = val;
+public class LogLossLossFunction implements LossFunction {
+    @Override public Double estimate(Double answer, Double prediction) {
+        prediction = clipPrediction(prediction);
+        return -(answer * Math.log(prediction) + (1. - answer) * Math.log(1. - prediction));
     }
 
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] doubles) {
-        return val;
+    @Override public Double grad(Long sampleSize, Double answer, Double prediction) {
+        return (prediction - answer) / (prediction * (1.0 - prediction));
     }
 
-    /** */
-    public double getVal() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double applyRegression(double[] features) {
-        return apply(features);
+    private Double clipPrediction(Double prediction) {
+        if (prediction > 0.99)
+            return 0.99;
+        else if (prediction < 0.01)
+            return 0.01;
+        else
+            return prediction;
     }
 }
