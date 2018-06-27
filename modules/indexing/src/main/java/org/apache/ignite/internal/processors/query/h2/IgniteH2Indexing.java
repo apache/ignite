@@ -1190,7 +1190,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         if (sfuFut != null) {
                             assert topVer != null && tx0 != null && tx0.mvccInfo() != null;
 
-                            ResultSetEnlistFuture enlistFut = new ResultSetEnlistFuture(
+                            ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
                                 IgniteH2Indexing.this.ctx.localNodeId(),
                                 tx0.nearXidVersion(),
                                 topVer,
@@ -1205,18 +1205,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 rs
                             );
 
-                            enlistFut.listen(new IgniteInClosure<IgniteInternalFuture<ResultSetEnlistFuture.ResultSetEnlistFutureResult>>() {
-                                @Override public void apply(IgniteInternalFuture<ResultSetEnlistFuture.ResultSetEnlistFutureResult> fut) {
+                            enlistFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
+                                @Override public void apply(IgniteInternalFuture<Long> fut) {
                                     if (fut.error() != null)
                                         sfuFut.onResult(IgniteH2Indexing.this.ctx.localNodeId(), 0L, false, fut.error());
-                                    else  {
-                                        ResultSetEnlistFuture.ResultSetEnlistFutureResult res = fut.result();
-
-                                        assert res != null;
-
-                                        sfuFut.onResult(IgniteH2Indexing.this.ctx.localNodeId(), res.enlistedRows(),
-                                            false, res.error());
-                                    }
+                                    else
+                                        sfuFut.onResult(IgniteH2Indexing.this.ctx.localNodeId(), fut.result(), false, null);
                                 }
                             });
 

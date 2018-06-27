@@ -549,12 +549,12 @@ public class DmlStatementsProcessor {
                         QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName,
                             newFieldsQry, null, true, true, mvccQueryTracker, cancel).get(0);
 
-                        it = plan.iteratorForTransaction(idx, cur, cacheOperation(plan.mode()));
+                        it = plan.iteratorForTransaction(idx, cur, op);
                     }
 
                     tx.addActiveCache(cctx, false);
 
-                    IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, op, it,
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, it,
                         fieldsQry.getPageSize(), timeout, sequential);
 
                     UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);

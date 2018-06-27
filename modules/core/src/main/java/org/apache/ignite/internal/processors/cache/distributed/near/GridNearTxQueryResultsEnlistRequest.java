@@ -41,6 +41,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+
 /**
  * Request to enlist into transaction and acquire locks for entries produced
  * with complex DML queries with reducer step.
@@ -255,11 +258,10 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
 
             int i = 0;
 
-            values = (op == GridCacheOperation.DELETE) ? null : new CacheObject[keys.length];
+            values = (op == DELETE || op == READ) ? null : new CacheObject[keys.length];
 
             for (Object row : rows) {
-                Object key;
-                Object val = null;
+                Object key, val = null;
 
                 if (row instanceof IgniteBiTuple) {
                     key = ((IgniteBiTuple)row).getKey();
@@ -268,12 +270,24 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                 else
                     key = row;
 
-                keys[i] = cctx.toCacheKeyObject(key);
-                keys[i].prepareMarshal(objCtx);
+                assert key != null && (op == DELETE || op == READ || val != null): "key=" + key + ", val=" + val;
+
+                KeyCacheObject key0 = cctx.toCacheKeyObject(key);
+
+                assert key0 != null;
+
+                key0.prepareMarshal(objCtx);
+
+                keys[i] = key0;
 
                 if (val != null) {
-                    values[i] = cctx.toCacheObject(val);
-                    values[i].prepareMarshal(objCtx);
+                    CacheObject val0 = cctx.toCacheObject(val);
+
+                    assert val0 != null;
+
+                    val0.prepareMarshal(objCtx);
+
+                    values[i] = val0;
                 }
 
                 i++;
@@ -293,7 +307,7 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
             for (int i = 0; i < keys.length; i++) {
                 keys[i].finishUnmarshal(objCtx, ldr);
 
-                if (op == GridCacheOperation.DELETE)
+                if (op == DELETE || op == READ)
                     rows.add(keys[i]);
                 else {
                     if (values[i] != null)

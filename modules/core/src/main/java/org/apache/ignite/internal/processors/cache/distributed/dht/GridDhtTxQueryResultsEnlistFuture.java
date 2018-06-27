@@ -25,21 +25,19 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Future processing transaction enlisting and locking of entries
  * produces by complex DML queries with reduce step.
  */
-public final class GridDhtTxQueryResultsEnlistFuture
-    extends GridDhtTxQueryEnlistAbstractFuture<GridNearTxQueryResultsEnlistResponse>
-    implements UpdateSourceIterator<Object> {
+public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEnlistFuture implements UpdateSourceIterator<Object> {
+    /** */
+    private static final long serialVersionUID = -4933550335145438798L;
     /** */
     private GridCacheOperation op;
 
@@ -94,18 +92,6 @@ public final class GridDhtTxQueryResultsEnlistFuture
     /** {@inheritDoc} */
     @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public GridNearTxQueryResultsEnlistResponse createResponse(@NotNull Throwable err) {
-        return new GridNearTxQueryResultsEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, err);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public GridNearTxQueryResultsEnlistResponse createResponse() {
-        return new GridNearTxQueryResultsEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, cnt,
-            hasNearNodeUpdates ? cctx.tm().mappedVersion(nearLockVer) : null,
-            hasNearNodeUpdates ? futId : null);
     }
 
     /** {@inheritDoc} */

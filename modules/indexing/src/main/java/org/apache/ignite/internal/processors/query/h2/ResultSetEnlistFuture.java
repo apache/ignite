@@ -24,34 +24,32 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.distributed.dht.ExceptionAware;
+import org.apache.ignite.internal.processors.cache.distributed.dht.DhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistAbstractFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Future to process whole local result set of SELECT FOR UPDATE query.
  */
-public final class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<ResultSetEnlistFuture.ResultSetEnlistFutureResult>
-    implements UpdateSourceIterator<Object> {
-    /** */
-    private static final long serialVersionUID = -8995895504338661551L;
-    /** */
-    private final ResultSet rs;
+public interface ResultSetEnlistFuture extends DhtLockFuture<Long> {
+    /**
+     * @param rs Result set.
+     * @return Update source.
+     */
+    static UpdateSourceIterator<?> createIterator(ResultSet rs) {
+        return new ResultSetUpdateSourceIteratorWrapper(rs);
+    }
 
     /** */
-    private final int keyColIdx;
-
-    /** */
-    private Boolean hasNext;
+    void init();
 
     /**
+     *
      * @param nearNodeId   Near node ID.
      * @param nearLockVer  Near lock version.
      * @param topVer       Topology version.
@@ -64,105 +62,79 @@ public final class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFut
      * @param timeout      Lock acquisition timeout.
      * @param cctx         Cache context.
      * @param rs           Result set to process.
+     * @return Result set enlist future.
      */
-    public ResultSetEnlistFuture(UUID nearNodeId, GridCacheVersion nearLockVer, AffinityTopologyVersion topVer,
+    static ResultSetEnlistFuture future(UUID nearNodeId, GridCacheVersion nearLockVer, AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot, long threadId, IgniteUuid nearFutId, int nearMiniId, @Nullable int[] parts,
         GridDhtTxLocalAdapter tx, long timeout, GridCacheContext<?, ?> cctx, ResultSet rs) {
-        super(nearNodeId, nearLockVer, topVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx);
 
-        this.rs = rs;
-
-        try {
-            keyColIdx = rs.getMetaData().getColumnCount();
+        if (cctx.isReplicated()) {
+            return new NearResultSetEnlistFuture(nearNodeId, nearLockVer, topVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
         }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-    }
-
-    /**
-     * @return Transaction adapter.
-     */
-    public GridDhtTxLocalAdapter tx() {
-        return tx;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected UpdateSourceIterator<?> createIterator() {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ResultSetEnlistFutureResult createResponse(@NotNull Throwable err) {
-        return new ResultSetEnlistFutureResult(0, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public ResultSetEnlistFutureResult createResponse() {
-        return new ResultSetEnlistFutureResult(cnt, null);
-    }
-
-    @Override public GridCacheOperation operation() {
-        return GridCacheOperation.READ;
-    }
-
-    @Override public boolean hasNextX() {
-        try {
-            if (hasNext == null)
-                hasNext = rs.next();
-
-            return hasNext;
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-    }
-
-    @Override public Object nextX() {
-        if (!hasNextX())
-            throw new NoSuchElementException();
-
-        try {
-            return rs.getObject(keyColIdx);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-        finally {
-            hasNext = null;
+        else {
+            return new DhtResultSetEnlistFuture(nearNodeId, nearLockVer, topVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
         }
     }
 
     /**
      *
      */
-    public static class ResultSetEnlistFutureResult implements ExceptionAware {
+    public static class ResultSetUpdateSourceIteratorWrapper implements UpdateSourceIterator<Object> {
         /** */
-        private long cnt;
+        private static final long serialVersionUID = -8745196216234843471L;
 
         /** */
-        private Throwable err;
+        private final ResultSet rs;
 
+        /** */
+        private Boolean hasNext;
+
+        /** */
+        private int keyColIdx;
 
         /**
-         * @param cnt Total rows counter on given node.
-         * @param err Exception.
+         * @param rs Result set.
          */
-        public ResultSetEnlistFutureResult(long cnt, Throwable err) {
-            this.err = err;
-            this.cnt = cnt;
-        }
-
-        /**
-         * @return Total rows counter on given node.
-         */
-        public long enlistedRows() {
-            return cnt;
+        public ResultSetUpdateSourceIteratorWrapper(ResultSet rs) {
+            this.rs = rs;
+            keyColIdx = -1;
         }
 
         /** {@inheritDoc} */
-        @Override public Throwable error() {
-            return err;
+        @Override public GridCacheOperation operation() {
+            return GridCacheOperation.READ;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNextX() {
+            try {
+                if (hasNext == null)
+                    hasNext = rs.next();
+
+                return hasNext;
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object nextX() {
+            if (!hasNextX())
+                throw new NoSuchElementException();
+
+            try {
+                if (keyColIdx == -1)
+                    keyColIdx = rs.getMetaData().getColumnCount();
+
+                return rs.getObject(keyColIdx);
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
+            finally {
+                hasNext = null;
+            }
         }
     }
 }

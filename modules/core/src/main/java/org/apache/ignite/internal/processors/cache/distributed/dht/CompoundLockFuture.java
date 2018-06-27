@@ -59,7 +59,7 @@ public class CompoundLockFuture extends GridFutureAdapter<Void> implements Ignit
      */
     public void init() {
         while(true) {
-            IgniteInternalFuture<?> fut = tx.lockFut;
+            IgniteInternalFuture<?> fut = tx.lockFuture();
 
             if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
                 onDone(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
@@ -69,17 +69,21 @@ public class CompoundLockFuture extends GridFutureAdapter<Void> implements Ignit
             else if (fut != null) {
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
-                    || fut instanceof GridDhtTxQueryEnlistAbstractFuture
+                    || fut instanceof GridDhtTxAbstractEnlistFuture
                     || fut instanceof CompoundLockFuture
                     || fut instanceof GridNearTxSelectForUpdateFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
-                fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                    @Override public void apply(IgniteInternalFuture fut) {
-                        if (fut.error() != null)
-                            onDone(fut.error());
-                    }
-                });
+                if (!fut.isDone()) {
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                        @Override public void apply(IgniteInternalFuture fut) {
+                            if (fut.error() != null)
+                                onDone(fut.error());
+                        }
+                    });
+                }
+                else if (fut.error() != null)
+                    onDone(fut.error());
 
                 break;
             }

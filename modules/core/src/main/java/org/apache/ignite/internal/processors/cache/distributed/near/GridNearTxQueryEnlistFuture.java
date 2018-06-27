@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
+
 /**
  * Cache lock future.
  */
@@ -190,12 +192,19 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
 
                 updateLocalFuture(fut);
 
-                fut.listen(new CI1<IgniteInternalFuture<GridNearTxQueryEnlistResponse>>() {
-                    @Override public void apply(IgniteInternalFuture<GridNearTxQueryEnlistResponse> fut) {
+                fut.listen(new CI1<IgniteInternalFuture<Long>>() {
+                    @Override public void apply(IgniteInternalFuture<Long> fut) {
                         assert fut.error() != null || fut.result() != null : fut;
 
                         try {
-                            localMini.onResult(fut.result(), fut.error());
+                            clearLocalFuture((GridDhtTxQueryEnlistFuture)fut);
+
+                            GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+
+                            localMini.onResult(res, fut.error());
+                        }
+                        catch (IgniteCheckedException e) {
+                            localMini.onResult(null, e);
                         }
                         finally {
                             CU.unwindEvicts(cctx);

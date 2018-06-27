@@ -795,7 +795,7 @@ public class GridMapQueryExecutor {
                             qr.queryCancel(qryIdx));
 
                         if (forUpdate) {
-                            ResultSetEnlistFuture enlistFut = new ResultSetEnlistFuture(
+                            ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
                                 ctx.localNodeId(),
                                 txDetails.version(),
                                 topVer,
@@ -815,10 +815,7 @@ public class GridMapQueryExecutor {
 
                             enlistFut.init();
 
-                            ResultSetEnlistFuture.ResultSetEnlistFutureResult r = enlistFut.get();
-
-                            if (r.error() != null)
-                                throw r.error();
+                            enlistFut.get();
 
                             rs.beforeFirst();
                         }
