@@ -32,12 +32,14 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -222,6 +224,13 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                 }
                 catch (IgniteClientDisconnectedException e) {
                     e.reconnectFuture().get();
+                }
+                catch (IgniteException e) {
+                    if (e.hasCause(IgniteNeedReconnectException.class))
+                        U.sleep(100);//wait for reconnection to prevent exception on rollback transaction
+                    else
+                        throw e;
+
                 }
             }
 
