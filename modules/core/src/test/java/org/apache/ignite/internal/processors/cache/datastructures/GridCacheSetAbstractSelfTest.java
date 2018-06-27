@@ -144,9 +144,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                     assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.name() + ", map=" + map + ']',
                         0,
                         map.size());
-
-                    assertFalse("Cache " + cache.name() + " was not destroyed.",
-                        cache.name().contains("_" + DataStructureType.SET.name() + "_"));
                 }
             }
         }
