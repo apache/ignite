@@ -3,13 +3,8 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.ArrayList;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import junit.framework.TestCase;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -227,61 +222,10 @@ public class IgniteFileIOTest extends TestCase {
     }
 
     /**
-     *
-     */
-    private interface ArrayTask {
-
-        /**
-         * @param off Offset.
-         * @param len Length.
-         */
-        public void process(int off, int len);
-
-    }
-
-    /**
-     * @param arr Array.
-     * @param task Task.
-     */
-    private static void processArray(@NotNull final byte[] arr, ArrayTask task) {
-        if (arr.length == 0)
-            return;
-
-        ForkJoinPool srvc = ForkJoinPool.commonPool();
-
-        final int blockSize = arr.length / srvc.getParallelism() + 1;
-
-        ArrayList<ForkJoinTask<?>> tasks = new ArrayList<>(srvc.getParallelism() + 1);
-
-        for (int i = 0; i < arr.length; i += blockSize) {
-            final int len = Math.min(blockSize, arr.length - i);
-
-            if (len > 0) {
-                final int off = i;
-
-                tasks.add(srvc.submit (() -> task.process(off, len)));
-            }
-        }
-
-        for (ForkJoinTask<?> t : tasks)
-            t.join();
-    }
-
-    /**
      * @param arr Array.
      */
     private static void fillRandomArray(@NotNull final byte[] arr) {
         ThreadLocalRandom.current().nextBytes(arr);
-//        processArray(arr, (off, len) -> {
-//            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-//
-//            for (int j = 0; j < len >> 3; j++)
-//                GridUnsafe.putLong(arr, GridUnsafe.BYTE_ARR_OFF + (j << 3) + off, rnd.nextLong());
-//
-//            for (int o = off + (len & ~7), j = 0; j < (len & 7); j++)
-//                arr[o + j] = (byte) (rnd.nextInt(256) - 128);
-//
-//        });
     }
 
     /**
@@ -297,32 +241,5 @@ public class IgniteFileIOTest extends TestCase {
                 return false;
 
         return true;
-
-//        final AtomicBoolean res = new AtomicBoolean(true);
-//
-//        processArray(arr1, (off, len) -> {
-//            for (int i = 0; i < len >> 3; i++) {
-//                long o = GridUnsafe.BYTE_ARR_OFF +(i << 3) + off;
-//
-//                if (GridUnsafe.getLong(arr1, o) != GridUnsafe.getLong(arr2, o)) {
-//                    res.set(false);
-//
-//                    return;
-//                }
-//
-//                if (!res.get())
-//                    return;
-//            }
-//
-//            if (!res.get())
-//                for (int o = off + (len & ~7), i = 0; i < (len & 7); i++)
-//                    if (arr1[o + i] != arr2[o + i]) {
-//                        res.set(false);
-//
-//                        return;
-//                    }
-//        });
-//
-//        return res.get();
     }
 }
