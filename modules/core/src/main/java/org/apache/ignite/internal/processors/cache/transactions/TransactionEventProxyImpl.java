@@ -39,6 +39,9 @@ import org.jetbrains.annotations.Nullable;
  * @see TransactionStateChangedEvent
  */
 public class TransactionEventProxyImpl implements TransactionProxy, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Xid. */
     private IgniteUuid xid;
 
