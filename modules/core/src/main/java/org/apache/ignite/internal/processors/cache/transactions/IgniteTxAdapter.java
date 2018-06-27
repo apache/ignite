@@ -1102,7 +1102,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
 
-                recordStateChanged(state);
+                recordStateChangedEvent(state);
 
                 notifyAll();
             }
@@ -1170,7 +1170,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** */
-    private void recordStateChanged(TransactionState state){
+    private void recordStateChangedEvent(TransactionState state){
         if (!near() || !local()) // Covers only GridNearTxLocal's state changes.
             return;
 
