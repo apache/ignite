@@ -24,16 +24,17 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -317,12 +318,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testTopologyChangesWithConstantLoad() throws Exception {
         final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
 
-        final int entriesCnt = 10_000;
+        final int entriesCnt = 1_000;
         final int maxNodesCnt = 4;
         final int topChanges = 50;
 
+        final AtomicLong orderCounter = new AtomicLong();
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicBoolean suspend = new AtomicBoolean();
+        final AtomicBoolean suspended = new AtomicBoolean();
 
         final ConcurrentMap<Integer, TestValue> map = new ConcurrentHashMap<>();
 
@@ -333,8 +336,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteCache<Integer, TestValue> cache = ignite.cache(INDEXED_CACHE);
 
         for (int i = 0; i < entriesCnt; i++) {
-            cache.put(i, new TestValue(i, i));
-            map.put(i, new TestValue(i, i));
+            long order = orderCounter.get();
+
+            cache.put(i, new TestValue(order, i, i));
+            map.put(i, new TestValue(order, i, i));
+
+            orderCounter.incrementAndGet();
         }
 
         final AtomicInteger nodesCnt = new AtomicInteger(4);
@@ -346,12 +353,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         return null;
 
                     if (suspend.get()) {
+                        suspended.set(true);
+
                         U.sleep(10);
 
                         continue;
                     }
 
                     int k = ThreadLocalRandom.current().nextInt(entriesCnt);
+                    long order = orderCounter.get();
                     int v1 = ThreadLocalRandom.current().nextInt();
                     int v2 = ThreadLocalRandom.current().nextInt();
 
@@ -379,7 +389,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         tx = ignite.transactions().txStart();
 
                     try {
-                        ignite.cache(INDEXED_CACHE).put(k, new TestValue(v1, v2));
+                        ignite.cache(INDEXED_CACHE).put(k, new TestValue(order, v1, v2));
                     }
                     catch (Exception ignored) {
                         success = false;
@@ -395,8 +405,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         }
                     }
 
-                    if (success)
-                        map.put(k, new TestValue(v1, v2));
+                    if (success) {
+                        map.put(k, new TestValue(order, v1, v2));
+
+                        orderCounter.incrementAndGet();
+                    }
                 }
             }
         }, 1, "load-runner");
@@ -428,14 +441,29 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 awaitPartitionMapExchange();
 
+                // Suspend loader and wait for last operation completion.
                 suspend.set(true);
+                GridTestUtils.waitForCondition(suspended::get, 5_000);
 
-                U.sleep(200);
+                long maxOrder = orderCounter.get();
 
-                for (Map.Entry<Integer, TestValue> entry : map.entrySet())
-                    assertEquals(it + " " + Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
+                for (Map.Entry<Integer, TestValue> entry : map.entrySet()) {
+                    TestValue expected = entry.getValue();
 
+                    if (expected.order < maxOrder)
+                        continue;
+
+                    TestValue actual = cache.get(entry.getKey());
+
+                    if (entry.getValue().order < maxOrder)
+                        continue;
+
+                    assertEquals(it + " " + Integer.toString(entry.getKey()), expected, actual);
+                }
+
+                // Resume progress for loader.
                 suspend.set(false);
+                suspended.set(false);
             }
         }
         finally {
@@ -596,6 +624,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      */
     private static class TestValue implements Serializable {
+        /** Order. */
+        private final long order;
         /** V 1. */
         private final int v1;
         /** V 2. */
@@ -605,37 +635,35 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
          * @param v1 V 1.
          * @param v2 V 2.
          */
-        private TestValue(int v1, int v2) {
+        private TestValue(long order, int v1, int v2) {
+            this.order = order;
             this.v1 = v1;
             this.v2 = v2;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+            if (this == o) return true;
 
-            TestValue val = (TestValue)o;
+            if (o == null || getClass() != o.getClass()) return false;
 
-            return v1 == val.v1 && v2 == val.v2;
+            TestValue testValue = (TestValue) o;
 
+            return order == testValue.order &&
+                v1 == testValue.v1 &&
+                v2 == testValue.v2;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = v1;
-
-            res = 31 * res + v2;
-
-            return res;
+            return Objects.hash(order, v1, v2);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return "TestValue{" +
-                "v1=" + v1 +
+                "order=" + order +
+                ", v1=" + v1 +
                 ", v2=" + v2 +
                 '}';
         }

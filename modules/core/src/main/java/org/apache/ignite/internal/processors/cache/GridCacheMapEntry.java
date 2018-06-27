@@ -2760,6 +2760,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     storeValue(val, expTime, ver, null);
                 }
+                else {
+                    if (!preload)
+                        log.warning("Rejected update: " + this);
+                }
             }
             else // Optimization to access storage only once.
                 update = storeValue(val, expTime, ver, null, p);
@@ -2823,6 +2827,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 return true;
+            }
+            else {
+                if (!preload)
+                    log.warning("Rejected update: " + this);
             }
 
             return false;
