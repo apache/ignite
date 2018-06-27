@@ -24,7 +24,7 @@ from pyignite.datatypes.complex import AnyDataArray, AnyDataObject
 from pyignite.datatypes.null_object import Null
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
 from pyignite.datatypes.sql import StatementType
-from pyignite.datatypes.standard import String
+from pyignite.datatypes.standard import String, StringArray
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
 from .result import APIResult
@@ -382,9 +382,7 @@ def sql_fields(
 
     def fields_or_field_count():
         if include_field_names:
-            return 'fields', StructArray([
-                ('field_name', String),
-            ])
+            return 'fields', StringArray
         return 'field_count', Int
 
     query_struct = SQLFieldsQuery([
@@ -442,12 +440,6 @@ def sql_fields(
     if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
-    if include_field_names:
-        # flatten field names
-        field_names = []
-        for od in result.value['fields']:
-            field_names.append(od['field_name'])
-        result.value['fields'] = field_names
     # flatten data
     data = []
     for od in result.value['data']:
