@@ -21,6 +21,7 @@ import attr
 from pyignite.connection import Connection
 from pyignite.constants import *
 from .standard import String
+from .complex import AnyDataObject
 from .primitive import *
 
 
@@ -179,6 +180,7 @@ QueryFields = StructArray([
     ('type_name', String),
     ('is_key_field', Bool),
     ('is_notnull_constraint_field', Bool),
+    ('default_value', AnyDataObject),
 ])
 
 
@@ -215,10 +217,8 @@ QueryEntities = StructArray([
 
 
 CacheKeyConfiguration = StructArray([
-    ('name', String),
     ('type_name', String),
-    ('is_key_field', Bool),
-    ('is_notnull_constraint_field', Bool),
+    ('affinity_key_field_name', String),
 ])
 
 
