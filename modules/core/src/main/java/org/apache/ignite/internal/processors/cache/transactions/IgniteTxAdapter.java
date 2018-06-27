@@ -1211,7 +1211,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (!system() /* ignoring system tx */ && evtMgr.isRecordable(type))
             evtMgr.record(new TransactionStateChangedEvent(
-                cctx.discovery().localNode(), null, type, ((GridNearTxLocal)this).proxy()));
+                cctx.discovery().localNode(), null, type, ((GridNearTxLocal)this).rollbackOnlyProxy()));
     }
 
     /** {@inheritDoc} */
