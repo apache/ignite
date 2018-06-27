@@ -37,6 +37,7 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
     static {
         ByteCodeRewrite.apply();
 
+        // GC will not unload this classes.
         WORKAROUND = new Class[] {ZooKeeperServer.class, LearnerZooKeeperServer.class, MBeanRegistry.class};
     }
 
