@@ -650,6 +650,9 @@ public final class GridH2CollocationModel {
             }
         }
 
+        if (filters == null)
+            return cm;
+
         assert cm.view;
 
         Select select = filters[0].getSelect();
