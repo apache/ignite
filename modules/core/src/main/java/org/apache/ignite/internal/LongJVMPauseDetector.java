@@ -40,19 +40,19 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  */
 class LongJVMPauseDetector {
     /** Logger. */
-    private final IgniteLogger LOG;
+    private final IgniteLogger log;
 
     /** Worker reference. */
     private final AtomicReference<Thread> workerRef = new AtomicReference<>();
 
     /** Precision. */
-    private final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
+    private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
 
     /** Threshold. */
-    private final int THRESHOLD = getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, 500);
+    private static final int THRESHOLD = getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, 500);
 
     /** Event count. */
-    private final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
+    private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
 
     /** Long pause count. */
     private long longPausesCnt;
@@ -69,8 +69,8 @@ class LongJVMPauseDetector {
     /**
      * @param log Logger.
      */
-    public LongJVMPauseDetector(GridLoggerProxy log) {
-        LOG = log;
+    public LongJVMPauseDetector(IgniteLogger log) {
+        this.log = log;
     }
 
     /**
@@ -78,8 +78,8 @@ class LongJVMPauseDetector {
      */
     public void start() {
         if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false)) {
-            if (LOG.isDebugEnabled())
-                LOG.debug("JVM Pause Detector is disabled.");
+            if (log.isDebugEnabled())
+                log.debug("JVM Pause Detector is disabled.");
 
             return;
         }
@@ -88,8 +88,8 @@ class LongJVMPauseDetector {
             private long prev = System.currentTimeMillis();
 
             @Override public void run() {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(getName() + " has been started.");
+                if (log.isDebugEnabled())
+                    log.debug(getName() + " has been started.");
 
                 while (true) {
                     try {
@@ -101,9 +101,9 @@ class LongJVMPauseDetector {
                         prev = now;
 
                         if (pause >= THRESHOLD) {
-                            LOG.warning("Possible too long JVM pause: " + pause + " milliseconds.");
+                            log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
 
-                            synchronized (LongJVMPauseDetector.class) {
+                            synchronized (LongJVMPauseDetector.this) {
                                 final int next = (int)(longPausesCnt % EVT_CNT);
 
                                 longPausesCnt++;
@@ -117,7 +117,7 @@ class LongJVMPauseDetector {
                         }
                     }
                     catch (InterruptedException e) {
-                        LOG.error(getName() + " has been interrupted", e);
+                        log.error(getName() + " has been interrupted", e);
 
                         break;
                     }
@@ -126,7 +126,7 @@ class LongJVMPauseDetector {
         };
 
         if (!workerRef.compareAndSet(null, worker)) {
-            LOG.warning(LongJVMPauseDetector.class.getSimpleName() + " already started!");
+            log.warning(LongJVMPauseDetector.class.getSimpleName() + " already started!");
 
             return;
         }
