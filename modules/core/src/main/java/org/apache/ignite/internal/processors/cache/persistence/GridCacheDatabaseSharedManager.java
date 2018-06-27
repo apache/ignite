@@ -4430,6 +4430,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /**
          * @param cls Closure to execute with disabled WAL.
+         * @throws IgniteCheckedException If execution failed.
          */
         public void execute(IgniteRunnable cls) throws IgniteCheckedException {
             if (cls == null)
@@ -4459,6 +4460,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        /**
+         * @throws IgniteCheckedException If write meta store flag failed.
+         */
         protected void writeMetaStoreDisableWALFlag() throws IgniteCheckedException {
             dbMgr.checkpointReadLock();
 
@@ -4469,6 +4473,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 dbMgr.checkpointReadUnlock();
             }
         }
+
+        /**
+         * @throws IgniteCheckedException If remove meta store flag failed.
+         */
         protected void removeMetaStoreDisableWALFlag() throws IgniteCheckedException {
             dbMgr.checkpointReadLock();
 
@@ -4480,7 +4488,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-
+        /**
+         * @param disable Flag wal disable.
+         */
         protected void disableWAL(boolean disable) throws IgniteCheckedException {
             dbMgr.checkpointReadLock();
 
@@ -4492,6 +4502,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        /** {@inheritDoc} */
         @Override public void onReadyForRead(ReadOnlyMetastorage ms) throws IgniteCheckedException {
             Boolean disabled = (Boolean)ms.read(WAL_DISABLED);
 
@@ -4507,6 +4518,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        /** {@inheritDoc} */
         @Override public void onReadyForReadWrite(ReadWriteMetastorage ms) throws IgniteCheckedException {
             // On new node start WAL always enabled. Remove flag from metastore.
             if (resetWalFlag)

@@ -89,6 +89,9 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void test() throws Exception {
         for (CrashPoint crashPoint : CrashPoint.values()) {
             testCrashWithDisableWAL(crashPoint);
@@ -100,7 +103,8 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param crashPoint Crash point.
+     * @throws Exception If failed.
      */
     private void testCrashWithDisableWAL(CrashPoint crashPoint) throws Exception {
         log.info("Start test crash " + crashPoint);
@@ -221,12 +225,19 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param crashPoint Crash point.
+     * @throws IgniteCheckedException Always throws exception.
+     */
     private void failNode(CrashPoint crashPoint) throws IgniteCheckedException {
         stopGrid(0, true);
 
         throw new IgniteCheckedException(crashPoint.toString());
     }
 
+    /**
+     * Crash point.
+     */
     private enum CrashPoint {
         BEFORE_WRITE_KEY_TO_META_STORE(false),
         AFTER_WRITE_KEY_TO_META_STORE(true),
@@ -236,6 +247,7 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
         AFTER_CHECKPOINT_AFTER_ENABLE_WAL(true),
         AFTER_REMOVE_KEY_TO_META_STORE(false);
 
+        /** Clean up flag. */
         private final boolean needCleanUp;
 
         CrashPoint(boolean up) {
