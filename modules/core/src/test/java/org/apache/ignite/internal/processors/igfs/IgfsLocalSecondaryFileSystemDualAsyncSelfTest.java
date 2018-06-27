@@ -29,4 +29,9 @@ public class IgfsLocalSecondaryFileSystemDualAsyncSelfTest extends IgfsLocalSeco
     public IgfsLocalSecondaryFileSystemDualAsyncSelfTest() {
         super(IgfsMode.DUAL_ASYNC);
     }
+
+    /** */
+    @Override public void testAccessAndModificationTimeUpwardsPropagation() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8887");
+    }
 }
