@@ -637,9 +637,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 state = cctx.kernalContext().clientNode() ? ExchangeLocalState.CLIENT : ExchangeLocalState.SRV;
 
             if (exchLog.isInfoEnabled()) {
-                if (firstDiscoEvt.eventNode().order() < crd.order())
-                    exchLog.info("Coordinator changed: [prev=" + firstDiscoEvt.eventNode() + ", new=" + crd + ']');
-
                 exchLog.info("Started exchange init [topVer=" + topVer +
                     ", crd=" + crdNode +
                     ", evt=" + IgniteUtils.gridEventName(firstDiscoEvt.type()) +
@@ -668,8 +665,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage)
+                else if (msg instanceof SnapshotDiscoveryMessage) {
                     exchange = onCustomMessageNoAffinityChange(crdNode);
+                }
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 else {
@@ -3545,8 +3543,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             crd0 = crd;
 
-                            if (crd0 == null)
+                            if (crd0 == null) {
                                 finishState = new FinishState(null, initialVersion(), null);
+                            }
                         }
 
                         if (crd0 == null) {
