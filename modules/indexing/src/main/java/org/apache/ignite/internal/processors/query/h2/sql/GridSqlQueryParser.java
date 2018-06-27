@@ -986,7 +986,7 @@ public class GridSqlQueryParser {
 
         List<DefineCommand> constraints = CREATE_TABLE_CONSTRAINTS.get(createTbl);
 
-        if (constraints.size() == 0)
+        if (F.isEmpty(constraints))
             throw new IgniteSQLException("No PRIMARY KEY defined for CREATE TABLE",
                 IgniteQueryErrorCode.PARSING);
 
