@@ -202,6 +202,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             return cachedProxy;
 
         cachedProxy = new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), true);
+
         return cachedProxy;
     }
 
@@ -1756,6 +1757,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Internal proxy.
      */
     @Override public GridCacheProxyImpl<K, V> internalProxy() {
+        if (isRestarting())
+            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut.get()), context().name());
+
         return new GridCacheProxyImpl<>(ctx, delegate, ctx.operationContextPerCall());
     }
 
@@ -1825,8 +1829,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridFutureAdapter<Void> currentFut = this.restartFut.get();
 
         if (currentFut != null)
-            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(currentFut), "Cache is restarting: " +
-                    context().name());
+            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(currentFut), context().name());
     }
 
     /**

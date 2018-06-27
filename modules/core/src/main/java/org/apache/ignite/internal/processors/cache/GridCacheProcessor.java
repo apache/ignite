@@ -2083,17 +2083,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cache.active(false);
         }
 
-        if (proxy != null) {
-            if (stop) {
-                if (restart)
-                    proxy.restart();
+        if (stop) {
+            if (restart) {
+                if (proxy == null) {
+                    GridCacheAdapter<?, ?> cache = caches.get(cacheName);
 
-                proxy.context().gate().stopped();
+                    proxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
+
+                    IgniteCacheProxyImpl<?, ?> oldProxy = jCacheProxies.putIfAbsent(cacheName, proxy);
+
+                    if (oldProxy != null)
+                        proxy = oldProxy;
+                }
+
+                proxy.restart();
             }
-            else
-                proxy.closeProxy();
 
+            if (proxy != null)
+                proxy.context().gate().stopped();
         }
+        else if (proxy != null)
+            proxy.closeProxy();
     }
 
     /**
