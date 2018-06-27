@@ -17,8 +17,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheHistoricalRebalancingTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
 
 /**
@@ -44,8 +42,8 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
         suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
         */
-        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
+        //suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
+        //suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
 
         suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
         //suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
