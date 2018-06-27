@@ -38,6 +38,8 @@ namespace ignite
             template<typename K, typename V>
             class CacheClient
             {
+                friend class impl::thin::cache::CacheClientProxy;
+
             public:
                 /** Key type. */
                 typedef K KeyType;

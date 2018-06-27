@@ -28,6 +28,7 @@
 #include <ignite/thin/ignite_client.h>
 
 #include <test_utils.h>
+#include <boost/thread/v2/thread.hpp>
 
 using namespace ignite::thin;
 using namespace boost::unit_test;
@@ -48,6 +49,50 @@ public:
     ~CacheClientTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
+    }
+
+    template<typename K, typename V>
+    void LocalPeek(cache::CacheClient<K,V>& cache, const K& key, V& value)
+    {
+        using namespace ignite::impl::thin;
+        using namespace ignite::impl::thin::cache;
+
+        CacheClientProxy& proxy = CacheClientProxy::GetFromCacheClient(cache);
+
+        WritableKeyImpl<K> wkey(key);
+        ReadableImpl<V> rvalue(value);
+
+        proxy.LocalPeek(wkey, rvalue);
+    }
+
+    template<typename KeyType>
+    void NumPartitionTest(int64_t num)
+    {
+        StartNode("node1");
+        StartNode("node2");
+
+        boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+        IgniteClientConfiguration cfg;
+
+        cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+        IgniteClient client = IgniteClient::Start(cfg);
+
+        cache::CacheClient<KeyType, int64_t> cache = client.GetCache<KeyType, int64_t>("partitioned");
+
+        cache.UpdatePartitions();
+
+        for (int64_t i = 1; i < num; ++i)
+            cache.Put(static_cast<KeyType>(i * 39916801), i * 5039);
+
+        for (int64_t i = 1; i < num; ++i)
+        {
+            int64_t val;
+            LocalPeek(cache, static_cast<KeyType>(i * 39916801), val);
+
+            BOOST_CHECK_EQUAL(val, i * 5039);
+        }
     }
 
 private:
@@ -298,23 +343,268 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsComplexKey)
     BOOST_CHECK(cache.ContainsKey(key));
 }
 
-BOOST_AUTO_TEST_CASE(CacheClientUpdatePartitions)
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsInt8)
+{
+    NumPartitionTest<int8_t>(100);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsInt16)
+{
+    NumPartitionTest<int16_t>(2000);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsInt32)
+{
+    NumPartitionTest<int32_t>(1050);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsInt64)
+{
+    NumPartitionTest<int64_t>(2000);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsUint16)
+{
+    NumPartitionTest<uint16_t>(1500);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsFloat)
+{
+    NumPartitionTest<float>(1500);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsDouble)
+{
+    NumPartitionTest<double>(500);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
 {
     StartNode("node1");
     StartNode("node2");
 
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
     IgniteClientConfiguration cfg;
 
-    cfg.SetEndPoints("127.0.0.1:11110");
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClient<int32_t, int32_t> cache = client.GetCache<int32_t, int32_t>("partitioned");
-
-    for (int32_t i = 0; i < 1024; ++i)
-        cache.Put(i * 131, i * 10);
+    cache::CacheClient<std::string, int64_t> cache = client.GetCache<std::string, int64_t>("partitioned");
 
     cache.UpdatePartitions();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::Guid, int64_t> cache = client.GetCache<ignite::Guid, int64_t>("partitioned");
+
+    cache.UpdatePartitions();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::Guid(i * 406586897, i * 87178291199), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::Guid(i * 406586897, i * 87178291199), val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int64_t> cache =
+        client.GetCache<ignite::ComplexType, int64_t>("partitioned");
+
+    cache.UpdatePartitions();
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        ignite::ComplexType key;
+
+        key.i32Field = static_cast<int32_t>(i * 406586897);
+        key.strField = ignite::common::LexicalCast<std::string>(i * 39916801);
+        key.objField.f1 = static_cast<int32_t>(i * 87178291199);
+        key.objField.f2 = ignite::common::LexicalCast<std::string>(i * 59969537);
+
+        cache.Put(key, i * 5039);
+    }
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        ignite::ComplexType key;
+
+        key.i32Field = static_cast<int32_t>(i * 406586897);
+        key.strField = ignite::common::LexicalCast<std::string>(i * 39916801);
+        key.objField.f1 = static_cast<int32_t>(i * 87178291199);
+        key.objField.f2 = ignite::common::LexicalCast<std::string>(i * 59969537);
+
+        int64_t val;
+        LocalPeek(cache, key, val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::Date, int64_t> cache = client.GetCache<ignite::Date, int64_t>("partitioned");
+
+    cache.UpdatePartitions();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::MakeDateGmt(
+            static_cast<int>(1990 + i),
+            std::abs(static_cast<int>((i * 87178291199) % 11) + 1),
+            std::abs(static_cast<int>((i * 39916801) % 27) + 1),
+            std::abs(static_cast<int>(9834497 * i) % 24),
+            std::abs(static_cast<int>(i * 87178291199) % 60),
+            std::abs(static_cast<int>(i * 39916801) % 60)),
+            i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::MakeDateGmt(
+            static_cast<int>(1990 + i),
+            std::abs(static_cast<int>((i * 87178291199) % 11) + 1),
+            std::abs(static_cast<int>((i * 39916801) % 27) + 1),
+            std::abs(static_cast<int>(9834497 * i) % 24),
+            std::abs(static_cast<int>(i * 87178291199) % 60),
+            std::abs(static_cast<int>(i * 39916801) % 60)),
+            val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::Time, int64_t> cache = client.GetCache<ignite::Time, int64_t>("partitioned");
+
+    cache.UpdatePartitions();
+
+    for (int64_t i = 1; i < 100; ++i)
+        cache.Put(ignite::common::MakeTimeGmt(
+            std::abs(static_cast<int>(9834497 * i) % 24),
+            std::abs(static_cast<int>(i * 87178291199) % 60),
+            std::abs(static_cast<int>(i * 39916801) % 60)),
+            i * 5039);
+
+    for (int64_t i = 1; i < 100; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::MakeTimeGmt(
+            std::abs(static_cast<int>(9834497 * i) % 24),
+            std::abs(static_cast<int>(i * 87178291199) % 60),
+            std::abs(static_cast<int>(i * 39916801) % 60)),
+            val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
+{
+    StartNode("node1");
+    StartNode("node2");
+
+    boost::this_thread::sleep_for(boost::chrono::seconds(2));
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::Timestamp, int64_t> cache = client.GetCache<ignite::Timestamp, int64_t>("partitioned");
+
+    cache.UpdatePartitions();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::MakeTimestampGmt(
+            static_cast<int>(1990 + i),
+            std::abs(static_cast<int>(i * 87178291199) % 11 + 1),
+            std::abs(static_cast<int>(i * 39916801) % 28),
+            std::abs(static_cast<int>(9834497 * i) % 24),
+            std::abs(static_cast<int>(i * 87178291199) % 60),
+            std::abs(static_cast<int>(i * 39916801) % 60),
+            std::abs(static_cast<long>((i * 303595777) % 1000000000))),
+            i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::MakeTimestampGmt(
+            static_cast<int>(1990 + i),
+            std::abs(static_cast<int>(i * 87178291199) % 11 + 1),
+            std::abs(static_cast<int>(i * 39916801) % 28),
+            std::abs(static_cast<int>(9834497 * i) % 24),
+            std::abs(static_cast<int>(i * 87178291199) % 60),
+            std::abs(static_cast<int>(i * 39916801) % 60),
+            std::abs(static_cast<long>((i * 303595777) % 1000000000))),
+            val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

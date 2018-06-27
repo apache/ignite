@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <cstddef>
+#include <cstdlib>
 
 #include <sstream>
 #include <iterator>
@@ -45,6 +46,8 @@ namespace ignite
                 typeUpdater(),
                 typeMgr()
             {
+                srand(common::GetRandSeed());
+
                 typeUpdater.reset(new net::RemoteTypeUpdater(*this));
 
                 typeMgr.SetUpdater(typeUpdater.get());
@@ -118,8 +121,6 @@ namespace ignite
 
                 std::advance(it, idx);
 
-                std::cout << "Random: " << it->second.Get()->GetAddress().host << ":" << it->second.Get()->GetAddress().port << std::endl;
-
                 return it->second;
             }
 
@@ -187,9 +188,8 @@ namespace ignite
 
                     if (dst.IsValid())
                     {
-                        std::cout << "Old: " << dst.Get()->GetAddress().host << ":" << dst.Get()->GetAddress().port << std::endl;
 
-                        return dst;   
+                        return dst;
                     }
 
                     SP_DataChannel channel(new DataChannel(config, typeMgr));
@@ -199,8 +199,6 @@ namespace ignite
                     if (connected)
                     {
                         dst.Swap(channel);
-
-                        std::cout << "New: " << dst.Get()->GetAddress().host << ":" << dst.Get()->GetAddress().port << std::endl;
 
                         return dst;
                     }

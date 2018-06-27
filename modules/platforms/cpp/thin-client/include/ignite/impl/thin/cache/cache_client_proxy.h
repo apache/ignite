@@ -85,9 +85,31 @@ namespace ignite
                     bool ContainsKey(const WritableKey& key);
 
                     /**
+                     * Peeks at in-memory cached value using default optional
+                     * peek mode. This method will not load value from any
+                     * persistent store or from a remote node.
+                     *
+                     * Use for testing purposes only.
+                     *
+                     * @param key Key whose presence in this cache is to be tested.
+                     * @param value Value.
+                     */
+                    void LocalPeek(const WritableKey& key, Readable& value);
+
+                    /**
                      * Update cache partitions info.
                      */
                     void UpdatePartitions();
+
+                    /**
+                     * Get from CacheClient.
+                     * Use for testing purposes only.
+                     */
+                    template<typename CacheClientT>
+                    static CacheClientProxy& GetFromCacheClient(CacheClientT& instance)
+                    {
+                        return instance.proxy;
+                    }
 
                 private:
                     /** Implementation. */

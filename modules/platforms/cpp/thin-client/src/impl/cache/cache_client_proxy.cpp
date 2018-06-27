@@ -60,6 +60,11 @@ namespace ignite
                     return GetCacheImpl(impl).ContainsKey(key);
                 }
 
+                void CacheClientProxy::LocalPeek(const WritableKey& key, Readable& value)
+                {
+                    GetCacheImpl(impl).LocalPeek(key, value);
+                }
+
                 void CacheClientProxy::UpdatePartitions()
                 {
                     GetCacheImpl(impl).UpdatePartitions();

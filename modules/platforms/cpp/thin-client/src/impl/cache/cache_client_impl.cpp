@@ -97,6 +97,17 @@ namespace ignite
                     return rsp.GetValue();
                 }
 
+                void CacheClientImpl::LocalPeek(const WritableKey& key, Readable& value)
+                {
+                    CacheKeyRequest<RequestType::CACHE_LOCAL_PEEK> req(id, binary, key);
+                    CacheGetResponse rsp(value);
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+                }
+
                 void CacheClientImpl::UpdatePartitions()
                 {
                     std::vector<ConnectableNodePartitions> nodeParts;
@@ -143,9 +154,9 @@ namespace ignite
                 const std::vector<net::EndPoint>& CacheClientImpl::GetEndPointsForKey(const WritableKey& key) const
                 {
                     assert(!assignment.empty());
-                    
+
                     int32_t hash = key.GetHashCode();
-                    uint32_t uhash = static_cast<uint16_t>(hash);
+                    uint32_t uhash = static_cast<uint32_t>(hash);
 
                     int32_t part = 0;
 
@@ -158,9 +169,6 @@ namespace ignite
                         if (part < 0)
                             part = 0;
                     }
-                    
-                    std::cout << "Hash: " << uhash << ", Mask: " << mask << ", Part: " << part << ", Addr port:" << assignment[part][0].port << std::endl;
-
 
                     return assignment[part];
                 }

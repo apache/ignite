@@ -123,6 +123,9 @@ namespace ignite
                     /** Get size. */
                     CACHE_GET_SIZE = 1020,
 
+                    /** Local peek. */
+                    CACHE_LOCAL_PEEK = 1021,
+
                     /** Cache get names. */
                     CACHE_GET_NAMES = 1050,
 
