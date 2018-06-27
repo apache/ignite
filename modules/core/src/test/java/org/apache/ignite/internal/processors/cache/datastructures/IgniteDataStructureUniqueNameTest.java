@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -31,8 +30,8 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -278,9 +277,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         final int THREADS = DS_TYPES * 3;
 
         for (int iter = 0; iter < 20; iter++) {
-            Boolean collocated = ThreadLocalRandom.current().nextBoolean();
-
-            log.info("Iteration=" + iter + ", collocated=" + collocated);
+            log.info("Iteration: " + iter);
 
             List<IgniteInternalFuture<Object>> futs = new ArrayList<>(THREADS);
 
@@ -332,14 +329,14 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                                 case 4:
                                     log.info("Create queue, grid: " + ignite.name());
 
-                                    res = ignite.queue(name, 0, config(collocated));
+                                    res = ignite.queue(name, 0, config(false));
 
                                     break;
 
                                 case 5:
                                     log.info("Create set, grid: " + ignite.name());
 
-                                    res = ignite.set(name, config(collocated));
+                                    res = ignite.set(name, config(false));
 
                                     break;
 

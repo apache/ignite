@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.datastructures.DataStructureType;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -518,8 +517,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg);
 
-        assertEquals(0, set0.size());
-
         for (int i = 0; i < 5000; i++)
             assertTrue(set0.add(i));
 
@@ -811,12 +808,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
-        boolean separatedCacheMode = separated(set0);
+        boolean separated = separated(set0);
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            if (separatedCacheMode) {
+            if (separated) {
                 assertNull("Cache " + cctx.name() + " was not destroyed.", cache);
 
                 continue;
