@@ -190,7 +190,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
      */
     private Transaction tx() throws IgniteException {
         if (tx == null)
-            throw new IgniteException("Operation allowed only inside remote listener or " +
+            throw new IgniteException("Operation allowed only inside remote filter or " +
                 "inside local listener registered on originating node. " +
                 "Only xid() operation allowed in other cases. ");
 

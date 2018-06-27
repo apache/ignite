@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TransactionStateChangedEvent;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -63,14 +68,14 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 200, 2)) {
-            cache.put(1,1);
+            cache.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
-            cache.put(1,2);
+            cache.put(1, 2);
 
             tx.commit();
 
@@ -81,7 +86,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1,3);
+            cache.put(1, 3);
 
             tx.commit();
 
@@ -118,13 +123,13 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
-            cache.put(1,1);
+            cache.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1,2);
+            cache.put(1, 2);
 
             tx.commit();
 
@@ -164,19 +169,19 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
-            cache.put(1,1);
+            cache.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().withLabel("test").txStart()) {
-            cache.put(1,2);
+            cache.put(1, 2);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1,3);
+            cache.put(1, 3);
 
             tx.commit();
 
@@ -187,7 +192,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
-            cache.put(1,4);
+            cache.put(1, 4);
 
             tx.commit();
 
@@ -228,20 +233,20 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
-            cache.put(1,1);
+            cache.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
-            cache.put(1,2);
+            cache.put(1, 2);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1,3);
+            cache.put(1, 3);
 
             tx.commit();
 
@@ -252,7 +257,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
-            cache.put(1,4);
+            cache.put(1, 4);
 
             tx.commit();
 
@@ -261,6 +266,74 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         catch (TransactionRollbackException ignored) {
             // No-op.
         }
+    }
+
+    /**
+     *
+     */
+    public void testRollbackInsideLocalListenerAfterRemoteFilter() throws Exception {
+        Ignite ignite = startGrid(0);
+        Ignite remote = startGrid(1);
+
+        final IgniteEvents evts = ignite.events();
+
+        evts.enableLocal(EVTS_TX);
+
+        AtomicBoolean rollbackFailed = new AtomicBoolean();
+        AtomicBoolean alreadyRolledBack = new AtomicBoolean();
+
+        evts.remoteListen(
+            (IgniteBiPredicate<UUID, Event>)(uuid, e) -> {
+                assert e instanceof TransactionStateChangedEvent;
+
+                TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
+
+                Transaction tx = evt.tx();
+
+                try {
+                    tx.rollback();
+                }
+                catch (IgniteException ignored) {
+                    alreadyRolledBack.set(rollbackFailed.getAndSet(true));
+                }
+
+                return true;
+            },
+            (IgnitePredicate<Event>)e -> {
+                assert e instanceof TransactionStateChangedEvent;
+
+                return true;
+            },
+            EVT_TX_STARTED);
+
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        assertFalse(rollbackFailed.get());
+        assertFalse(alreadyRolledBack.get());
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            cache.put(1, 1);
+
+            tx.commit();
+
+            fail("Should fail prior this line.");
+        }
+        catch (TransactionRollbackException ignored) {
+            // No-op.
+        }
+
+        assertFalse(rollbackFailed.get());
+        assertFalse(alreadyRolledBack.get());
+
+        try (Transaction tx = remote.transactions().txStart()) {
+            cache.put(1, 2);
+
+            tx.commit();
+        }
+
+        assertTrue(GridTestUtils.waitForCondition(rollbackFailed::get, 5_000));
+
+        assertFalse(alreadyRolledBack.get());
     }
 
     /** {@inheritDoc} */
