@@ -111,7 +111,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -4298,13 +4297,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (err instanceof OutOfMemoryError)
                         ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err != null) {
-                        FailureType ft = err instanceof GridWorkerFailureException
-                            ? ((GridWorkerFailureException)err).failureType()
-                            : SYSTEM_WORKER_TERMINATION;
-
-                        ((IgniteEx)ignite).context().failure().process(new FailureContext(ft, err));
-                    }
+                    else if (err != null)
+                        ((IgniteEx)ignite).context().failure().process(
+                            new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }

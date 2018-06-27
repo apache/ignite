@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -241,8 +240,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
                 if (err instanceof OutOfMemoryError)
                     ctx.failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err instanceof GridWorkerFailureException)
-                    ctx.failure().process(new FailureContext(((GridWorkerFailureException)err).failureType(), err));
                 else if (err != null)
                     ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }

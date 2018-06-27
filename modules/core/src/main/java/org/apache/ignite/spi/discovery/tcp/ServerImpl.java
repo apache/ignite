@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -2724,8 +2723,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (err instanceof OutOfMemoryError)
                         failure.process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err instanceof GridWorkerFailureException)
-                        failure.process(new FailureContext(((GridWorkerFailureException)err).failureType(), err));
                     else if (err != null)
                         failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
@@ -5812,8 +5809,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (err instanceof OutOfMemoryError)
                         failure.process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err instanceof GridWorkerFailureException)
-                        failure.process(new FailureContext(((GridWorkerFailureException)err).failureType(), err));
                     else if (err != null)
                         failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }

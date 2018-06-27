@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -172,13 +170,8 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null) {
-                    FailureType ft = err instanceof GridWorkerFailureException
-                        ? ((GridWorkerFailureException)err).failureType()
-                        : SYSTEM_WORKER_TERMINATION;
-
-                    cctx.kernalContext().failure().process(new FailureContext(ft, err));
-                }
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
     }

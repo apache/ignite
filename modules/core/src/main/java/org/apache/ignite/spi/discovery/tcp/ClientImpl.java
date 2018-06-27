@@ -58,7 +58,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -1873,13 +1871,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 Thread.currentThread().interrupt();
             }
             catch (Throwable t) {
-                if (spi.ignite() instanceof IgniteEx) {
-                    FailureType ft = t instanceof GridWorkerFailureException
-                        ? ((GridWorkerFailureException)t).failureType()
-                        : CRITICAL_ERROR;
-
-                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(ft, t));
-                }
+                if (spi.ignite() instanceof IgniteEx)
+                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, t));
             }
             finally {
                 SocketStream currSock = this.currSock;
