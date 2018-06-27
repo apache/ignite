@@ -243,13 +243,6 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -396,25 +389,12 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     public void testAtomicOrImplicitTxPutAll() throws Exception {
-        executeWithAllCaches(new TestClosure() {
-            @Override public void run() throws Exception {
-                Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.putAll(F.asMap(key1, okValue, key2, badValue));
+        doAtomicOrImplicitTxPutAll(F.asMap(1, okValue, 5, badValue), 1);
+    }
 
-                        return null;
-                    }
-                }, IgniteSQLException.class);
-
-                IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
-
-                assertNotNull(ex);
-
-                assertTrue(ex.getMessage().contains(ERR_MSG));
-
-                assertEquals(isLocalAtomic() ? 1 : 0, cache.size());
-            }
-        });
+    /** */
+    public void testAtomicOrImplicitTxPutAllForSingleValue() throws Exception {
+        doAtomicOrImplicitTxPutAll(F.asMap(5, badValue), 0);
     }
 
     /** */
@@ -611,23 +591,12 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     public void testTxPutAll() throws Exception {
-        executeWithAllTxCaches(new TestClosure() {
-            @Override public void run() throws Exception {
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
-                            cache.putAll(F.asMap(key1, okValue, key2, badValue));
+        doTxPutAll(F.asMap(1, okValue, 5, badValue));
+    }
 
-                            tx.commit();
-                        }
-
-                        assertEquals(0, cache.size());
-
-                        return null;
-                    }
-                }, CacheException.class, ERR_MSG);
-            }
-        });
+    /** */
+    public void testTxPutAllForSingleValue() throws Exception {
+        doTxPutAll(F.asMap(5, badValue));
     }
 
     /** */
@@ -1020,6 +989,50 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
                 return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
             }
         }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
+    }
+
+    /** */
+    private void doAtomicOrImplicitTxPutAll(final Map<Integer, Person> values, int expAtomicCacheSize) throws Exception {
+        executeWithAllCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        cache.putAll(values);
+
+                        return null;
+                    }
+                }, IgniteSQLException.class);
+
+                IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+                assertNotNull(ex);
+
+                assertTrue(ex.getMessage().contains(ERR_MSG));
+
+                assertEquals(isLocalAtomic() ? expAtomicCacheSize : 0, cache.size());
+            }
+        });
+    }
+
+    /** */
+    private void doTxPutAll(Map<Integer, Person> values) throws Exception {
+        executeWithAllTxCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
+                            cache.putAll(values);
+
+                            tx.commit();
+                        }
+
+                        assertEquals(0, cache.size());
+
+                        return null;
+                    }
+                }, CacheException.class, ERR_MSG);
+            }
+        });
     }
 
     /** */

@@ -50,11 +50,6 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
         return grid(0).cluster();
     }

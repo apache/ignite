@@ -26,7 +26,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -37,7 +37,7 @@ import java.util.UUID;
 
 /**
  * Run SVM multi-class classification trainer over distributed dataset to build two models:
- * one with normalization and one without normalization.
+ * one with minmaxscaling and one without minmaxscaling.
  *
  * @see SVMLinearMultiClassClassificationModel
  */
@@ -66,7 +66,7 @@ public class SVMMultiClassClassificationExample {
                 System.out.println(">>> SVM Multi-class model");
                 System.out.println(mdl.toString());
 
-                NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
+                MinMaxScalerTrainer<Integer, double[]> normalizationTrainer = new MinMaxScalerTrainer<>();
 
                 IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
                     ignite,
@@ -81,7 +81,7 @@ public class SVMMultiClassClassificationExample {
                     (k, v) -> v[0]
                 );
 
-                System.out.println(">>> SVM Multi-class model with normalization");
+                System.out.println(">>> SVM Multi-class model with minmaxscaling");
                 System.out.println(mdlWithNormalization.toString());
 
                 System.out.println(">>> ----------------------------------------------------------------");
@@ -116,7 +116,7 @@ public class SVMMultiClassClassificationExample {
 
                         confusionMtx[idx1][idx2]++;
 
-                        // Collect data for model with normalization
+                        // Collect data for model with minmaxscaling
                         if(groundTruth != predictionWithNormalization)
                             amountOfErrorsWithNormalization++;
 

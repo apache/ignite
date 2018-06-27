@@ -15,6 +15,7 @@
     limitations under the License.
 
 mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, tip })
+    -var errLbl = label.substring(0, label.length - 1)
     mixin __form-field__input()
         button.select-toggle(
             type='button'

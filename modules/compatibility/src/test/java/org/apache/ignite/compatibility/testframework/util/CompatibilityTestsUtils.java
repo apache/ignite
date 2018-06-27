@@ -17,6 +17,7 @@
 
 package org.apache.ignite.compatibility.testframework.util;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -89,5 +90,16 @@ public class CompatibilityTestsUtils {
         catch (NoSuchFieldException e) {
             return null;
         }
+    }
+
+    /**
+     * Checks if the given directory is empty.
+     *
+     * @param dir Directory to check.
+     * @return {@code true} if the given directory is empty or doesn't exist, otherwise {@code false}.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static boolean isDirectoryEmpty(File dir) {
+        return !dir.exists() || (dir.isDirectory() && dir.list().length == 0);
     }
 }

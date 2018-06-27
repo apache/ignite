@@ -73,11 +73,6 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
 

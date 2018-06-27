@@ -146,28 +146,6 @@ export default angular.module('ignite-console.page-configure.validation', [])
             }]
         };
     })
-    .directive('ngModel', ['$timeout', function($timeout) {
-        return {
-            require: ['ngModel', '?^^bsCollapseTarget', '?^^igniteFormField', '?^^panelCollapsible'],
-            link(scope, el, attr, [ngModel, bsCollapseTarget, igniteFormField, panelCollapsible]) {
-                const off = scope.$on('$showValidationError', (e, target) => {
-                    if (target !== ngModel) return;
-                    ngModel.$setTouched();
-                    bsCollapseTarget && bsCollapseTarget.open();
-                    panelCollapsible && panelCollapsible.open();
-                    $timeout(() => {
-                        if (el[0].scrollIntoViewIfNeeded)
-                            el[0].scrollIntoViewIfNeeded();
-                        else
-                            el[0].scrollIntoView();
-
-                        if (!attr.bsSelect) $timeout(() => el[0].focus());
-                        igniteFormField && igniteFormField.notifyAboutError();
-                    });
-                });
-            }
-        };
-    }])
     .directive('igniteFormField', function() {
         return {
             restrict: 'C',

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -139,7 +140,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(1024 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(1024L * 1024 * 1024).setPersistenceEnabled(true))
             .setPageSize(PAGE_SIZE)
             .setWalHistorySize(1)
             .setWalSegmentSize(1024 * 1024)
@@ -213,45 +214,44 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File wal = new File(db, "wal");
         final File walArchive = setWalAndArchiveToSameValue ? wal : new File(wal, "archive");
 
-        final MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, subfolderName, WAL_SEGMENTS);
-        final WALIterator it = mockItFactory.iterator(wal, walArchive);
-        final int cntUsingMockIter = iterateAndCount(it, false);
-
-        log.info("Total records loaded " + cntUsingMockIter);
-        assertTrue(cntUsingMockIter > 0);
-        assertTrue(cntUsingMockIter > cacheObjectsToWrite);
+        int[] checkKeyIterArr = new int[cacheObjectsToWrite];
 
         final File walArchiveDirWithConsistentId = new File(walArchive, subfolderName);
         final File walWorkDirWithConsistentId = new File(wal, subfolderName);
         final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
+
+        //Check iteratorArchiveDirectory and iteratorArchiveFiles are same.
         final int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
 
         log.info("Total records loaded using directory : " + cntArchiveDir);
 
-        final int cntArchiveFileByFile = iterateAndCount(
-            factory.iteratorArchiveFiles(
-                walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER)));
+        final int cntArchiveFileByFile = iterateAndCount(factory.iteratorArchiveFiles(
+            walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER)));
 
         log.info("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
-        assertTrue(cntArchiveFileByFile > cacheObjectsToWrite);
-        assertTrue(cntArchiveDir > cacheObjectsToWrite);
         assertTrue(cntArchiveDir == cntArchiveFileByFile);
-        //really count2 may be less because work dir correct loading is not supported yet
-        assertTrue("Mock based reader loaded " + cntUsingMockIter + " records " +
-                "but standalone has loaded only " + cntArchiveDir,
-            cntUsingMockIter >= cntArchiveDir);
+
+        //Check iteratorArchiveFiles + iteratorWorkFiles iterate over all entries.
+        Arrays.fill(checkKeyIterArr, 0);
+
+        iterateAndCountDataRecord(factory.iteratorArchiveFiles(
+            walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER)), new IgniteBiInClosure<Object, Object>() {
+            @Override public void apply(Object o, Object o2) {
+                checkKeyIterArr[(Integer)o]++;
+            }
+        }, null);
 
         final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
-        final int cntWork = iterateAndCount(factory.iteratorWorkFiles(workFiles));
+        iterateAndCountDataRecord(factory.iteratorWorkFiles(workFiles), new IgniteBiInClosure<Object, Object>() {
+            @Override public void apply(Object o, Object o2) {
+                checkKeyIterArr[(Integer) o]++;
+            }
+        }, null).size();
 
-        log.info("Total records loaded from work: " + cntWork);
-
-        assertTrue("Work iterator loaded [" + cntWork + "] " +
-                "Archive iterator loaded [" + cntArchiveFileByFile + "]; " +
-                "mock iterator [" + cntUsingMockIter + "]",
-            cntWork + cntArchiveFileByFile == cntUsingMockIter);
+        for (int i =0 ; i< cacheObjectsToWrite; i++)
+            assertTrue("Iterator didn't find key="+ i, checkKeyIterArr[i] > 0);
     }
 
     /**
@@ -828,7 +828,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
         cfg.setAtomicityMode(mode);
-        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary()
+            .withAllowAtomicOpsInTx();
 
         try (Transaction tx = ig.transactions().txStart()) {
             for (int i = 0; i < 10; i++) {

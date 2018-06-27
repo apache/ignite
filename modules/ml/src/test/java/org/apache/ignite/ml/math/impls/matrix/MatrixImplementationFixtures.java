@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -28,7 +25,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.storage.matrix.FunctionMatrixStorage;
 import org.jetbrains.annotations.NotNull;
 
 /** */
@@ -37,13 +33,8 @@ class MatrixImplementationFixtures {
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
         (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)DenseLocalOffHeapMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new,
-        (Supplier<Iterable<Matrix>>)MatrixViewFixture::new,
-        (Supplier<Iterable<Matrix>>)FunctionMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)DiagonalMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)TransposedMatrixViewFixture::new
+        (Supplier<Iterable<Matrix>>)MatrixViewFixture::new
     );
 
     /** */
@@ -76,26 +67,10 @@ class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class RandomMatrixFixture extends MatrixSizeIterator {
-        /** */
-        RandomMatrixFixture() {
-            super(RandomMatrix::new, "RandomMatrix");
-        }
-    }
-
-    /** */
     private static class SparseLocalOnHeapMatrixFixture extends MatrixSizeIterator {
         /** */
         SparseLocalOnHeapMatrixFixture() {
             super(SparseLocalOnHeapMatrix::new, "SparseLocalOnHeapMatrix");
-        }
-    }
-
-    /** */
-    private static class PivotedMatrixViewFixture extends WrapperMatrixIterator {
-        /** */
-        PivotedMatrixViewFixture() {
-            super(PivotedMatrixView::new, "PivotedMatrixView over DenseLocalOnHeapMatrix");
         }
     }
 
@@ -105,52 +80,6 @@ class MatrixImplementationFixtures {
         MatrixViewFixture() {
             super((matrix) -> new MatrixView(matrix, 0, 0, matrix.rowSize(), matrix.columnSize()),
                 "MatrixView over DenseLocalOnHeapMatrix");
-        }
-    }
-
-    /** */
-    private static class FunctionMatrixFixture extends WrapperMatrixIterator {
-        /** */
-        FunctionMatrixFixture() {
-            super(FunctionMatrixForTest::new, "FunctionMatrix wrapping DenseLocalOnHeapMatrix");
-        }
-    }
-
-    /** */
-    private static class DiagonalMatrixFixture extends DiagonalIterator {
-        /** */
-        DiagonalMatrixFixture() {
-            super(DenseLocalOnHeapMatrix::new, "DiagonalMatrix over DenseLocalOnHeapMatrix");
-        }
-
-        /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    return hasNextSize(getSizeIdx());
-                }
-
-                /** {@inheritDoc} */
-                @Override public Matrix next() {
-                    assert getSize(getSizeIdx()) == 1 : "Only size 1 allowed for diagonal matrix fixture.";
-
-                    Matrix matrix = getConstructor().apply(getSize(getSizeIdx()), getSize(getSizeIdx()));
-
-                    nextIdx();
-
-                    return new DiagonalMatrix(matrix);
-                }
-            };
-        }
-    }
-
-    /** */
-    private static class TransposedMatrixViewFixture extends WrapperMatrixIterator {
-        /** */
-        TransposedMatrixViewFixture() {
-            super(TransposedMatrixView::new, "TransposedMatrixView over DenseLocalOnHeapMatrix");
         }
     }
 
@@ -314,68 +243,6 @@ class MatrixImplementationFixtures {
         /** */
         void nextIdx() {
             sizeIdx++;
-        }
-    }
-
-    /** Subclass tweaked for serialization */
-    private static class FunctionMatrixForTest extends FunctionMatrix {
-        /** */
-        Matrix underlying;
-
-        /** */
-        public FunctionMatrixForTest() {
-            // No-op.
-        }
-
-        /** */
-        FunctionMatrixForTest(Matrix underlying) {
-            super(underlying.rowSize(), underlying.columnSize(), underlying::get, underlying::set);
-
-            this.underlying = underlying;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Matrix copy() {
-            return new FunctionMatrixForTest(underlying);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-
-            out.writeObject(underlying);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-
-            underlying = (Matrix)in.readObject();
-
-            setStorage(new FunctionMatrixStorage(underlying.rowSize(), underlying.columnSize(),
-                underlying::get, underlying::set));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = 1;
-
-            res = res * 37 + underlying.hashCode();
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            FunctionMatrixForTest that = (FunctionMatrixForTest)o;
-
-            return underlying != null ? underlying.equals(that.underlying) : that.underlying == null;
         }
     }
 }

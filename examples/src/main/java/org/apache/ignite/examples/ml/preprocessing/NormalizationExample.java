@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -26,16 +27,11 @@ import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 
-import java.util.Arrays;
-
 /**
- * Example that shows how to use normalization preprocessor to normalize data.
- *
- * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
- * in this example. The second preprocessor here is a normalization preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
+ * Example that shows how to use normalization preprocessor to normalize each vector in the given data.
  */
 public class NormalizationExample {
     /** Run example. */
@@ -53,6 +49,7 @@ public class NormalizationExample {
 
             // Defines second preprocessor that normalizes features.
             IgniteBiFunction<Integer, Person, double[]> preprocessor = new NormalizationTrainer<Integer, Person>()
+                .withP(1)
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
@@ -91,10 +88,10 @@ public class NormalizationExample {
 
         IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new Person("Mike", 42, 10000));
-        persons.put(2, new Person("John", 32, 64000));
-        persons.put(3, new Person("George", 53, 120000));
-        persons.put(4, new Person("Karl", 24, 70000));
+        persons.put(1, new Person("Mike", 10, 20));
+        persons.put(2, new Person("John", 20, 10));
+        persons.put(3, new Person("George", 30, 0));
+        persons.put(4, new Person("Karl", 25, 15));
 
         return persons;
     }

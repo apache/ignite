@@ -62,7 +62,6 @@ test('Basic editing', async(t) => {
 
     await t
         .expect(page.buttonPreviewProject.visible).notOk('Preview project button is hidden for new cluster configs')
-        .expect(page.buttonDownloadProject.visible).notOk('Download project button is hidden for new cluster configs')
         .typeText(page.clusterNameInput.control, clusterName, {replace: true});
     await page.cachesList.addItem();
     await page.cachesList.addItem();

@@ -26,14 +26,15 @@ export default class {
     /** @type {string} */
     serverError = null;
 
-    static $inject = ['Auth', 'IgniteMessages'];
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
 
     /**
      * @param {import('app/modules/user/Auth.service').default} Auth
      */
-    constructor(Auth, IgniteMessages) {
+    constructor(Auth, IgniteMessages, IgniteFormUtils) {
         this.Auth = Auth;
         this.IgniteMessages = IgniteMessages;
+        this.IgniteFormUtils = IgniteFormUtils;
     }
 
     /** @param {import('./types').ISigninFormController} form */
@@ -42,15 +43,28 @@ export default class {
     }
 
     $postLink() {
+        this.form.email.$validators.server = () => !this.serverError;
         this.form.password.$validators.server = () => !this.serverError;
     }
 
+    /** @param {string} error */
+    setServerError(error) {
+        this.serverError = error;
+        this.form.email.$validate();
+        this.form.password.$validate();
+    }
+
     signin() {
+        this.IgniteFormUtils.triggerValidation(this.form);
+
+        this.setServerError(null);
+
+        if (!this.canSubmitForm(this.form))
+            return;
+
         return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
-            this.serverError = res.data;
-            this.form.email.$validate();
-            this.form.password.$validate();
+            this.setServerError(res.data);
         });
     }
 }

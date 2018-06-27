@@ -394,6 +394,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * Test timeouts with random values and different tx configurations.
      */
     public void testRandomMixedTxConfigurations() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8509");
+
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();

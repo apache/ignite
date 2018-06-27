@@ -174,13 +174,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         return 1000 * 60 * 5;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Convert the given key from binary form, if necessary.
      *

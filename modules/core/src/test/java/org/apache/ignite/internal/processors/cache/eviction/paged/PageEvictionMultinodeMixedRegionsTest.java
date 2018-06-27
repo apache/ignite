@@ -35,7 +35,7 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
         DataRegionConfiguration persReg = new DataRegionConfiguration()
             .setName("persisted")
             .setPersistenceEnabled(true)
-            .setMaxSize(128 * 1024 * 1024); // limit memory to save space on agents
+            .setMaxSize(128L * 1024 * 1024); // limit memory to save space on agents
 
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(persReg);
 
@@ -53,8 +53,6 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cleanPersistenceDir();
     }
 }

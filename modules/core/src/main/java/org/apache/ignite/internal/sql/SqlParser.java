@@ -113,9 +113,14 @@ public class SqlParser {
                             break;
 
                         case COPY:
-                            cmd = processCopy();
+                            try {
+                                cmd = processCopy();
 
-                            break;
+                                break;
+                            }
+                            catch (SqlParseException e) {
+                                throw new SqlStrictParseException(e);
+                            }
 
                         case SET:
                             cmd = processSet();

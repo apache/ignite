@@ -36,7 +36,10 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     .ignite-form-field__control
                         -let items = loadBalancingSpi
 
-                        list-editable(ng-model=items name='loadBalancingConfigurations')
+                        list-editable.pc-list-editable-with-legacy-settings-rows(
+                            ng-model=items
+                            name='loadBalancingConfigurations'
+                        )
                             list-editable-item-edit
                                 - form = '$parent.form'
                                 .settings-row

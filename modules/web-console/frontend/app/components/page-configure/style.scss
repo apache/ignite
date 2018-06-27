@@ -186,6 +186,22 @@ list-editable .pc-form-group__text-title {
     }
 }
 
+// Add this class to list-editable when a pc-form-grid is used inside list-editable-item-edit
+.pc-list-editable-with-form-grid > .le-body > .le-row {
+    & > .le-row-index,
+    & > .le-row-cross {
+        margin-top: 28px;
+    }
+}
+
+// Add this class to list-editable when legacy settings-row classes are used inside list-editable-item-edit
+.pc-list-editable-with-legacy-settings-rows > .le-body > .le-row {
+    & > .le-row-index,
+    & > .le-row-cross {
+        margin-top: 18px;
+    }
+}
+
 .pc-form-grid-row {
     &>.pc-form-grid-col-10 {
         flex-basis: calc(100% / 6);

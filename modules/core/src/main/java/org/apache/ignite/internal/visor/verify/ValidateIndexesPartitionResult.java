@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- *
+ * Encapsulates intermediate results of validation of SQL index (if {@link #sqlIdxName} is present) or partition.
  */
 public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /** */
@@ -52,6 +52,10 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     @GridToStringExclude
     private List<IndexValidationIssue> issues = new ArrayList<>(10);
 
+    /** Sql index name. */
+    @GridToStringExclude
+    private String sqlIdxName;
+
     /**
      *
      */
@@ -64,12 +68,15 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
      * @param size Size.
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
+     * @param sqlIdxName Sql index name (optional).
      */
-    public ValidateIndexesPartitionResult(long updateCntr, long size, boolean isPrimary, Object consistentId) {
+    public ValidateIndexesPartitionResult(long updateCntr, long size, boolean isPrimary, Object consistentId,
+        String sqlIdxName) {
         this.updateCntr = updateCntr;
         this.size = size;
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
+        this.sqlIdxName = sqlIdxName;
     }
 
     /**
@@ -108,6 +115,13 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     }
 
     /**
+     * @return <code>null</code> for partition validation result, SQL index name for index validation result
+     */
+    public String sqlIndexName() {
+        return sqlIdxName;
+    }
+
+    /**
      * @param t Issue.
      * @return True if there are already enough issues.
      */
@@ -121,12 +135,18 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeLong(updateCntr);
         out.writeLong(size);
         out.writeBoolean(isPrimary);
         out.writeObject(consistentId);
         U.writeCollection(out, issues);
+        U.writeString(out, sqlIdxName);
     }
 
     /** {@inheritDoc} */
@@ -136,10 +156,15 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
         isPrimary = in.readBoolean();
         consistentId = in.readObject();
         issues = U.readList(in);
+
+        if (protoVer >= V2)
+            sqlIdxName = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ValidateIndexesPartitionResult.class, this);
+        return sqlIdxName == null ? S.toString(ValidateIndexesPartitionResult.class, this) :
+            ValidateIndexesPartitionResult.class.getSimpleName() + " [consistentId=" + consistentId +
+                ", sqlIdxName=" + sqlIdxName + "]";
     }
 }

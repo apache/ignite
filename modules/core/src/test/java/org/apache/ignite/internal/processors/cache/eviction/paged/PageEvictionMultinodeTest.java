@@ -63,11 +63,6 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10 * 60 * 1000;
     }

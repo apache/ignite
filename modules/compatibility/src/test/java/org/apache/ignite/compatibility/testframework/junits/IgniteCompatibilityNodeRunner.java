@@ -106,12 +106,16 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             }
 
             X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
+
             watchdog.interrupt();
         }
         catch (Throwable e) {
             e.printStackTrace();
+
             X.println("Dumping classpath, error occurred: " + e);
+
             dumpClasspath();
+
             throw e;
         }
     }
@@ -147,6 +151,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
         };
 
         final Thread thread = new Thread(target);
+
         thread.setDaemon(true);
         thread.start();
 

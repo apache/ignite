@@ -59,13 +59,6 @@ public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Tests correct query execution with disabled re-balancing.
      */

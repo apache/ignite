@@ -53,12 +53,6 @@ public class Arguments {
      */
     private String baselineArgs;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
-    private long pingTimeout;
-
-    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
-    private long pingInterval;
-
     /** Transaction arguments. */
     private final VisorTxTaskArg txArg;
 
@@ -66,6 +60,22 @@ public class Arguments {
      * Arguments for --cache subcommand.
      */
     private CacheArguments cacheArgs;
+
+    /**
+     * Action for WAL command.
+     */
+    private String walAct;
+
+    /**
+     * Arguments for WAL command.
+     */
+    private String walArgs;
+
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    private long pingTimeout;
+
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    private long pingInterval;
 
     /**
      * @param cmd Command.
@@ -76,14 +86,16 @@ public class Arguments {
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
      * @param txArg TX arg.
-     * @param force Force flag.
+     * @param cacheArgs --cache subcommand arguments.
+     * @param walAct WAL action.
+     * @param walArgs WAL args.
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
-     * @param cacheArgs --cache subcommand arguments.
+     * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs, long pingTimeout, long pingInterval, VisorTxTaskArg txArg, boolean force,
-        CacheArguments cacheArgs) {
+                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+                     Long pingTimeout, Long pingInterval, boolean force) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -91,11 +103,13 @@ public class Arguments {
         this.pwd = pwd;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+        this.txArg = txArg;
+        this.cacheArgs = cacheArgs;
+        this.walAct = walAct;
+        this.walArgs = walArgs;
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
         this.force = force;
-        this.txArg = txArg;
-        this.cacheArgs = cacheArgs;
     }
 
     /**
@@ -148,6 +162,34 @@ public class Arguments {
     }
 
     /**
+     * @return Transaction arguments.
+     */
+    public VisorTxTaskArg transactionArguments() {
+        return txArg;
+    }
+
+    /**
+     * @return Arguments for --cache subcommand.
+     */
+    public CacheArguments cacheArgs() {
+        return cacheArgs;
+    }
+
+    /**
+     * @return WAL action.
+     */
+    public String walAction() {
+        return walAct;
+    }
+
+    /**
+     * @return WAL arguments.
+     */
+    public String walArguments() {
+        return walArgs;
+    }
+
+    /**
      * See {@link GridClientConfiguration#pingTimeout}.
      *
      * @return Ping timeout.
@@ -166,23 +208,9 @@ public class Arguments {
     }
 
     /**
-     * @return Transaction arguments.
-     */
-    public VisorTxTaskArg transactionArguments() {
-        return txArg;
-    }
-
-    /**
      * @return Force option.
      */
     public boolean force() {
         return force;
-    }
-
-    /**
-     * @return Arguments for --cache subcommand.
-     */
-    public CacheArguments cacheArgs() {
-        return cacheArgs;
     }
 }

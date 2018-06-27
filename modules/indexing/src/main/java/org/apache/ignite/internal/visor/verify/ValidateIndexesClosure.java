@@ -31,9 +31,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -51,12 +50,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -66,9 +68,13 @@ import org.h2.index.Cursor;
 import org.h2.index.Index;
 
 /**
- *
+ * Closure that locally validates indexes of given caches.
+ * Validation consists of three checks:
+ * 1. If entry is present in cache data tree, it's reachable from all cache SQL indexes
+ * 2. If entry is present in cache SQL index, it can be dereferenced with link from index
+ * 3. If entry is present in cache SQL index, it's present in cache data tree
  */
-public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, ValidateIndexesPartitionResult>> {
+public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndexesJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -83,21 +89,43 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
     /** Cache names. */
     private Set<String> cacheNames;
 
+    /** If provided only first K elements will be validated. */
+    private final int checkFirst;
+
+    /** If provided only each Kth element will be validated. */
+    private final int checkThrough;
+
     /** Counter of processed partitions. */
-    private final AtomicInteger completionCntr = new AtomicInteger(0);
+    private final AtomicInteger processedPartitions = new AtomicInteger(0);
+
+    /** Total partitions. */
+    private volatile int totalPartitions;
+
+    /** Counter of processed indexes. */
+    private final AtomicInteger processedIndexes = new AtomicInteger(0);
+
+    /** Total partitions. */
+    private volatile int totalIndexes;
+
+    /** Last progress print timestamp. */
+    private final AtomicLong lastProgressPrintTs = new AtomicLong(0);
 
     /** Calculation executor. */
     private volatile ExecutorService calcExecutor;
 
     /**
      * @param cacheNames Cache names.
+     * @param checkFirst If positive only first K elements will be validated.
+     * @param checkThrough If positive only each Kth element will be validated.
      */
-    public ValidateIndexesClosure(Set<String> cacheNames) {
+    public ValidateIndexesClosure(Set<String> cacheNames, int checkFirst, int checkThrough) {
         this.cacheNames = cacheNames;
+        this.checkFirst = checkFirst;
+        this.checkThrough = checkThrough;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKey, ValidateIndexesPartitionResult> call() throws Exception {
+    @Override public VisorValidateIndexesJobResult call() throws Exception {
         calcExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         try {
@@ -111,7 +139,7 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
     /**
      *
      */
-    private Map<PartitionKey, ValidateIndexesPartitionResult> call0() throws Exception {
+    private VisorValidateIndexesJobResult call0() throws Exception {
         Set<Integer> grpIds = new HashSet<>();
 
         Set<String> missingCaches = new HashSet<>();
@@ -150,8 +178,9 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
         }
 
         List<Future<Map<PartitionKey, ValidateIndexesPartitionResult>>> procPartFutures = new ArrayList<>();
-
-        completionCntr.set(0);
+        List<Future<Map<String, ValidateIndexesPartitionResult>>> procIdxFutures = new ArrayList<>();
+        List<T2<CacheGroupContext, GridDhtLocalPartition>> partArgs = new ArrayList<>();
+        List<T2<GridCacheContext, Index>> idxArgs = new ArrayList<>();
 
         for (Integer grpId : grpIds) {
             CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
@@ -162,45 +191,82 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
             List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
 
             for (GridDhtLocalPartition part : parts)
-                procPartFutures.add(processPartitionAsync(grpCtx, part));
-        }
+                partArgs.add(new T2<>(grpCtx, part));
 
-        Map<PartitionKey, ValidateIndexesPartitionResult> res = new HashMap<>();
+            GridQueryProcessor qry = ignite.context().query();
 
-        long lastProgressLogTs = U.currentTimeMillis();
+            IgniteH2Indexing indexing = (IgniteH2Indexing)qry.getIndexing();
 
-        for (int i = 0; i < procPartFutures.size(); ) {
-            Future<Map<PartitionKey, ValidateIndexesPartitionResult>> fut = procPartFutures.get(i);
+            for (GridCacheContext ctx : grpCtx.caches()) {
+                Collection<GridQueryTypeDescriptor> types = qry.types(ctx.name());
 
-            try {
-                Map<PartitionKey, ValidateIndexesPartitionResult> partRes = fut.get(1, TimeUnit.SECONDS);
+                if (!F.isEmpty(types)) {
+                    for (GridQueryTypeDescriptor type : types) {
+                        GridH2Table gridH2Tbl = indexing.dataTable(ctx.name(), type.tableName());
 
-                res.putAll(partRes);
+                        if (gridH2Tbl == null)
+                            continue;
 
-                i++;
-            }
-            catch (InterruptedException | ExecutionException e) {
-                for (int j = i + 1; j < procPartFutures.size(); j++)
-                    procPartFutures.get(j).cancel(false);
+                        ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
-                if (e instanceof InterruptedException)
-                    throw new IgniteInterruptedException((InterruptedException)e);
-                else if (e.getCause() instanceof IgniteException)
-                    throw (IgniteException)e.getCause();
-                else
-                    throw new IgniteException(e.getCause());
-            }
-            catch (TimeoutException ignored) {
-                if (U.currentTimeMillis() - lastProgressLogTs > 60 * 1000L) {
-                    lastProgressLogTs = U.currentTimeMillis();
-
-                    log.warning("ValidateIndexesClosure is still running, processed " + completionCntr.get() + " of " +
-                        procPartFutures.size() + " local partitions");
+                        for (Index idx : indexes)
+                            idxArgs.add(new T2<>(ctx, idx));
+                    }
                 }
             }
         }
 
-        return res;
+        // To decrease contention on same indexes.
+        Collections.shuffle(partArgs);
+        Collections.shuffle(idxArgs);
+
+        for (T2<CacheGroupContext, GridDhtLocalPartition> t2 : partArgs)
+            procPartFutures.add(processPartitionAsync(t2.get1(), t2.get2()));
+
+        for (T2<GridCacheContext, Index> t2 : idxArgs)
+            procIdxFutures.add(processIndexAsync(t2.get1(), t2.get2()));
+
+        totalPartitions = procPartFutures.size();
+        totalIndexes = procIdxFutures.size();
+
+        Map<PartitionKey, ValidateIndexesPartitionResult> partResults = new HashMap<>();
+        Map<String, ValidateIndexesPartitionResult> idxResults = new HashMap<>();
+
+        int curPart = 0;
+        int curIdx = 0;
+        try {
+            for (; curPart < procPartFutures.size(); curPart++) {
+                Future<Map<PartitionKey, ValidateIndexesPartitionResult>> fut = procPartFutures.get(curPart);
+
+                Map<PartitionKey, ValidateIndexesPartitionResult> partRes = fut.get();
+
+                partResults.putAll(partRes);
+            }
+
+            for (; curIdx < procIdxFutures.size(); curIdx++) {
+                Future<Map<String, ValidateIndexesPartitionResult>> fut = procIdxFutures.get(curIdx);
+
+                Map<String, ValidateIndexesPartitionResult> idxRes = fut.get();
+
+                idxResults.putAll(idxRes);
+            }
+        }
+        catch (InterruptedException | ExecutionException e) {
+            for (int j = curPart; j < procPartFutures.size(); j++)
+                procPartFutures.get(j).cancel(false);
+
+            for (int j = curIdx; j < procIdxFutures.size(); j++)
+                procIdxFutures.get(j).cancel(false);
+
+            if (e instanceof InterruptedException)
+                throw new IgniteInterruptedException((InterruptedException)e);
+            else if (e.getCause() instanceof IgniteException)
+                throw (IgniteException)e.getCause();
+            else
+                throw new IgniteException(e.getCause());
+        }
+
+        return new VisorValidateIndexesJobResult(partResults, idxResults);
     }
 
     /**
@@ -245,18 +311,57 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
 
             boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
-            partRes = new ValidateIndexesPartitionResult(updateCntrBefore, partSize, isPrimary, consId);
+            partRes = new ValidateIndexesPartitionResult(updateCntrBefore, partSize, isPrimary, consId, null);
 
             boolean enoughIssues = false;
 
-            long keysProcessed = 0;
-            long lastProgressLog = U.currentTimeMillis();
+            GridQueryProcessor qryProcessor = ignite.context().query();
+
+            Method m;
+            try {
+                m = GridQueryProcessor.class.getDeclaredMethod("typeByValue", String.class,
+                    CacheObjectContext.class, KeyCacheObject.class, CacheObject.class, boolean.class);
+            }
+            catch (NoSuchMethodException e) {
+                log.error("Failed to invoke typeByValue", e);
+
+                throw new IgniteException(e);
+            }
+
+            m.setAccessible(true);
+
+            final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+            final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
+
+            long current = 0;
+            long processedNumber = 0;
 
             while (it.hasNextX()) {
                 if (enoughIssues)
                     break;
 
                 CacheDataRow row = it.nextX();
+
+                if (skipConditions) {
+                    if (bothSkipConditions) {
+                        if (processedNumber > checkFirst)
+                            break;
+                        else if (current++ % checkThrough > 0)
+                            continue;
+                        else
+                            processedNumber++;
+                    }
+                    else {
+                        if (checkFirst > 0) {
+                            if (current++ > checkFirst)
+                                break;
+                        }
+                        else {
+                            if (current++ % checkThrough > 0)
+                                continue;
+                        }
+                    }
+                }
 
                 int cacheId = row.cacheId() == 0 ? grpCtx.groupId() : row.cacheId();
 
@@ -266,14 +371,7 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
                 if (cacheCtx == null)
                     throw new IgniteException("Unknown cacheId of CacheDataRow: " + cacheId);
 
-                GridQueryProcessor qryProcessor = ignite.context().query();
-
                 try {
-                    Method m = GridQueryProcessor.class.getDeclaredMethod("typeByValue", String.class,
-                        CacheObjectContext.class, KeyCacheObject.class, CacheObject.class, boolean.class);
-
-                    m.setAccessible(true);
-
                     QueryTypeDescriptorImpl res = (QueryTypeDescriptorImpl)m.invoke(
                         qryProcessor, cacheCtx.name(), cacheCtx.cacheObjectContext(), row.key(), row.value(), true);
 
@@ -298,7 +396,7 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
                             Cursor cursor = idx.find((Session) null, h2Row, h2Row);
 
                             if (cursor == null || !cursor.next())
-                                throw new IgniteCheckedException("Key not found.");
+                                throw new IgniteCheckedException("Key is present in CacheDataTree, but can't be found in SQL index.");
                         }
                         catch (Throwable t) {
                             Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
@@ -313,7 +411,7 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
                         }
                     }
                 }
-                catch (IllegalAccessException | NoSuchMethodException e) {
+                catch (IllegalAccessException e) {
                     log.error("Failed to invoke typeByValue", e);
 
                     throw new IgniteException(e);
@@ -325,16 +423,6 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
 
                     throw new IgniteException(target);
                 }
-                finally {
-                    keysProcessed++;
-
-                    if (U.currentTimeMillis() - lastProgressLog >= 60_000 && partSize > 0) {
-                        log.warning("Processing partition " + part.id() + " (" + (keysProcessed * 100 / partSize) +
-                            "% " + keysProcessed + "/" + partSize + ")");
-
-                        lastProgressLog = U.currentTimeMillis();
-                    }
-                }
             }
         }
         catch (IgniteCheckedException e) {
@@ -345,12 +433,145 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
         }
         finally {
             part.release();
+
+            printProgressIfNeeded();
         }
 
         PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
 
-        completionCntr.incrementAndGet();
+        processedPartitions.incrementAndGet();
 
         return Collections.singletonMap(partKey, partRes);
+    }
+
+    /**
+     *
+     */
+    private void printProgressIfNeeded() {
+        long curTs = U.currentTimeMillis();
+
+        long lastTs = lastProgressPrintTs.get();
+
+        if (curTs - lastTs >= 60_000 && lastProgressPrintTs.compareAndSet(lastTs, curTs)) {
+            log.warning("Current progress of ValidateIndexesClosure: processed " +
+                processedPartitions.get() + " of " + totalPartitions + " partitions, " +
+                processedIndexes.get() + " of " + totalIndexes + " SQL indexes");
+        }
+    }
+
+    /**
+     * @param ctx Context.
+     * @param idx Index.
+     */
+    private Future<Map<String, ValidateIndexesPartitionResult>> processIndexAsync(GridCacheContext ctx, Index idx) {
+        return calcExecutor.submit(new Callable<Map<String, ValidateIndexesPartitionResult>>() {
+            @Override public Map<String, ValidateIndexesPartitionResult> call() throws Exception {
+                return processIndex(ctx, idx);
+            }
+        });
+    }
+
+    /**
+     * @param ctx Context.
+     * @param idx Index.
+     */
+    private Map<String, ValidateIndexesPartitionResult> processIndex(GridCacheContext ctx, Index idx) {
+        Object consId = ignite.context().discovery().localNode().consistentId();
+
+        ValidateIndexesPartitionResult idxValidationRes = new ValidateIndexesPartitionResult(
+            -1, -1, true, consId, idx.getName());
+
+        boolean enoughIssues = false;
+
+        Cursor cursor = null;
+
+        try {
+            cursor = idx.find((Session)null, null, null);
+
+            if (cursor == null)
+                throw new IgniteCheckedException("Can't iterate through index: " + idx);
+        }
+        catch (Throwable t) {
+            IndexValidationIssue is = new IndexValidationIssue(null, ctx.name(), idx.getName(), t);
+
+            log.error("Find in index failed: " + is.toString());
+
+            enoughIssues = true;
+        }
+
+        final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+        final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
+
+        long current = 0;
+        long processedNumber = 0;
+
+        KeyCacheObject previousKey = null;
+
+        while (!enoughIssues) {
+            KeyCacheObject h2key = null;
+
+            try {
+                try {
+                    if (!cursor.next())
+                        break;
+                }
+                catch (IllegalStateException e) {
+                    throw new IgniteCheckedException("Key is present in SQL index, but is missing in corresponding " +
+                        "data page. Previous successfully read key: " +
+                        CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true), e);
+                }
+
+                GridH2Row h2Row = (GridH2Row)cursor.get();
+
+                if (skipConditions) {
+                    if (bothSkipConditions) {
+                        if (processedNumber > checkFirst)
+                            break;
+                        else if (current++ % checkThrough > 0)
+                            continue;
+                        else
+                            processedNumber++;
+                    }
+                    else {
+                        if (checkFirst > 0) {
+                            if (current++ > checkFirst)
+                                break;
+                        }
+                        else {
+                            if (current++ % checkThrough > 0)
+                                continue;
+                        }
+                    }
+                }
+
+                h2key = h2Row.key();
+
+                CacheDataRow cacheDataStoreRow = ctx.group().offheap().read(ctx, h2key);
+
+                if (cacheDataStoreRow == null)
+                    throw new IgniteCheckedException("Key is present in SQL index, but can't be found in CacheDataTree.");
+
+                previousKey = h2key;
+            }
+            catch (Throwable t) {
+                Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
+                    ctx.cacheObjectContext(), h2key, true, true);
+
+                IndexValidationIssue is = new IndexValidationIssue(
+                    String.valueOf(o), ctx.name(), idx.getName(), t);
+
+                log.error("Failed to lookup key: " + is.toString());
+
+                enoughIssues |= idxValidationRes.reportIssue(is);
+            }
+        }
+
+        String uniqueIdxName = "[cache=" + ctx.name() + ", idx=" + idx.getName() + "]";
+
+        processedIndexes.incrementAndGet();
+
+        printProgressIfNeeded();
+
+        return Collections.singletonMap(uniqueIdxName, idxValidationRes);
     }
 }

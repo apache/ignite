@@ -40,7 +40,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         +tooltip(`Configuration properties for binary types`)
                     .ignite-form-field__control
                         -var items = model + '.typeConfigurations'
-                        list-editable(ng-model=items name='typeСonfigurations')
+                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='typeСonfigurations')
                             list-editable-item-edit.pc-form-grid-row
                                 - form = '$parent.form'
                                 .pc-form-grid-col-60

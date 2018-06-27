@@ -466,6 +466,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
+            ldr.perThreadBufferSize(1);
 
             // Define count of puts.
             final AtomicInteger idxGen = new AtomicInteger();

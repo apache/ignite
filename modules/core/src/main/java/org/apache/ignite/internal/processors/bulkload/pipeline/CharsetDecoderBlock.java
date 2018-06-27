@@ -34,6 +34,9 @@ import java.util.Arrays;
  * the erroneous input, appending the coder's replacement value to the output buffer, and resuming the coding operation.
  */
 public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
+    /** Empty portion. */
+    public static final char[] EMPTY_PORTION = new char[0];
+
     /** Charset decoder */
     private final CharsetDecoder charsetDecoder;
 
@@ -67,7 +70,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         isEndOfInput = isLastAppend;
 
         if (leftover == null && data.length == 0) {
-            nextBlock.accept(new char[0], isLastAppend);
+            nextBlock.accept(EMPTY_PORTION, isLastAppend);
+
             return;
         }
 
@@ -78,8 +82,7 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         else {
             dataBuf = ByteBuffer.allocate(leftover.length + data.length);
 
-            dataBuf.put(leftover)
-                   .put(data);
+            dataBuf.put(leftover).put(data);
 
             dataBuf.flip();
 
@@ -101,8 +104,9 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
                     leftover = Arrays.copyOfRange(dataBuf.array(),
                         dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
 
+                // See {@link CharsetDecoder} class javadoc for the protocol.
                 if (isEndOfInput)
-                    charsetDecoder.flush(outBuf); // See {@link CharsetDecoder} class javadoc for the protocol.
+                    charsetDecoder.flush(outBuf);
 
                 if (outBuf.position() > 0)
                     nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
@@ -111,7 +115,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
                 break;
             }
 
-            if (res.isOverflow()) { // Not enough space in the output buffer, flush it and retry.
+            // Not enough space in the output buffer, flush it and retry.
+            if (res.isOverflow()) {
                 assert outBuf.position() > 0;
 
                 nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),

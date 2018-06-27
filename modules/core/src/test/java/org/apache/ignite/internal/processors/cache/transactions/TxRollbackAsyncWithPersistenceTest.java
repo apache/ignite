@@ -37,8 +37,6 @@ public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IGNITE_WAL_LOG_TX_RECORDS);
     }
 

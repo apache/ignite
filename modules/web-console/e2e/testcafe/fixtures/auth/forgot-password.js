@@ -33,8 +33,7 @@ fixture('Password reset')
 test('Incorrect email', async(t) => {
     await t
         .typeText(page.email.control, 'aa')
-        .expect(page.email.getError('email').exists).ok('Marks field as invalid')
-        .expect(page.remindPasswordButton.getAttribute('disabled')).ok('Disables submit button');
+        .expect(page.email.getError('email').exists).ok('Marks field as invalid');
 });
 
 test('Unknown email', async(t) => {

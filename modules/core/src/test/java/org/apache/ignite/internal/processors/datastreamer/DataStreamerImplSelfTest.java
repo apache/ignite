@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -108,6 +109,34 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt++;
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseWithCancellation() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        Ignite g1 = grid(1);
+
+        List<IgniteFuture> futures = new ArrayList<>();
+
+        IgniteDataStreamer<Object, Object> dataLdr = g1.dataStreamer(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++)
+            futures.add(dataLdr.addData(i, i));
+
+        try {
+            dataLdr.close(true);
+        }
+        catch (CacheException e) {
+            // No-op.
+        }
+
+        for (IgniteFuture fut : futures)
+            assertTrue(fut.isDone());
     }
 
     /**
@@ -238,6 +267,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             IgniteFuture fut = null;
 
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                streamer.perThreadBufferSize(1);
+
                 fut = streamer.addData(1, "1");
 
                 streamer.flush();
@@ -333,6 +364,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         final IgniteDataStreamer ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ldr.perThreadBufferSize(1);
 
         final IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -466,6 +499,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        streamer.perThreadBufferSize(1);
 
         ((DataStreamerImpl)streamer).maxRemapCount(0);
 

@@ -187,7 +187,6 @@
     <None Include="..\..\config\isolated-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-continuous.xml" />
     <None Include="..\..\config\persistence-store.xml">
       <Filter>Configs</Filter>
     </None>

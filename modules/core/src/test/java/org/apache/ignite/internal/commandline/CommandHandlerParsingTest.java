@@ -1,45 +1,180 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.commandline;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.UUID;
 import junit.framework.TestCase;
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.commandline.Command.CACHE;
+import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
+import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
+import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
 
 /**
  * Tests Command Handler parsing arguments.
  */
 public class CommandHandlerParsingTest extends TestCase {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
+        super.tearDown();
+    }
+
     /**
-     * Test parsing and validation for user and password arguments.
+     * validate_indexes command arguments parsing and validation
+     */
+    public void testValidateIndexArguments() {
+        CommandHandler hnd = new CommandHandler();
+
+        //happy case for all parameters
+        try {
+            int expectedCheckFirst = 10;
+            int expectedCheckThrough = 11;
+            UUID nodeId = UUID.randomUUID();
+
+            CacheArguments args = hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    "cache1, cache2",
+                    nodeId.toString(),
+                    VI_CHECK_FIRST,
+                    Integer.toString(expectedCheckFirst),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedCheckThrough)
+                )
+            ).cacheArgs();
+
+            assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
+            assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedCheckThrough, args.checkThrough());
+        }
+        catch (IllegalArgumentException e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        try {
+            int expectedParam = 11;
+            UUID nodeId = UUID.randomUUID();
+
+            CacheArguments args = hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    nodeId.toString(),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedParam)
+                )
+            ).cacheArgs();
+
+            assertNull("caches weren't specified, null value expected", args.caches());
+            assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
+            assertEquals("checkFirst parameter unexpected value", -1, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedParam, args.checkThrough());
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VI_CHECK_FIRST,
+                    "0"
+                )
+            );
+
+            fail("Expected exception hasn't been thrown");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(CACHE.text(), CacheCommand.VALIDATE_INDEXES.text(), VI_CHECK_THROUGH));
+
+            fail("Expected exception hasn't been thrown");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Test that experimental command (i.e. WAL command) is disabled by default.
+     */
+    public void testExperimentalCommandIsDisabled() {
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
+        CommandHandler hnd = new CommandHandler();
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            assertTrue(e instanceof IllegalArgumentException);
+        }
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_DELETE));
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            assertTrue(e instanceof IllegalArgumentException);
+        }
+    }
+
+    /**
+     * Tests parsing and validation for user and password arguments.
      */
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
+            if (cmd == Command.CACHE || cmd == Command.WAL)
+                continue; // --cache subcommand requires its own specific arguments.
+
             try {
                 hnd.parseAndValidate(asList("--user"));
 
@@ -85,12 +220,55 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
+     * Tests parsing and validation  of WAL commands.
+     */
+    public void testParseAndValidateWalActions() {
+        CommandHandler hnd = new CommandHandler();
+
+        Arguments args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
+
+        assertEquals(WAL, args.command());
+
+        assertEquals(WAL_PRINT, args.walAction());
+
+        String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
+
+        args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
+
+        assertEquals(WAL_DELETE, args.walAction());
+
+        assertEquals(nodes, args.walArguments());
+
+        try {
+            hnd.parseAndValidate(Collections.singletonList(WAL.text()));
+
+            fail("expected exception: invalid arguments for --wal command");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
+
+            fail("expected exception: invalid arguments for --wal command");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Tests host and port arguments.
      * Tests connection settings arguments.
      */
     public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
+            if (cmd == Command.CACHE || cmd == Command.WAL)
+                continue; // --cache subcommand requires its own specific arguments.
+
             Arguments args = hnd.parseAndValidate(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
@@ -98,7 +276,7 @@ public class CommandHandlerParsingTest extends TestCase {
             assertEquals(DFLT_PORT, args.port());
 
             args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
-                    "--ping-timeout", "40000", cmd.text()));
+                "--ping-timeout", "40000", cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());

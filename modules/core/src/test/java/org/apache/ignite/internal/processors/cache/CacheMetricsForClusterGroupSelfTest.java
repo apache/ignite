@@ -80,11 +80,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         startGrid(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test cluster group metrics in case of statistics enabled.
      */
