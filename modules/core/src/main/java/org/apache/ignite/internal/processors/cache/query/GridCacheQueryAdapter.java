@@ -312,15 +312,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
-     * Forces to a local query.
-     *
-     * @param forceLocal flag.
-     */
-    public void forceLocal(boolean forceLocal) {
-        this.forceLocal = forceLocal;
-    }
-
-    /**
      * @return Security subject ID.
      */
     public UUID subjectId() {
@@ -442,7 +433,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
-        return (IgniteClosure<Map.Entry<K, V>, Object>) transform;
+        return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
     }
 
     /**
@@ -832,7 +823,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          * @return Cache entry
          */
         private Object convert(Object obj) {
-            if(qry.transform() != null)
+            if (qry.transform() != null)
                 return obj;
 
             Map.Entry e = (Map.Entry)obj;
