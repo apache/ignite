@@ -73,12 +73,8 @@ def cache_put(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)
     return result
@@ -129,12 +125,8 @@ def cache_get(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -206,12 +198,8 @@ def cache_get_all(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
 
     result.value = {}
@@ -293,12 +281,7 @@ def cache_put_all(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result
 
 
@@ -348,12 +331,8 @@ def cache_contains_key(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -421,12 +400,8 @@ def cache_contains_keys(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -484,12 +459,8 @@ def cache_get_and_put(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -547,12 +518,8 @@ def cache_get_and_replace(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -603,12 +570,8 @@ def cache_get_and_remove(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -665,12 +628,8 @@ def cache_put_if_absent(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['success']
     return result
@@ -727,12 +686,8 @@ def cache_get_and_put_if_absent(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['value']
     return result
@@ -789,12 +744,8 @@ def cache_replace(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['success']
     return result
@@ -858,12 +809,8 @@ def cache_replace_if_equals(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['success']
     return result
@@ -905,12 +852,7 @@ def cache_clear(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result
 
 
@@ -956,12 +898,7 @@ def cache_clear_key(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result
 
 
@@ -1023,12 +960,7 @@ def cache_clear_keys(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result
 
 
@@ -1077,12 +1009,8 @@ def cache_remove_key(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['success']
     return result
@@ -1141,12 +1069,8 @@ def cache_remove_if_equals(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['success']
     return result
@@ -1210,12 +1134,7 @@ def cache_remove_keys(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result
 
 
@@ -1255,12 +1174,7 @@ def cache_remove_all(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result
 
 
@@ -1314,12 +1228,8 @@ def cache_get_size(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = response_struct.to_python(response)['count']
     return result

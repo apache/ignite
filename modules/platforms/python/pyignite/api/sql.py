@@ -95,12 +95,8 @@ def scan(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
     data = {}
@@ -156,12 +152,8 @@ def scan_cursor_get_page(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
     data = {}
@@ -257,12 +249,8 @@ def sql(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
     data = {}
@@ -317,12 +305,8 @@ def sql_cursor_get_page(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
     data = {}
@@ -454,12 +438,8 @@ def sql_fields(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
     if include_field_names:
@@ -520,12 +500,8 @@ def sql_fields_cursor_get_page(
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
+    if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
     data = []
@@ -565,10 +541,5 @@ def resource_close(conn: Connection, cursor: int, query_id=None) -> APIResult:
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
 
-    result = APIResult(
-        status=response.status_code,
-        query_id=response.query_id,
-    )
-    if hasattr(response, 'error_message'):
-        result.message = String.to_python(response.error_message)
+    result = APIResult(response)
     return result

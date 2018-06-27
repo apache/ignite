@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import attr
+from pyignite.datatypes.standard import String
+from pyignite.queries import Response
 
 
 def hashcode(string: str) -> int:
@@ -33,7 +34,6 @@ def hashcode(string: str) -> int:
     return result
 
 
-@attr.s
 class APIResult:
     """
     Dataclass which represents the result of API request.
@@ -46,7 +46,11 @@ class APIResult:
     * value: return value or None.
     """
 
-    status = attr.ib(type=int)
-    message = attr.ib(type=str, default='Success')
-    value = attr.ib(default=None)
-    query_id = attr.ib(type=int, default=None)
+    message = 'Success'
+    value = None
+
+    def __init__(self, response: Response):
+        self.status = response.status_code
+        self.query_id = response.query_id
+        if hasattr(response, 'error_message'):
+            self.message = String.to_python(response.error_message)
