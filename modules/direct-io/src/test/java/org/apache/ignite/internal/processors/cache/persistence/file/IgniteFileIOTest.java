@@ -271,16 +271,17 @@ public class IgniteFileIOTest extends TestCase {
      * @param arr Array.
      */
     private static void fillRandomArray(@NotNull final byte[] arr) {
-        processArray(arr, (off, len) -> {
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-            for (int j = 0; j < len >> 3; j++)
-                GridUnsafe.putLong(arr, GridUnsafe.BYTE_ARR_OFF + (j << 3) + off, rnd.nextLong());
-
-            for (int o = off + (len & ~7), j = 0; j < (len & 7); j++)
-                arr[o + j] = (byte) (rnd.nextInt(256) - 128);
-
-        });
+        ThreadLocalRandom.current().nextBytes(arr);
+//        processArray(arr, (off, len) -> {
+//            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+//
+//            for (int j = 0; j < len >> 3; j++)
+//                GridUnsafe.putLong(arr, GridUnsafe.BYTE_ARR_OFF + (j << 3) + off, rnd.nextLong());
+//
+//            for (int o = off + (len & ~7), j = 0; j < (len & 7); j++)
+//                arr[o + j] = (byte) (rnd.nextInt(256) - 128);
+//
+//        });
     }
 
     /**
@@ -291,31 +292,37 @@ public class IgniteFileIOTest extends TestCase {
         if (arr1.length != arr2.length)
             return false;
 
-        final AtomicBoolean res = new AtomicBoolean(true);
+        for (int i = 0; i < arr1.length; i++)
+            if (arr1[i] != arr2[i])
+                return false;
 
-        processArray(arr1, (off, len) -> {
-            for (int i = 0; i < len >> 3; i++) {
-                long o = GridUnsafe.BYTE_ARR_OFF +(i << 3) + off;
+        return true;
 
-                if (GridUnsafe.getLong(arr1, o) != GridUnsafe.getLong(arr2, o)) {
-                    res.set(false);
-
-                    return;
-                }
-
-                if (!res.get())
-                    return;
-            }
-
-            if (!res.get())
-                for (int o = off + (len & ~7), i = 0; i < (len & 7); i++)
-                    if (arr1[o + i] != arr2[o + i]) {
-                        res.set(false);
-
-                        return;
-                    }
-        });
-
-        return res.get();
+//        final AtomicBoolean res = new AtomicBoolean(true);
+//
+//        processArray(arr1, (off, len) -> {
+//            for (int i = 0; i < len >> 3; i++) {
+//                long o = GridUnsafe.BYTE_ARR_OFF +(i << 3) + off;
+//
+//                if (GridUnsafe.getLong(arr1, o) != GridUnsafe.getLong(arr2, o)) {
+//                    res.set(false);
+//
+//                    return;
+//                }
+//
+//                if (!res.get())
+//                    return;
+//            }
+//
+//            if (!res.get())
+//                for (int o = off + (len & ~7), i = 0; i < (len & 7); i++)
+//                    if (arr1[o + i] != arr2[o + i]) {
+//                        res.set(false);
+//
+//                        return;
+//                    }
+//        });
+//
+//        return res.get();
     }
 }
