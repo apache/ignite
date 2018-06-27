@@ -205,7 +205,7 @@ def cache_get_all(
     data = {}
     for od in result.value['data']:
         data[od['key']] = od['value']
-    result.value['data'] = data
+    result.value = data
     return result
 
 

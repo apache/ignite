@@ -35,10 +35,8 @@ def test_create_with_config(conn):
         PROP_NAME: cache_name,
         PROP_CACHE_KEY_CONFIGURATION: [
             {
-                'name': '123_key',
                 'type_name': 'blah',
-                'is_key_field': False,
-                'is_notnull_constraint_field': False,
+                'affinity_key_field_name': 'abc1234',
             }
         ],
     })
@@ -61,10 +59,8 @@ def test_get_or_create_with_config(conn):
         PROP_NAME: cache_name,
         PROP_CACHE_KEY_CONFIGURATION: [
             {
-                'name': '123_key',
                 'type_name': 'blah',
-                'is_key_field': False,
-                'is_notnull_constraint_field': False,
+                'affinity_key_field_name': 'abc1234',
             }
         ],
     })
