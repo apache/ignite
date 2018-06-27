@@ -36,7 +36,7 @@ import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.jetbrains.annotations.NotNull;
 
-public class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Double> {
+public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Double> {
     private final LossFunction lossFunction;
     private final double gradientStep;
     private final int countOfModels;
@@ -50,6 +50,8 @@ public class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Doubl
     @Override public <K, V> Model<double[], Double> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        learnLabels(datasetBuilder, featureExtractor, lbExtractor);
 
         IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(datasetBuilder,
             featureExtractor, lbExtractor);
@@ -67,7 +69,7 @@ public class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Doubl
             Model<double[], Double> currComposition = new ModelsComposition(models, aggregator);
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
-                Double realAnswer = lbExtractor.apply(k, v);
+                Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
                 Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
                 return -lossFunction.grad(sampleSize, realAnswer, mdlAnswer);
             };
@@ -75,14 +77,23 @@ public class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Doubl
             models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
         }
 
-        return new ModelsComposition(models, resAggregator);
+        return new ModelsComposition(models, resAggregator) {
+            @Override public Double apply(double[] features) {
+                return internalLabelToExternal(super.apply(features));
+            }
+        };
     }
 
-    @NotNull private DecisionTreeRegressionTrainer buildBaseModelTrainer() {
-        return new DecisionTreeRegressionTrainer(1, 0.);
-    }
+    protected abstract  <V, K> void learnLabels(DatasetBuilder<K, V> builder,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
 
-    private <V, K> IgniteBiTuple<Double, Long> computeInitialValue(DatasetBuilder<K, V> builder,
+    @NotNull protected abstract DecisionTreeRegressionTrainer buildBaseModelTrainer();
+
+    protected abstract double externalLabelToInternal(double x);
+
+    protected abstract double internalLabelToExternal(double x);
+
+    protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -92,7 +103,7 @@ public class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Doubl
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
-                    double sum = Arrays.stream(data.getLabels()).sum();
+                    double sum = Arrays.stream(data.getLabels()).map(this::externalLabelToInternal).sum();
                     return new IgniteBiTuple<>(sum, (long)data.getLabels().length);
                 },
                 (a, b) -> {
