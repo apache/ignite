@@ -39,12 +39,6 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD and IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT accordingly.
  */
 class LongJVMPauseDetector {
-    /** Logger. */
-    private final IgniteLogger log;
-
-    /** Worker reference. */
-    private final AtomicReference<Thread> workerRef = new AtomicReference<>();
-
     /** Precision. */
     private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
 
@@ -53,6 +47,12 @@ class LongJVMPauseDetector {
 
     /** Event count. */
     private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
+
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Worker reference. */
+    private final AtomicReference<Thread> workerRef = new AtomicReference<>();
 
     /** Long pause count. */
     private long longPausesCnt;
