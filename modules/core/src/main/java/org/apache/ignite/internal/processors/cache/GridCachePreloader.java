@@ -63,6 +63,11 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
+     * @param exchFut Toplogy version to compare affinity assignments with.
+     */
+    public void afterExchange(GridDhtPartitionsExchangeFuture exchFut);
+
+    /**
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      * @return Assignments or {@code null} if detected that there are pending exchanges.

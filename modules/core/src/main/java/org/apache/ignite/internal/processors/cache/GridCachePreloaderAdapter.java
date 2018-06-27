@@ -152,6 +152,11 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
+    @Override public void afterExchange(GridDhtPartitionsExchangeFuture exchFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
                                                                      GridDhtPartitionsExchangeFuture exchFut) {
         return null;

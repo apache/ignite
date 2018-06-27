@@ -2437,9 +2437,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     boolean forcePreload = false;
 
-                    // When assignments not changed we can skip them.
-                    boolean skipAssigns = false;
-
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
@@ -2546,6 +2543,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
+                                grp.preloader().afterExchange(exchFut);
+
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
@@ -2566,12 +2565,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance) {
+                                if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
-
-                                    if (assigns != null)
-                                        skipAssigns &= !assigns.changed();
-                                }
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }
@@ -2620,7 +2615,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                if (skipAssigns && !forcePreload)
+                                log.info("Exec preloader [empty=" + assigns.isEmpty() +
+                                    ", cancel=" + assigns.cancelled() +
+                                ", changed=" + assigns.changed() +
+                                ", forcePreload=" + forcePreload +
+                                ", topVer" + assigns.topologyVersion() +
+                                ", grp=" + grp.cacheOrGroupName() + "]");
+
+                                if (!assigns.changed() && !forcePreload)
                                     grp.preloader().updateAssignments(assigns.topologyVersion());
                                 else {
                                     // Cancels previous rebalance future (in case it's not done yet).
