@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
-
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
-
 /**
- * Base interface for decision tree nodes.
+ * <!-- Package description. -->
+ * Full ML Tutorial.
  */
-public interface DecisionTreeNode extends Model<Vector, Double> {
-}
+package org.apache.ignite.examples.ml.tutorial;

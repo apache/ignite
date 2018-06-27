@@ -24,7 +24,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,7 +48,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
     /** Model for inference. */
-    private final Model<double[], L> mdl;
+    private final Model<Vector, L> mdl;
 
     /**
      * Constructs a new instance of cache based truth with prediction cursor.
@@ -59,7 +61,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
      */
     public CacheBasedTruthWithPredictionCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<double[], L> mdl) {
+        Model<Vector, L> mdl) {
         this.cursor = query(upstreamCache, filter);
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -118,7 +120,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
             double[] features = featureExtractor.apply(entry.getKey(), entry.getValue());
             L lb = lbExtractor.apply(entry.getKey(), entry.getValue());
 
-            return new TruthWithPrediction<>(lb, mdl.apply(features));
+            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
         }
     }
 }

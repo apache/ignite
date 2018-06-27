@@ -587,6 +587,16 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if current thread holds lock on topology.
+     */
+    public boolean isTopologyLocked() {
+        if (top == null)
+            return false;
+
+        return top.holdsLock();
+    }
+
+    /**
      * @return Offheap manager.
      */
     public IgniteCacheOffheapManager offheap() {

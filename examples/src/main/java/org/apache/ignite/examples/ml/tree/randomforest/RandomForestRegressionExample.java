@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -79,7 +80,7 @@ public class RandomForestRegressionExample {
                         double[] inputs = Arrays.copyOfRange(val, 0, val.length - 1);
                         double groundTruth = val[val.length - 1];
 
-                        double prediction = randomForest.apply(inputs);
+                        double prediction = randomForest.apply(new DenseLocalOnHeapVector(inputs));
 
                         mse += Math.pow(prediction - groundTruth, 2.0);
                         mae += Math.abs(prediction - groundTruth);
