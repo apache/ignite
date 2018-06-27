@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class LocalTruthWithPredictionCursor<L, K, V> implements TruthWithPredictionCursor<L> {
+public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPredictionCursor<L> {
     /** Map with {@code upstream} data. */
     private final Map<K, V> upstreamMap;
 
@@ -47,7 +49,7 @@ public class LocalTruthWithPredictionCursor<L, K, V> implements TruthWithPredict
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
     /** Model for inference. */
-    private final Model<double[], L> mdl;
+    private final Model<Vector, L> mdl;
 
     /**
      * Constructs a new instance of local truth with prediction cursor.
@@ -60,7 +62,7 @@ public class LocalTruthWithPredictionCursor<L, K, V> implements TruthWithPredict
      */
     public LocalTruthWithPredictionCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<double[], L> mdl) {
+        Model<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.featureExtractor = featureExtractor;
@@ -117,7 +119,7 @@ public class LocalTruthWithPredictionCursor<L, K, V> implements TruthWithPredict
 
             nextEntry = null;
 
-            return new TruthWithPrediction<>(lb, mdl.apply(features));
+            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
         }
 
         /**
