@@ -57,7 +57,7 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 /***
  *
  */
-public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
+public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTest {
     /** */
     public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -93,8 +93,8 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void test() throws Exception {
-        for (CrashPoint crashPoint : CrashPoint.values()) {
-            testCrashWithDisableWAL(crashPoint);
+        for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
+            testStopNodeWithDisableWAL(nodeStopPoint);
 
             stopAllGrids();
 
@@ -103,11 +103,11 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param crashPoint Crash point.
+     * @param nodeStopPoint Stop point.
      * @throws Exception If failed.
      */
-    private void testCrashWithDisableWAL(CrashPoint crashPoint) throws Exception {
-        log.info("Start test crash " + crashPoint);
+    private void testStopNodeWithDisableWAL(NodeStopPoint nodeStopPoint) throws Exception {
+        log.info("Start test crash " + nodeStopPoint);
 
         IgniteEx ig0 = startGrid(0);
 
@@ -117,41 +117,41 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
 
         WALDisableContext walDisableContext = new WALDisableContext(dbMgr, sharedContext.wal(), sharedContext.pageStore()) {
             @Override protected void writeMetaStoreDisableWALFlag() throws IgniteCheckedException {
-                if (crashPoint == CrashPoint.BEFORE_WRITE_KEY_TO_META_STORE)
-                    failNode(crashPoint);
+                if (nodeStopPoint == NodeStopPoint.BEFORE_WRITE_KEY_TO_META_STORE)
+                    failNode(nodeStopPoint);
 
                 super.writeMetaStoreDisableWALFlag();
 
-                if (crashPoint == CrashPoint.AFTER_WRITE_KEY_TO_META_STORE)
-                    failNode(crashPoint);
+                if (nodeStopPoint == NodeStopPoint.AFTER_WRITE_KEY_TO_META_STORE)
+                    failNode(nodeStopPoint);
             }
 
             @Override protected void removeMetaStoreDisableWALFlag() throws IgniteCheckedException {
-                if (crashPoint == CrashPoint.AFTER_CHECKPOINT_AFTER_ENABLE_WAL)
-                    failNode(crashPoint);
+                if (nodeStopPoint == NodeStopPoint.AFTER_CHECKPOINT_AFTER_ENABLE_WAL)
+                    failNode(nodeStopPoint);
 
                 super.removeMetaStoreDisableWALFlag();
 
-                if (crashPoint == CrashPoint.AFTER_REMOVE_KEY_TO_META_STORE)
-                    failNode(crashPoint);
+                if (nodeStopPoint == NodeStopPoint.AFTER_REMOVE_KEY_TO_META_STORE)
+                    failNode(nodeStopPoint);
             }
 
             @Override protected void disableWAL(boolean disable) throws IgniteCheckedException {
                 if (disable) {
-                    if (crashPoint == CrashPoint.AFTER_CHECKPOINT_BEFORE_DISABLE_WAL)
-                        failNode(crashPoint);
+                    if (nodeStopPoint == NodeStopPoint.AFTER_CHECKPOINT_BEFORE_DISABLE_WAL)
+                        failNode(nodeStopPoint);
 
                     super.disableWAL(disable);
 
-                    if (crashPoint == CrashPoint.AFTER_DISABLE_WAL)
-                        failNode(crashPoint);
+                    if (nodeStopPoint == NodeStopPoint.AFTER_DISABLE_WAL)
+                        failNode(nodeStopPoint);
 
                 }
                 else {
                     super.disableWAL(disable);
 
-                    if (crashPoint == CrashPoint.AFTER_ENABLE_WAL)
-                        failNode(crashPoint);
+                    if (nodeStopPoint == NodeStopPoint.AFTER_ENABLE_WAL)
+                        failNode(nodeStopPoint);
                 }
             }
         };
@@ -175,17 +175,17 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
             dbMgr.applyUpdatesOnRecovery(it, (tup) -> true, (entry) -> true, new HashMap<>());
         }
         catch (IgniteCheckedException e) {
-            if (crashPoint.needCleanUp)
+            if (nodeStopPoint.needCleanUp)
                 fail = true;
         }
 
-        Assert.assertEquals(crashPoint.needCleanUp, fail);
+        Assert.assertEquals(nodeStopPoint.needCleanUp, fail);
 
         Ignite ig1 = startGrid(0);
 
-        String msg = crashPoint.toString();
+        String msg = nodeStopPoint.toString();
 
-        if (crashPoint.needCleanUp) {
+        if (nodeStopPoint.needCleanUp) {
             PdsFoldersResolver foldersResolver = ((IgniteEx)ig1).context().pdsFolderResolver();
 
             File root = foldersResolver.resolveFolders().persistentStoreRootPath();
@@ -226,19 +226,19 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param crashPoint Crash point.
+     * @param nodeStopPoint Stop point.
      * @throws IgniteCheckedException Always throws exception.
      */
-    private void failNode(CrashPoint crashPoint) throws IgniteCheckedException {
+    private void failNode(NodeStopPoint nodeStopPoint) throws IgniteCheckedException {
         stopGrid(0, true);
 
-        throw new IgniteCheckedException(crashPoint.toString());
+        throw new IgniteCheckedException(nodeStopPoint.toString());
     }
 
     /**
      * Crash point.
      */
-    private enum CrashPoint {
+    private enum NodeStopPoint {
         BEFORE_WRITE_KEY_TO_META_STORE(false),
         AFTER_WRITE_KEY_TO_META_STORE(true),
         AFTER_CHECKPOINT_BEFORE_DISABLE_WAL(true),
@@ -250,7 +250,7 @@ public class IgniteCrashDuringDisableWALTest extends GridCommonAbstractTest {
         /** Clean up flag. */
         private final boolean needCleanUp;
 
-        CrashPoint(boolean up) {
+        NodeStopPoint(boolean up) {
             needCleanUp = up;
         }
     }
