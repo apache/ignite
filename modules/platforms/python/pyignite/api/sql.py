@@ -428,9 +428,7 @@ def sql_fields(
     response_struct = Response([
         ('cursor', Long),
         fields_or_field_count(),
-        ('data', StructArray([
-            ('value', AnyDataObject),
-        ])),
+        ('data', AnyDataArray()),
         ('more', Bool),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
@@ -440,11 +438,6 @@ def sql_fields(
     if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
-    # flatten data
-    data = []
-    for od in result.value['data']:
-        data.append(od['value'])
-    result.value['data'] = data
     return result
 
 
