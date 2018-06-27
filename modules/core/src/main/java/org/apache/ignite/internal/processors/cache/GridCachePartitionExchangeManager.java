@@ -1121,6 +1121,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         affCache.similarAffinityKey());
                 }
 
+                m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
+
                 if (exchId != null) {
                     CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
 
@@ -1154,6 +1156,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     m.addPartitionUpdateCounters(top.groupId(), cntrsMap);
                 else
                     m.addPartitionUpdateCounters(top.groupId(), CachePartitionFullCountersMap.toCountersMap(cntrsMap));
+
+                m.addPartitionSizes(top.groupId(), top.globalPartSizes());
             }
         }
 
@@ -1264,9 +1268,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                    m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
                 }
+
+                m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
             }
         }
 
@@ -1288,9 +1292,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                m.addPartitionSizes(top.groupId(), top.partitionSizes());
             }
+
+            m.addPartitionSizes(top.groupId(), top.partitionSizes());
         }
 
         return m;
@@ -1482,6 +1486,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
+                            msg.partitionSizes(grpId),
                             msg.topologyVersion());
                     }
                 }
@@ -1552,8 +1557,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (updated)
                     scheduleResendPartitions();
             }
-            else
-                exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveSingleMessage(node, msg);
+            else {
+                GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(), null, null, null, null);
+
+                if (log.isDebugEnabled())
+                    log.debug("Notifying exchange future about single message: " + exchFut);
+
+                if (msg.client() && !exchFut.isDone()) {
+                    if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
+                        U.warn(log, "Client node tries to connect but its exchange " +
+                            "info is cleaned up from exchange history." +
+                            " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
+                            "or start clients in  smaller batches."
+                        );
+
+                        exchFut.forceClientReconnect(node, msg);
+
+                        return;
+                    }
+                }
+
+                exchFut.onReceiveSingleMessage(node, msg);
+            }
         }
         finally {
             leaveBusy();
@@ -2352,7 +2377,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          *
          */
-        private void body0() throws InterruptedException, IgniteInterruptedCheckedException {
+        private void body0() throws InterruptedException, IgniteCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             long cnt = 0;
@@ -2642,20 +2667,26 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     throw e;
                 }
                 catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
-                    assert cctx.discovery().reconnectSupported();
+                    if (cctx.discovery().reconnectSupported()) {
+                        U.warn(log, "Local node failed to complete partition map exchange due to " +
+                            "exception, will try to reconnect to cluster: " + e.getMessage(), e);
 
-                    U.warn(log,"Local node failed to complete partition map exchange due to " +
-                        "network issues, will try to reconnect to cluster", e);
+                        cctx.discovery().reconnect();
 
-                    cctx.discovery().reconnect();
-
-                    reconnectNeeded = true;
+                        reconnectNeeded = true;
+                    }
+                    else
+                        U.warn(log, "Local node received IgniteClientDisconnectedCheckedException or " +
+                            " IgniteNeedReconnectException exception but doesn't support reconnect, stopping node: " +
+                            e.getMessage(), e);
 
                     return;
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + task, e);
+
+                    throw e;
                 }
             }
         }

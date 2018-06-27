@@ -21,6 +21,7 @@
 
     margin-left: 10px;
     margin-right: $remove-column-width;
+    transition: 0.2s opacity;
 
     &__multiple-cols {
         margin-left: $index-column-width;
@@ -47,5 +48,10 @@
         .le-row-item-view:nth-last-child(2) {
             display: none;
         }
+    }
+
+    &[disabled] {
+        opacity: 0.5;
+        cursor: default;
     }
 }

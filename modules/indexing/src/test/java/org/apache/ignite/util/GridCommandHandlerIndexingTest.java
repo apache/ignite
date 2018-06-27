@@ -101,9 +101,18 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
+        assertEquals(EXIT_CODE_OK,
+            execute(
+                "--cache",
+                "validate_indexes",
+                cacheName,
+                "checkFirst", "10000",
+                "checkThrough", "10"));
 
         assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+
+        assertTrue(testOut.toString().contains(
+            "Key is present in SQL index, but is missing in corresponding data page."));
     }
 
     /**

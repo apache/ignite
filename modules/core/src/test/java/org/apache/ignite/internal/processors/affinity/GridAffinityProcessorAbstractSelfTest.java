@@ -102,11 +102,6 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test affinity functions caching and clean up.
      *

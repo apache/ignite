@@ -167,8 +167,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         if (executor != null)
             executor.shutdown();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

@@ -73,8 +73,6 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
      */
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
-
-        super.afterTestsStopped();
     }
 
     /** */

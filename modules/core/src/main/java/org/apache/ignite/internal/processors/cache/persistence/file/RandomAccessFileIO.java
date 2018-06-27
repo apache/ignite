@@ -79,8 +79,8 @@ public class RandomAccessFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
-        ch.write(ByteBuffer.wrap(buf, off, len));
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return ch.write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */

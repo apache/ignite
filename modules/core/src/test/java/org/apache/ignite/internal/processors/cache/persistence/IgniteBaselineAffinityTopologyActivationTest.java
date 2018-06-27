@@ -68,7 +68,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
+                    .setPersistenceEnabled(true).setMaxSize(10L * 1024 * 1024)
 
             ).setWalMode(WALMode.LOG_ONLY)
         );

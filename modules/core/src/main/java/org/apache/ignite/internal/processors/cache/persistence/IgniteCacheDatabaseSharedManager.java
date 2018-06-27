@@ -76,10 +76,10 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
-    static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
+    public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
     /** Minimum size of memory chunk */
-    private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
+    private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
 
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
@@ -736,6 +736,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * No-op for non-persistent storage.
+     */
+    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
      *
      */
     @Nullable public IgniteInternalFuture wakeupForCheckpoint(String reason) {
@@ -762,14 +769,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param discoEvt Before exchange for the given discovery event.
+     *
+     * @return {@code True} if partitions have been restored from persistent storage.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
-        // No-op.
+    public boolean beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
+        return false;
     }
 
     /**
-     * @param fut Partition exchange future.
+     * Called when all partitions have been fully restored and pre-created on node start.
+     *
+     * @throws IgniteCheckedException If failed.
      */
+    public void onStateRestored() throws IgniteCheckedException {
+        // No-op.
+    }
+
+        /**
+         * @param fut Partition exchange future.
+         */
     public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         // No-op.
     }
@@ -1086,6 +1104,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param enabled flag.
      */
     public void walEnabled(int grpId, boolean enabled, boolean local) {
+        // No-op.
+    }
+
+    /**
+     * Marks last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
+     *
+     * @param grpId Group id.
+     */
+    public void lastCheckpointInapplicableForWalRebalance(int grpId) {
         // No-op.
     }
 

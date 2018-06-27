@@ -116,7 +116,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
             };
 
             uuid = grid(0).context().cache().cache(cache.getName()).context().continuousQueries()
-                .executeInternalQuery(lsnr, new SerializableFilter(), false, true, true);
+                .executeInternalQuery(lsnr, new SerializableFilter(), false, true, true, false);
 
             for (int i = 10; i < 20; i++)
                 cache.put(i, i);

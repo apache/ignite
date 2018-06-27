@@ -107,11 +107,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         jcache(0).clear();
     }

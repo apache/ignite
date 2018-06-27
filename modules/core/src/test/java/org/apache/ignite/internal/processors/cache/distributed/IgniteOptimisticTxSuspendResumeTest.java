@@ -135,8 +135,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids(true);
     }
 

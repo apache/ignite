@@ -47,8 +47,6 @@ public class SpringCacheTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         G.stop(true);
     }
 

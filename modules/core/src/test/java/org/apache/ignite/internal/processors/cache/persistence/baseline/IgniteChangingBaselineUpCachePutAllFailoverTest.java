@@ -48,9 +48,9 @@ public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAll
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setInitialSize(200 * 1024 * 1024)
-                        .setMaxSize(200 * 1024 * 1024)
-                        .setCheckpointPageBufferSize(200 * 1024 * 1024)
+                        .setInitialSize(200L * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
+                        .setCheckpointPageBufferSize(200L * 1024 * 1024)
                 )
         );
 
@@ -82,8 +82,6 @@ public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAll
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

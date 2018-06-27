@@ -114,11 +114,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         DummyService.reset();
     }
