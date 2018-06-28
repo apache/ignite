@@ -187,10 +187,7 @@ namespace ignite
                     SP_DataChannel& dst = channels[*it];
 
                     if (dst.IsValid())
-                    {
-
                         return dst;
-                    }
 
                     SP_DataChannel channel(new DataChannel(config, typeMgr));
 
