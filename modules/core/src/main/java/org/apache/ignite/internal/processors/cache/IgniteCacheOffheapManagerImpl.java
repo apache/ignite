@@ -1544,7 +1544,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param c Closure.
          * @throws IgniteCheckedException If failed.
          */
-        public void invoke0(GridCacheContext cctx, CacheSearchRow row, OffheapInvokeClosure c)
+        private void invoke0(GridCacheContext cctx, CacheSearchRow row, OffheapInvokeClosure c)
             throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");

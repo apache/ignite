@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -88,6 +89,9 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
 
     /** Lock version. */
     protected final GridCacheVersion lockVer;
+
+    /** */
+    protected volatile GridDhtTxQueryResultsEnlistFuture localEnlistFuture;
 
     /** */
     @SuppressWarnings("unused")
@@ -295,6 +299,14 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
         boolean done = super.onDone(res, err, cancelled);
 
         assert done;
+
+        GridDhtTxQueryResultsEnlistFuture localFuture0 = localEnlistFuture;
+
+        if (localFuture0 != null) {
+            assert err != null;
+
+            localFuture0.onDone(err);
+        }
 
         // Clean up.
         cctx.mvcc().removeVersionedFuture(this);

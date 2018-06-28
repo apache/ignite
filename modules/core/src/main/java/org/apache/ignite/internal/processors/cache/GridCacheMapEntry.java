@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtra
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -400,11 +401,31 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 info.key(key);
                 info.value(row.value());
                 info.cacheId(cctx.cacheId());
-                info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
-                info.newMvccVersion(row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter());
                 info.version(row.version());
                 info.setNew(false);
                 info.setDeleted(false);
+
+                byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
+                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(),
+                        row.mvccOperationCounter());
+
+                if (txState == TxState.ABORTED)
+                    continue;
+
+                info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
+                info.mvccTxState(txState);
+
+                byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                        row.newMvccOperationCounter());
+
+                if (newTxState != TxState.ABORTED) {
+                    info.newMvccVersion(row.newMvccCoordinatorVersion(),
+                        row.newMvccCounter(),
+                        row.newMvccOperationCounter());
+
+                    info.newMvccTxState(newTxState);
+                }
 
                 long expireTime = row.expireTime();
 
