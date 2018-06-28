@@ -25,8 +25,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.tree.DecisionTreeClassificationTrainerExample;
-import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.score.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
@@ -34,9 +34,9 @@ import org.apache.ignite.thread.IgniteThread;
 /**
  * Run decision tree classification with cross validation.
  *
- * @see CrossValidationScoreCalculator
+ * @see CrossValidation
  */
-public class CrossValidationScoreCalculatorExample {
+public class CrossValidationExample {
     /**
      * Executes example.
      *
@@ -68,12 +68,12 @@ public class CrossValidationScoreCalculatorExample {
                 // Create classification trainer.
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
-                CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
-                    = new CrossValidationScoreCalculator<>();
+                CrossValidation<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
+                    = new CrossValidation<>();
 
                 double[] scores = scoreCalculator.score(
                     trainer,
-                    new AccuracyScoreCalculator<>(),
+                    new Accuracy<>(),
                     ignite,
                     trainingSet,
                     (k, v) -> new double[]{v.x, v.y},

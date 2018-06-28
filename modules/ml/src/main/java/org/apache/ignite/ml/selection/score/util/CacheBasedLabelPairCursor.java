@@ -27,7 +27,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import org.apache.ignite.ml.selection.score.LabelPair;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPredictionCursor<L> {
+public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     /** Query cursor. */
     private final QueryCursor<Cache.Entry<K, V>> cursor;
 
@@ -59,9 +59,9 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
      * @param lbExtractor Label extractor.
      * @param mdl Model for inference.
      */
-    public CacheBasedTruthWithPredictionCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<Vector, L> mdl) {
+    public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
+                                     IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+                                     Model<Vector, L> mdl) {
         this.cursor = query(upstreamCache, filter);
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -74,7 +74,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<TruthWithPrediction<L>> iterator() {
+    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
         return new TruthWithPredictionIterator(cursor.iterator());
     }
 
@@ -95,7 +95,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
     /**
      * Util iterator that makes predictions using the model.
      */
-    private class TruthWithPredictionIterator implements Iterator<TruthWithPrediction<L>> {
+    private class TruthWithPredictionIterator implements Iterator<LabelPair<L>> {
         /** Base iterator. */
         private final Iterator<Cache.Entry<K, V>> iter;
 
@@ -114,13 +114,13 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
         }
 
         /** {@inheritDoc} */
-        @Override public TruthWithPrediction<L> next() {
+        @Override public LabelPair<L> next() {
             Cache.Entry<K, V> entry = iter.next();
 
             double[] features = featureExtractor.apply(entry.getKey(), entry.getValue());
             L lb = lbExtractor.apply(entry.getKey(), entry.getValue());
 
-            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
+            return new LabelPair<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
         }
     }
 }

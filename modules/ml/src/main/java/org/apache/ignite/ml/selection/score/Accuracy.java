@@ -17,36 +17,31 @@
 
 package org.apache.ignite.ml.selection.score;
 
+import java.util.Iterator;
+
 /**
- * Pair of truth value and predicated by model.
+ * Accuracy score calculator.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class TruthWithPrediction<L> {
-    /** Truth value. */
-    private final L truth;
+public class Accuracy<L> implements Metric<L> {
+    /** {@inheritDoc} */
+    @Override public double score(Iterator<LabelPair<L>> iter) {
+        long totalCnt = 0;
+        long correctCnt = 0;
 
-    /** Predicted value. */
-    private final L prediction;
+        while (iter.hasNext()) {
+            LabelPair<L> e = iter.next();
 
-    /**
-     * Constructs a new instance of truth with prediction.
-     *
-     * @param truth Truth value.
-     * @param prediction Predicted value.
-     */
-    public TruthWithPrediction(L truth, L prediction) {
-        this.truth = truth;
-        this.prediction = prediction;
-    }
+            L prediction = e.getPrediction();
+            L truth = e.getTruth();
 
-    /** */
-    public L getTruth() {
-        return truth;
-    }
+            if (prediction.equals(truth))
+                correctCnt++;
 
-    /** */
-    public L getPrediction() {
-        return prediction;
+            totalCnt++;
+        }
+
+        return 1.0 * correctCnt / totalCnt;
     }
 }

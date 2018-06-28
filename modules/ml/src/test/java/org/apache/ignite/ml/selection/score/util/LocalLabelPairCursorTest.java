@@ -19,15 +19,15 @@ package org.apache.ignite.ml.selection.score.util;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import org.apache.ignite.ml.selection.score.LabelPair;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link LocalTruthWithPredictionCursor}.
+ * Tests for {@link LocalLabelPairCursor}.
  */
-public class LocalTruthWithPredictionCursorTest {
+public class LocalLabelPairCursorTest {
     /** */
     @Test
     public void testIterate() {
@@ -36,7 +36,7 @@ public class LocalTruthWithPredictionCursorTest {
         for (int i = 0; i < 1000; i++)
             data.put(i, i);
 
-        TruthWithPredictionCursor<Integer> cursor = new LocalTruthWithPredictionCursor<>(
+        LabelPairCursor<Integer> cursor = new LocalLabelPairCursor<>(
             data,
             (k, v) -> v % 2 == 0,
             (k, v) -> new double[]{v},
@@ -45,7 +45,7 @@ public class LocalTruthWithPredictionCursorTest {
         );
 
         int cnt = 0;
-        for (TruthWithPrediction<Integer> e : cursor) {
+        for (LabelPair<Integer> e : cursor) {
             assertEquals(e.getPrediction(), e.getTruth());
             cnt++;
         }

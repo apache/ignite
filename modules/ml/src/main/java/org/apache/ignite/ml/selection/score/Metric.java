@@ -24,12 +24,12 @@ import java.util.Iterator;
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public interface ScoreCalculator<L> {
+public interface Metric<L> {
     /**
      * Calculates score.
      *
      * @param iter Iterator that supplies pairs of truth values and predicated.
      * @return Score.
      */
-    public double score(Iterator<TruthWithPrediction<L>> iter);
+    public double score(Iterator<LabelPair<L>> iter);
 }

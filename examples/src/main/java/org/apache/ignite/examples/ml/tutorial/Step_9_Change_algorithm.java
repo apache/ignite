@@ -36,8 +36,8 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.score.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.thread.IgniteThread;
@@ -120,12 +120,12 @@ public class Step_9_Change_algorithm {
                                             SimpleGDParameterUpdate::avg
                                         ), maxIterations, batchSize, locIterations, 123L);
 
-                                        CrossValidationScoreCalculator<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
-                                            = new CrossValidationScoreCalculator<>();
+                                        CrossValidation<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
+                                            = new CrossValidation<>();
 
                                         double[] scores = scoreCalculator.score(
                                             trainer,
-                                            new AccuracyScoreCalculator<>(),
+                                            new Accuracy<>(),
                                             ignite,
                                             dataCache,
                                             split.getTrainFilter(),

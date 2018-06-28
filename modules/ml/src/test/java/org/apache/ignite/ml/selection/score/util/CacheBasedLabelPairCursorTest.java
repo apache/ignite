@@ -21,13 +21,13 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import org.apache.ignite.ml.selection.score.LabelPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for {@link CacheBasedTruthWithPredictionCursor}.
+ * Tests for {@link CacheBasedLabelPairCursor}.
  */
-public class CacheBasedTruthWithPredictionCursorTest extends GridCommonAbstractTest {
+public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 4;
 
@@ -60,7 +60,7 @@ public class CacheBasedTruthWithPredictionCursorTest extends GridCommonAbstractT
         for (int i = 0; i < 1000; i++)
             data.put(i, i);
 
-        TruthWithPredictionCursor<Integer> cursor = new CacheBasedTruthWithPredictionCursor<>(
+        LabelPairCursor<Integer> cursor = new CacheBasedLabelPairCursor<>(
             data,
             (k, v) -> v % 2 == 0,
             (k, v) -> new double[]{v},
@@ -69,7 +69,7 @@ public class CacheBasedTruthWithPredictionCursorTest extends GridCommonAbstractT
         );
 
         int cnt = 0;
-        for (TruthWithPrediction<Integer> e : cursor) {
+        for (LabelPair<Integer> e : cursor) {
             assertEquals(e.getPrediction(), e.getTruth());
             cnt++;
         }

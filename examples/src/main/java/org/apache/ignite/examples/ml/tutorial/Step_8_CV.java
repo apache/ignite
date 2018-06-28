@@ -31,8 +31,8 @@ import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTr
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.score.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -110,12 +110,12 @@ public class Step_8_CV {
 
                             DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(maxDeep, 0);
 
-                            CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
-                                = new CrossValidationScoreCalculator<>();
+                            CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                                = new CrossValidation<>();
 
                             double[] scores = scoreCalculator.score(
                                 trainer,
-                                new AccuracyScoreCalculator<>(),
+                                new Accuracy<>(),
                                 ignite,
                                 dataCache,
                                 split.getTrainFilter(),

@@ -15,33 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.score.util;
 
-import java.util.Iterator;
+import org.apache.ignite.ml.selection.score.LabelPair;
 
 /**
- * Accuracy score calculator.
+ * Closeable iterable that supplies pairs of truth and predictions (abstraction that hides a difference between querying
+ * data from Ignite cache and from local Map).
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class AccuracyScoreCalculator<L> implements ScoreCalculator<L> {
-    /** {@inheritDoc} */
-    @Override public double score(Iterator<TruthWithPrediction<L>> iter) {
-        long totalCnt = 0;
-        long correctCnt = 0;
-
-        while (iter.hasNext()) {
-            TruthWithPrediction<L> e = iter.next();
-
-            L prediction = e.getPrediction();
-            L truth = e.getTruth();
-
-            if (prediction.equals(truth))
-                correctCnt++;
-
-            totalCnt++;
-        }
-
-        return 1.0 * correctCnt / totalCnt;
-    }
+public interface LabelPairCursor<L> extends Iterable<LabelPair<L>>, AutoCloseable {
 }
