@@ -106,7 +106,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * Shows the last topology version to be rebalanced. Can be changed by exchange thread if calculated
-     * cache affinity assignments are different from the previous rebalance version.
+     * affinity assignments are different from the previous requested version.
      */
     private volatile AffinityTopologyVersion requestedRebTopVer = AffinityTopologyVersion.ZERO;
 

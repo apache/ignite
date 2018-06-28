@@ -2616,7 +2616,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assignsCancelled |= assigns.cancelled();
 
                                 if (log.isDebugEnabled())
-                                    log.debug("Exec preloader [empty=" + assigns.isEmpty() +
+                                    log.debug("Prepare preloading [empty=" + assigns.isEmpty() +
                                         ", cancel=" + assigns.cancelled() +
                                         ", changed=" + assigns.changed() +
                                         ", forcePreload=" + forcePreload +

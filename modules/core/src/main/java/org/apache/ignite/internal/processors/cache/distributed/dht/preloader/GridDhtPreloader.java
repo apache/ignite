@@ -159,6 +159,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
+        final AffinityTopologyVersion rebTopVer = demander.requestedRebalanceTopVer();
+
+        if (rebTopVer.initialized())
+            supplier.onTopologyChanged(rebTopVer);
+
         demander.onTopologyChanged(lastFut);
     }
 
@@ -195,9 +200,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         if (isAssignsChanged(rebTopVer, topVer))
             demander.requestedRebalanceTopVer(topVer);
-
-        if (rebTopVer.initialized())
-            supplier.onTopologyChanged(rebTopVer);
     }
 
     /** {@inheritDoc} */
