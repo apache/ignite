@@ -23,11 +23,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -54,6 +57,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Backups tests.
  */
+@SuppressWarnings("unchecked")
 public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest {
 
     /** Test timeout. */
@@ -295,19 +299,26 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
 
         awaitPartitionMapExchange();
 
-        IgniteCache clientCache = client.cache(DEFAULT_CACHE_NAME);
-        IgniteCache cache1 = node1.cache(DEFAULT_CACHE_NAME);
-        IgniteCache cache2 = node2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?,?> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?,?> cache1 = node1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?,?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
+
+        AtomicInteger keyGen = new AtomicInteger();
+        Affinity affinity = affinity(clientCache);
+
+        ClusterNode cNode1 = ((IgniteEx)node1).localNode();
+        ClusterNode cNode2 = ((IgniteEx)node2).localNode();
 
         StringBuilder insert = new StringBuilder("INSERT INTO Integer (_key, _val) values ");
 
-        boolean first = true;
-
-        for (int key = 0; key < KEYS_CNT; key++) {
-            if (!first)
+        for (int i = 0; i < KEYS_CNT; i++) {
+            if (i > 0)
                 insert.append(',');
-            else
-                first = false;
+
+            // To make big batches in near results future.
+            Integer key = i < KEYS_CNT / 2 ? keyForNode(affinity, keyGen, cNode1) : keyForNode(affinity, keyGen, cNode2);
+
+            assert key != null;
 
             insert.append('(').append(key).append(',').append(key * 10).append(')');
         }
