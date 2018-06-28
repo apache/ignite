@@ -2624,7 +2624,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         ", grp=" + grp.cacheOrGroupName() + "]");
                                 }
 
-                                if (!assigns.changed() && !forcePreload)
+                                if (assigns != null && !assigns.changed() && !forcePreload)
                                     grp.preloader().updateAssignments(assigns.topologyVersion());
                                 else {
                                     // Cancels previous rebalance future (in case it's not done yet).
