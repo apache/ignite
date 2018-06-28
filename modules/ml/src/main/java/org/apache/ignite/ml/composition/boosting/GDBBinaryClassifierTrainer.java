@@ -19,13 +19,10 @@ package org.apache.ignite.ml.composition.boosting;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -39,7 +36,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     private double externalSecondClass; //internal 1.0
 
     public GDBBinaryClassifierTrainer(double gradStepSize, Integer modelsCnt) {
-        super(new LogLossLossFunction(), gradStepSize, modelsCnt);
+        super(gradStepSize, modelsCnt);
     }
 
     @Override
@@ -70,10 +67,12 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     }
 
     @Override protected double internalLabelToExternal(double indent) {
-        return sigma(indent) == 0.0 ? externalFirstClass : externalSecondClass;
+        double sigma = 1.0 / (1.0 + Math.exp(-indent));
+        double internalCls = sigma < 0.5 ? 0.0 : 1.0;
+        return internalCls == 0.0 ? externalFirstClass : externalSecondClass;
     }
 
-    private double sigma(double x) {
-        return (1.0 / (1.0 + Math.exp(-x))) < 0.5 ? 0.0 : 1.0;
+    @Override protected double grad(long sampleSize, double answer, double prediction) {
+        return (prediction - answer) / (prediction * (1.0 - prediction));
     }
 }

@@ -24,13 +24,12 @@ public abstract class GDBOnTreesTrainer extends GDBTrainer {
     private final int maxDepth;
     private final double minImpurityDecrease;
 
-    private GDBOnTreesTrainer(LossFunction lossFunction,
-        double gradStepSize,
+    private GDBOnTreesTrainer(double gradStepSize,
         Integer modelsCnt,
         int maxDepth,
         double minImpurityDecrease) {
 
-        super(lossFunction, gradStepSize, modelsCnt);
+        super(gradStepSize, modelsCnt);
         this.maxDepth = maxDepth;
         this.minImpurityDecrease = minImpurityDecrease;
     };

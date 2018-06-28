@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.math.statistics.DiscreteDistribution;
-
 /**
  * Decision tree conditional (non-leaf) node.
  */
@@ -76,10 +74,5 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
     /** */
     public DecisionTreeNode getElseNode() {
         return elseNode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double applyRegression(double[] features) {
-        return apply(features);
     }
 }

@@ -17,19 +17,12 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
-import java.util.Arrays;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 
 public abstract class GDBRegressionTrainer extends GDBTrainer {
     public GDBRegressionTrainer(double gradStepSize, Integer modelsCnt) {
-        super(new MSELossFunction(), gradStepSize, modelsCnt);
+        super(gradStepSize, modelsCnt);
     }
 
     @Override
@@ -44,5 +37,9 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
 
     @Override protected double internalLabelToExternal(double x) {
         return x;
+    }
+
+    @Override protected double grad(long sampleSize, double answer, double prediction) {
+        return (2.0 / sampleSize) * (prediction - answer);
     }
 }

@@ -37,12 +37,10 @@ import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Double> {
-    private final LossFunction lossFunction;
     private final double gradientStep;
     private final int countOfModels;
 
-    public GDBTrainer(LossFunction lossFunction, double gradStepSize, Integer modelsCnt) {
-        this.lossFunction = lossFunction;
+    public GDBTrainer(double gradStepSize, Integer modelsCnt) {
         gradientStep = gradStepSize;
         this.countOfModels = modelsCnt;
     }
@@ -71,7 +69,7 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
                 Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
-                return -lossFunction.grad(sampleSize, realAnswer, mdlAnswer);
+                return -grad(sampleSize, realAnswer, mdlAnswer);
             };
 
             models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
@@ -125,4 +123,6 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
             throw new RuntimeException(e);
         }
     }
+
+    protected abstract double grad(long sampleSize, double answer, double prediction);
 }

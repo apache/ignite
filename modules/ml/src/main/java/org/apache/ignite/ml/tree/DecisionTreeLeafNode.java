@@ -45,9 +45,4 @@ public class DecisionTreeLeafNode implements DecisionTreeNode {
     public double getVal() {
         return val;
     }
-
-    /** {@inheritDoc} */
-    @Override public Double applyRegression(double[] features) {
-        return apply(features);
-    }
 }
