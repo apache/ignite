@@ -17,7 +17,6 @@
 
 #include <ignite/impl/thin/cache/cache_client_impl.h>
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
-#include "..\..\..\include\ignite\impl\thin\cache\cache_client_proxy.h"
 
 using namespace ignite::impl::thin;
 using namespace cache;

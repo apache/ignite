@@ -30,7 +30,8 @@
 #include <ifaddrs.h>
 #include <errno.h>
 
-#include <ignite/impl/thin/net/utility.h>
+#include <ignite/ignite_error.h>
+#include <ignite/impl/thin/net/net_utils.h>
 
 namespace ignite
 {
@@ -40,7 +41,7 @@ namespace ignite
         {
             namespace net
             {
-                namespace utility
+                namespace net_utils
                 {
                     void GetLocalAddresses(std::set<std::string>& addrs)
                     {

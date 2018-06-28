@@ -56,10 +56,12 @@ ignite_thin_client_tests_LDFLAGS = \
 	-rdynamic
 
 ignite_thin_client_tests_SOURCES = \
+        src/cache_client_test.cpp \
         src/teamcity/teamcity_boost.cpp \
         src/teamcity/teamcity_messages.cpp \
         src/test_utils.cpp \
         src/ignite_client_test.cpp \
+        src/auth_test.cpp \
         src/ssl_test.cpp
 
 run-check: check

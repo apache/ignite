@@ -355,7 +355,7 @@ namespace ignite
                  * @param key Key.
                  */
                 CacheKeyRequest(int32_t cacheId, bool binary, const Writable& key) :
-                    CacheRequest(cacheId, binary),
+                    CacheRequest<OpCode>(cacheId, binary),
                     key(key)
                 {
                     // No-op.
