@@ -290,12 +290,11 @@ public class ZookeeperClient implements Watcher {
      *
      * @param paths Paths to create.
      * @param createMode Create mode.
-     * @throws KeeperException.NodeExistsException If at least one of target node already exists.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
     void createAll(List<String> paths, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NodeExistsException
+        throws ZookeeperClientFailedException, InterruptedException
     {
         if (paths.isEmpty())
             return;
@@ -337,7 +336,13 @@ public class ZookeeperClient implements Watcher {
                     break;
                 }
                 catch (KeeperException.NodeExistsException e) {
-                    throw e;
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to create nodes using bulk operation: " + e);
+
+                    for (Op op : ops)
+                        createIfNeeded(op.getPath(), null, createMode);
+
+                    break;
                 }
                 catch (Exception e) {
                     onZookeeperError(connStartTime, e);
@@ -587,12 +592,11 @@ public class ZookeeperClient implements Watcher {
      * @param parent Parent path.
      * @param paths Children paths.
      * @param ver Version.
-     * @throws KeeperException.NoNodeException If at least one of nodes does not exist.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
     void deleteAll(@Nullable String parent, List<String> paths, int ver)
-        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
+        throws ZookeeperClientFailedException, InterruptedException
     {
         if (paths.isEmpty())
             return;
@@ -636,7 +640,13 @@ public class ZookeeperClient implements Watcher {
                     break;
                 }
                 catch (KeeperException.NoNodeException e) {
-                    throw e;
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to delete nodes using bulk operation: " + e);
+
+                    for (Op op : ops)
+                        deleteIfExists(op.getPath(), ver);
+
+                    break;
                 }
                 catch (Exception e) {
                     onZookeeperError(connStartTime, e);

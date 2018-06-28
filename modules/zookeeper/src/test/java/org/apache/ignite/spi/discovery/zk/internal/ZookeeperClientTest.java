@@ -164,6 +164,29 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCreateAllNodeExists() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = createClient(SES_TIMEOUT);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+
+        client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
+
+        List<String> paths = new ArrayList<>();
+
+        paths.add("/apacheIgnite/1");
+        paths.add("/apacheIgnite/2");
+        paths.add("/apacheIgnite/3");
+
+        client.createAll(paths, CreateMode.PERSISTENT);
+
+        assertEquals(3, client.getChildren("/apacheIgnite").size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDeleteAll() throws Exception {
         startZK(1);
 
@@ -210,6 +233,23 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
             subPaths.add(String.valueOf(i));
 
         client.deleteAll("/apacheIgnite", subPaths, -1);
+
+        assertTrue(client.getChildren("/apacheIgnite").isEmpty());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeleteAllNoNode() throws Exception {
+        startZK(1);
+
+        ZookeeperClient client = createClient(SES_TIMEOUT);
+
+        client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
+        client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
+        client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
+
+        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2", "3"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
