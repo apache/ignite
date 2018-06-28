@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1807,10 +1806,6 @@ public class GridCacheUtils {
                         entry.initialValue(
                             val,
                             ver,
-                            null,
-                            null,
-                            TxState.NA,
-                            TxState.NA,
                             expiryPlc == null ? 0 : expiryPlc.forCreate(),
                             expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
                             true,

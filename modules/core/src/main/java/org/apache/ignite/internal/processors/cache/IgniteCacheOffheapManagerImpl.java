@@ -1383,8 +1383,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final PageHandler<MvccVersion, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
 
         /** Mvcc update tx state hint handler. */
-        private final PageHandler<Void, Boolean> mvccUpdateTxStateHint =
-            new MvccUpdateTxStateHintHandler();
+        private final PageHandler<Void, Boolean> mvccUpdateTxStateHint = new MvccUpdateTxStateHintHandler();
 
         /** */
         private final PageHandler<MvccDataRow, Boolean> mvccApplyChanges = new MvccApplyChangesHandler();
@@ -1645,43 +1644,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     newVal = true;
                 }
 
-                MvccSnapshot mvccSnapshot = new MvccSnapshotWithoutTxs(
-                    mvccVer.coordinatorVersion(),
-                    mvccVer.counter(),
-                    mvccVer.operationCounter(),
-                    MVCC_COUNTER_NA);
-
-                if (val != null)
-                    val.valueBytes(coCtx);
-
-                MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
-                    key,
-                    val,
-                    ver,
-                    expireTime,
-                    mvccSnapshot,
-                    newMvccVer,
-                    partId,
-                    false, // TODO IGNITE-7185
-                    false,
-                    false,
-                    cctx);
-
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-                if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
-                    updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
-
-                    rowStore.addRow(updateRow);
-
-                    updateRow.cacheId(cctx.cacheId());
-                }
-                else
-                    rowStore.addRow(updateRow);
-
-                if (grp.sharedGroup() && updateRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                    updateRow.cacheId(cctx.cacheId());
-
                 if (newVal) {
                     int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
@@ -1703,9 +1665,34 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     }
                 }
 
-                dataTree.putx(updateRow);
+                if (val != null)
+                    val.valueBytes(coCtx);
+
+                MvccDataRow updateRow = new MvccDataRow(
+                    key,
+                    val,
+                    ver,
+                    partId,
+                    expireTime,
+                    cctx.cacheId(),
+                    mvccVer,
+                    newMvccVer);
 
                 if (val != null) {
+                    assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                    if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
+                        updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
+
+                        rowStore.addRow(updateRow);
+
+                        updateRow.cacheId(cctx.cacheId());
+                    }
+                    else
+                        rowStore.addRow(updateRow);
+
+                    dataTree.putx(updateRow);
+
                     incrementSize(cctx.cacheId());
 
                     // The reason for 'idxRebuild' param being true below

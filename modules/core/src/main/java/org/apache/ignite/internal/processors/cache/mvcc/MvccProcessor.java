@@ -300,7 +300,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * @return Future, which is completed as soon as the lock will be released.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteInternalFuture waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
+    public IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
         TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
 
         LockFuture fut = new LockFuture(cctx.ioPolicy());
@@ -1656,7 +1656,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     }
 
     /** */
-    private static class LockFuture extends GridFutureAdapter implements Waiter, Runnable {
+    private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
         /** */
         private final byte plc;
 

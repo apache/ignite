@@ -401,7 +401,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        isMovingPart(key.partition()));
+                                        isMoving(key.partition()));
 
                                     break;
 
@@ -416,7 +416,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         null,
                                         mvccSnapshot,
                                         op,
-                                        isMovingPart(key.partition()));
+                                        isMoving(key.partition()));
 
                                     break;
 
@@ -606,12 +606,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         for (ClusterNode node : backups) {
             assert !node.isLocal();
 
-            GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), part);
+            boolean moving = isMoving(node, part);
 
-            boolean movingPart =
-                partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED;
-
-            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !movingPart) {
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !moving) {
                 updateMappings(node);
 
                 if (newRemoteTx(node))
@@ -632,13 +629,13 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             if (batch == null)
                 batches.put(node.id(), batch = new Batch(node));
 
-            if (movingPart && hist0 == null) {
+            if (moving && hist0 == null) {
                 assert !F.isEmpty(hist);
 
                 hist0 = fetchHistoryInfo(key, hist);
             }
 
-            batch.add(key, movingPart ? hist0 : val);
+            batch.add(key, moving ? hist0 : val);
 
             if (batch.size() == BATCH_SIZE) {
                 assert batches != null;
@@ -718,12 +715,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         // Check possibility of adding to batch and sending.
         for (ClusterNode node : backupNodes(key)) {
-            GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), key.partition());
-
-            boolean movingPart =
-                (partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED);
-
-            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !movingPart)
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !isMoving(node, key.partition()))
                 continue;
 
             Batch batch = batches.get(node.id());
@@ -873,7 +865,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      * @param part Partition.
      * @return {@code true} if the given partition is rebalancing to any backup node.
      */
-    private boolean isMovingPart(int part) {
+    private boolean isMoving(int part) {
         if (movingParts == null)
             movingParts = new HashMap<>();
 
@@ -885,9 +877,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         List<ClusterNode> dhtNodes = cctx.affinity().nodesByPartition(part, tx.topologyVersion());
 
         for (int i = 1; i < dhtNodes.size(); i++) {
-            GridDhtPartitionState partState = cctx.topology().partitionState(dhtNodes.get(i).id(), part);
-
-            if (partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED) {
+            ClusterNode node = dhtNodes.get(i);
+            if (isMoving(node, part)) {
                 movingParts.put(part, Boolean.TRUE);
 
                 return true;
@@ -897,6 +888,17 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         movingParts.put(part, Boolean.FALSE);
 
         return false;
+    }
+
+    /**
+     * @param node Cluster node.
+     * @param part Partition.
+     * @return {@code true} if the given partition is rebalancing to the given node.
+     */
+    private boolean isMoving(ClusterNode node, int part) {
+        GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), part);
+
+        return partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED;
     }
 
     /** */

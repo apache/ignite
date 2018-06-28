@@ -410,7 +410,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             try {
                 CacheObject val = null;
 
-                Message val0 = vals != null? vals.get(i) : null;
+                Message val0 = vals != null ? vals.get(i) : null;
 
                 CacheEntryInfoCollection entries =
                     val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;

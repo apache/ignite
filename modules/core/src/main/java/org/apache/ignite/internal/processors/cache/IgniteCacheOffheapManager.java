@@ -212,6 +212,24 @@ public interface IgniteCacheOffheapManager {
      * @param entry Entry.
      * @param val Value.
      * @param ver Version.
+     * @param expireTime Expire time.
+     * @return {@code True} if value was inserted.
+     * @throws IgniteCheckedException If failed.
+     */
+    default boolean mvccInitialValue(
+        GridCacheMapEntry entry,
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        long expireTime
+    ) throws IgniteCheckedException {
+        return mvccInitialValue(entry, val, ver, expireTime, null, null);
+    }
+
+    /**
+     * @param entry Entry.
+     * @param val Value.
+     * @param ver Version.
+     * @param expireTime Expire time.
      * @param mvccVer MVCC version.
      * @param newMvccVer New MVCC version.
      * @return {@code True} if value was inserted.
@@ -230,6 +248,7 @@ public interface IgniteCacheOffheapManager {
      * @param entry Entry.
      * @param val Value.
      * @param ver Version.
+     * @param expireTime Expire time.
      * @param mvccVer MVCC version.
      * @param newMvccVer New MVCC version.
      * @param txState Tx state hint for the mvcc version.
@@ -272,7 +291,7 @@ public interface IgniteCacheOffheapManager {
      * @param primary {@code True} if on primary node.
      * @param entry Entry.
      * @param mvccSnapshot MVCC snapshot.
-     * @param needHistory
+     * @param needHistory Flag to collect history.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -754,7 +773,7 @@ public interface IgniteCacheOffheapManager {
          * @param primary {@code True} if update is executed on primary node.
          * @param key Key.
          * @param mvccSnapshot MVCC snapshot.
-         * @param needHistory
+         * @param needHistory Flag to collect history.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
          */

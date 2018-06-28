@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -3550,10 +3549,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             entry.initialValue(cacheVal,
                 ver,
-                null,
-                null,
-                TxState.NA,
-                TxState.NA,
                 ttl,
                 CU.EXPIRE_TIME_CALCULATE,
                 false,

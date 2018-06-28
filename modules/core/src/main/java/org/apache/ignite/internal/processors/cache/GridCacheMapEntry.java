@@ -872,7 +872,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     // Update indexes before actual write to entry.
                     if (cctx.mvccEnabled())
-                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null, null);
+                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime);
                     else
                         storeValue(ret, expTime, nextVer, null);
 
@@ -986,7 +986,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Update indexes.
                     if (ret != null) {
                         if (cctx.mvccEnabled())
-                            cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null, null);
+                            cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime);
                         else
                             storeValue(ret, expTime, nextVer, null);
 
@@ -1103,7 +1103,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
 
-                IgniteInternalFuture lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, updateCntr, mvccVer,
                     op, needHistory, resFut));
@@ -1187,6 +1187,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             res = cctx.offheap().mvccRemove(tx.local(), this, mvccVer, needHistory);
 
+            assert res != null;
+
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
             else if (res.resultType() == ResultType.LOCKED) {
@@ -1196,7 +1198,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
 
-                IgniteInternalFuture lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccRemoveLockListener(tx, this, affNodeId, topVer, updateCntr, mvccVer, needHistory,
                     resFut));
@@ -1238,7 +1240,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx, MvccSnapshot mvccVer)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert tx != null;
@@ -1272,7 +1273,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
 
-                IgniteInternalFuture lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccAcquireLockListener(tx, this, mvccVer, resFut));
 
@@ -3425,7 +3426,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (val != null) {
                     if (cctx.mvccEnabled())
-                        cctx.offheap().mvccInitialValue(this, val, newVer, expTime, null, null);
+                        cctx.offheap().mvccInitialValue(this, val, newVer, expTime);
                     else
                         storeValue(val, expTime, newVer, null);
 
@@ -4880,7 +4881,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion()).listen(this);
+                    IgniteInternalFuture<?> lockFuture = cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion());
+
+                    lockFuture.listen(this);
 
                     return;
                 }

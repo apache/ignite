@@ -1127,10 +1127,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                 entry0.initialValue(val0,
                                     ver,
-                                    null,
-                                    null,
-                                    TxState.NA,
-                                    TxState.NA,
                                     ttl,
                                     expireTime,
                                     false,

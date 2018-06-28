@@ -309,7 +309,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param dhtVer Dht version assigned at primary node.
      * @param dhtFutId Dht future id assigned at primary node.
      */
-    private void processBatchLocalBackupKeys(UUID primaryId, Collection<Object> rows, GridCacheVersion dhtVer,
+    private void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
         IgniteUuid dhtFutId) {
         assert dhtVer != null;
         assert dhtFutId != null;
@@ -319,36 +319,17 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         assert op != READ;
 
         final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
-        final ArrayList<Message> vals = (op == DELETE) ? null :
-            new ArrayList<>(rows.size());
+        final ArrayList<Message> vals = op != DELETE ? new ArrayList<>(rows.size()) : null;
 
         for (Object row : rows) {
-            KeyCacheObject key;
-
             if (op == DELETE)
-                key = cctx.toCacheKeyObject(row);
-            else
-                key = cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey());
-
-            keys.add(key);
-
-            if (vals != null)
+                keys.add(cctx.toCacheKeyObject(row));
+            else {
+                keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
                 vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
+            }
         }
 
-        processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
-    }
-
-    /**
-     *
-     * @param primaryId Primary node id.
-     * @param keys Keys.
-     * @param vals Values.
-     * @param dhtVer Dht version.
-     * @param dhtFutId Dht future id.
-     */
-    private void processBatchLocalBackupKeys0(UUID primaryId, List<KeyCacheObject> keys, List<Message> vals,
-        GridCacheVersion dhtVer, IgniteUuid dhtFutId) {
         try {
             GridDhtTxRemote dhtTx = cctx.tm().tx(dhtVer);
 
@@ -666,7 +647,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         /**
          * @return Collection of local backup rows.
          */
-        public Collection<Object> localBackupRows() {
+        public List<Object> localBackupRows() {
             return locBkpRows;
         }
 
