@@ -935,14 +935,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param grpName Group name.
      * @param dsType Data structure type.
      * @param dsName Data structure name.
-     * @param separated Separated cache required.
+     * @param separated Separated cache flag.
      * @return Data structure cache.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName,
-        DataStructureType dsType, String dsName, boolean separated)
-        throws IgniteCheckedException
-    {
+    private IgniteInternalCache compatibleCache(CollectionConfiguration cfg,
+        String grpName,
+        DataStructureType dsType,
+        String dsName,
+        boolean separated
+    ) throws IgniteCheckedException {
         String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
             cfg.getBackups() + "@" + grpName;
 
@@ -1020,7 +1022,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param grpName Cache group name.
      * @param type Data structure type.
      * @param create Create flag.
-     * @param separated Separated cache required.
+     * @param separated Separated cache flag.
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
      */
@@ -1048,9 +1050,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
-        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
+        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = ctx.cache().cache(metaCacheName);
 
-        if (metaCache0 == null) {
+        if (metaCache == null) {
             CacheConfiguration ccfg = null;
 
             if (!create) {
@@ -1071,21 +1073,21 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 true,
                 true).get();
 
-            metaCache0 = ctx.cache().cache(metaCacheName);
+            metaCache = ctx.cache().cache(metaCacheName);
 
-            assert metaCache0 != null;
+            assert metaCache != null;
         }
 
         IgniteInternalCache cache = null;
 
-        AtomicDataStructureValue oldVal = metaCache0.get(new GridCacheInternalKeyImpl(name, grpName));
+        AtomicDataStructureValue oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
 
         if (oldVal == null && create) {
             cache = compatibleCache(cfg, grpName, type, name, separated);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
-            oldVal = metaCache0.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
+            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
         }
 
         if (oldVal != null) {
@@ -1106,6 +1108,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 if (oldCfg.isCollocated() != cfg.isCollocated() ||
                     oldCfg.getCacheMode() != cfg.getCacheMode() ||
+                    oldCfg.getBackups() != cfg.getBackups() ||
                     oldCfg.getAtomicityMode() != cfg.getAtomicityMode() ||
                     !Objects.equals(oldNodeFilter, newNodeFilter)) {
                     throw new IgniteCheckedException("Another collection with the same name but different " +
@@ -1114,6 +1117,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         ", existingCollocated=" + oldCfg.isCollocated() +
                         ", newCacheMode=" + cfg.getCacheMode() +
                         ", existingCacheMode=" + oldCfg.getCacheMode() +
+                        ", newBackups=" + cfg.getBackups() +
+                        ", existingBackups=" + oldCfg.getBackups() +
                         ", newAtomicityMode=" + cfg.getAtomicityMode() +
                         ", existingAtomicityMode=" + oldCfg.getAtomicityMode() +
                         ", newNodeFilter=" + newNodeFilter +

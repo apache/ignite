@@ -131,19 +131,17 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             IgniteKernal grid = (IgniteKernal)grid(i);
 
             for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
-                if (cache.context().dataStructuresCache()) {
-                    CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
+                CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
 
-                    Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
+                Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
 
-                    assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
+                assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
 
-                    map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
+                map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
-                    assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.name() + ", map=" + map + ']',
-                        0,
-                        map.size());
-                }
+                assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.name() + ", map=" + map + ']',
+                    0,
+                    map.size());
             }
         }
     }
@@ -809,6 +807,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
         boolean separated = separated(set0);
+
+        if (separated)
+            awaitPartitionMapExchange();
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());

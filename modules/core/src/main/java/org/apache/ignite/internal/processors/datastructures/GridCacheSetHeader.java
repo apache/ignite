@@ -53,7 +53,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /**
      * @param id Set UUID.
      * @param collocated Collocation flag.
-     * @param separated {@code True} If this version of IgniteSet uses separated cache.
+     * @param separated Separated cache flag.
      */
     public GridCacheSetHeader(IgniteUuid id, boolean collocated, boolean separated) {
         assert !(separated && collocated);

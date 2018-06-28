@@ -392,8 +392,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         boolean create,
-        boolean separated)
-        throws IgniteCheckedException {
+        boolean separated) throws IgniteCheckedException
+    {
         return set0(name, colloc, create, separated);
     }
 
