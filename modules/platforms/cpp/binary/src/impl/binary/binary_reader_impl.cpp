@@ -445,6 +445,26 @@ namespace ignite
                 return ReadStringInternal(res, len);
             }
 
+            void BinaryReaderImpl::ReadString(std::string& res)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+                
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr == IGNITE_HDR_NULL)
+                    res.clear();
+
+                if (hdr != IGNITE_TYPE_STRING)
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
+
+                int32_t realLen = stream->ReadInt32();
+
+                res.resize(static_cast<size_t>(realLen));
+
+                stream->ReadInt8Array(reinterpret_cast<int8_t*>(&res[0]), realLen);
+            }
+
             int32_t BinaryReaderImpl::ReadString(const char* fieldName, char* res, const int32_t len)
             {
                 CheckRawMode(false);
@@ -526,7 +546,7 @@ namespace ignite
                     return realLen;
                 }
                 else if (hdr != IGNITE_HDR_NULL)
-                    ThrowOnInvalidHeader(IGNITE_TYPE_ARRAY, hdr);
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
 
                 return -1;
             }
