@@ -59,6 +59,7 @@ panel-collapsible {
 
     .#{&}__actions {
         margin-left: auto;
+        flex: 0 0 auto;
 
         & > panel-actions {
             display: flex;

@@ -23,7 +23,6 @@ import {merge} from 'rxjs/observable/merge';
 import {empty} from 'rxjs/observable/empty';
 import {of} from 'rxjs/observable/of';
 import {fromPromise} from 'rxjs/observable/fromPromise';
-import {uniqueName} from 'app/utils/uniqueName';
 import uniq from 'lodash/uniq';
 
 import {
@@ -35,7 +34,7 @@ import {
     shortIGFSsActionTypes,
     modelsActionTypes,
     igfssActionTypes
-} from './../reducer';
+} from '../reducer';
 
 import {
     REMOVE_CLUSTER_ITEMS,
@@ -43,6 +42,7 @@ import {
     CONFIRM_CLUSTERS_REMOVAL,
     CONFIRM_CLUSTERS_REMOVAL_OK,
     COMPLETE_CONFIGURATION,
+    ADVANCED_SAVE_COMPLETE_CONFIGURATION,
     ADVANCED_SAVE_CLUSTER,
     ADVANCED_SAVE_CACHE,
     ADVANCED_SAVE_IGFS,
@@ -141,7 +141,7 @@ export default class ConfigEffects {
             ].filter((v) => v)));
 
         this.saveCompleteConfigurationEffect$ = this.ConfigureState.actions$
-            .let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION'))
+            .let(ofType(ADVANCED_SAVE_COMPLETE_CONFIGURATION))
             .switchMap((action) => {
                 const actions = [
                     {
@@ -427,9 +427,21 @@ export default class ConfigEffects {
             .do((a) => this.configurationDownload.downloadClusterConfiguration(a.changedItems.cluster))
             .ignoreElements();
 
+        this.advancedDownloadAfterSaveEffect$ = merge(
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_CLUSTER)),
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_CACHE)),
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_IGFS)),
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_MODEL)),
+        )
+            .filter((a) => a.download)
+            .zip(this.ConfigureState.actions$.let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK')))
+            .pluck('1')
+            .do((a) => this.configurationDownload.downloadClusterConfiguration(a.changedItems.cluster))
+            .ignoreElements();
+
         this.advancedSaveRedirectEffect$ = this.ConfigureState.actions$
             .let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK'))
-            .withLatestFrom(this.ConfigureState.actions$.let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION')))
+            .withLatestFrom(this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_COMPLETE_CONFIGURATION)))
             .pluck('1', 'changedItems')
             .map((req) => {
                 const firstChangedItem = Object.keys(req).filter((k) => k !== 'cluster')
@@ -577,7 +589,7 @@ export default class ConfigEffects {
         )
             .withLatestFrom(this.ConfigureState.state$.pluck('edit'))
             .map(([action, edit]) => ({
-                type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION',
+                type: ADVANCED_SAVE_COMPLETE_CONFIGURATION,
                 changedItems: _applyChangedIDs(edit, action)
             }));
 

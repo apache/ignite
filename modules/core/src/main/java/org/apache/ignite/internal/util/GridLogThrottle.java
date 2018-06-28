@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_THROTTLE_CAPACITY;
+import static org.jsr166.ConcurrentLinkedHashMap.DFLT_CONCUR_LVL;
 
 /**
  * Grid log throttle.
  * <p>
  * Errors are logged only if they were not logged for the last
- * {@link #throttleTimeout} number of minutes.
+ * {@link #throttleTimeout} milliseconds.
  * Note that not only error messages are checked for duplicates, but also exception
  * classes.
  */
@@ -37,12 +41,15 @@ public class GridLogThrottle {
     /** Default throttle timeout in milliseconds (value is <tt>5 * 60 * 1000</tt>). */
     public static final int DFLT_THROTTLE_TIMEOUT = 5 * 60 * 1000;
 
-    /** Throttle timeout. */
-    private static int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
+    /** Throttle timeout in milliseconds. */
+    private static volatile int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
+
+    /** Throttle capacity. */
+    private static final int throttleCap = IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, 128);
 
     /** Errors. */
     private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
-        new ConcurrentHashMap<>();
+        new ConcurrentLinkedHashMap<>(throttleCap, 1f, DFLT_CONCUR_LVL, throttleCap);
 
     /**
      * Sets system-wide log throttle timeout.
@@ -58,8 +65,17 @@ public class GridLogThrottle {
      *
      * @return System-side log throttle timeout.
      */
-    public static long throttleTimeout() {
+    public static int throttleTimeout() {
         return throttleTimeout;
+    }
+
+    /**
+     * Gets system-wide log throttle capacity.
+     *
+     * @return System-side log throttle capacity.
+     */
+    public static int throttleCapacity() {
+        return throttleCap;
     }
 
     /**

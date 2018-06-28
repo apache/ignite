@@ -19,7 +19,6 @@ package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
@@ -63,40 +62,6 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
-        }
-    }
-
-    /**
-     * Test failure handler implementation
-     */
-    private class TestFailureHandler implements FailureHandler {
-        /** Invalidate. */
-        private final boolean invalidate;
-
-        /** Latch. */
-        private final CountDownLatch latch;
-
-        /** Failure context. */
-        volatile FailureContext failureCtx;
-
-        /**
-         * @param invalidate Invalidate.
-         * @param latch Latch.
-         */
-        TestFailureHandler(boolean invalidate, CountDownLatch latch) {
-            this.invalidate = invalidate;
-            this.latch = latch;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-            this.failureCtx = failureCtx;
-
-            this.latch.countDown();
-
-            ignite.log().warning("Handled ignite failure: " + failureCtx);
-
-            return invalidate;
         }
     }
 

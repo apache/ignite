@@ -35,8 +35,8 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setInitialSize(200 * 1024 * 1024)
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setInitialSize(200L * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );

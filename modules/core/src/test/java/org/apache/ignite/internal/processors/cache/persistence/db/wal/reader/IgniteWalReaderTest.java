@@ -140,7 +140,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(1024 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(1024L * 1024 * 1024).setPersistenceEnabled(true))
             .setPageSize(PAGE_SIZE)
             .setWalHistorySize(1)
             .setWalSegmentSize(1024 * 1024)
@@ -828,7 +828,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
         cfg.setAtomicityMode(mode);
-        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary()
+            .withAllowAtomicOpsInTx();
 
         try (Transaction tx = ig.transactions().txStart()) {
             for (int i = 0; i < 10; i++) {

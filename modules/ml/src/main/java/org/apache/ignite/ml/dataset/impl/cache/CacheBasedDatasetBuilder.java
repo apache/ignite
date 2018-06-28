@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -52,15 +53,31 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
+    /** Filter for {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> filter;
+
     /**
-     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
+     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
+     * predicate that passes all upstream entries to dataset.
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      */
     public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache) {
+        this(ignite, upstreamCache, (a, b) -> true);
+    }
+
+    /**
+     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
+     *
+     * @param ignite Ignite instance.
+     * @param upstreamCache Ignite Cache with {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
+     */
+    public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
+        this.filter = filter;
     }
 
     /** {@inheritDoc} */
@@ -84,12 +101,19 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         ComputeUtils.initContext(
             ignite,
             upstreamCache.getName(),
+            filter,
             datasetCache.getName(),
             partCtxBuilder,
             RETRIES,
             RETRY_INTERVAL
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, datasetCache, partDataBuilder, datasetId);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, datasetCache, partDataBuilder, datasetId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache,
+            (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2));
     }
 }

@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-form(id='igfs' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
+form(id='igfs' name='ui.inputForm' novalidate)
     include ./templates/general
 
     include ./templates/secondary
@@ -32,7 +32,4 @@ form(id='igfs' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
         ng-click='$ctrl.confirmAndReset()'
     )
         | Cancel
-    button.btn-ignite.btn-ignite--success(
-        form='igfs'
-        type='submit'
-    ) Save
+    pc-split-button(actions=`::$ctrl.formActions`)

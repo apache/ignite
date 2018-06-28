@@ -89,6 +89,12 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     /** Cache names. */
     private Set<String> cacheNames;
 
+    /** If provided only first K elements will be validated. */
+    private final int checkFirst;
+
+    /** If provided only each Kth element will be validated. */
+    private final int checkThrough;
+
     /** Counter of processed partitions. */
     private final AtomicInteger processedPartitions = new AtomicInteger(0);
 
@@ -109,9 +115,13 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
     /**
      * @param cacheNames Cache names.
+     * @param checkFirst If positive only first K elements will be validated.
+     * @param checkThrough If positive only each Kth element will be validated.
      */
-    public ValidateIndexesClosure(Set<String> cacheNames) {
+    public ValidateIndexesClosure(Set<String> cacheNames, int checkFirst, int checkThrough) {
         this.cacheNames = cacheNames;
+        this.checkFirst = checkFirst;
+        this.checkThrough = checkThrough;
     }
 
     /** {@inheritDoc} */
@@ -320,11 +330,38 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             m.setAccessible(true);
 
+            final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+            final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
+
+            long current = 0;
+            long processedNumber = 0;
+
             while (it.hasNextX()) {
                 if (enoughIssues)
                     break;
 
                 CacheDataRow row = it.nextX();
+
+                if (skipConditions) {
+                    if (bothSkipConditions) {
+                        if (processedNumber > checkFirst)
+                            break;
+                        else if (current++ % checkThrough > 0)
+                            continue;
+                        else
+                            processedNumber++;
+                    }
+                    else {
+                        if (checkFirst > 0) {
+                            if (current++ > checkFirst)
+                                break;
+                        }
+                        else {
+                            if (current++ % checkThrough > 0)
+                                continue;
+                        }
+                    }
+                }
 
                 int cacheId = row.cacheId() == 0 ? grpCtx.groupId() : row.cacheId();
 
@@ -462,14 +499,50 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             enoughIssues = true;
         }
 
+        final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+        final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
+
+        long current = 0;
+        long processedNumber = 0;
+
+        KeyCacheObject previousKey = null;
+
         while (!enoughIssues) {
             KeyCacheObject h2key = null;
 
             try {
-                if (!cursor.next())
-                    break;
+                try {
+                    if (!cursor.next())
+                        break;
+                }
+                catch (IllegalStateException e) {
+                    throw new IgniteCheckedException("Key is present in SQL index, but is missing in corresponding " +
+                        "data page. Previous successfully read key: " +
+                        CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true), e);
+                }
 
                 GridH2Row h2Row = (GridH2Row)cursor.get();
+
+                if (skipConditions) {
+                    if (bothSkipConditions) {
+                        if (processedNumber > checkFirst)
+                            break;
+                        else if (current++ % checkThrough > 0)
+                            continue;
+                        else
+                            processedNumber++;
+                    }
+                    else {
+                        if (checkFirst > 0) {
+                            if (current++ > checkFirst)
+                                break;
+                        }
+                        else {
+                            if (current++ % checkThrough > 0)
+                                continue;
+                        }
+                    }
+                }
 
                 h2key = h2Row.key();
 
@@ -477,6 +550,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 if (cacheDataStoreRow == null)
                     throw new IgniteCheckedException("Key is present in SQL index, but can't be found in CacheDataTree.");
+
+                previousKey = h2key;
             }
             catch (Throwable t) {
                 Object o = CacheObjectUtils.unwrapBinaryIfNeeded(

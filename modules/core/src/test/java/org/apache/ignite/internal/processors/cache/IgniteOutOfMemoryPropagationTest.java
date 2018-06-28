@@ -229,7 +229,7 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(10 * 1024 * 1024 + 1));
+            .setMaxSize(10L * 1024 * 1024 + 1));
 
         cfg.setDataStorageConfiguration(memCfg);
 

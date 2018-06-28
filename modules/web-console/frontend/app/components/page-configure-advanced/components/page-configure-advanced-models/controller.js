@@ -156,8 +156,8 @@ export default class PageConfigureAdvancedModels {
         this.$state.go('base.configuration.edit.advanced.models.model', {modelID});
     }
 
-    save(model) {
-        this.ConfigureState.dispatchAction(advancedSaveModel(model));
+    save({model, download}) {
+        this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
     }
 
     /**
