@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.logger.java.JavaLogger;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
@@ -133,6 +134,9 @@ class LongJVMPauseDetector {
 
         worker.setDaemon(true);
         worker.start();
+
+        if (log.isDebugEnabled())
+            log.debug("LongJVMPauseDetector was successfully started");
     }
 
     /**
