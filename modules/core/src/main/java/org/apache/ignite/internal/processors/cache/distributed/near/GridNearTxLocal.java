@@ -1827,19 +1827,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param cacheCtx Cache context.
-     * @param op Cache operation.
      * @param it Entries iterator.
      * @param pageSize Page size.
      * @param timeout Timeout.
+     * @param sequential Sequential locking flag.
      * @return Operation future.
      */
     public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx,
-        GridCacheOperation op, UpdateSourceIterator<?> it, int pageSize, long timeout) {
+        UpdateSourceIterator<?> it, int pageSize, long timeout, boolean sequential) {
         try {
             beforePut(cacheCtx, false, true);
 
             return updateAsync(new GridNearTxQueryResultsEnlistFuture(cacheCtx, this,
-                timeout, op, it, pageSize));
+                timeout, it, pageSize, sequential));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);

@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -181,7 +180,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistRequest.class, new CI2<UUID, GridNearTxQueryEnlistRequest>() {
             @Override public void apply(UUID nodeId, GridNearTxQueryEnlistRequest req) {
-                processNearEnlistRequest(nodeId, req);
+                processNearTxQueryEnlistRequest(nodeId, req);
             }
         });
 
@@ -208,7 +207,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryResultsEnlistRequest.class,
             new CI2<UUID, GridNearTxQueryResultsEnlistRequest>() {
                 @Override public void apply(UUID nodeId, GridNearTxQueryResultsEnlistRequest req) {
-                    processNearTxEnlistRequest(nodeId, req);
+                    processNearTxQueryResultsEnlistRequest(nodeId, req);
                 }
             });
 
@@ -689,7 +688,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processNearEnlistRequest(UUID nodeId, final GridNearTxQueryEnlistRequest req) {
+    private void processNearTxQueryEnlistRequest(UUID nodeId, final GridNearTxQueryEnlistRequest req) {
         assert nodeId != null;
         assert req != null;
 
@@ -749,7 +748,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.timeout(),
             ctx);
 
-        fut.listen(new NearTxQueryEnlistResultHandler<>(tx, nearNode, req.version()));
+        fut.listen(NearTxQueryEnlistResultHandler.instance());
 
         fut.init();
     }
@@ -1971,7 +1970,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processNearTxEnlistRequest(UUID nodeId, final GridNearTxQueryResultsEnlistRequest req) {
+    private void processNearTxQueryResultsEnlistRequest(UUID nodeId, final GridNearTxQueryResultsEnlistRequest req) {
         assert nodeId != null;
         assert req != null;
 
@@ -2026,7 +2025,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.rows(),
             req.operation());
 
-        fut.listen(new NearTxQueryEnlistResultHandler<>(tx, nearNode, req.version()));
+        fut.listen(NearTxQueryEnlistResultHandler.instance());
 
         fut.init();
     }
@@ -2271,7 +2270,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param res Response message.
      */
     private void processDhtTxQueryEnlistResponse(UUID backup, GridDhtTxQueryEnlistResponse res) {
-        GridDhtTxQueryEnlistAbstractFuture fut = (GridDhtTxQueryEnlistAbstractFuture)
+        GridDhtTxAbstractEnlistFuture fut = (GridDhtTxAbstractEnlistFuture)
             ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
@@ -2285,81 +2284,4 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         fut.onResult(backup, res);
     }
 
-    /**
-     * @param <Rsp>
-     */
-    private class NearTxQueryEnlistResultHandler<Rsp extends GridNearTxQueryEnlistResponse>
-        implements CI1<IgniteInternalFuture<Rsp>> {
-        /** */
-        private static final long serialVersionUID = 5189735824793607906L;
-
-        /** */
-        private GridDhtTxLocal tx;
-
-        /** */
-        private ClusterNode nearNode;
-
-        /** */
-        private GridCacheVersion version;
-
-        /** */
-        private NearTxQueryEnlistResultHandler(GridDhtTxLocal tx, ClusterNode nearNode, GridCacheVersion version) {
-            this.tx = tx;
-            this.nearNode = nearNode;
-            this.version = version;
-        }
-
-        /** */
-        @Override public void apply(IgniteInternalFuture<Rsp> future) {
-            Rsp res = future.result();
-
-            if (res == null) {
-                assert future.error() != null : future;
-                assert future instanceof GridDhtTxQueryEnlistAbstractFuture;
-
-                res = ((GridDhtTxQueryEnlistAbstractFuture<Rsp>)future).createResponse(future.error());
-            }
-
-            if (res.removeMapping()) {
-                final Rsp res0 = res;
-
-                tx.rollbackDhtLocalAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
-                        try {
-                            ctx.io().send(nearNode, res0, ctx.ioPolicy());
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to send near enlist response [" +
-                                "txId=" + version +
-                                ", node=" + nearNode.id() +
-                                ", res=" + res0 + ']', e);
-
-                            throw new GridClosureException(e);
-                        }
-                    }
-                });
-
-                return;
-            }
-
-            try {
-                ctx.io().send(nearNode, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send near enlist response (will rollback transaction) [" +
-                    "txId=" + version +
-                    ", node=" + nearNode.id() +
-                    ", res=" + res + ']', e);
-
-                try {
-                    tx.rollbackDhtLocalAsync();
-                }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
-
-                throw new GridClosureException(e);
-            }
-        }
-    }
 }

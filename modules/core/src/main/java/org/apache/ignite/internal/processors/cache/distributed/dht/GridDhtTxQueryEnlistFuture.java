@@ -22,20 +22,17 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Cache lock future.
  */
-public final class GridDhtTxQueryEnlistFuture
-    extends GridDhtTxQueryEnlistAbstractFuture<GridNearTxQueryEnlistResponse> {
+public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFuture {
     /** Involved cache ids. */
     private final int[] cacheIds;
 
@@ -123,24 +120,6 @@ public final class GridDhtTxQueryEnlistFuture
     @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
         return cctx.kernalContext().query().prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry,
                 params, flags, pageSize, 0, topVer, mvccSnapshot, new GridQueryCancel());
-    }
-
-    /**
-     * @param err Error.
-     * @return Prepare response.
-     */
-    @NotNull @Override public GridNearTxQueryEnlistResponse createResponse(@NotNull Throwable err) {
-        return new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, err);
-    }
-
-    /**
-     * @return Prepare response.
-     */
-    @NotNull @Override public GridNearTxQueryEnlistResponse createResponse() {
-        assert tx.queryEnlisted() || cnt == 0;
-
-        return new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId,
-            nearLockVer, cnt, tx.empty() && !tx.queryEnlisted());
     }
 
     /** {@inheritDoc} */

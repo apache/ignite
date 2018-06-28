@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,6 +54,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -77,8 +80,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     private static final AtomicIntegerFieldUpdater<GridNearTxQueryResultsEnlistFuture> SKIP_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxQueryResultsEnlistFuture.class, "skipCntr");
 
-    /** */
-    private GridCacheOperation op;
+    /** Marker object. */
+    private static final Object FINISHED = new Object();
 
     /** */
     private final UpdateSourceIterator<?> it;
@@ -108,25 +111,27 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     /** Topology locked flag. */
     private boolean topLocked;
 
+    /** */
+    private final boolean sequential;
+
     /**
      * @param cctx Cache context.
      * @param tx Transaction.
      * @param timeout Timeout.
-     * @param op Cache operation.
      * @param it Rows iterator.
      * @param batchSize Batch size.
+     * @param sequential Sequential locking flag.
      */
-    GridNearTxQueryResultsEnlistFuture(GridCacheContext<?, ?> cctx,
+    public GridNearTxQueryResultsEnlistFuture(GridCacheContext<?, ?> cctx,
         GridNearTxLocal tx,
         long timeout,
-        GridCacheOperation op,
         UpdateSourceIterator<?> it,
-        int batchSize) {
+        int batchSize, boolean sequential) {
         super(cctx, tx, timeout);
 
-        this.op = op;
         this.it = it;
         this.batchSize = batchSize > 0 ? batchSize : DFLT_BATCH_SIZE;
+        this.sequential = sequential;
     }
 
     /** {@inheritDoc} */
@@ -142,32 +147,28 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param nodeId Node that is ready for a new batch.
      */
     private void sendNextBatches(@Nullable UUID nodeId) {
-        Collection<Batch> next;
-
         try {
-            next = mapRows(nodeId);
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
+            Collection<Batch> next = continueLoop(nodeId);
 
-            return;
-        }
-
-        if (next == null)
-            return;
-
-        boolean first = (nodeId != null);
-
-        for (Batch batch : next) {
-            if (isDone())
+            if (next == null)
                 return;
 
-            ClusterNode node = batch.node();
+            boolean first = (nodeId != null);
 
-            sendBatch(node, batch, first);
+            for (Batch batch : next) {
+                ClusterNode node = batch.node();
 
-            if (!node.isLocal())
-                first = false;
+                sendBatch(node, batch, first);
+
+                if (!node.isLocal())
+                    first = false;
+            }
+        }
+        catch (Throwable e) {
+            onDone(e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -178,32 +179,28 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @return Collection of newly completed batches.
      * @throws IgniteCheckedException If failed.
      */
-    private Collection<Batch> mapRows(@Nullable UUID nodeId) throws IgniteCheckedException {
+    private Collection<Batch> continueLoop(@Nullable UUID nodeId) throws IgniteCheckedException {
         if (nodeId != null)
             batches.remove(nodeId);
 
-        ArrayList<Batch> res = null;
-
         // Accumulate number of batches released since we got here.
         // Let only one thread do the looping.
-        if (SKIP_UPD.getAndIncrement(this) != 0)
+        if (isDone() || SKIP_UPD.getAndIncrement(this) != 0)
             return null;
+
+        ArrayList<Batch> res = null; Batch batch = null;
 
         boolean flush = false;
 
+        GridCacheOperation op = it.operation();
+
         while (true) {
-            Object cur = (peek != null) ? peek : (it.hasNextX() ? it.nextX() : null);
+            while (hasNext0()) {
+                checkCompleted();
 
-            while (cur != null) {
-                if (isDone())
-                    return null; // Cancelled.
+                Object cur = next0();
 
-                Object key;
-
-                if (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ)
-                    key = cctx.toCacheKeyObject(cur);
-                else
-                    key = cctx.toCacheKeyObject(((IgniteBiTuple)cur).getKey());
+                KeyCacheObject key = cctx.toCacheKeyObject(op == DELETE || op == READ ? cur : ((IgniteBiTuple)cur).getKey());
 
                 List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
 
@@ -213,16 +210,18 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
-                Batch batch = batches.get(node.id());
+                if (!sequential)
+                    batch = batches.get(node.id());
+                else if (batch != null && !batch.node().equals(node))
+                    res = markReady(res, batch);
 
-                if (batch == null) {
-                    batch = new Batch(node);
-
-                    batches.put(node.id(), batch);
-                }
+                if (batch == null)
+                    batches.put(node.id(), batch = new Batch(node));
 
                 if (batch.ready()) {
                     // Can't advance further at the moment.
+                    batch = null;
+
                     peek = cur;
 
                     it.beforeDetach();
@@ -232,21 +231,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     break;
                 }
 
-                peek = null;
+                batch.add(op == READ || op == DELETE ? key : cur,
+                    op != READ && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
 
-                batch.add(op == GridCacheOperation.DELETE ? key : cur,
-                    cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
-
-                cur = it.hasNextX() ? it.nextX() : null;
-
-                if (batch.size() == batchSize) {
-                    batch.ready(true);
-
-                    if (res == null)
-                        res = new ArrayList<>();
-
-                    res.add(batch);
-                }
+                if (batch.size() == batchSize)
+                    res = markReady(res, batch);
             }
 
             if (SKIP_UPD.decrementAndGet(this) == 0)
@@ -259,14 +248,14 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             return res;
 
         // No data left - flush incomplete batches.
-        for (Batch batch : batches.values()) {
-            if (!batch.ready()) {
+        for (Batch batch0 : batches.values()) {
+            if (!batch0.ready()) {
                 if (res == null)
                     res = new ArrayList<>();
 
-                batch.ready(true);
+                batch0.ready(true);
 
-                res.add(batch);
+                res.add(batch0);
             }
         }
 
@@ -274,6 +263,43 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             onDone(this.res);
 
         return res;
+    }
+
+    /** */
+    private Object next0() {
+        if (!hasNext0())
+            throw new NoSuchElementException();
+
+        Object cur;
+
+        if ((cur = peek) != null)
+            peek = null;
+        else
+            cur = it.next();
+
+        return cur;
+    }
+
+    /** */
+    private boolean hasNext0() {
+        if (peek == null && !it.hasNext())
+            peek = FINISHED;
+
+        return peek != FINISHED;
+    }
+
+    /** */
+    private ArrayList<Batch> markReady(ArrayList<Batch> batches, Batch batch) {
+        if (!batch.ready()) {
+            batch.ready(true);
+
+            if (batches == null)
+                batches = new ArrayList<>();
+
+            batches.add(batch);
+        }
+
+        return batches;
     }
 
     /**
@@ -288,14 +314,18 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         assert dhtVer != null;
         assert dhtFutId != null;
 
+        GridCacheOperation op = it.operation();
+
+        assert op != READ;
+
         final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
-        final ArrayList<Message> vals = (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ) ? null :
+        final ArrayList<Message> vals = (op == DELETE) ? null :
             new ArrayList<>(rows.size());
 
         for (Object row : rows) {
             KeyCacheObject key;
 
-            if (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ)
+            if (op == DELETE)
                 key = cctx.toCacheKeyObject(row);
             else
                 key = cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey());
@@ -354,7 +384,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, op, keys, vals, mvccSnapshot.withoutActiveTransactions());
+            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions());
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -371,13 +401,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param batch Batch.
      * @param first First mapping flag.
      */
-    private void sendBatch(ClusterNode node, Batch batch, boolean first) {
-        GridDistributedTxMapping mapping = tx.mappings().get(node.id());
-
-        if (mapping == null)
-            tx.mappings().put(mapping = new GridDistributedTxMapping(node));
-
-        mapping.markQueryUpdate();
+    private void sendBatch(ClusterNode node, Batch batch, boolean first) throws IgniteCheckedException {
+        updateMappings(node);
 
         boolean clientFirst = first && cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
 
@@ -397,30 +422,25 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param batchFut Mini-future for the batch.
      * @param clientFirst {@code true} if originating node is client and it is a first request to any data node.
      */
-    private void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) {
+    private void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) throws IgniteCheckedException {
         assert batchFut != null;
 
-        try {
-            GridNearTxQueryResultsEnlistRequest req = new GridNearTxQueryResultsEnlistRequest(cctx.cacheId(),
-                threadId,
-                futId,
-                batchId,
-                tx.subjectId(),
-                topVer,
-                lockVer,
-                mvccSnapshot,
-                clientFirst,
-                remainingTime(),
-                tx.remainingTime(),
-                tx.taskNameHash(),
-                batchFut.rows(),
-                op);
+        GridNearTxQueryResultsEnlistRequest req = new GridNearTxQueryResultsEnlistRequest(cctx.cacheId(),
+            threadId,
+            futId,
+            batchId,
+            tx.subjectId(),
+            topVer,
+            lockVer,
+            mvccSnapshot,
+            clientFirst,
+            remainingTime(),
+            tx.remainingTime(),
+            tx.taskNameHash(),
+            batchFut.rows(),
+            it.operation());
 
-            sendRequest(req, nodeId);
-        }
-        catch (IgniteCheckedException ex) {
-            onDone(ex);
-        }
+        sendRequest(req, nodeId);
     }
 
     /**
@@ -454,44 +474,46 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param nodeId Node id.
      * @param batch Batch.
      */
-    private void enlistLocal(int batchId, UUID nodeId, Batch batch) {
+    private void enlistLocal(int batchId, UUID nodeId, Batch batch) throws IgniteCheckedException {
         Collection<Object> rows = batch.rows();
 
-        try {
-            localEnlistFuture = new GridDhtTxQueryResultsEnlistFuture(nodeId,
-                lockVer,
-                topVer,
-                mvccSnapshot,
-                threadId,
-                futId,
-                batchId,
-                tx,
-                remainingTime(),
-                cctx,
-                rows,
-                op);
+        GridDhtTxQueryResultsEnlistFuture fut = new GridDhtTxQueryResultsEnlistFuture(nodeId,
+            lockVer,
+            topVer,
+            mvccSnapshot,
+            threadId,
+            futId,
+            batchId,
+            tx,
+            remainingTime(),
+            cctx,
+            rows,
+            it.operation());
 
-            localEnlistFuture.listen(new CI1<IgniteInternalFuture<GridNearTxQueryResultsEnlistResponse>>() {
-                @Override public void apply(IgniteInternalFuture<GridNearTxQueryResultsEnlistResponse> fut) {
-                    assert fut.error() != null || fut.result() != null : fut;
+        updateLocalFuture(fut);
 
-                    localEnlistFuture = null;
+        fut.listen(new CI1<IgniteInternalFuture<Long>>() {
+            @Override public void apply(IgniteInternalFuture<Long> fut) {
+                assert fut.error() != null || fut.result() != null : fut;
 
-                    try {
-                        if (checkResponse(nodeId, true, fut.result(), fut.error()))
-                            sendNextBatches(nodeId);
-                    }
-                    finally {
-                        CU.unwindEvicts(cctx);
-                    }
+                try {
+                    clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
+
+                    GridNearTxQueryResultsEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+
+                    if (checkResponse(nodeId, res, fut.error()))
+                        sendNextBatches(nodeId);
                 }
-            });
+                catch (IgniteCheckedException e) {
+                    checkResponse(nodeId, null, e);
+                }
+                finally {
+                    CU.unwindEvicts(cctx);
+                }
+            }
+        });
 
-            localEnlistFuture.init();
-        }
-        catch (IgniteTxTimeoutCheckedException e) {
-            onDone(e);
-        }
+        fut.init();
     }
 
     /**
@@ -499,7 +521,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param res Response.
      */
     public void onResult(UUID nodeId, GridNearTxQueryResultsEnlistResponse res) {
-        if (checkResponse(nodeId, false, res, res.error())) {
+        if (checkResponse(nodeId, res, res.error())) {
 
             Batch batch = batches.get(nodeId);
 
@@ -522,7 +544,13 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
             topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
 
-            onDone(topEx);
+            processFailure(topEx, null);
+
+            batches.remove(nodeId);
+
+            if (batches.isEmpty()) // Wait for all pending requests.
+                onDone();
+
         }
 
         if (log.isDebugEnabled())
@@ -534,35 +562,34 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
     /**
      * @param nodeId Originating node ID.
-     * @param local {@code True} if originating node is local.
      * @param res Response.
      * @param err Exception.
      * @return {@code True} if future was completed by this call.
      */
-    public boolean checkResponse(UUID nodeId, boolean local, GridNearTxQueryResultsEnlistResponse res, Throwable err) {
+    public boolean checkResponse(UUID nodeId, GridNearTxQueryResultsEnlistResponse res, Throwable err) {
         assert res != null || err != null : this;
 
         if (err == null && res.error() != null)
             err = res.error();
 
-        if (X.hasCause(err, ClusterTopologyCheckedException.class)
-            || (res != null && res.removeMapping())) {
-            assert tx.mappings().get(nodeId).empty();
-
+        if (X.hasCause(err, ClusterTopologyCheckedException.class))
             tx.removeMapping(nodeId);
-        }
-        else if (err == null && res.result() > 0) {
-            if (local)
-                tx.colocatedLocallyMapped(true);
-            else
-                tx.hasRemoteLocks(true);
-        }
 
-        if (err != null) {
-            onDone(err);
+        assert err != null || res.result() > 0;
+
+        if (err != null)
+            processFailure(err, null);
+
+        if (ex != null) {
+            batches.remove(nodeId);
+
+            if (batches.isEmpty()) // Wait for all pending requests.
+                onDone();
 
             return false;
         }
+
+        assert res != null;
 
         RES_UPD.getAndAdd(this, res.result());
 

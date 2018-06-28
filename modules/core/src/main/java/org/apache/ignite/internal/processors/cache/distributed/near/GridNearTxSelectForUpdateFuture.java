@@ -143,6 +143,9 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
 
         mapping.markQueryUpdate();
 
+        if (node.isLocal())
+            tx.colocatedLocallyMapped(true);
+
         int futId = futuresCountNoLock();
 
         miniFutIds.put(node.id(), futId);
@@ -416,16 +419,17 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
             }
 
             if (X.hasCause(err, ClusterTopologyCheckedException.class) || removeMapping) {
-                assert tx.mappings().get(node.id()).empty();
+                GridDistributedTxMapping m = tx.mappings().get(node.id());
+
+                assert m != null && m.empty();
 
                 tx.removeMapping(node.id());
-            }
-            else if (err == null && cnt > 0) {
+
                 if (node.isLocal())
-                    tx.colocatedLocallyMapped(true);
-                else
-                    tx.hasRemoteLocks(true);
+                    tx.colocatedLocallyMapped(false);
             }
+            else if (err == null && cnt > 0 && !node.isLocal())
+                tx.hasRemoteLocks(true);
 
             return onDone(cnt, err);
         }

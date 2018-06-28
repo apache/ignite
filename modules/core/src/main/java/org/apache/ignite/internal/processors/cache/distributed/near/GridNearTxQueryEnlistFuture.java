@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
+
 /**
  * Cache lock future.
  */
@@ -95,49 +97,37 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
      * @param topLocked Topology locked flag.
      */
     protected void map(final boolean topLocked) {
-        final AffinityAssignment assignment = cctx.affinity().assignment(topVer);
-
-        Collection<ClusterNode> primary;
-
-        IgniteTxMappings m = tx.mappings();
-
-        if (parts != null) {
-            primary = U.newHashSet(parts.length);
-
-            for (int i = 0; i < parts.length; i++) {
-                ClusterNode pNode = assignment.get(parts[i]).get(0);
-
-                primary.add(pNode);
-
-                GridDistributedTxMapping mapping = m.get(pNode.id());
-
-                if (mapping == null)
-                    m.put(mapping = new GridDistributedTxMapping(pNode));
-
-                mapping.markQueryUpdate();
-            }
-        }
-        else {
-            primary = assignment.primaryPartitionNodes();
-
-            for (ClusterNode pNode : primary) {
-                GridDistributedTxMapping mapping = m.get(pNode.id());
-
-                if (mapping == null)
-                    m.put(mapping = new GridDistributedTxMapping(pNode));
-
-                mapping.markQueryUpdate();
-            }
-        }
-
-        boolean locallyMapped = primary.contains(cctx.localNode());
-
-        if (locallyMapped)
-            add(new MiniFuture(cctx.localNode()));
-
         MiniFuture mini = null;
 
         try {
+            final AffinityAssignment assignment = cctx.affinity().assignment(topVer);
+
+            Collection<ClusterNode> primary;
+
+            if (parts != null) {
+                primary = U.newHashSet(parts.length);
+
+                for (int i = 0; i < parts.length; i++) {
+                    ClusterNode pNode = assignment.get(parts[i]).get(0);
+
+                    primary.add(pNode);
+
+                    updateMappings(pNode);
+                }
+            }
+            else {
+                primary = assignment.primaryPartitionNodes();
+
+                for (ClusterNode pNode : primary) {
+                    updateMappings(pNode);
+                }
+            }
+
+            boolean locallyMapped = primary.contains(cctx.localNode());
+
+            if (locallyMapped)
+                add(new MiniFuture(cctx.localNode()));
+
             int idx = locallyMapped ? 1 : 0;
             boolean first = true;
             boolean clientFirst = false;
@@ -200,12 +190,21 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
                     remainingTime(),
                     cctx);
 
-                fut.listen(new CI1<IgniteInternalFuture<GridNearTxQueryEnlistResponse>>() {
-                    @Override public void apply(IgniteInternalFuture<GridNearTxQueryEnlistResponse> fut) {
+                updateLocalFuture(fut);
+
+                fut.listen(new CI1<IgniteInternalFuture<Long>>() {
+                    @Override public void apply(IgniteInternalFuture<Long> fut) {
                         assert fut.error() != null || fut.result() != null : fut;
 
                         try {
-                            localMini.onResult(fut.result(), fut.error());
+                            clearLocalFuture((GridDhtTxQueryEnlistFuture)fut);
+
+                            GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+
+                            localMini.onResult(res, fut.error());
+                        }
+                        catch (IgniteCheckedException e) {
+                            localMini.onResult(null, e);
                         }
                         finally {
                             CU.unwindEvicts(cctx);
@@ -217,9 +216,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
             }
         }
         catch (Throwable e) {
-            assert mini != null;
-
-            mini.onResult(null, e);
+            if (mini != null)
+                mini.onResult(null, e);
+            else
+                onDone(e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -365,16 +365,17 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
 
             if (X.hasCause(err, ClusterTopologyCheckedException.class)
                 || (res != null && res.removeMapping())) {
-                assert tx.mappings().get(node.id()).empty();
+                GridDistributedTxMapping m = tx.mappings().get(node.id());
+
+                assert m != null && m.empty();
 
                 tx.removeMapping(node.id());
-            }
-            else if (res.result() > 0) {
+
                 if (node.isLocal())
-                    tx.colocatedLocallyMapped(true);
-                else
-                    tx.hasRemoteLocks(true);
+                    tx.colocatedLocallyMapped(false);
             }
+            else if (res != null && res.result() > 0 && !node.isLocal())
+                tx.hasRemoteLocks(true);
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }

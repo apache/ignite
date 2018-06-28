@@ -278,9 +278,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * @param cntr Mvcc counter.
      */
     public void registerLocalTransaction(long crd, long cntr) {
-        Waiter old = waitMap.put(new TxKey(crd, cntr), LOCAL_TRANSACTION_MARKER);
+        Waiter old = waitMap.putIfAbsent(new TxKey(crd, cntr), LOCAL_TRANSACTION_MARKER);
 
-        assert old == null;
+        assert old == null || old.hasLocalTransaction();
     }
 
     /**

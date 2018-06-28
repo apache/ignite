@@ -425,8 +425,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (lockFut != null) {
                 if (lockFut instanceof DhtLockFuture)
                     ((DhtLockFuture<?>)lockFut).onError(rollbackException());
-                else {
-                    /**
+                else if (!lockFut.isDone()) {
+                    /*
                      * Prevents race with {@link GridDhtTransactionalCacheAdapter#lockAllAsync
                      * (GridCacheContext, ClusterNode, GridNearLockRequest, CacheEntryPredicate[])}
                      */
