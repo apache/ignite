@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
