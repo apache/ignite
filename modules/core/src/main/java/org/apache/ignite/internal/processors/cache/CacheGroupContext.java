@@ -587,6 +587,16 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if current thread holds lock on topology.
+     */
+    public boolean isTopologyLocked() {
+        if (top == null)
+            return false;
+
+        return top.holdsLock();
+    }
+
+    /**
      * @return Offheap manager.
      */
     public IgniteCacheOffheapManager offheap() {
@@ -728,6 +738,8 @@ public class CacheGroupContext {
     void stopGroup() {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        evictor.stop();
 
         aff.cancelFutures(err);
 
