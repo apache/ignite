@@ -1522,7 +1522,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentStartStop1() throws Exception {
-        concurrentStartStop(1);
+       concurrentStartStop(1);
     }
 
     /**
@@ -3277,7 +3277,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConnectionCheck() throws Exception {
-        final int NODES = 5;
+       final int NODES = 5;
 
         startGridsMultiThreaded(NODES);
 
@@ -4629,7 +4629,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                         break;
                     }
                     catch (Exception e) {
-                        //no-op
+                        log.warning("Can't connect to server " + s + " [err=" + e + ']');
                     }
                 }
             }
