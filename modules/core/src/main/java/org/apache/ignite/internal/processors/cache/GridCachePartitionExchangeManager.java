@@ -2615,12 +2615,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                log.info("Exec preloader [empty=" + assigns.isEmpty() +
-                                    ", cancel=" + assigns.cancelled() +
-                                ", changed=" + assigns.changed() +
-                                ", forcePreload=" + forcePreload +
-                                ", topVer" + assigns.topologyVersion() +
-                                ", grp=" + grp.cacheOrGroupName() + "]");
+                                if (log.isDebugEnabled())
+                                    log.debug("Exec preloader [empty=" + assigns.isEmpty() +
+                                        ", cancel=" + assigns.cancelled() +
+                                        ", changed=" + assigns.changed() +
+                                        ", forcePreload=" + forcePreload +
+                                        ", topVer" + assigns.topologyVersion() +
+                                        ", grp=" + grp.cacheOrGroupName() + "]");
 
                                 if (!assigns.changed() && !forcePreload)
                                     grp.preloader().updateAssignments(assigns.topologyVersion());

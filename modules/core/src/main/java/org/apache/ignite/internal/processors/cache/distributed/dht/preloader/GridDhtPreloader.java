@@ -165,7 +165,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @param oldTopVer Previous topology version.
      * @param newTopVer New topology version to check requested result.
-     * @return {@code True} if affinity assignments changed.
+     * @return {@code True} if affinity assignments changed between this two versions or there is no
+     * affinity assignments information about old topology version.
      */
     private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
         AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
@@ -175,7 +176,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         AffinityAssignment prevAff = !oldTopVer.initialized() || !grp.affinity().cachedVersions().contains(oldTopVer) ?
             aff : grp.affinity().cachedAffinity(oldTopVer);
 
-        // If assigns calculated on the same affinities then rebalance need to be scheduled
+        // If assigns calculated on the same affinities then rebalance need to be scheduled.
         boolean assignsChanged = aff == prevAff;
 
         int parts = grp.affinity().partitions();

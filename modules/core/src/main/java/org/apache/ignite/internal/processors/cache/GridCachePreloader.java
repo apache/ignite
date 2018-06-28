@@ -63,7 +63,7 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param exchFut Toplogy version to compare affinity assignments with.
+     * @param exchFut Completed exchange future.
      */
     public void afterExchange(GridDhtPartitionsExchangeFuture exchFut);
 
@@ -92,9 +92,9 @@ public interface GridCachePreloader {
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
 
     /**
-     * Update topology version e.g. when assignments not changed from previous version.
+     * Update previously added assignments usging provided input info.
      *
-     * @param topVer New topology version.
+     * @param topVer New topology version to update.
      */
     public void updateAssignments(AffinityTopologyVersion topVer);
 
