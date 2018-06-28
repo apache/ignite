@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3Client;
 import org.mockito.Mockito;
 
 /**
@@ -38,14 +39,17 @@ public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFin
         finder.setAwsCredentials(new BasicAWSCredentials("dummy", "dummy"));
     }
 
+    /** {@inheritDoc} */
     @Override protected void setKeyPrefix(TcpDiscoveryS3IpFinder finder) {
         finder.setKeyPrefix("/test/key/prefix");
     }
 
+    /** {@inheritDoc} */
     @Override protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
         finder.setBucketName(getBucketName());
     }
 
+    /** {@inheritDoc} */
     @Override protected TcpDiscoveryS3IpFinder ipFinder() throws Exception {
         TcpDiscoveryS3IpFinder ipFinder = Mockito.spy(new TcpDiscoveryS3IpFinder());
         Mockito.doReturn(new DummyS3Client()).when(ipFinder).createAmazonS3Client();
@@ -59,7 +63,6 @@ public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFin
 
     /** {@inheritDoc} */
     @Override public void testIpFinder() throws Exception {
-
         injectLogger(finder);
 
         assert finder.isShared() : "Ip finder should be shared by default.";

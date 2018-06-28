@@ -30,6 +30,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAws
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderBucketEndpointSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderKeyPrefixSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyObjectListingTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3ClientTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -53,6 +55,8 @@ public class IgniteS3TestSuite extends TestSuite {
         suite.addTestSuite(S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class);
 
         // S3 IP finder.
+        suite.addTestSuite(DummyS3ClientTest.class);
+        suite.addTestSuite(DummyObjectListingTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class);

@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.StringTokenizer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -103,7 +104,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Server side encryption algorithm */
     private @Nullable String sseAlg;
 
-    /** Sub-folder name to write node addresses to */
+    /** Sub-folder name to write node addresses. */
     private @Nullable String keyPrefix;
 
     /** Init guard. */
@@ -154,7 +155,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                     String addr = key;
 
                     if (keyPrefix != null) {
-                        addr = key.replace(keyPrefix, "");
+                        addr = key.replaceFirst(Pattern.quote(keyPrefix), "");
                     }
 
                     StringTokenizer st = new StringTokenizer(addr, DELIM);
@@ -354,9 +355,8 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets bucket endpoint for IP finder.
-     * If the endpoint is not set then IP finder will go to each region to find a corresponding bucket.
-     * For information about possible endpoint names visit
+     * Sets bucket endpoint for IP finder. If the endpoint is not set then IP finder will go to each region to find a
+     * corresponding bucket. For information about possible endpoint names visit
      * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>.
      *
      * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
@@ -370,8 +370,8 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys.
-     * For information about possible S3-managed encryption keys visit
+     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys. For information about possible
+     * S3-managed encryption keys visit
      * <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>.
      *
      * @param sseAlg Server-side encryption algorithm, for example, AES256 or SSES3.
