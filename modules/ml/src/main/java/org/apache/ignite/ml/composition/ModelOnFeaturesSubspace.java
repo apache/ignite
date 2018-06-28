@@ -20,11 +20,13 @@ package org.apache.ignite.ml.composition;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
  */
-public class ModelOnFeaturesSubspace implements Model<double[], Double> {
+public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
     /**
      * Features mapping to subspace.
      */
@@ -32,7 +34,7 @@ public class ModelOnFeaturesSubspace implements Model<double[], Double> {
     /**
      * Trained model of features subspace.
      */
-    private final Model<double[], Double> model;
+    private final Model<Vector, Double> mdl;
 
     /**
      * Constructs new instance of ModelOnFeaturesSubspace.
@@ -40,9 +42,9 @@ public class ModelOnFeaturesSubspace implements Model<double[], Double> {
      * @param featuresMapping Features mapping to subspace.
      * @param mdl Learned model.
      */
-    public ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<double[], Double> mdl) {
+    ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<Vector, Double> mdl) {
         this.featuresMapping = Collections.unmodifiableMap(featuresMapping);
-        this.model = mdl;
+        this.mdl = mdl;
     }
 
     /**
@@ -51,10 +53,10 @@ public class ModelOnFeaturesSubspace implements Model<double[], Double> {
      * @param features Features vector.
      * @return Estimation.
      */
-    @Override public Double apply(double[] features) {
+    @Override public Double apply(Vector features) {
         double[] newFeatures = new double[featuresMapping.size()];
-        featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features[featureVectorId]);
-        return model.apply(newFeatures);
+        featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features.get(featureVectorId));
+        return mdl.apply(Vector.of(newFeatures));
     }
 
     /**
@@ -67,7 +69,7 @@ public class ModelOnFeaturesSubspace implements Model<double[], Double> {
     /**
      * Returns model.
      */
-    public Model<double[], Double> getModel() {
-        return model;
+    public Model<Vector, Double> getMdl() {
+        return mdl;
     }
 }

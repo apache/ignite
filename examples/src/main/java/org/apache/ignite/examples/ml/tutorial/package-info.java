@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-export default angular
-.module('ignite-console.modules', [
-]);
+/**
+ * <!-- Package description. -->
+ * Full ML Tutorial.
+ */
+package org.apache.ignite.examples.ml.tutorial;

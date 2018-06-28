@@ -22,11 +22,13 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Model consisting of several models and prediction aggregation strategy.
  */
-public class ModelsComposition implements Model<double[], Double> {
+public class ModelsComposition implements Model<Vector, Double> {
     /**
      * Predictions aggregator.
      */
@@ -34,7 +36,7 @@ public class ModelsComposition implements Model<double[], Double> {
     /**
      * Models.
      */
-    private final List<Model<double[], Double>> models;
+    private final List<Model<Vector, Double>> models;
 
     /**
      * Constructs a new instance of composition of models.
@@ -42,7 +44,7 @@ public class ModelsComposition implements Model<double[], Double> {
      * @param models Basic models.
      * @param predictionsAggregator Predictions aggregator.
      */
-    public ModelsComposition(List<? extends Model<double[], Double>> models, PredictionsAggregator predictionsAggregator) {
+    public ModelsComposition(List<? extends Model<Vector, Double>> models, PredictionsAggregator predictionsAggregator) {
         this.predictionsAggregator = predictionsAggregator;
         this.models = Collections.unmodifiableList(models);
     }
@@ -53,7 +55,7 @@ public class ModelsComposition implements Model<double[], Double> {
      * @param features Features vector.
      * @return Estimation.
      */
-    @Override public Double apply(double[] features) {
+    @Override public Double apply(Vector features) {
         double[] predictions = new double[models.size()];
 
         for (int i = 0; i < models.size(); i++)
@@ -72,8 +74,7 @@ public class ModelsComposition implements Model<double[], Double> {
     /**
      * Returns containing models.
      */
-    public List<Model<double[], Double>> getModels() {
+    public List<Model<Vector, Double>> getModels() {
         return models;
     }
-
 }

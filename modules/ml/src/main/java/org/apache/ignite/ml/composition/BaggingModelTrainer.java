@@ -29,6 +29,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
@@ -161,7 +162,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
-        Model<double[], Double> mdl = buildDatasetTrainerForModel().fit(
+        Model<Vector, Double> mdl = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
@@ -188,7 +189,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
     /**
      * Creates trainer specific to ensemble.
      */
-    protected abstract DatasetTrainer<? extends Model<double[], Double>, Double> buildDatasetTrainerForModel();
+    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildDatasetTrainerForModel();
 
     /**
      * Wraps the original feature extractor with features subspace mapping applying.

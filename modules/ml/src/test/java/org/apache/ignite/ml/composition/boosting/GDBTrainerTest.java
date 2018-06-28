@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 public class GDBTrainerTest {
@@ -34,7 +37,7 @@ public class GDBTrainerTest {
         System.out.print("[");
         for (int i = 0; i < maxTrees + 1; i += 100) {
             GDBTrainer trainer = GDBOnTreesTrainer.regression(0.01, i, 3, 0.0);
-            Model<double[], Double> model = trainer.fit(
+            Model<Vector, Double> model = trainer.fit(
                 learningSample, 1,
                 (k, v) -> new double[] {v[0]},
                 (k, v) -> v[1]
@@ -44,7 +47,7 @@ public class GDBTrainerTest {
             for (int j = 0; j < size; j++) {
                 double x = xs[j];
                 double y = ys[j];
-                double p = model.apply(new double[] {x});
+                double p = model.apply(Vector.of(new double[] {x}));
                 mse += Math.pow(y - p, 2);
             }
             mse /= size;
@@ -85,7 +88,13 @@ public class GDBTrainerTest {
         System.out.print("[");
         for (int i = 0; i < maxTrees + 1; i += 100) {
             GDBTrainer trainer = GDBOnTreesTrainer.binaryClassification(0.01, i, 3, 0.0);
-            Model<double[], Double> model = trainer.fit(
+//            GDBTrainer trainer = new GDBBinaryClassifierTrainer() {
+//                @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
+//                    return null;
+//                }
+//            };
+
+            Model<Vector, Double> model = trainer.fit(
                 learningSample, 1,
                 (k, v) -> new double[] {v[0]},
                 (k, v) -> v[1]
@@ -95,7 +104,7 @@ public class GDBTrainerTest {
             for (int j = 0; j < sampleSize; j++) {
                 double x = xs[j];
                 double y = ys[j];
-                Double modelAnswer = model.apply(new double[] {x});
+                Double modelAnswer = model.apply(Vector.of(new double[] {x}));
 //                double p = sigma(modelAnswer) < 0.5 ? 0. : 1.;
 //                errorRate += ((y != p) ? 1.0 : 0.0);
                 errorRate += ((y != modelAnswer) ? 1.0 : 0.0);

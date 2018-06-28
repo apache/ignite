@@ -28,15 +28,15 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Double>, Double> {
+abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Double> {
     private final double gradientStep;
     private final int countOfModels;
 
@@ -45,7 +45,7 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
         this.countOfModels = modelsCnt;
     }
 
-    @Override public <K, V> Model<double[], Double> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> Model<Vector, Double> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -56,7 +56,7 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
         Double mean = initAndSampleSize.get1();
         Long sampleSize = initAndSampleSize.get2();
 
-        List<DecisionTreeNode> models = new ArrayList<>();
+        List<Model<Vector, Double>> models = new ArrayList<>();
         double[] compositionWeights = new double[countOfModels];
         Arrays.fill(compositionWeights, gradientStep);
         BoostingPredictionsAggregator resAggregator = new BoostingPredictionsAggregator(mean, compositionWeights);
@@ -64,11 +64,11 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
         for (int i = 0; i < countOfModels; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, i);
             BoostingPredictionsAggregator aggregator = new BoostingPredictionsAggregator(mean, weights);
-            Model<double[], Double> currComposition = new ModelsComposition(models, aggregator);
+            Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
+                Double mdlAnswer = currComposition.apply(Vector.of(featureExtractor.apply(k, v)));
                 return -grad(sampleSize, realAnswer, mdlAnswer);
             };
 
@@ -76,7 +76,7 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
         }
 
         return new ModelsComposition(models, resAggregator) {
-            @Override public Double apply(double[] features) {
+            @Override public Double apply(Vector features) {
                 return internalLabelToExternal(super.apply(features));
             }
         };
@@ -85,7 +85,7 @@ public abstract class GDBTrainer implements DatasetTrainer<Model<double[], Doubl
     protected abstract  <V, K> void learnLabels(DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
 
-    @NotNull protected abstract DecisionTreeRegressionTrainer buildBaseModelTrainer();
+    @NotNull protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
 
     protected abstract double externalLabelToInternal(double x);
 
