@@ -2062,7 +2062,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return fully configured encryption SPI implementations.
+     * Gets fully configured encryption SPI implementations.
      *
      * @return Encryption SPI implementation.
      */

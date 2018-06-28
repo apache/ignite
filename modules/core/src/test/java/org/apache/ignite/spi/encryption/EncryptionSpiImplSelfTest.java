@@ -64,7 +64,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
     public void testEncryptDecrypt() throws Exception {
         EncryptionSpi<EncryptionKeyImpl> encSpi = spi();
 
-        EncryptionKeyImpl k = encSpi.masterKey();
+        EncryptionKeyImpl k = GridTestUtils.getFieldValue(encSpi, "masterKey");
         
         assertNotNull(k);
         assertNotNull(k.key());
@@ -98,7 +98,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
         assertNotNull(encGrpKey);
         assertTrue(encGrpKey.length > 0);
 
-        EncryptionKeyImpl k2 = encSpi.decryptAndCheckKey(encGrpKey);
+        EncryptionKeyImpl k2 = encSpi.decryptKey(encGrpKey);
 
         assertEquals(k.key(), k2.key());
     }

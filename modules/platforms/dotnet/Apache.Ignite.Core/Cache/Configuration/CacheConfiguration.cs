@@ -160,8 +160,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="QueryParallelism"/>. </summary>
         public const int DefaultQueryParallelism = 1;
 
-        /// <summary> Default value for <see cref="IsEncrypted"/>. </summary>
-        public const bool DefaultIsEncrypted = false;
+        /// <summary> Default value for <see cref="Encrypted"/>. </summary>
+        public const bool DefaultEncryptionEnabled = false;
 
         /// <summary>
         /// Gets or sets the cache name.
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
             MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
             QueryParallelism = DefaultQueryParallelism;
-            IsEncrypted = DefaultIsEncrypted;
+            Encrypted = DefaultEncryptionEnabled;
         }
 
         /// <summary>
@@ -330,7 +330,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             QueryDetailMetricsSize = reader.ReadInt();
             QueryParallelism = reader.ReadInt();
             SqlSchema = reader.ReadString();
-            IsEncrypted = reader.ReadBoolean();
+            Encrypted = reader.ReadBoolean();
 
             QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
@@ -427,7 +427,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(QueryDetailMetricsSize);
             writer.WriteInt(QueryParallelism);
             writer.WriteString(SqlSchema);
-            writer.WriteBoolean(IsEncrypted);
+            writer.WriteBoolean(Encrypted);
 
             writer.WriteCollectionRaw(QueryEntities);
 
@@ -925,7 +925,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets encryption flag.
         /// Default is false.
         /// </summary>
-        [DefaultValue(DefaultIsEncrypted)]
-        public bool IsEncrypted { get; set; }
+        [DefaultValue(DefaultEncryptionEnabled)]
+        public bool Encrypted { get; set; }
     }
 }

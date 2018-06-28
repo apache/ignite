@@ -4313,7 +4313,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             metaStorage.write(ENCRYPTION_KEY_PREFIX + grpId, encGrpKey);
 
-            EncryptionKey encKey = encSpi.decryptAndCheckKey(encGrpKey);
+            EncryptionKey encKey = encSpi.decryptKey(encGrpKey);
 
             grpEncryptionKeys.put(grpId, encKey);
         }
@@ -4405,7 +4405,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 byte[] encGrpKey = (byte[])encKeys.get(key);
 
-                EncryptionKey<?> grpKey = encSpi.decryptAndCheckKey(encGrpKey);
+                EncryptionKey<?> grpKey = encSpi.decryptKey(encGrpKey);
 
                 EncryptionKey<?> old = grpEncryptionKeys.putIfAbsent(grpId, grpKey);
 

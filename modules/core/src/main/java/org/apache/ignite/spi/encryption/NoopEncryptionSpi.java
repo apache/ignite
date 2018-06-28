@@ -36,11 +36,6 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiNoop
 public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi<EncryptionKeyImpl> {
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl masterKey() {
-        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
-    }
-
-    /** {@inheritDoc} */
     @Override public byte[] masterKeyDigest() {
         return new byte[0];
     }
@@ -66,7 +61,7 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl decryptAndCheckKey(byte[] key) {
+    @Override public EncryptionKeyImpl decryptKey(byte[] key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 

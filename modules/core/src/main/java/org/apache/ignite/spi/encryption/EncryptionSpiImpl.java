@@ -160,13 +160,6 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl masterKey() {
-        ensureStarted();
-
-        return masterKey;
-    }
-
-    /** {@inheritDoc} */
     @Override public byte[] masterKeyDigest() {
         ensureStarted();
 
@@ -215,7 +208,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl decryptAndCheckKey(byte[] data) {
+    @Override public EncryptionKeyImpl decryptKey(byte[] data) {
         byte[] serKey = decrypt(data, masterKey);
 
         EncryptionKeyImpl key = U.fromBytes(serKey);

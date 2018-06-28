@@ -25,17 +25,11 @@ import org.apache.ignite.spi.IgniteSpi;
  */
 public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
     /**
-     * @return Master key.
-     */
-    K masterKey();
-
-    /**
      * Returns master key digest.
      * Should always return same digest for a same key.
      * Digest used for a configuration consistency check.
      *
      * @return Master key digest.
-     * @see #masterKey()
      */
     byte[] masterKeyDigest();
 
@@ -66,6 +60,10 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
     byte[] decrypt(byte[] data, K key);
 
     /**
+     * Encrypts key.
+     * We should add some info to check key integrity on decryption.
+     *
+     *
      * @param key Key to encrypt.
      * @return Encrypted key.
      */
@@ -77,7 +75,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
      * @param key Key to decrypt.
      * @return Encrypted key.
      */
-    K decryptAndCheckKey(byte[] key);
+    K decryptKey(byte[] key);
 
     /**
      * @param dataSize Size of clear data in bytes.

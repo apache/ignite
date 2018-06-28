@@ -376,9 +376,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
 
     /**
-     * {@code True} if cache encrypted, {@code false} otherwise.
-     * Please, note, only data persisted to the disk will be encrypted.
-     * 
+     * Flag indicating whether data must be encrypted.
+     * If {@code true} data on the disk will be encrypted.
+     *
      * @see EncryptionSpi
      * @see EncryptionSpiImpl
      */
@@ -2280,6 +2280,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets flag indicating whether data must be encrypted.
+     *
      * @return {@code True} if this cache persistent data is encrypted.
      */
     public boolean isEncrypted() {
