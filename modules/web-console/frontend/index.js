@@ -15,17 +15,8 @@
  * limitations under the License.
  */
 
-const Mocha = require('mocha');
-const glob = require('glob');
+import angular from 'angular';
 
-const mocha = new Mocha({ui: 'tdd', reporter: process.env.MOCHA_REPORTER || 'spec'});
-const testPath = ['./test/unit/**/*.js', './test/routes/**/*.js'];
+import igniteConsole from './app/app';
 
-testPath
-    .map((mask) => glob.sync(mask))
-    .reduce((acc, items) => acc.concat(items), [])
-    .map(mocha.addFile.bind(mocha));
-
-const runner = mocha.run();
-
-runner.on('end', (failures) => process.exit(failures));
+angular.bootstrap(document, [igniteConsole.name], {strictDi: true});

@@ -15,8 +15,12 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+const { startEnv, dropTestDB } = require('./envtools');
 
-export default angular
-.module('ignite-console.modules', [
-]);
+startEnv();
+
+process.on('SIGINT', async() => {
+    await dropTestDB();
+
+    process.exit(0);
+});

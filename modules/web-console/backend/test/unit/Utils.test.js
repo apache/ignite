@@ -15,29 +15,34 @@
  * limitations under the License.
  */
 
-'use strict';
+const assert = require('chai').assert;
+const injector = require('../injector');
 
-const path = require('path');
+let utils;
+let errors;
+let db;
 
-const appPath = require('app-module-path');
-appPath.addPath(__dirname);
-appPath.addPath(path.join(__dirname, 'node_modules'));
-
-const { migrate, init } = require('./launch-tools');
-
-const injector = require('./injector');
-
-injector.log.info = () => {};
-injector.log.debug = () => {};
-
-Promise.all([injector('settings'), injector('mongo')])
-    .then(([{mongoUrl}]) => {
-        return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'));
-    })
-    .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
-    .then(init)
-    .catch((err) => {
-        console.error(err);
-
-        process.exit(1);
+suite('UtilsTestsSuite', () => {
+    suiteSetup(() => {
+        return Promise.all([injector('services/utils'),
+            injector('errors'),
+            injector('dbHelper')])
+            .then(([_utils, _errors, _db]) => {
+                utils = _utils;
+                errors = _errors;
+                db = _db;
+            });
     });
+
+    setup(() => db.init());
+
+    test('Check token generator', () => {
+        const tokenLength = 16;
+        const token1 = utils.randomString(tokenLength);
+        const token2 = utils.randomString(tokenLength);
+
+        assert.equal(token1.length, tokenLength);
+        assert.equal(token2.length, tokenLength);
+        assert.notEqual(token1, token2);
+    });
+});
