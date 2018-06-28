@@ -456,7 +456,7 @@ namespace ignite
                     res.clear();
 
                 if (hdr != IGNITE_TYPE_STRING)
-                    ThrowOnInvalidHeader(IGNITE_TYPE_ARRAY, hdr);
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
 
                 int32_t realLen = stream->ReadInt32();
 
@@ -546,7 +546,7 @@ namespace ignite
                     return realLen;
                 }
                 else if (hdr != IGNITE_HDR_NULL)
-                    ThrowOnInvalidHeader(IGNITE_TYPE_ARRAY, hdr);
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
 
                 return -1;
             }

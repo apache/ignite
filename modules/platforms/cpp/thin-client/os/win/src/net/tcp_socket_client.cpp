@@ -165,6 +165,8 @@ namespace ignite
 
                         if (socketHandle == INVALID_SOCKET)
                         {
+                            freeaddrinfo(result);
+
                             std::string err = "Socket creation failed: " + GetLastSocketErrorMessage();
 
                             throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
