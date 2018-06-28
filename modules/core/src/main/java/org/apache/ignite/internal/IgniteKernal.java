@@ -2145,6 +2145,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (longOpDumpTask != null)
                 longOpDumpTask.close();
 
+            if (longJVMPauseDetector != null)
+                longJVMPauseDetector.stop();
+
             boolean interrupted = false;
 
             while (true) {
