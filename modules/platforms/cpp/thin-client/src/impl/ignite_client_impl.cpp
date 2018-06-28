@@ -46,18 +46,30 @@ namespace ignite
 
             cache::SP_CacheClientImpl IgniteClientImpl::GetCache(const char* name) const
             {
+                ignite::thin::cache::CacheClientConfiguration cacheConfig;
+
+                return GetCache(name, cacheConfig);
+            }
+
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::GetCache(const char* name,
+                const ignite::thin::cache::CacheClientConfiguration& config) const
+            {
                 CheckCacheName(name);
 
                 int32_t cacheId = utility::GetCacheId(name);
 
-                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, cacheId));
-
-                cache.Get()->UpdatePartitions();
-
-                return cache;
+                return MakeCacheImpl(router, name, config, cacheId);
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::GetOrCreateCache(const char* name)
+            {
+                ignite::thin::cache::CacheClientConfiguration cacheConfig;
+
+                return GetOrCreateCache(name, cacheConfig);
+            }
+
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::GetOrCreateCache(const char* name,
+                const ignite::thin::cache::CacheClientConfiguration& config)
             {
                 CheckCacheName(name);
                 
@@ -70,15 +82,19 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
-
-                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, cacheId));
                 
-                cache.Get()->UpdatePartitions();
-
-                return cache;
+                return MakeCacheImpl(router, name, config, cacheId);
             }
 
             cache::SP_CacheClientImpl IgniteClientImpl::CreateCache(const char* name)
+            {
+                ignite::thin::cache::CacheClientConfiguration cacheConfig;
+
+                return CreateCache(name, cacheConfig);
+            }
+
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::CreateCache(const char* name,
+                const ignite::thin::cache::CacheClientConfiguration& config)
             {
                 CheckCacheName(name);
 
@@ -92,11 +108,7 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
 
-                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, cacheId));
-                
-                cache.Get()->UpdatePartitions();
-
-                return cache;
+                return MakeCacheImpl(router, name, config, cacheId);
             }
 
             void IgniteClientImpl::DestroyCache(const char* name)
@@ -123,6 +135,20 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+            }
+
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::MakeCacheImpl(
+                const SP_DataRouter& router,
+                const std::string& name,
+                const ignite::thin::cache::CacheClientConfiguration& config,
+                int32_t id)
+            {
+                cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, config, id));
+
+                if (config.IsLessenLatency())
+                    cache.Get()->UpdatePartitions();
+
+                return cache;
             }
 
             void IgniteClientImpl::CheckCacheName(const char* name)

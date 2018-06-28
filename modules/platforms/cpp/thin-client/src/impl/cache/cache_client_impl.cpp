@@ -31,9 +31,14 @@ namespace ignite
         {
             namespace cache
             {
-                CacheClientImpl::CacheClientImpl(const SP_DataRouter& router, const std::string& name, int32_t id):
+                CacheClientImpl::CacheClientImpl(
+                        const SP_DataRouter& router,
+                        const std::string& name,
+                        const ignite::thin::cache::CacheClientConfiguration& config,
+                        int32_t id) :
                     router(router),
                     name(name),
+                    config(config),
                     id(id),
                     binary(false),
                     assignment(),
@@ -110,6 +115,9 @@ namespace ignite
 
                 void CacheClientImpl::UpdatePartitions()
                 {
+                    if (!config.IsLessenLatency())
+                        return;
+
                     std::vector<ConnectableNodePartitions> nodeParts;
 
                     CacheRequest<RequestType::CACHE_NODE_PARTITIONS> req(id, binary);

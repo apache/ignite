@@ -68,14 +68,32 @@ namespace ignite
             return GetClientImpl(impl).GetCache(name);
         }
 
+        IgniteClient::SP_Void IgniteClient::InternalGetCache(const char* name,
+            const cache::CacheClientConfiguration& config)
+        {
+            return GetClientImpl(impl).GetCache(name, config);
+        }
+
         IgniteClient::SP_Void IgniteClient::InternalGetOrCreateCache(const char* name)
         {
             return GetClientImpl(impl).GetOrCreateCache(name);
         }
 
+        IgniteClient::SP_Void IgniteClient::InternalGetOrCreateCache(const char* name,
+            const cache::CacheClientConfiguration& config)
+        {
+            return GetClientImpl(impl).GetOrCreateCache(name, config);
+        }
+
         IgniteClient::SP_Void IgniteClient::InternalCreateCache(const char* name)
         {
             return static_cast<SP_Void>(GetClientImpl(impl).CreateCache(name));
+        }
+
+        IgniteClient::SP_Void IgniteClient::InternalCreateCache(const char* name,
+            const cache::CacheClientConfiguration& config)
+        {
+            return static_cast<SP_Void>(GetClientImpl(impl).CreateCache(name, config));
         }
 
         IgniteClient::IgniteClient(SP_Void& impl)

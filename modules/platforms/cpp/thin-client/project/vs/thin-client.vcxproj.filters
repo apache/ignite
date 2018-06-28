@@ -144,5 +144,8 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\cache_client_configuration.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
