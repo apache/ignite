@@ -943,15 +943,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         DataStructureType dsType, String dsName, boolean separated)
         throws IgniteCheckedException
     {
-        String cacheNamePrefix = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
-            cfg.getBackups();
-
-        String cacheName = cacheNamePrefix + "@" + grpName;
+        String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
+            cfg.getBackups() + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
 
         if (separated && (cache == null || !cache.containsKey(new GridCacheSetHeaderKey(dsName)))) {
-            cacheName = cacheNamePrefix + "_" + dsType.name() + "_" + dsName + "@" + grpName;
+            cacheName += "#" + dsType.name() + "_" + dsName;
 
             cache = ctx.cache().cache(cacheName);
         }
