@@ -91,21 +91,21 @@ public abstract class AbstractWalRecordsIterator
      * @param sharedCtx Shared context.
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
-     * @param bufSize buffer for reading records size.
+     * @param initialReadBufferSize buffer for reading records size.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
-        final int bufSize
+        final int initialReadBufferSize
     ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
 
-        buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+        buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
 
     /** {@inheritDoc} */
@@ -225,8 +225,12 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
-            if (!(e instanceof SegmentEofException))
-                handleRecordException(e, actualFilePtr);
+            if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
+                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
+
+                if (e0 != null)
+                    throw e0;
+            }
 
             return null;
         }
@@ -248,12 +252,15 @@ public abstract class AbstractWalRecordsIterator
      *
      * @param e problem from records reading
      * @param ptr file pointer was accessed
+     *
+     * @return {@code null} if the error was handled and we can go ahead,
+     *  {@code IgniteCheckedException} if the error was not handled, and we should stop the iteration.
      */
-    protected void handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
+    protected IgniteCheckedException handleRecordException(@NotNull final Exception e, @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
+
+        return new IgniteCheckedException(e);
     }
 
     /**
@@ -265,8 +272,8 @@ public abstract class AbstractWalRecordsIterator
      */
     protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
-        @Nullable final FileWALPointer start)
-        throws IgniteCheckedException, FileNotFoundException {
+        @Nullable final FileWALPointer start
+    ) throws IgniteCheckedException, FileNotFoundException {
         try {
             FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
 
