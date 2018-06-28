@@ -2654,24 +2654,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return false;
 
         // Currently the rollback process is supported for dynamically started caches only.
-        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange())
-            return true;
-
-        return false;
-    }
-
-    /**
-     * Tries to revert all the changes that were done during initialization phase
-     * in case of the given {@code discoEvt} supports the rollback procedure.
-     *
-     * @param msg Failure message.
-     */
-    private void rollbackExchange(final DynamicCacheChangeFailureMessage msg) {
-        assert isRollbackSupported();
-
-        // Rollback dynamically started caches.
-        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange())
-            cctx.affinity().forceCloseCaches(this, crd.isLocal(), msg.exchangeActions());
+        return firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange();
     }
 
     /**
@@ -3553,6 +3536,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void onDynamicCacheChangeFail(final ClusterNode node, final DynamicCacheChangeFailureMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
+        assert firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT && dynamicCacheStartExchange();
+
+        final ExchangeActions actions = exchangeActions();
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
@@ -3566,7 +3552,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         try {
                             assert msg.error() != null: msg;
 
-                            rollbackExchange(msg);
+                            // Try to revert all the changes that were done during initialization phase
+                            cctx.affinity().forceCloseCaches(GridDhtPartitionsExchangeFuture.this,
+                                crd.isLocal(), msg.exchangeActions());
 
                             synchronized (mux) {
                                 finishState = new FinishState(crd.id(), initialVersion(), null);
@@ -3574,10 +3562,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 state = ExchangeLocalState.DONE;
                             }
 
-                            if (exchActions != null)
-                                exchActions.completeRequestFutures(cctx, msg.error());
+                            if (actions != null)
+                                actions.completeRequestFutures(cctx, msg.error());
 
                             onDone(exchId.topologyVersion());
+                        }
+                        catch (Throwable e) {
+                            onDone(e);
                         }
                         finally {
                             leaveBusy();

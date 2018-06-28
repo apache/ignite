@@ -63,15 +63,6 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
     /** Client mode flag. */
     private Boolean appendCustomAttribute;
 
-    /** Custom TCP communication SPI. */
-    private boolean customCommunication;
-
-    /** Custom TCP communication SPI. */
-    private boolean customDiscovery;
-
-    /** */
-    private static final int NODE_IDX = 1;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -86,12 +77,12 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = (customDiscovery)? new CustomDiscoverySpi(NODE_IDX) : new TcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
 
-        TcpCommunicationSpi commSpi = (customCommunication)? new CustomCommunicationSpi() : new TcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new CustomCommunicationSpi();
         commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
 
         cfg.setCommunicationSpi(commSpi);
@@ -116,8 +107,6 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
      */
     public void testCoordinatorFailure() throws Exception {
         // Start coordinator node.
-        customCommunication = true;
-        customDiscovery = false;
         appendCustomAttribute = true;
 
         Ignite g = startGrid(0);
@@ -151,54 +140,6 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
         latch.await();
 
         stopGrid(0, true);
-
-        awaitPartitionMapExchange();
-
-        // Correct the cache configuration.
-        cfg.setAffinity(new RendezvousAffinityFunction());
-
-        IgniteCache cache = g1.getOrCreateCache(cfg);
-
-        checkCacheOperations(g1, cache);
-    }
-
-    public void testNodeJoin() throws Exception {
-        // Start coordinator node.
-        customCommunication = false;
-        customDiscovery = true;
-        appendCustomAttribute = true;
-
-        Ignite g = startGrid(0);
-
-        appendCustomAttribute = false;
-
-        Ignite g1 = startGrid(1);
-        Ignite g2 = startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setName("test-coordinator-failover");
-
-        cfg.setAffinity(new BrokenAffinityFunction(false, getTestIgniteInstanceName(2)));
-
-        GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        g1.getOrCreateCache(cfg);
-                        return null;
-                    }
-                }, CacheException.class, null);
-
-                return null;
-            }
-        }, "cache-starter-thread");
-
-        latch.await();
-
-        Ignite g3 = startGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -273,42 +214,6 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
             }
 
             super.sendMessage(node, msg, ackClosure);
-        }
-    }
-
-
-    /**
-     * Discovery SPI that could optionally delay message processing.
-     */
-    private static class CustomDiscoverySpi extends TcpDiscoverySpi {
-        private final int instanceName;
-
-        public CustomDiscoverySpi(int instanceName) {
-            this.instanceName = instanceName;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
-
-                try {
-                    DiscoveryCustomMessage custMsg = GridTestUtils.getFieldValue(
-                        ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader()), "delegate");
-
-                    if (custMsg instanceof DynamicCacheChangeFailureMessage &&
-                        ignite.name().endsWith(Integer.toString(instanceName))) {
-                        latch.countDown();
-
-                        doSleep(7_000);
-                    }
-                }
-                catch (Throwable e) {
-                    fail("Unexpected error: " + e);
-                }
-            }
-
-            super.startMessageProcess(msg);
         }
     }
 
