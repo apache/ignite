@@ -243,11 +243,11 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
-        return F.view(attrs, new IgnitePredicate<String>() {
+        return new HashMap<>(F.view(attrs, new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
                 return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
             }
-        });
+        }));
     }
 
     /** {@inheritDoc} */
