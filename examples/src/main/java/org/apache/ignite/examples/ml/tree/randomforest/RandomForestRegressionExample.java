@@ -51,8 +51,6 @@ public class RandomForestRegressionExample {
      * Run example.
      */
     public static void main(String[] args) throws InterruptedException {
-        ExecutorService threadPool = Executors.newFixedThreadPool(3);
-
         System.out.println();
         System.out.println(">>> Random Forest regression algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -63,7 +61,7 @@ public class RandomForestRegressionExample {
                     RandomForestRegressionExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0, threadPool);
+                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                         (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
@@ -99,9 +97,6 @@ public class RandomForestRegressionExample {
             igniteThread.start();
             igniteThread.join();
         }
-
-        threadPool.shutdown();
-        threadPool.awaitTermination(1, TimeUnit.MINUTES);
     }
 
     /**

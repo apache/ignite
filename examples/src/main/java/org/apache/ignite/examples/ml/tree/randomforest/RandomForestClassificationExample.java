@@ -50,8 +50,6 @@ public class RandomForestClassificationExample {
      * Run example.
      */
     public static void main(String[] args) throws InterruptedException {
-        ExecutorService threadPool = Executors.newFixedThreadPool(3);
-
         System.out.println();
         System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -62,7 +60,7 @@ public class RandomForestClassificationExample {
                     RandomForestClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(13, 4, 101, 0.3, 2, 0, threadPool);
+                RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(13, 4, 101, 0.3, 2, 0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                         (k, v) -> Arrays.copyOfRange(v, 1, v.length),
@@ -94,9 +92,6 @@ public class RandomForestClassificationExample {
             igniteThread.start();
             igniteThread.join();
         }
-
-        threadPool.shutdown();
-        threadPool.awaitTermination(1, TimeUnit.MINUTES);
     }
 
     /**
