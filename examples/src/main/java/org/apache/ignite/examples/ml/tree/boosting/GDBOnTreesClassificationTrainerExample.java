@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tree;
+package org.apache.ignite.examples.ml.tree.boosting;
 
-import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.tree.DecisionTreeRegressionTrainerExample;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.GDBOnTreesTrainer;
+import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example of using distributed {@link DecisionTreeClassificationTrainer}.
+ * Example represents a Gradient Boosting On Trees Classification on dataset representing
+ * meander function f(x) = [sin(x) > 0].
  */
 public class GDBOnTreesClassificationTrainerExample {
     /**
@@ -42,8 +40,6 @@ public class GDBOnTreesClassificationTrainerExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String... args) throws InterruptedException {
-        System.out.println(">>> Decision tree regression trainer example started.");
-
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -64,8 +60,7 @@ public class GDBOnTreesClassificationTrainerExample {
                 }
 
                 // Create regression trainer.
-                DatasetTrainer<Model<Vector, Double>, Double> trainer =
-                    GDBOnTreesTrainer.binaryClassification(1.0, 300, 2, 0.);
+                DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.);
 
                 // Train decision tree model.
                 Model<Vector, Double> mdl = trainer.fit(
@@ -75,10 +70,8 @@ public class GDBOnTreesClassificationTrainerExample {
                     (k, v) -> v[1]
                 );
 
-                System.out.println(">>> Decision tree classification model: " + mdl);
-
                 System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> | Prediction\t| Valid answer\t|");
                 System.out.println(">>> ---------------------------------");
 
                 // Calculate score.
@@ -90,65 +83,12 @@ public class GDBOnTreesClassificationTrainerExample {
 
                 System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> Decision tree regression trainer example completed.");
+                System.out.println(">>> GDB classification trainer example completed.");
             });
 
             igniteThread.start();
 
             igniteThread.join();
-        }
-    }
-
-    /**
-     * Generate point with {@code x} in (-0.5, 0.5) and {@code y} in the same interval. If {@code x * y > 0} then label
-     * is 1, otherwise 0.
-     *
-     * @param rnd Random.
-     * @return Point with label.
-     */
-    private static LabeledPoint generatePoint(Random rnd) {
-
-        double x = rnd.nextDouble() - 0.5;
-        double y = rnd.nextDouble() - 0.5;
-
-        return new LabeledPoint(x, y, x * y > 0 ? 1 : 0);
-    }
-
-    /** Point data class. */
-    private static class Point {
-        /** X coordinate. */
-        final double x;
-
-        /** Y coordinate. */
-        final double y;
-
-        /**
-         * Constructs a new instance of point.
-         *
-         * @param x X coordinate.
-         * @param y Y coordinate.
-         */
-        Point(double x, double y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-    /** Labeled point data class. */
-    private static class LabeledPoint extends Point {
-        /** Point label. */
-        final double lb;
-
-        /**
-         * Constructs a new instance of labeled point data.
-         *
-         * @param x X coordinate.
-         * @param y Y coordinate.
-         * @param lb Point label.
-         */
-        LabeledPoint(double x, double y, double lb) {
-            super(x, y);
-            this.lb = lb;
         }
     }
 }

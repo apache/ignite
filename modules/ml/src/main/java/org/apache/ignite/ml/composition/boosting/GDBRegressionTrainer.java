@@ -20,25 +20,37 @@ package org.apache.ignite.ml.composition.boosting;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
+/**
+ * Model trainer for Gradient Boosting Regression.
+ */
 public abstract class GDBRegressionTrainer extends GDBTrainer {
-    public GDBRegressionTrainer(double gradStepSize, Integer modelsCnt) {
-        super(gradStepSize, modelsCnt);
+    /**
+     * Constructs instance of GDBRegressionTrainer.
+     * @param gradStepSize Grad step size.
+     * @param cntOfIterations Count of learning iterations.
+     */
+    public GDBRegressionTrainer(double gradStepSize, Integer cntOfIterations) {
+        super(gradStepSize, cntOfIterations);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
     }
 
+    /** {@inheritDoc} */
     @Override protected double externalLabelToInternal(double x) {
         return x;
     }
 
+    /** {@inheritDoc} */
     @Override protected double internalLabelToExternal(double x) {
         return x;
     }
 
+    /** {@inheritDoc} */
     @Override protected double grad(long sampleSize, double answer, double prediction) {
         return (2.0 / sampleSize) * (prediction - answer);
     }

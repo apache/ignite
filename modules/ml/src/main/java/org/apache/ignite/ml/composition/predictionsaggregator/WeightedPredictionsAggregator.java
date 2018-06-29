@@ -20,20 +20,40 @@ package org.apache.ignite.ml.composition.predictionsaggregator;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-public class BoostingPredictionsAggregator implements PredictionsAggregator {
-    private final double initialValue;
+/**
+ * Predictions aggregator returning weighted sum of predictions.
+ * result(p1, ..., pn) = bias + p1*w1 + ... + pn*wn
+ */
+public class WeightedPredictionsAggregator implements PredictionsAggregator {
+    /** Weights for predictions. */
     private final double[] weights;
+    /** Bias. */
+    private final double bias;
 
-    public BoostingPredictionsAggregator(double initialValue, double[] weights) {
+    /**
+     * Constructs WeightedPredictionsAggregator instance.
+     * @param weights Weights.
+     */
+    public WeightedPredictionsAggregator(double[] weights) {
         this.weights = weights;
-        this.initialValue = initialValue;
+        this.bias = 0.0;
     }
 
+    /**
+     * Constructs WeightedPredictionsAggregator instance.
+     * @param weights Weights.
+     * @param bias Bias.
+     */
+    public WeightedPredictionsAggregator(double[] weights, double bias) {
+        this.weights = weights;
+        this.bias = bias;
+    }
+
+    /** {@inheritDoc} */
     @Override public Double apply(double[] answers) {
         A.ensure(answers.length == weights.length,
             "Composition vector must have same size as weights vector");
 
-        return initialValue + IntStream.range(0, answers.length)
-            .mapToDouble(i -> weights[i] * answers[i]).sum();
+        return bias + IntStream.range(0, answers.length).mapToDouble(i -> weights[i] * answers[i]).sum();
     }
 }

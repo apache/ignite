@@ -1,16 +1,40 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.composition.boosting;
 
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.GDBOnTreesTrainer;
+import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
+import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+/** */
 public class GDBTrainerTest {
-    @Test
-    public void testFitRegression() {
+    /** */
+    @Test public void testFitRegression() {
         int size = 100;
         double[] xs = new double[size];
         double[] ys = new double[size];
@@ -21,48 +45,37 @@ public class GDBTrainerTest {
         Map<Integer, double[]> learningSample = new HashMap<>();
         for (int i = 0; i < size; i++) {
             xs[i] = from + step * i;
-            ys[i] = Math.pow(xs[i], 2);
+            ys[i] = 2 * xs[i];
             learningSample.put(i, new double[] {xs[i], ys[i]});
         }
 
-        int maxTrees = 2000;
-        System.out.print("[");
-        for (int i = 0; i < maxTrees + 1; i += 100) {
-            System.out.print(String.format("%.2f", (double)i));
-            if (i != maxTrees)
-                System.out.print(",");
-        }
-        System.out.println("]");
-        System.out.print("[");
-        for (int i = 0; i < maxTrees + 1; i += 100) {
-            DatasetTrainer<Model<Vector, Double>, Double> trainer = GDBOnTreesTrainer.regression(0.01, i, 3, 0.0);
-            Model<Vector, Double> model = trainer.fit(
-                learningSample, 1,
-                (k, v) -> new double[] {v[0]},
-                (k, v) -> v[1]
-            );
+        DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0);
+        Model<Vector, Double> model = trainer.fit(
+            learningSample, 1,
+            (k, v) -> new double[] {v[0]},
+            (k, v) -> v[1]
+        );
 
-            double mse = 0.0;
-            for (int j = 0; j < size; j++) {
-                double x = xs[j];
-                double y = ys[j];
-                double p = model.apply(Vector.of(new double[] {x}));
-                mse += Math.pow(y - p, 2);
-            }
-            mse /= size;
-            System.out.print(String.format("%.2f", mse));
-            if (i != maxTrees)
-                System.out.print(",");
+        double mse = 0.0;
+        for (int j = 0; j < size; j++) {
+            double x = xs[j];
+            double y = ys[j];
+            double p = model.apply(Vector.of(new double[] {x}));
+            mse += Math.pow(y - p, 2);
         }
-        System.out.println("]");
+        mse /= size;
+
+        assertEquals(0.0, mse, 0.0001);
+
+        assertTrue(model instanceof ModelsComposition);
+        ModelsComposition composition = (ModelsComposition) model;
+
+        assertEquals(2000, composition.getModels().size());
+        assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
     }
 
-    private double sigma(double x) {
-        return 1.0 / (1.0 + Math.exp(-x));
-    }
-
-    @Test
-    public void testFitClassifier() {
+    /** */
+    @Test public void testFitClassifier() {
         int sampleSize = 100;
         double[] xs = new double[sampleSize];
         double[] ys = new double[sampleSize];
@@ -74,40 +87,30 @@ public class GDBTrainerTest {
 
         Map<Integer, double[]> learningSample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++)
-            learningSample.put(i, new double[] { xs[i], ys[i] });
+            learningSample.put(i, new double[] {xs[i], ys[i]});
 
-        int maxTrees = 2000;
-        System.out.print("[");
-        for (int i = 0; i < maxTrees + 1; i += 100) {
-            System.out.print(String.format("%.2f", (double)i));
-            if (i != maxTrees)
-                System.out.print(",");
+        DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0);
+        Model<Vector, Double> model = trainer.fit(
+            learningSample, 1,
+            (k, v) -> new double[] {v[0]},
+            (k, v) -> v[1]
+        );
+
+        int errorsCount = 0;
+        for (int j = 0; j < sampleSize; j++) {
+            double x = xs[j];
+            double y = ys[j];
+            double p = model.apply(Vector.of(new double[] {x}));
+            if(p != y)
+                errorsCount++;
         }
-        System.out.println("]");
-        System.out.print("[");
-        for (int i = 0; i < maxTrees + 1; i += 100) {
-            DatasetTrainer<Model<Vector, Double>, Double> trainer = GDBOnTreesTrainer.binaryClassification(0.01, i, 3, 0.0);
 
-            Model<Vector, Double> model = trainer.fit(
-                learningSample, 1,
-                (k, v) -> new double[] {v[0]},
-                (k, v) -> v[1]
-            );
+        assertEquals(0, errorsCount);
 
-            double errorRate = 0.0;
-            for (int j = 0; j < sampleSize; j++) {
-                double x = xs[j];
-                double y = ys[j];
-                Double modelAnswer = model.apply(Vector.of(new double[] {x}));
-//                double p = sigma(modelAnswer) < 0.5 ? 0. : 1.;
-//                errorRate += ((y != p) ? 1.0 : 0.0);
-                errorRate += ((y != modelAnswer) ? 1.0 : 0.0);
-            }
-            errorRate /= sampleSize;
-            System.out.print(String.format("%.2f", errorRate));
-            if (i != maxTrees)
-                System.out.print(",");
-        }
-        System.out.println("]");
+        assertTrue(model instanceof ModelsComposition);
+        ModelsComposition composition = (ModelsComposition) model;
+
+        assertEquals(500, composition.getModels().size());
+        assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
     }
 }

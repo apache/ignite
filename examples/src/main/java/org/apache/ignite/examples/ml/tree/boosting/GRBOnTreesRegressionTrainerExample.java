@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tree;
+package org.apache.ignite.examples.ml.tree.boosting;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -24,15 +24,14 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.tree.GDBOnTreesTrainer;
+import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example of using distributed {@link DecisionTreeRegressionTrainer}.
+ * Example represents a Gradient Boosting On Trees Regression on dataset representing
+ * parabolic function f(x) = x^2.
  */
 public class GRBOnTreesRegressionTrainerExample {
     /**
@@ -41,8 +40,6 @@ public class GRBOnTreesRegressionTrainerExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String... args) throws InterruptedException {
-        System.out.println(">>> Decision tree regression trainer example started.");
-
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -63,8 +60,7 @@ public class GRBOnTreesRegressionTrainerExample {
                 }
 
                 // Create regression trainer.
-                DatasetTrainer<Model<Vector, Double>, Double> trainer =
-                    GDBOnTreesTrainer.regression(1.0, 2000, 1, 0.);
+                DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.);
 
                 // Train decision tree model.
                 Model<Vector, Double> mdl = trainer.fit(
@@ -74,10 +70,8 @@ public class GRBOnTreesRegressionTrainerExample {
                     (k, v) -> v[1]
                 );
 
-                System.out.println(">>> Decision tree regression model: " + mdl);
-
                 System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> | Prediction\t| Valid answer \t|");
                 System.out.println(">>> ---------------------------------");
 
                 // Calculate score.
@@ -89,7 +83,7 @@ public class GRBOnTreesRegressionTrainerExample {
 
                 System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> Decision tree regression trainer example completed.");
+                System.out.println(">>> GDB Regression trainer example completed.");
             });
 
             igniteThread.start();

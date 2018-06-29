@@ -31,14 +31,25 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 
+/**
+ * Model trainer for Gradient Boosting Binary Classification.
+ */
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
+    /** External representation of first class */
     private double externalFirstClass; //internal 0.0
+    /** External representation of second class */
     private double externalSecondClass; //internal 1.0
 
-    public GDBBinaryClassifierTrainer(double gradStepSize, Integer modelsCnt) {
-        super(gradStepSize, modelsCnt);
+    /**
+     * Constructs instance of GDBBinaryClassifierTrainer.
+     * @param gradStepSize Grad step size.
+     * @param cntOfIterations Count of learning iterations.
+     */
+    public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations) {
+        super(gradStepSize, cntOfIterations);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
@@ -62,16 +73,19 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
         externalSecondClass = uniqLabels.get(1);
     }
 
+    /** {@inheritDoc} */
     @Override protected double externalLabelToInternal(double x) {
         return x == externalFirstClass ? 0.0 : 1.0;
     }
 
+    /** {@inheritDoc} */
     @Override protected double internalLabelToExternal(double indent) {
         double sigma = 1.0 / (1.0 + Math.exp(-indent));
         double internalCls = sigma < 0.5 ? 0.0 : 1.0;
         return internalCls == 0.0 ? externalFirstClass : externalSecondClass;
     }
 
+    /** {@inheritDoc} */
     @Override protected double grad(long sampleSize, double answer, double prediction) {
         return (prediction - answer) / (prediction * (1.0 - prediction));
     }

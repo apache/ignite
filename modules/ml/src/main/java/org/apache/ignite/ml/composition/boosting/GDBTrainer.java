@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.predictionsaggregator.BoostingPredictionsAggregator;
+import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -35,15 +35,27 @@ import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Abstract GDB trainer.
+ * It implements gradient descent in functional space using user-selected regressor in child class.
+ */
 abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Double> {
+    /** Gradient step. */
     private final double gradientStep;
-    private final int countOfModels;
+    /** Count of iterations. */
+    private final int cntOfIterations;
 
-    public GDBTrainer(double gradStepSize, Integer modelsCnt) {
+    /**
+     * Constructs GDBTrainer instance.
+     * @param gradStepSize Grad step size.
+     * @param cntOfIterations Count of learning iterations.
+     */
+    public GDBTrainer(double gradStepSize, Integer cntOfIterations) {
         gradientStep = gradStepSize;
-        this.countOfModels = modelsCnt;
+        this.cntOfIterations = cntOfIterations;
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> Model<Vector, Double> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -56,13 +68,13 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
         Long sampleSize = initAndSampleSize.get2();
 
         List<Model<Vector, Double>> models = new ArrayList<>();
-        double[] compositionWeights = new double[countOfModels];
+        double[] compositionWeights = new double[cntOfIterations];
         Arrays.fill(compositionWeights, gradientStep);
-        BoostingPredictionsAggregator resAggregator = new BoostingPredictionsAggregator(mean, compositionWeights);
+        WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeights, mean);
 
-        for (int i = 0; i < countOfModels; i++) {
+        for (int i = 0; i < cntOfIterations; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, i);
-            BoostingPredictionsAggregator aggregator = new BoostingPredictionsAggregator(mean, weights);
+            WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
             Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
@@ -81,15 +93,38 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
         };
     }
 
+    /**
+     * Defines unique labels in dataset if need (useful in case of classification).
+     * @param builder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lExtractor Labels extractor.
+     */
     protected abstract  <V, K> void learnLabels(DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
 
+    /**
+     * Returns regressor model trainer for one step of GDB.
+     */
     @NotNull protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
 
-    protected abstract double externalLabelToInternal(double x);
+    /**
+     * Maps external representation of label to internal.
+     * @param lbl Label value.
+     */
+    protected abstract double externalLabelToInternal(double lbl);
 
-    protected abstract double internalLabelToExternal(double x);
+    /**
+     * Maps internal representation of label to external.
+     * @param lbl Label value.
+     */
+    protected abstract double internalLabelToExternal(double lbl);
 
+    /**
+     * Compute mean value of label as first approximation.
+     * @param builder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
     protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -123,5 +158,11 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
         }
     }
 
+    /**
+     * Estimate gradient value for answer-prediction pair.
+     * @param sampleSize Sample size.
+     * @param answer Right answer.
+     * @param prediction Prediction.
+     */
     protected abstract double grad(long sampleSize, double answer, double prediction);
 }
