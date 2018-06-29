@@ -27,6 +27,9 @@ import java.util.Set;
  * Indexing query filter for specific cache.
  */
 public class IndexingQueryCacheFilter {
+
+    public static volatile boolean DEBUG = false;
+
     /** Affinity manager. */
     private final GridCacheAffinityManager aff;
 
@@ -74,9 +77,13 @@ public class IndexingQueryCacheFilter {
      * @return {@code True} if passed.
      */
     public boolean applyPartition(int part) {
+        boolean res;
+
         if (parts == null)
-            return aff.primaryByPartition(locNode, part, topVer);
+            res = aff.primaryByPartition(locNode, part, topVer);
         else
-            return parts.contains(part);
+            res = parts.contains(part);
+
+        return res;
     }
 }
