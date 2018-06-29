@@ -170,6 +170,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         if (workerAgain != null && workerAgain == worker)
                             workerDiedHnd.apply(worker);
 
+                        // Worker is dead, but it's still accessible via iterator => iterator is outdated, resetting.
                         checkIter = registeredWorkers.entrySet().iterator();
                     }
 
@@ -179,7 +180,9 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         if (workerAgain != null && workerAgain == worker)
                             workerIsHangingHnd.apply(worker);
 
-                        checkIter = registeredWorkers.entrySet().iterator();
+                        // Iterator should not be reset:
+                        // otherwise we'll never iterate beyond the hanging worker,
+                        // that may stay in the map for indefinite time.
                     }
                 }
             }
