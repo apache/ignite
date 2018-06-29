@@ -20,7 +20,7 @@ in progress.
 
 from pyignite.connection import Connection
 from pyignite.datatypes.cache_config import StructArray
-from pyignite.datatypes.complex import AnyDataArray, AnyDataObject
+from pyignite.datatypes.complex import AnyDataArray, AnyDataObject, Map
 from pyignite.datatypes.null_object import Null
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
 from pyignite.datatypes.sql import StatementType
@@ -86,10 +86,7 @@ def scan(
 
     response_struct = Response([
         ('cursor', Long),
-        ('data', StructArray([
-            ('key', AnyDataObject),
-            ('value', AnyDataObject),
-        ])),
+        ('data', Map),
         ('more', Bool),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
@@ -99,10 +96,6 @@ def scan(
     if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
-    data = {}
-    for od in result.value['data']:
-        data[od['key']] = od['value']
-    result.value['data'] = data
     return result
 
 
@@ -143,10 +136,7 @@ def scan_cursor_get_page(
     conn.send(send_buffer)
 
     response_struct = Response([
-        ('data', StructArray([
-            ('key', AnyDataObject),
-            ('value', AnyDataObject),
-        ])),
+        ('data', Map),
         ('more', Bool),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
@@ -156,10 +146,6 @@ def scan_cursor_get_page(
     if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
-    data = {}
-    for od in result.value['data']:
-        data[od['key']] = od['value']
-    result.value['data'] = data
     return result
 
 
@@ -240,10 +226,7 @@ def sql(
 
     response_struct = Response([
         ('cursor', Long),
-        ('data', StructArray([
-            ('key', AnyDataObject),
-            ('value', AnyDataObject),
-        ])),
+        ('data', Map),
         ('more', Bool),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
@@ -253,10 +236,6 @@ def sql(
     if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
-    data = {}
-    for od in result.value['data']:
-        data[od['key']] = od['value']
-    result.value['data'] = data
     return result
 
 
@@ -296,10 +275,7 @@ def sql_cursor_get_page(
     conn.send(send_buffer)
 
     response_struct = Response([
-        ('data', StructArray([
-            ('key', AnyDataObject),
-            ('value', AnyDataObject),
-        ])),
+        ('data', Map),
         ('more', Bool),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
@@ -309,10 +285,6 @@ def sql_cursor_get_page(
     if result.status != 0:
         return result
     result.value = dict(response_struct.to_python(response))
-    data = {}
-    for od in result.value['data']:
-        data[od['key']] = od['value']
-    result.value['data'] = data
     return result
 
 

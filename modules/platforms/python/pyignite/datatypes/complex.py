@@ -32,7 +32,7 @@ from .type_codes import *
 
 
 __all__ = [
-    'AnyDataObject', 'AnyDataArray',
+    'AnyDataObject', 'AnyDataArray', 'Map',
     'ObjectArrayObject', 'CollectionObject', 'MapObject',
 ]
 
@@ -377,17 +377,25 @@ class CollectionObject(ObjectArrayObject):
         )
 
 
-class MapObject:
+class Map:
     """
-    This is a dictionary type. Type conversion hint can be a `HASH_MAP`
-    (ordinary dict) or `LINKED_HASH_MAP` (collections.OrderedDict).
 
-    Keys and values in map are independent data objects, but `count`
-    counts pairs. Very annoying.
     """
-    tc_type = TC_MAP
     HASH_MAP = 1
     LINKED_HASH_MAP = 2
+
+    @classmethod
+    def build_header(cls):
+        return type(
+            cls.__name__+'Header',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                ],
+            }
+        )
 
     @classmethod
     def parse(cls, conn: Connection):
@@ -412,6 +420,58 @@ class MapObject:
         return final_class, buffer
 
     @classmethod
+    def to_python(cls, ctype_object):
+        map_type = getattr(ctype_object, 'type', cls.HASH_MAP)
+        result = OrderedDict() if map_type == cls.LINKED_HASH_MAP else {}
+
+        for i in range(0, ctype_object.length << 1, 2):
+            k = AnyDataObject.to_python(
+                    getattr(ctype_object, 'element_{}'.format(i))
+                )
+            v = AnyDataObject.to_python(
+                    getattr(ctype_object, 'element_{}'.format(i + 1))
+                )
+            result[k] = v
+        return result
+
+    @classmethod
+    def from_python(cls, value, type_id=None):
+        header_class = cls.build_header()
+        header = header_class()
+        length = len(value)
+        header.length = length
+        if hasattr(header, 'type_code'):
+            header.type_code = int.from_bytes(
+                cls.tc_type,
+                byteorder=PROTOCOL_BYTE_ORDER
+            )
+        if hasattr(header, 'type'):
+            header.type = type_id
+        buffer = bytes(header)
+
+        for k, v in value.items():
+            if is_hinted(k):
+                buffer += k[1].from_python(k[0])
+            else:
+                buffer += AnyDataObject.from_python(k)
+            if is_hinted(v):
+                buffer += v[1].from_python(v[0])
+            else:
+                buffer += AnyDataObject.from_python(v)
+        return buffer
+
+
+class MapObject(Map):
+    """
+    This is a dictionary type. Type conversion hint can be a `HASH_MAP`
+    (ordinary dict) or `LINKED_HASH_MAP` (collections.OrderedDict).
+
+    Keys and values in map are independent data objects, but `count`
+    counts pairs. Very annoying.
+    """
+    tc_type = TC_MAP
+
+    @classmethod
     def build_header(cls):
         return type(
             cls.__name__+'Header',
@@ -428,34 +488,9 @@ class MapObject:
 
     @classmethod
     def to_python(cls, ctype_object):
-        result = (
-            OrderedDict() if ctype_object.type == cls.LINKED_HASH_MAP else {}
-        )
-        for i in range(0, ctype_object.length << 1, 2):
-            k = AnyDataObject.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
-                )
-            v = AnyDataObject.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i + 1))
-                )
-            result[k] = v
-        return ctype_object.type, result
+        return ctype_object.type, super().to_python(ctype_object)
 
     @classmethod
     def from_python(cls, value):
         type_id, value = value
-        header_class = cls.build_header()
-        header = header_class()
-        header.type_code = int.from_bytes(
-            cls.tc_type,
-            byteorder=PROTOCOL_BYTE_ORDER
-        )
-        length = len(value)
-        header.length = length
-        header.type = type_id
-        buffer = bytes(header)
-
-        for k, v in value.items():
-            buffer += AnyDataObject.from_python(k)
-            buffer += AnyDataObject.from_python(v)
-        return buffer
+        return super().from_python(value, type_id)

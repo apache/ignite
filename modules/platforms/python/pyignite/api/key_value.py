@@ -15,11 +15,9 @@
 
 from pyignite.connection import Connection
 from pyignite.queries.op_codes import *
-from pyignite.datatypes.cache_config import Struct, StructArray
-from pyignite.datatypes.complex import AnyDataObject
+from pyignite.datatypes.complex import AnyDataArray, AnyDataObject, Map
 from pyignite.datatypes.key_value import PeekModes
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
-from pyignite.datatypes.standard import String
 from pyignite.queries import Query, Response
 from pyignite.utils import is_hinted
 from .result import APIResult
@@ -155,45 +153,21 @@ def cache_get_all(
     class CacheGetAllQuery(Query):
         op_code = OP_CACHE_GET_ALL
 
-    value_hint_pairs = []
-    length = len(keys)
-    for key_or_pair in keys:
-        if is_hinted(key_or_pair):
-            value_hint_pairs.append(key_or_pair)
-        else:
-            value_hint_pairs.append((key_or_pair, AnyDataObject))
-
-    # structure name: hint
-    key_fields = {}
-    # structure name: value
-    data = {}
-    for i, pair in enumerate(value_hint_pairs):
-        name = 'element_{}'.format(i)
-        value, hint = pair
-        key_fields[name] = hint
-        data[name] = value
-
     query_struct = CacheGetAllQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('length', Int),
-    ] + list(key_fields.items()), query_id=query_id)
+        ('keys', AnyDataArray()),
+    ], query_id=query_id)
 
-    data.update({
+    _, send_buffer = query_struct.from_python({
         'hash_code': hash_code,
         'flag': 1 if binary else 0,
-        'length': length,
+        'keys': keys,
     })
-    _, send_buffer = query_struct.from_python(data)
     conn.send(send_buffer)
 
     response_struct = Response([
-        (
-            'data', StructArray([
-                ('key', AnyDataObject),
-                ('value', AnyDataObject),
-            ])
-        ),
+        ('data', Map),
     ])
     response_class, recv_buffer = response_struct.parse(conn)
     response = response_class.from_buffer_copy(recv_buffer)
@@ -201,11 +175,7 @@ def cache_get_all(
     result = APIResult(response)
     if result.status != 0:
         return result
-    result.value = dict(response_struct.to_python(response))
-    data = {}
-    for od in result.value['data']:
-        data[od['key']] = od['value']
-    result.value = data
+    result.value = dict(response_struct.to_python(response))['data']
     return result
 
 
@@ -234,42 +204,17 @@ def cache_put_all(
     class CachePutAllQuery(Query):
         op_code = OP_CACHE_PUT_ALL
 
-    length = len(pairs)
-    unrolled = []
-    for k_pair, v_pair in pairs.items():
-        if not is_hinted(k_pair):
-            k_pair = (k_pair, AnyDataObject)
-        unrolled.append(k_pair)
-        if not is_hinted(v_pair):
-            v_pair = (v_pair, AnyDataObject)
-        unrolled.append(v_pair)
-
-    # structure name: hint
-    key_fields = {}
-    # structure name: value:
-    data = {}
-    # quad is a ((key, key type hint), (value, value type hint)) tuple
-    for i, quad in enumerate(zip(unrolled[::2], unrolled[1::2])):
-        name = 'element_{}'.format(i)
-        key_pair, value_pair = quad
-        key_fields[name] = Struct([
-            ('key', key_pair[1]),
-            ('value', value_pair[1]),
-        ])
-        data[name] = {'key': key_pair[0], 'value': value_pair[0]}
-
     query_struct = CachePutAllQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('length', Int),
-    ] + list(key_fields.items()), query_id=query_id)
+        ('data', Map),
+    ], query_id=query_id)
 
-    data.update({
+    _, send_buffer = query_struct.from_python({
         'hash_code': hash_code,
         'flag': 1 if binary else 0,
-        'length': length,
+        'data': pairs,
     })
-    _, send_buffer = query_struct.from_python(data)
     conn.send(send_buffer)
 
     response_struct = Response([])
@@ -356,37 +301,17 @@ def cache_contains_keys(
     class CacheContainsKeysQuery(Query):
         op_code = OP_CACHE_CONTAINS_KEYS
 
-    value_hint_pairs = []
-    length = len(keys)
-    for key_or_pair in keys:
-        if is_hinted(key_or_pair):
-            value_hint_pairs.append(key_or_pair)
-        else:
-            value_hint_pairs.append((key_or_pair, AnyDataObject))
-
-    # structure name: hint
-    key_fields = {}
-    # structure name: value
-    data = {}
-    for i, pair in enumerate(value_hint_pairs):
-        name = 'element_{}'.format(i)
-        value, hint = pair
-        key_fields[name] = hint
-        data[name] = value
-
     query_struct = CacheContainsKeysQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('length', Int),
-    ] + list(key_fields.items()), query_id=query_id)
+        ('keys', AnyDataArray()),
+    ], query_id=query_id)
 
-    data.update({
+    _, send_buffer = query_struct.from_python({
         'hash_code': hash_code,
         'flag': 1 if binary else 0,
-        'length': length,
+        'keys': keys,
     })
-
-    _, send_buffer = query_struct.from_python(data)
     conn.send(send_buffer)
 
     response_struct = Response([
@@ -919,36 +844,17 @@ def cache_clear_keys(
     class CacheClearKeysQuery(Query):
         op_code = OP_CACHE_CLEAR_KEYS
 
-    value_hint_pairs = []
-    length = len(keys)
-    for key_or_pair in keys:
-        if is_hinted(key_or_pair):
-            value_hint_pairs.append(key_or_pair)
-        else:
-            value_hint_pairs.append((key_or_pair, AnyDataObject))
-
-    # structure name: hint
-    key_fields = {}
-    # structure name: value
-    data = {}
-    for i, pair in enumerate(value_hint_pairs):
-        name = 'element_{}'.format(i)
-        value, hint = pair
-        key_fields[name] = hint
-        data[name] = value
-
     query_struct = CacheClearKeysQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('length', Int),
-    ] + list(key_fields.items()), query_id=query_id)
+        ('keys', AnyDataArray()),
+    ], query_id=query_id)
 
-    data.update({
+    _, send_buffer = query_struct.from_python({
         'hash_code': hash_code,
         'flag': 1 if binary else 0,
-        'length': length,
+        'keys': keys,
     })
-    _, send_buffer = query_struct.from_python(data)
     conn.send(send_buffer)
 
     response_struct = Response([])
@@ -1093,36 +999,17 @@ def cache_remove_keys(
     class CacheRemoveKeysQuery(Query):
         op_code = OP_CACHE_REMOVE_KEYS
 
-    value_hint_pairs = []
-    length = len(keys)
-    for key_or_pair in keys:
-        if is_hinted(key_or_pair):
-            value_hint_pairs.append(key_or_pair)
-        else:
-            value_hint_pairs.append((key_or_pair, AnyDataObject))
-
-    # structure name: hint
-    key_fields = {}
-    # structure name: value
-    data = {}
-    for i, pair in enumerate(value_hint_pairs):
-        name = 'element_{}'.format(i)
-        value, hint = pair
-        key_fields[name] = hint
-        data[name] = value
-
     query_struct = CacheRemoveKeysQuery([
         ('hash_code', Int),
         ('flag', Byte),
-        ('length', Int),
-    ] + list(key_fields.items()), query_id=query_id)
+        ('keys', AnyDataArray()),
+    ], query_id=query_id)
 
-    data.update({
+    _, send_buffer = query_struct.from_python({
         'hash_code': hash_code,
         'flag': 1 if binary else 0,
-        'length': length,
+        'keys': keys,
     })
-    _, send_buffer = query_struct.from_python(data)
     conn.send(send_buffer)
 
     response_struct = Response([])
