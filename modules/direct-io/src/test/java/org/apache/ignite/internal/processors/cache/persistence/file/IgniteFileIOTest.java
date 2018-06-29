@@ -187,6 +187,27 @@ public class IgniteFileIOTest extends TestCase {
     }
 
     /**
+     * test for 'full read' functionality.
+     */
+    public void testReadFullyArray() throws Exception {
+        byte[] arr = new byte[TEST_DATA_SIZE];
+
+        byte[] arrDst = new byte[TEST_DATA_SIZE];
+
+        fillRandomArray(arr);
+
+        TestFileIO fileIO = new TestFileIO(arr) {
+            @Override public int read(byte[] buf, int off, int len) throws IOException {
+                return super.read(buf, off, len < 2 ? len : (len >> 1));
+            }
+        };
+
+        fileIO.readFully(arrDst, 0, arrDst.length);
+
+        assert compareArrays(arr, arrDst);
+    }
+
+    /**
      * test for 'full write' functionality.
      */
     public void testWriteFully() throws Exception {
@@ -219,6 +240,27 @@ public class IgniteFileIOTest extends TestCase {
         assert buf.remaining() == 0;
 
         assert compareArrays(arr, buf.array());
+    }
+
+    /**
+     * test for 'full write' functionality.
+     */
+    public void testWriteFullyArray() throws Exception {
+        byte[] arr = new byte[TEST_DATA_SIZE];
+
+        byte[] arrSrc = new byte[TEST_DATA_SIZE];
+
+        fillRandomArray(arrSrc);
+
+        TestFileIO fileIO = new TestFileIO(arr) {
+            @Override public int write(byte[] buf, int off, int len) throws IOException {
+                return super.write(buf, off, len < 2 ? len : (len >> 1));
+            }
+        };
+
+        fileIO.writeFully(arrSrc, 0, arrSrc.length);
+
+        assert compareArrays(arr, arrSrc);
     }
 
     /**

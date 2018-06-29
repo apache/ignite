@@ -61,7 +61,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf);
             }
-        }, destBuf.remaining(), false);
+        }, avail(destBuf.remaining()), false);
     }
 
     /** {@inheritDoc} */
@@ -70,14 +70,14 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf, position + offs);
             }
-        }, destBuf.remaining(), false);
+        }, avail(destBuf.remaining(), position), false);
     }
 
     /** {@inheritDoc} */
     @Override public int readFully(final byte[] buf, final int off, final int len) throws IOException {
         return fully(new IOOperation() {
             @Override public int run(int offs) throws IOException {
-                return read(buf, off + offs, len - off);
+                return read(buf, off + offs, len - offs);
             }
         }, len, false);
     }
@@ -104,8 +104,26 @@ public abstract class AbstractFileIO implements FileIO {
     @Override public int writeFully(final byte[] buf, final int off, final int len) throws IOException {
         return fully(new IOOperation() {
             @Override public int run(int offs) throws IOException {
-                return write(buf, off + offs, len - off);
+                return write(buf, off + offs, len - offs);
             }
         }, len, true);
     }
+
+    /**
+     * @param requested Requested.
+     */
+    private int avail(int requested) throws IOException {
+        return avail(requested, position());
+    }
+
+    /**
+     * @param requested Requested.
+     * @param position Position.
+     */
+    private int avail(int requested, long position) throws IOException {
+        long avail = size() - position;
+
+        return requested > avail ? (int) avail : requested;
+    }
+
 }
