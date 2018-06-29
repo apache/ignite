@@ -39,7 +39,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
-import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder;
+import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
@@ -413,34 +413,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Closeable iterator.
      */
     private GridCloseableIterator<T> iterator0() {
-        return separated ? separatedCacheIterator() : sharedCacheIterator();
-    }
-
-    /**
-     * @return Shared cache iterator.
-     */
-    @SuppressWarnings("unchecked")
-    private GridCloseableIterator<T> sharedCacheIterator() {
         try {
-            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
-
-            Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
-
-            qry.projection(ctx.grid().cluster().forNodes(nodes));
-
-            CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
-
-            CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator it =
-                ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
-                    @Override protected T convert(Map.Entry<T, ?> e) {
-                        return e.getKey();
-                    }
-
-                    @Override protected void remove(T item) {
-                        GridCacheSetImpl.this.remove(item);
-                    }
-                });
+            WeakReferenceCloseableIterator<T> it = separated ? separatedCacheIterator() : sharedCacheIterator();
 
             if (rmvd) {
                 ctx.itHolder().removeIterator(it);
@@ -456,41 +430,51 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
+     * @return Shared cache iterator.
+     */
+    @SuppressWarnings("unchecked")
+    private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
+        CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
+            new GridSetQueryPredicate<>(id, collocated), null, false, false);
+
+        Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+
+        qry.projection(ctx.grid().cluster().forNodes(nodes));
+
+        CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
+
+        return ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+            @Override protected T convert(Map.Entry<T, ?> e) {
+                return e.getKey();
+            }
+
+            @Override protected void remove(T item) {
+                GridCacheSetImpl.this.remove(item);
+            }
+        });
+    }
+
+    /**
      * @return Separated cache iterator.
      */
     @SuppressWarnings("unchecked")
-    private GridCloseableIterator<T> separatedCacheIterator() {
-        try {
-            GridCloseableIterator iter =
-                (GridCloseableIterator)cache.scanIterator(false, new IgniteBiPredicate<Object, Object>() {
-                    @Override public boolean apply(Object k, Object v) {
-                        return k.getClass() == GridCacheSetItemKey.class;
-                    }
-                });
-
-            return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, Object>>() {
-                @Override protected T convert(Map.Entry<T, Object> e) {
-                    return (T)((SetItemKey)e.getKey()).item();
-                }
-
-                @Override protected void remove(T item) {
-                    ctx.gate().enter();
-
-                    try {
-                        cache.remove(itemKey(item));
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
-                    }
-                    finally {
-                        ctx.gate().leave();
-                    }
+    private WeakReferenceCloseableIterator<T> separatedCacheIterator() throws IgniteCheckedException {
+        GridCloseableIterator iter =
+            (GridCloseableIterator)cache.scanIterator(false, new IgniteBiPredicate<Object, Object>() {
+                @Override public boolean apply(Object k, Object v) {
+                    return k.getClass() == GridCacheSetItemKey.class;
                 }
             });
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+
+        return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+            @Override protected T convert(Map.Entry<T, ?> e) {
+                return (T)((SetItemKey)e.getKey()).item();
+            }
+
+            @Override protected void remove(T item) {
+                GridCacheSetImpl.this.remove(item);
+            }
+        });
     }
 
     /**
