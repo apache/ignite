@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1050,9 +1049,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
-        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = ctx.cache().cache(metaCacheName);
+        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
 
-        if (metaCache == null) {
+        if (metaCache0 == null) {
             CacheConfiguration ccfg = null;
 
             if (!create) {
@@ -1073,21 +1072,39 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 true,
                 true).get();
 
-            metaCache = ctx.cache().cache(metaCacheName);
+            metaCache0 = ctx.cache().cache(metaCacheName);
 
-            assert metaCache != null;
+            assert metaCache0 != null;
         }
 
-        IgniteInternalCache cache = null;
+        final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = metaCache0;
 
-        AtomicDataStructureValue oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
+        AtomicDataStructureValue oldVal;
 
-        if (oldVal == null && create) {
+        final IgniteInternalCache cache;
+
+        if (create) {
             cache = compatibleCache(cfg, grpName, type, name, separated);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
             oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
+        }
+        else {
+            oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
+
+            if (oldVal == null)
+                return null;
+            else if (!(oldVal instanceof DistributedCollectionMetadata))
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + oldVal.type() + ']');
+
+            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
+
+            if (cache == null)
+                return null;
         }
 
         if (oldVal != null) {
@@ -1097,46 +1114,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     ", newType=" + type +
                     ", existingType=" + oldVal.type() + ']');
 
-            CollectionConfiguration oldCfg = ((DistributedCollectionMetadata)oldVal).configuration();
+            assert oldVal instanceof DistributedCollectionMetadata;
 
-            if (cfg != null) {
-                String oldNodeFilter = oldCfg.getNodeFilter() != null ? oldCfg.getNodeFilter().getClass().getName() :
-                    CacheConfiguration.IgniteAllNodesPredicate.class.getName();
-
-                String newNodeFilter = cfg.getNodeFilter() != null ? cfg.getNodeFilter().getClass().getName() :
-                    CacheConfiguration.IgniteAllNodesPredicate.class.getName();
-
-                if (oldCfg.isCollocated() != cfg.isCollocated() ||
-                    oldCfg.getCacheMode() != cfg.getCacheMode() ||
-                    oldCfg.getBackups() != cfg.getBackups() ||
-                    oldCfg.getAtomicityMode() != cfg.getAtomicityMode() ||
-                    !Objects.equals(oldNodeFilter, newNodeFilter)) {
-                    throw new IgniteCheckedException("Another collection with the same name but different " +
-                        "configuration already created [name=" + name + ", group=" + grpName +
-                        ", newCollocated=" + cfg.isCollocated() +
-                        ", existingCollocated=" + oldCfg.isCollocated() +
-                        ", newCacheMode=" + cfg.getCacheMode() +
-                        ", existingCacheMode=" + oldCfg.getCacheMode() +
-                        ", newBackups=" + cfg.getBackups() +
-                        ", existingBackups=" + oldCfg.getBackups() +
-                        ", newAtomicityMode=" + cfg.getAtomicityMode() +
-                        ", existingAtomicityMode=" + oldCfg.getAtomicityMode() +
-                        ", newNodeFilter=" + newNodeFilter +
-                        ", existingNodeFilter=" + oldNodeFilter + ']');
-                }
+            if (cfg != null && ((DistributedCollectionMetadata)oldVal).configuration().isCollocated() != cfg.isCollocated()) {
+                throw new IgniteCheckedException("Another collection with the same name but different " +
+                    "configuration already created [name=" + name +
+                    ", newCollocated=" + cfg.isCollocated() +
+                    ", existingCollocated=" + !cfg.isCollocated() + ']');
             }
-
-            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
         }
-
-        if (cache == null)
-            return null;
-
-        final GridCacheContext cctx0 = cache.context();
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                return c.applyx(cctx0);
+                return c.applyx(cache.context());
             }
         });
     }

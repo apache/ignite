@@ -146,10 +146,9 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
             return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
     }
 
-
     /**
      * @param set Ignite set.
-     * @return {@code True} if this instance of IgniteSet is using separated cache.
+     * @return {@code True} If a separated cache is used to store items.
      */
     protected boolean separated(IgniteSet set) {
         IgniteSet impl = set;

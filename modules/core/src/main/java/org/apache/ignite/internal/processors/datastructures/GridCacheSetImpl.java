@@ -107,8 +107,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr) {
-        assert hdr.id() != null;
-
         this.ctx = ctx;
         this.name = name;
         this.collocated = hdr.collocated();
@@ -146,14 +144,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
 
-        return hdr != null && id.equals(hdr.id());
-    }
-
-    /**
-     * @return {@code True} If IgniteSet instance uses a separate cache to store its elements.
-     */
-    boolean separated() {
-        return separated;
+        return hdr != null && hdr.id().equals(id);
     }
 
     /** {@inheritDoc} */
@@ -421,7 +412,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @return Closeable iterator.
      */
-    protected GridCloseableIterator<T> iterator0() {
+    private GridCloseableIterator<T> iterator0() {
         return separated ? separatedCacheIterator() : sharedCacheIterator();
     }
 
@@ -610,6 +601,13 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     GridCacheContext context() {
         return ctx;
+    }
+
+    /**
+     * @return {@code True} If a separated cache is used to store items.
+     */
+    boolean separated() {
+        return separated;
     }
 
     /**
