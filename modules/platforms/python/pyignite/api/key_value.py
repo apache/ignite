@@ -19,7 +19,6 @@ from pyignite.datatypes.complex import AnyDataArray, AnyDataObject, Map
 from pyignite.datatypes.key_value import PeekModes
 from pyignite.datatypes.primitive import Bool, Byte, Int, Long
 from pyignite.queries import Query, Response
-from pyignite.utils import is_hinted
 from .result import APIResult
 
 

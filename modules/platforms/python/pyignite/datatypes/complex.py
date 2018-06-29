@@ -379,7 +379,10 @@ class CollectionObject(ObjectArrayObject):
 
 class Map:
     """
+    Dictionary type, payload-only.
 
+    Ignite does not track the order of key-value pairs in its caches, hence
+    the ordinary Python dict type, not the collections.OrderedDict.
     """
     HASH_MAP = 1
     LINKED_HASH_MAP = 2
