@@ -92,7 +92,7 @@ public interface GridCachePreloader {
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
 
     /**
-     * Update previously added assignments usging provided input info.
+     * Update previously created rebalance future using provided input info.
      *
      * @param topVer New topology version to update.
      */
