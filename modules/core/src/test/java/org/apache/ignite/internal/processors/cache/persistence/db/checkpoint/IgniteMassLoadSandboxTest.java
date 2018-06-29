@@ -349,11 +349,11 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             final Pattern idxPtrn = Pattern.compile("idx=([0-9]+),");
 
-            final Pattern covererdPtrn = Pattern.compile("walSegmentsCovered=\\[(.*)\\], ");
+            final Pattern covererdPtrn = Pattern.compile("walSegmentsCovered=\\[(.+)\\], ");
 
             boolean hasCheckpoint = false;
 
-            long lastCovered = -1;
+            long nextCovered = 0;
 
             for (String line : lines) {
                 if (!chPtrn.matcher(line).find())
@@ -369,7 +369,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                 final Matcher coveredMatcher = covererdPtrn.matcher(line);
 
-                assertTrue(coveredMatcher.find());
+                if (!coveredMatcher.find()) { // no wal segments are covered by checkpoint
+                    assertEquals(nextCovered, idx);
+                    continue;
+                }
 
                 final String coveredMatcherGrp = coveredMatcher.group(1);
 
@@ -377,13 +380,13 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     Arrays.stream(coveredMatcherGrp.split(",")).mapToLong(e -> Integer.valueOf(e.trim())).toArray() :
                     new long[0];
 
-                assertEquals(lastCovered + 1, covered[0]);
+                assertEquals(nextCovered, covered[0]);
 
-                final long last = covered[covered.length - 1];
+                final long lastCovered = covered[covered.length - 1];
 
-                assertEquals(idx - 1, last);  // current wal is excluded
+                assertEquals(idx - 1, lastCovered);  // current wal is excluded
 
-                lastCovered = last;
+                nextCovered = lastCovered + 1;
             }
 
             assertTrue(hasCheckpoint);
