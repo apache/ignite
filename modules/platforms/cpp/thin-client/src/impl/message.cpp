@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
+#include <ignite/binary/binary_raw_reader.h>
+#include <ignite/thin/cache/cache_peek_mode.h>
+
 #include <ignite/impl/thin/response_status.h>
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
 #include <ignite/impl/thin/message.h>
-#include "ignite/binary/binary_raw_reader.h"
 
 namespace ignite
 {
@@ -214,6 +216,57 @@ namespace ignite
             void BoolResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 value = reader.ReadBool();
+            }
+
+            CacheGetSizeRequest::CacheGetSizeRequest(int32_t cacheId, bool binary, int32_t peekModes) :
+                CacheRequest<RequestType::CACHE_GET_SIZE>(cacheId, binary),
+                peekModes(peekModes)
+            {
+                // No-op.
+            }
+
+            void CacheGetSizeRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            {
+                if (peekModes & ignite::thin::cache::CachePeekMode::ALL)
+                {
+                    // Size.
+                    writer.WriteInt32(1);
+
+                    writer.WriteInt8(0);
+
+                    return;
+                }
+
+                interop::InteropOutputStream* stream = writer.GetStream();
+                
+                // Reserve size.
+                stream->Reserve(4);
+
+                int32_t sizePos = stream->Position();
+
+                if (peekModes & ignite::thin::cache::CachePeekMode::NEAR_CACHE)
+                    stream->WriteInt8(1);
+
+                if (peekModes & ignite::thin::cache::CachePeekMode::PRIMARY)
+                    stream->WriteInt8(2);
+
+                if (peekModes & ignite::thin::cache::CachePeekMode::BACKUP)
+                    stream->WriteInt8(3);
+
+                if (peekModes & ignite::thin::cache::CachePeekMode::ONHEAP)
+                    stream->WriteInt8(4);
+
+                if (peekModes & ignite::thin::cache::CachePeekMode::OFFHEAP)
+                    stream->WriteInt8(5);
+
+                stream->WriteInt32(stream->Position() - sizePos);
+
+                stream->Synchronize();
+            }
+
+            void Int64Response::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                value = reader.ReadInt64();
             }
         }
     }

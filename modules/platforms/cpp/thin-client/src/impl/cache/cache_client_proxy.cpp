@@ -59,6 +59,11 @@ namespace ignite
                     return GetCacheImpl(impl).ContainsKey(key);
                 }
 
+                int64_t CacheClientProxy::GetSize(int32_t peekModes)
+                {
+                    return GetCacheImpl(impl).GetSize(peekModes);
+                }
+
                 void CacheClientProxy::LocalPeek(const WritableKey& key, Readable& value)
                 {
                     GetCacheImpl(impl).LocalPeek(key, value);

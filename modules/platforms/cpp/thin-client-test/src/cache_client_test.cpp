@@ -20,6 +20,7 @@
 #endif
 
 #include <boost/test/unit_test.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <ignite/ignition.h>
 
@@ -28,7 +29,7 @@
 #include <ignite/thin/ignite_client.h>
 
 #include <test_utils.h>
-#include <boost/thread/v2/thread.hpp>
+#include "ignite/thin/cache/cache_peek_mode.h"
 
 using namespace ignite::thin;
 using namespace boost::unit_test;
@@ -625,6 +626,40 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
 
         BOOST_CHECK_EQUAL(val, i * 5039);
     }
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetSizeAll)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, int32_t> cache =
+        client.GetCache<int32_t, int32_t>("partitioned");
+
+    for (int32_t i = 1; i < 1000; ++i)
+        cache.Put(i, i * 5039);
+
+    int64_t size = cache.GetSize(cache::CachePeekMode::ALL);
+    BOOST_CHECK_EQUAL(size, 1000);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetSizePrimary)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, int32_t> cache =
+        client.GetCache<int32_t, int32_t>("partitioned");
+
+    for (int32_t i = 1; i < 1000; ++i)
+        cache.Put(i, i * 5039);
+
+    int64_t size = cache.GetSize(cache::CachePeekMode::PRIMARY);
+    BOOST_CHECK_EQUAL(size, 1000);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

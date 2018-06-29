@@ -102,6 +102,19 @@ namespace ignite
                     return rsp.GetValue();
                 }
 
+                int64_t CacheClientImpl::GetSize(int32_t peekModes)
+                {
+                    CacheGetSizeRequest req(id, binary, peekModes);
+                    Int64Response rsp;
+
+                    router.Get()->SyncMessage(req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    return rsp.GetValue();
+                }
+
                 void CacheClientImpl::LocalPeek(const WritableKey& key, Readable& value)
                 {
                     CacheKeyRequest<RequestType::CACHE_LOCAL_PEEK> req(id, binary, key);

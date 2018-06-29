@@ -339,6 +339,41 @@ namespace ignite
             };
 
             /**
+             * Cache get size request.
+             */
+            class CacheGetSizeRequest : public CacheRequest<RequestType::CACHE_GET_SIZE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param binary Binary cache flag.
+                 * @param peekModes Peek modes.
+                 */
+                CacheGetSizeRequest(int32_t cacheId, bool binary, int32_t peekModes);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CacheGetSizeRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Peek modes. */
+                int32_t peekModes;
+            };
+
+            /**
              * Cache key request.
              *
              * Request to cache containing single key.
@@ -731,6 +766,51 @@ namespace ignite
             private:
                 /** Value. */
                 bool value;
+            };
+
+            /**
+             * Get cache names response.
+             */
+            class Int64Response : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Int64Response() :
+                    value(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Int64Response()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get received value.
+                 *
+                 * @return Received bool value.
+                 */
+                int64_t GetValue() const
+                {
+                    return value;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Value. */
+                int64_t value;
             };
         }
     }

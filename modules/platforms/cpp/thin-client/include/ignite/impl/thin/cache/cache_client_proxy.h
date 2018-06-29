@@ -85,6 +85,16 @@ namespace ignite
                     bool ContainsKey(const WritableKey& key);
 
                     /**
+                     * Gets the number of all entries cached across all nodes.
+                     * @note This operation is distributed and will query all
+                     * participating nodes for their cache sizes.
+                     *
+                     * @param peekModes Peek modes mask.
+                     * @return Cache size across all nodes.
+                     */
+                    int64_t GetSize(int32_t peekModes);
+
+                    /**
                      * Peeks at in-memory cached value using default optional
                      * peek mode. This method will not load value from any
                      * persistent store or from a remote node.
