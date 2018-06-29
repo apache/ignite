@@ -80,7 +80,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew, false);
+            super(cacheId, name, pageMem, wal, metaPageId, initNew);
         }
 
         /** {@inheritDoc} */

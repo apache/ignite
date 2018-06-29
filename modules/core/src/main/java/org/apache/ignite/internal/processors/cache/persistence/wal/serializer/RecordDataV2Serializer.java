@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -81,7 +82,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
         int clearSize = clearSize(rec);
 
         if (rec.type().mayBeEncrypted()) {
-            if (((WalEncryptedRecord)rec).needEncryption())
+            if (delegateSerializer.needEncryption(rec))
                 return encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* cacheId */
                     + 4 /* encrypted data size */;
 
@@ -102,8 +103,11 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             needDecryption = in.readByte() == ENCRYPTED;
 
         if (needDecryption) {
-            if (encryptionSpi == null)
-                return delegateSerializer.readEncryptedRecordWithoutDecryption(in, type);
+            if (encryptionSpi == null) {
+                int grpId = delegateSerializer.skipEncryptedRec(in);
+
+                return new EncryptedRecord(grpId, type);
+            }
 
             T2<ByteBufferBackedDataInput, Integer> clearData = delegateSerializer.readEncryptedData(in);
 
@@ -119,14 +123,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec.type().mayBeEncrypted()) {
-            if (((WalEncryptedRecord)rec).needEncryption()) {
+            if (delegateSerializer.needEncryption(rec)) {
                 int clearSize = clearSize(rec);
 
                 ByteBuffer clearData = ByteBuffer.allocate(clearSize);
 
                 writeClearRecord(rec, clearData);
 
-                int grpId = ((WalEncryptedRecord)rec).groupId();
+                int grpId = ((WalRecordCacheGroupAware)rec).groupId();
 
                 delegateSerializer.writeEncryptedData(grpId, clearData, buf);
 
@@ -289,7 +293,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 buf.putLong(dataRec.timestamp());
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
-                    RecordDataV1Serializer.putDataEntry(buf, dataEntry);
+                    delegateSerializer.putDataEntry(buf, dataEntry);
 
                 break;
 

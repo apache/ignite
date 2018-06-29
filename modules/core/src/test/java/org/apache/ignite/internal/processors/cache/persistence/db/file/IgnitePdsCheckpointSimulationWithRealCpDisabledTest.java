@@ -338,7 +338,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         wal.flush(start, false);
 
         for (DataEntry entry : entries)
-            wal.log(new DataRecord(entry, false, entry.cacheId()));
+            wal.log(new DataRecord(entry));
 
         // Data will not be written to the page store.
         stopAllGrids();

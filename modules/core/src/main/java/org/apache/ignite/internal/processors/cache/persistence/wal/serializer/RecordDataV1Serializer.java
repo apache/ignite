@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
@@ -81,8 +82,10 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -99,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Record data V1 serializer.
@@ -123,10 +127,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private final EncryptionSpi<EncryptionKey<?>> encryptionSpi;
 
     /** */
-    public static final byte ENCRYPTED = 1;
+    static final byte ENCRYPTED = 1;
 
     /** */
-    public static final byte CLEAR = 0;
+    static final byte CLEAR = 0;
 
     /**
      * @param cctx Cache shared context.
@@ -163,8 +167,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             needDecryption = in.readByte() == ENCRYPTED;
 
         if (needDecryption) {
-            if (encryptionSpi == null)
-                return readEncryptedRecordWithoutDecryption(in, type);
+            if (encryptionSpi == null) {
+                int grpId = skipEncryptedRec(in);
+
+                return new EncryptedRecord(grpId, type);
+            }
 
             T2<ByteBufferBackedDataInput, Integer> clearData = readEncryptedData(in);
 
@@ -187,7 +194,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 writeClearRecord(rec, clearData);
 
-                int grpId = ((WalEncryptedRecord)rec).groupId();
+                int grpId = ((WalRecordCacheGroupAware)rec).groupId();
 
                 writeEncryptedData(grpId, clearData, buf);
 
@@ -201,11 +208,24 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
-     * @param record Rec to check.
+     * @param rec Record to check.
      * @return {@code True} if this record should be encrypted.
      */
-    boolean needEncryption(WALRecord record) {
-        return false;
+    boolean needEncryption(WALRecord rec) {
+        if (!(rec instanceof WalRecordCacheGroupAware))
+            return false;
+
+        return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
+    }
+
+    /**
+     * @param grpId Group id.
+     * @return {@code True} if this record should be encrypted.
+     */
+    boolean needEncryption(int grpId) {
+        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+        return grpCtx != null && grpCtx.encrypted();
     }
 
     /**
@@ -239,10 +259,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * Should be used only for a offline WAL iteration.
      *
      * @param in Data stream.
-     * @return Encrypted record.
+     * @return Group id of skipped record.
      */
-    EncryptedRecord readEncryptedRecordWithoutDecryption(ByteBufferBackedDataInput in, RecordType clearRecordType)
-        throws IOException {
+    int skipEncryptedRec(ByteBufferBackedDataInput in) throws IOException {
         int grpId = in.readInt();
         int encryptedRecSize = in.readInt();
 
@@ -250,7 +269,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         assert skipped == encryptedRecSize;
 
-        return new EncryptedRecord(grpId, clearRecordType);
+        return grpId;
     }
 
     /**
@@ -1570,8 +1589,32 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /**
      * @param buf Buffer to write to.
      * @param entry Data entry.
+     * @throws IgniteCheckedException If failed.
      */
-    static void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+    void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+        DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(entry.cacheId());
+
+        if (desc != null && needEncryption(desc.groupId())) {
+            int clearSize = entrySize(entry);
+
+            ByteBuffer clearData = ByteBuffer.allocate(clearSize);
+
+            putClearDataEntry(clearData, entry);
+
+            writeEncryptedData(desc.groupId(), clearData, buf);
+        }
+        else {
+            buf.put(CLEAR);
+
+            putClearDataEntry(buf, entry);
+        }
+    }
+
+    /**
+     * @param buf Buffer to write to.
+     * @param entry Data entry.
+     */
+    private void putClearDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1638,8 +1681,35 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /**
      * @param in Input to read from.
      * @return Read entry.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     DataEntry readDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+        boolean needDecryption = in.readByte() == ENCRYPTED;
+
+        if (needDecryption) {
+            if (encryptionSpi == null) {
+                skipEncryptedRec(in);
+
+                return new EncryptedDataEntry();
+            }
+
+            T2<ByteBufferBackedDataInput, Integer> clearData = readEncryptedData(in);
+
+            if (clearData.get1() == null)
+                return null;
+
+            return readClearDataEntry(clearData.get1());
+        }
+
+        return readClearDataEntry(in);
+    }
+
+    /**
+     * @param in Input to read from.
+     * @return Read entry.
+     */
+    DataEntry readClearDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();
@@ -1769,8 +1839,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
         int sz = 0;
 
-        for (DataEntry entry : dataRec.writeEntries())
-            sz += entrySize(entry);
+        for (DataEntry entry : dataRec.writeEntries()) {
+            int clearSize = entrySize(entry);
+
+            if (cctx.cacheContext(entry.cacheId()).config().isEncrypted()) {
+                sz += encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* groupId */
+                    + 4 /* data size */;
+            }
+            else
+                sz += clearSize + 1 /* encrypted flag */;
+        }
 
         return sz;
     }
@@ -1818,5 +1896,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         }
 
         return size;
+    }
+
+    private static class EncryptedDataEntry extends DataEntry {
+        EncryptedDataEntry() {
+            super(0, null, null, null, null, null, 0, 0, 0);
+        }
     }
 }
