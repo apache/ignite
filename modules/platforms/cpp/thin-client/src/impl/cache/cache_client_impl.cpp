@@ -115,9 +115,33 @@ namespace ignite
                     return rsp.GetValue();
                 }
 
+                bool CacheClientImpl::Remove(const WritableKey& key)
+                {
+                    CacheKeyRequest<RequestType::CACHE_REMOVE_KEY> req(id, binary, key);
+                    BoolResponse rsp;
+
+                    router.Get()->SyncMessage(req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    return rsp.GetValue();
+                }
+
                 void CacheClientImpl::RemoveAll()
                 {
                     CacheRequest<RequestType::CACHE_REMOVE_ALL> req(id, binary);
+                    Response rsp;
+
+                    router.Get()->SyncMessage(req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+                }
+
+                void CacheClientImpl::Clear(const WritableKey& key)
+                {
+                    CacheKeyRequest<RequestType::CACHE_CLEAR_KEY> req(id, binary, key);
                     Response rsp;
 
                     router.Get()->SyncMessage(req, rsp);

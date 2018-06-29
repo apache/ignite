@@ -74,9 +74,19 @@ namespace ignite
                     GetCacheImpl(impl).UpdatePartitions();
                 }
 
+                bool CacheClientProxy::Remove(const WritableKey& key)
+                {
+                    return GetCacheImpl(impl).Remove(key);
+                }
+
                 void CacheClientProxy::RemoveAll()
                 {
                     GetCacheImpl(impl).RemoveAll();
+                }
+
+                void CacheClientProxy::Clear(const WritableKey& key)
+                {
+                    GetCacheImpl(impl).Clear(key);
                 }
 
                 void CacheClientProxy::Clear()

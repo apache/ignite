@@ -86,8 +86,7 @@ namespace ignite
 
                     /**
                      * Gets the number of all entries cached across all nodes.
-                     * @note This operation is distributed and will query all
-                     * participating nodes for their cache sizes.
+                     * @note This operation is distributed and will query all participating nodes for their cache sizes.
                      *
                      * @param peekModes Peek modes mask.
                      * @return Cache size across all nodes.
@@ -95,9 +94,8 @@ namespace ignite
                     int64_t GetSize(int32_t peekModes);
 
                     /**
-                     * Peeks at in-memory cached value using default optional
-                     * peek mode. This method will not load value from any
-                     * persistent store or from a remote node.
+                     * Peeks at in-memory cached value using default optional peek mode. This method will not load value
+                     * from any persistent store or from a remote node.
                      *
                      * Use for testing purposes only.
                      *
@@ -112,11 +110,34 @@ namespace ignite
                     void UpdatePartitions();
 
                     /**
+                     * Removes given key mapping from cache. If cache previously contained value for the given key,
+                     * then this value is returned. In case of PARTITIONED or REPLICATED caches, the value will be
+                     * loaded from the primary node, which in its turn may load the value from the disk-based swap
+                     * storage, and consecutively, if it's not in swap, from the underlying persistent storage.
+                     * If the returned value is not needed, method removex() should always be used instead of this
+                     * one to avoid the overhead associated with returning of the previous value.
+                     * If write-through is enabled, the value will be removed from store.
+                     * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                     *
+                     * @param key Key whose mapping is to be removed from cache.
+                     * @return False if there was no matching key.
+                     */
+                    bool Remove(const WritableKey& key);
+
+                    /**
                      * Removes all mappings from cache.
                      * If write-through is enabled, the value will be removed from store.
                      * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                      */
                     void RemoveAll();
+
+                    /**
+                     * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
+                     * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+                     *
+                     * @param key Key to clear.
+                     */
+                    void Clear(const WritableKey& key);
 
                     /**
                      * Clear cache.
