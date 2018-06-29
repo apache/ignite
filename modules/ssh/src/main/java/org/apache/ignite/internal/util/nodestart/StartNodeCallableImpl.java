@@ -76,7 +76,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     private static final String SUCCESSFUL_START_MSG = "Successfully bound to TCP port";
 
     /**  */
-    private static final long EXECUTE_WAIT_TIME = 1000;
+    private static final long EXECUTE_WAIT_TIME = 2000;
 
     /**  */
     private static final long NODE_START_CHECK_PERIOD = 2000;
