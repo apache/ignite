@@ -227,6 +227,8 @@ namespace ignite
 
             void CacheGetSizeRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
+                CacheRequest<RequestType::CACHE_GET_SIZE>::Write(writer, ver);
+
                 if (peekModes & ignite::thin::cache::CachePeekMode::ALL)
                 {
                     // Size.
@@ -238,11 +240,9 @@ namespace ignite
                 }
 
                 interop::InteropOutputStream* stream = writer.GetStream();
-                
-                // Reserve size.
-                stream->Reserve(4);
 
-                int32_t sizePos = stream->Position();
+                // Reserve size.
+                int32_t sizePos = stream->Reserve(4);
 
                 if (peekModes & ignite::thin::cache::CachePeekMode::NEAR_CACHE)
                     stream->WriteInt8(1);
@@ -259,7 +259,9 @@ namespace ignite
                 if (peekModes & ignite::thin::cache::CachePeekMode::OFFHEAP)
                     stream->WriteInt8(5);
 
-                stream->WriteInt32(stream->Position() - sizePos);
+                int32_t size = stream->Position() - sizePos - 4;
+
+                stream->WriteInt32(sizePos, size);
 
                 stream->Synchronize();
             }

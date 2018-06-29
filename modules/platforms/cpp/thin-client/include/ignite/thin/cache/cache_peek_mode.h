@@ -67,12 +67,7 @@ namespace ignite
                     /**
                      * Peeks value from the off-heap storage only, without loading off-heap value into cache.
                      */
-                    OFFHEAP = 0x20,
-
-                    /**
-                     * Peeks value from the swap storage only, without loading swapped value into cache.
-                     */
-                    SWAP = 0x40
+                    OFFHEAP = 0x20
                 };
             };
         }

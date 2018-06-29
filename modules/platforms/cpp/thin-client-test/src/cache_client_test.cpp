@@ -99,6 +99,23 @@ public:
         }
     }
 
+    void SizeTest(int32_t peekMode)
+    {
+        IgniteClientConfiguration cfg;
+        cfg.SetEndPoints("127.0.0.1:11110");
+
+        IgniteClient client = IgniteClient::Start(cfg);
+
+        cache::CacheClient<int32_t, int32_t> cache =
+            client.GetCache<int32_t, int32_t>("partitioned");
+
+        for (int32_t i = 0; i < 1000; ++i)
+            cache.Put(i, i * 5039);
+
+        int64_t size = cache.GetSize(peekMode);
+        BOOST_CHECK_EQUAL(size, 1000);
+    }
+
 private:
     /** Server node. */
     ignite::Ignite serverNode;
@@ -630,36 +647,30 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
 
 BOOST_AUTO_TEST_CASE(CacheClientGetSizeAll)
 {
-    IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110");
-
-    IgniteClient client = IgniteClient::Start(cfg);
-
-    cache::CacheClient<int32_t, int32_t> cache =
-        client.GetCache<int32_t, int32_t>("partitioned");
-
-    for (int32_t i = 1; i < 1000; ++i)
-        cache.Put(i, i * 5039);
-
-    int64_t size = cache.GetSize(cache::CachePeekMode::ALL);
-    BOOST_CHECK_EQUAL(size, 1000);
+    SizeTest(cache::CachePeekMode::ALL);
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetSizePrimary)
 {
-    IgniteClientConfiguration cfg;
-    cfg.SetEndPoints("127.0.0.1:11110");
+    SizeTest(cache::CachePeekMode::PRIMARY);
+}
 
-    IgniteClient client = IgniteClient::Start(cfg);
+BOOST_AUTO_TEST_CASE(CacheClientGetSizeOnheap)
+{
+    SizeTest(cache::CachePeekMode::ONHEAP);
+}
 
-    cache::CacheClient<int32_t, int32_t> cache =
-        client.GetCache<int32_t, int32_t>("partitioned");
+BOOST_AUTO_TEST_CASE(CacheClientGetSizeSeveral)
+{
+    using cache::CachePeekMode;
 
-    for (int32_t i = 1; i < 1000; ++i)
-        cache.Put(i, i * 5039);
-
-    int64_t size = cache.GetSize(cache::CachePeekMode::PRIMARY);
-    BOOST_CHECK_EQUAL(size, 1000);
+    SizeTest(
+        CachePeekMode::NEAR_CACHE |
+        CachePeekMode::PRIMARY |
+        CachePeekMode::BACKUP |
+        CachePeekMode::ONHEAP |
+        CachePeekMode::OFFHEAP
+    );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
