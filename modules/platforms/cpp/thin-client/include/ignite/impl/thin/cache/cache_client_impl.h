@@ -104,6 +104,18 @@ namespace ignite
                     int64_t GetSize(int32_t peekModes);
 
                     /**
+                     * Removes all mappings from cache.
+                     * If write-through is enabled, the value will be removed from store.
+                     * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                     */
+                    void RemoveAll();
+
+                    /**
+                     * Clear cache.
+                     */
+                    void Clear();
+
+                    /**
                      * Peeks at in-memory cached value using default optional
                      * peek mode. This method will not load value from any
                      * persistent store or from a remote node.

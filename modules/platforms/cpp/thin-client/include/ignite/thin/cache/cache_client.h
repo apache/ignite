@@ -124,8 +124,7 @@ namespace ignite
 
                 /**
                  * Gets the number of all entries cached across all nodes.
-                 * @note This operation is distributed and will query all
-                 * participating nodes for their cache sizes.
+                 * @note This operation is distributed and will query all participating nodes for their cache sizes.
                  *
                  * @param peekModes Peek modes mask.
                  * @return Cache size across all nodes.
@@ -133,6 +132,24 @@ namespace ignite
                 int64_t GetSize(int32_t peekModes)
                 {
                     return proxy.GetSize(peekModes);
+                }
+
+                /**
+                 * Removes all mappings from cache.
+                 * If write-through is enabled, the value will be removed from store.
+                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                 */
+                void RemoveAll()
+                {
+                    proxy.RemoveAll();
+                }
+
+                /**
+                 * Clear cache.
+                 */
+                void Clear()
+                {
+                    proxy.Clear();
                 }
 
                 /**

@@ -673,4 +673,48 @@ BOOST_AUTO_TEST_CASE(CacheClientGetSizeSeveral)
     );
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientRemoveAll)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, int32_t> cache =
+        client.GetCache<int32_t, int32_t>("partitioned");
+
+    for (int32_t i = 0; i < 1000; ++i)
+        cache.Put(i, i * 5039);
+
+    int64_t size = cache.GetSize(cache::CachePeekMode::ALL);
+    BOOST_CHECK_EQUAL(size, 1000);
+
+    cache.RemoveAll();
+
+    size = cache.GetSize(cache::CachePeekMode::ALL);
+    BOOST_CHECK_EQUAL(size, 0);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientClear)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, int32_t> cache =
+        client.GetCache<int32_t, int32_t>("partitioned");
+
+    for (int32_t i = 0; i < 1000; ++i)
+        cache.Put(i, i * 5039);
+
+    int64_t size = cache.GetSize(cache::CachePeekMode::ALL);
+    BOOST_CHECK_EQUAL(size, 1000);
+
+    cache.Clear();
+
+    size = cache.GetSize(cache::CachePeekMode::ALL);
+    BOOST_CHECK_EQUAL(size, 0);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

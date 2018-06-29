@@ -112,6 +112,18 @@ namespace ignite
                     void UpdatePartitions();
 
                     /**
+                     * Removes all mappings from cache.
+                     * If write-through is enabled, the value will be removed from store.
+                     * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                     */
+                    void RemoveAll();
+
+                    /**
+                     * Clear cache.
+                     */
+                    void Clear();
+
+                    /**
                      * Get from CacheClient.
                      * Use for testing purposes only.
                      */
