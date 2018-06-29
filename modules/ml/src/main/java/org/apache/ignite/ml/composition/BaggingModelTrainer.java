@@ -88,8 +88,6 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
-        List<Future<ModelOnFeaturesSubspace>> futures = new ArrayList<>();
-
         for (int i = 0; i < ensembleSize; i++)
             learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
 
