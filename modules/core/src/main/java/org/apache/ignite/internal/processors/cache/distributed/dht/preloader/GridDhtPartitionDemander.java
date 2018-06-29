@@ -294,13 +294,14 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Initiates new rebalance process from given {@code assignments}.
-     * If previous rebalance is not finished method cancels it.
+     * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
+     * future based on them. If previous rebalance future is not finished method will cancel it.
+     * Also, method sends current rebalance started event. Empty and cancelled assignments processed different way.
      * In case of delayed rebalance method schedules new with configured delay.
      *
-     * @param assignments Assignments.
-     * @param force {@code True} if dummy reassign.
-     * @param rebalanceId Rebalance id.
+     * @param assignments New assignments to be processed.
+     * @param force {@code True} if dummy reassign {@see GridCachePartitionExchangeManager#forceReassign()}.
+     * @param rebalanceId Rebalance id generated from exchange thread.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
