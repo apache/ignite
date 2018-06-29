@@ -44,6 +44,7 @@ import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
+import org.apache.ignite.internal.LongJVMPauseDetectorTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
@@ -136,6 +137,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteTopologyPrintFormatSelfTest.class);
         suite.addTestSuite(ComputeJobCancelWithServiceSelfTest.class);
         suite.addTestSuite(IgniteConnectionConcurrentReserveAndRemoveTest.class);
+        suite.addTestSuite(LongJVMPauseDetectorTest.class);
 
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
