@@ -40,13 +40,11 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
      * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
-     * @param encrypted {@code True} if cache encrypted.
      */
     public CacheFreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
         ReuseList reuseList,
-        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew,
-        boolean encrypted) throws IgniteCheckedException {
-        super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew, encrypted);
+        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
+        super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
     }
 
     /** {@inheritDoc} */

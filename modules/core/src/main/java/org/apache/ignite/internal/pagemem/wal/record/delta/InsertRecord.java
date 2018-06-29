@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Insert into inner or leaf page.
  */
-public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedRecord {
+public class InsertRecord<L> extends PageDeltaRecord {
     /** */
     private int idx;
 
@@ -42,9 +41,6 @@ public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedReco
     /** */
     private BPlusIO<L> io;
 
-    /** If {@code true} this record should be encrypted. */
-    private boolean needEncryption;
-
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
@@ -52,7 +48,6 @@ public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedReco
      * @param idx Index.
      * @param rowBytes Row bytes.
      * @param rightId Right ID.
-     * @param needEncryption If {@code true} this record should be encrypted.
      */
     public InsertRecord(
         int grpId,
@@ -60,8 +55,7 @@ public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedReco
         BPlusIO<L> io,
         int idx,
         byte[] rowBytes,
-        long rightId,
-        boolean needEncryption
+        long rightId
     ) {
         super(grpId, pageId);
 
@@ -69,7 +63,6 @@ public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedReco
         this.idx = idx;
         this.rowBytes = rowBytes;
         this.rightId = rightId;
-        this.needEncryption = needEncryption;
     }
 
     /** {@inheritDoc} */
@@ -108,11 +101,6 @@ public class InsertRecord<L> extends PageDeltaRecord implements WalEncryptedReco
      */
     public byte[] rowBytes() {
         return rowBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needEncryption() {
-        return needEncryption;
     }
 
     /** {@inheritDoc} */

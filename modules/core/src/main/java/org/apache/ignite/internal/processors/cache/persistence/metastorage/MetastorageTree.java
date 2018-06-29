@@ -45,7 +45,6 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
      * @param globalRmvId
      * @param metaPageId
      * @param reuseList
-     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException
      */
     public MetastorageTree(int cacheId,
@@ -55,10 +54,9 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         ReuseList reuseList,
         MetastorageRowStore rowStore,
         long metaPageId,
-        boolean initNew,
-        boolean encrypted) throws IgniteCheckedException {
+        boolean initNew) throws IgniteCheckedException {
         super("Metastorage", cacheId, pageMem, wal,
-            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS, encrypted);
+            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS);
 
         this.rowStore = rowStore;
 

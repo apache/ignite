@@ -42,7 +42,6 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
      * @param initNew Initialize new index.
-     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     public PendingEntriesTree(
@@ -51,8 +50,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         PageMemory pageMem,
         long metaPageId,
         ReuseList reuseList,
-        boolean initNew,
-        boolean encrypted)
+        boolean initNew)
         throws IgniteCheckedException {
         super(name,
             grp.groupId(),
@@ -62,8 +60,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             metaPageId,
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
-            encrypted);
+            grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS);
 
         this.grp = grp;
 

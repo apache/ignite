@@ -19,14 +19,13 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Replace.
  */
-public class ReplaceRecord<L> extends PageDeltaRecord implements WalEncryptedRecord {
+public class ReplaceRecord<L> extends PageDeltaRecord {
     /** */
     private BPlusIO<L> io;
 
@@ -36,24 +35,19 @@ public class ReplaceRecord<L> extends PageDeltaRecord implements WalEncryptedRec
     /** */
     private int idx;
 
-    /** If {@code true} this record should be encrypted. */
-    private boolean needEncryption;
-
     /**
      * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param io IO.
      * @param rowBytes Row bytes.
      * @param idx Index.
-     * @param needEncryption If {@code true} this record should be encrypted.
      */
-    public ReplaceRecord(int grpId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx, boolean needEncryption) {
+    public ReplaceRecord(int grpId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx) {
         super(grpId, pageId);
 
         this.io = io;
         this.rowBytes = rowBytes;
         this.idx = idx;
-        this.needEncryption = needEncryption;
     }
 
     /** {@inheritDoc} */
@@ -89,11 +83,6 @@ public class ReplaceRecord<L> extends PageDeltaRecord implements WalEncryptedRec
      */
     public byte[] rowBytes() {
         return rowBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needEncryption() {
-        return needEncryption;
     }
 
     /** {@inheritDoc} */

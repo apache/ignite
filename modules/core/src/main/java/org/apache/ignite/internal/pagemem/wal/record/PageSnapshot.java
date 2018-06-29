@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 /**
  *
  */
-public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware, WalEncryptedRecord {
+public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     @GridToStringExclude
     private byte[] pageData;
@@ -37,34 +37,26 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware,
     /** */
     private FullPageId fullPageId;
 
-    /** If {@code true} this record should be encrypted. */
-    private final boolean needEncryption;
-
     /**
      * @param fullPageId Full page ID.
      * @param pageData Read array.
-     * @param needEncryption If {@code true} this record should be encrypted.
      */
-    public PageSnapshot(FullPageId fullPageId, byte[] pageData, boolean needEncryption) {
+    public PageSnapshot(FullPageId fullPageId, byte[] pageData) {
         this.fullPageId = fullPageId;
         this.pageData = pageData;
-        this.needEncryption = needEncryption;
     }
 
     /**
      * @param fullPageId Full page ID.
      * @param ptr Pointer to copy from.
      * @param pageSize Page size.
-     * @param needEncryption If {@code true} this record should be encrypted.
      */
-    public PageSnapshot(FullPageId fullPageId, long ptr, int pageSize, boolean needEncryption) {
+    public PageSnapshot(FullPageId fullPageId, long ptr, int pageSize) {
         this.fullPageId = fullPageId;
 
         pageData = new byte[pageSize];
 
         GridUnsafe.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageSize);
-
-        this.needEncryption = needEncryption;
     }
 
     /** {@inheritDoc} */
@@ -112,10 +104,5 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware,
     /** {@inheritDoc} */
     @Override public int groupId() {
         return fullPageId.groupId();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needEncryption() {
-        return needEncryption;
     }
 }

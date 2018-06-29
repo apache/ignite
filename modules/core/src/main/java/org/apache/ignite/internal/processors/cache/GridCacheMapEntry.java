@@ -2784,19 +2784,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr = nextPartitionCounter(topVer, true, null);
 
                 if (walEnabled) {
-                    cctx.shared().wal().log(new DataRecord(
-                        new DataEntry(
-                            cctx.cacheId(),
-                            key,
-                            val,
-                            val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
-                            null,
-                            ver,
-                            expireTime,
-                            partition(),
-                            updateCntr),
-                        cctx.config().isEncrypted(),
-                        cctx.groupId()));
+                    cctx.shared().wal().log(new DataRecord(new DataEntry(
+                        cctx.cacheId(),
+                        key,
+                        val,
+                        val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
+                        null,
+                        ver,
+                        expireTime,
+                        partition(),
+                        updateCntr
+                    )));
                 }
 
                 drReplicate(drType, val, ver, topVer);
@@ -3624,19 +3622,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                cctx.shared().wal().log(new DataRecord(
-                    new DataEntry(
-                        cctx.cacheId(),
-                        key,
-                        val,
-                        op,
-                        null,
-                        writeVer,
-                        expireTime,
-                        partition(),
-                        updCntr),
-                    cctx.config().isEncrypted(),
-                    cctx.groupId()));
+                cctx.shared().wal().log(new DataRecord(new DataEntry(
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    op,
+                    null,
+                    writeVer,
+                    expireTime,
+                    partition(),
+                    updCntr)));
         }
         catch (StorageException e) {
             throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
@@ -3662,19 +3657,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
 
-            return cctx.shared().wal().log(new DataRecord(
-                new DataEntry(
-                    cctx.cacheId(),
-                    key,
-                    val,
-                    op,
-                    tx.nearXidVersion(),
-                    tx.writeVersion(),
-                    expireTime,
-                    key.partition(),
-                    updCntr),
-                cctx.config().isEncrypted(),
-                cctx.groupId()));
+            return cctx.shared().wal().log(new DataRecord(new DataEntry(
+                cctx.cacheId(),
+                key,
+                val,
+                op,
+                tx.nearXidVersion(),
+                tx.writeVersion(),
+                expireTime,
+                key.partition(),
+                updCntr)));
         }
         else
             return null;

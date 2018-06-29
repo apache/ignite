@@ -43,7 +43,6 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
@@ -145,10 +144,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int clearSize = clearSize(record);
 
         if (record.type().mayBeEncrypted()) {
-            assert record instanceof WalEncryptedRecord :
-                "Record of type " + record.type() + " should implements WalEncryptedRecord";
-
-            if (((WalEncryptedRecord)record).needEncryption())
+            if (needEncryption(record))
                 return encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* groupId */
                     + 4 /* data size */;
 
@@ -184,10 +180,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec.type().mayBeEncrypted()) {
-            assert rec instanceof WalEncryptedRecord :
-                "Record of type " + rec.type() + " should implements WalEncryptedRecord";
-
-            if (((WalEncryptedRecord)rec).needEncryption()) {
+            if (needEncryption(rec)) {
                 int clearSize = clearSize(rec);
 
                 ByteBuffer clearData = ByteBuffer.allocate(clearSize);
@@ -205,6 +198,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         }
 
         writeClearRecord(rec, buf);
+    }
+
+    /**
+     * @param record Rec to check.
+     * @return {@code True} if this record should be encrypted.
+     */
+    boolean needEncryption(WALRecord record) {
+        return false;
     }
 
     /**
@@ -477,7 +478,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(arr);
 
-                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr, false);
+                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr);
 
                 break;
 
@@ -554,7 +555,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readDataEntry(in));
 
-                res = new DataRecord(entries, 0L, false, -1);
+                res = new DataRecord(entries, 0L);
 
                 break;
 
@@ -607,7 +608,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageInsertRecord(cacheId, pageId, payload, false);
+                res = new DataPageInsertRecord(cacheId, pageId, payload);
 
                 break;
             }
@@ -626,7 +627,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageUpdateRecord(cacheId, pageId, itemId, payload, false);
+                res = new DataPageUpdateRecord(cacheId, pageId, itemId, payload);
 
                 break;
             }
@@ -642,7 +643,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink, false);
+                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink);
 
                 break;
             }
@@ -734,8 +735,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(rowBytes);
 
-                res = new NewRootInitRecord<>(cacheId, pageId, rootId, (BPlusInnerIO<?>)io, leftId, rowBytes, rightId,
-                    false);
+                res = new NewRootInitRecord<>(cacheId, pageId, rootId, (BPlusInnerIO<?>)io, leftId, rowBytes, rightId);
 
                 break;
 
@@ -764,7 +764,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(rowBytes);
 
-                res = new InsertRecord<>(cacheId, pageId, io, itemIdx, rowBytes, rightId, false);
+                res = new InsertRecord<>(cacheId, pageId, io, itemIdx, rowBytes, rightId);
 
                 break;
 
@@ -802,7 +802,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(rowBytes);
 
-                res = new ReplaceRecord<>(cacheId, pageId, io, rowBytes, itemIdx, false);
+                res = new ReplaceRecord<>(cacheId, pageId, io, rowBytes, itemIdx);
 
                 break;
 

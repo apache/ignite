@@ -120,8 +120,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             grp.dataRegion().pageMemory(),
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
-            reuseListRoot.isAllocated(),
-            grp.encrypted());
+            reuseListRoot.isAllocated());
 
         RootPage metastoreRoot = metas.treeRoot;
 
@@ -133,8 +132,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageIdAllocator.FLAG_IDX,
             reuseList,
             metastoreRoot.pageId().pageId(),
-            metastoreRoot.isAllocated(),
-            grp.encrypted());
+            metastoreRoot.isAllocated());
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
     }
@@ -1213,8 +1211,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
-                        reuseRoot.isAllocated(),
-                        grp.encrypted()) {
+                        reuseRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1233,8 +1230,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         freeList,
                         rowStore,
                         treeRoot.pageId().pageId(),
-                        treeRoot.isAllocated(),
-                        grp.encrypted()) {
+                        treeRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1251,8 +1247,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         grp.dataRegion().pageMemory(),
                         pendingTreeRoot.pageId().pageId(),
                         freeList,
-                        pendingTreeRoot.isAllocated(),
-                        grp.encrypted()) {
+                        pendingTreeRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1370,8 +1365,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize(),
-                                grp.encrypted()));
+                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize()));
 
                         allocated = true;
                     }
@@ -1401,8 +1395,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
                             if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
-                                    pageMem.pageSize(), grp.encrypted()));
+                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize()));
 
                             pendingTreeAllocated = true;
                         }

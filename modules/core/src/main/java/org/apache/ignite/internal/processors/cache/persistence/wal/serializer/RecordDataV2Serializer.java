@@ -39,7 +39,6 @@ import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.pagemem.wal.record.WalEncryptedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -82,9 +81,6 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
         int clearSize = clearSize(rec);
 
         if (rec.type().mayBeEncrypted()) {
-            assert rec instanceof WalEncryptedRecord :
-                "Record of type " + rec.type() + " should implements WalEncryptedRecord";
-
             if (((WalEncryptedRecord)rec).needEncryption())
                 return encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* cacheId */
                     + 4 /* encrypted data size */;
@@ -226,7 +222,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(delegateSerializer.readDataEntry(in));
 
-                return new DataRecord(entries, timeStamp, false, -1);
+                return new DataRecord(entries, timeStamp);
             case SNAPSHOT:
                 long snpId = in.readLong();
                 byte full = in.readByte();

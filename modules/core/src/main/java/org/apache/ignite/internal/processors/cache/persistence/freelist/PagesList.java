@@ -129,7 +129,6 @@ public abstract class PagesList extends DataStructure {
      * @param buckets Number of buckets.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
-     * @param encrypted {@code True} if cache encrypted.
      */
     protected PagesList(
         int cacheId,
@@ -137,10 +136,9 @@ public abstract class PagesList extends DataStructure {
         PageMemory pageMem,
         int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId,
-        boolean encrypted
+        long metaPageId
     ) {
-        super(cacheId, pageMem, wal, encrypted);
+        super(cacheId, pageMem, wal);
 
         this.name = name;
         this.buckets = buckets;

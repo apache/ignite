@@ -770,19 +770,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                         if (grp.persistenceEnabled() && grp.walEnabled() &&
                                             cctx.snapshot().needTxReadLogging()) {
-                                            ptr = cctx.wal().log(new DataRecord(
-                                                new DataEntry(
-                                                    cacheCtx.cacheId(),
-                                                    txEntry.key(),
-                                                    val,
-                                                    op,
-                                                    nearXidVersion(),
-                                                    writeVersion(),
-                                                    0,
-                                                    txEntry.key().partition(),
-                                                    txEntry.updateCounter()),
-                                                grp.encrypted(),
-                                                cacheCtx.groupId()));
+                                            ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                                cacheCtx.cacheId(),
+                                                txEntry.key(),
+                                                val,
+                                                op,
+                                                nearXidVersion(),
+                                                writeVersion(),
+                                                0,
+                                                txEntry.key().partition(),
+                                                txEntry.updateCounter())));
                                         }
 
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

@@ -28,16 +28,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * This record contains information about operation we want to do.
  * Contains operation type (put, remove) and (Key, Value, Version) for each {@link DataEntry}
  */
-public class DataRecord extends TimeStampRecord implements WalEncryptedRecord {
+public class DataRecord extends TimeStampRecord {
     /** */
     @GridToStringInclude
     private List<DataEntry> writeEntries;
-
-    /** If {@code true} this record should be encrypted. */
-    private boolean needEncryption = false;
-
-    /** Group id that will be used for a record encryption. */
-    private int grpId;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
@@ -53,44 +47,33 @@ public class DataRecord extends TimeStampRecord implements WalEncryptedRecord {
 
     /**
      * @param writeEntry Write entry.
-     * @param needEncryption If {@code true} this record should be encrypted.
-     * @param grpId Group id.
      */
-    public DataRecord(DataEntry writeEntry, boolean needEncryption, int grpId) {
-        this(writeEntry, U.currentTimeMillis(), needEncryption, grpId);
+    public DataRecord(DataEntry writeEntry) {
+        this(writeEntry, U.currentTimeMillis());
     }
 
     /**
      * @param writeEntries Write entries.
-     * @param needEncryption If {@code true} this record should be encrypted.
-     * @param grpId Group id.
      */
-    public DataRecord(List<DataEntry> writeEntries, boolean needEncryption, int grpId) {
-        this(writeEntries, U.currentTimeMillis(), needEncryption, grpId);
+    public DataRecord(List<DataEntry> writeEntries) {
+        this(writeEntries, U.currentTimeMillis());
     }
 
     /**
      * @param writeEntry Write entry.
-     * @param timestamp Timestamp.
-     * @param needEncryption If {@code true} this record should be encrypted.
-     * @param grpId Group id that will be used for a record encryption.
      */
-    public DataRecord(DataEntry writeEntry, long timestamp, boolean needEncryption, int grpId) {
-        this(Collections.singletonList(writeEntry), timestamp, needEncryption, grpId);
+    public DataRecord(DataEntry writeEntry, long timestamp) {
+        this(Collections.singletonList(writeEntry), timestamp);
     }
 
     /**
      * @param writeEntries Write entries.
      * @param timestamp TimeStamp.
-     * @param needEncryption If {@code true} this record should be encrypted.
-     * @param grpId Group id.
      */
-    public DataRecord(List<DataEntry> writeEntries, long timestamp, boolean needEncryption, int grpId) {
+    public DataRecord(List<DataEntry> writeEntries, long timestamp) {
         super(timestamp);
 
         this.writeEntries = writeEntries;
-        this.needEncryption = needEncryption;
-        this.grpId = grpId;
     }
 
     /**
@@ -98,16 +81,6 @@ public class DataRecord extends TimeStampRecord implements WalEncryptedRecord {
      */
     public List<DataEntry> writeEntries() {
         return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needEncryption() {
-        return needEncryption;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int groupId() {
-        return grpId;
     }
 
     /** {@inheritDoc} */

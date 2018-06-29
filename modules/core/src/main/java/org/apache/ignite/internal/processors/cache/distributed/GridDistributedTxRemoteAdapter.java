@@ -757,23 +757,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
-                            if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
-                                boolean needEncryption = false;
-
-                                int grpId = -1;
-
-                                for (DataEntry e : dataEntries) {
-                                    if (cctx.cache().cacheDescriptor(e.cacheId()).cacheConfiguration().isEncrypted()) {
-                                        grpId = cctx.cache().cacheDescriptor(e.cacheId()).groupId();
-
-                                        needEncryption = true;
-
-                                        break;
-                                    }
-                                }
-
-                                cctx.wal().log(new DataRecord(dataEntries, needEncryption, grpId));
-                            }
+                            if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null)
+                                cctx.wal().log(new DataRecord(dataEntries));
 
                             if (ptr != null && !cctx.tm().logTxRecords())
                                 cctx.wal().flush(ptr, false);
