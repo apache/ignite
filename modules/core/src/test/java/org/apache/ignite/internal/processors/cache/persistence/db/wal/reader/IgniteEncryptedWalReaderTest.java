@@ -79,19 +79,18 @@ public class IgniteEncryptedWalReaderTest extends AbstractIgniteWalReaderTest {
         File walWorkDirWithConsistentId = new File(wal, nodeFolder);
         IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, nodeFolder);
 
-        int encRecCnt = 0;
+        int dataRecCnt = 0;
 
         try (WALIterator walIter = factory.iteratorWorkFiles(
                 walWorkDirWithConsistentId.listFiles(WAL_SEGMENT_FILE_FILTER))) {
             for (IgniteBiTuple<WALPointer, WALRecord> next : walIter) {
                 WALRecord walRecord = next.get2();
 
-                if (walRecord.type() == ENCRYPTED_RECORD &&
-                    ((EncryptedRecord)walRecord).clearRecordType() == DATA_RECORD)
-                    encRecCnt++;
+                if (walRecord.type() == DATA_RECORD)
+                    dataRecCnt++;
             }
         }
 
-        assertEquals(cacheObjectsToWrite, encRecCnt);
+        assertEquals(cacheObjectsToWrite, dataRecCnt);
     }
 }

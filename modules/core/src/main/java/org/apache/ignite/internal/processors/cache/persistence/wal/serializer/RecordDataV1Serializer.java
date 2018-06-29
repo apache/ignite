@@ -102,7 +102,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 
 /**
  * Record data V1 serializer.
@@ -144,11 +146,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public int size(WALRecord record) throws IgniteCheckedException {
-        int clSz = clearSize(record);
+    @Override public int size(WALRecord rec) throws IgniteCheckedException {
+        int clSz = clearSize(rec);
 
-        if (record.type().mayBeEncrypted()) {
-            if (needEncryption(record))
+        if (rec.type().mayBeEncrypted()) {
+            if (needEncryption(rec))
                 return encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */
                     + 4 /* data size */;
 
@@ -223,9 +225,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     boolean needEncryption(int grpId) {
-        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
-
-        return grpCtx != null && grpCtx.encrypted();
+        return cctx.database().groupKey(grpId) != null;
     }
 
     /**
@@ -294,24 +294,24 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
-     * @param record Record to measure.
-     * @return Clear(without encryption) size of serialized record in bytes.
+     * @param rec Record to measure.
+     * @return Clear(without encryption) size of serialized rec in bytes.
      * @throws IgniteCheckedException If failed.
      */
-    int clearSize(WALRecord record) throws IgniteCheckedException {
-        switch (record.type()) {
+    int clearSize(WALRecord rec) throws IgniteCheckedException {
+        switch (rec.type()) {
             case PAGE_RECORD:
-                assert record instanceof PageSnapshot;
+                assert rec instanceof PageSnapshot;
 
-                PageSnapshot pageRec = (PageSnapshot)record;
+                PageSnapshot pageRec = (PageSnapshot)rec;
 
                 return pageRec.pageData().length + 12;
 
             case CHECKPOINT_RECORD:
-                CheckpointRecord cpRec = (CheckpointRecord)record;
+                CheckpointRecord cpRec = (CheckpointRecord)rec;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
+                        "Invalid WAL rec: " + cpRec;
 
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
@@ -333,12 +333,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/4 + /*partId*/4;
 
             case DATA_RECORD:
-                DataRecord dataRec = (DataRecord)record;
+                DataRecord dataRec = (DataRecord)rec;
 
                 return 4 + dataSize(dataRec);
 
             case METASTORE_DATA_RECORD:
-                MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
+                MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)rec;
 
                 return  4 + metastoreDataRec.key().getBytes().length + 4 +
                     (metastoreDataRec.value() != null ? metastoreDataRec.value().length : 0);
@@ -347,18 +347,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return HEADER_RECORD_DATA_SIZE;
 
             case DATA_PAGE_INSERT_RECORD:
-                DataPageInsertRecord diRec = (DataPageInsertRecord)record;
+                DataPageInsertRecord diRec = (DataPageInsertRecord)rec;
 
                 return 4 + 8 + 2 + diRec.payload().length;
 
             case DATA_PAGE_UPDATE_RECORD:
-                DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
+                DataPageUpdateRecord uRec = (DataPageUpdateRecord)rec;
 
                 return 4 + 8 + 2 + 4 +
                         uRec.payload().length;
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
-                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
+                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)rec;
 
                 return 4 + 8 + 8 + 4 + difRec.payloadSize();
 
@@ -384,7 +384,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8;
 
             case BTREE_INIT_NEW_ROOT:
-                NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)record;
+                NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)rec;
 
                 return 4 + 8 + 8 + 2 + 2 + 8 + 8 + riRec.io().getItemSize();
 
@@ -392,7 +392,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 8;
 
             case BTREE_PAGE_INSERT:
-                InsertRecord<?> inRec = (InsertRecord<?>)record;
+                InsertRecord<?> inRec = (InsertRecord<?>)rec;
 
                 return 4 + 8 + 2 + 2 + 2 + 8 + inRec.io().getItemSize();
 
@@ -403,7 +403,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 2;
 
             case BTREE_PAGE_REPLACE:
-                ReplaceRecord<?> rRec = (ReplaceRecord<?>)record;
+                ReplaceRecord<?> rRec = (ReplaceRecord<?>)rec;
 
                 return 4 + 8 + 2 + 2 + 2 + rRec.io().getItemSize();
 
@@ -468,10 +468,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 0;
 
             case TX_RECORD:
-                return txRecordSerializer.size((TxRecord)record);
+                return txRecordSerializer.size((TxRecord)rec);
 
             default:
-                throw new UnsupportedOperationException("Type: " + record.type());
+                throw new UnsupportedOperationException("Type: " + rec.type());
         }
     }
 
@@ -1709,7 +1709,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param in Input to read from.
      * @return Read entry.
      */
-    DataEntry readClearDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    private DataEntry readClearDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();
@@ -1842,7 +1842,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         for (DataEntry entry : dataRec.writeEntries()) {
             int clSz = entrySize(entry);
 
-            if (cctx.cacheContext(entry.cacheId()).config().isEncrypted()) {
+            if (needEncryption(cctx.cacheContext(entry.cacheId()).groupId())) {
                 sz += encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */
                     + 4 /* data size */;
             }
@@ -1900,7 +1900,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     private static class EncryptedDataEntry extends DataEntry {
         EncryptedDataEntry() {
-            super(0, null, null, null, null, null, 0, 0, 0);
+            super(0, null, null, READ, null, null, 0, 0, 0);
         }
     }
 }

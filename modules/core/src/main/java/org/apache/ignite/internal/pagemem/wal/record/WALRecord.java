@@ -38,7 +38,7 @@ public abstract class WALRecord {
         PAGE_RECORD(true),
 
         /** */
-        DATA_RECORD(true),
+        DATA_RECORD,
 
         /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,

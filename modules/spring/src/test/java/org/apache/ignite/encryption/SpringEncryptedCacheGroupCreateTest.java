@@ -35,6 +35,11 @@ public class SpringEncryptedCacheGroupCreateTest extends GridCommonAbstractTest 
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+    }
+
     /** @throws Exception If failed. */
     public void testCreateEncryptedCacheGroup() throws Exception {
         IgniteEx g0 = (IgniteEx)G.start(
