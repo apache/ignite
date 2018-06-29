@@ -96,7 +96,7 @@ public interface GridCachePreloader {
      *
      * @param topVer New topology version to update.
      */
-    public void updateAssignments(AffinityTopologyVersion topVer);
+    public void updateRebalanceFuture(AffinityTopologyVersion topVer);
 
     /**
      * @param p Preload predicate.

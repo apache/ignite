@@ -283,7 +283,7 @@ public class GridDhtPartitionDemander {
      *
      * @param topVer New topology to update.
      */
-    void updateRebalanceTopVer(AffinityTopologyVersion topVer){
+    void updateRebalanceFuture(AffinityTopologyVersion topVer){
         final RebalanceFuture fut = rebalanceFut;
 
         if (log.isDebugEnabled())
@@ -1138,7 +1138,7 @@ public class GridDhtPartitionDemander {
                 // Negative number of id signals that supply context
                 // with the same positive id must be cleaned up at the supply node.
                 -rebalanceId,
-                this.topologyVersion(),
+                topVer,
                 grp.groupId());
 
             d.timeout(grp.config().getRebalanceTimeout());
