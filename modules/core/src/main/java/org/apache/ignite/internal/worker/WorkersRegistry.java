@@ -24,11 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerDiedException;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
-import org.apache.ignite.internal.util.worker.GridWorkerIsHangingException;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Workers registry.
@@ -54,6 +53,21 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
     /** Last thread that performed the check. Null reference denotes "checking is in progress". */
     private AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
+
+    /** */
+    private final IgniteInClosure<GridWorker> workerDiedHnd;
+
+    /** */
+    private final IgniteInClosure<GridWorker> workerIsHangingHnd;
+
+    /** */
+    public WorkersRegistry(
+        @NotNull IgniteInClosure<GridWorker> workerDiedHnd,
+        @NotNull IgniteInClosure<GridWorker> workerIsHangingHnd
+    ) {
+        this.workerDiedHnd = workerDiedHnd;
+        this.workerIsHangingHnd = workerIsHangingHnd;
+    }
 
     /**
      * Adds worker to the registry.
@@ -118,9 +132,9 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     }
 
     /** {@inheritDoc} */
-    @Override public void onIdle(GridWorker w) throws GridWorkerFailureException {
-        if (!isPeerCheckEnabled)
-            return;
+    @Override public void onIdle(GridWorker w) {
+            if (!isPeerCheckEnabled)
+                return;
 
         Thread prevCheckerThread = lastChecker.get();
 
@@ -154,7 +168,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
 
                         if (workerAgain != null && workerAgain == worker)
-                            throw new GridWorkerDiedException(worker);
+                            workerDiedHnd.apply(worker);
 
                         checkIter = registeredWorkers.entrySet().iterator();
                     }
@@ -163,7 +177,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
 
                         if (workerAgain != null && workerAgain == worker)
-                            throw new GridWorkerIsHangingException(worker);
+                            workerIsHangingHnd.apply(worker);
 
                         checkIter = registeredWorkers.entrySet().iterator();
                     }

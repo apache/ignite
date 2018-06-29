@@ -5885,7 +5885,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         };
 
         try {
-            IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
+            IgniteCache<String, Integer> cache = grid(0).cache(cacheName()).withAllowAtomicOpsInTx();
 
             List<String> keys = primaryKeysForCache(0, 2, 1);
 

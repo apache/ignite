@@ -15,34 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.worker;
+package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
-/** Thrown when {@link GridWorker} has failed in some way. */
-public abstract class GridWorkerFailureException extends RuntimeException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final GridWorker worker;
-
-    /** */
-    protected GridWorkerFailureException(GridWorker worker) {
-        this.worker = worker;
-    }
-
-    /** */
-    public GridWorker worker() {
-        return worker;
-    }
-
-    /** */
-    public abstract FailureType failureType();
-
+/**
+ * Predictions aggregator returning the mean value of predictions.
+ */
+public class MeanValuePredictionsAggregator implements PredictionsAggregator {
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return "[class=" + getClass().getSimpleName() + ", worker=" + S.toString(GridWorker.class, worker) + ']';
+    @Override public Double apply(double[] estimations) {
+        A.notEmpty(estimations, "estimations vector");
+        return Arrays.stream(estimations).reduce(0.0, Double::sum) / estimations.length;
     }
 }

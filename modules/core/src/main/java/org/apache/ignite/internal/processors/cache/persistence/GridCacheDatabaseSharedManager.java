@@ -150,7 +150,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -1462,6 +1461,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquireSnapshotWorker memory
      * state.
+     * @throws IgniteException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override public void checkpointReadLock() {
@@ -1474,7 +1474,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (stopping) {
                 checkpointLock.readLock().unlock();
 
-                throw new RuntimeException("Failed to perform cache update: node is stopping.");
+                throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
             }
 
             if (safeToUpdatePageMemories() || checkpointLock.getReadHoldCount() > 1)
@@ -2984,13 +2984,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null) {
-                    FailureType ft = err instanceof GridWorkerFailureException
-                        ? ((GridWorkerFailureException)err).failureType()
-                        : SYSTEM_WORKER_TERMINATION;
-
-                    cctx.kernalContext().failure().process(new FailureContext(ft, err));
-                }
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
 
             // Final run after the cancellation.

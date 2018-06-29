@@ -15,24 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.worker;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.failure.FailureType;
-
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
-
-/** Thrown when {@link GridWorker} is hanging. */
-public class GridWorkerIsHangingException extends GridWorkerFailureException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    public GridWorkerIsHangingException(GridWorker worker) {
-        super(worker);
-    }
-
-    /** {@inheritDoc} */
-    @Override public FailureType failureType() {
-        return CRITICAL_ERROR;
-    }
+/**
+ * Additional context for partition eviction process.
+ */
+public interface EvictionContext {
+    /**
+     * @return {@code true} If eviction process should be stopped.
+     */
+    public boolean shouldStop();
 }
