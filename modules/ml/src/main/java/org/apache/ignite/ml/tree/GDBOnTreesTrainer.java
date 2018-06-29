@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.boosting;
+package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.boosting.GDBBinaryClassifierTrainer;
+import org.apache.ignite.ml.composition.boosting.GDBRegressionTrainer;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class GDBOnTreesTrainer extends GDBTrainer {
-    private final int maxDepth;
-    private final double minImpurityDecrease;
-
-    private GDBOnTreesTrainer(double gradStepSize,
-        Integer modelsCnt,
-        int maxDepth,
-        double minImpurityDecrease) {
-
-        super(gradStepSize, modelsCnt);
-        this.maxDepth = maxDepth;
-        this.minImpurityDecrease = minImpurityDecrease;
-    };
-
-    @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
-        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease);
-    }
-
-    public static GDBTrainer regression(double gradStepSize,
+public abstract class GDBOnTreesTrainer {
+    public static DatasetTrainer<Model<Vector,Double>, Double> regression(double gradStepSize,
         Integer modelsCnt,
         int maxDepth,
         double minImpurityDecrease) {
@@ -50,7 +37,7 @@ public abstract class GDBOnTreesTrainer extends GDBTrainer {
         };
     }
 
-    public static GDBTrainer binaryClassification(double gradStepSize,
+    public static DatasetTrainer<Model<Vector,Double>, Double> binaryClassification(double gradStepSize,
         Integer modelsCnt,
         int maxDepth,
         double minImpurityDecrease) {

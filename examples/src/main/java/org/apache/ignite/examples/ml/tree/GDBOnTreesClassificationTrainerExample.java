@@ -17,20 +17,25 @@
 
 package org.apache.ignite.examples.ml.tree;
 
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.apache.ignite.ml.tree.GDBOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example of using distributed {@link DecisionTreeRegressionTrainer}.
+ * Example of using distributed {@link DecisionTreeClassificationTrainer}.
  */
-public class DecisionTreeRegressionTrainerExample {
+public class GDBOnTreesClassificationTrainerExample {
     /**
      * Executes example.
      *
@@ -47,37 +52,40 @@ public class DecisionTreeRegressionTrainerExample {
                 DecisionTreeRegressionTrainerExample.class.getSimpleName(), () -> {
 
                 // Create cache with training data.
-                CacheConfiguration<Integer, Point> trainingSetCfg = new CacheConfiguration<>();
+                CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
                 trainingSetCfg.setName("TRAINING_SET");
                 trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-                IgniteCache<Integer, Point> trainingSet = ignite.createCache(trainingSetCfg);
-
-                // Fill training data.
-                generatePoints(trainingSet);
+                IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
+                for(int i = -50; i <= 50; i++) {
+                    double x = ((double)i) / 10.0;
+                    double y = Math.sin(x) < 0 ? 0.0 : 1.0;
+                    trainingSet.put(i, new double[] {x, y});
+                }
 
                 // Create regression trainer.
-                DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
+                DatasetTrainer<Model<Vector, Double>, Double> trainer =
+                    GDBOnTreesTrainer.binaryClassification(1.0, 300, 2, 0.);
 
                 // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(
+                Model<Vector, Double> mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] {v.x},
-                    (k, v) -> v.y
+                    (k, v) -> new double[] { v[0] },
+                    (k, v) -> v[1]
                 );
 
-                System.out.println(">>> Decision tree regression model: " + mdl);
+                System.out.println(">>> Decision tree classification model: " + mdl);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
                 System.out.println(">>> ---------------------------------");
 
                 // Calculate score.
-                for (int x = 0; x < 10; x++) {
-                    double predicted = mdl.apply(new DenseLocalOnHeapVector(new double[] {x}));
+                for (int x = -5; x < 5; x++) {
+                    double predicted = mdl.apply(Vector.of(new double[] {x}));
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x) < 0 ? 0.0 : 1.0);
                 }
 
                 System.out.println(">>> ---------------------------------");
@@ -92,15 +100,18 @@ public class DecisionTreeRegressionTrainerExample {
     }
 
     /**
-     * Generates {@code sin(x)} on interval [0, 10) and loads into the specified cache.
+     * Generate point with {@code x} in (-0.5, 0.5) and {@code y} in the same interval. If {@code x * y > 0} then label
+     * is 1, otherwise 0.
+     *
+     * @param rnd Random.
+     * @return Point with label.
      */
-    private static void generatePoints(IgniteCache<Integer, Point> trainingSet) {
-        for (int i = 0; i < 1000; i++) {
-            double x = i / 100.0;
-            double y = Math.sin(x);
+    private static LabeledPoint generatePoint(Random rnd) {
 
-            trainingSet.put(i, new Point(x, y));
-        }
+        double x = rnd.nextDouble() - 0.5;
+        double y = rnd.nextDouble() - 0.5;
+
+        return new LabeledPoint(x, y, x * y > 0 ? 1 : 0);
     }
 
     /** Point data class. */
@@ -120,6 +131,24 @@ public class DecisionTreeRegressionTrainerExample {
         Point(double x, double y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    /** Labeled point data class. */
+    private static class LabeledPoint extends Point {
+        /** Point label. */
+        final double lb;
+
+        /**
+         * Constructs a new instance of labeled point data.
+         *
+         * @param x X coordinate.
+         * @param y Y coordinate.
+         * @param lb Point label.
+         */
+        LabeledPoint(double x, double y, double lb) {
+            super(x, y);
+            this.lb = lb;
         }
     }
 }

@@ -22,15 +22,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.apache.ignite.ml.tree.GDBOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example of using distributed {@link DecisionTreeRegressionTrainer}.
  */
-public class DecisionTreeRegressionTrainerExample {
+public class GRBOnTreesRegressionTrainerExample {
     /**
      * Executes example.
      *
@@ -44,27 +48,30 @@ public class DecisionTreeRegressionTrainerExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                DecisionTreeRegressionTrainerExample.class.getSimpleName(), () -> {
+                GRBOnTreesRegressionTrainerExample.class.getSimpleName(), () -> {
 
                 // Create cache with training data.
-                CacheConfiguration<Integer, Point> trainingSetCfg = new CacheConfiguration<>();
+                CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
                 trainingSetCfg.setName("TRAINING_SET");
                 trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-                IgniteCache<Integer, Point> trainingSet = ignite.createCache(trainingSetCfg);
-
-                // Fill training data.
-                generatePoints(trainingSet);
+                IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
+                for(int i = -50; i <= 50; i++) {
+                    double x = ((double)i) / 10.0;
+                    double y = Math.pow(x, 2);
+                    trainingSet.put(i, new double[] {x, y});
+                }
 
                 // Create regression trainer.
-                DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
+                DatasetTrainer<Model<Vector, Double>, Double> trainer =
+                    GDBOnTreesTrainer.regression(1.0, 2000, 1, 0.);
 
                 // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(
+                Model<Vector, Double> mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] {v.x},
-                    (k, v) -> v.y
+                    (k, v) -> new double[] { v[0] },
+                    (k, v) -> v[1]
                 );
 
                 System.out.println(">>> Decision tree regression model: " + mdl);
@@ -74,10 +81,10 @@ public class DecisionTreeRegressionTrainerExample {
                 System.out.println(">>> ---------------------------------");
 
                 // Calculate score.
-                for (int x = 0; x < 10; x++) {
-                    double predicted = mdl.apply(new DenseLocalOnHeapVector(new double[] {x}));
+                for (int x = -5; x < 5; x++) {
+                    double predicted = mdl.apply(Vector.of(new double[] {x}));
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
                 }
 
                 System.out.println(">>> ---------------------------------");

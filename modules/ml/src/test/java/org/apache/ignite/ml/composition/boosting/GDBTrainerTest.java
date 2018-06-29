@@ -1,12 +1,11 @@
 package org.apache.ignite.ml.composition.boosting;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.tree.GDBOnTreesTrainer;
 import org.junit.Test;
 
 public class GDBTrainerTest {
@@ -36,7 +35,7 @@ public class GDBTrainerTest {
         System.out.println("]");
         System.out.print("[");
         for (int i = 0; i < maxTrees + 1; i += 100) {
-            GDBTrainer trainer = GDBOnTreesTrainer.regression(0.01, i, 3, 0.0);
+            DatasetTrainer<Model<Vector, Double>, Double> trainer = GDBOnTreesTrainer.regression(0.01, i, 3, 0.0);
             Model<Vector, Double> model = trainer.fit(
                 learningSample, 1,
                 (k, v) -> new double[] {v[0]},
@@ -77,7 +76,7 @@ public class GDBTrainerTest {
         for (int i = 0; i < sampleSize; i++)
             learningSample.put(i, new double[] { xs[i], ys[i] });
 
-        int maxTrees = 500;
+        int maxTrees = 2000;
         System.out.print("[");
         for (int i = 0; i < maxTrees + 1; i += 100) {
             System.out.print(String.format("%.2f", (double)i));
@@ -87,12 +86,7 @@ public class GDBTrainerTest {
         System.out.println("]");
         System.out.print("[");
         for (int i = 0; i < maxTrees + 1; i += 100) {
-            GDBTrainer trainer = GDBOnTreesTrainer.binaryClassification(0.01, i, 3, 0.0);
-//            GDBTrainer trainer = new GDBBinaryClassifierTrainer() {
-//                @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
-//                    return null;
-//                }
-//            };
+            DatasetTrainer<Model<Vector, Double>, Double> trainer = GDBOnTreesTrainer.binaryClassification(0.01, i, 3, 0.0);
 
             Model<Vector, Double> model = trainer.fit(
                 learningSample, 1,
