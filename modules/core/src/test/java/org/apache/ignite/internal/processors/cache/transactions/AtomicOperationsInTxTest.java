@@ -71,6 +71,20 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testEnablingAtomicOperationDuringTransaction() throws Exception {
+        GridTestUtils.assertThrows(log, (Callable<IgniteCache>)() -> {
+            try (Transaction tx = grid(0).transactions().txStart()) {
+                return grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+            }
+        },
+            IllegalStateException.class,
+            "Enabling atomic operations during active transaction is not allowed."
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAllowedAtomicOperations() throws Exception {
         checkOperations(true);
     }
