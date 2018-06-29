@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.EncryptedDataEntry;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -257,6 +258,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
+        if(dataEntry instanceof EncryptedDataEntry)
+            return dataEntry;
 
         final KeyCacheObject key;
         final CacheObject val;

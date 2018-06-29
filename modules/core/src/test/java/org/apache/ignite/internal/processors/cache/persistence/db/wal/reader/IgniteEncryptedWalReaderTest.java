@@ -17,36 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
-import java.io.File;
-import java.util.UUID;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.encryption.EncryptionSpi;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
 
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.genNewStyleSubfolderName;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /** */
-public class IgniteEncryptedWalReaderTest extends AbstractIgniteWalReaderTest {
+public class IgniteEncryptedWalReaderTest extends IgniteWalReaderTest {
     /** {@inheritDoc} */
     protected boolean encrypted() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected EncryptionSpi encryptionSpi() {
+    protected EncryptionSpi encryptionSpi() {
         EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
 
         encSpi.setKeyStorePath(KEYSTORE_PATH);
@@ -55,42 +40,18 @@ public class IgniteEncryptedWalReaderTest extends AbstractIgniteWalReaderTest {
         return encSpi;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFillWalAndReadRecords() throws Exception {
-        setWalAndArchiveToSameValue = false;
-        int cacheObjectsToWrite = 1000;
+    /** {@inheritDoc} */
+    @Override public void testPutAllTxIntoTwoNodes() throws Exception {
+        // No-op.
+    }
 
-        Ignite ignite0 = startGrid("node0");
+    /** {@inheritDoc} */
+    @Override public void testTxFillWalAndExtractDataRecords() throws Exception {
+        // No-op.
+    }
 
-        ignite0.active(true);
-
-        putDummyRecords(ignite0, cacheObjectsToWrite);
-
-        String nodeFolder = genNewStyleSubfolderName(0, (UUID)ignite0.cluster().localNode().consistentId());
-
-        stopGrid("node0", false);
-
-        String workDir = U.defaultWorkDirectory();
-        File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
-        File wal = new File(db, "wal");
-
-        File walWorkDirWithConsistentId = new File(wal, nodeFolder);
-        IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, nodeFolder);
-
-        int dataRecCnt = 0;
-
-        try (WALIterator walIter = factory.iteratorWorkFiles(
-                walWorkDirWithConsistentId.listFiles(WAL_SEGMENT_FILE_FILTER))) {
-            for (IgniteBiTuple<WALPointer, WALRecord> next : walIter) {
-                WALRecord walRecord = next.get2();
-
-                if (walRecord.type() == DATA_RECORD)
-                    dataRecCnt++;
-            }
-        }
-
-        assertEquals(cacheObjectsToWrite, dataRecCnt);
+    /** {@inheritDoc} */
+    @Override public void testTxRecordsReadWoBinaryMeta() throws Exception {
+        // No-op.
     }
 }

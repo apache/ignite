@@ -1898,7 +1898,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         return size;
     }
 
-    private static class EncryptedDataEntry extends DataEntry {
+    public static class EncryptedDataEntry extends DataEntry {
         EncryptedDataEntry() {
             super(0, null, null, READ, null, null, 0, 0, 0);
         }
