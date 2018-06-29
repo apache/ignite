@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 /**
  *
  */
-public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware {
+public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     /** */
     @GridToStringExclude
     private byte[] pageData;
@@ -38,12 +38,12 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
     private FullPageId fullPageId;
 
     /**
-     * @param fullPageId Full page ID.
-     * @param pageData Read array.
+     * @param fullId Full page ID.
+     * @param arr Read array.
      */
-    public PageSnapshot(FullPageId fullPageId, byte[] pageData) {
-        this.fullPageId = fullPageId;
-        this.pageData = pageData;
+    public PageSnapshot(FullPageId fullId, byte[] arr) {
+        fullPageId = fullId;
+        pageData = arr;
     }
 
     /**

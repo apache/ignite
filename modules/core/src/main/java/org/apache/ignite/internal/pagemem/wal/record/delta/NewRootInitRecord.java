@@ -44,7 +44,6 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
     /**
      * @param grpId Cache group ID.
      * @param pageId  Page ID.
-     * @param newRootId New root ID.
      * @param io IO.
      * @param leftChildId Left child ID.
      * @param rowBytes Row.
