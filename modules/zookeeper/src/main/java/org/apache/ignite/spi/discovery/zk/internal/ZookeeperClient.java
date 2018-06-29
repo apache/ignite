@@ -287,7 +287,6 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
-     *
      * @param paths Paths to create.
      * @param createMode Create mode.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
