@@ -79,17 +79,17 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord rec) throws IgniteCheckedException {
-        int clearSize = clearSize(rec);
+        int clSz = clearSize(rec);
 
         if (rec.type().mayBeEncrypted()) {
             if (delegateSerializer.needEncryption(rec))
-                return encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* cacheId */
+                return encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* cacheId */
                     + 4 /* encrypted data size */;
 
-             return clearSize + 1 /* encrypted flag */;
+             return clSz + 1 /* encrypted flag */;
         }
 
-        return clearSize;
+        return clSz;
     }
 
     /** {@inheritDoc} */
@@ -109,12 +109,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return new EncryptedRecord(grpId, type);
             }
 
-            T2<ByteBufferBackedDataInput, Integer> clearData = delegateSerializer.readEncryptedData(in);
+            T2<ByteBufferBackedDataInput, Integer> clData = delegateSerializer.readEncryptedData(in);
 
-            if (clearData.get1() == null)
-                return new EncryptedRecord(clearData.get2(), type);
+            if (clData.get1() == null)
+                return new EncryptedRecord(clData.get2(), type);
 
-            return readClearRecord(type, clearData.get1());
+            return readClearRecord(type, clData.get1());
         }
 
         return readClearRecord(type, in);
@@ -124,15 +124,15 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec.type().mayBeEncrypted()) {
             if (delegateSerializer.needEncryption(rec)) {
-                int clearSize = clearSize(rec);
+                int clSz = clearSize(rec);
 
-                ByteBuffer clearData = ByteBuffer.allocate(clearSize);
+                ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-                writeClearRecord(rec, clearData);
+                writeClearRecord(rec, clData);
 
                 int grpId = ((WalRecordCacheGroupAware)rec).groupId();
 
-                delegateSerializer.writeEncryptedData(grpId, clearData, buf);
+                delegateSerializer.writeEncryptedData(grpId, clData, buf);
 
                 return;
             }

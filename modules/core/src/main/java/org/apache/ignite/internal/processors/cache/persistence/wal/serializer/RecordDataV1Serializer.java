@@ -145,17 +145,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        int clearSize = clearSize(record);
+        int clSz = clearSize(record);
 
         if (record.type().mayBeEncrypted()) {
             if (needEncryption(record))
-                return encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* groupId */
+                return encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */
                     + 4 /* data size */;
 
-            return clearSize + 1 /* encrypted flag */;
+            return clSz + 1 /* encrypted flag */;
         }
 
-        return clearSize;
+        return clSz;
     }
 
     /** {@inheritDoc} */
@@ -173,12 +173,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return new EncryptedRecord(grpId, type);
             }
 
-            T2<ByteBufferBackedDataInput, Integer> clearData = readEncryptedData(in);
+            T2<ByteBufferBackedDataInput, Integer> clData = readEncryptedData(in);
 
-            if (clearData.get1() == null)
-                return new EncryptedRecord(clearData.get2(), type);
+            if (clData.get1() == null)
+                return new EncryptedRecord(clData.get2(), type);
 
-            return readClearRecord(type, clearData.get1());
+            return readClearRecord(type, clData.get1());
         }
 
         return readClearRecord(type, in);
@@ -188,15 +188,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec.type().mayBeEncrypted()) {
             if (needEncryption(rec)) {
-                int clearSize = clearSize(rec);
+                int clSz = clearSize(rec);
 
-                ByteBuffer clearData = ByteBuffer.allocate(clearSize);
+                ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-                writeClearRecord(rec, clearData);
+                writeClearRecord(rec, clData);
 
                 int grpId = ((WalRecordCacheGroupAware)rec).groupId();
 
-                writeEncryptedData(grpId, clearData, buf);
+                writeEncryptedData(grpId, clData, buf);
 
                 return;
             }
@@ -238,20 +238,20 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     T2<ByteBufferBackedDataInput, Integer> readEncryptedData(ByteBufferBackedDataInput in)
         throws IOException {
         int grpId = in.readInt();
-        int encryptedRecSize = in.readInt();
+        int encRecSz = in.readInt();
 
-        byte[] encryptedData = new byte[encryptedRecSize];
+        byte[] encData = new byte[encRecSz];
 
-        in.readFully(encryptedData);
+        in.readFully(encData);
 
         EncryptionKey key = cctx.database().groupKey(grpId);
 
         if (key == null)
             return new T2<>(null, grpId);
 
-        byte[] clearData = encryptionSpi.decrypt(encryptedData, key);
+        byte[] clData = encryptionSpi.decrypt(encData, key);
 
-        return new T2<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clearData)), grpId);
+        return new T2<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId);
     }
 
     /**
@@ -263,34 +263,34 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      */
     int skipEncryptedRec(ByteBufferBackedDataInput in) throws IOException {
         int grpId = in.readInt();
-        int encryptedRecSize = in.readInt();
+        int encRecSz = in.readInt();
 
-        int skipped = in.skipBytes(encryptedRecSize);
+        int skipped = in.skipBytes(encRecSz);
 
-        assert skipped == encryptedRecSize;
+        assert skipped == encRecSz;
 
         return grpId;
     }
 
     /**
-     * Writes encrypted {@code clearData} to {@code dst} stream.
+     * Writes encrypted {@code clData} to {@code dst} stream.
      *
      * @param grpId Group id;
-     * @param clearData Clear data.
+     * @param clData Clear data.
      * @param dst Destination buffer.
      */
-    void writeEncryptedData(int grpId, ByteBuffer clearData, ByteBuffer dst) {
-        int dataSize = encryptionSpi.encryptedSize(clearData.capacity());
+    void writeEncryptedData(int grpId, ByteBuffer clData, ByteBuffer dst) {
+        int dtSz = encryptionSpi.encryptedSize(clData.capacity());
 
         dst.put(ENCRYPTED);
         dst.putInt(grpId);
-        dst.putInt(dataSize);
+        dst.putInt(dtSz);
 
         EncryptionKey key = cctx.database().groupKey(grpId);
 
         assert key != null;
 
-        dst.put(encryptionSpi.encrypt(clearData.array(), key));
+        dst.put(encryptionSpi.encrypt(clData.array(), key));
     }
 
     /**
@@ -1595,13 +1595,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(entry.cacheId());
 
         if (desc != null && needEncryption(desc.groupId())) {
-            int clearSize = entrySize(entry);
+            int clSz = entrySize(entry);
 
-            ByteBuffer clearData = ByteBuffer.allocate(clearSize);
+            ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-            putClearDataEntry(clearData, entry);
+            putClearDataEntry(clData, entry);
 
-            writeEncryptedData(desc.groupId(), clearData, buf);
+            writeEncryptedData(desc.groupId(), clData, buf);
         }
         else {
             buf.put(CLEAR);
@@ -1694,12 +1694,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return new EncryptedDataEntry();
             }
 
-            T2<ByteBufferBackedDataInput, Integer> clearData = readEncryptedData(in);
+            T2<ByteBufferBackedDataInput, Integer> clData = readEncryptedData(in);
 
-            if (clearData.get1() == null)
+            if (clData.get1() == null)
                 return null;
 
-            return readClearDataEntry(clearData.get1());
+            return readClearDataEntry(clData.get1());
         }
 
         return readClearDataEntry(in);
@@ -1840,14 +1840,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int sz = 0;
 
         for (DataEntry entry : dataRec.writeEntries()) {
-            int clearSize = entrySize(entry);
+            int clSz = entrySize(entry);
 
             if (cctx.cacheContext(entry.cacheId()).config().isEncrypted()) {
-                sz += encryptionSpi.encryptedSize(clearSize) + 1 /* encrypted flag */ + 4 /* groupId */
+                sz += encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */
                     + 4 /* data size */;
             }
             else
-                sz += clearSize + 1 /* encrypted flag */;
+                sz += clSz + 1 /* encrypted flag */;
         }
 
         return sz;
