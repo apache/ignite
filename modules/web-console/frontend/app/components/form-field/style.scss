@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import './style.scss';
-import {directive as showValidationError} from './showValidationError.directive';
-import {directive as copyInputValue} from './copyInputValueButton.directive';
+.copy-input-value-button {
+    position: absolute;
+    top: 31px;
+    right: 10px;
 
-export default angular
-    .module('ignite-console.form-field', [])
-    .directive('ngModel', showValidationError)
-    .directive('copyInputValueButton', copyInputValue);
+    &:hover {
+        @import 'public/stylesheets/variables';
+
+        color: $ignite-brand-success;
+        cursor: pointer;
+    }
+}
