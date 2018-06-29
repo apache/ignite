@@ -448,46 +448,23 @@ class ClusterCachesInfo {
         Collection<DynamicCacheChangeRequest> reqs,
         AffinityTopologyVersion topVer,
         boolean persistedCfgs) {
+
         CacheChangeProcessResult res = new CacheChangeProcessResult();
 
         final List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete = new ArrayList<>();
 
         for (DynamicCacheChangeRequest req : reqs) {
+            String cacheName = req.cacheName();
+
             if (req.template()) {
-                CacheConfiguration ccfg = req.startCacheConfiguration();
-
-                assert ccfg != null : req;
-
-                DynamicCacheDescriptor desc = registeredTemplates.get(req.cacheName());
-
-                if (desc == null) {
-                    DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx,
-                        ccfg,
-                        req.cacheType(),
-                        null,
-                        true,
-                        req.initiatingNodeId(),
-                        false,
-                        false,
-                        req.deploymentId(),
-                        req.schema());
-
-                    DynamicCacheDescriptor old = registeredTemplates().put(ccfg.getName(), templateDesc);
-
-                    assert old == null;
-
-                    res.addedDescs.add(templateDesc);
-                }
-
-                if (!persistedCfgs)
-                    ctx.cache().completeTemplateAddFuture(ccfg.getName(), req.deploymentId());
+                processTemplateAddRequest(persistedCfgs, res, req);
 
                 continue;
             }
 
             assert !req.clientStartOnly() : req;
 
-            DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
+            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
             boolean needExchange = false;
 
@@ -498,122 +475,14 @@ class ClusterCachesInfo {
             if (req.start()) {
                 // Starting a new cache.
                 if (desc == null) {
-                    String conflictErr = checkCacheConflict(req.startCacheConfiguration());
-
-                    if (conflictErr != null) {
-                        U.warn(log, "Ignore cache start request. " + conflictErr);
-
-                        IgniteCheckedException err = new IgniteCheckedException("Failed to start " +
-                            "cache. " + conflictErr);
-
-                        if (persistedCfgs)
-                            res.errs.add(err);
-                        else
-                            ctx.cache().completeCacheStartFuture(req, false, err);
-
+                    if (!processStartNewCacheRequest(exchangeActions, topVer, persistedCfgs, res, req, cacheName))
                         continue;
-                    }
 
-                    if (req.clientStartOnly()) {
-                        assert !persistedCfgs;
-
-                        ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException("Failed to start " +
-                            "client cache (a cache with the given name is not started): " + req.cacheName()));
-                    }
-                    else {
-                        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
-                            req.startCacheConfiguration(), registeredCaches.values());
-
-                        if (err != null) {
-                            if (persistedCfgs)
-                                res.errs.add(err);
-                            else
-                                ctx.cache().completeCacheStartFuture(req, false, err);
-
-                            continue;
-                        }
-
-                        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
-
-                        assert req.cacheType() != null : req;
-                        assert F.eq(ccfg.getName(), req.cacheName()) : req;
-
-                        int cacheId = CU.cacheId(req.cacheName());
-
-                        CacheGroupDescriptor grpDesc = registerCacheGroup(exchangeActions,
-                            topVer,
-                            ccfg,
-                            cacheId,
-                            req.initiatingNodeId(),
-                            req.deploymentId());
-
-                        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
-                            ccfg,
-                            req.cacheType(),
-                            grpDesc,
-                            false,
-                            req.initiatingNodeId(),
-                            false,
-                            req.sql(),
-                            req.deploymentId(),
-                            req.schema());
-
-                        DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
-
-                        restartingCaches.remove(ccfg.getName());
-
-                        assert old == null;
-
-                        ctx.discovery().setCacheFilter(
-                            startDesc.cacheId(),
-                            grpDesc.groupId(),
-                            ccfg.getName(),
-                            ccfg.getNearConfiguration() != null);
-
-                        if (!persistedCfgs) {
-                            ctx.discovery().addClientNode(req.cacheName(),
-                                req.initiatingNodeId(),
-                                req.nearCacheConfiguration() != null);
-                        }
-
-                        res.addedDescs.add(startDesc);
-
-                        exchangeActions.addCacheToStart(req, startDesc);
-
-                        needExchange = true;
-                    }
+                    needExchange = true;
                 }
-                else {
-                    assert !persistedCfgs;
-                    assert req.initiatingNodeId() != null : req;
-
-                    if (req.failIfExists()) {
-                        ctx.cache().completeCacheStartFuture(req, false,
-                            new CacheExistsException("Failed to start cache " +
-                                "(a cache with the same name is already started): " + req.cacheName()));
-                    }
-                    else {
-                        // Cache already exists, it is possible client cache is needed.
-                        ClusterNode node = ctx.discovery().node(req.initiatingNodeId());
-
-                        boolean clientReq = node != null &&
-                            !ctx.discovery().cacheAffinityNode(node, req.cacheName());
-
-                        if (clientReq) {
-                            ctx.discovery().addClientNode(req.cacheName(),
-                                req.initiatingNodeId(),
-                                req.nearCacheConfiguration() != null);
-
-                            if (node.id().equals(req.initiatingNodeId())) {
-                                desc.clientCacheStartVersion(topVer);
-
-                                clientCacheStart = true;
-
-                                ctx.discovery().clientCacheStartEvent(req.requestId(), F.asMap(req.cacheName(), req), null);
-                            }
-                        }
-                    }
-                }
+                else
+                    clientCacheStart = processStartAlreadyStartedCacheRequest(topVer, persistedCfgs, req,
+                        cacheName, desc);
 
                 if (!needExchange && !clientCacheStart && desc != null) {
                     if (desc.clientCacheStartVersion() != null)
@@ -644,7 +513,7 @@ class ClusterCachesInfo {
                     if (req.sql() && !desc.sql()) {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
-                                "DROP TABLE [cacheName=" + req.cacheName() + ']'));
+                                "DROP TABLE [cacheName=" + cacheName + ']'));
 
                         continue;
                     }
@@ -652,48 +521,14 @@ class ClusterCachesInfo {
                     if (!req.sql() && desc.sql()) {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with cache API may be removed with " +
-                                "direct call to destroyCache [cacheName=" + req.cacheName() + ']'));
+                                "direct call to destroyCache [cacheName=" + cacheName + ']'));
 
                         continue;
                     }
 
-                    DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
-
-                    if (req.restart())
-                        restartingCaches.add(req.cacheName());
-
-                    assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
-
-                    ctx.discovery().removeCacheFilter(req.cacheName());
+                    processStopCacheRequest(exchangeActions, req, cacheName, desc);
 
                     needExchange = true;
-
-                    exchangeActions.addCacheToStop(req, desc);
-
-                    CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupId());
-
-                    assert grpDesc != null && grpDesc.groupId() == desc.groupId() : desc;
-
-                    grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
-
-                    if (!grpDesc.hasCaches()) {
-                        registeredCacheGrps.remove(grpDesc.groupId());
-
-                        ctx.discovery().removeCacheGroup(grpDesc);
-
-                        exchangeActions.addCacheGroupToStop(grpDesc, req.destroy());
-
-                        assert exchangeActions.checkStopRequestConsistency(grpDesc.groupId());
-
-                        // If all caches in group will be destroyed it is not necessary to destroy single cache
-                        // because group will be stopped anyway.
-                        if (req.destroy()) {
-                            for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
-                                if (action.descriptor().groupId() == grpDesc.groupId())
-                                    action.request().destroy(false);
-                            }
-                        }
-                    }
                 }
             }
             else
@@ -744,6 +579,211 @@ class ClusterCachesInfo {
         }
 
         return res;
+    }
+
+    private void processStopCacheRequest(ExchangeActions exchangeActions, DynamicCacheChangeRequest req, String cacheName, DynamicCacheDescriptor desc) {
+        DynamicCacheDescriptor old = registeredCaches.remove(cacheName);
+
+        if (req.restart())
+            restartingCaches.add(cacheName);
+
+        assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
+
+        ctx.discovery().removeCacheFilter(cacheName);
+
+        exchangeActions.addCacheToStop(req, desc);
+
+        CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupId());
+
+        assert grpDesc != null && grpDesc.groupId() == desc.groupId() : desc;
+
+        grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
+
+        if (!grpDesc.hasCaches()) {
+            registeredCacheGrps.remove(grpDesc.groupId());
+
+            ctx.discovery().removeCacheGroup(grpDesc);
+
+            exchangeActions.addCacheGroupToStop(grpDesc, req.destroy());
+
+            assert exchangeActions.checkStopRequestConsistency(grpDesc.groupId());
+
+            // If all caches in group will be destroyed it is not necessary to destroy single cache
+            // because group will be stopped anyway.
+            if (req.destroy()) {
+                for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
+                    if (action.descriptor().groupId() == grpDesc.groupId())
+                        action.request().destroy(false);
+                }
+            }
+        }
+    }
+
+    private void processTemplateAddRequest(boolean persistedCfgs, CacheChangeProcessResult res, DynamicCacheChangeRequest req) {
+        CacheConfiguration ccfg = req.startCacheConfiguration();
+
+        assert ccfg != null : req;
+
+        DynamicCacheDescriptor desc = registeredTemplates.get(req.cacheName());
+
+        if (desc == null) {
+            DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx,
+                ccfg,
+                req.cacheType(),
+                null,
+                true,
+                req.initiatingNodeId(),
+                false,
+                false,
+                req.deploymentId(),
+                req.schema());
+
+            DynamicCacheDescriptor old = registeredTemplates().put(ccfg.getName(), templateDesc);
+
+            assert old == null;
+
+            res.addedDescs.add(templateDesc);
+        }
+
+        if (!persistedCfgs)
+            ctx.cache().completeTemplateAddFuture(ccfg.getName(), req.deploymentId());
+    }
+
+    /**
+     *
+     * @param topVer
+     * @param persistedCfgs
+     * @param req
+     * @param cacheName
+     * @param desc
+     * @return
+     */
+    private boolean processStartAlreadyStartedCacheRequest(
+            AffinityTopologyVersion topVer, boolean persistedCfgs, DynamicCacheChangeRequest req, String cacheName,
+            DynamicCacheDescriptor desc) {
+        assert !persistedCfgs;
+        assert req.initiatingNodeId() != null : req;
+
+        if (req.failIfExists()) {
+            ctx.cache().completeCacheStartFuture(req, false,
+                new CacheExistsException("Failed to start cache " +
+                    "(a cache with the same name is already started): " + cacheName));
+        }
+        else {
+            // Cache already exists, it is possible client cache is needed.
+            ClusterNode node = ctx.discovery().node(req.initiatingNodeId());
+
+            boolean clientReq = node != null &&
+                !ctx.discovery().cacheAffinityNode(node, cacheName);
+
+            if (clientReq) {
+                ctx.discovery().addClientNode(cacheName,
+                    req.initiatingNodeId(),
+                    req.nearCacheConfiguration() != null);
+
+                if (node.id().equals(req.initiatingNodeId())) {
+                    desc.clientCacheStartVersion(topVer);
+
+                    ctx.discovery().clientCacheStartEvent(req.requestId(), F.asMap(cacheName, req), null);
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     *
+     * @param exchangeActions
+     * @param topVer
+     * @param persistedCfgs
+     * @param res
+     * @param req
+     * @param cacheName
+     * @return True if there was no errors.
+     */
+    private boolean processStartNewCacheRequest(
+            ExchangeActions exchangeActions, AffinityTopologyVersion topVer, boolean persistedCfgs,
+            CacheChangeProcessResult res, DynamicCacheChangeRequest req, String cacheName
+    ) {
+        String conflictErr = checkCacheConflict(req.startCacheConfiguration());
+
+        if (conflictErr != null) {
+            U.warn(log, "Ignore cache start request. " + conflictErr);
+
+            IgniteCheckedException err = new IgniteCheckedException("Failed to start " +
+                "cache. " + conflictErr);
+
+            if (persistedCfgs)
+                res.errs.add(err);
+            else
+                ctx.cache().completeCacheStartFuture(req, false, err);
+
+            return false;
+        }
+
+        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
+            req.startCacheConfiguration(), registeredCaches.values());
+
+        if (err != null) {
+            if (persistedCfgs)
+                res.errs.add(err);
+            else
+                ctx.cache().completeCacheStartFuture(req, false, err);
+
+            return false;
+        }
+
+        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
+
+        assert req.cacheType() != null : req;
+        assert F.eq(ccfg.getName(), cacheName) : req;
+
+        int cacheId = CU.cacheId(cacheName);
+
+        CacheGroupDescriptor grpDesc = registerCacheGroup(exchangeActions,
+            topVer,
+            ccfg,
+            cacheId,
+            req.initiatingNodeId(),
+            req.deploymentId());
+
+        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
+            ccfg,
+            req.cacheType(),
+            grpDesc,
+            false,
+            req.initiatingNodeId(),
+            false,
+            req.sql(),
+            req.deploymentId(),
+            req.schema());
+
+        DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
+
+        restartingCaches.remove(ccfg.getName());
+
+        assert old == null;
+
+        ctx.discovery().setCacheFilter(
+            startDesc.cacheId(),
+            grpDesc.groupId(),
+            ccfg.getName(),
+            ccfg.getNearConfiguration() != null);
+
+        if (!persistedCfgs) {
+            ctx.discovery().addClientNode(cacheName,
+                req.initiatingNodeId(),
+                req.nearCacheConfiguration() != null);
+        }
+
+        res.addedDescs.add(startDesc);
+
+        exchangeActions.addCacheToStart(req, startDesc);
+
+        return true;
     }
 
     /**
