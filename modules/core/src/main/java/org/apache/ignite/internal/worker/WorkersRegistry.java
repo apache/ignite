@@ -43,6 +43,9 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
 
+    /** Whether workers should check peers' health or not. */
+    private volatile boolean isPeerCheckEnabled = true;
+
     /** Points to the next worker to check. */
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
 
@@ -94,6 +97,16 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
         return registeredWorkers.get(name);
     }
 
+    /** */
+    public boolean getPeerCheckEnabled() {
+        return isPeerCheckEnabled;
+    }
+
+    /** */
+    public void setPeerCheckEnabled(boolean value) {
+        isPeerCheckEnabled = value;
+    }
+
     /** {@inheritDoc} */
     @Override public void onStarted(GridWorker w) {
         register(w);
@@ -106,6 +119,9 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
     /** {@inheritDoc} */
     @Override public void onIdle(GridWorker w) throws GridWorkerFailureException {
+        if (!isPeerCheckEnabled)
+            return;
+
         Thread prevCheckerThread = lastChecker.get();
 
         if (prevCheckerThread == null ||

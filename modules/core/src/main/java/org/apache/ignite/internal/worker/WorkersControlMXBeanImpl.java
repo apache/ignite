@@ -62,6 +62,16 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean getPeerCheckEnabled() {
+        return workerRegistry.getPeerCheckEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setPeerCheckEnabled(boolean value) {
+        workerRegistry.setPeerCheckEnabled(value);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean stopThreadByUniqueName(String name) {
         Thread[] threads = Thread.getAllStackTraces().keySet().stream()
             .filter(t -> Objects.equals(t.getName(), name))

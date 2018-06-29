@@ -47,6 +47,13 @@ public interface WorkersControlMXBean {
     )
     public boolean terminateWorker(String name);
 
+    /** */
+    @MXBeanDescription("Whether workers check each other's health.")
+    public boolean getPeerCheckEnabled();
+
+    /** */
+    public void setPeerCheckEnabled(boolean value);
+
     /**
      * Stops thread by {@code name}, if exists and unique.
      *
