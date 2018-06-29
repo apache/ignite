@@ -325,7 +325,7 @@ public class ZookeeperClient implements Watcher {
         batches.add(batch);
 
         for (List<Op> ops : batches) {
-            for (; ; ) {
+            for (;;) {
                 long connStartTime = this.connStartTime;
 
                 try {
@@ -628,7 +628,7 @@ public class ZookeeperClient implements Watcher {
         batches.add(batch);
 
         for (List<Op> ops : batches) {
-            for (; ; ) {
+            for (;;) {
                 long connStartTime = this.connStartTime;
 
                 try {
