@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -47,6 +48,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -1247,6 +1250,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         changeWalModeIfNeeded();
 
+        // TODO : register timeout.
+
         if (crd.isLocal()) {
             if (remaining.isEmpty())
                 onAllReceived(null);
@@ -1255,6 +1260,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             sendPartitions(crd);
 
         initDone();
+    }
+
+    private void onDistributedExchangeTimeout() {
+        if (crd.isLocal()) {
+            for (UUID remainingUuid : remaining)
+                cctx.discovery().failNode(remainingUuid, null);
+        }
+        else {
+            // TODO: check if CRD finished exchange, kick if it didn't
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
+        }
     }
 
     /**
