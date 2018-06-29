@@ -294,8 +294,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     void createAll(List<String> paths, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         if (paths.isEmpty())
             return;
 
@@ -327,7 +326,7 @@ public class ZookeeperClient implements Watcher {
         batches.add(batch);
 
         for (List<Op> ops : batches) {
-            for (;;) {
+            for (; ; ) {
                 long connStartTime = this.connStartTime;
 
                 try {
@@ -596,8 +595,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     void deleteAll(@Nullable String parent, List<String> paths, int ver)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         if (paths.isEmpty())
             return;
 
