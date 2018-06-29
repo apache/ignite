@@ -59,8 +59,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * @param compressor Impurity function compressor.
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
-        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor, DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;

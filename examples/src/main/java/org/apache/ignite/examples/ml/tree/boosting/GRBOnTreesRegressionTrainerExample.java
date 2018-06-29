@@ -91,36 +91,4 @@ public class GRBOnTreesRegressionTrainerExample {
             igniteThread.join();
         }
     }
-
-    /**
-     * Generates {@code sin(x)} on interval [0, 10) and loads into the specified cache.
-     */
-    private static void generatePoints(IgniteCache<Integer, Point> trainingSet) {
-        for (int i = 0; i < 1000; i++) {
-            double x = i / 100.0;
-            double y = Math.sin(x);
-
-            trainingSet.put(i, new Point(x, y));
-        }
-    }
-
-    /** Point data class. */
-    private static class Point {
-        /** X coordinate. */
-        final double x;
-
-        /** Y coordinate. */
-        final double y;
-
-        /**
-         * Constructs a new instance of point.
-         *
-         * @param x X coordinate.
-         * @param y Y coordinate.
-         */
-        Point(double x, double y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
 }

@@ -24,6 +24,7 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.junit.Test;
@@ -69,6 +70,7 @@ public class GDBTrainerTest {
 
         assertTrue(model instanceof ModelsComposition);
         ModelsComposition composition = (ModelsComposition) model;
+        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
         assertEquals(2000, composition.getModels().size());
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
@@ -101,14 +103,16 @@ public class GDBTrainerTest {
             double x = xs[j];
             double y = ys[j];
             double p = model.apply(Vector.of(new double[] {x}));
-            if(p != y)
+            if(p != y) {
                 errorsCount++;
+            }
         }
 
         assertEquals(0, errorsCount);
 
         assertTrue(model instanceof ModelsComposition);
         ModelsComposition composition = (ModelsComposition) model;
+        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
         assertEquals(500, composition.getModels().size());
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);

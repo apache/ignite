@@ -15,36 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
-
-import org.apache.ignite.ml.math.Vector;
-
 /**
- * Decision tree leaf node which contains value.
+ * <!-- Package description. -->
+ * Gradient Boosting On Trees examples.
  */
-public class DecisionTreeLeafNode implements DecisionTreeNode {
-    /** */
-    private static final long serialVersionUID = -472145568088482206L;
-
-    /** Value of the node. */
-    private final double val;
-
-    /**
-     * Constructs a new decision tree leaf node.
-     *
-     * @param val Value of the node.
-     */
-    public DecisionTreeLeafNode(double val) {
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double apply(Vector doubles) {
-        return val;
-    }
-
-    /** */
-    public double getVal() {
-        return val;
-    }
-}
+package org.apache.ignite.examples.ml.tree.boosting;
