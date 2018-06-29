@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -83,6 +84,9 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
     /** Argument for simple SQL (2). */
     protected static final int SQL_ARG_2 = 80;
+
+    /** Large cache size. */
+    protected static final int LARGE_CACHE_SIZE = 100_000;
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

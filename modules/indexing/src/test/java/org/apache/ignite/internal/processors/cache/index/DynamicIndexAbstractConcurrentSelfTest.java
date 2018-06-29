@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,16 +40,10 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
@@ -61,13 +54,6 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestT
 public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;
-
-    /** Large cache size. */
-    private static final int LARGE_CACHE_SIZE = 100_000;
-
-    /** Latches to block certain index operations. */
-    private static final ConcurrentHashMap<UUID, T3<CountDownLatch, AtomicBoolean, CountDownLatch>> BLOCKS =
-        new ConcurrentHashMap<>();
 
     /** Cache mode. */
     private final CacheMode cacheMode;
@@ -96,10 +82,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
     @Override protected void afterTest() throws Exception {
         GridQueryProcessor.idxCls = null;
 
-        for (T3<CountDownLatch, AtomicBoolean, CountDownLatch> block : BLOCKS.values())
-            block.get1().countDown();
-
-        BLOCKS.clear();
+        BlockingIndexing.clear();
 
         stopAllGrids();
 
@@ -113,7 +96,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<KeyClass, ValueClass> cacheConfiguration() {
-        CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
+        CacheConfiguration<KeyClass, ValueClass> ccfg = super.cacheConfiguration();
 
         return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
     }
@@ -154,7 +137,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         put(srv1, 0, KEY_AFTER);
 
         // Test migration between normal servers.
-        CountDownLatch idxLatch = blockIndexing(srv1Id);
+        CountDownLatch idxLatch = BlockingIndexing.block(srv1Id);
 
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
 
@@ -166,7 +149,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         //srv1.close();
         Ignition.stop(srv1.name(), true);
 
-        unblockIndexing(srv1Id);
+        BlockingIndexing.unblock(srv1Id);
 
         idxFut1.get();
 
@@ -175,7 +158,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
 
         // Test migration from normal server to non-affinity server.
-        idxLatch = blockIndexing(srv2Id);
+        idxLatch = BlockingIndexing.block(srv2Id);
 
         QueryIndex idx2 = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
@@ -187,7 +170,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         //srv2.close();
         Ignition.stop(srv2.name(), true);
 
-        unblockIndexing(srv2Id);
+        BlockingIndexing.unblock(srv2Id);
 
         idxFut2.get();
 
@@ -210,7 +193,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         createSqlCache(srv1);
 
-        CountDownLatch idxLatch = blockIndexing(srv1);
+        CountDownLatch idxLatch = BlockingIndexing.block(srv1);
 
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
         QueryIndex idx2 = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
@@ -231,7 +214,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         assert !idxFut1.isDone();
         assert !idxFut2.isDone();
 
-        unblockIndexing(srv1);
+        BlockingIndexing.unblock(srv1);
 
         idxFut1.get();
         idxFut2.get();
@@ -258,7 +241,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         createSqlCache(srv1);
 
-        CountDownLatch idxLatch = blockIndexing(srv1);
+        CountDownLatch idxLatch = BlockingIndexing.block(srv1);
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
@@ -273,7 +256,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         assert !idxFut.isDone();
 
-        unblockIndexing(srv1);
+        BlockingIndexing.unblock(srv1);
 
         idxFut.get();
 
@@ -399,8 +382,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         put(srv1, 0, LARGE_CACHE_SIZE);
 
         // Start index operation in blocked state.
-        CountDownLatch idxLatch1 = blockIndexing(srv1);
-        CountDownLatch idxLatch2 = blockIndexing(srv2);
+        CountDownLatch idxLatch1 = BlockingIndexing.block(srv1);
+        CountDownLatch idxLatch2 = BlockingIndexing.block(srv2);
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
@@ -413,8 +396,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Start two more nodes and unblock index operation in the middle.
         ignitionStart(serverConfiguration(3));
 
-        unblockIndexing(srv1);
-        unblockIndexing(srv2);
+        BlockingIndexing.unblock(srv1);
+        BlockingIndexing.unblock(srv2);
 
         ignitionStart(serverConfiguration(4));
 
@@ -449,7 +432,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         put(cli, KEY_AFTER);
 
         // Start index operation and block it on coordinator.
-        CountDownLatch idxLatch = blockIndexing(srv1);
+        CountDownLatch idxLatch = BlockingIndexing.block(srv1);
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
@@ -462,7 +445,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         destroySqlCache(cli);
 
         // Unblock indexing and see what happens.
-        unblockIndexing(srv1);
+        BlockingIndexing.unblock(srv1);
 
         try {
             idxFut.get();
@@ -975,86 +958,6 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
     }
 
     /**
-     * Block indexing.
-     *
-     * @param node Node.
-     */
-    @SuppressWarnings("SuspiciousMethodCalls")
-    private static CountDownLatch blockIndexing(Ignite node) {
-        UUID nodeId = ((IgniteEx)node).localNode().id();
-
-        return blockIndexing(nodeId);
-    }
-
-    /**
-     * Block indexing.
-     *
-     * @param nodeId Node.
-     */
-    @SuppressWarnings("SuspiciousMethodCalls")
-    private static CountDownLatch blockIndexing(UUID nodeId) {
-        assertFalse(BLOCKS.contains(nodeId));
-
-        CountDownLatch idxLatch = new CountDownLatch(1);
-
-        BLOCKS.put(nodeId, new T3<>(new CountDownLatch(1), new AtomicBoolean(), idxLatch));
-
-        return idxLatch;
-    }
-
-    /**
-     * Unblock indexing.
-     *
-     * @param node Node.
-     */
-    private static void unblockIndexing(Ignite node) {
-        UUID nodeId = ((IgniteEx)node).localNode().id();
-
-        unblockIndexing(nodeId);
-    }
-
-    /**
-     * Unblock indexing.
-     *
-     * @param nodeId Node ID.
-     */
-    @SuppressWarnings("ConstantConditions")
-    private static void unblockIndexing(UUID nodeId) {
-        T3<CountDownLatch, AtomicBoolean, CountDownLatch> blocker = BLOCKS.remove(nodeId);
-
-        assertNotNull(blocker);
-
-        blocker.get1().countDown();
-    }
-
-    /**
-     * Await indexing.
-     *
-     * @param nodeId Node ID.
-     */
-    @SuppressWarnings("ConstantConditions")
-    private static void awaitIndexing(UUID nodeId) {
-        T3<CountDownLatch, AtomicBoolean, CountDownLatch> blocker = BLOCKS.get(nodeId);
-
-        if (blocker != null) {
-            assertTrue(blocker.get2().compareAndSet(false, true));
-
-            blocker.get3().countDown();
-
-            while (true) {
-                try {
-                    blocker.get1().await();
-
-                    break;
-                }
-                catch (InterruptedException e) {
-                    // No-op.
-                }
-            }
-        }
-    }
-
-    /**
      * Get unescaped field alias.
      *
      * @param field Field.
@@ -1065,29 +968,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
     }
 
     /**
-     * Blocking indexing processor.
-     */
-    private static class BlockingIndexing extends IgniteH2Indexing {
-        /** {@inheritDoc} */
-        @Override public void dynamicIndexCreate(@NotNull String schemaName, String tblName,
-            QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
-            throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
-
-            super.dynamicIndexCreate(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicIndexDrop(@NotNull String schemaName, String idxName, boolean ifExists)
-            throws IgniteCheckedException{
-            awaitIndexing(ctx.localNodeId());
-
-            super.dynamicIndexDrop(schemaName, idxName, ifExists);
-        }
-    }
-
-    /**
      * Start SQL cache on given node.
+     *
      * @param node Node to create cache on.
      * @return Created cache.
      */
@@ -1097,7 +979,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /**
      * Start a node.
-     * 
+     *
      * @param cfg Configuration.
      * @return Ignite instance.
      */

@@ -1829,7 +1829,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cache object context.
      */
     private CacheObjectContext cacheObjectContext(String cacheName) {
-        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
+        GridCacheAdapter<?, ?> cache = ctx.cache().internalCache(cacheName);
+
+        // Internal cache can be stopped and removed concurrently.
+        return cache != null ? cache.context().cacheObjectContext() : null;
     }
 
     /**
