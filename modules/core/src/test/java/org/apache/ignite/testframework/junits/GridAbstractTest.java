@@ -199,6 +199,7 @@ public abstract class GridAbstractTest extends TestCase {
      *
      */
     static {
+        System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");

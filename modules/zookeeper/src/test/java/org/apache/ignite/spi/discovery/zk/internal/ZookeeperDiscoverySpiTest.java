@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -311,10 +310,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                         assertNull(old);
 
-                        synchronized (nodeEvts) {
-                            DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
+                        // If the current node has failed, the local join will never happened.
+                        if (evt.type() != EVT_NODE_FAILED ||
+                            discoveryEvt.eventNode().consistentId().equals(ignite.configuration().getConsistentId())) {
+                            synchronized (nodeEvts) {
+                                DiscoveryLocalJoinData locJoin = ((IgniteEx)ignite).context().discovery().localJoin();
 
-                            nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                                nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                            }
                         }
                     }
 
@@ -466,6 +469,28 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             }, 30_000);
 
             assertNull(res.get());
+        }
+    }
+
+    /**
+     * Verifies that node attributes returned through public API are presented in standard form.
+     *
+     * It means there is no exotic classes that may unnecessary capture other classes from the context.
+     *
+     * For more information about the problem refer to
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-8857">IGNITE-8857</a>.
+     */
+    public void testNodeAttributesNotReferencingZookeeperClusterNode() throws Exception {
+        userAttrs = new HashMap<>();
+        userAttrs.put("testAttr", "testAttr");
+
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            assertTrue(ignite.cluster().localNode().attributes() instanceof HashMap);
+        }
+        finally {
+            userAttrs = null;
         }
     }
 
