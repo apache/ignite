@@ -294,24 +294,24 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
-     * @param rec Record to measure.
+     * @param record Record to measure.
      * @return Clear(without encryption) size of serialized rec in bytes.
      * @throws IgniteCheckedException If failed.
      */
-    int clearSize(WALRecord rec) throws IgniteCheckedException {
-        switch (rec.type()) {
+    int clearSize(WALRecord record) throws IgniteCheckedException {
+        switch (record.type()) {
             case PAGE_RECORD:
-                assert rec instanceof PageSnapshot;
+                assert record instanceof PageSnapshot;
 
-                PageSnapshot pageRec = (PageSnapshot)rec;
+                PageSnapshot pageRec = (PageSnapshot)record;
 
                 return pageRec.pageData().length + 12;
 
             case CHECKPOINT_RECORD:
-                CheckpointRecord cpRec = (CheckpointRecord)rec;
+                CheckpointRecord cpRec = (CheckpointRecord)record;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL rec: " + cpRec;
+                        "Invalid WAL record: " + cpRec;
 
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
@@ -333,12 +333,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/4 + /*partId*/4;
 
             case DATA_RECORD:
-                DataRecord dataRec = (DataRecord)rec;
+                DataRecord dataRec = (DataRecord)record;
 
                 return 4 + dataSize(dataRec);
 
             case METASTORE_DATA_RECORD:
-                MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)rec;
+                MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
 
                 return  4 + metastoreDataRec.key().getBytes().length + 4 +
                     (metastoreDataRec.value() != null ? metastoreDataRec.value().length : 0);
@@ -347,18 +347,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return HEADER_RECORD_DATA_SIZE;
 
             case DATA_PAGE_INSERT_RECORD:
-                DataPageInsertRecord diRec = (DataPageInsertRecord)rec;
+                DataPageInsertRecord diRec = (DataPageInsertRecord)record;
 
                 return 4 + 8 + 2 + diRec.payload().length;
 
             case DATA_PAGE_UPDATE_RECORD:
-                DataPageUpdateRecord uRec = (DataPageUpdateRecord)rec;
+                DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
 
                 return 4 + 8 + 2 + 4 +
                         uRec.payload().length;
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
-                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)rec;
+                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
 
                 return 4 + 8 + 8 + 4 + difRec.payloadSize();
 
@@ -384,7 +384,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8;
 
             case BTREE_INIT_NEW_ROOT:
-                NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)rec;
+                NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)record;
 
                 return 4 + 8 + 8 + 2 + 2 + 8 + 8 + riRec.io().getItemSize();
 
@@ -392,7 +392,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 8;
 
             case BTREE_PAGE_INSERT:
-                InsertRecord<?> inRec = (InsertRecord<?>)rec;
+                InsertRecord<?> inRec = (InsertRecord<?>)record;
 
                 return 4 + 8 + 2 + 2 + 2 + 8 + inRec.io().getItemSize();
 
@@ -403,7 +403,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 2;
 
             case BTREE_PAGE_REPLACE:
-                ReplaceRecord<?> rRec = (ReplaceRecord<?>)rec;
+                ReplaceRecord<?> rRec = (ReplaceRecord<?>)record;
 
                 return 4 + 8 + 2 + 2 + 2 + rRec.io().getItemSize();
 
@@ -468,10 +468,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 0;
 
             case TX_RECORD:
-                return txRecordSerializer.size((TxRecord)rec);
+                return txRecordSerializer.size((TxRecord)record);
 
             default:
-                throw new UnsupportedOperationException("Type: " + rec.type());
+                throw new UnsupportedOperationException("Type: " + record.type());
         }
     }
 
