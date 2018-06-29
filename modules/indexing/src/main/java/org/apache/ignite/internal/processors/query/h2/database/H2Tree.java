@@ -81,7 +81,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
-     * @param encrypted {@code True} if cache encrypted.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -97,10 +96,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
-        @Nullable H2RowCache rowCache,
-        boolean encrypted
+        @Nullable H2RowCache rowCache
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, encrypted);
+        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
         if (!initNew) {
             // Page is ready - read inline size from it.
