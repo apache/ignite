@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
@@ -61,10 +59,6 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * Feature vector size.
      */
     private final int featureVectorSize;
-    /**
-     * Learning thread pool.
-     */
-    private final ExecutorService threadPool;
 
     /**
      * Constructs new instance of BaggingModelTrainer.
@@ -81,33 +75,11 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         int ensembleSize,
         double samplePartSizePerMdl) {
 
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize,
-            samplePartSizePerMdl, null);
-    }
-
-    /**
-     * Constructs new instance of BaggingModelTrainer.
-     *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param threadPool Learning thread pool.
-     */
-    public BaggingModelTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        ExecutorService threadPool) {
-
         this.predictionsAggregator = predictionsAggregator;
         this.maximumFeaturesCntPerMdl = maximumFeaturesCntPerMdl;
         this.ensembleSize = ensembleSize;
         this.samplePartSizePerMdl = samplePartSizePerMdl;
         this.featureVectorSize = featureVectorSize;
-        this.threadPool = threadPool;
     }
 
     /** {@inheritDoc} */
@@ -118,28 +90,8 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
         List<Future<ModelOnFeaturesSubspace>> futures = new ArrayList<>();
 
-        for (int i = 0; i < ensembleSize; i++) {
-            if (threadPool == null)
-                learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
-            else {
-                Future<ModelOnFeaturesSubspace> fut = threadPool.submit(() -> {
-                    return learnModel(datasetBuilder, featureExtractor, lbExtractor);
-                });
-
-                futures.add(fut);
-            }
-        }
-
-        if (threadPool != null) {
-            for (Future<ModelOnFeaturesSubspace> future : futures) {
-                try {
-                    learnedModels.add(future.get());
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        for (int i = 0; i < ensembleSize; i++)
+            learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
 
         return new ModelsComposition(learnedModels, predictionsAggregator);
     }
