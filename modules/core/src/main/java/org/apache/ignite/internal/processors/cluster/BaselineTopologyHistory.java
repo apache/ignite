@@ -94,6 +94,9 @@ public class BaselineTopologyHistory implements Serializable {
 
     /** */
     boolean isCompatibleWith(BaselineTopology blt) {
+        if (hist.size() <= blt.id())
+            return false;
+
         BaselineTopologyHistoryItem histBlt = hist.get(blt.id());
 
         return histBlt.branchingHistory().contains(blt.branchingPointHash());
