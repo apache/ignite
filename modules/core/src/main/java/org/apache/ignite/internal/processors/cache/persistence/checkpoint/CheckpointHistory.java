@@ -204,13 +204,22 @@ public class CheckpointHistory {
 
         assert lastEntry != null;
 
-        final Map.Entry<Long, CheckpointEntry> previous = histMap.lowerEntry(lastEntry.getKey());
+        final Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
 
-        long lastIdx = ((FileWALPointer)lastEntry.getValue().checkpointMark()).index();
+        final WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
 
-        long prevIdx = previous != null ? ((FileWALPointer)previous.getValue().checkpointMark()).index() : 0;
+        long lastIdx = 0;
+
+        long prevIdx = 0;
 
         final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
+
+        if (lastWALPointer instanceof FileWALPointer) {
+            lastIdx = ((FileWALPointer)lastWALPointer).index();
+
+            if (previousEntry != null)
+                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
+        }
 
         for (long walCovered = prevIdx; walCovered < lastIdx; walCovered++)
             walSegmentsCovered.add(walCovered);
