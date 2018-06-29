@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteFuture;
  */
 public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     /** Context. */
-    protected GridCacheContext cctx;
+    public GridCacheContext cctx;
 
     /** Logger. */
     protected IgniteLogger log;

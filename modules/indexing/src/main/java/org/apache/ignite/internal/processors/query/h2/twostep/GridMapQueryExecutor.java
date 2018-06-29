@@ -100,6 +100,9 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridMapQueryExecutor {
+
+    public static volatile boolean DEBUG = false;
+
     /** */
     public static final boolean FORCE_LAZY = IgniteSystemProperties.getBoolean(IGNITE_SQL_FORCE_LAZY_RESULT_SET);
 
@@ -999,6 +1002,17 @@ public class GridMapQueryExecutor {
 
         try {
             boolean loc = node.isLocal();
+
+            if (DEBUG) {
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("NODE=" + ctx.grid().name() + "\n");
+
+                for (Value[] row : rows)
+                    sb.append("\t" + row[0].getLong());
+
+                System.out.println(sb.toString());
+            }
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
                 page == 0 ? res.rowCount() : -1,

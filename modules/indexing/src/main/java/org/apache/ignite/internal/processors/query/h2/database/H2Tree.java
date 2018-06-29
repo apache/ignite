@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.result.SearchRow;
@@ -164,7 +167,25 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 return null;
         }
 
-        return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+        GridH2Row row = (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+
+        KeyCacheObject key = row.key();
+
+        if (GridMapQueryExecutor.DEBUG) {
+            String keyStr = key.toString();
+
+            if (keyStr.contains("610026643276160002")) {
+                IndexingQueryCacheFilter filter0 = (IndexingQueryCacheFilter)filter;
+
+                long link = ((H2RowLinkIO)io).getLink(pageAddr, idx);
+
+                int part = PageIdUtils.partId(PageIdUtils.pageId(link));
+
+                System.out.println("FAULT: " + part);
+            }
+        }
+
+        return row;
     }
 
     /**
