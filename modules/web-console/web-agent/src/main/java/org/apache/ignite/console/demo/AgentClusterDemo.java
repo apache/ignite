@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -100,7 +101,7 @@ public class AgentClusterDemo {
     private static CountDownLatch initLatch = new CountDownLatch(1);
 
     /** */
-    private static volatile String demoUrl;
+    private static volatile List<String> demoUrl;
 
     /**
      * Configure node.
@@ -204,7 +205,7 @@ public class AgentClusterDemo {
     }
 
     /** */
-    public static String getDemoUrl() {
+    public static List<String> getDemoUrl() {
         return demoUrl;
     }
 
@@ -269,7 +270,7 @@ public class AgentClusterDemo {
 
                             log.info("DEMO: Started embedded node for demo purpose [TCP binary port={}, Jetty REST port={}]", port, jettyPort);
 
-                            demoUrl = String.format("http://%s:%d", jettyHost, jettyPort);
+                            demoUrl = Collections.singletonList(String.format("http://%s:%d", jettyHost, jettyPort));
 
                             initLatch.countDown();
                         }

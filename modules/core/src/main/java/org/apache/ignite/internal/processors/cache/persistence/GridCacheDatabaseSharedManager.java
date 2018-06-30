@@ -131,6 +131,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -166,6 +167,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -1460,6 +1462,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquireSnapshotWorker memory
      * state.
+     * @throws IgniteException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override public void checkpointReadLock() {
@@ -1472,7 +1475,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (stopping) {
                 checkpointLock.readLock().unlock();
 
-                throw new RuntimeException("Failed to perform cache update: node is stopping.");
+                throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
             }
 
             if (safeToUpdatePageMemories() || checkpointLock.getReadHoldCount() > 1)
@@ -1929,39 +1932,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.wal().allowCompressionUntil(status.startPtr);
 
         long start = U.currentTimeMillis();
-        int applied = 0;
-        WALPointer lastRead = null;
+
+        long lastArchivedSegment = cctx.wal().lastArchivedSegment();
+
+        RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, lastArchivedSegment, log);
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
+        int applied = 0;
+
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
+                WALRecord rec = restoreBinaryState.next(it);
 
-                WALRecord rec = tup.get2();
-
-                lastRead = tup.get1();
+                if (rec == null)
+                    break;
 
                 switch (rec.type()) {
-                    case CHECKPOINT_RECORD:
-                        CheckpointRecord cpRec = (CheckpointRecord)rec;
-
-                        // We roll memory up until we find a checkpoint start record registered in the status.
-                        if (F.eq(cpRec.checkpointId(), status.cpStartId)) {
-                            log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
-                                ", pos=" + tup.get1() + ']');
-
-                            apply = false;
-                        }
-                        else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
-                            U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
-                                ", expCpId=" + status.cpStartId + ", pos=" + tup.get1() + ']');
-
-                        break;
-
                     case PAGE_RECORD:
-                        if (apply) {
+                        if (restoreBinaryState.needApplyBinaryUpdate()) {
                             PageSnapshot pageRec = (PageSnapshot)rec;
 
                             // Here we do not require tag check because we may be applying memory changes after
@@ -2044,7 +2034,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     default:
-                        if (apply && rec instanceof PageDeltaRecord) {
+                        if (restoreBinaryState.needApplyBinaryUpdate() && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
                             int grpId = r.groupId();
@@ -2085,11 +2075,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (metastoreOnly)
             return null;
 
+        WALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
+
         if (status.needRestoreMemory()) {
-            if (apply)
+            if (restoreBinaryState.needApplyBinaryUpdate())
                 throw new StorageException("Failed to restore memory state (checkpoint marker is present " +
                     "on disk, but checkpoint record is missed in WAL) " +
-                    "[cpStatus=" + status + ", lastRead=" + lastRead + "]");
+                    "[cpStatus=" + status + ", lastRead=" + lastReadPtr + "]");
 
             log.info("Finished applying memory changes [changesApplied=" + applied +
                 ", time=" + (U.currentTimeMillis() - start) + "ms]");
@@ -2100,7 +2092,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         cpHistory.initialize(retreiveHistory());
 
-        return lastRead == null ? null : lastRead.next();
+        return lastReadPtr == null ? null : lastReadPtr.next();
     }
 
     /**
@@ -2209,6 +2201,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!metastoreOnly)
             cctx.kernalContext().query().skipFieldLookup(true);
 
+        long lastArchivedSegment = cctx.wal().lastArchivedSegment();
+
+        RestoreLogicalState restoreLogicalState = new RestoreLogicalState(lastArchivedSegment, log);
+
         long start = U.currentTimeMillis();
         int applied = 0;
 
@@ -2219,9 +2215,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
             while (it.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+                WALRecord rec = restoreLogicalState.next(it);
 
-                WALRecord rec = next.get2();
+                if (rec == null)
+                    break;
 
                 switch (rec.type()) {
                     case DATA_RECORD:
@@ -4363,5 +4360,172 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return new T2<>(Integer.parseInt(key.substring(WAL_GLOBAL_KEY_PREFIX.length())), false);
         else
             return null;
+    }
+
+    /**
+     * Abstract class for create restore context.
+     */
+    public abstract static class RestoreStateContext {
+        /** */
+        protected final IgniteLogger log;
+
+        /** Last archived segment. */
+        protected final long lastArchivedSegment;
+
+        /** Last read record WAL pointer. */
+        protected FileWALPointer lastRead;
+
+        /**
+         * @param lastArchivedSegment Last archived segment index.
+         * @param log Ignite logger.
+         */
+        public RestoreStateContext(long lastArchivedSegment, IgniteLogger log) {
+            this.lastArchivedSegment = lastArchivedSegment;
+            this.log = log;
+        }
+
+        /**
+         * Advance iterator to the next record.
+         *
+         * @param it WAL iterator.
+         * @return WALRecord entry.
+         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
+         */
+        public WALRecord next(WALIterator it) throws IgniteCheckedException {
+            try {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
+
+                WALRecord rec = tup.get2();
+
+                WALPointer ptr = tup.get1();
+
+                lastRead = (FileWALPointer)ptr;
+
+                rec.position(ptr);
+
+                return rec;
+            }
+            catch (IgniteCheckedException e) {
+                boolean throwsCRCError = throwsCRCError();
+
+                if (X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
+                    if (throwsCRCError)
+                        throw e;
+                    else
+                        return null;
+                }
+
+                log.error("Catch error during restore state, throwsCRCError=" + throwsCRCError, e);
+
+                throw e;
+            }
+        }
+
+        /**
+         *
+         * @return Last read WAL record pointer.
+         */
+        public WALPointer lastReadRecordPointer() {
+            return lastRead;
+        }
+
+        /**
+         *
+         * @return Flag indicates need throws CRC exception or not.
+         */
+        public boolean throwsCRCError(){
+            FileWALPointer lastReadPtr = lastRead;
+
+            return lastReadPtr != null && lastReadPtr.index() <= lastArchivedSegment;
+        }
+    }
+
+    /**
+     * Restore memory context. Tracks the safety of binary recovery.
+     */
+    public static class RestoreBinaryState extends RestoreStateContext {
+        /** Checkpoint status. */
+        private final CheckpointStatus status;
+
+        /** The flag indicates need to apply the binary update or no needed. */
+        private boolean needApplyBinaryUpdates;
+
+        /**
+         * @param status Checkpoint status.
+         * @param lastArchivedSegment Last archived segment index.
+         * @param log Ignite logger.
+         */
+        public RestoreBinaryState(CheckpointStatus status, long lastArchivedSegment, IgniteLogger log) {
+            super(lastArchivedSegment, log);
+
+            this.status = status;
+            needApplyBinaryUpdates = status.needRestoreMemory();
+        }
+
+        /**
+         * Advance iterator to the next record.
+         *
+         * @param it WAL iterator.
+         * @return WALRecord entry.
+         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
+         */
+        @Override public WALRecord next(WALIterator it) throws IgniteCheckedException {
+            WALRecord rec = super.next(it);
+
+            if (rec == null)
+                return null;
+
+            if (rec.type() == CHECKPOINT_RECORD) {
+                CheckpointRecord cpRec = (CheckpointRecord)rec;
+
+                // We roll memory up until we find a checkpoint start record registered in the status.
+                if (F.eq(cpRec.checkpointId(), status.cpStartId)) {
+                    log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
+                        ", pos=" + rec.position() + ']');
+
+                    needApplyBinaryUpdates = false;
+                }
+                else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
+                    U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
+                        ", expCpId=" + status.cpStartId + ", pos=" + rec.position() + ']');
+            }
+
+            return rec;
+        }
+
+        /**
+         *
+         * @return Flag indicates need apply binary record or not.
+         */
+        public boolean needApplyBinaryUpdate() {
+            return needApplyBinaryUpdates;
+        }
+
+        /**
+         *
+         * @return Flag indicates need throws CRC exception or not.
+         */
+        @Override public boolean throwsCRCError() {
+            log.info("Throws CRC error check, needApplyBinaryUpdates=" + needApplyBinaryUpdates +
+                ", lastArchivedSegment=" + lastArchivedSegment + ", lastRead=" + lastRead);
+
+            if (needApplyBinaryUpdates)
+                return true;
+
+            return super.throwsCRCError();
+        }
+    }
+
+    /**
+     * Restore logical state context. Tracks the safety of logical recovery.
+     */
+    public static class RestoreLogicalState extends RestoreStateContext {
+        /**
+         * @param lastArchivedSegment Last archived segment index.
+         * @param log Ignite logger.
+         */
+        public RestoreLogicalState(long lastArchivedSegment, IgniteLogger log) {
+            super(lastArchivedSegment, log);
+        }
     }
 }
