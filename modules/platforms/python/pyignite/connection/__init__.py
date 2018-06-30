@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import socket
+import ssl
 
 from pyignite.constants import *
 from .handshake import HandshakeRequest, read_response
@@ -32,8 +33,15 @@ class Connection:
 
     socket = None
 
-    def __init__(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def __init__(self, use_ssl=True):
+        _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if use_ssl:
+            _socket = ssl.wrap_socket(
+                _socket,
+                ssl_version=SSL_VERSION,
+                ciphers=SSL_CIPHERS
+            )
+        self.socket = _socket
 
     read_response = read_response
 
