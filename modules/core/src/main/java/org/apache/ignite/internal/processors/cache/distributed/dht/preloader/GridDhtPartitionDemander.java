@@ -258,11 +258,14 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return {@code AffinityTopologyVersion.ZERO} if rebalance have never been started. Otherwise
-     * the last requested rebalance topology version returned.
+     * @return {@code AffinityTopologyVersion.ZERO} if rebalance have never been started or cancelled or
+     * dummy exchange need to be processed. Look at {@see GridCachePartitionExchangeManager#forceReassign} for details.
+     * Otherwise the last requested rebalance topology version returned.
      */
     AffinityTopologyVersion requestedRebalanceTopVer() {
-        return requestedRebTopVer;
+        final RebalanceFuture fut = rebalanceFut;
+
+        return fut.isDone() && !fut.result() ? AffinityTopologyVersion.ZERO : requestedRebTopVer;
     }
 
     /**
