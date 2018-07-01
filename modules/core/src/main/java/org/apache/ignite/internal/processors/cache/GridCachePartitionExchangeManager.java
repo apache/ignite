@@ -2599,6 +2599,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         List<String> rebList = new LinkedList<>();
 
+                        List<String> unchangedList = new LinkedList<>();
+
                         boolean assignsCancelled = false;
 
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
@@ -2615,8 +2617,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                if (assigns != null && !assigns.changed() && !forcePreload)
+                                if (assigns != null && !assigns.changed() && !forcePreload) {
                                     grp.preloader().updateRebalanceFuture(assigns.topologyVersion());
+
+                                    unchangedList.add(grp.cacheOrGroupName());
+                                }
                                 else {
                                     Runnable cur = grp.preloader().addAssignments(assigns,
                                         forcePreload,
@@ -2636,6 +2641,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
+                        final String unchanged = unchangedList.isEmpty() ? "[]" : unchangedList.toString();
+
                         if (assignsCancelled) { // Pending exchange.
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
@@ -2644,7 +2651,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else if (r != null) {
                             Collections.reverse(rebList);
 
-                            U.log(log, "Rebalancing scheduled [order=" + rebList + "]");
+                            U.log(log, "Rebalancing scheduled [order=" + rebList +
+                                ", unchanged=" + unchanged + "]");
 
                             if (!hasPendingExchange()) {
                                 U.log(log, "Rebalancing started " +
@@ -2661,7 +2669,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + ']');
+                                ", node=" + exchId.nodeId() +  ", unchanged=" + unchanged + "]");
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
