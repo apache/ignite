@@ -97,6 +97,27 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        ctx.discovery().localJoinFuture().listen(f -> {
+            if (!isLocalNodeCoordinator())
+                return;
+
+            synchronized (mux) {
+                HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
+
+                HashMap<Integer, byte[]> newEncKeys =
+                    newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+
+                if (newEncKeys == null)
+                    return;
+
+                for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet())
+                    groupKey(entry.getKey(), entry.getValue());
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
         JoiningNodeDiscoveryData discoData) {
         IgniteNodeValidationResult res = super.validateNode(node, discoData);
@@ -200,8 +221,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             else if (newKeys != null){
                 for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
                     byte[] old = knownEncKeys.putIfAbsent(entry.getKey(), entry.getValue());
-
-                    groupKey(entry.getKey(), entry.getValue());
 
                     assert old == null;
                 }
