@@ -42,9 +42,9 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * following way: the training set is split into k smaller sets. The following procedure is followed for each of the k
  * “folds”:
  * <ul>
- *     <li>A model is trained using k-1 of the folds as training data;</li>
- *     <li>the resulting model is validated on the remaining part of the data (i.e., it is used as a test set to compute
- *     a performance measure such as accuracy).</li>
+ * <li>A model is trained using k-1 of the folds as training data;</li>
+ * <li>the resulting model is validated on the remaining part of the data (i.e., it is used as a test set to compute
+ * a performance measure such as accuracy).</li>
  * </ul>
  *
  * @param <M> Type of model.
@@ -66,7 +66,7 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
      * @return Array of scores of the estimator for each run of the cross validation.
      */
     public double[] score(DatasetTrainer<M, L> trainer, ScoreCalculator<L> scoreCalculator, Ignite ignite,
-        IgniteCache<K, V> upstreamCache, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteCache<K, V> upstreamCache, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor, int cv) {
         return score(trainer, scoreCalculator, ignite, upstreamCache, (k, v) -> true, featureExtractor, lbExtractor,
             new SHA256UniformMapper<>(), cv);
@@ -87,7 +87,7 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
      */
     public double[] score(DatasetTrainer<M, L> trainer, ScoreCalculator<L> scoreCalculator, Ignite ignite,
         IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor, int cv) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor, int cv) {
         return score(trainer, scoreCalculator, ignite, upstreamCache, filter, featureExtractor, lbExtractor,
             new SHA256UniformMapper<>(), cv);
     }
@@ -103,12 +103,12 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      * @param mapper Mapper used to map a key-value pair to a point on the segment (0, 1).
-     * @param cv Number of folds.
+     * @param cv Number of folds.d
      * @return Array of scores of the estimator for each run of the cross validation.
      */
     public double[] score(DatasetTrainer<M, L> trainer, ScoreCalculator<L> scoreCalculator,
         Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         UniformMapper<K, V> mapper, int cv) {
 
         return score(
@@ -146,7 +146,7 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
      * @return Array of scores of the estimator for each run of the cross validation.
      */
     public double[] score(DatasetTrainer<M, L> trainer, ScoreCalculator<L> scoreCalculator, Map<K, V> upstreamMap,
-        int parts, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor, int cv) {
+        int parts, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor, int cv) {
         return score(trainer, scoreCalculator, upstreamMap, (k, v) -> true, parts, featureExtractor, lbExtractor,
             new SHA256UniformMapper<>(), cv);
     }
@@ -165,7 +165,7 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
      * @return Array of scores of the estimator for each run of the cross validation.
      */
     public double[] score(DatasetTrainer<M, L> trainer, ScoreCalculator<L> scoreCalculator, Map<K, V> upstreamMap,
-        IgniteBiPredicate<K, V> filter, int parts, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiPredicate<K, V> filter, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor, int cv) {
         return score(trainer, scoreCalculator, upstreamMap, filter, parts, featureExtractor, lbExtractor,
             new SHA256UniformMapper<>(), cv);
@@ -186,7 +186,7 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
      * @return Array of scores of the estimator for each run of the cross validation.
      */
     public double[] score(DatasetTrainer<M, L> trainer, ScoreCalculator<L> scoreCalculator, Map<K, V> upstreamMap,
-        IgniteBiPredicate<K, V> filter, int parts, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiPredicate<K, V> filter, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor, UniformMapper<K, V> mapper, int cv) {
         return score(
             trainer,
@@ -226,7 +226,7 @@ public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V>
     private double[] score(DatasetTrainer<M, L> trainer, Function<IgniteBiPredicate<K, V>,
         DatasetBuilder<K, V>> datasetBuilderSupplier,
         BiFunction<IgniteBiPredicate<K, V>, M, TruthWithPredictionCursor<L>> testDataIterSupplier,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         ScoreCalculator<L> scoreCalculator, UniformMapper<K, V> mapper, int cv) {
 
         double[] scores = new double[cv];

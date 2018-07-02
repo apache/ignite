@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
@@ -44,10 +45,10 @@ public class Step_2_Imputing {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    IgniteBiFunction<Integer, Object[], double[]> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
-                            (k, v) -> new double[]{(double)v[0], (double)v[5], (double)v[6]} // "pclass", "sibsp", "parch"
+                            (k, v) -> Vector.of((double)v[0], (double)v[5], (double)v[6]) // "pclass", "sibsp", "parch"
                         );
 
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
@@ -77,7 +78,7 @@ public class Step_2_Imputing {
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(new DenseLocalOnHeapVector(imputingPreprocessor.apply(observation.getKey(), val)));
+                            double prediction = mdl.apply(imputingPreprocessor.apply(observation.getKey(), val));
 
                             totalAmount++;
                             if (groundTruth != prediction)

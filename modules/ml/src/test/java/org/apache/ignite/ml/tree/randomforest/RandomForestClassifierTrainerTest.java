@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,7 +68,7 @@ public class RandomForestClassifierTrainerTest {
         }
 
         RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1);
-        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> k, (k, v) -> v);
+        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> Vector.of(k), (k, v) -> v);
 
         assertTrue(model.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
         assertEquals(5, model.getModels().size());

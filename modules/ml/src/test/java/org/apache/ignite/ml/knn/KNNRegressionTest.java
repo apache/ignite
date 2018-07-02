@@ -72,7 +72,7 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
@@ -107,7 +107,7 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
@@ -142,7 +142,7 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())

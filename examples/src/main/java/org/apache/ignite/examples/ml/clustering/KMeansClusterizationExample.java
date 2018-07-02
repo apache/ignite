@@ -31,6 +31,7 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -58,7 +59,7 @@ public class KMeansClusterizationExample {
                 KMeansModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 );
 

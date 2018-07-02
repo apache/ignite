@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
@@ -65,7 +66,7 @@ public class LogisticRegressionSGDTrainerSample {
                 LogisticRegressionModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 ).withRawLabels(true);
 

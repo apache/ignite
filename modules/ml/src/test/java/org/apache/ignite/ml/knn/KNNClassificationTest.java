@@ -71,7 +71,7 @@ public class KNNClassificationTest {
         KNNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
@@ -99,7 +99,7 @@ public class KNNClassificationTest {
         KNNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
@@ -127,7 +127,7 @@ public class KNNClassificationTest {
         KNNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
@@ -153,7 +153,7 @@ public class KNNClassificationTest {
         KNNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())

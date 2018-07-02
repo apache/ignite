@@ -59,7 +59,7 @@ public class KMeansTrainerTest {
 
         KMeansModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 

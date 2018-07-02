@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
@@ -106,7 +107,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         MultilayerPerceptron mdl = trainer.fit(
             ignite,
             trainingSet,
-            (k, v) -> v.getPixels(),
+            (k, v) -> Vector.of(v.getPixels()),
             (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");

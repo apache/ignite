@@ -43,7 +43,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
     private final IgniteBiPredicate<K, V> filter;
 
     /** Feature extractor. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
@@ -61,7 +61,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
      * @param mdl Model for inference.
      */
     public LocalTruthWithPredictionCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         Model<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
@@ -114,12 +114,12 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
             K key = nextEntry.getKey();
             V val = nextEntry.getValue();
 
-            double[] features = featureExtractor.apply(key, val);
+            Vector features = featureExtractor.apply(key, val);
             L lb = lbExtractor.apply(key, val);
 
             nextEntry = null;
 
-            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
+            return new TruthWithPrediction<>(lb, mdl.apply(features));
         }
 
         /**

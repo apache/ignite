@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
@@ -153,7 +154,7 @@ public class LocalModelsTest {
 
         KMeansModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 

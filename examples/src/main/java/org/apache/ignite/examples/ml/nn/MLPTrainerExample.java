@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
@@ -100,7 +101,7 @@ public class MLPTrainerExample {
                 MultilayerPerceptron mlp = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] {v.x, v.y},
+                    (k, v) -> Vector.of(v.x, v.y),
                     (k, v) -> new double[] {v.lb}
                 );
 

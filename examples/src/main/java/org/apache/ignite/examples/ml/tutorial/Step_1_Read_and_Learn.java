@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -50,7 +51,7 @@ public class Step_1_Read_and_Learn {
                     DecisionTreeNode mdl = trainer.fit(
                         ignite,
                         dataCache,
-                        (k, v) -> new double[]{(double)v[0], (double)v[5], (double)v[6]}, // "pclass", "sibsp", "parch"
+                        (k, v) -> Vector.of((double)v[0], (double)v[5], (double)v[6]), // "pclass", "sibsp", "parch"
                         (k, v) -> (double)v[1]
                     );
 

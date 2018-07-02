@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -79,7 +80,7 @@ public class LinearRegressionSGDTrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[4]
         );
 

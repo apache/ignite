@@ -42,7 +42,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
     private final QueryCursor<Cache.Entry<K, V>> cursor;
 
     /** Feature extractor. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
@@ -60,7 +60,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
      * @param mdl Model for inference.
      */
     public CacheBasedTruthWithPredictionCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         Model<Vector, L> mdl) {
         this.cursor = query(upstreamCache, filter);
         this.featureExtractor = featureExtractor;
@@ -117,10 +117,10 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
         @Override public TruthWithPrediction<L> next() {
             Cache.Entry<K, V> entry = iter.next();
 
-            double[] features = featureExtractor.apply(entry.getKey(), entry.getValue());
+            Vector features = featureExtractor.apply(entry.getKey(), entry.getValue());
             L lb = lbExtractor.apply(entry.getKey(), entry.getValue());
 
-            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
+            return new TruthWithPrediction<>(lb, mdl.apply(features));
         }
     }
 }

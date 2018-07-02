@@ -56,7 +56,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
      * @return Model.
      */
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         assert datasetBuilder != null;
 

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
@@ -52,33 +53,39 @@ public class SVMMultiClassClassificationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 SVMMultiClassClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, Vector> dataCache = getTestCache(ignite);
 
                 SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer();
 
                 SVMLinearMultiClassClassificationModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0]
+                    (k, v) -> {
+                        double[] arr = v.asArray();
+                        return Vector.of(Arrays.copyOfRange(arr, 1, arr.length));
+                    },
+                    (k, v) -> v.get(0)
                 );
 
                 System.out.println(">>> SVM Multi-class model");
                 System.out.println(mdl.toString());
 
-                MinMaxScalerTrainer<Integer, double[]> normalizationTrainer = new MinMaxScalerTrainer<>();
+                MinMaxScalerTrainer<Integer, Vector> normalizationTrainer = new MinMaxScalerTrainer<>();
 
-                IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
+                IgniteBiFunction<Integer, Vector, Vector> preprocessor = normalizationTrainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length)
+                    (k, v) -> {
+                        double[] arr = v.asArray();
+                        return Vector.of(Arrays.copyOfRange(arr, 1, arr.length));
+                    }
                 );
 
                 SVMLinearMultiClassClassificationModel mdlWithNormalization = trainer.fit(
                     ignite,
                     dataCache,
                     preprocessor,
-                    (k, v) -> v[0]
+                    (k, v) -> v.get(0)
                 );
 
                 System.out.println(">>> SVM Multi-class model with minmaxscaling");
@@ -96,9 +103,9 @@ public class SVMMultiClassClassificationExample {
                 int[][] confusionMtx = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
                 int[][] confusionMtxWithNormalization = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
+                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, Vector> observation : observations) {
+                        double[] val = observation.getValue().asArray();
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
@@ -151,15 +158,15 @@ public class SVMMultiClassClassificationExample {
      * @param ignite Ignite instance.
      * @return Filled Ignite Cache.
      */
-    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
+    private static IgniteCache<Integer, Vector> getTestCache(Ignite ignite) {
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
 
         for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
+            cache.put(i, Vector.of(data[i]));
 
         return cache;
     }

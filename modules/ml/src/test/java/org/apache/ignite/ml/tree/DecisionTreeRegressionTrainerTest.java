@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree;
 
+import org.apache.ignite.ml.math.Vector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -65,7 +66,7 @@ public class DecisionTreeRegressionTrainerTest {
         DecisionTreeNode tree = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOf(v, v.length - 1),
+            (k, v) -> Vector.of(Arrays.copyOf(v, v.length - 1)),
             (k, v) -> v[v.length - 1]
         );
 

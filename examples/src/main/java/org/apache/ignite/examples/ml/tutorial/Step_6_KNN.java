@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
@@ -54,7 +55,7 @@ public class Step_6_KNN {
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
 
-                    IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
                         .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
@@ -62,21 +63,21 @@ public class Step_6_KNN {
                             featureExtractor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
                             strEncoderPreprocessor
                         );
 
 
-                    IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                         .withP(1)
                         .fit(
                         ignite,
@@ -112,7 +113,7 @@ public class Step_6_KNN {
                             double groundTruth = (double)val[1];
                             String name = (String)val[2];
 
-                            double prediction = mdl.apply(new DenseLocalOnHeapVector(normalizationPreprocessor.apply(observation.getKey(), val)));
+                            double prediction = mdl.apply(normalizationPreprocessor.apply(observation.getKey(), val));
 
                             totalAmount++;
                             if (groundTruth != prediction)

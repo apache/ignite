@@ -19,6 +19,7 @@ package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.Vector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,17 +56,17 @@ public class MinMaxScalerTrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFit() {
-        Map<Integer, double[]> data = new HashMap<>();
-        data.put(1, new double[] {2, 4, 1});
-        data.put(2, new double[] {1, 8, 22});
-        data.put(3, new double[] {4, 10, 100});
-        data.put(4, new double[] {0, 22, 300});
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, Vector.of(2, 4, 1));
+        data.put(2, Vector.of(1, 8, 22));
+        data.put(3, Vector.of(4, 10, 100));
+        data.put(4, Vector.of(0, 22, 300));
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        MinMaxScalerTrainer<Integer, double[]> standardizationTrainer = new MinMaxScalerTrainer<>();
+        MinMaxScalerTrainer<Integer, Vector> standardizationTrainer = new MinMaxScalerTrainer<>();
 
-        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
+        MinMaxScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
             datasetBuilder,
             (k, v) -> v
         );

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.nn;
 
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
@@ -136,7 +137,7 @@ public class MLPTrainerTest {
             MultilayerPerceptron mlp = trainer.fit(
                 xorData,
                 parts,
-                (k, v) -> v[0],
+                (k, v) -> Vector.of(v[0]),
                 (k, v) -> v[1]
             );
 

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
@@ -133,7 +134,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
             MultilayerPerceptron mlp = trainer.fit(
                 ignite,
                 xorCache,
-                (k, v) -> new double[]{ v.x, v.y },
+                (k, v) -> Vector.of(v.x, v.y ),
                 (k, v) -> new double[]{ v.lb}
             );
 
