@@ -19,12 +19,13 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+
 module.exports = {
-    implements: 'middlewares:api',
-    inject: ['require(lodash)']
+    implements: 'middlewares:api'
 };
 
-module.exports.factory = (_) => {
+module.exports.factory = () => {
     return (req, res, next) => {
         // Set headers to avoid API caching in browser (esp. IE)
         res.header('Cache-Control', 'must-revalidate');

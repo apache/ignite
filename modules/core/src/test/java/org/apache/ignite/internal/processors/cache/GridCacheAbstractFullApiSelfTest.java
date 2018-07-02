@@ -310,9 +310,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         storeStgy.removeFromStore(key);
 
-        try (final Transaction transaction = grid(0).transactions().txStart()) {
-            IgniteCache<String, Integer> cache = jcache(0);
+        IgniteCache<String, Integer> cache = jcache(0);
 
+        try (final Transaction transaction = grid(0).transactions().txStart()) {
             // retrieve market type from the grid
             Integer old = cache.withSkipStore().get(key);
 
@@ -4031,7 +4031,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkPeekTxRemove(TransactionConcurrency concurrency) throws Exception {
         if (txShouldBeUsed()) {
             Ignite ignite = primaryIgnite("key");
-            IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
             cache.put("key", 1);
 
@@ -5312,7 +5312,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testWithSkipStore() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> cache = jcache(0);
 
         IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
 
@@ -5524,7 +5524,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
             return;
 
-        IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> cache = jcache(0);
 
         IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
 
@@ -5889,7 +5889,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         };
 
         try {
-            IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+            IgniteCache<String, Integer> cache = jcache(0);
 
             List<String> keys = primaryKeysForCache(cache, 2);
 
@@ -5974,8 +5974,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
+                        IgniteCache<String, Integer> cache = jcache(0);
+
                         try (Transaction tx = ignite(0).transactions().txStart()) {
-                            jcache(0).lock("key").lock();
+                            cache.lock("key").lock();
                         }
 
                         return null;
@@ -5989,8 +5991,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
+                        IgniteCache<String, Integer> cache = jcache(0);
+
                         try (Transaction tx = ignite(0).transactions().txStart()) {
-                            jcache(0).lockAll(Arrays.asList("key1", "key2")).lock();
+                            cache.lockAll(Arrays.asList("key1", "key2")).lock();
                         }
 
                         return null;

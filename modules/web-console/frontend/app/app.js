@@ -133,7 +133,8 @@ import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
-import connectedClusters from './components/connected-clusters';
+import connectedClusters from './components/connected-clusters-badge';
+import connectedClustersDialog from './components/connected-clusters-dialog';
 import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
 import progressLine from './components/progress-line';
@@ -151,13 +152,10 @@ import igniteServices from './services';
 import uiAceJava from './directives/ui-ace-java';
 import uiAceSpring from './directives/ui-ace-spring';
 
-// Inject external modules.
-import IgniteModules from 'IgniteModules/index';
-
 import baseTemplate from 'views/base.pug';
 import * as icons from '../public/images/icons';
 
-angular.module('ignite-console', [
+export default angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
@@ -232,6 +230,7 @@ angular.module('ignite-console', [
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,
+    connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
     exposeInput.name,
@@ -246,9 +245,7 @@ angular.module('ignite-console', [
     breadcrumbs.name,
     passwordVisibility.name,
     progressLine.name,
-    formField.name,
-    // Ignite modules.
-    IgniteModules.name
+    formField.name
 ])
 .service($exceptionHandler.name, $exceptionHandler)
 // Directives.

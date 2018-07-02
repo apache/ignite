@@ -27,6 +27,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.selection.score.ScoreCalculator;
 import org.apache.ignite.ml.selection.score.util.CacheBasedTruthWithPredictionCursor;
@@ -51,7 +52,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class CrossValidationScoreCalculator<M extends Model<double[], L>, L, K, V> {
+public class CrossValidationScoreCalculator<M extends Model<Vector, L>, L, K, V> {
     /**
      * Computes cross-validated metrics.
      *
@@ -109,6 +110,7 @@ public class CrossValidationScoreCalculator<M extends Model<double[], L>, L, K, 
         Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         UniformMapper<K, V> mapper, int cv) {
+
         return score(
             trainer,
             predicate -> new CacheBasedDatasetBuilder<>(

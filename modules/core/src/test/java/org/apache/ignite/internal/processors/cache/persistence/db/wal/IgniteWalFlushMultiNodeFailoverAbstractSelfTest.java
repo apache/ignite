@@ -97,7 +97,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60_000;
+        return 120_000;
     }
 
     /**
@@ -161,7 +161,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     /**
      * @throws Exception if failed.
      */
-    public void failWhilePut(boolean failWhileStart) throws Exception {
+    private void failWhilePut(boolean failWhileStart) throws Exception {
         final Ignite grid = startGridsMultiThreaded(gridCount());
 
         grid.cluster().active(true);
@@ -169,7 +169,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
 
         for (int i = 0; i < ITRS; i++) {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try (Transaction tx = grid.transactions().txStart(
                         TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
                     cache.put(i, "testValue" + i);
