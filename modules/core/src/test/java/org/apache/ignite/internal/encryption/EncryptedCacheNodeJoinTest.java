@@ -126,8 +126,6 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         createEncCache(grid3, null, cacheName(), null, false);
 
-        //TODO: 1. Check cache keys on grid start.
-        //TODO: 2. Add backpucount = 2 and putDataToGrid.
         assertThrowsWithCause(() -> {
             try {
                 startGrid(GRID_0);
@@ -135,6 +133,6 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }, AssertionError.class);
+        }, IgniteCheckedException.class);
     }
 }

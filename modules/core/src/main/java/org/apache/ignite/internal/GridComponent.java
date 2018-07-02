@@ -64,7 +64,10 @@ public interface GridComponent {
         QUERY_PROC,
 
         /** Authentication processor. */
-        AUTH_PROC
+        AUTH_PROC,
+
+        /** Encryption manager. */
+        ENCRYPTION_MGR
     }
 
     /**
@@ -150,7 +153,7 @@ public interface GridComponent {
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /** */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value

@@ -1129,6 +1129,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Returns group encryption keys.
+     *
+     * @return Group encryption keys.
+     */
+    @Nullable public Map<Integer, EncryptionKey<?>> encryptionKeys() {
+        return null;
+    }
+
+    /**
      * Marks last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
      *
      * @param grpId Group id.

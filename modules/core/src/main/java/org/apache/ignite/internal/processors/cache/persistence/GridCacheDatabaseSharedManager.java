@@ -4321,6 +4321,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Map<Integer, EncryptionKey<?>> encryptionKeys() {
+        return grpEncryptionKeys;
+    }
+
     /**
      * Checks that checkpoint with timestamp {@code cpTs} is inapplicable as start point for WAL rebalance for given group {@code grpId}.
      *

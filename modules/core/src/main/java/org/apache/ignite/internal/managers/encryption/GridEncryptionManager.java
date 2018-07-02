@@ -18,15 +18,20 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MASTER_KEY_DIGEST;
 
 /**
@@ -66,7 +71,29 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> {
         if (res != null)
             return res;
 
-        return validateNode(node);
+        if (!discoData.hasJoiningNodeData())
+            return validateNode(node);
+
+        Map<Integer, byte[]> encKeysFromJoiningNode = (Map<Integer, byte[]>)discoData.joiningNodeData();
+
+        if (F.isEmpty(encKeysFromJoiningNode))
+            return validateNode(node);
+
+        for (Map.Entry<Integer, byte[]> entry : encKeysFromJoiningNode.entrySet()) {
+            EncryptionKey locEncKey = ctx.cache().context().database().groupKey(entry.getKey());
+
+            if (locEncKey == null)
+                continue;
+
+            if (Arrays.equals(getSpi().encryptKey(locEncKey), entry.getValue()))
+                continue;
+
+            return new IgniteNodeValidationResult(ctx.localNodeId(),
+                "Cache key differs! Node join is rejected. [nodeId=" + node.id() + "]",
+                "Cache key differs! Node join is rejected.");
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -86,5 +113,25 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> {
         return new IgniteNodeValidationResult(ctx.localNodeId(),
             "Master key digest differs! Node join is rejected. [nodeId=" + node.id() + "]",
             "Master key digest differs! Node join is rejected.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        Map<Integer, EncryptionKey<?>> encKeys = ctx.cache().context().database().encryptionKeys();
+
+        if (F.isEmpty(encKeys))
+            return;
+
+        HashMap<Integer, byte[]> keysToSend = new HashMap<>();
+
+        for (Map.Entry<Integer, EncryptionKey<?>> entry : encKeys.entrySet())
+            keysToSend.put(entry.getKey(), getSpi().encryptKey(entry.getValue()));
+
+        dataBag.addJoiningNodeData(ENCRYPTION_MGR.ordinal(), keysToSend);
+    }
+
+    /** {@inheritDoc} */
+    public DiscoveryDataExchangeType discoveryDataType() {
+        return ENCRYPTION_MGR;
     }
 }
