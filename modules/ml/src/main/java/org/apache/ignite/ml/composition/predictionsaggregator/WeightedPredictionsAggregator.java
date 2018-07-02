@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.composition.predictionsaggregator;
 
-import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**

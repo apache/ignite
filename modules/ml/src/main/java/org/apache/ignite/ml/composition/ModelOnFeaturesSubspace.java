@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
