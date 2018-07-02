@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -34,7 +35,7 @@ import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuil
 /**
  * Trainer for binary classifier using Gradient Boosting.
  * As preparing stage this algorithm learn labels in dataset and create mapping dataset labels to 0 and 1.
- * This algorithm uses gradient of Logarithmic Loss metric [LogLoss] in each step of learning.
+ * This algorithm uses gradient of Logarithmic Loss metric [LogLoss] by default in each step of learning.
  */
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class. */
@@ -49,7 +50,23 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
      * @param cntOfIterations Count of learning iterations.
      */
     public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations) {
-        super(gradStepSize, cntOfIterations);
+        super(gradStepSize,
+            cntOfIterations,
+            LossPerPredictionFunctions.LOG_LOSS);
+    }
+
+    /**
+     * Constructs instance of GDBBinaryClassifierTrainer.
+     *
+     * @param gradStepSize Grad step size.
+     * @param cntOfIterations Count of learning iterations.
+     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is current model prediction.
+     */
+    public GDBBinaryClassifierTrainer(double gradStepSize,
+        Integer cntOfIterations,
+        IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
+
+        super(gradStepSize, cntOfIterations, lossGradient);
     }
 
     /** {@inheritDoc} */
@@ -85,10 +102,5 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
         double sigma = 1.0 / (1.0 + Math.exp(-indent));
         double internalCls = sigma < 0.5 ? 0.0 : 1.0;
         return internalCls == 0.0 ? externalFirstCls : externalSecondCls;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected double grad(long sampleSize, double answer, double prediction) {
-        return (prediction - answer) / (prediction * (1.0 - prediction));
     }
 }

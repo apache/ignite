@@ -32,6 +32,7 @@ import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -60,16 +61,21 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
     private final double gradientStep;
     /** Count of iterations. */
     private final int cntOfIterations;
+    /** Gradient of loss function. First argument is sample size, second argument is valid answer,
+     * third argument is current model prediction. */
+    private final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /**
      * Constructs GDBTrainer instance.
      *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
+     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer third argument is current model prediction.
      */
-    public GDBTrainer(double gradStepSize, Integer cntOfIterations) {
+    public GDBTrainer(double gradStepSize, Integer cntOfIterations, IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
         gradientStep = gradStepSize;
         this.cntOfIterations = cntOfIterations;
+        this.lossGradient = lossGradient;
     }
 
     /** {@inheritDoc} */
@@ -97,7 +103,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
                 Double mdlAnswer = currComposition.apply(VectorUtils.of(featureExtractor.apply(k, v)));
-                return -grad(sampleSize, realAnswer, mdlAnswer);
+                return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
             };
 
             models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
@@ -178,13 +184,4 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
             throw new RuntimeException(e);
         }
     }
-
-    /**
-     * Estimate gradient value for answer-prediction pair.
-     *
-     * @param sampleSize Sample size.
-     * @param answer Right answer.
-     * @param prediction Prediction.
-     */
-    protected abstract double grad(long sampleSize, double answer, double prediction);
 }

@@ -32,7 +32,9 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
      * @param cntOfIterations Count of learning iterations.
      */
     public GDBRegressionTrainer(double gradStepSize, Integer cntOfIterations) {
-        super(gradStepSize, cntOfIterations);
+        super(gradStepSize,
+            cntOfIterations,
+            LossPerPredictionFunctions.MSE);
     }
 
     /** {@inheritDoc} */
@@ -49,10 +51,5 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     /** {@inheritDoc} */
     @Override protected double internalLabelToExternal(double x) {
         return x;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected double grad(long sampleSize, double answer, double prediction) {
-        return (2.0 / sampleSize) * (prediction - answer);
     }
 }
