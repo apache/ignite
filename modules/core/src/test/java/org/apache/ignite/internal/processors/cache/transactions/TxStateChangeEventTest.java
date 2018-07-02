@@ -85,8 +85,6 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
         final IgniteEvents evts = loc ? ignite.events() : grid(3).events();
 
-        evts.enableLocal(EVTS_TX);
-
         if (loc)
             evts.localListen((IgnitePredicate<Event>)e -> {
                 assert e instanceof TransactionStateChangedEvent;

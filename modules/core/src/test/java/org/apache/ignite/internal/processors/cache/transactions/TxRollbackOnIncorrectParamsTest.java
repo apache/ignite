@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TransactionStateChangedEvent;
@@ -34,7 +33,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
@@ -47,11 +45,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     public void testTimeoutSetLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
 
-        final IgniteEvents evts = ignite.events();
-
-        evts.enableLocal(EVTS_TX);
-
-        evts.localListen((IgnitePredicate<Event>)e -> {
+        ignite.events().localListen((IgnitePredicate<Event>)e -> {
             assert e instanceof TransactionStateChangedEvent;
 
             TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
@@ -103,11 +97,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     public void testLabelFilledLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
 
-        final IgniteEvents evts = ignite.events();
-
-        evts.enableLocal(EVTS_TX);
-
-        evts.localListen((IgnitePredicate<Event>)e -> {
+        ignite.events().localListen((IgnitePredicate<Event>)e -> {
             assert e instanceof TransactionStateChangedEvent;
 
             TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
@@ -150,11 +140,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
         IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
-        final IgniteEvents evts = ignite.events();
-
-        evts.enableLocal(EVTS_TX);
-
-        evts.remoteListen(null,
+        ignite.events().remoteListen(null,
             (IgnitePredicate<Event>)e -> {
                 assert e instanceof TransactionStateChangedEvent;
 
@@ -214,11 +200,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
         IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
-        final IgniteEvents evts = ignite.events();
-
-        evts.enableLocal(EVTS_TX);
-
-        evts.remoteListen(null,
+        ignite.events().remoteListen(null,
             (IgnitePredicate<Event>)e -> {
                 assert e instanceof TransactionStateChangedEvent;
 
@@ -232,7 +214,6 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
                 return true;
             },
             EVT_TX_STARTED);
-
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
@@ -281,14 +262,10 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
         IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
-        final IgniteEvents evts = ignite.events();
-
-        evts.enableLocal(EVTS_TX);
-
         AtomicBoolean rollbackFailed = new AtomicBoolean();
         AtomicBoolean alreadyRolledBack = new AtomicBoolean();
 
-        evts.remoteListen(
+        ignite.events().remoteListen(
             (IgniteBiPredicate<UUID, Event>)(uuid, e) -> {
                 assert e instanceof TransactionStateChangedEvent;
 
