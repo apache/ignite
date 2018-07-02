@@ -37,7 +37,7 @@ import java.util.List;
  *     <li>Regression means approximating a function.</li>
  * </ul>
  */
-public class KNNRegressionModel<K,V> extends KNNClassificationModel<K,V> {
+public class KNNRegressionModel extends KNNClassificationModel {
     /** */
     private static final long serialVersionUID = -721836321291120543L;
 
