@@ -925,9 +925,13 @@
                                         <exclude>**/*.cmd</exclude>
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
+                                        <exclude>**/.dockerignore</exclude>
+                                        <exclude>modules/platforms/nodejs/examples/certs/client.crt</exclude>
+                                        <exclude>modules/platforms/nodejs/examples/certs/ca.crt</exclude>
+                                        <exclude>modules/platforms/nodejs/examples/certs/client.key</exclude>
+                                        <exclude>modules/platforms/nodejs/api_spec/**</exclude>
                                         <!--web console-->
                                         <exclude>**/web-console/**/.eslintrc</exclude>
-                                        <exclude>**/web-console/**/.dockerignore</exclude>
                                         <exclude>**/web-console/**/.babelrc</exclude>
                                         <exclude>**/web-console/**/*.json</exclude>
                                         <exclude>**/web-console/**/*.json.sample</exclude>
