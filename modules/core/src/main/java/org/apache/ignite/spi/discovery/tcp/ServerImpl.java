@@ -6043,7 +6043,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (previous != null && !previous.id().equals(nodeId)) {
                                 Collection<InetSocketAddress> nodeAddrs =
-                                    spi.getNodeAddresses(previous, U.sameMacs(locNode, previous));
+                                    spi.getNodeAddresses(previous, false);
 
                                 for (InetSocketAddress addr : nodeAddrs) {
                                     // Connection refused may be got if node doesn't listen
