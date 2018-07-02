@@ -128,6 +128,10 @@ public class Loader implements IgniteClosure<Integer, Integer> {
 
         final long pagesToLoad = pageNum * args.preloadDataRegionMult();
 
+        BenchmarkUtils.println("Preloading multiplier is " + args.preloadDataRegionMult());
+
+        BenchmarkUtils.println(String.format("Will try to load %d pages.", pagesToLoad));
+
         IgniteEx igniteEx = (IgniteEx)ignite;
 
         try {
@@ -187,11 +191,11 @@ public class Loader implements IgniteClosure<Integer, Integer> {
                 serv.shutdown();
             }
 
-            impl.disableMetrics();
-
             BenchmarkUtils.println("Objects loaded = " + cnt);
 
             BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
+
+            impl.disableMetrics();
         }
         catch (IgniteCheckedException e) {
             BenchmarkUtils.error("Failed to load data.", e);
