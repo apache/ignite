@@ -1537,7 +1537,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             rebalancePartition(p, haveHistory);
 
-                            changed = true;
+                            // Should True only if real exchange occurred.
+                            if (exchangeVer != null)
+                                changed = true;
                         }
                     }
                 }
