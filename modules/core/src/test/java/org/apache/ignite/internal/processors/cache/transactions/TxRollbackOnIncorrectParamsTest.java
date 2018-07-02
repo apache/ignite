@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
@@ -32,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
@@ -64,7 +64,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             return true;
         }, EVT_TX_STARTED);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache cache = ignite.getOrCreateCache(defaultCacheConfiguration());
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 200, 2)) {
@@ -81,7 +81,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
 
@@ -92,7 +92,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -120,7 +120,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             return true;
         }, EVT_TX_STARTED);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache cache = ignite.getOrCreateCache(defaultCacheConfiguration());
 
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
             cache.put(1, 1);
@@ -135,7 +135,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -146,6 +146,9 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     public void testLabelFilledRemoteGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
+
+        IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
         final IgniteEvents evts = ignite.events();
 
@@ -166,39 +169,37 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             },
             EVT_TX_STARTED);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
-
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
-            cache.put(1, 1);
+            cacheLocal.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().withLabel("test").txStart()) {
-            cache.put(1, 2);
+            cacheRemote.put(1, 2);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1, 3);
+            cacheLocal.put(1, 3);
 
             tx.commit();
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
-            cache.put(1, 4);
+            cacheRemote.put(1, 4);
 
             tx.commit();
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -209,6 +210,9 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     public void testTimeoutSetRemoteGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
+
+        IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
         final IgniteEvents evts = ignite.events();
 
@@ -229,41 +233,40 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             },
             EVT_TX_STARTED);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
-            cache.put(1, 1);
+            cacheLocal.put(1, 1);
 
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
-            cache.put(1, 2);
+            cacheRemote.put(1, 2);
 
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1, 3);
+            cacheLocal.put(1, 3);
 
             tx.commit();
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
-            cache.put(1, 4);
+            cacheRemote.put(1, 4);
 
             tx.commit();
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -274,6 +277,9 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     public void testRollbackInsideLocalListenerAfterRemoteFilter() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
+
+        IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
         final IgniteEvents evts = ignite.events();
 
@@ -306,19 +312,17 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             },
             EVT_TX_STARTED);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
-
         assertFalse(rollbackFailed.get());
         assertFalse(alreadyRolledBack.get());
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cache.put(1, 1);
+            cacheLocal.put(1, 1);
 
             tx.commit();
 
             fail("Should fail prior this line.");
         }
-        catch (TransactionRollbackException ignored) {
+        catch (CacheException ignored) {
             // No-op.
         }
 
@@ -326,7 +330,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         assertFalse(alreadyRolledBack.get());
 
         try (Transaction tx = remote.transactions().txStart()) {
-            cache.put(1, 2);
+            cacheRemote.put(1, 2);
 
             tx.commit();
         }
