@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -78,7 +79,7 @@ public class GRBOnTreesRegressionTrainerExample {
 
                 // Calculate score.
                 for (int x = -5; x < 5; x++) {
-                    double predicted = mdl.apply(Vector.of(new double[] {x}));
+                    double predicted = mdl.apply(VectorUtils.of(x));
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
                 }
