@@ -277,7 +277,6 @@ public class GridDhtPartitionDemander {
                 ", latestTopVer=" + rebalanceFut.topologyVersion() + ", grp=" + grp.cacheOrGroupName() + "]");
 
         requestedRebTopVer = topVer;
-
     }
 
     /**
