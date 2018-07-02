@@ -272,13 +272,12 @@ public class GridDhtPartitionDemander {
      * @param topVer Target rebalance topology version to be requested.
      */
     void requestedRebalanceTopVer(AffinityTopologyVersion topVer) {
-        if (requestedRebTopVer.initialized()) {
-            if (log.isDebugEnabled())
-                log.debug("Change last requested rebalance topology version [topVer=" + rebalanceFut.topVer +
-                    ", latestTopVer=" + rebalanceFut.topologyVersion() + ", grp=" + grp.cacheOrGroupName() + "]");
+        if (log.isDebugEnabled())
+            log.debug("Change last requested rebalance topology version [topVer=" + rebalanceFut.topVer +
+                ", latestTopVer=" + rebalanceFut.topologyVersion() + ", grp=" + grp.cacheOrGroupName() + "]");
 
-            requestedRebTopVer = topVer;
-        }
+        requestedRebTopVer = topVer;
+
     }
 
     /**
@@ -324,6 +323,8 @@ public class GridDhtPartitionDemander {
         long delay = grp.config().getRebalanceDelay();
 
         if ((delay == 0 || force) && assignments != null) {
+            final AffinityTopologyVersion topVer = assignments.topologyVersion();
+
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
@@ -332,7 +333,7 @@ public class GridDhtPartitionDemander {
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
                         if (future.get())
-                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
+                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
                     }
                 });
 
@@ -393,6 +394,9 @@ public class GridDhtPartitionDemander {
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
                 fut.sendRebalanceFinishedEvent();
+
+                if (requestedRebTopVer.compareTo(topVer) < 0)
+                    requestedRebalanceTopVer(topVer);
 
                 return null;
             }
@@ -566,7 +570,7 @@ public class GridDhtPartitionDemander {
                                     fut.cleanupRemoteContexts(node.id());
 
                                 if (requestedRebTopVer.compareTo(fut.topVer) < 0)
-                                    requestedRebTopVer = fut.topVer;
+                                    requestedRebalanceTopVer(fut.topVer);
                             }
 
                             if (log.isDebugEnabled())

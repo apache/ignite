@@ -195,7 +195,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityTopologyVersion rebTopVer = demander.requestedRebalanceTopVer();
 
-        if (isAssignsChanged(rebTopVer, topVer))
+        if (rebTopVer.initialized() && isAssignsChanged(rebTopVer, topVer))
             demander.requestedRebalanceTopVer(topVer);
     }
 

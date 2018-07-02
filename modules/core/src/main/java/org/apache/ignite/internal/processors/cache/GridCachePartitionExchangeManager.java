@@ -2677,8 +2677,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + ", unchangedGrps=" + unchangedList +
-                                ", emptyGrps=" + emptyAssignsList + "]");
+                                ", node=" + exchId.nodeId() + ", unchangedAssign=" + unchangedList +
+                                ", emptyAssign=" + emptyAssignsList + "]");
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
