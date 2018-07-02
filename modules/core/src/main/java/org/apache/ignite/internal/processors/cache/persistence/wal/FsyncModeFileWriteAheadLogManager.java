@@ -849,6 +849,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
+    @Override public long lastArchivedSegment() {
+        return archiver.lastArchivedAbsoluteIndex();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         FileWALPointer fPtr = (FileWALPointer)ptr;
 

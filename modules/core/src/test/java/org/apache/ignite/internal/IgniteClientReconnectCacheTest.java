@@ -165,9 +165,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         DiscoverySpi srvSpi = ignite(0).configuration().getDiscoverySpi();
 
-        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
+            .withAllowAtomicOpsInTx();
 
-        final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE);
+        final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE).withAllowAtomicOpsInTx();
 
         staticCache.put(1, 1);
 
@@ -178,7 +179,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setName("nearCache");
 
-        final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>());
+        final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>())
+            .withAllowAtomicOpsInTx();
 
         nearCache.put(1, 1);
 

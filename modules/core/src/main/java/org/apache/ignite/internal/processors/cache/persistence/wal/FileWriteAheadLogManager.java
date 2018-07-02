@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator.AbstractFileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -126,6 +127,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
@@ -190,7 +192,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     };
 
     /** */
-    private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
+    public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
     public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = new FileFilter() {
@@ -954,6 +956,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public long lastArchivedSegment() {
+        return archivedMonitor.lastArchivedAbsoluteIndex();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         FileWALPointer fPtr = (FileWALPointer)ptr;
 
@@ -1667,9 +1674,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         notifyAll();
                     }
 
-                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED)) {
-                        evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
-                            res.getAbsIdx(), res.getDstArchiveFile()));
+                    if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED)) {
+                        evt.record(new WalSegmentArchivedEvent(
+                                cctx.discovery().localNode(),
+                                res.getAbsIdx(),
+                                res.getDstArchiveFile())
+                        );
                     }
                 }
             }
@@ -1923,7 +1933,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
 
             if (alreadyCompressed.length > 0)
-                lastCompressedIdx = alreadyCompressed[alreadyCompressed.length - 1].getIdx();
+                lastCompressedIdx = alreadyCompressed[alreadyCompressed.length - 1].idx();
         }
 
         /**
@@ -2331,7 +2341,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * WAL file descriptor.
      */
-    public static class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
+    public static class FileDescriptor implements
+        Comparable<FileDescriptor>, AbstractFileDescriptor {
         /** */
         protected final File file;
 
@@ -2399,20 +2410,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return (int)(idx ^ (idx >>> 32));
-        }
-
-        /**
-         * @return Absolute WAL segment file index
-         */
-        public long getIdx() {
-            return idx;
-        }
-
-        /**
-         * @return absolute pathname string of this file descriptor pathname.
-         */
-        public String getAbsolutePath() {
-            return file.getAbsolutePath();
         }
 
         /**
