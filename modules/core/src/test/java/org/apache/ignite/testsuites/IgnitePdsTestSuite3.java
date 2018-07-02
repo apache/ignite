@@ -24,6 +24,11 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorrupte
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAllBaselineNodesOnlineFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsUnusedWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
@@ -56,6 +61,14 @@ public class IgnitePdsTestSuite3 extends TestSuite {
         System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
         addRealPageStoreTests(suite);
+
+        // BaselineTopology tests
+        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
+        suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
+        suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
+        suite.addTestSuite(ClientAffinityAssignmentWithBaselineTest.class);
+        suite.addTestSuite(IgniteAbsentEvictionNodeOutOfBaselineTest.class);
+
 
         return suite;
     }

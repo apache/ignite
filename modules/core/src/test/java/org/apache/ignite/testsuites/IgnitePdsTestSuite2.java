@@ -24,11 +24,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuo
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesDestroyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAllBaselineNodesOnlineFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
@@ -54,13 +49,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteDataIntegrityTests.class);
 
         addRealPageStoreTestsNotForDirectIo(suite);
-
-        // BaselineTopology tests
-        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
-        suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
-        suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
-        suite.addTestSuite(ClientAffinityAssignmentWithBaselineTest.class);
-        suite.addTestSuite(IgniteAbsentEvictionNodeOutOfBaselineTest.class);
 
         suite.addTestSuite(FileDownloaderTest.class);
 
