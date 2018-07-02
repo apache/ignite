@@ -67,7 +67,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
-    /** Group encryption keys. */
     private Map<Integer, byte[]> encKeys;
 
     /**
@@ -78,7 +77,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @param baselineTopology Baseline topology.
      * @param forceChangeBaselineTopology Force change baseline topology flag.
      * @param timestamp Timestamp.
-     * @param encKeys Group encryption keys.
      */
     public ChangeGlobalStateMessage(
         UUID reqId,
@@ -88,8 +86,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
         long timestamp,
-        Map<Integer, byte[]> encKeys
-    ) {
+        Map<Integer, byte[]> encKeys) {
         assert reqId != null;
         assert initiatingNodeId != null;
 
@@ -195,10 +192,10 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Group encryption keys.
+     * @return Encryption keys.
      */
     public Map<Integer, byte[]> encryptionKeys() {
-        return encKeys != null ? encKeys : Collections.emptyMap();
+        return encKeys;
     }
 
     /** {@inheritDoc} */

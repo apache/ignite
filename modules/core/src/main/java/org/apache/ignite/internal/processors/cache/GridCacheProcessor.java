@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -775,7 +776,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheData.sql(sql);
 
         if (GridCacheUtils.isCacheTemplateName(cacheName))
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true, null));
         else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
@@ -807,7 +808,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             stopSeq.addFirst(cacheName);
 
-        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
+        byte[] encKey = null;
+
+        if (cacheData.config().isEncrypted()) {
+            int grpId = CU.cacheGroupId(cacheName, cacheData.config().getGroupName());
+
+            EncryptionKey savedKey = ctx.cache().sharedCtx.database().groupKey(grpId);
+
+            if (savedKey != null)
+                encKey = ctx.config().getEncryptionSpi().encryptKey(savedKey);
+        }
+
+        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured,
+            encKey));
     }
 
     /**
@@ -4404,9 +4417,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.disabledAfterStart(disabledAfterStart);
 
         if (ccfg != null) {
-            if (ccfg.isEncrypted())
-                checkEncryptedCacheSupported();
-
             cloneCheckSerializable(ccfg);
 
             if (desc != null || MetaStorage.METASTORAGE_CACHE_NAME.equals(cacheName)) {
@@ -4477,6 +4487,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.nearCacheConfiguration(nearCfg);
 
         req.cacheType(cacheType);
+
+        if (ccfg.isEncrypted()) {
+            checkEncryptedCacheSupported();
+
+            EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
+
+            EncryptionKey key;
+
+            if (desc != null) {
+                IgniteCacheDatabaseSharedManager db = ctx.cache().sharedCtx.database();
+
+                key = db.groupKey(desc.groupId());
+            }
+            else
+                key = encSpi.create();
+
+            req.encryptionKey(encSpi.encryptKey(key));
+        }
 
         return req;
     }

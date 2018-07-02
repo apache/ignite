@@ -127,10 +127,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @GridDirectMap(keyType = Integer.class, valueType = CacheGroupAffinityMessage.class)
     private Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
 
-    /** grpId -> encryptedKey */
-    @GridDirectMap(keyType = Integer.class, valueType = byte[].class)
-    private Map<Integer, byte[]> encGrpKeys;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -185,7 +181,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.resTopVer = resTopVer;
         cp.joinedNodeAff = joinedNodeAff;
         cp.idealAffDiff = idealAffDiff;
-        cp.encGrpKeys = encGrpKeys;
     }
 
     /**
@@ -275,10 +270,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param grpId Cache group ID.
      * @param fullMap Full partitions map.
      * @param dupDataCache Optional ID of cache with the same partition state map.
-     * @param encGrpKey Encrypted group key.
      */
-    public void addFullPartitionsMap(int grpId, GridDhtPartitionFullMap fullMap, @Nullable Integer dupDataCache,
-        @Nullable byte[] encGrpKey) {
+    public void addFullPartitionsMap(int grpId, GridDhtPartitionFullMap fullMap, @Nullable Integer dupDataCache) {
         assert fullMap != null;
 
         if (parts == null)
@@ -296,13 +289,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 dupPartsData.put(grpId, dupDataCache);
             }
-        }
-
-        if (encGrpKey != null) {
-            if (encGrpKeys == null)
-                encGrpKeys = new HashMap<>();
-
-            encGrpKeys.put(grpId, encGrpKey);
         }
     }
 
@@ -500,13 +486,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
     }
 
-    /**
-     * @return Encryption keys map.
-     */
-    public Map<Integer, byte[]> encryptionKeys() {
-        return encGrpKeys == null ? Collections.emptyMap() : encGrpKeys;
-    }
-
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
@@ -684,12 +663,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 writer.incrementState();
 
-            case 17:
-                if (!writer.writeMap("encGrpKeys", encGrpKeys, MessageCollectionItemType.INT,
-                    MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -802,13 +775,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 17:
-                encGrpKeys = reader.readMap("encGrpKeys", MessageCollectionItemType.INT, MessageCollectionItemType.BYTE_ARR, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtPartitionsFullMessage.class);
@@ -821,7 +787,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 18;
+        return 17;
     }
 
     /** {@inheritDoc} */

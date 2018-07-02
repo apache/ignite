@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about configured caches sent from joining node.
@@ -115,6 +116,8 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         /** Statically configured flag */
         private final boolean staticallyConfigured;
 
+        @Nullable private final byte[] encKey;
+
         /**
          * @param cacheData Cache data.
          * @param cacheType Cache type.
@@ -123,12 +126,13 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          * @param staticallyConfigured {@code true} if it was configured by static config and {@code false} otherwise.
          */
         public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags,
-            boolean staticallyConfigured) {
+            boolean staticallyConfigured, @Nullable byte[] encKey) {
             this.cacheData = cacheData;
             this.cacheType = cacheType;
             this.sql = sql;
             this.flags = flags;
             this.staticallyConfigured = staticallyConfigured;
+            this.encKey = encKey;
         }
 
         /**
@@ -157,6 +161,13 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          */
         public boolean isStaticallyConfigured() {
             return staticallyConfigured;
+        }
+
+        /**
+         * @return Encryption key.
+         */
+        public byte[] encryptionKey() {
+            return encKey;
         }
 
         /** {@inheritDoc} */

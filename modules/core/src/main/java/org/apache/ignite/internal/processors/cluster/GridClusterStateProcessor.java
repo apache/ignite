@@ -49,13 +49,14 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -868,6 +869,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         List<StoredCacheData> storedCfgs = null;
 
+        Map<Integer, byte[]> encKeys = new HashMap<>();
+
         if (activate && CU.isPersistenceEnabled(ctx.config())) {
             try {
                 Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
@@ -882,24 +885,22 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 return startedFut;
             }
-        }
 
-        Map<Integer, byte[]> encKeys = null;
+            IgniteCacheDatabaseSharedManager db = ctx.cache().context().database();
 
-        for (DynamicCacheDescriptor cache : ctx.cache().cacheDescriptors().values()) {
-            if (!cache.cacheConfiguration().isEncrypted())
-                continue;
+            for (Map.Entry<Integer, CacheGroupDescriptor> entry : ctx.cache().cacheGroupDescriptors().entrySet()) {
+                if (!entry.getValue().config().isEncrypted())
+                    continue;
 
-            EncryptionSpi encSpi = sharedCtx.gridConfig().getEncryptionSpi();
+                EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
 
-            EncryptionKey grpKey = sharedCtx.database().groupKey(cache.groupId());
+                EncryptionKey encKey = db.groupKey(entry.getKey());
 
-            byte[] encGrpKey = encSpi.encryptKey(grpKey != null ? grpKey : encSpi.create());
+                if (encKey == null)
+                    encKey = encSpi.create();
 
-            if (encKeys == null)
-                encKeys = new HashMap<>();
-
-            encKeys.put(cache.groupId(), encGrpKey);
+                encKeys.put(entry.getKey(), encSpi.encryptKey(encKey));
+            }
         }
 
         ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(startedFut.requestId,

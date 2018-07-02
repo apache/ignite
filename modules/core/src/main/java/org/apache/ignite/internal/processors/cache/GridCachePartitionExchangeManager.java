@@ -1213,24 +1213,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 dupData.put(affKey, new T2<>(grpId, map));
         }
 
-        byte[] encGrpKey = null;
-
-        if (isEncrypted) {
-            EncryptionSpi encSpi = cctx.gridConfig().getEncryptionSpi();
-
-            EncryptionKey grpKey = cctx.database().groupKey(grpId);
-
-            if (grpKey == null) {
-
-                encGrpKey = encSpi.encryptKey(encSpi.create());
-
-                cctx.database().groupKey(grpId, encGrpKey);
-            }
-            else
-                encGrpKey = encSpi.encryptKey(grpKey);
-        }
-
-        m.addFullPartitionsMap(grpId, map, dupDataCache, encGrpKey);
+        m.addFullPartitionsMap(grpId, map, dupDataCache);
     }
 
     /**
@@ -1492,9 +1475,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
 
         try {
-            for (Map.Entry<Integer, byte[]> encKey : msg.encryptionKeys().entrySet())
-                cctx.database().groupKey(encKey.getKey(), encKey.getValue());
-
             if (msg.exchangeId() == null) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');

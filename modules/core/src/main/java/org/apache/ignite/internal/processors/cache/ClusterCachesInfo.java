@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,12 +41,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.GridCachePluginContext;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -154,17 +158,6 @@ class ClusterCachesInfo {
 
         if (conflictErr != null)
             throw new IgniteCheckedException("Failed to start configured cache. " + conflictErr);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param grpName Group name.
-     * @return Group ID.
-     */
-    private int cacheGroupId(String cacheName, @Nullable String grpName) {
-        assert cacheName != null;
-
-        return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
     }
 
     /**
@@ -548,7 +541,8 @@ class ClusterCachesInfo {
                             ccfg,
                             cacheId,
                             req.initiatingNodeId(),
-                            req.deploymentId());
+                            req.deploymentId(),
+                            req.encryptionKey());
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
                             ccfg,
@@ -1510,7 +1504,7 @@ class ClusterCachesInfo {
                     ", conflictingCacheName=" + desc.cacheName() + ']';
         }
 
-        int grpId = cacheGroupId(cfg.getName(), cfg.getGroupName());
+        int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
 
         if (cfg.getGroupName() != null) {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
@@ -1621,7 +1615,8 @@ class ClusterCachesInfo {
             cfg,
             cacheId,
             nodeId,
-            joinData.cacheDeploymentId());
+            joinData.cacheDeploymentId(),
+            cacheInfo.encryptionKey());
 
         ctx.discovery().setCacheFilter(
             cacheId,
@@ -1743,7 +1738,8 @@ class ClusterCachesInfo {
         CacheConfiguration<?, ?> startedCacheCfg,
         Integer cacheId,
         UUID rcvdFrom,
-        IgniteUuid deploymentId) {
+        IgniteUuid deploymentId,
+        @Nullable byte[] encKey) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = cacheGroupByName(startedCacheCfg.getGroupName());
 
@@ -1754,7 +1750,7 @@ class ClusterCachesInfo {
             }
         }
 
-        int grpId = cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
+        int grpId = CU.cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
@@ -1771,6 +1767,9 @@ class ClusterCachesInfo {
             persistent,
             persistent,
             null);
+
+        if (encKey != null)
+            ctx.cache().context().database().groupKey(grpId, encKey);
 
         if (ctx.cache().context().pageStore() != null)
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
