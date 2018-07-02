@@ -116,6 +116,22 @@ igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
     $translateProvider.useSanitizeValueStrategy('sanitize');
 }]);
 
+// Restores pre 4.3.0 ui-grid getSelectedRows method behavior
+// ui-grid 4.4+ getSelectedRows additionally skips entries without $$hashKey,
+// which breaks most of out code that works with selected rows.
+igniteConsoleCfg.directive('uiGridSelection', function() {
+    function legacyGetSelectedRows() {
+        return this.rows.filter((row) => row.isSelected).map((row) => row.entity);
+    }
+    return {
+        require: '^uiGrid',
+        restrict: 'A',
+        link(scope, el, attr, ctrl) {
+            ctrl.grid.api.registerMethodsFromObject({selection: {legacyGetSelectedRows}});
+        }
+    };
+});
+
 igniteConsoleCfg.config(['$httpProvider', ($httpProvider) => {
     $httpProvider.defaults.withCredentials = true;
 }]);
