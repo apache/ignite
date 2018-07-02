@@ -34,7 +34,7 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     public GDBRegressionTrainer(double gradStepSize, Integer cntOfIterations) {
         super(gradStepSize,
             cntOfIterations,
-            LossPerPredictionFunctions.MSE);
+            LossGradientPerPredictionFunctions.MSE);
     }
 
     /** {@inheritDoc} */

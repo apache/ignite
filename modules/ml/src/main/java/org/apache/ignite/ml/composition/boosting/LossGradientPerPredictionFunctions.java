@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 /**
  * Contains implementations of per-prediction loss functions for gradient boosting algorithm.
  */
-public class LossPerPredictionFunctions {
+public class LossGradientPerPredictionFunctions {
     /** Mean squared error loss for regression. */
     public static IgniteTriFunction<Long, Double, Double, Double> MSE = (sampleSize, answer, prediction) -> {
         return (2.0 / sampleSize) * (prediction - answer);

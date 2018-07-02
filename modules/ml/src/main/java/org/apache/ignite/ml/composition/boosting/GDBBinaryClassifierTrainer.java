@@ -52,7 +52,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations) {
         super(gradStepSize,
             cntOfIterations,
-            LossPerPredictionFunctions.LOG_LOSS);
+            LossGradientPerPredictionFunctions.LOG_LOSS);
     }
 
     /**
