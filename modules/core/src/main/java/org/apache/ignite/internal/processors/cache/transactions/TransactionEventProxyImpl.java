@@ -147,7 +147,6 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         tx().close();
-        ;
     }
 
     /** {@inheritDoc} */
