@@ -928,7 +928,7 @@ has gone wrong.</p>
 <span id="pyignite-api-result-module"></span><h2>pyignite.api.result module<a class="headerlink" href="#module-pyignite.api.result" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyignite.api.result.APIResult">
-<em class="property">class </em><code class="descclassname">pyignite.api.result.</code><code class="descname">APIResult</code><span class="sig-paren">(</span><em>status: int</em>, <em>message: str = 'Success'</em>, <em>value=None</em>, <em>query_id: int = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.api.result.APIResult" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyignite.api.result.</code><code class="descname">APIResult</code><span class="sig-paren">(</span><em>response: pyignite.queries.Response</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.api.result.APIResult" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Dataclass which represents the result of API request.</p>
 <p>Fields are:</p>
@@ -938,6 +938,16 @@ has gone wrong.</p>
 otherwise,</li>
 <li>value: return value or None.</li>
 </ul>
+<dl class="attribute">
+<dt id="pyignite.api.result.APIResult.message">
+<code class="descname">message</code><em class="property"> = 'Success'</em><a class="headerlink" href="#pyignite.api.result.APIResult.message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.api.result.APIResult.value">
+<code class="descname">value</code><em class="property"> = None</em><a class="headerlink" href="#pyignite.api.result.APIResult.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="function">

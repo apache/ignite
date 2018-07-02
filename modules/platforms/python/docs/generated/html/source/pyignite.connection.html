@@ -33,19 +33,34 @@
 <span id="pyignite-connection-package"></span><h1>pyignite.connection package<a class="headerlink" href="#module-pyignite.connection" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="pyignite.connection.Connection">
-<em class="property">class </em><code class="descclassname">pyignite.connection.</code><code class="descname">Connection</code><a class="headerlink" href="#pyignite.connection.Connection" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyignite.connection.</code><code class="descname">Connection</code><span class="sig-paren">(</span><em>use_ssl: bool = None</em>, <em>ssl_version=None</em>, <em>ssl_ciphers=None</em>, <em>ssl_cert_requires=0</em>, <em>ssl_keyfile: str = None</em>, <em>ssl_certfile: str = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Socket wrapper. Detects fragmentation and network errors.</p>
 <p><a class="reference external" href="https://docs.python.org/3/howto/sockets.html">https://docs.python.org/3/howto/sockets.html</a></p>
 <dl class="method">
 <dt id="pyignite.connection.Connection.close">
 <code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection.close" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Mark socket closed. This is recommended but not required, since
+sockets are automatically closed when they are garbage-collected.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyignite.connection.Connection.connect">
-<code class="descname">connect</code><span class="sig-paren">(</span><em>host</em>, <em>port</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection.connect" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">connect</code><span class="sig-paren">(</span><em>host: str</em>, <em>port: int</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to the server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>host</strong> – Ignite server host,</li>
+<li><strong>port</strong> – Ignite server port.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyignite.connection.Connection.read_response">
@@ -54,13 +69,42 @@
 
 <dl class="method">
 <dt id="pyignite.connection.Connection.recv">
-<code class="descname">recv</code><span class="sig-paren">(</span><em>buffersize</em>, <em>flags=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection.recv" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">recv</code><span class="sig-paren">(</span><em>buffersize</em>, <em>flags=None</em><span class="sig-paren">)</span> &#x2192; bytes<a class="headerlink" href="#pyignite.connection.Connection.recv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receive data from socket.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>buffersize</strong> – bytes to receive,</li>
+<li><strong>flags</strong> – (optional) OS-specific flags,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">data received.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="pyignite.connection.Connection.send">
-<code class="descname">send</code><span class="sig-paren">(</span><em>data</em>, <em>flags=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection.send" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descname">send</code><span class="sig-paren">(</span><em>data: bytes</em>, <em>flags=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.Connection.send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send data down the socket.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> – bytes to send,</li>
+<li><strong>flags</strong> – (optional) OS-specific flags.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="pyignite.connection.Connection.socket">
@@ -73,6 +117,8 @@
 <dt id="pyignite.connection.PrefetchConnection">
 <em class="property">class </em><code class="descclassname">pyignite.connection.</code><code class="descname">PrefetchConnection</code><span class="sig-paren">(</span><em>conn: pyignite.connection.Connection</em>, <em>prefetch: bytes = b''</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.PrefetchConnection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyignite.connection.Connection" title="pyignite.connection.Connection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.connection.Connection</span></code></a></p>
+<p>Use this socket wrapper, when you wish to “put back” some data you just
+receive from the socket.</p>
 <dl class="attribute">
 <dt id="pyignite.connection.PrefetchConnection.conn">
 <code class="descname">conn</code><em class="property"> = None</em><a class="headerlink" href="#pyignite.connection.PrefetchConnection.conn" title="Permalink to this definition">¶</a></dt>
@@ -86,7 +132,23 @@
 <dl class="method">
 <dt id="pyignite.connection.PrefetchConnection.recv">
 <code class="descname">recv</code><span class="sig-paren">(</span><em>buffersize</em>, <em>flags=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.connection.PrefetchConnection.recv" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Receive data from socket.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>buffersize</strong> – bytes to receive,</li>
+<li><strong>flags</strong> – (optional) OS-specific flags,</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">data received.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </dd></dl>
 

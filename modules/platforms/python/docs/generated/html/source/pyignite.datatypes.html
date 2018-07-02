@@ -370,7 +370,7 @@ data streams.</p>
 
 <dl class="attribute">
 <dt id="pyignite.datatypes.cache_properties.PropQueryEntities.prop_data_class">
-<code class="descname">prop_data_class</code><em class="property"> = StructArray(following=[('key_type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('value_type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('table_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('key_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('value_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('query_fields', StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_key_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;), ('is_notnull_constraint_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)), ('field_name_aliases', StructArray(following=[('field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('alias', &lt;class 'pyignite.datatypes.standard.String'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)), ('query_indexes', StructArray(following=[('index_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('index_type', &lt;class 'pyignite.datatypes.cache_config.IndexType'&gt;), ('inline_size', &lt;class 'pyignite.datatypes.primitive.Int'&gt;), ('fields', StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_descending', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;))], counter_type=&lt;class 'ctypes.c_int'&gt;))], counter_type=&lt;class 'ctypes.c_int'&gt;)</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryEntities.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prop_data_class</code><em class="property"> = StructArray(following=[('key_type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('value_type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('table_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('key_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('value_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('query_fields', StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_key_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;), ('is_notnull_constraint_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;), ('default_value', &lt;class 'pyignite.datatypes.complex.AnyDataObject'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)), ('field_name_aliases', StructArray(following=[('field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('alias', &lt;class 'pyignite.datatypes.standard.String'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)), ('query_indexes', StructArray(following=[('index_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('index_type', &lt;class 'pyignite.datatypes.cache_config.IndexType'&gt;), ('inline_size', &lt;class 'pyignite.datatypes.primitive.Int'&gt;), ('fields', StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_descending', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;))], counter_type=&lt;class 'ctypes.c_int'&gt;))], counter_type=&lt;class 'ctypes.c_int'&gt;)</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropQueryEntities.prop_data_class" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -624,7 +624,7 @@ data streams.</p>
 
 <dl class="attribute">
 <dt id="pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_data_class">
-<code class="descname">prop_data_class</code><em class="property"> = StructArray(following=[('name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('is_key_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;), ('is_notnull_constraint_field', &lt;class 'pyignite.datatypes.primitive.Bool'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_data_class" title="Permalink to this definition">¶</a></dt>
+<code class="descname">prop_data_class</code><em class="property"> = StructArray(following=[('type_name', &lt;class 'pyignite.datatypes.standard.String'&gt;), ('affinity_key_field_name', &lt;class 'pyignite.datatypes.standard.String'&gt;)], counter_type=&lt;class 'ctypes.c_int'&gt;)</em><a class="headerlink" href="#pyignite.datatypes.cache_properties.PropCacheKeyConfiguration.prop_data_class" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -794,6 +794,45 @@ on serializing Python data or parsing an unknown Ignite data object.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="pyignite.datatypes.complex.Map">
+<em class="property">class </em><code class="descclassname">pyignite.datatypes.complex.</code><code class="descname">Map</code><a class="headerlink" href="#pyignite.datatypes.complex.Map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Dictionary type, payload-only.</p>
+<p>Ignite does not track the order of key-value pairs in its caches, hence
+the ordinary Python dict type, not the collections.OrderedDict.</p>
+<dl class="attribute">
+<dt id="pyignite.datatypes.complex.Map.HASH_MAP">
+<code class="descname">HASH_MAP</code><em class="property"> = 1</em><a class="headerlink" href="#pyignite.datatypes.complex.Map.HASH_MAP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyignite.datatypes.complex.Map.LINKED_HASH_MAP">
+<code class="descname">LINKED_HASH_MAP</code><em class="property"> = 2</em><a class="headerlink" href="#pyignite.datatypes.complex.Map.LINKED_HASH_MAP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyignite.datatypes.complex.Map.build_header">
+<em class="property">classmethod </em><code class="descname">build_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.Map.build_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyignite.datatypes.complex.Map.from_python">
+<em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em>, <em>type_id=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.Map.from_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyignite.datatypes.complex.Map.parse">
+<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>conn: pyignite.connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.Map.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyignite.datatypes.complex.Map.to_python">
+<em class="property">classmethod </em><code class="descname">to_python</code><span class="sig-paren">(</span><em>ctype_object</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.Map.to_python" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="pyignite.datatypes.complex.ObjectArrayObject">
 <em class="property">class </em><code class="descclassname">pyignite.datatypes.complex.</code><code class="descname">ObjectArrayObject</code><a class="headerlink" href="#pyignite.datatypes.complex.ObjectArrayObject" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyignite.datatypes.complex.AnyDataObject" title="pyignite.datatypes.complex.AnyDataObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.complex.AnyDataObject</span></code></a></p>
@@ -859,21 +898,11 @@ covers all the use cases.</p>
 <dl class="class">
 <dt id="pyignite.datatypes.complex.MapObject">
 <em class="property">class </em><code class="descclassname">pyignite.datatypes.complex.</code><code class="descname">MapObject</code><a class="headerlink" href="#pyignite.datatypes.complex.MapObject" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="#pyignite.datatypes.complex.Map" title="pyignite.datatypes.complex.Map"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyignite.datatypes.complex.Map</span></code></a></p>
 <p>This is a dictionary type. Type conversion hint can be a <cite>HASH_MAP</cite>
 (ordinary dict) or <cite>LINKED_HASH_MAP</cite> (collections.OrderedDict).</p>
 <p>Keys and values in map are independent data objects, but <cite>count</cite>
 counts pairs. Very annoying.</p>
-<dl class="attribute">
-<dt id="pyignite.datatypes.complex.MapObject.HASH_MAP">
-<code class="descname">HASH_MAP</code><em class="property"> = 1</em><a class="headerlink" href="#pyignite.datatypes.complex.MapObject.HASH_MAP" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="pyignite.datatypes.complex.MapObject.LINKED_HASH_MAP">
-<code class="descname">LINKED_HASH_MAP</code><em class="property"> = 2</em><a class="headerlink" href="#pyignite.datatypes.complex.MapObject.LINKED_HASH_MAP" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="classmethod">
 <dt id="pyignite.datatypes.complex.MapObject.build_header">
 <em class="property">classmethod </em><code class="descname">build_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.MapObject.build_header" title="Permalink to this definition">¶</a></dt>
@@ -882,11 +911,6 @@ counts pairs. Very annoying.</p>
 <dl class="classmethod">
 <dt id="pyignite.datatypes.complex.MapObject.from_python">
 <em class="property">classmethod </em><code class="descname">from_python</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.MapObject.from_python" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="classmethod">
-<dt id="pyignite.datatypes.complex.MapObject.parse">
-<em class="property">classmethod </em><code class="descname">parse</code><span class="sig-paren">(</span><em>conn: pyignite.connection.Connection</em><span class="sig-paren">)</span><a class="headerlink" href="#pyignite.datatypes.complex.MapObject.parse" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
