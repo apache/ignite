@@ -26,6 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 public abstract class GDBRegressionTrainer extends GDBTrainer {
     /**
      * Constructs instance of GDBRegressionTrainer.
+     *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
      */

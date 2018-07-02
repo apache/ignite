@@ -36,12 +36,13 @@ import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuil
  */
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class */
-    private double externalFirstClass; //internal 0.0
+    private double externalFirstCls; //internal 0.0
     /** External representation of second class */
-    private double externalSecondClass; //internal 1.0
+    private double externalSecondCls; //internal 1.0
 
     /**
      * Constructs instance of GDBBinaryClassifierTrainer.
+     *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
      */
@@ -69,20 +70,20 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
                 ));
 
         A.ensure(uniqLabels.size() == 2, "Binary classifier expects two types of labels in learning dataset");
-        externalFirstClass = uniqLabels.get(0);
-        externalSecondClass = uniqLabels.get(1);
+        externalFirstCls = uniqLabels.get(0);
+        externalSecondCls = uniqLabels.get(1);
     }
 
     /** {@inheritDoc} */
     @Override protected double externalLabelToInternal(double x) {
-        return x == externalFirstClass ? 0.0 : 1.0;
+        return x == externalFirstCls ? 0.0 : 1.0;
     }
 
     /** {@inheritDoc} */
     @Override protected double internalLabelToExternal(double indent) {
         double sigma = 1.0 / (1.0 + Math.exp(-indent));
         double internalCls = sigma < 0.5 ? 0.0 : 1.0;
-        return internalCls == 0.0 ? externalFirstClass : externalSecondClass;
+        return internalCls == 0.0 ? externalFirstCls : externalSecondCls;
     }
 
     /** {@inheritDoc} */

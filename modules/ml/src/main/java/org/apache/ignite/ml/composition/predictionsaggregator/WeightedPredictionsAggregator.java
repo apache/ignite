@@ -31,6 +31,7 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
 
     /**
      * Constructs WeightedPredictionsAggregator instance.
+     *
      * @param weights Weights.
      */
     public WeightedPredictionsAggregator(double[] weights) {
@@ -40,6 +41,7 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
 
     /**
      * Constructs WeightedPredictionsAggregator instance.
+     *
      * @param weights Weights.
      * @param bias Bias.
      */

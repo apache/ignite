@@ -103,9 +103,8 @@ public class GDBTrainerTest {
             double x = xs[j];
             double y = ys[j];
             double p = model.apply(Vector.of(new double[] {x}));
-            if(p != y) {
+            if(p != y)
                 errorsCount++;
-            }
         }
 
         assertEquals(0, errorsCount);

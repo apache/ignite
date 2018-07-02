@@ -35,6 +35,7 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
 
     /**
      * Constructs instance of GDBRegressionOnTreesTrainer.
+     *
      * @param gradStepSize Gradient step size.
      * @param cntOfIterations Count of iterations.
      * @param maxDepth Max depth.

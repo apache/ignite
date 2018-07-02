@@ -47,6 +47,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
     /**
      * Constructs GDBTrainer instance.
+     *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
      */
@@ -95,6 +96,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
     /**
      * Defines unique labels in dataset if need (useful in case of classification).
+     *
      * @param builder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lExtractor Labels extractor.
@@ -109,18 +111,21 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
     /**
      * Maps external representation of label to internal.
+     *
      * @param lbl Label value.
      */
     protected abstract double externalLabelToInternal(double lbl);
 
     /**
      * Maps internal representation of label to external.
+     *
      * @param lbl Label value.
      */
     protected abstract double internalLabelToExternal(double lbl);
 
     /**
      * Compute mean value of label as first approximation.
+     *
      * @param builder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
@@ -160,6 +165,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
     /**
      * Estimate gradient value for answer-prediction pair.
+     *
      * @param sampleSize Sample size.
      * @param answer Right answer.
      * @param prediction Prediction.
