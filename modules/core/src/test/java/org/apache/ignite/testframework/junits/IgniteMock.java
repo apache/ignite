@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
@@ -447,6 +448,13 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
+        CollectionConfiguration cfg)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteMultimap<K, V> multimap(String name,
         CollectionConfiguration cfg)
     {
         return null;

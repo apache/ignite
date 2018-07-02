@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteLock;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
@@ -53,6 +54,9 @@ public enum DataStructureType {
 
     /** */
     SET(IgniteSet.class.getSimpleName()),
+
+    /** */
+    MULTIMAP(IgniteMultimap.class.getSimpleName()),
 
     /** */
     SEMAPHORE(IgniteSemaphore.class.getSimpleName()),

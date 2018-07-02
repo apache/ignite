@@ -27,15 +27,19 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -51,6 +55,10 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapHeader;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapHeaderKey;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapProxy;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
@@ -70,7 +78,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -112,14 +119,26 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Queues map. */
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
 
-    /** Queue header view.  */
+    /** Multimaps map. */
+    private final ConcurrentMap<IgniteUuid, GridCacheMultimapProxy> multimapsMap;
+
+    /** Queue header view. */
     private IgniteInternalCache<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
+
+    /** Multimap header view. */
+    private IgniteInternalCache<GridCacheMultimapHeaderKey, GridCacheMultimapHeader> multimapHdrView;
 
     /** Query notifying about queue update. */
     private UUID queueQryId;
 
+    /** Query notifying about multimap update. */
+    private Set<UUID> multimapQryIds = new HashSet<>();
+
     /** Queue query creation guard. */
     private final AtomicBoolean queueQryGuard = new AtomicBoolean();
+
+    /** Multimap query creation guard. */
+    private final AtomicBoolean multimapQryGuard = new AtomicBoolean();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -135,7 +154,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     public CacheDataStructuresManager() {
         queuesMap = new ConcurrentHashMap<>(10);
-
+        multimapsMap = new ConcurrentHashMap<>(10);
         setsMap = new ConcurrentHashMap<>(10);
     }
 
@@ -143,6 +162,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         try {
             queueHdrView = cctx.cache();
+            multimapHdrView = cctx.cache();
 
             initFlag = true;
         }
@@ -157,6 +177,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         if (queueQryId != null)
             cctx.continuousQueries().cancelInternalQuery(queueQryId);
+
+        for (UUID id : multimapQryIds)
+            cctx.continuousQueries().cancelInternalQuery(id);
 
         for (GridCacheQueueProxy q : queuesMap.values())
             q.delegate().onKernalStop();
@@ -206,11 +229,21 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 queuesMap.remove(e.getKey(), queue);
             }
         }
+
+        for (Map.Entry<IgniteUuid, GridCacheMultimapProxy> e : multimapsMap.entrySet()) {
+            GridCacheMultimapProxy multimap = e.getValue();
+
+            if (clusterRestarted) {
+                multimap.delegate().onRemoved(false);
+
+                multimapsMap.remove(e.getKey(), multimap);
+            }
+        }
     }
 
     /**
      * @throws IgniteCheckedException If thread is interrupted or manager
-     *     was not successfully initialized.
+     * was not successfully initialized.
      */
     private void waitInitialization() throws IgniteCheckedException {
         if (initLatch.getCount() > 0)
@@ -233,8 +266,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         final int cap,
         boolean colloc,
         final boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         waitInitialization();
 
         // Non collocated mode enabled only for PARTITIONED cache.
@@ -256,8 +288,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         final int cap,
         boolean colloc,
         final boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         cctx.gate().enter();
 
         try {
@@ -395,8 +426,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         final boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 =
             create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
@@ -415,8 +445,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         cctx.gate().enter();
 
         try {
@@ -660,6 +689,118 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param name Multimap name.
+     * @param colloc Collocated flag.
+     * @param create Create flag.
+     * @return Multimap header.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public <K, V> IgniteMultimap<K, V> multimap(String name, boolean colloc,
+        boolean create) throws IgniteCheckedException {
+        waitInitialization();
+
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean colloc0 = create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
+
+        return multimap0(name, colloc0, create);
+    }
+
+    /**
+     * @param name Multimap name.
+     * @param colloc Collocated flag.
+     * @param create Create flag.
+     * @return Multimap header.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public <K, V> GridCacheMultimapProxy<K, V> multimap0(String name, boolean colloc,
+        boolean create) throws IgniteCheckedException {
+        cctx.gate().enter();
+
+        try {
+            GridCacheMultimapHeaderKey key = new GridCacheMultimapHeaderKey(name);
+
+            GridCacheMultimapHeader hdr;
+
+            if (create) {
+                hdr = new GridCacheMultimapHeader(IgniteUuid.randomUuid(), name, cctx.name(), colloc, 0);
+
+                GridCacheMultimapHeader old = multimapHdrView.withNoRetries().getAndPutIfAbsent(key, hdr);
+
+                if (old != null) {
+                    if (old.collocated() != colloc)
+                        throw new IgniteCheckedException("Failed to create multimap, multimap with the same name but " +
+                            "different configuration already exists [name=" + name + ']');
+
+                    hdr = old;
+                }
+            }
+            else
+                hdr = multimapHdrView.get(key);
+
+            if (hdr == null)
+                return null;
+
+            if (multimapQryGuard.compareAndSet(false, true)) {
+                UUID qryId = cctx.continuousQueries().executeInternalQuery(
+                    new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(
+                            Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
+                            if (!busyLock.enterBusy())
+                                return;
+
+                            try {
+                                for (CacheEntryEvent<?, ?> e : evts) {
+                                    GridCacheMultimapHeaderKey key1 = (GridCacheMultimapHeaderKey)e.getKey();
+                                    GridCacheMultimapHeader hdr1 = (GridCacheMultimapHeader)e.getValue();
+
+                                    for (final GridCacheMultimapProxy multimap : multimapsMap.values()) {
+                                        if (multimap.name().equals(key1.multimapName()) && hdr1 == null) {
+                                            GridCacheMultimapHeader oldHdr = (GridCacheMultimapHeader)e.getOldValue();
+
+                                            assert oldHdr != null;
+
+                                            if (oldHdr.id().equals(multimap.delegate().id())) {
+                                                multimap.delegate().onRemoved(false);
+
+                                                multimapsMap.remove(multimap.delegate().id());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            finally {
+                                busyLock.leaveBusy();
+                            }
+                        }
+                    },
+                    new MultimapHeaderPredicate(),
+                    cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
+                    true,
+                    false);
+                multimapQryIds.add(qryId);
+            }
+
+            GridCacheMultimapProxy multimap = multimapsMap.get(hdr.id());
+
+            if (multimap == null) {
+                multimap = new GridCacheMultimapProxy(cctx, new GridCacheMultimapImpl(name, hdr, cctx));
+
+                GridCacheMultimapProxy old = multimapsMap.putIfAbsent(hdr.id(), multimap);
+
+                if (old != null)
+                    multimap = old;
+            }
+
+            return multimap;
+        }
+        finally {
+            cctx.gate().leave();
+        }
+    }
+
+    /**
      * Predicate for queue continuous query.
      */
     private static class QueueHeaderPredicate<K, V> implements CacheEntryEventSerializableFilter<K, V>,
@@ -677,6 +818,37 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> e) {
             return e.getKey() instanceof GridCacheQueueHeaderKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Predicate for multimap continuous query.
+     */
+    private static class MultimapHeaderPredicate<K, V> implements CacheEntryEventSerializableFilter<K, V>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public MultimapHeaderPredicate() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> e) {
+            return e.getKey() instanceof GridCacheMultimapHeaderKey;
         }
 
         /** {@inheritDoc} */

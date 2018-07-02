@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
@@ -92,6 +93,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_STAMPED;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.COUNT_DOWN_LATCH;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.MULTIMAP;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.QUEUE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SEMAPHORE;
@@ -955,6 +957,53 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * @param cfg Collection configuration.
+     * @param name Multimap name.
+     * @param grpName Group name.
+     * @param colloc Collocation flag.
+     * @return Cache for multimap.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private IgniteInternalCache compatibleCacheForMultimap(CollectionConfiguration cfg, String name,
+        String grpName, boolean colloc)
+        throws IgniteCheckedException {
+        String dsPart = !colloc ? name + "_" : "";
+        String cacheName = DS_CACHE_NAME_PREFIX + dsPart + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
+            cfg.getBackups() + "@" + grpName;
+
+        IgniteInternalCache cache = ctx.cache().cache(cacheName);
+
+        if (cache == null) {
+            ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
+                cacheName,
+                null,
+                CacheType.DATA_STRUCTURES,
+                false,
+                false,
+                true,
+                true).get();
+        }
+        else {
+            IgnitePredicate<ClusterNode> cacheNodeFilter = cache.context().group().nodeFilter();
+
+            String clsName1 = cacheNodeFilter != null ? cacheNodeFilter.getClass().getName() :
+                CacheConfiguration.IgniteAllNodesPredicate.class.getName();
+            String clsName2 = cfg.getNodeFilter() != null ? cfg.getNodeFilter().getClass().getName() :
+                CacheConfiguration.IgniteAllNodesPredicate.class.getName();
+
+            if (!clsName1.equals(clsName2))
+                throw new IgniteCheckedException("Could not add collection to group " + grpName +
+                    " because of different node filters [existing=" + clsName1 + ", new=" + clsName2 + "]");
+        }
+
+        cache = ctx.cache().getOrStartCache(cacheName);
+
+        assert cache != null;
+
+        return cache;
+    }
+
+    /**
      * @param name Queue name.
      * @param cctx Queue cache context.
      * @throws IgniteCheckedException If failed.
@@ -1096,6 +1145,133 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 return c.applyx(cache.context());
             }
         });
+    }
+
+    /**
+     * @param c Closure creating a multimap.
+     * @param cfg Configuration.
+     * @param name Multimap name.
+     * @param grpName Cache group name.
+     * @param type Data structure type.
+     * @param create Create flag.
+     * @param colloc Collocation flag.
+     * @return Multimap instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private <T> T getMultimap(final IgniteClosureX<GridCacheContext, T> c,
+        @Nullable CollectionConfiguration cfg,
+        String name,
+        @Nullable String grpName,
+        final DataStructureType type,
+        boolean create,
+        boolean colloc)
+        throws IgniteCheckedException {
+        awaitInitialization();
+
+        assert name != null;
+        assert !create || cfg != null;
+
+        if (grpName == null) {
+            if (cfg != null && cfg.getGroupName() != null)
+                grpName = cfg.getGroupName();
+            else
+                grpName = DEFAULT_DS_GROUP_NAME;
+        }
+
+        final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = getMetaCache(cfg, grpName, create);
+
+        AtomicDataStructureValue oldVal;
+
+        final IgniteInternalCache cache;
+
+        if (create) {
+            cache = compatibleCacheForMultimap(cfg, name, grpName, colloc);
+
+            DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
+
+            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
+        }
+        else {
+            oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
+
+            if (oldVal == null)
+                return null;
+            else if (!(oldVal instanceof DistributedCollectionMetadata))
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + oldVal.type() + ']');
+
+            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
+
+            if (cache == null)
+                return null;
+        }
+
+        if (oldVal != null) {
+            if (oldVal.type() != type)
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + oldVal.type() + ']');
+
+            assert oldVal instanceof DistributedCollectionMetadata;
+
+            if (cfg != null && ((DistributedCollectionMetadata)oldVal).configuration().isCollocated() != cfg.isCollocated()) {
+                throw new IgniteCheckedException("Another collection with the same name but different " +
+                    "configuration already created [name=" + name +
+                    ", newCollocated=" + cfg.isCollocated() +
+                    ", existingCollocated=" + !cfg.isCollocated() + ']');
+            }
+        }
+
+        return retryTopologySafe(new IgniteOutClosureX<T>() {
+            @Override public T applyx() throws IgniteCheckedException {
+                return c.applyx(cache.context());
+            }
+        });
+    }
+
+    /**
+     * Get a meta cache for multimap
+     * @param cfg Multimap configuration
+     * @param grpName Multimap group name
+     * @param create Create flag
+     * @return A meta cache for multimap
+     * @throws IgniteCheckedException
+     */
+    @Nullable private IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> getMetaCache(
+        @Nullable CollectionConfiguration cfg, @Nullable String grpName, boolean create) throws IgniteCheckedException {
+        final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
+
+        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
+
+        if (metaCache0 == null) {
+            CacheConfiguration ccfg = null;
+
+            if (!create) {
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(metaCacheName);
+
+                if (desc == null)
+                    return null;
+            }
+            else
+                ccfg = metaCacheConfiguration(cfg, metaCacheName, grpName);
+
+            ctx.cache().dynamicStartCache(ccfg,
+                metaCacheName,
+                null,
+                CacheType.DATA_STRUCTURES,
+                false,
+                false,
+                true,
+                true).get();
+
+            metaCache0 = ctx.cache().cache(metaCacheName);
+
+            assert metaCache0 != null;
+        }
+        return metaCache0;
     }
 
     /**
@@ -1633,6 +1809,48 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         assert false;
 
         return null;
+    }
+
+    /**
+     * Gets a multimap from cache or creates one if it's not cached.
+     *
+     * @param name Name of multimap.
+     * @param grpName Group name. If present, will override groupName from configuration.
+     * @param cfg Non-null multimap configuration if new multimap should be created.
+     * @return Instance of multimap.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public final <K, V> IgniteMultimap<K, V> multimap(final String name, @Nullable final String grpName,
+        @Nullable final CollectionConfiguration cfg)
+        throws IgniteCheckedException {
+        A.notNull(name, "name");
+
+        final boolean create = cfg != null;
+        final boolean colloc = create && (cfg.getCacheMode() != PARTITIONED || cfg.isCollocated());
+        if (cfg != null && colloc != cfg.isCollocated()) {
+            log.warning("Multimap non-collocated mode available only for PARTITIONED cache mode. " +
+                "Flipping multimap to collocated mode");
+            cfg.setCollocated(true);
+        }
+
+        return getMultimap(new IgniteClosureX<GridCacheContext, IgniteMultimap<K, V>>() {
+            @Override public IgniteMultimap<K, V> applyx(GridCacheContext ctx) throws IgniteCheckedException {
+                return ctx.dataStructures().multimap(name, colloc, create);
+            }
+        }, cfg, name, grpName, MULTIMAP, create, colloc);
+    }
+
+    /**
+     * @param name Multimap name.
+     * @param cctx Multimap cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void removeMultimap(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
+        assert name != null;
+        assert cctx != null;
+
+        removeDataStructure(null, name, cctx.group().name(), MULTIMAP, null);
     }
 
     /**

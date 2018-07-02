@@ -50,7 +50,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "semaphore", // IGNITE-7103
             "reentrantLock", // IGNITE-7105
             "queue", // IGNITE-1417
-            "set" // IGNITE-6834
+            "set", // IGNITE-6834
+            "multimap" // IGNITE-8425
         };
 
         /** Known name mappings. */
