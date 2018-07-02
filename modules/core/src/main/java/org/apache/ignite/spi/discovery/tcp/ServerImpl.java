@@ -6025,8 +6025,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long rcvdTime = lastRingMsgReceivedTime;
                         long now = U.currentTimeMillis();
 
-                        // We got message from previous in less than connection check interval.
-                        boolean ok = rcvdTime + msgWorker.connCheckFreq >= now;
+                        // We got message from previous in less than double connection check interval.
+                        boolean ok = rcvdTime + msgWorker.connCheckFreq * 2 >= now;
 
                         if (ok) {
                             // Check case when previous node suddenly died. This will speed up
@@ -6039,11 +6039,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             TcpDiscoveryNode previous = ring.previousNode(failed);
 
+                            InetSocketAddress liveAddr = null;
+
                             if (previous != null && !previous.id().equals(nodeId)) {
                                 Collection<InetSocketAddress> nodeAddrs =
                                     spi.getNodeAddresses(previous, U.sameMacs(locNode, previous));
-
-                                InetSocketAddress liveAddr = null;
 
                                 for (InetSocketAddress addr : nodeAddrs) {
                                     // Connection refused may be got if node doesn't listen
@@ -6059,10 +6059,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     log.info("Connection check done: [liveAddr=" + liveAddr
                                         + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
                                         + ", connectingNodeId=" + nodeId + ']');
-
-                                // If local node was able to connect to previous, confirm that it's alive.
-                                ok = liveAddr != null;
                             }
+
+                            // If local node was able to connect to previous, confirm that it's alive.
+                            ok = liveAddr != null && (!liveAddr.getAddress().isLoopbackAddress()
+                                || !locNode.socketAddresses().contains(liveAddr));
                         }
 
                         res.previousNodeAlive(ok);

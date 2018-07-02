@@ -278,7 +278,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
     /** Default connection recovery timeout in ms. */
-    public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = 10000;
+    public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");

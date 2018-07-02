@@ -46,7 +46,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     /** */
-    private static final int FAILURE_DETECTION_TIMEOUT = 10_000;
+    private static final int FAILURE_DETECTION_TIMEOUT = 5_000;
 
     /** */
     private Set<InetSocketAddress> failedAddrs = new GridConcurrentHashSet<>();
@@ -259,7 +259,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         // Must be greater than failureDetectionTimeout / 3 as it calculated into
         // connection check frequency.
-        timeout = FAILURE_DETECTION_TIMEOUT / 2;
+        timeout = FAILURE_DETECTION_TIMEOUT;
 
         doFailNodes(false);
     }
