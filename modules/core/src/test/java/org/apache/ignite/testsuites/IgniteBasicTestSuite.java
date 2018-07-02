@@ -17,12 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
-import org.apache.ignite.failure.AccountTransferTransactionTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
-import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
@@ -90,6 +87,8 @@ import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 /**
  * Basic test suite.

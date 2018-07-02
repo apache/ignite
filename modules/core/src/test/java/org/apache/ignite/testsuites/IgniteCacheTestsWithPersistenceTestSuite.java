@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuiteWithPersistent extends TestSuite {
+public class IgniteCacheTestsWithPersistenceTestSuite extends TestSuite {
     /**
      * @return IgniteCache test suite.
      * @throws Exception Thrown in case of the failure.
