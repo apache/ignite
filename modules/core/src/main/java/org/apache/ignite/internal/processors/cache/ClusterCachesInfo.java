@@ -94,7 +94,7 @@ class ClusterCachesInfo {
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
     /** Caches currently being restarted. */
-    private final Collection<String> restartingCaches = new GridConcurrentHashSet<>();
+    private final ConcurrentHashMap<String, IgniteUuid> restartingCaches = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -453,94 +453,8 @@ class ClusterCachesInfo {
 
         final List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete = new ArrayList<>();
 
-        for (DynamicCacheChangeRequest req : reqs) {
-            String cacheName = req.cacheName();
-
-            if (req.template()) {
-                processTemplateAddRequest(persistedCfgs, res, req);
-
-                continue;
-            }
-
-            assert !req.clientStartOnly() : req;
-
-            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
-
-            boolean needExchange = false;
-
-            boolean clientCacheStart = false;
-
-            AffinityTopologyVersion waitTopVer = null;
-
-            if (req.start()) {
-                // Starting a new cache.
-                if (desc == null) {
-                    if (!processStartNewCacheRequest(exchangeActions, topVer, persistedCfgs, res, req, cacheName))
-                        continue;
-
-                    needExchange = true;
-                }
-                else
-                    clientCacheStart = processStartAlreadyStartedCacheRequest(topVer, persistedCfgs, req,
-                        cacheName, desc);
-
-                if (!needExchange && !clientCacheStart && desc != null) {
-                    if (desc.clientCacheStartVersion() != null)
-                        waitTopVer = desc.clientCacheStartVersion();
-                    else {
-                        AffinityTopologyVersion nodeStartVer =
-                            new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
-
-                        if (desc.startTopologyVersion() != null)
-                            waitTopVer = desc.startTopologyVersion();
-                        else
-                            waitTopVer = desc.receivedFromStartVersion();
-
-                        if (waitTopVer == null || nodeStartVer.compareTo(waitTopVer) > 0)
-                            waitTopVer = nodeStartVer;
-                    }
-                }
-            }
-            else if (req.resetLostPartitions()) {
-                if (desc != null) {
-                    needExchange = true;
-
-                    exchangeActions.addCacheToResetLostPartitions(req, desc);
-                }
-            }
-            else if (req.stop()) {
-                if (desc != null) {
-                    if (req.sql() && !desc.sql()) {
-                        ctx.cache().completeCacheStartFuture(req, false,
-                            new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
-                                "DROP TABLE [cacheName=" + cacheName + ']'));
-
-                        continue;
-                    }
-
-                    if (!req.sql() && desc.sql()) {
-                        ctx.cache().completeCacheStartFuture(req, false,
-                            new IgniteCheckedException("Only cache created with cache API may be removed with " +
-                                "direct call to destroyCache [cacheName=" + cacheName + ']'));
-
-                        continue;
-                    }
-
-                    processStopCacheRequest(exchangeActions, req, cacheName, desc);
-
-                    needExchange = true;
-                }
-            }
-            else
-                assert false : req;
-
-            if (!needExchange) {
-                if (!clientCacheStart && ctx.localNodeId().equals(req.initiatingNodeId()))
-                    reqsToComplete.add(new T2<>(req, waitTopVer));
-            }
-            else
-                res.needExchange = true;
-        }
+        for (DynamicCacheChangeRequest req : reqs)
+            processCacheChangeRequest0(req, exchangeActions, topVer, persistedCfgs, res, reqsToComplete);
 
         if (!F.isEmpty(res.addedDescs)) {
             AffinityTopologyVersion startTopVer = res.needExchange ? topVer.nextMinorVersion() : topVer;
@@ -581,11 +495,135 @@ class ClusterCachesInfo {
         return res;
     }
 
+    /**
+     *
+     * @param req
+     * @param exchangeActions
+     * @param topVer
+     * @param persistedCfgs
+     * @param res
+     * @param reqsToComplete
+     */
+    private void processCacheChangeRequest0(
+            DynamicCacheChangeRequest req,
+            ExchangeActions exchangeActions,
+            AffinityTopologyVersion topVer,
+            boolean persistedCfgs,
+            CacheChangeProcessResult res,
+            List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete
+    ) {
+        String cacheName = req.cacheName();
+
+        if (req.template()) {
+            processTemplateAddRequest(persistedCfgs, res, req);
+
+            return;
+        }
+
+        assert !req.clientStartOnly() : req;
+
+        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+
+        boolean needExchange = false;
+
+        boolean clientCacheStart = false;
+
+        AffinityTopologyVersion waitTopVer = null;
+
+        if (req.start()) {
+            boolean proceedFuther = true;
+
+            if (restartingCaches.containsKey(cacheName) &&
+                    (req.restartId() == null || !req.restartId().equals(restartingCaches.get(cacheName)))) {
+
+                if (req.failIfExists()) {
+                    ctx.cache().completeCacheStartFuture(req, false,
+                            new CacheExistsException("Failed to start cache (a cache is restarting): " + cacheName));
+                }
+
+                proceedFuther = false;
+            }
+
+            if (proceedFuther) {
+                if (desc == null) { /* Starting a new cache.*/
+                    if (!processStartNewCacheRequest(exchangeActions, topVer, persistedCfgs, res, req, cacheName))
+                        return;
+
+                    needExchange = true;
+                }
+                else {
+                    clientCacheStart = processStartAlreadyStartedCacheRequest(topVer, persistedCfgs, req, cacheName, desc);
+
+                    if (!clientCacheStart) {
+                        if (desc.clientCacheStartVersion() != null)
+                            waitTopVer = desc.clientCacheStartVersion();
+                        else {
+                            AffinityTopologyVersion nodeStartVer =
+                                    new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
+
+                            if (desc.startTopologyVersion() != null)
+                                waitTopVer = desc.startTopologyVersion();
+                            else
+                                waitTopVer = desc.receivedFromStartVersion();
+
+                            if (waitTopVer == null || nodeStartVer.compareTo(waitTopVer) > 0)
+                                waitTopVer = nodeStartVer;
+                        }
+                    }
+                }
+            }
+        }
+        else if (req.resetLostPartitions()) {
+            if (desc != null) {
+                needExchange = true;
+
+                exchangeActions.addCacheToResetLostPartitions(req, desc);
+            }
+        }
+        else if (req.stop()) {
+            if (desc != null) {
+                if (req.sql() && !desc.sql()) {
+                    ctx.cache().completeCacheStartFuture(req, false,
+                        new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
+                            "DROP TABLE [cacheName=" + cacheName + ']'));
+
+                    return;
+                }
+
+                if (!req.sql() && desc.sql()) {
+                    ctx.cache().completeCacheStartFuture(req, false,
+                        new IgniteCheckedException("Only cache created with cache API may be removed with " +
+                            "direct call to destroyCache [cacheName=" + cacheName + ']'));
+
+                    return;
+                }
+
+                processStopCacheRequest(exchangeActions, req, cacheName, desc);
+
+                needExchange = true;
+            }
+        }
+        else
+            assert false : req;
+
+        if (!needExchange) {
+            if (!clientCacheStart && ctx.localNodeId().equals(req.initiatingNodeId()))
+                reqsToComplete.add(new T2<>(req, waitTopVer));
+        }
+        else
+            res.needExchange = true;
+    }
+
     private void processStopCacheRequest(ExchangeActions exchangeActions, DynamicCacheChangeRequest req, String cacheName, DynamicCacheDescriptor desc) {
         DynamicCacheDescriptor old = registeredCaches.remove(cacheName);
 
-        if (req.restart())
-            restartingCaches.add(cacheName);
+        if (req.restart()) {
+            IgniteUuid restartId = req.restartId();
+
+            assert restartId != null : "Restart id is null!";
+
+            restartingCaches.put(cacheName, restartId);
+        }
 
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
@@ -650,8 +688,7 @@ class ClusterCachesInfo {
     }
 
     /**
-     *
-     * @param topVer
+     * @param topVer Topology version.
      * @param persistedCfgs
      * @param req
      * @param cacheName
@@ -805,7 +842,7 @@ class ClusterCachesInfo {
      * @return Collection of currently restarting caches.
      */
     Collection<String> restartingCaches() {
-        return restartingCaches;
+        return restartingCaches.keySet();
     }
 
     /**
@@ -1013,7 +1050,7 @@ class ClusterCachesInfo {
             templates.put(desc.cacheName(), cacheData);
         }
 
-        Collection<String> restarting = new HashSet<>(restartingCaches);
+        Collection<String> restarting = new HashSet<>(restartingCaches.keySet());
 
         return new CacheNodeCommonDiscoveryData(caches,
             templates,

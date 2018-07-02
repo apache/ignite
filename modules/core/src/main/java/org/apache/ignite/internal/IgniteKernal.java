@@ -3108,7 +3108,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx, false);
+            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx, false, null);
         }
         finally {
             unguard();
@@ -3128,7 +3128,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx, false);
+            return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx);
         }
         finally {
             unguard();
