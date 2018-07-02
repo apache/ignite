@@ -24,10 +24,10 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.TransactionStateChangedEvent;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -45,8 +45,11 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     /** Xid. */
     private IgniteUuid xid;
 
-    /** Tx proxy. */
-    private TransactionProxy tx;
+    /** Tx. */
+    private GridNearTxLocal tx;
+
+    /** Proxy. */
+    private TransactionProxy proxy;
 
     /**
      * Default constructor (required by Externalizable).
@@ -58,7 +61,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
      * @param xid Xid.
      * @param tx Tx proxy.
      */
-    public TransactionEventProxyImpl(IgniteUuid xid, TransactionProxy tx) {
+    public TransactionEventProxyImpl(IgniteUuid xid, GridNearTxLocal tx) {
         assert xid != null;
         assert tx != null;
 
@@ -191,13 +194,16 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
      * @return local transaction
      * @throws IgniteException in case tx was not found.
      */
-    private Transaction tx() throws IgniteException {
+    private TransactionProxy tx() throws IgniteException {
         if (tx == null)
             throw new IgniteException("Operation allowed only inside remote filter or " +
                 "inside local listener registered on originating node. " +
                 "Only xid() operation allowed in other cases. ");
 
-        return tx;
+        if (proxy == null) // Lazy init to speedup event creation.
+            proxy = tx.rollbackOnlyProxy();
+
+        return proxy;
     }
 
     /** {@inheritDoc} */
