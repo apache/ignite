@@ -28,16 +28,32 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
+import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract GDB trainer.
+ * Abstract Gradient Boosting trainer.
  * It implements gradient descent in functional space using user-selected regressor in child class.
+ * Each learning iteration the trainer evaluate gradient of error-function and fit regression model
+ * to it. After learning step the model is used in models composition of regressions with weight
+ * equal to gradient descent step.
+ *
+ * These classes can be used as regressor trainers:
+ * {@link DecisionTreeRegressionTrainer}, {@link KNNRegressionTrainer},
+ * {@link LinearRegressionLSQRTrainer}, {@link RandomForestRegressionTrainer},
+ * {@link LinearRegressionSGDTrainer}.
+ *
+ * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
 abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
@@ -80,7 +96,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(Vector.of(featureExtractor.apply(k, v)));
+                Double mdlAnswer = currComposition.apply(VectorUtils.of(featureExtractor.apply(k, v)));
                 return -grad(sampleSize, realAnswer, mdlAnswer);
             };
 

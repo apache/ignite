@@ -36,6 +36,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Abstract trainer implementing bagging logic.
+ * In each learning iteration the algorithm trains one model on subset of learning sample and
+ * subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
  */
 public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsComposition, Double> {
     /**

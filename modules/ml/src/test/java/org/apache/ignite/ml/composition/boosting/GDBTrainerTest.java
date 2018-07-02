@@ -23,6 +23,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
@@ -61,7 +62,7 @@ public class GDBTrainerTest {
         for (int j = 0; j < size; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = model.apply(Vector.of(new double[] {x}));
+            double p = model.apply(VectorUtils.of(x));
             mse += Math.pow(y - p, 2);
         }
         mse /= size;
@@ -102,7 +103,7 @@ public class GDBTrainerTest {
         for (int j = 0; j < sampleSize; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = model.apply(Vector.of(new double[] {x}));
+            double p = model.apply(VectorUtils.of(x));
             if(p != y)
                 errorsCount++;
         }

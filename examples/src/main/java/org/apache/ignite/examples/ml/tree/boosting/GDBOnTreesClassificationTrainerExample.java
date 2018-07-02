@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.tree.DecisionTreeRegressionTrainerExample;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -30,8 +29,11 @@ import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example represents a Gradient Boosting On Trees Classification on dataset representing
- * meander function f(x) = [sin(x) > 0].
+ * Example represents a solution for the task of classification learning based on
+ * Gradient Boosting on trees implementation. It shows an initialization of {@link org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer},
+ * initialization of Ignite Cache, learning step and comparing of predicted and real values.
+ *
+ * In this example dataset is creating automatically by meander function f(x) = [sin(x) > 0].
  */
 public class GDBOnTreesClassificationTrainerExample {
     /**
@@ -45,7 +47,7 @@ public class GDBOnTreesClassificationTrainerExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                DecisionTreeRegressionTrainerExample.class.getSimpleName(), () -> {
+                GDBBinaryClassifierOnTreesTrainer.class.getSimpleName(), () -> {
 
                 // Create cache with training data.
                 CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();

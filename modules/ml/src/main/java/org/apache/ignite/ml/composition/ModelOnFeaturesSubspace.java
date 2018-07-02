@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
@@ -55,7 +56,7 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
     @Override public Double apply(Vector features) {
         double[] newFeatures = new double[featuresMapping.size()];
         featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features.get(featureVectorId));
-        return mdl.apply(Vector.of(newFeatures));
+        return mdl.apply(VectorUtils.of(newFeatures));
     }
 
     /**

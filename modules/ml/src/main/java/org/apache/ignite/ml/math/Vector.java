@@ -506,13 +506,4 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param f Function used for replacing.
      **/
     public void compute(int i, IgniteIntDoubleToDoubleBiFunction f);
-
-    /**
-     * Construct new vector as array of doubles wrapper.
-     * @param doubles Array of doubles.
-     * @return Vector.
-     */
-    public static Vector of(double[] doubles) {
-        return new DenseLocalOnHeapVector(doubles);
-    }
 }

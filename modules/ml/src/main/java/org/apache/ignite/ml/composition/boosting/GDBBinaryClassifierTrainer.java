@@ -32,7 +32,9 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 
 /**
- * Model trainer for Gradient Boosting Binary Classification.
+ * Trainer for binary classifier using Gradient Boosting.
+ * As preparing stage this algorithm learn labels in dataset and create mapping dataset labels to 0 and 1.
+ * This algorithm uses gradient of Logarithmic Loss metric [LogLoss] in each step of learning.
  */
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class. */

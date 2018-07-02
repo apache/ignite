@@ -21,7 +21,8 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Model trainer for Gradient Boosting Regression.
+ * Trainer for regressor using Gradient Boosting.
+ * This algorithm uses gradient of Mean squared error loss metric [MSE] in each step of learning.
  */
 public abstract class GDBRegressionTrainer extends GDBTrainer {
     /**

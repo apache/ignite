@@ -38,9 +38,8 @@ import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on RandomForest
- * implementation for regression. It shows an initialization of {@link RandomForestTrainer} with
- * thread pool for multi-thread learning, initialization of Ignite Cache,
- * learning step and evaluation of model quality in terms of
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainer},
+ * +initialization of Ignite Cache, learning step and evaluation of model quality in terms of
  * Mean Squared Error (MSE) and Mean Absolute Error (MAE).
  *
  * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/

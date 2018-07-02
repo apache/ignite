@@ -29,8 +29,11 @@ import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example represents a Gradient Boosting On Trees Regression on dataset representing
- * parabolic function f(x) = x^2.
+ * Example represents a solution for the task of regression learning based on
+ * Gradient Boosting on trees implementation. It shows an initialization of {@link org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer},
+ * initialization of Ignite Cache, learning step and comparing of predicted and real values.
+ *
+ * In this example dataset is creating automatically by parabolic function f(x) = x^2.
  */
 public class GRBOnTreesRegressionTrainerExample {
     /**
