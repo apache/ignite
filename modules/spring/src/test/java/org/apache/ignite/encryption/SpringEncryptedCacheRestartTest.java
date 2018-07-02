@@ -17,11 +17,15 @@
 
 package org.apache.ignite.encryption;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
 public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
@@ -29,7 +33,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     @Override protected void createEncCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup) {
         IgniteCache<Long, String> cache = grid0.cache(cacheName());
 
-        for (long i=0; i<100; i++)
+        for (long i = 0; i < 100; i++)
             cache.put(i, "" + i);
     }
 
@@ -51,5 +55,39 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         awaitPartitionMapExchange();
 
         return new IgniteEx[] {g0, g1};
+    }
+
+    /** @throws Exception If failed. */
+    public void testThirdNodeJoin() throws Exception {
+        IgniteEx[] g = startTestGrids(true);
+
+        IgniteEx g2 = (IgniteEx)G.start(
+            IgniteUtils.resolveIgnitePath(
+                "modules/spring/src/test/config/ignite-config-with-encryption-3.xml").getAbsolutePath());
+
+        Collection<String> cacheNames = Arrays.asList("encrypted", "encrypted-2");
+
+        for (String cacheName : cacheNames) {
+            IgniteInternalCache<Object, Object> enc = g[0].cachex(cacheName);
+
+            assertNotNull(enc);
+
+            int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
+
+            EncryptionKey<?> key0 = g[0].context().encryption().groupKey(grpId);
+            EncryptionKey<?> key1 = g[1].context().encryption().groupKey(grpId);
+            EncryptionKey<?> key2 = g2.context().encryption().groupKey(grpId);
+
+            assertNotNull(cacheName, key0);
+            assertNotNull(cacheName, key1);
+            assertNotNull(cacheName, key2);
+
+            assertNotNull(cacheName, key0.key());
+            assertNotNull(cacheName, key1.key());
+            assertNotNull(cacheName, key2.key());
+
+            assertEquals(cacheName, key0.key(), key1.key());
+            assertEquals(cacheName, key1.key(), key2.key());
+        }
     }
 }

@@ -69,7 +69,7 @@ public class EncryptedCacheCreateGroupTest extends AbstractEncryptionTest {
         IgniteInternalCache<Object, Object> encrypted2 = grid.cachex(ENCRYPTED_CACHE + "2");
 
         EncryptionKey<?> key2 =
-            encrypted2.context().shared().database().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
+            encrypted2.context().kernalContext().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
 
         assertNotNull(key2);
         assertNotNull(key2.key());
@@ -103,7 +103,7 @@ public class EncryptedCacheCreateGroupTest extends AbstractEncryptionTest {
 
         IgniteInternalCache<Object, Object> encrypted = grid.cachex(cacheName);
 
-        EncryptionKey<?> key = encrypted.context().shared().database().groupKey(CU.cacheGroupId(cacheName, grpName));
+        EncryptionKey<?> key = grid.context().encryption().groupKey(CU.cacheGroupId(cacheName, grpName));
 
         assertNotNull(key);
         assertNotNull(key.key());

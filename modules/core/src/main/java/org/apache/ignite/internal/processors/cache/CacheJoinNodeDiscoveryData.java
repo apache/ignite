@@ -116,8 +116,6 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         /** Statically configured flag */
         private final boolean staticallyConfigured;
 
-        @Nullable private final byte[] encKey;
-
         /**
          * @param cacheData Cache data.
          * @param cacheType Cache type.
@@ -126,13 +124,12 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          * @param staticallyConfigured {@code true} if it was configured by static config and {@code false} otherwise.
          */
         public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags,
-            boolean staticallyConfigured, @Nullable byte[] encKey) {
+            boolean staticallyConfigured) {
             this.cacheData = cacheData;
             this.cacheType = cacheType;
             this.sql = sql;
             this.flags = flags;
             this.staticallyConfigured = staticallyConfigured;
-            this.encKey = encKey;
         }
 
         /**
@@ -161,13 +158,6 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          */
         public boolean isStaticallyConfigured() {
             return staticallyConfigured;
-        }
-
-        /**
-         * @return Encryption key.
-         */
-        public byte[] encryptionKey() {
-            return encKey;
         }
 
         /** {@inheritDoc} */

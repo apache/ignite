@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.ENCRYPTION_KEY_PREFIX;
+import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
 
 /**
  */
@@ -109,12 +109,10 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
                 fail(encCacheName + " should be destroyed.");
         }
 
-        IgniteCacheDatabaseSharedManager db = grid.context().cache().context().database();
-
         int grpId = CU.cacheGroupId(encCacheName, grpName);
 
-        EncryptionKey encKey = db.groupKey(grpId);
-        MetaStorage metaStore = db.metaStorage();
+        EncryptionKey encKey = grid.context().encryption().groupKey(grpId);
+        MetaStorage metaStore = grid.context().cache().context().database().metaStorage();
 
         if (keyShouldBeEmpty) {
             assertNull(encKey);

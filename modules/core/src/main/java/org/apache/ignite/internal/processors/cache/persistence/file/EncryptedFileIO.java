@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import org.apache.ignite.encryption.EncryptionKey;
-import org.apache.ignite.encryption.EncryptionSpi;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -56,14 +55,9 @@ public class EncryptedFileIO implements FileIO {
     private int headerSize;
 
     /**
-     * Encryption SPI.
-     */
-    private EncryptionSpi<EncryptionKey<?>> encryptionSpi;
-
-    /**
      * Shared database manager.
      */
-    private IgniteCacheDatabaseSharedManager db;
+    private GridEncryptionManager encMgr;
 
     /**
      * Encryption key.
@@ -75,18 +69,16 @@ public class EncryptedFileIO implements FileIO {
      * @param groupId Group id.
      * @param pageSize Size of clear data page in bytes.
      * @param headerSize Size of file header in bytes.
-     * @param db Shared database manager.
-     * @param encryptionSpi Encryption SPI.
+     * @param encMgr Encryption manager.
      */
     EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int pageSizeOnDisk, int headerSize,
-        IgniteCacheDatabaseSharedManager db, EncryptionSpi<EncryptionKey<?>> encryptionSpi) {
+        GridEncryptionManager encMgr) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;
         this.pageSizeOnDisk = pageSizeOnDisk;
         this.headerSize = headerSize;
-        this.db = db;
-        this.encryptionSpi = encryptionSpi;
+        this.encMgr = encMgr;
     }
 
     /** {@inheritDoc} */
@@ -122,7 +114,7 @@ public class EncryptedFileIO implements FileIO {
                 "but read only " + res + " bytes");
         }
 
-        destBuf.put(encryptionSpi.decrypt(encrypted.array(), key()));
+        destBuf.put(encMgr.spi().decrypt(encrypted.array(), key()));
 
         return res;
     }
@@ -148,7 +140,7 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.get(srcArr, 0, pageSize);
 
-        byte[] encrypted = encryptionSpi.encrypt(srcArr, key());
+        byte[] encrypted = encMgr.spi().encrypt(srcArr, key());
 
         return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
     }
@@ -158,7 +150,7 @@ public class EncryptedFileIO implements FileIO {
      */
     private EncryptionKey<?> key() {
         if (key == null)
-            return key = db.groupKey(groupId);
+            return key = encMgr.groupKey(groupId);
 
         return key;
     }

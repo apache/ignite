@@ -113,13 +113,6 @@ public class StateChangeRequest {
         return msg.initiatorNodeId();
     }
 
-    /**
-     * @return Group encryption keys.
-     */
-    public Map<Integer, byte[]> encryptionKeys() {
-        return msg.encryptionKeys();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StateChangeRequest.class, this);

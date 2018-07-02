@@ -62,13 +62,13 @@ public class SpringEncryptedCacheGroupCreateTest extends GridCommonAbstractTest 
 
         assertNotNull(encrypted2);
 
-        EncryptionKey<?> key = encrypted.context().shared().database().groupKey(
+        EncryptionKey<?> key = g0.context().encryption().groupKey(
             CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
 
         assertNotNull(key);
         assertNotNull(key.key());
 
-        EncryptionKey<?> key2 = encrypted2.context().shared().database().groupKey(
+        EncryptionKey<?> key2 = g0.context().encryption().groupKey(
             CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
 
         assertNotNull(key2);

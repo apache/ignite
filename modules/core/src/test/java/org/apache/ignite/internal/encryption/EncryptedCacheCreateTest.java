@@ -79,7 +79,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         IgniteInternalCache<Object, Object> encrypted = grid.cachex(ENCRYPTED_CACHE);
 
-        EncryptionKey<?> key = encrypted.context().shared().database().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
+        EncryptionKey<?> key = grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
 
         assertNotNull(key);
         assertNotNull(key.key());

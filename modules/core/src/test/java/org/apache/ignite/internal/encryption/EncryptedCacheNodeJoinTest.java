@@ -37,6 +37,9 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     private static final String GRID_3 = "grid-3";
 
     /** */
+    private static final String GRID_4 = "grid-4";
+
+    /** */
     private static final String KEYSTORE_PATH_2 =
         IgniteUtils.resolveIgnitePath("modules/core/src/test/resources/tde2.jks").getAbsolutePath();
 
@@ -60,7 +63,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         if (grid.equals(GRID_0) ||
             grid.equals(GRID_2) ||
-            grid.equals(GRID_3)) {
+            grid.equals(GRID_3) ||
+            grid.equals(GRID_4)) {
             EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
 
             encSpi.setKeyStorePath(grid.equals(GRID_2) ? KEYSTORE_PATH_2 : KEYSTORE_PATH);
@@ -134,5 +138,24 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
                 throw new RuntimeException(e);
             }
         }, IgniteCheckedException.class);
+    }
+
+    /** */
+    public void testThirdNodeCanJoin() throws Exception {
+        IgniteEx grid0 = startGrid(GRID_0);
+
+        IgniteEx grid3 = startGrid(GRID_3);
+
+        grid3.cluster().active(true);
+
+        createEncCache(grid0, grid3, cacheName(), null);
+
+        checkEncCaches(grid0, grid3);
+
+        IgniteEx grid4 = startGrid(GRID_4);
+
+        awaitPartitionMapExchange();
+
+        checkEncCaches(grid0, grid4);
     }
 }

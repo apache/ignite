@@ -26,7 +26,7 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="igniteInstanceName" value="grid-1" />
+        <property name="igniteInstanceName" value="grid-3" />
 
         <property name="peerClassLoadingEnabled" value="true"/>
 

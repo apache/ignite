@@ -112,12 +112,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertTrue(encrypted1.configuration().isEncrypted());
 
-            EncryptionKey<?> encKey0 = encrypted0.context().shared().database().groupKey(grpId);
+            EncryptionKey<?> encKey0 = grid0.context().encryption().groupKey(grpId);
 
             assertNotNull(encKey0);
             assertNotNull(encKey0.key());
 
-            EncryptionKey<?> encKey1 = encrypted1.context().shared().database().groupKey(grpId);
+            EncryptionKey<?> encKey1 = grid1.context().encryption().groupKey(grpId);
 
             assertNotNull(encKey1);
             assertNotNull(encKey1.key());

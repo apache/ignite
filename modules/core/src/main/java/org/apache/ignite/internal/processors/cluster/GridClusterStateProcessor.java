@@ -869,8 +869,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         List<StoredCacheData> storedCfgs = null;
 
-        Map<Integer, byte[]> encKeys = new HashMap<>();
-
         if (activate && CU.isPersistenceEnabled(ctx.config())) {
             try {
                 Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
@@ -885,22 +883,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 return startedFut;
             }
-
-            IgniteCacheDatabaseSharedManager db = ctx.cache().context().database();
-
-            for (Map.Entry<Integer, CacheGroupDescriptor> entry : ctx.cache().cacheGroupDescriptors().entrySet()) {
-                if (!entry.getValue().config().isEncrypted())
-                    continue;
-
-                EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
-
-                EncryptionKey encKey = db.groupKey(entry.getKey());
-
-                if (encKey == null)
-                    encKey = encSpi.create();
-
-                encKeys.put(entry.getKey(), encSpi.encryptKey(encKey));
-            }
         }
 
         ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(startedFut.requestId,
@@ -909,8 +891,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             activate,
             blt,
             forceChangeBaselineTopology,
-            System.currentTimeMillis(),
-            encKeys);
+            System.currentTimeMillis());
 
         try {
             if (log.isInfoEnabled())

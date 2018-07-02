@@ -1616,7 +1616,7 @@ class ClusterCachesInfo {
             cacheId,
             nodeId,
             joinData.cacheDeploymentId(),
-            cacheInfo.encryptionKey());
+            null);
 
         ctx.discovery().setCacheFilter(
             cacheId,
@@ -1730,6 +1730,7 @@ class ClusterCachesInfo {
      * @param cacheId Cache ID.
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
+     * @param encKey Encryption key.
      * @return Group descriptor.
      */
     private CacheGroupDescriptor registerCacheGroup(
@@ -1769,7 +1770,7 @@ class ClusterCachesInfo {
             null);
 
         if (encKey != null)
-            ctx.cache().context().database().groupKey(grpId, encKey);
+            ctx.encryption().groupKey(grpId, encKey);
 
         if (ctx.cache().context().pageStore() != null)
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);

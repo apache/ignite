@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
@@ -52,43 +53,35 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     private int groupId;
 
     /**
-     * Encryption SPI.
+     * Encryption manager.
      */
-    private EncryptionSpi<EncryptionKey<?>> encryptionSpi;
-
-    /**
-     * Shared database manager.
-     */
-    private IgniteCacheDatabaseSharedManager db;
+    private GridEncryptionManager encMgr;
 
     /**
      * @param plainIOFactory Underlying file factory.
      * @param groupId Group id.
      * @param pageSize Size of clear data page in bytes.
-     * @param db Shared database manager.
-     * @param encryptionSpi Encryption SPI.
+     * @param encMgr Encryption manager.
      */
-    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, IgniteCacheDatabaseSharedManager db,
-        EncryptionSpi<EncryptionKey<?>> encryptionSpi) {
+    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, GridEncryptionManager encMgr) {
         this.plainIOFactory = plainIOFactory;
         this.groupId = groupId;
         this.pageSize = pageSize;
-        this.db = db;
-        this.encryptionSpi = encryptionSpi;
+        this.encMgr = encMgr;
     }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         FileIO io = plainIOFactory.create(file);
 
-        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, db, encryptionSpi);
+        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr);
     }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO io = plainIOFactory.create(file, modes);
 
-        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, db, encryptionSpi);
+        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr);
     }
 
     /**
@@ -102,6 +95,6 @@ public class EncryptedFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public int dataSizeOnDisk(int dataSize) {
-        return encryptionSpi.encryptedSize(pageSize);
+        return encMgr.spi().encryptedSize(pageSize);
     }
 }

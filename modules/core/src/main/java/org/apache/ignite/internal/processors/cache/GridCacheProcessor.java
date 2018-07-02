@@ -776,7 +776,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheData.sql(sql);
 
         if (GridCacheUtils.isCacheTemplateName(cacheName))
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true, null));
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
         else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
@@ -808,19 +808,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             stopSeq.addFirst(cacheName);
 
-        byte[] encKey = null;
-
-        if (cacheData.config().isEncrypted()) {
-            int grpId = CU.cacheGroupId(cacheName, cacheData.config().getGroupName());
-
-            EncryptionKey savedKey = ctx.cache().sharedCtx.database().groupKey(grpId);
-
-            if (savedKey != null)
-                encKey = ctx.config().getEncryptionSpi().encryptKey(savedKey);
-        }
-
-        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured,
-            encKey));
+        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
     }
 
     /**
@@ -4495,11 +4483,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             EncryptionKey key;
 
-            if (desc != null) {
-                IgniteCacheDatabaseSharedManager db = ctx.cache().sharedCtx.database();
-
-                key = db.groupKey(desc.groupId());
-            }
+            if (desc != null)
+                key = ctx.encryption().groupKey(desc.groupId());
             else
                 key = encSpi.create();
 

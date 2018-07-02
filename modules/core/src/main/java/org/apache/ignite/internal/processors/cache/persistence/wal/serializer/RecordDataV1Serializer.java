@@ -225,7 +225,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     boolean needEncryption(int grpId) {
-        return cctx.database().groupKey(grpId) != null;
+        return cctx.kernalContext().encryption().groupKey(grpId) != null;
     }
 
     /**
@@ -244,7 +244,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         in.readFully(encData);
 
-        EncryptionKey key = cctx.database().groupKey(grpId);
+        EncryptionKey key = cctx.kernalContext().encryption().groupKey(grpId);
 
         if (key == null)
             return new T2<>(null, grpId);
@@ -286,7 +286,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         dst.putInt(grpId);
         dst.putInt(dtSz);
 
-        EncryptionKey key = cctx.database().groupKey(grpId);
+        EncryptionKey key = cctx.kernalContext().encryption().groupKey(grpId);
 
         assert key != null;
 
