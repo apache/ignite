@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
 import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
@@ -53,6 +55,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String grid) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(grid);
+
+        cfg.setConsistentId(grid);
 
         if (grid.equals(GRID_0) ||
             grid.equals(GRID_2) ||
@@ -103,5 +107,34 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         startGrid(GRID_0);
 
         startGrid(GRID_3).cluster().active(true);
+    }
+
+    public void testNodeCantJoinWithDifferentCacheKeys() throws Exception {
+        IgniteEx grid0 = startGrid(GRID_0);
+        startGrid(GRID_3);
+
+        grid0.cluster().active(true);
+
+        stopGrid(GRID_3, false);
+
+        createEncCache(grid0, null, cacheName(), null, false);
+
+        stopGrid(GRID_0, false);
+        IgniteEx grid3 = startGrid(GRID_3);
+
+        grid3.cluster().active(true);
+
+        createEncCache(grid3, null, cacheName(), null, false);
+
+        //TODO: 1. Check cache keys on grid start.
+        //TODO: 2. Add backpucount = 2 and putDataToGrid.
+        assertThrowsWithCause(() -> {
+            try {
+                startGrid(GRID_0);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, AssertionError.class);
     }
 }

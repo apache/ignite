@@ -41,6 +41,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpiImplSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.CIPHER_ALGO;
@@ -131,18 +132,27 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createEncCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup)
+    protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup)
         throws IgniteInterruptedCheckedException {
+        createEncCache(grid0, grid1, cacheName, cacheGroup, true);
+    }
+
+    /** */
+    protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup,
+        boolean putData) throws IgniteInterruptedCheckedException {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>(cacheName)
             .setGroupName(cacheGroup)
             .setEncrypted(true);
 
         IgniteCache<Long, String> cache = grid0.createCache(ccfg);
 
-        GridTestUtils.waitForCondition(() -> grid1.cachex(cacheName()) != null, 2_000L);
+        if (grid1 != null)
+            GridTestUtils.waitForCondition(() -> grid1.cachex(cacheName()) != null, 2_000L);
 
-        for (long i=0; i<100; i++)
-            cache.put(i, "" + i);
+        if (putData) {
+            for (long i = 0; i < 100; i++)
+                cache.put(i, "" + i);
+        }
     }
 
     /**
