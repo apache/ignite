@@ -903,7 +903,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     }
 
                     return;
-
                 }
             }
 
