@@ -35,7 +35,7 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
 
         System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite3.addRealPageStoreTests(suite);
 
         //Integrity test with reduced count of pages.
         suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
