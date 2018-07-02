@@ -3226,11 +3226,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 if (!F.isEmpty(msg.getErrorsMap())) {
                                     Exception e = msg.getErrorsMap().get(cctx.localNodeId());
 
-                                    assert e != null : msg.getErrorsMap();
+                                    if (e != null && reconnectOnError(e)) {
+                                        onDone(e);
 
-                                    onDone(e);
-
-                                    return;
+                                        return;
+                                    }
                                 }
 
                                 AffinityTopologyVersion resVer = msg.resultTopologyVersion() != null ? msg.resultTopologyVersion() : initialVersion();
