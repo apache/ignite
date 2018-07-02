@@ -35,9 +35,9 @@ import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuil
  * Model trainer for Gradient Boosting Binary Classification.
  */
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
-    /** External representation of first class */
+    /** External representation of first class. */
     private double externalFirstCls; //internal 0.0
-    /** External representation of second class */
+    /** External representation of second class. */
     private double externalSecondCls; //internal 1.0
 
     /**
@@ -51,8 +51,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, double[]> featureExtractor,
+    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
         List<Double> uniqLabels = new ArrayList<Double>(
