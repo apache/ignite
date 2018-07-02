@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.cache.CacheMode;
+
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
@@ -86,6 +88,9 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      * @throws Exception If failed.
      */
     public void testUpdate_N_Objects_ClientServer_Backups0_Sql_Persistence() throws Exception {
+        if (cacheMode() == CacheMode.REPLICATED)
+            fail("need to fix update counters");
+
         persistence = true;
 
         updateNObjectsTest(5, 2, 0, 0, 64, DFLT_TEST_TIME,
