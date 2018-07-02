@@ -82,38 +82,26 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testServerNodeJoinDisabled() throws Exception {
-        checkNodeJoinDisabled(false);
+        startGrid(configuration(0, true, false));
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    startGrid(configuration(1, false, false));
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "User authentication configuration is different on local server node and coordinator");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClientNodeJoinDisabled() throws Exception {
-        checkNodeJoinDisabled(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testServerNodeJoinEnabled() throws Exception {
-        checkNodeJoinEnabled(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientNodeJoinEnabled() throws Exception {
-        checkNodeJoinEnabled(true);
-    }
-
-    /**
-     * @param client Is joining node client.
-     * @throws Exception If failed.
-     */
-    private void checkNodeJoinDisabled(boolean client) throws Exception {
         startGrid(configuration(0, true, false));
 
-        startGrid(configuration(1, false, client));
+        startGrid(configuration(1, false, true));
 
         grid(0).cluster().active(true);
 
@@ -125,15 +113,31 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     }
 
     /**
-     * @param client Is joining node client.
      * @throws Exception If failed.
      */
-    private void checkNodeJoinEnabled(boolean client) throws Exception {
+    public void testServerNodeJoinEnabled() throws Exception {
         startGrid(configuration(0, false, false));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    startGrid(configuration(1, true, client));
+                    startGrid(configuration(1, true, false));
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "User authentication configuration is different on local server node and coordinator");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeJoinEnabled() throws Exception {
+        startGrid(configuration(0, false, false));
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    startGrid(configuration(1, true, true));
 
                     return null;
                 }

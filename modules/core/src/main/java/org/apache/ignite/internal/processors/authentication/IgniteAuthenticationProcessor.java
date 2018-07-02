@@ -877,26 +877,34 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 rmtEnabled = false;
 
             if (isEnabled != rmtEnabled) {
+                if (!ctx.clientNode()) {
+                    validateErr = "User authentication configuration is different on " +
+                        "local server node and coordinator [local=" + isEnabled + ", on_coordinator" + rmtEnabled;
+
+                    return;
+                }
+
                 if (rmtEnabled)
-                    U.warn(log, "User authentication is enabled on cluster. Enables on local node");
+                    U.warn(log, "User authentication is enabled on cluster. Enables on local client node");
                 else {
                     validateErr = "User authentication is disabled on cluster";
 
                     return;
                 }
-            }
 
-            isEnabled = rmtEnabled;
+                isEnabled = rmtEnabled;
 
-            if (!isEnabled) {
-                try {
-                    stop(false);
+                if (!isEnabled) {
+                    try {
+                        stop(false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Unexpected exception on stopped authentication processor", e);
+                    }
+
+                    return;
+
                 }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Unexpected exception on stopped authentication processor", e);
-                }
-
-                return;
             }
 
             if (ctx.clientNode())
