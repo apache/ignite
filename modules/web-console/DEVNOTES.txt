@@ -1,14 +1,14 @@
 Ignite Web Console Build Instructions
 =====================================
-1. Install locally MongoDB (version >=3.2.x) follow instructions from site http://docs.mongodb.org/manual/installation.
-2. Install locally NodeJS (version >=6.5.x) using installer from site https://nodejs.org/en/download/current for your OS.
-3. Change directory to '/modules/web-console/backend' and
+1. Install MongoDB (version >=3.2.0 <=3.4.15) using instructions from http://docs.mongodb.org/manual/installation.
+2. Install Node.js (version >=8.0.0) using installer from https://nodejs.org/en/download/current for your OS.
+3. Change directory to 'modules/web-console/backend' and
  run "npm install --no-optional" for download backend dependencies.
-4. Change directory to '/modules/web-console/frontend' and
+4. Change directory to 'modules/web-console/frontend' and
  run "npm install --no-optional" for download frontend dependencies.
 5. Build ignite-web-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
-6. Copy ignite-web-agent-<version>.zip from '/modules/web-console/web-agent/target'
- to '/modules/web-console/backend/agent_dists' folder.
+6. Copy ignite-web-agent-<version>.zip from 'modules/web-console/web-agent/target'
+ to 'modules/web-console/backend/agent_dists' folder.
 
 Steps 1 - 4 should be executed once.
 
@@ -17,10 +17,10 @@ Ignite Web Console Run In Development Mode
 1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.2/bin
   and start MongoDB by executing "mongod".
 
-2. In new terminal change directory to '/modules/web-console/backend'.
+2. In new terminal change directory to 'modules/web-console/backend'.
    If needed run "npm install --no-optional" (if dependencies changed) and run "npm start" to start backend.
 
-3. In new terminal change directory to '/modules/web-console/frontend'.
+3. In new terminal change directory to 'modules/web-console/frontend'.
   If needed run "npm install --no-optional" (if dependencies changed) and start webpack in development mode "npm run dev".
 
 4. In browser open: http://localhost:9000
@@ -35,19 +35,69 @@ How to migrate model:
 Ignite Web Console Direct-Install Maven Build Instructions
 ==========================================================
 To build direct-install archive from sources run following command in Ignite project root folder:
-"mvn clean package -pl :ignite-web-agent,:ignite-web-console -am -P web-console -DskipTests=true -DskipClientDocs -Dmaven.javadoc.skip=true"
+"mvn clean package -pl :ignite-web-console -am -P web-console,direct-install -DskipTests=true -DskipClientDocs -Dmaven.javadoc.skip=true"
 
-Assembled archive can be found here: `/modules/web-console/target/ignite-web-console-direct-install-*.zip`.
+Assembled archive can be found here: `modules/web-console/target/ignite-web-console-direct-install-*.zip`.
+
+
+Ignite Web Console Docker Images Build Instructions
+===================================================
+Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
+
+To build docker images from sources run following command in Ignite project root folder:
+
+"mvn clean package -pl :ignite-web-console -am -P web-console,docker-image -DskipTests=true -DskipClientDocs -Dmaven.javadoc.skip=true"
+
+Prepared image can be listed with `docker images` command.
+
+
+Ignite Web Console Standalone Docker Image Build Manual Instructions
+====================================================================
+Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
+
+1. Build Apache Ignite Web Agent archive as described in `modules/web-console/web-agent/README.txt`.
+2. Goto Web Console's module directory: `cd modules/web-console`
+3. Build docker image:
+
+"docker build . -t apacheignite/web-console-standalone[:<version>] -f docker/standalone/Dockerfile"
+
+Prepared image can be listed in `docker images` command output.
+
+
+Ignite Web Console Backend Docker Image Build Manual Instructions
+====================================================================
+Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
+
+1. Build Apache Ignite Web Agent archive as described in `modules/web-console/web-agent/README.txt`.
+2. Goto Web Console's module directory: `cd modules/web-console`
+3. Build docker image:
+
+"docker build . -t apacheignite/web-console-backend[:<version>] -f docker/compose/backend/Dockerfile"
+
+Prepared image can be listed in `docker images` command output.
+
+
+Ignite Web Console Frontend Docker Image Build Manual Instructions
+====================================================================
+Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
+
+1. Build Apache Ignite Web Agent archive as described in `modules/web-console/web-agent/README.txt`.
+2. Goto Web Console's module directory: `cd modules/web-console`
+3. Build docker image:
+
+"docker build . -t apacheignite/web-console-frontend[:<version>] -f docker/compose/frontend/Dockerfile"
+
+Prepared image can be listed in `docker images` command output.
 
 
 End-to-end tests
 ================
-E2E tests are performed with TestCafe framework - https://testcafe.devexpress.com/.
+E2E tests are performed with TestCafe framework - https://testcafe.devexpress.com
 
 To launch tests on your local machine you will need:
 1. Install and launch MongoDB.
 2. Optionally install Chromium (https://www.chromium.org/getting-involved/download-chromium or https://chromium.woolyss.com).
-   You may use any other browser, just set 'BROWSERS' constant in 'modules\web-console\e2e\testcafe.js'.
+   You may use any other browser, just set 'BROWSERS' constant in 'modules/web-console/e2e/testcafe/index.js'.
 3. In new terminal change directory to 'modules/web-console/e2e/testcafe' folder and execute: "npm install".
 4. To start test environment and tests execute: "npm run test".
 
@@ -57,7 +107,7 @@ To perform it do the following:
 1. Ensure that MongoDB is up and running and all dependencies for backend and frontend are installed.
 2. Open directory "modules/web-console/e2e/testcafe" in terminal. Install dependencies for E2E testing with "npm install" command.
 3. Execute command "npm run env". This will start backend and frontend environment.
-4. Open another terminal window and run command "node testcafe.js" in the same directory. This will run only tests without launching environment.
+4. Open another terminal window and run command "node index.js" in the same directory. This will run only tests without launching environment.
 
 Please refer to TestCafe documentation at https://devexpress.github.io/testcafe/documentation/test-api/test-code-structure.html#skipping-tests
  upon how to specify which particular test should be run or skipped.
@@ -65,9 +115,27 @@ Please refer to TestCafe documentation at https://devexpress.github.io/testcafe/
 You can modify the following params with environment variables:
 - DB_URL - connection string to test MongoDB. Default: mongodb://localhost/console-e2e
 - APP_URL - URL for test environment applications. Default: http://localhost:9001
-- TEAMCITY - Whether to use TeamCity reporter. Default: false (native Testcafe "spec" reporter is used)
+- REPORTER - Which "TestCafe" reporter to use. Set to 'teamcity' to use Teamcity reporter. Default: "spec" (native Testcafe reporter)
 
 You can run tests in docker:
 1. Install docker and docker-compose.
-2. Execute in terminal: "docker-compose up --abort-on-container-exit" in directory "modules/web-console/e2e".
+2. Execute in terminal: "docker-compose up --build --abort-on-container-exit" in directory "modules/web-console/e2e".
 3. If you need to cleanup docker container then execute "docker-compose down".
+
+
+Frontend unit tests
+===================
+Unit tests are performed with Mocha framework - https://mochajs.org
+
+To launch tests on your local machine you will need:
+1. In new terminal change directory to 'modules/web-console/frontend' folder and execute: "npm install".
+2. To start test environment and tests execute: "npm run test".
+
+
+Backend unit tests
+==================
+Unit tests are performed with Mocha framework - https://mochajs.org
+
+To launch tests on your local machine you will need:
+1. In new terminal change directory to 'modules/web-console/backend' folder and execute: "npm install".
+2. To start test environment and tests execute: "npm run test".
