@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.util.Comparator;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
@@ -158,13 +160,15 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             long lastOnIdleTs = U.currentTimeMillis();
 
+            long waitTimeoutMs = IgniteSystemProperties.getLong(IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT, DFLT_WAIT_TIME);
+
             try {
                 while (!isCancelled()) {
                     updateHeartbeat();
 
                     long now = U.currentTimeMillis();
 
-                    if (now - lastOnIdleTs > DFLT_WAIT_TIME) {
+                    if (now - lastOnIdleTs > waitTimeoutMs) {
                         onIdle();
 
                         lastOnIdleTs = now;
@@ -218,12 +222,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
                                 if (waitTime > 0)
-                                    mux.wait(Math.min(waitTime, DFLT_WAIT_TIME));
+                                    mux.wait(Math.min(waitTime, waitTimeoutMs));
                                 else
                                     break;
                             }
                             else
-                                mux.wait(DFLT_WAIT_TIME);
+                                mux.wait(waitTimeoutMs);
                         }
                     }
                 }

@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridWorker implements Runnable {
     /**  Default heartbeat timeout threshold in milliseconds, when exceeded, worker is considered as hanging. */
-    public final static long DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS = 30_000;
+    public static final long DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS = 30_000;
 
     /** Ignite logger. */
     protected final IgniteLogger log;

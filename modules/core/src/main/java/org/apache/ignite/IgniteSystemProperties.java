@@ -952,6 +952,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT = "IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT";
 
     /**
+     * Maximum wait step duration for timeout processor, milliseconds.
+     *
+     * Default is {@code 5_000}.
+     */
+    public static final String IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT = "IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT";
+
+    /**
      * Accept timeout socket option for generic TCP servers, milliseconds.
      *
      * Default is {@code 10_000}.

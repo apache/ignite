@@ -145,6 +145,9 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** */
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
 
+    /** */
+    private static final long MAX_JOIN_SLEEP_DURATION_MS = 2000;
+
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
 
@@ -543,10 +546,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "Will retry every " + spi.getReconnectDelay() + " ms. " +
                             "Change 'reconnectDelay' to configure the frequency of retries.", true);
 
-                    if (beforeEachSleep != null)
-                        beforeEachSleep.run();
-
-                    Thread.sleep(spi.getReconnectDelay());
+                    sleepShallowly(spi.getReconnectDelay(), beforeEachSleep);
                 }
             }
 
@@ -612,16 +612,30 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Will wait before retry join.");
 
-                Thread.sleep(spi.getReconnectDelay());
+                sleepShallowly(spi.getReconnectDelay(), beforeEachSleep);
             }
             else if (addrs.isEmpty()) {
                 LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "every " + spi.getReconnectDelay() + " ms; change 'reconnectDelay' to configure the frequency " +
                     "of retries): " + toOrderedList(addrs0), true);
 
-                Thread.sleep(spi.getReconnectDelay());
+                sleepShallowly(spi.getReconnectDelay(), beforeEachSleep);
             }
         }
+    }
+
+    /** */
+    private void sleepShallowly(long millis, Runnable beforeEachSleep) throws InterruptedException {
+        do {
+            if (beforeEachSleep != null)
+                beforeEachSleep.run();
+
+            long span = Math.min(millis, MAX_JOIN_SLEEP_DURATION_MS);
+
+            Thread.sleep(span);
+
+            millis -= span;
+        } while (millis > 0);
     }
 
     /**
