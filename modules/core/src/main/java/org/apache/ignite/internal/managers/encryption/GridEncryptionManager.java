@@ -48,7 +48,34 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MASTER_KEY_DIGEST;
 
 /**
- * Manages cache encryptor.
+ * Manages cache keys and {@code EncryptionSpi} instances.
+ *
+ * Group keys generation protocol:
+ *
+ * <ul>
+ *     <li>Joining node:
+ *     <ul>
+ *         <li>1. Collects and send all stored group keys to coordinator.</li>
+ *         <li>2. Generate(but doesn't store locally!) and send cache keys for all new, locally configured groups.</li>
+ *         <li>3. Store all keys received from coordinator to local store.</li>
+ *     </ul>
+ *     </li>
+ *     <li>Coordinator:
+ *     <ul>
+ *         <li>1. Checks master key digest are equal to local. If not join is rejected.</li>
+ *         <li>2. Checks all stored keys from joining node are equal to stored keys. If not join is rejected.</li>
+ *         <li>3. Collects all stored keys and sends it to joining node.</li>
+ *     </ul>
+ *     </li>
+ *     <li>All nodes:
+ *     <ul>
+ *         <li>1. If new key for group doesn't exists locally it added to local store.</li>
+ *         <li>2. If new key for group exists locally, then received key skipped.
+ *         It was added by concurrently joining node.</li>
+ *     </ul>
+ *     </li>
+ * </ul>
+ *
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
     private final Object mux = new Object();
@@ -138,18 +165,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (nodeEncKeys == null || F.isEmpty(nodeEncKeys.knownKeys))
             return null;
 
-        for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
-            EncryptionKey locEncKey = grpEncKeys.get(entry.getKey());
+        synchronized (mux) {
+            for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
+                EncryptionKey locEncKey = grpEncKeys.get(entry.getKey());
 
-            if (locEncKey == null)
-                continue;
+                if (locEncKey == null)
+                    continue;
 
-            if (Arrays.equals(getSpi().encryptKey(locEncKey), entry.getValue()))
-                continue;
+                if (Arrays.equals(getSpi().encryptKey(locEncKey), entry.getValue()))
+                    continue;
 
-            return new IgniteNodeValidationResult(ctx.localNodeId(),
-                "Cache key differs! Node join is rejected. [nodeId=" + node.id() + "]",
-                "Cache key differs! Node join is rejected.");
+                return new IgniteNodeValidationResult(ctx.localNodeId(),
+                    "Cache key differs! Node join is rejected. [nodeId=" + node.id() + "]",
+                    "Cache key differs! Node join is rejected.");
+            }
         }
 
         return null;
@@ -449,17 +478,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return res;
     }
 
-    /**
-     *
-     */
+    /** */
     public static class NodeEncryptionKeys implements Serializable {
+        /** */
         NodeEncryptionKeys(Map<Integer, byte[]> knownKeys, Map<Integer, byte[]> newKeys) {
             this.knownKeys = knownKeys;
             this.newKeys = newKeys;
         }
 
+        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node. */
         Map<Integer, byte[]> knownKeys;
 
+        /**  New keys i.e. keys for a local statically configured caches. */
         Map<Integer, byte[]> newKeys;
     }
 }
