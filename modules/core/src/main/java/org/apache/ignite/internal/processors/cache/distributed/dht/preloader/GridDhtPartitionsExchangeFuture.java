@@ -3226,7 +3226,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 if (!F.isEmpty(msg.getErrorsMap())) {
                                     Exception e = msg.getErrorsMap().get(cctx.localNodeId());
 
-                                    if (e != null && reconnectOnError(e)) {
+                                    if (e != null && e instanceof IgniteNeedReconnectException) {
                                         onDone(e);
 
                                         return;
