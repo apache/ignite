@@ -443,7 +443,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
         /** {@inheritDoc} */
-        @Override public List<String> getActiveConnections() {
+        @Override public List<String> getConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();
 
             List<String> res = new ArrayList<>(sessions.size());
@@ -479,7 +479,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean dropConnectionById(long id) {
+        @Override public boolean dropConnection(long id) {
             assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
 
             Collection<? extends GridNioSession> sessions = srv.sessions();
