@@ -134,21 +134,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (!isLocalNodeCoordinator())
                 return;
 
-            synchronized (mux) {
-                HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
+            HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
 
-                HashMap<Integer, byte[]> newEncKeys =
-                    newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+            HashMap<Integer, byte[]> newEncKeys =
+                newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
-                if (newEncKeys == null)
-                    return;
+            if (newEncKeys == null)
+                return;
 
-                for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
-                    groupKey(entry.getKey(), entry.getValue());
+            for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
+                groupKey(entry.getKey(), entry.getValue());
 
-                    if (log.isInfoEnabled())
-                        log.info("Added encryption key on local join [grpId=" + entry.getKey() + "]");
-                }
+                if (log.isInfoEnabled())
+                    log.info("Added encryption key on local join [grpId=" + entry.getKey() + "]");
             }
         });
     }
@@ -182,20 +180,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return null;
         }
 
-        synchronized (mux) {
-            for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
-                EncryptionKey locEncKey = grpEncKeys.get(entry.getKey());
+        for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
+            EncryptionKey locEncKey = grpEncKeys.get(entry.getKey());
 
-                if (locEncKey == null)
-                    continue;
+            if (locEncKey == null)
+                continue;
 
-                if (Arrays.equals(getSpi().encryptKey(locEncKey), entry.getValue()))
-                    continue;
+            if (Arrays.equals(getSpi().encryptKey(locEncKey), entry.getValue()))
+                continue;
 
-                return new IgniteNodeValidationResult(ctx.localNodeId(),
-                    "Cache key differs! Node join is rejected. [node=" + node.id() + ", grp=" + entry.getKey() + "]",
-                    "Cache key differs! Node join is rejected.");
-            }
+            return new IgniteNodeValidationResult(ctx.localNodeId(),
+                "Cache key differs! Node join is rejected. [node=" + node.id() + ", grp=" + entry.getKey() + "]",
+                "Cache key differs! Node join is rejected.");
         }
 
         return null;
@@ -252,20 +248,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null)
             return;
 
-        synchronized (mux) {
-            for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
-                if (groupKey(entry.getKey()) == null) {
-                    if (log.isInfoEnabled()) {
-                        log.info("Store group key received from joining node [node=" +
-                            data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
-                    }
-
-                    groupKey(entry.getKey(), entry.getValue());
-                }
-                else if (log.isInfoEnabled()) {
-                    log.info("Skip group key received from joining node. Already exists. [node=" +
+        for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
+            if (groupKey(entry.getKey()) == null) {
+                if (log.isInfoEnabled()) {
+                    log.info("Store group key received from joining node [node=" +
                         data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
                 }
+
+                groupKey(entry.getKey(), entry.getValue());
+            }
+            else if (log.isInfoEnabled()) {
+                log.info("Skip group key received from joining node. Already exists. [node=" +
+                    data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
             }
         }
     }
@@ -278,40 +272,36 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
             return;
 
-        synchronized (mux) {
-            HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
+        HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
 
-            HashMap<Integer, byte[]> newKeys =
-                newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+        HashMap<Integer, byte[]> newKeys =
+            newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
-            if (knownEncKeys == null)
-                knownEncKeys = newKeys;
-            else if (newKeys != null){
-                for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
-                    byte[] old = knownEncKeys.putIfAbsent(entry.getKey(), entry.getValue());
+        if (knownEncKeys == null)
+            knownEncKeys = newKeys;
+        else if (newKeys != null){
+            for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
+                byte[] old = knownEncKeys.putIfAbsent(entry.getKey(), entry.getValue());
 
-                    assert old == null;
-                }
+                assert old == null;
             }
-
-            dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
         }
+
+        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        synchronized (mux) {
-            Map<Integer, byte[]> encKeysFromCluster = (Map<Integer, byte[]>)data.commonData();
+        Map<Integer, byte[]> encKeysFromCluster = (Map<Integer, byte[]>)data.commonData();
 
-            if (F.isEmpty(encKeysFromCluster))
-                return;
+        if (F.isEmpty(encKeysFromCluster))
+            return;
 
-            for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet()) {
-                if (log.isInfoEnabled())
-                    log.info("Store group key received from coordinator [grp=" + entry.getKey() + "]");
+        for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet()) {
+            if (log.isInfoEnabled())
+                log.info("Store group key received from coordinator [grp=" + entry.getKey() + "]");
 
-                groupKey(entry.getKey(), entry.getValue());
-            }
+            groupKey(entry.getKey(), entry.getValue());
         }
     }
 
