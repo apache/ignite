@@ -37,6 +37,6 @@ public class KNNClassificationTrainer implements SingleLabelDatasetTrainer<KNNCl
      */
     @Override public <K, V> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return new KNNClassificationModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
+        return new KNNClassificationModel(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
     }
 }

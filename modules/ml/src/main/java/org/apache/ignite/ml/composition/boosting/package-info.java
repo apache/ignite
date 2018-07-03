@@ -15,14 +15,9 @@
  * limitations under the License.
  */
 
-const Jasmine = require('jasmine');
-
-const jasmine = new Jasmine();
-jasmine.loadConfig({
-    'spec_dir': 'spec',
-    'spec_files': [
-        `examples/${process.argv[2]}.spec.js`
-    ],
-    "random": false
-});
-jasmine.execute();
+/**
+ * <!-- Package description. -->
+ * Contains Gradient Boosting regression and classification abstract classes
+ * allowing regressor type selecting in child classes.
+ */
+package org.apache.ignite.ml.composition.boosting;

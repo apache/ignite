@@ -67,7 +67,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
         this.decisionTreeLeafBuilder = decisionTreeLeafBuilder;
     }
 
-
     /** {@inheritDoc} */
     @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {

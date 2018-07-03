@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-const Jasmine = require('jasmine');
+package org.apache.ignite.ml.composition.boosting;
 
-const jasmine = new Jasmine();
-jasmine.loadConfig({
-    'spec_dir': 'spec',
-    'spec_files': [
-        `examples/${process.argv[2]}.spec.js`
-    ],
-    "random": false
-});
-jasmine.execute();
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+
+/**
+ * Contains implementations of per-prediction loss functions for gradient boosting algorithm.
+ */
+public class LossGradientPerPredictionFunctions {
+    /** Mean squared error loss for regression. */
+    public static IgniteTriFunction<Long, Double, Double, Double> MSE = (sampleSize, answer, prediction) -> {
+        return (2.0 / sampleSize) * (prediction - answer);
+    };
+
+    /** Logarithmic loss for binary classification. */
+    public static IgniteTriFunction<Long, Double, Double, Double> LOG_LOSS = (sampleSize, answer, prediction) -> {
+        return (prediction - answer) / (prediction * (1.0 - prediction));
+    };
+}
