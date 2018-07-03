@@ -491,7 +491,10 @@ public class DataStorageConfiguration implements Serializable {
      * Gets a total number of checkpoints to keep in the WAL history.
      *
      * @return Number of checkpoints to keep in WAL after a checkpoint is finished.
+     * @deprecated Instead of walHistorySize use maxWalArchiveSize for manage of archive size.
+     * @see DataStorageConfiguration#getMaxWalArchiveSize()
      */
+    @Deprecated
     public int getWalHistorySize() {
         return walHistSize <= 0 ? DFLT_WAL_HISTORY_SIZE : walHistSize;
     }
@@ -501,7 +504,10 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param walHistSize Number of checkpoints to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
+     * @deprecated Instead of walHistorySize use maxWalArchiveSize for manage of archive size.
+     * @see DataStorageConfiguration#setMaxWalArchiveSize(long)
      */
+    @Deprecated
     public DataStorageConfiguration setWalHistorySize(int walHistSize) {
         this.walHistSize = walHistSize;
 

@@ -55,6 +55,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -114,6 +115,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -187,6 +189,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private static final double CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE =
         IgniteSystemProperties.getDouble(IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, 0.25);
 
+    /**
+     * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     */
+    private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
+        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
+
     /** */
     private final boolean alwaysWriteFullPages;
 
@@ -198,6 +206,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * It is simple way to calculate wal size without checkpoint instead fair wal size calculating.
      */
     private final long maxSegCountWithoutCheckpoint;
+
+    /** Size of wal archive since which removing of old archive should be started */
+    private final long allowedThresholdWalArchiveSize;
 
     /** */
     private final WALMode mode;
@@ -329,6 +340,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         maxSegCountWithoutCheckpoint =
             (long)((dsCfg.getMaxWalArchiveSize() * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE) / dsCfg.getWalSegmentSize());
+
+        allowedThresholdWalArchiveSize = (long)(dsCfg.getMaxWalArchiveSize() * THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
         assert mode == WALMode.FSYNC : dsCfg;
     }
@@ -865,10 +878,39 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
-     * {@inheritDoc}
+     * Files from archive WAL directory.
      */
-    public FileDescriptor[] walArchiveFiles() {
+    private FileDescriptor[] walArchiveFiles() {
         return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+    }
+
+    /**
+     * @return Max allowed index of files to delete.(including this file).
+     */
+    @Override public long fileIdxToDelete() {
+        //When maxWalArchiveSize==MAX_VALUE deleting files is not permit.
+        if (dsCfg.getMaxWalArchiveSize() == Long.MAX_VALUE)
+            return -1;
+
+        FileDescriptor[] archivedFiles = walArchiveFiles();
+
+        Long totalArchiveSize = Stream.of(archivedFiles)
+            .map(desc -> desc.file().length())
+            .reduce(0L, Long::sum);
+
+        if (archivedFiles.length == 0 || totalArchiveSize < allowedThresholdWalArchiveSize)
+            return -1;
+
+        long sizeOfOldestArchivedFiles = 0;
+
+        for (FileDescriptor desc : archivedFiles) {
+            sizeOfOldestArchivedFiles += desc.file().length();
+
+            if (totalArchiveSize - sizeOfOldestArchivedFiles < allowedThresholdWalArchiveSize)
+                return desc.getIdx();
+        }
+
+        return archivedFiles[archivedFiles.length - 1].getIdx();
     }
 
     /** {@inheritDoc} */

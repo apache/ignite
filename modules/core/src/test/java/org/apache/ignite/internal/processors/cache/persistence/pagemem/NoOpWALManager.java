@@ -153,7 +153,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public FileDescriptor[] walArchiveFiles() {
-        return new FileDescriptor[0];
+    @Override public long fileIdxToDelete() {
+        return -1;
     }
 }

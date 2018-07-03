@@ -61,7 +61,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -135,7 +134,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -171,7 +169,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
@@ -308,12 +305,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Timeout between partition file destroy and checkpoint to handle it. */
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
 
-    /**
-     * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
-     */
-    private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
-        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
-
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -370,9 +361,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private final int maxCpHistMemSize;
-
-    /** Size of wal archive since which removing of old archive should be started */
-    private final long allowedThresholdWalArchiveSize;
 
     /** */
     private Map</*grpId*/Integer, Map</*partId*/Integer, T2</*updCntr*/Long, WALPointer>>> reservedForExchange;
@@ -435,8 +423,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persistenceCfg.getMetricsRateTimeInterval(),
             persistenceCfg.getMetricsSubIntervalCount()
         );
-
-        allowedThresholdWalArchiveSize = (long)(persistenceCfg.getMaxWalArchiveSize() * THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
 
@@ -4329,7 +4315,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param chp Checkpoint which finishing now.
          */
         private void onMaxWalArchiveSizeCheckpointFinished(Checkpoint chp) {
-            WALPointer checkpointMarkUntilDel = resolveCheckpointMarkUntilDelete(chp);
+            WALPointer checkpointMarkUntilDel = higherPointer(
+                checkpointMarkUntilDeleteByMemorySize(),
+                checkpointMarkUntilDeleteByArchiveSize(chp)
+            );
 
             if (checkpointMarkUntilDel == null) {
                 finishCheckpoint(chp, 0);
@@ -4356,34 +4345,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param chp Current finished checkpoint.
-         * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
-         */
-        @Nullable private WALPointer resolveCheckpointMarkUntilDelete(Checkpoint chp) {
-            WALPointer markUntilDeleteByMemorySize = checkpointMarkUntilDeleteByMemorySize();
-
-            if (!isRemovingWalEnable())
-                return markUntilDeleteByMemorySize;
-
-            WALPointer markUntilDeleteByArchiveSize = checkpointMarkUntilDeleteByArchiveSize(chp);
-
-            return higherPointer(markUntilDeleteByMemorySize, markUntilDeleteByArchiveSize);
-        }
-
-        /**
          * @param firstPointer One of pointers to choose the highest.
          * @param secondPointer One of pointers to choose the highest.
          * @return The highest pointer from input ones.
          */
         private WALPointer higherPointer(WALPointer firstPointer, WALPointer secondPointer) {
+            if (firstPointer == null)
+                return secondPointer;
+
+            if (secondPointer == null)
+                return firstPointer;
+
             FileWALPointer first = (FileWALPointer)firstPointer;
             FileWALPointer second = (FileWALPointer)secondPointer;
-
-            if (first == null)
-                return second;
-
-            if (second == null)
-                return first;
 
             return first.index() > second.index() ? first : second;
         }
@@ -4417,13 +4391,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (chp.cpEntry == null)
                 return null;
 
-            FileDescriptor[] archivedFiles = cctx.wal().walArchiveFiles();
-
-            Long totalArchiveSize = Stream.of(archivedFiles)
-                .map(desc -> desc.file().length())
-                .reduce(0L, Long::sum);
-
-            long absFileIdxForDel = calculateFileIdxToDelete(archivedFiles, totalArchiveSize);
+            long absFileIdxForDel = cctx.wal().fileIdxToDelete();
 
             if (absFileIdxForDel < 0)
                 return null;
@@ -4440,27 +4408,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             return lastCheckpointEntry.checkpointMark();
-        }
-
-        /**
-         * @param fileDescriptors Set of files for find files to delete.
-         * @param totalArchiveSize Total size of archive files.
-         * @return Max allowed index of files to delete.(including this file).
-         */
-        private long calculateFileIdxToDelete(FileDescriptor[] fileDescriptors, Long totalArchiveSize) {
-            if (fileDescriptors.length == 0 || totalArchiveSize < allowedThresholdWalArchiveSize)
-                return -1;
-
-            long sizeOfOldestArchivedFiles = 0;
-
-            for (FileDescriptor desc : fileDescriptors) {
-                sizeOfOldestArchivedFiles += desc.file().length();
-
-                if (totalArchiveSize - sizeOfOldestArchivedFiles < allowedThresholdWalArchiveSize)
-                    return desc.getIdx();
-            }
-
-            return fileDescriptors[fileDescriptors.length - 1].getIdx();
         }
 
         /**

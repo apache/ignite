@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -40,9 +41,55 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  *
  */
-public class WalDeletionArchiveTest extends GridCommonAbstractTest {
+public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "SomeCache";
+
+    /**
+     * Start grid with override default configuration via customConfigurator.
+     */
+    private Ignite startGrid(Consumer<DataStorageConfiguration> customConfigurator) throws Exception {
+        IgniteConfiguration configuration = getConfiguration(getTestIgniteInstanceName());
+
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
+
+        dbCfg.setWalMode(walMode());
+        dbCfg.setWalSegmentSize(512 * 1024);
+        dbCfg.setCheckpointFrequency(60 * 1000);
+        dbCfg.setPageSize(4 * 1024);
+        dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(100 * 1024 * 1024)
+            .setPersistenceEnabled(true));
+
+        customConfigurator.accept(dbCfg);
+
+        configuration.setDataStorageConfiguration(dbCfg);
+
+        Ignite ignite = startGrid(configuration);
+
+        ignite.active(true);
+
+        return ignite;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /**
+     * @return WAL mode used in test.
+     */
+    abstract protected WALMode walMode();
 
     /**
      * History size parameters consistency check. Should be set just one of wal history size or max wal archive size.
@@ -94,8 +141,12 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
         for (int i = 0; i < 500; i++)
             cache.put(i, i);
 
+        forceCheckpoint();
+
         //then: total archive size less than half of maxWalArchiveSize(by current logic)
-        FileDescriptor[] files = wal(ignite).walArchiveFiles();
+        IgniteWriteAheadLogManager wal = wal(ignite);
+
+        FileDescriptor[] files = (FileDescriptor[])U.findNonPublicMethod(wal.getClass(), "walArchiveFiles").invoke(wal);
 
         Long totalSize = Stream.of(files)
             .map(desc -> desc.file().length())
@@ -103,6 +154,7 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
 
         assertTrue(files.length >= 1);
         assertTrue(totalSize <= allowedThresholdWalArchiveSize);
+        assertFalse(Stream.of(files).anyMatch(desc -> desc.file().getName().endsWith("00001.wal")));
 
         GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
 
@@ -193,7 +245,9 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
         forceCheckpoint();
 
         //then: WAL files was not deleted but some of checkpoint history was deleted.
-        FileDescriptor[] files = wal(ignite).walArchiveFiles();
+        IgniteWriteAheadLogManager wal = wal(ignite);
+
+        FileDescriptor[] files = (FileDescriptor[])U.findNonPublicMethod(wal.getClass(), "walArchiveFiles").invoke(wal);
 
         boolean hasFirstSegment = Stream.of(files)
             .anyMatch(desc -> desc.file().getName().endsWith("0001.wal"));
@@ -203,32 +257,6 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
         GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
 
         assertTrue(hist.checkpoints().size() == 2);
-    }
-
-    /**
-     * Start grid with override default configuration via customConfigurator.
-     */
-    private Ignite startGrid(Consumer<DataStorageConfiguration> customConfigurator) throws Exception {
-        IgniteConfiguration configuration = getConfiguration(getTestIgniteInstanceName());
-
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setWalSegmentSize(512 * 1024);
-        dbCfg.setCheckpointFrequency(60 * 1000);
-        dbCfg.setPageSize(4 * 1024);
-        dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(100 * 1024 * 1024)
-            .setPersistenceEnabled(true));
-
-        customConfigurator.accept(dbCfg);
-
-        configuration.setDataStorageConfiguration(dbCfg);
-
-        Ignite ignite = startGrid(configuration);
-
-        ignite.active(true);
-
-        return ignite;
     }
 
     /**
@@ -243,19 +271,5 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
      */
     private IgniteWriteAheadLogManager wal(Ignite ignite) {
         return ((IgniteEx)ignite).context().cache().context().wal();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
     }
 }
