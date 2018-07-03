@@ -21,7 +21,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class PartitionMapExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbstractTest {
+public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbstractTest {
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

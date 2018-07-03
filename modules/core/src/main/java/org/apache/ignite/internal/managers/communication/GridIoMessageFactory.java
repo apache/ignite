@@ -53,6 +53,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeFinishedCheckRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeFinishedCheckResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
@@ -924,6 +926,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 135:
                 msg = new LatchAckMessage();
+
+                break;
+
+            case 136:
+                msg = new PartitionsExchangeFinishedCheckRequest();
+
+                break;
+
+            case 137:
+                msg = new PartitionsExchangeFinishedCheckResponse();
 
                 break;
 
