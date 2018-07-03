@@ -15,14 +15,25 @@
  * limitations under the License.
  */
 
-const Jasmine = require('jasmine');
+package org.apache.ignite.internal;
 
-const jasmine = new Jasmine();
-jasmine.loadConfig({
-    'spec_dir': 'spec',
-    'spec_files': [
-        `examples/${process.argv[2]}.spec.js`
-    ],
-    "random": false
-});
-jasmine.execute();
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
+
+/**
+ * Predicate to filter out security credentials attribute by its name.
+ */
+public class SecurityCredentialsAttrFilterPredicate implements IgnitePredicate<String> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override public boolean apply(String s) {
+        return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SecurityCredentialsAttrFilterPredicate.class, this);
+    }
+}
