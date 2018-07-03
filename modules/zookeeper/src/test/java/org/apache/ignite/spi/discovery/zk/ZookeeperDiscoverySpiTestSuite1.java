@@ -30,7 +30,14 @@ import org.apache.zookeeper.server.quorum.LearnerZooKeeperServer;
  *
  */
 public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
-    /** @see <a href="https://github.com/Netflix/curator/issues/121">Issue link.</a>. */
+    /**
+     * During test suite processing GC can unload some classes whose bytecode has been rewritten here
+     * {@link ByteCodeRewrite}. And the next time these classes will be loaded without bytecode rewriting.
+     *
+     * This workaround prevents unloading of these classes.
+     *
+     * @see <a href="https://github.com/Netflix/curator/issues/121">Issue link.</a>.
+     */
     @SuppressWarnings("unused")
     private static final Class[] WORKAROUND;
 
