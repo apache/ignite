@@ -891,19 +891,19 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
                     return;
                 }
+            }
 
-                isEnabled = rmtEnabled;
+            isEnabled = rmtEnabled;
 
-                if (!isEnabled) {
-                    try {
-                        stop(false);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.warn(log, "Unexpected exception on stopped authentication processor", e);
-                    }
-
-                    return;
+            if (!isEnabled) {
+                try {
+                    stop(false);
                 }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Unexpected exception on stopped authentication processor", e);
+                }
+
+                return;
             }
 
             if (ctx.clientNode())
