@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.cache.configuration.Factory;
@@ -135,7 +135,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 GridNioFilter[] filters = makeFilters(cliConnCfg);
 
-                int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
                 long idleTimeout = cliConnCfg.getIdleTimeout();
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
@@ -195,7 +194,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /**
      * Register an Ignite MBean for managing clients connections.
      */
-    private <T> void registerMBean() throws IgniteCheckedException {
+    private void registerMBean() throws IgniteCheckedException {
         assert !U.IGNITE_MBEANS_DISABLED;
 
         String name = getClass().getSimpleName();
@@ -514,6 +513,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
          * @param ctx client connection context.
          * @return connection description
          */
+        @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
         private String clientConnectionDescription(GridNioSession ses, ClientListenerConnectionContext ctx) {
             AuthorizationContext authCtx = ctx.authorizationContext();
 
@@ -526,10 +526,19 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             else
                 sb.append("ThinClient [");
 
+            InetSocketAddress rmtAddr = ses.remoteAddress();
+            InetSocketAddress locAddr = ses.localAddress();
+
+            assert rmtAddr != null;
+            assert locAddr != null;
+
+            String rmtAddrStr = rmtAddr.getHostString() + ":" + rmtAddr.getPort();
+            String locAddrStr = locAddr.getHostString() + ":" + locAddr.getPort();
+
             sb.append("id=" + ctx.connectionId());
-            sb.append("user=").append(authCtx == null ? "<anonymous>" : authCtx.userName());
-            sb.append(", rmtAddr=" + ses.remoteAddress().toString());
-            sb.append(", locAddr=" + ses.localAddress().toString());
+            sb.append(", user=").append(authCtx == null ? "<anonymous>" : authCtx.userName());
+            sb.append(", rmtAddr=" + rmtAddrStr);
+            sb.append(", locAddr=" + locAddrStr);
 
             return sb.append(']').toString();
         }
