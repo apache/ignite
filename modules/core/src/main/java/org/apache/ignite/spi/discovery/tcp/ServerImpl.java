@@ -6855,15 +6855,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread {
-        /** */
-        private final MessageWorker worker;
+    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread<MessageWorker<T>> {
 
         /** {@inheritDoc} */
         private MessageWorkerThreadWithCleanup(MessageWorker<T> worker, IgniteLogger log) {
             super(worker, log);
-
-            this.worker = worker;
         }
 
         /** {@inheritDoc} */
@@ -6877,17 +6873,17 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Slightly modified {@link IgniteSpiThread} intended to use with message workers.
      */
-    private class MessageWorkerThread extends IgniteSpiThread {
+    private class MessageWorkerThread<W extends GridWorker> extends IgniteSpiThread {
         /**
          * Backed interrupted flag, once set, it is not affected by further {@link Thread#interrupted()} calls.
          */
         private volatile boolean interrupted;
 
         /** */
-        private final GridWorker worker;
+        protected final W worker;
 
         /** {@inheritDoc} */
-        private MessageWorkerThread(GridWorker worker, IgniteLogger log) {
+        private MessageWorkerThread(W worker, IgniteLogger log) {
             super(worker.igniteInstanceName(), worker.name(), log);
 
             this.worker = worker;
