@@ -3037,7 +3037,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
-     * @param restartId
+     * @param Restart requester id (it'll allow to start this cache only him).
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<?> dynamicStartCachesByStoredConf(
@@ -3163,8 +3163,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param destroy Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
-                                                        boolean destroy) {
+    public IgniteInternalFuture<?> dynamicDestroyCaches(
+            Collection<String> cacheNames,
+            boolean checkThreadTx,
+            boolean destroy
+    ) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
@@ -3182,7 +3185,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cacheName Cache names to destroy.
      * @param restart Restart flag.
-     * @param restartId
+     * @param restartId Restart requester id (it'll allow to start this cache only him).
      * @param destroy Cache data destroy flag. Setting to {@code true} will cause removing all cache data from store.
      * @return Future that will be completed when cache is destroyed.
      */
@@ -4360,7 +4363,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param sql Whether the cache needs to be created as the result of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
-     * @param restartId
+     * @param restartId Restart requester id (it'll allow to start this cache only him).
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @return Request or {@code null} if cache already exists.
