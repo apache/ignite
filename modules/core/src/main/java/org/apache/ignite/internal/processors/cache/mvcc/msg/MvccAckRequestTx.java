@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -43,7 +44,7 @@ public class MvccAckRequestTx implements MvccMessage {
     private long txCntr;
 
     /** */
-    private long qryTrackerId;
+    private long qryTrackerId = MvccQueryTracker.MVCC_TRACKER_ID_NA;
 
     /** */
     private byte flags;

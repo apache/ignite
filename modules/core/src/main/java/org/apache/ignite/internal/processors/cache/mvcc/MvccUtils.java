@@ -752,13 +752,17 @@ public class MvccUtils {
 
             assert crd != null : tx.topologyVersion();
 
-            if (crd.nodeId().equals(cctx.localNodeId()))
-                tx.mvccInfo(mvccInfo = new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator(tx).get()));
+            if (crd.nodeId().equals(cctx.localNodeId())) {
+                if (!mvccProc.coordinatorInitFuture().isDone())
+                    mvccProc.coordinatorInitFuture().get();
+
+                tx.mvccInfo(new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator()));
+            }
             else
-                return mvccProc.requestTxSnapshot(crd, new MvccTxSnapshotResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
+                mvccProc.requestTxSnapshot(new MvccTxSnapshotResponseListener(tx)).get(); // TODO IGNITE-7388
         }
 
-        return mvccInfo.snapshot();
+        return tx.mvccInfo().snapshot();
     }
 
     /** */

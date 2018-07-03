@@ -1258,22 +1258,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 assert crd != null : tx.topologyVersion();
 
-                if (crd.nodeId().equals(cctx.localNodeId())) {
-                    try {
-                        onResponse(cctx.localNodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx).get());
-                    }
-                    catch (IgniteCheckedException e) {
-                        onDone(e);
-                    }
-                }
-                else {
-                    IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(crd,
-                        this,
-                        tx.nearXidVersion());
+                IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(this);
 
-                    if (tx.onePhaseCommit())
-                        waitCrdCntrFut = crdCntrFut;
-                }
+                if (tx.onePhaseCommit())
+                    waitCrdCntrFut = crdCntrFut;
             }
 
             onEntriesLocked();

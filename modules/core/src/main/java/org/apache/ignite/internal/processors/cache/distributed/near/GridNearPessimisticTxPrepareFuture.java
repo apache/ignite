@@ -450,24 +450,10 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (mvccCrd != null) {
             assert !tx.onePhaseCommit();
 
-            if (mvccCrd.nodeId().equals(cctx.localNodeId())) {
-                MvccSnapshot mvccSnapshot = null;
+            IgniteInternalFuture<MvccSnapshot> cntrFut = cctx.coordinators().requestTxSnapshot(this);
 
-                try {
-                    mvccSnapshot = cctx.coordinators().requestTxSnapshotOnCoordinator(tx).get();
-                }
-                catch (IgniteCheckedException e) {
-                    onError(e);
-                }
-
-                onResponse(cctx.localNodeId(), mvccSnapshot);
-            }
-            else {
-                IgniteInternalFuture<MvccSnapshot> cntrFut =
-                    cctx.coordinators().requestTxSnapshot(mvccCrd, this, tx.nearXidVersion());
-
+            if (cntrFut != null)
                 add((IgniteInternalFuture)cntrFut);
-            }
         }
 
         markInitialized();

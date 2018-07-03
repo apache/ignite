@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -34,9 +33,6 @@ public class MvccTxSnapshotRequest implements MvccMessage {
     /** */
     private long futId;
 
-    /** */
-    private GridCacheVersion txId;
-
     /**
      * Required by {@link GridIoMessageFactory}.
      */
@@ -46,13 +42,9 @@ public class MvccTxSnapshotRequest implements MvccMessage {
 
     /**
      * @param futId Future ID.
-     * @param txId Transaction ID.
      */
-    public MvccTxSnapshotRequest(long futId, GridCacheVersion txId) {
-        assert txId != null;
-
+    public MvccTxSnapshotRequest(long futId) {
         this.futId = futId;
-        this.txId = txId;
     }
 
     /** {@inheritDoc} */
@@ -72,13 +64,6 @@ public class MvccTxSnapshotRequest implements MvccMessage {
         return futId;
     }
 
-    /**
-     * @return Transaction ID.
-     */
-    public GridCacheVersion txId() {
-        return txId;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -96,13 +81,6 @@ public class MvccTxSnapshotRequest implements MvccMessage {
                     return false;
 
                 writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage("txId", txId))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -123,15 +101,6 @@ public class MvccTxSnapshotRequest implements MvccMessage {
                     return false;
 
                 reader.incrementState();
-
-            case 1:
-                txId = reader.readMessage("txId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(MvccTxSnapshotRequest.class);
@@ -144,7 +113,7 @@ public class MvccTxSnapshotRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
