@@ -17,11 +17,8 @@ import socket
 import ssl
 
 from pyignite.constants import *
+from pyignite.exceptions import SocketError
 from .handshake import HandshakeRequest, read_response
-
-
-class SocketError(Exception):
-    pass
 
 
 class Connection:

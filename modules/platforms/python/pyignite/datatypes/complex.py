@@ -23,7 +23,9 @@ import attr
 
 from pyignite.connection import Connection, PrefetchConnection
 from pyignite.constants import *
+from pyignite.exceptions import ParseError
 from pyignite.utils import is_hinted, is_iterable
+from .primitive import Int
 from .primitive_arrays import *
 from .primitive_objects import *
 from .standard import *
@@ -80,6 +82,8 @@ def tc_map(key: bytes):
         TC_OBJECT_ARRAY: ObjectArrayObject,
         TC_COLLECTION: CollectionObject,
         TC_MAP: MapObject,
+
+        TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
     }[key]
 
 
@@ -125,7 +129,10 @@ class AnyDataObject:
     @classmethod
     def parse(cls, conn: Connection):
         type_code = conn.recv(ctypes.sizeof(ctypes.c_byte))
-        data_class = tc_map(type_code)
+        try:
+            data_class = tc_map(type_code)
+        except KeyError:
+            raise ParseError('Unknown type code: `{}`'.format(type_code))
         return data_class.parse(PrefetchConnection(conn, prefetch=type_code))
 
     @classmethod
@@ -348,6 +355,65 @@ class ObjectArrayObject(AnyDataObject):
         for x in value:
             buffer += super().from_python(x)
         return buffer
+
+
+class WrappedDataObject(ObjectArrayObject):
+    tc_type = TC_ARRAY_WRAPPED_OBJECTS
+    type_or_id_name = 'offset'
+
+    @classmethod
+    def build_header(cls):
+        return type(
+            cls.__name__+'Header',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('type_code', ctypes.c_byte),
+                    ('length', ctypes.c_int),
+                ],
+            }
+        )
+
+    @classmethod
+    def parse(cls, conn: Connection):
+        intermediate_class, buffer = super().parse(conn)
+        # deal with offset
+        final_class = type(
+            cls.__name__,
+            (intermediate_class,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('offset', ctypes.c_int),
+                ],
+            }
+        )
+        buffer += conn.recv(
+            ctypes.sizeof(final_class) - ctypes.sizeof(intermediate_class)
+        )
+        return final_class, buffer
+
+    @classmethod
+    def from_python(cls, value):
+        offset, value = value
+        header_class = cls.build_header()
+        header = header_class()
+        header.type_code = int.from_bytes(
+            cls.tc_type,
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
+        try:
+            length = len(value)
+        except TypeError:
+            value = [value]
+            length = 1
+        header.length = length
+        buffer = bytes(header)
+
+        for x in value:
+            buffer += super().from_python(x)
+        return buffer + Int.from_python(offset)
 
 
 class CollectionObject(ObjectArrayObject):
