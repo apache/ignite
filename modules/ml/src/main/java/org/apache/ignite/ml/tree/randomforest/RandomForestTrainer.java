@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 
@@ -49,33 +48,8 @@ public abstract class RandomForestTrainer extends BaggingModelTrainer {
         int maxDeep,
         double minImpurityDecrease) {
 
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease, null);
-    }
-
-    /**
-     * Constructs new instance of BaggingModelTrainer.
-     *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
-     * @param threadPool Learning thread pool.
-     */
-    public RandomForestTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep,
-        double minImpurityDecrease,
-        ExecutorService threadPool) {
-
         super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, threadPool);
+            ensembleSize, samplePartSizePerMdl);
 
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
