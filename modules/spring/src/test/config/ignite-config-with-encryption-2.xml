@@ -19,60 +19,14 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="igniteInstanceName" value="grid-0" />
-
-        <property name="peerClassLoadingEnabled" value="true"/>
-
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="shared" value="false"/>
-                        <property name="addresses">
-                            <list>
-                                <value>127.0.0.1:47500..47509</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-
-        <property name="dataStorageConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                <property name="defaultDataRegionConfiguration">
-                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="maxSize" value="#{10*1024*1024}"/>
-                        <property name="persistenceEnabled" value="true"/>
-                    </bean>
-                </property>
-                <property name="pageSize" value="#{4*1024}"/>
-                <property name="walMode" value="LOG_ONLY"/>
-            </bean>
-        </property>
-
-        <property name="encryptionSpi">
-            <bean class="org.apache.ignite.spi.encryption.EncryptionSpiImpl">
-                <property name="keyStorePath" value="tde.jks"/>
-                <property name="keyStorePassword" value="love_sex_god"/>
-            </bean>
-        </property>
-
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="encrypted" />
-                    <property name="encrypted" value="true" />
-                    <property name="groupName" value="encrypted-group" />
-                </bean>
-            </list>
-        </property>
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="cache.cfg" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="encrypted-2"/>
+        <property name="encrypted" value="true"/>
+        <property name="groupName" value="encrypted-group"/>
     </bean>
+
+    <import resource="ignite-config-with-encryption.xml"/>
 </beans>

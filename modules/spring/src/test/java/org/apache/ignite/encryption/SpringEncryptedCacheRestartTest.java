@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -44,13 +45,13 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         if (cleanPersistenceDir)
             cleanPersistenceDir();
 
-        IgniteEx g0 = (IgniteEx)G.start(
+        IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-0.xml").getAbsolutePath());
+                "modules/spring/src/test/config/ignite-config-with-encryption-0.xml").getAbsolutePath(), "grid-0");
 
-        IgniteEx g1 = (IgniteEx)G.start(
+        IgniteEx g1 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-1.xml").getAbsolutePath());
+                "modules/spring/src/test/config/ignite-config-with-encryption-0.xml").getAbsolutePath(), "grid-1");
 
         g1.cluster().active(true);
 
@@ -63,9 +64,9 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     public void testThirdNodeJoin() throws Exception {
         IgniteEx[] g = startTestGrids(true);
 
-        IgniteEx g2 = (IgniteEx)G.start(
+        IgniteEx g2 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-3.xml").getAbsolutePath());
+                "modules/spring/src/test/config/ignite-config-with-encryption-2.xml").getAbsolutePath(), "grid-2");
 
         Collection<String> cacheNames = Arrays.asList("encrypted", "encrypted-2");
 
@@ -96,13 +97,13 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
     /** @throws Exception If failed. */
     public void testCreateEncryptedCacheGroup() throws Exception {
-        IgniteEx g0 = (IgniteEx)G.start(
+        IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-2.xml").getAbsolutePath());
+                "modules/spring/src/test/config/ignite-config-with-encryption-1.xml").getAbsolutePath(), "grid-0");
 
-        IgniteEx g1 = (IgniteEx)G.start(
+        IgniteEx g1 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-3.xml").getAbsolutePath());
+                "modules/spring/src/test/config/ignite-config-with-encryption-2.xml").getAbsolutePath(), "grid-1");
 
         g1.cluster().active(true);
 
@@ -133,13 +134,18 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
     /** @throws Exception If failed. */
     public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
-        IgniteEx g0 = (IgniteEx)G.start(
+        IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-4.xml").getAbsolutePath());
+                "modules/spring/src/test/config/ignite-config-with-encryption-1.xml").getAbsolutePath(), "grid-0");
 
         GridTestUtils.assertThrowsWithCause(() -> {
-            G.start(IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-5.xml").getAbsolutePath());
+            try {
+                IgnitionEx.start(IgniteUtils.resolveIgnitePath(
+                    "modules/spring/src/test/config/ignite-config-with-encryption-3.xml").getAbsolutePath(), "grid-1");
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
         }, IgniteCheckedException.class);
     }
 }
