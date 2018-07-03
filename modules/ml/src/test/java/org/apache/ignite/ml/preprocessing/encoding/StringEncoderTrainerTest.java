@@ -66,7 +66,9 @@ public class StringEncoderTrainerTest {
 
         DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        StringEncoderTrainer<Integer, String[]> strEncoderTrainer = new StringEncoderTrainer<>();
+        StringEncoderTrainer<Integer, String[]> strEncoderTrainer = new StringEncoderTrainer<Integer, String[]>()
+            .encodeFeature(0)
+            .encodeFeature(1);
 
         StringEncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
