@@ -378,11 +378,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param newRow New row.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
-     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
     public void store(CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-        boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
+        boolean prevRowAvailable) throws IgniteCheckedException {
         assert enabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
 
@@ -401,7 +400,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             if (qryProcEnabled)
-                qryProc.store(cctx, newRow, prevRow, prevRowAvailable, idxRebuild);
+                qryProc.store(cctx, newRow, prevRow, prevRowAvailable);
         }
         finally {
             invalidateResultCache();

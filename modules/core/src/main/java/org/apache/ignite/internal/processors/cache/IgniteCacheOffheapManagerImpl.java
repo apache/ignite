@@ -1636,11 +1636,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (val != null) {
                     incrementSize(cctx.cacheId());
 
-                    // The reason for 'idxRebuild' param being true below
-                    // is to allow the case when the new row version already exists
-                    // as an effect of normal re-balance.
                     if (cctx.queries().enabled())
-                        cctx.queries().store(updateRow, null, true, true);
+                        cctx.queries().store(updateRow, null, true);
                 }
             }
             finally {
@@ -1734,7 +1731,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 if (qryMgr.enabled())
-                    qryMgr.store(updateRow, null, true, false);
+                    qryMgr.store(updateRow, null, true);
 
                 updatePendingEntries(cctx, updateRow, oldRow);
 
@@ -1940,7 +1937,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 if (qryMgr.enabled())
-                    qryMgr.store(updateRow, null, true, false);
+                    qryMgr.store(updateRow, null, true);
 
                 updatePendingEntries(cctx, updateRow, oldRow);
 
@@ -2186,7 +2183,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.store(newRow, oldRow, true, false);
+                qryMgr.store(newRow, oldRow, true);
 
             updatePendingEntries(cctx, newRow, oldRow);
 

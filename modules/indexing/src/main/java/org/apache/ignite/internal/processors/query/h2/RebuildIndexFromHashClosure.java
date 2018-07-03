@@ -42,6 +42,6 @@ class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
     /** {@inheritDoc} */
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
         // prevRowAvailable is always true with MVCC on, and always false *on index rebuild* with MVCC off.
-        qryMgr.store(row, null, mvccEnabled, true);
+        qryMgr.store(row, null, mvccEnabled);
     }
 }
