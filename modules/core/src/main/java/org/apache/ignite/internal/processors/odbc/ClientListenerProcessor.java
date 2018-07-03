@@ -524,12 +524,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             else if (ctx instanceof OdbcConnectionContext)
                 sb.append("OdbcClient [");
             else
-                sb.append("PlatformClient [");
+                sb.append("ThinClient [");
 
             sb.append("id=" + ctx.connectionId());
             sb.append("user=").append(authCtx == null ? "<anonymous>" : authCtx.userName());
-            sb.append(", rmtAddr="+ses.remoteAddress().toString());
-            sb.append(", locAddr="+ses.localAddress().toString());
+            sb.append(", rmtAddr=" + ses.remoteAddress().toString());
+            sb.append(", locAddr=" + ses.localAddress().toString());
 
             return sb.append(']').toString();
         }

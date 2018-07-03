@@ -279,7 +279,7 @@ public class JdbcThinTcpIo {
             }
         }
         catch (Exception e) {
-            if(sock != null && !sock.isClosed())
+            if (sock != null && !sock.isClosed())
                 U.closeQuiet(sock);
 
             throw e;
