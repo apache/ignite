@@ -99,7 +99,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
             separated = in.readBoolean();
         }
         catch (EOFException ignore) {
-            // No-op.
+            // Ignore exception for backward compatibility, since header may not contain a "separated" flag.
         }
     }
 

@@ -118,7 +118,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
     // TODO Set current snapshot version before merge.
-    private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOC_SET_SINCE =
+    private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
         IgniteProductVersion.fromString("2.6.0");
 
     /** Initial capacity. */
@@ -1131,7 +1131,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         });
     }
 
-
     /**
      * Awaits for processor initialization.
      */
@@ -1557,7 +1556,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create = cfg != null;
         final boolean collocated = isCollocated(cfg);
         final boolean separated = !collocated &&
-            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOC_SET_SINCE,  ctx.grid().cluster().nodes());
+            U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE,  ctx.grid().cluster().nodes());
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {

@@ -151,11 +151,9 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @return {@code True} If a separated cache is used to store items.
      */
     protected boolean separated(IgniteSet set) {
-        IgniteSet impl = set;
-
         if (set instanceof GridCacheSetProxy)
-            impl = ((GridCacheSetProxy)set).delegate();
+            set = ((GridCacheSetProxy)set).delegate();
 
-        return GridTestUtils.getFieldValue(impl, "separated");
+        return GridTestUtils.getFieldValue(set, "separated");
     }
 }
