@@ -130,7 +130,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     static final byte ENCRYPTED = 1;
 
     /** */
-    static final byte CLEAR = 0;
+    static final byte PLAIN = 0;
 
     /**
      * @param cctx Cache shared context.
@@ -201,7 +201,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return;
             }
             else
-                buf.put(CLEAR);
+                buf.put(PLAIN);
         }
 
         writePlainRecord(rec, buf);
@@ -1602,7 +1602,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             writeEncryptedData(desc.groupId(), clData, buf);
         }
         else {
-            buf.put(CLEAR);
+            buf.put(PLAIN);
 
             putPlainDataEntry(buf, entry);
         }

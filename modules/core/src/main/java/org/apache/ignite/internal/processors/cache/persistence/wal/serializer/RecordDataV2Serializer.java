@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.typedef.T2;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.CLEAR;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.PLAIN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.ENCRYPTED;
 
 /**
@@ -135,7 +135,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return;
             }
             else
-                buf.put(CLEAR);
+                buf.put(PLAIN);
         }
 
         writePlainRecord(rec, buf);
