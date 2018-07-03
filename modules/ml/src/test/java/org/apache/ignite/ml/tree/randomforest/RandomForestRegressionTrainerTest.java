@@ -73,7 +73,7 @@ public class RandomForestRegressionTrainerTest {
         assertEquals(5, model.getModels().size());
 
         for (ModelsComposition.ModelOnFeaturesSubspace tree : model.getModels()) {
-            assertTrue(tree.getModel() instanceof DecisionTreeConditionalNode);
+            assertTrue(tree.getMdl() instanceof DecisionTreeConditionalNode);
             assertEquals(3, tree.getFeaturesMapping().size());
         }
     }

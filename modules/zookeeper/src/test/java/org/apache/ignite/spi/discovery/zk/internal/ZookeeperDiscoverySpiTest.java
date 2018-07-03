@@ -73,6 +73,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -469,6 +471,38 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             }, 30_000);
 
             assertNull(res.get());
+        }
+    }
+
+    /**
+     * Verifies that node attributes returned through public API are presented in standard form.
+     *
+     * It means there is no exotic classes that may unnecessary capture other classes from the context.
+     *
+     * For more information about the problem refer to
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-8857">IGNITE-8857</a>.
+     */
+    public void testNodeAttributesNotReferencingZookeeperClusterNode() throws Exception {
+        userAttrs = new HashMap<>();
+        userAttrs.put("testAttr", "testAttr");
+
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            Map<String, Object> attrs = ignite.cluster().localNode().attributes();
+
+            assertTrue(attrs instanceof PredicateMapView);
+
+            IgnitePredicate[] preds = GridTestUtils.getFieldValue(attrs, "preds");
+
+            assertNotNull(preds);
+
+            assertTrue(preds.length == 1);
+
+            assertTrue(preds[0] instanceof SecurityCredentialsAttrFilterPredicate);
+        }
+        finally {
+            userAttrs = null;
         }
     }
 
