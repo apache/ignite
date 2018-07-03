@@ -199,7 +199,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
                 "inside local listener registered on originating node. " +
                 "Only xid() operation allowed in other cases. ");
 
-        if (proxy == null) // Lazy init to speedup event creation.
+        if (proxy == null)
             proxy = tx.rollbackOnlyProxy();
 
         return proxy;
