@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,14 +34,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.PersistentStorageIOException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -304,12 +309,55 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test node invalidation when meta store is read only.
+     */
+    public void testReadOnlyMetaStore() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        IgniteInternalCache cache = ignite0.cachex(CACHE_NAME1);
+
+        cache.put(1, 1);
+
+        ignite0.cluster().active(false);
+
+        FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
+
+        File workDir = storeMgr.workDir();
+        File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
+        File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
+
+        metaStoreFile.setWritable(false);
+
+        try {
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        ignite0.cluster().active(true);
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+            });
+
+            waitFailure(IOException.class);
+
+            fut.cancel();
+        }
+        finally {
+            metaStoreFile.setWritable(true);
+        }
+    }
+
+    /**
      * @param expError Expected error.
      */
     private void waitFailure(Class<? extends Throwable> expError) throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(() -> failureHnd.failure(), 5_000L));
 
-        assertTrue(expError.isInstance(failureHnd.error()));
+        assertTrue(X.hasCause(failureHnd.error(), expError));
     }
 
     /**

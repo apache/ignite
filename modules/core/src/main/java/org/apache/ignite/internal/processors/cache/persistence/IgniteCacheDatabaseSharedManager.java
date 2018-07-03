@@ -801,14 +801,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param discoEvt Before exchange for the given discovery event.
+     *
+     * @return {@code True} if partitions have been restored from persistent storage.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
-        // No-op.
+    public boolean beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
+        return false;
     }
 
     /**
-     * @param fut Partition exchange future.
+     * Called when all partitions have been fully restored and pre-created on node start.
+     *
+     * @throws IgniteCheckedException If failed.
      */
+    public void onStateRestored() throws IgniteCheckedException {
+        // No-op.
+    }
+
+        /**
+         * @param fut Partition exchange future.
+         */
     public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         // No-op.
     }
@@ -1125,6 +1136,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param enabled flag.
      */
     public void walEnabled(int grpId, boolean enabled, boolean local) {
+        // No-op.
+    }
+
+    /**
+     * Marks last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
+     *
+     * @param grpId Group id.
+     */
+    public void lastCheckpointInapplicableForWalRebalance(int grpId) {
         // No-op.
     }
 

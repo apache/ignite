@@ -65,7 +65,7 @@ public class CacheBasedTruthWithPredictionCursorTest extends GridCommonAbstractT
             (k, v) -> v % 2 == 0,
             (k, v) -> new double[]{v},
             (k, v) -> v,
-            arr -> (int)arr[0]
+            vec -> (int)vec.get(0)
         );
 
         int cnt = 0;

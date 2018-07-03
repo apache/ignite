@@ -125,7 +125,7 @@ public class DatabaseListener {
 
     /** */
     private final AbstractListener availableDriversLsnr = new AbstractListener() {
-        @Override public Object execute(Map<String, Object> args) throws Exception {
+        @Override public Object execute(Map<String, Object> args) {
             if (driversFolder == null) {
                 log.info("JDBC drivers folder not specified, returning empty list");
 

@@ -443,23 +443,6 @@
                                     <includeScope>test</includeScope>
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>copy-domain</id>
-                                <goals>
-                                    <goal>copy</goal>
-                                </goals>
-                                <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>javax.cache</groupId>
-                                            <artifactId>app-domain</artifactId>
-                                            <version>${javax.cache.tck.version}</version>
-                                            <outputDirectory>${domain-lib-dir}</outputDirectory>
-                                            <destFileName>${domain-jar}</destFileName>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
                         </executions>
                     </plugin>
 
