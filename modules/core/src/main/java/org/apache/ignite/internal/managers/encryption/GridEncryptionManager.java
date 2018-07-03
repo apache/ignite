@@ -31,6 +31,7 @@ import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -49,6 +50,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
 
 /**
  * Manages cache keys and {@code EncryptionSpi} instances.
+ *
+ * NOTE: Following protocol applied to statically configured caches.
+ * For dynamically created caches key generated in request creation.
  *
  * Group keys generation protocol:
  *
@@ -76,6 +80,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  *     </li>
  * </ul>
  *
+ * @see DynamicCacheChangeRequest
+ * @see DynamicCacheChangeRequest#encryptionKey()
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
     private final Object mux = new Object();
