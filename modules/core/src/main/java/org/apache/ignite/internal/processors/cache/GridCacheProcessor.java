@@ -2085,9 +2085,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (stop) {
             if (restart) {
-                if (proxy == null) {
-                    GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+                GridCacheAdapter<?, ?> cache;
 
+                if (proxy == null && (cache = caches.get(cacheName)) != null) {
                     proxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
 
                     IgniteCacheProxyImpl<?, ?> oldProxy = jCacheProxies.putIfAbsent(cacheName, proxy);
@@ -2096,7 +2096,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         proxy = oldProxy;
                 }
 
-                proxy.restart();
+                if (proxy != null)
+                    proxy.restart();
             }
 
             if (proxy != null)
