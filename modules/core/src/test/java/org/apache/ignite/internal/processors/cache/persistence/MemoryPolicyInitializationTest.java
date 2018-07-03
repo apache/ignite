@@ -75,7 +75,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertTrue(allMemPlcs.size() == 2);
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
     }
@@ -91,7 +91,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 4);
+        assertTrue(allMemPlcs.size() == 3);
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -112,7 +112,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertTrue(allMemPlcs.size() == 2);
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -136,7 +136,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 4);
+        assertTrue(allMemPlcs.size() == 3);
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
