@@ -2820,10 +2820,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 entry.lockEntry();
 
-                if (entry.key() != null && entry.key().partition() < 0) {
-                    int k = 2;
-                }
-
                 if (entry.obsolete())
                     entry.unlockEntry();
                 else
