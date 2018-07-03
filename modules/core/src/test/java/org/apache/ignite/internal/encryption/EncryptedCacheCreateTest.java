@@ -54,8 +54,8 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
         DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
 
@@ -77,7 +77,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         grid.createCache(ccfg);
 
-        IgniteInternalCache<Object, Object> encrypted = grid.cachex(ENCRYPTED_CACHE);
+        IgniteInternalCache<Object, Object> enc = grid.cachex(ENCRYPTED_CACHE);
 
         EncryptionKey<?> key = grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
 

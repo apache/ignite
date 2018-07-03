@@ -61,8 +61,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
 
     /**
      * Encrypts key.
-     * We should add some info to check key integrity on decryption.
-     *
+     * Adds some info to check key integrity on decryption.
      *
      * @param key Key to encrypt.
      * @return Encrypted key.
@@ -70,7 +69,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
     byte[] encryptKey(K key);
 
     /**
-     * Decrypts key and check it integrity.
+     * Decrypts key and checks it integrity.
      * 
      * @param key Key to decrypt.
      * @return Encrypted key.
@@ -78,7 +77,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
     K decryptKey(byte[] key);
 
     /**
-     * @param dataSize Size of clear data in bytes.
+     * @param dataSize Size of plain data in bytes.
      * @return Size of encrypted data in bytes.
      */
     int encryptedSize(int dataSize);

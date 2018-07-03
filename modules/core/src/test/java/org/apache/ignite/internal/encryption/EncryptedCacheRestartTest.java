@@ -19,6 +19,7 @@ package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
@@ -37,24 +38,24 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     public void testCreateEncryptedCache() throws Exception {
-        IgniteEx[] grids = startTestGrids(true);
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
-        createEncCache(grids[0], grids[1], cacheName(), null);
+        createEncCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        checkEncCaches(grids[0], grids[1]);
+        checkEncCaches(grids.get1(), grids.get2());
 
         int grpId = CU.cacheGroupId(cacheName(), null);
 
         EncryptionKey<?> keyBeforeRestart =
-            grids[0].context().encryption().groupKey(grpId);
+            grids.get1().context().encryption().groupKey(grpId);
 
         stopAllGrids();
 
         grids = startTestGrids(false);
 
-        checkEncCaches(grids[0], grids[1]);
+        checkEncCaches(grids.get1(), grids.get2());
 
-        EncryptionKey<?> keyAfterRestart = grids[0].context().encryption().groupKey(grpId);
+        EncryptionKey<?> keyAfterRestart = grids.get1().context().encryption().groupKey(grpId);
 
         assertNotNull(keyAfterRestart);
         assertNotNull(keyAfterRestart.key());

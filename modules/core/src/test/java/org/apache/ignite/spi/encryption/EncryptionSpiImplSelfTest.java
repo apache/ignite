@@ -69,19 +69,19 @@ public class EncryptionSpiImplSelfTest extends TestCase {
         assertNotNull(k);
         assertNotNull(k.key());
 
-        byte[] clearText = "Just a test string to encrypt!".getBytes("UTF-8");
+        byte[] plainText = "Just a test string to encrypt!".getBytes("UTF-8");
 
-        byte[] cipherText = encSpi.encrypt(clearText, k);
+        byte[] cipherText = encSpi.encrypt(plainText, k);
 
         assertNotNull(cipherText);
-        assertEquals(encSpi.encryptedSize(clearText.length), cipherText.length);
+        assertEquals(encSpi.encryptedSize(plainText.length), cipherText.length);
         
         byte[] decryptedText = encSpi.decrypt(cipherText, k);
 
         assertNotNull(decryptedText);
-        assertEquals(clearText.length, decryptedText.length);
+        assertEquals(plainText.length, decryptedText.length);
 
-        assertEquals(new String(clearText, "UTF-8"), new String(decryptedText, "UTF-8"));
+        assertEquals(new String(plainText, "UTF-8"), new String(decryptedText, "UTF-8"));
     }
 
     /** @throws Exception If failed. */

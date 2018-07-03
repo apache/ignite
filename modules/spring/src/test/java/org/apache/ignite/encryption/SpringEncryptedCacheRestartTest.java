@@ -26,7 +26,9 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -41,8 +43,8 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteEx[] startTestGrids(boolean cleanPersistenceDir) throws Exception {
-        if (cleanPersistenceDir)
+    @Override protected T2<IgniteEx, IgniteEx> startTestGrids(boolean clnPersDir) throws Exception {
+        if (clnPersDir)
             cleanPersistenceDir();
 
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
@@ -57,12 +59,12 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         awaitPartitionMapExchange();
 
-        return new IgniteEx[] {g0, g1};
+        return new T2<>(g0, g1);
     }
 
     /** @throws Exception If failed. */
-    public void testThirdNodeJoin() throws Exception {
-        IgniteEx[] g = startTestGrids(true);
+    public void testEncKeysEqualsOnThirdNodeJoin() throws Exception {
+        T2<IgniteEx, IgniteEx> g = startTestGrids(true);
 
         IgniteEx g2 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
@@ -71,14 +73,14 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         Collection<String> cacheNames = Arrays.asList("encrypted", "encrypted-2");
 
         for (String cacheName : cacheNames) {
-            IgniteInternalCache<Object, Object> enc = g[0].cachex(cacheName);
+            IgniteInternalCache<Object, Object> enc = g.get1().cachex(cacheName);
 
             assertNotNull(enc);
 
             int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
 
-            EncryptionKey<?> key0 = g[0].context().encryption().groupKey(grpId);
-            EncryptionKey<?> key1 = g[1].context().encryption().groupKey(grpId);
+            EncryptionKey<?> key0 = g.get1().context().encryption().groupKey(grpId);
+            EncryptionKey<?> key1 = g.get2().context().encryption().groupKey(grpId);
             EncryptionKey<?> key2 = g2.context().encryption().groupKey(grpId);
 
             assertNotNull(cacheName, key0);

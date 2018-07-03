@@ -28,17 +28,17 @@ public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAwa
     private int grpId;
 
     /**
-     * Type of clear record.
+     * Type of plain record.
      */
-    private RecordType clearRecordType;
+    private RecordType plainRecType;
 
     /**
      * @param grpId Group id
-     * @param clearRecordType Clear record type.
+     * @param plainRecType Plain record type.
      */
-    public EncryptedRecord(int grpId, RecordType clearRecordType) {
+    public EncryptedRecord(int grpId, RecordType plainRecType) {
         this.grpId = grpId;
-        this.clearRecordType = clearRecordType;
+        this.plainRecType = plainRecType;
     }
 
     /** {@inheritDoc} */
@@ -52,9 +52,9 @@ public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAwa
     }
 
     /**
-     * @return Type of clear record.
+     * @return Type of plain record.
      */
-    public RecordType clearRecordType() {
-        return clearRecordType;
+    public RecordType plainRecordType() {
+        return plainRecType;
     }
 }

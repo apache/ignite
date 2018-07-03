@@ -38,7 +38,7 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     private FileIOFactory plainIOFactory;
 
     /**
-     * Size of clear data page in bytes.
+     * Size of plain data page in bytes.
      */
     private int pageSize;
 
@@ -60,7 +60,7 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     /**
      * @param plainIOFactory Underlying file factory.
      * @param groupId Group id.
-     * @param pageSize Size of clear data page in bytes.
+     * @param pageSize Size of plain data page in bytes.
      * @param encMgr Encryption manager.
      */
     EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, GridEncryptionManager encMgr) {

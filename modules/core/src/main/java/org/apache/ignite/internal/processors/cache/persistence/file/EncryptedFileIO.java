@@ -40,7 +40,7 @@ public class EncryptedFileIO implements FileIO {
     private int groupId;
 
     /**
-     * Size of clear data page in bytes.
+     * Size of plain data page in bytes.
      */
     private int pageSize;
 
@@ -67,7 +67,7 @@ public class EncryptedFileIO implements FileIO {
     /**
      * @param plainFileIO Underlying file.
      * @param groupId Group id.
-     * @param pageSize Size of clear data page in bytes.
+     * @param pageSize Size of plain data page in bytes.
      * @param headerSize Size of file header in bytes.
      * @param encMgr Encryption manager.
      */

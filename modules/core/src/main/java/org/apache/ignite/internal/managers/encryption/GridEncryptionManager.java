@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  *     <li>Joining node:
  *     <ul>
  *         <li>1. Collects and send all stored group keys to coordinator.</li>
- *         <li>2. Generate(but doesn't store locally!) and send cache keys for all new, locally configured groups.</li>
+ *         <li>2. Generate(but doesn't store locally!) and send keys for all statically configured groups in case the not presented in metastore.</li>
  *         <li>3. Store all keys received from coordinator to local store.</li>
  *     </ul>
  *     </li>
@@ -74,8 +74,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  *     <li>All nodes:
  *     <ul>
  *         <li>1. If new key for group doesn't exists locally it added to local store.</li>
- *         <li>2. If new key for group exists locally, then received key skipped.
- *         It was added by concurrently joining node.</li>
+ *         <li>2. If new key for group exists locally, then received key skipped.</li>
  *     </ul>
  *     </li>
  * </ul>
@@ -84,6 +83,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  * @see DynamicCacheChangeRequest#encryptionKey()
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
+    /** Synchronization mutex. */
     private final Object mux = new Object();
 
     /** Prefix for a encryption group key in meta store. */

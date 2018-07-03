@@ -22,6 +22,7 @@ import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
@@ -40,61 +41,61 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     public void testEncryptedCacheDestroy() throws Exception {
-        IgniteEx[] grids = startTestGrids(true);
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
-        createEncCache(grids[0], grids[1], cacheName(), null);
+        createEncCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        checkEncCaches(grids[0], grids[1]);
+        checkEncCaches(grids.get1(), grids.get2());
 
         String encryptedCacheName = cacheName();
 
-        grids[0].destroyCache(encryptedCacheName);
+        grids.get1().destroyCache(encryptedCacheName);
 
-        checkCacheDestroyed(grids[1], encryptedCacheName, null, true);
+        checkCacheDestroyed(grids.get2(), encryptedCacheName, null, true);
 
         stopAllGrids(true);
 
         grids = startTestGrids(false);
 
-        checkCacheDestroyed(grids[0], encryptedCacheName, null, true);
+        checkCacheDestroyed(grids.get1(), encryptedCacheName, null, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testEncryptedCacheFromGroupDestroy() throws Exception {
-        IgniteEx[] grids = startTestGrids(true);
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         String encCacheName = cacheName();
 
         String grpName = "group1";
 
-        createEncCache(grids[0], grids[1], encCacheName + "2", grpName);
-        createEncCache(grids[0], grids[1], encCacheName, grpName);
+        createEncCache(grids.get1(), grids.get2(), encCacheName + "2", grpName);
+        createEncCache(grids.get1(), grids.get2(), encCacheName, grpName);
 
-        checkEncCaches(grids[0], grids[1]);
+        checkEncCaches(grids.get1(), grids.get2());
 
-        grids[0].destroyCache(encCacheName);
+        grids.get1().destroyCache(encCacheName);
 
-        checkCacheDestroyed(grids[1], encCacheName, grpName, false);
-
-        stopAllGrids(true);
-
-        grids = startTestGrids(false);
-
-        checkCacheDestroyed(grids[0], encCacheName, grpName, false);
-
-        grids[0].destroyCache(encCacheName + "2");
-
-        checkCacheDestroyed(grids[0], encCacheName + "2", grpName, true);
+        checkCacheDestroyed(grids.get2(), encCacheName, grpName, false);
 
         stopAllGrids(true);
 
         grids = startTestGrids(false);
 
-        checkCacheDestroyed(grids[0], encCacheName, grpName, true);
+        checkCacheDestroyed(grids.get1(), encCacheName, grpName, false);
 
-        checkCacheDestroyed(grids[0], encCacheName + "2", grpName, true);
+        grids.get1().destroyCache(encCacheName + "2");
+
+        checkCacheDestroyed(grids.get1(), encCacheName + "2", grpName, true);
+
+        stopAllGrids(true);
+
+        grids = startTestGrids(false);
+
+        checkCacheDestroyed(grids.get1(), encCacheName, grpName, true);
+
+        checkCacheDestroyed(grids.get1(), encCacheName + "2", grpName, true);
     }
 
     /** */

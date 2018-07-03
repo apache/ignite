@@ -82,7 +82,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -103,7 +102,6 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 
 /**
@@ -147,7 +145,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord rec) throws IgniteCheckedException {
-        int clSz = clearSize(rec);
+        int clSz = plainSize(rec);
 
         if (rec.type().mayBeEncrypted()) {
             if (needEncryption(rec))
@@ -180,21 +178,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             if (clData.get1() == null)
                 return new EncryptedRecord(clData.get2(), type);
 
-            return readClearRecord(type, clData.get1());
+            return readPlainRecord(type, clData.get1());
         }
 
-        return readClearRecord(type, in);
+        return readPlainRecord(type, in);
     }
 
     /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec.type().mayBeEncrypted()) {
             if (needEncryption(rec)) {
-                int clSz = clearSize(rec);
+                int clSz = plainSize(rec);
 
                 ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-                writeClearRecord(rec, clData);
+                writePlainRecord(rec, clData);
 
                 int grpId = ((WalRecordCacheGroupAware)rec).groupId();
 
@@ -206,7 +204,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.put(CLEAR);
         }
 
-        writeClearRecord(rec, buf);
+        writePlainRecord(rec, buf);
     }
 
     /**
@@ -232,7 +230,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * Reads and decrypt data from {@code in} stream.
      *
      * @param in Input stream.
-     * @return Clear data stream.
+     * @return Plain data stream.
      * @throws IOException If failed.
      */
     T2<ByteBufferBackedDataInput, Integer> readEncryptedData(ByteBufferBackedDataInput in)
@@ -276,7 +274,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * Writes encrypted {@code clData} to {@code dst} stream.
      *
      * @param grpId Group id;
-     * @param clData Clear data.
+     * @param clData Plain data.
      * @param dst Destination buffer.
      */
     void writeEncryptedData(int grpId, ByteBuffer clData, ByteBuffer dst) {
@@ -295,10 +293,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param record Record to measure.
-     * @return Clear(without encryption) size of serialized rec in bytes.
+     * @return Plain(without encryption) size of serialized rec in bytes.
      * @throws IgniteCheckedException If failed.
      */
-    int clearSize(WALRecord record) throws IgniteCheckedException {
+    int plainSize(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
             case PAGE_RECORD:
                 assert record instanceof PageSnapshot;
@@ -477,7 +475,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * Reads {@code WalRecord} of {@code type} from input.
-     * Input should be clear(not encrypted).
+     * Input should be plain(not encrypted).
      *
      * @param type Record type.
      * @param in Input
@@ -485,7 +483,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    WALRecord readClearRecord(RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    WALRecord readPlainRecord(RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
@@ -1054,7 +1052,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Output buffer.
      * @throws IgniteCheckedException If failed.
      */
-    void writeClearRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         switch (rec.type()) {
             case PAGE_RECORD:
                 PageSnapshot snap = (PageSnapshot)rec;
@@ -1599,14 +1597,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-            putClearDataEntry(clData, entry);
+            putPlainDataEntry(clData, entry);
 
             writeEncryptedData(desc.groupId(), clData, buf);
         }
         else {
             buf.put(CLEAR);
 
-            putClearDataEntry(buf, entry);
+            putPlainDataEntry(buf, entry);
         }
     }
 
@@ -1614,7 +1612,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer to write to.
      * @param entry Data entry.
      */
-    private void putClearDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+    private void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1699,17 +1697,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             if (clData.get1() == null)
                 return null;
 
-            return readClearDataEntry(clData.get1());
+            return readPlainDataEntry(clData.get1());
         }
 
-        return readClearDataEntry(in);
+        return readPlainDataEntry(in);
     }
 
     /**
      * @param in Input to read from.
      * @return Read entry.
      */
-    private DataEntry readClearDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    private DataEntry readPlainDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();

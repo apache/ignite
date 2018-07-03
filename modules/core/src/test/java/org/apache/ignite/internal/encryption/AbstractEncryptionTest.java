@@ -35,7 +35,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
 import org.apache.ignite.spi.encryption.EncryptionSpiImplSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -67,8 +71,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     public static final String KEYSTORE_PASSWORD = "love_sex_god";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
         EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
 
@@ -158,12 +162,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /**
      * Starts tests grid instances.
      *
-     * @param cleanPersistenceDir If {@code true} than before start persistence dir are cleaned.
+     * @param clnPersDir If {@code true} than before start persistence dir are cleaned.
      * @return Started grids.
      * @throws Exception If failed.
      */
-    protected IgniteEx[] startTestGrids(boolean cleanPersistenceDir) throws Exception {
-        if (cleanPersistenceDir)
+    protected T2<IgniteEx, IgniteEx> startTestGrids(boolean clnPersDir) throws Exception {
+        if (clnPersDir)
             cleanPersistenceDir();
 
         IgniteEx grid0 = startGrid(GRID_0);
@@ -174,7 +178,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        return new IgniteEx[] {grid0, grid1};
+        return new T2<>(grid0, grid1);
     }
 
     /** */
