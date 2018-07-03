@@ -1412,8 +1412,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
         catch (IOException e) {
             StorageException ex = new StorageException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
+
             if (failureProcessor != null)
                 failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+            
             throw ex;
         }
     }

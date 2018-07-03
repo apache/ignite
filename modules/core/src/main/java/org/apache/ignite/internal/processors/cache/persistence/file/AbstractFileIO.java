@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.EOFException;
@@ -61,7 +78,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf);
             }
-        }, avail(destBuf.remaining()), false);
+        }, available(destBuf.remaining()), false);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +87,7 @@ public abstract class AbstractFileIO implements FileIO {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf, position + offs);
             }
-        }, avail(destBuf.remaining(), position), false);
+        }, available(destBuf.remaining(), position), false);
     }
 
     /** {@inheritDoc} */
@@ -112,15 +129,15 @@ public abstract class AbstractFileIO implements FileIO {
     /**
      * @param requested Requested.
      */
-    private int avail(int requested) throws IOException {
-        return avail(requested, position());
+    private int available(int requested) throws IOException {
+        return available(requested, position());
     }
 
     /**
      * @param requested Requested.
      * @param position Position.
      */
-    private int avail(int requested, long position) throws IOException {
+    private int available(int requested, long position) throws IOException {
         long avail = size() - position;
 
         return requested > avail ? (int) avail : requested;
