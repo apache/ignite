@@ -48,11 +48,6 @@ import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStati
 import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheLockTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallingNodeJoinSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicNearEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
@@ -97,13 +92,10 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloa
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheFailedUpdateResponseTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
@@ -159,13 +151,6 @@ public class IgniteCacheTestSuite4 extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 4");
-
-        // Multi node update.
-        suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
-        suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
-        suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
-        suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicLoadAllTest.class);
         suite.addTestSuite(IgniteCacheAtomicLocalLoadAllTest.class);
@@ -234,7 +219,6 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteDynamicCacheStartNoExchangeTimeoutTest.class);
         suite.addTestSuite(CacheAffinityEarlyTest.class);
         suite.addTestSuite(IgniteCacheCreatePutMultiNodeSelfTest.class);
-        suite.addTestSuite(IgniteCacheCreatePutTest.class);
         suite.addTestSuite(CacheStartOnJoinTest.class);
         suite.addTestSuite(IgniteCacheStartTest.class);
         suite.addTestSuite(CacheDiscoveryDataConcurrentJoinTest.class);
@@ -335,8 +319,6 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
         suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
         suite.addTestSuite(IgniteCachePrimarySyncTest.class);
-        suite.addTestSuite(IgniteTxCachePrimarySyncTest.class);
-        suite.addTestSuite(IgniteTxCacheWriteSynchronizationModesMultithreadedTest.class);
         suite.addTestSuite(CachePutIfAbsentTest.class);
 
         suite.addTestSuite(MarshallerCacheJobRunNodeRestartTest.class);
