@@ -312,7 +312,7 @@ public abstract class GridWorker implements Runnable {
 
     /** */
     public void updateHeartbeat() {
-        heartbeatTimeMillis = System.currentTimeMillis();
+        heartbeatTimeMillis = U.currentTimeMillis();
     }
 
     /** */

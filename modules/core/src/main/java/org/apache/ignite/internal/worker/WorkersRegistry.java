@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
@@ -49,7 +50,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
 
     /** */
-    private volatile long lastCheckStartTimestamp = System.currentTimeMillis();
+    private volatile long lastCheckStartTimestamp = U.currentTimeMillis();
 
     /** Last thread that performed the check. Null reference denotes "checking is in progress". */
     private AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
@@ -139,12 +140,12 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
         Thread prevCheckerThread = lastChecker.get();
 
         if (prevCheckerThread == null ||
-            System.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS ||
+            U.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
 
         try {
-            lastCheckStartTimestamp = System.currentTimeMillis();
+            lastCheckStartTimestamp = U.currentTimeMillis();
 
             for (int i = 0; i < NO_OF_WORKERS_TO_CHECK_AT_ONCE; i++) {
                 if (!checkIter.hasNext()) {
@@ -174,7 +175,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         checkIter = registeredWorkers.entrySet().iterator();
                     }
 
-                    if (System.currentTimeMillis() - worker.heartbeatTimeMillis() > worker.criticalHeartbeatTimeoutMs()) {
+                    if (U.currentTimeMillis() - worker.heartbeatTimeMillis() > worker.criticalHeartbeatTimeoutMs()) {
                         GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
 
                         if (workerAgain != null && workerAgain == worker)
