@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -318,9 +320,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testTopologyChangesWithConstantLoad() throws Exception {
         final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
 
-        final int entriesCnt = 1_000;
+        final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
         final int topChanges = 50;
+        final boolean allowRemoves = true;
 
         final AtomicLong orderCounter = new AtomicLong();
         final AtomicBoolean stop = new AtomicBoolean();
@@ -347,7 +350,17 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         final AtomicInteger nodesCnt = new AtomicInteger(4);
 
         IgniteInternalFuture fut = runMultiThreadedAsync(new Callable<Void>() {
+            /**
+             * @param chance Chance of remove operation in percents.
+             * @return {@code true} if it should be remove operation.
+             */
+            private boolean removeOp(int chance) {
+                return ThreadLocalRandom.current().nextInt(100) + 1 <= chance;
+            }
+
             @Override public Void call() throws Exception {
+                Random rnd = ThreadLocalRandom.current();
+
                 while (true) {
                     if (stop.get())
                         return null;
@@ -360,27 +373,29 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         continue;
                     }
 
-                    int k = ThreadLocalRandom.current().nextInt(entriesCnt);
+                    int k = rnd.nextInt(entriesCnt);
                     long order = orderCounter.get();
-                    int v1 = ThreadLocalRandom.current().nextInt();
-                    int v2 = ThreadLocalRandom.current().nextInt();
 
-                    int n = nodesCnt.get();
+                    int v1 = 0, v2 = 0;
+                    boolean remove = false;
 
-                    if (n <= 0)
-                        continue;
+                    if (removeOp(allowRemoves ? 20 : 0))
+                        remove = true;
+                    else {
+                        v1 = rnd.nextInt();
+                        v2 = rnd.nextInt();
+                    }
+
+                    int nodes = nodesCnt.get();
 
                     Ignite ignite;
 
                     try {
-                        ignite = grid(ThreadLocalRandom.current().nextInt(n));
+                        ignite = grid(rnd.nextInt(nodes));
                     }
                     catch (Exception ignored) {
                         continue;
                     }
-
-                    if (ignite == null)
-                        continue;
 
                     Transaction tx = null;
                     boolean success = true;
@@ -389,7 +404,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         tx = ignite.transactions().txStart();
 
                     try {
-                        ignite.cache(INDEXED_CACHE).put(k, new TestValue(order, v1, v2));
+                        IgniteCache<Object, Object> cache = ignite.cache(INDEXED_CACHE);
+
+                        if (remove)
+                            cache.remove(k);
+                        else
+                            cache.put(k, new TestValue(order, v1, v2));
                     }
                     catch (Exception ignored) {
                         success = false;
@@ -406,7 +426,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                     }
 
                     if (success) {
-                        map.put(k, new TestValue(order, v1, v2));
+                        map.put(k, new TestValue(order, v1, v2, remove));
 
                         orderCounter.incrementAndGet();
                     }
@@ -414,7 +434,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
         }, 1, "load-runner");
 
-        boolean[] changes = new boolean[] {false, false, true, true};
+        // "False" means stop last started node, "True" - start new node.
+        List<Boolean> predefinedChanges = Lists.newArrayList(false, false, true, true);
+
+        List<Boolean> topChangesHistory = new ArrayList<>();
 
         try {
             for (int it = 0; it < topChanges; it++) {
@@ -423,31 +446,40 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 U.sleep(3_000);
 
-                boolean add;
+                boolean addNode;
 
-                if (it < changes.length)
-                    add = changes[it];
+                if (it < predefinedChanges.size())
+                    addNode = predefinedChanges.get(it);
                 else if (nodesCnt.get() <= maxNodesCnt / 2)
-                    add = true;
+                    addNode = true;
                 else if (nodesCnt.get() >= maxNodesCnt)
-                    add = false;
+                    addNode = false;
                 else // More chance that node will be added
-                    add = ThreadLocalRandom.current().nextInt(3) <= 1;
+                    addNode = ThreadLocalRandom.current().nextInt(3) <= 1;
 
-                if (add)
+                if (addNode)
                     startGrid(nodesCnt.getAndIncrement());
                 else
                     stopGrid(nodesCnt.decrementAndGet());
 
+                topChangesHistory.add(addNode);
+
                 awaitPartitionMapExchange();
+
+                if (fut.error() != null)
+                    break;
 
                 // Suspend loader and wait for last operation completion.
                 suspend.set(true);
                 GridTestUtils.waitForCondition(suspended::get, 5_000);
 
+                // Fix last successful cache operation to skip operations that can be performed during check.
                 long maxOrder = orderCounter.get();
 
                 for (Map.Entry<Integer, TestValue> entry : map.entrySet()) {
+                    final String assertMsg = "Iteration: " + it + ". Changes: " + Objects.toString(topChangesHistory)
+                            + ". Key: " + Integer.toString(entry.getKey());
+
                     TestValue expected = entry.getValue();
 
                     if (expected.order < maxOrder)
@@ -455,10 +487,16 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                     TestValue actual = cache.get(entry.getKey());
 
+                    if (expected.removed) {
+                        assertNull(assertMsg + " should be removed.", actual);
+
+                        continue;
+                    }
+
                     if (entry.getValue().order < maxOrder)
                         continue;
 
-                    assertEquals(it + " " + Integer.toString(entry.getKey()), expected, actual);
+                    assertEquals(assertMsg, expected, actual);
                 }
 
                 // Resume progress for loader.
@@ -471,11 +509,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
 
         fut.get();
-
-        awaitPartitionMapExchange();
-
-        for (Map.Entry<Integer, TestValue> entry : map.entrySet())
-            assertEquals(Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
     }
 
     /**
@@ -624,21 +657,27 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      */
     private static class TestValue implements Serializable {
-        /** Order. */
+        /** Operation order. */
         private final long order;
+
         /** V 1. */
         private final int v1;
+
         /** V 2. */
         private final int v2;
 
-        /**
-         * @param v1 V 1.
-         * @param v2 V 2.
-         */
+        /** Flag indicates that value has removed. */
+        private final boolean removed;
+
         private TestValue(long order, int v1, int v2) {
+            this(order, v1, v2, false);
+        }
+
+        private TestValue(long order, int v1, int v2, boolean removed) {
             this.order = order;
             this.v1 = v1;
             this.v2 = v2;
+            this.removed = removed;
         }
 
         /** {@inheritDoc} */
