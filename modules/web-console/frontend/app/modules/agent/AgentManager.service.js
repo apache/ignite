@@ -21,6 +21,8 @@ import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 
+import AgentModal from './AgentModal.service';
+// @ts-ignore
 import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
@@ -80,7 +82,7 @@ class ConnectionState {
         if (_.isNil(this.cluster))
             this.cluster = _.head(clusters);
 
-        if (nonNil(this.cluster))
+        if (this.cluster)
             this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
 
         if (count === 0)
@@ -113,13 +115,16 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', ClusterLoginService.name];
+    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', AgentModal.name, 'UserNotifications', 'IgniteVersion', ClusterLoginService.name];
 
     /** @type {ng.IScope} */
     $root;
 
     /** @type {ng.IQService} */
     $q;
+
+    /** @type {AgentModal} */
+    agentModal;
 
     /** @type {ClusterLoginService} */
     ClusterLoginSrv;
@@ -151,8 +156,8 @@ export default class AgentManager {
         }
     }
 
-    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterLoginSrv) {
-        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterLoginSrv});
+    constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
+        Object.assign(this, {$root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv});
 
         let prevCluster;
 
@@ -183,36 +188,34 @@ export default class AgentManager {
     }
 
     connect() {
-        const self = this;
-
-        if (nonNil(self.socket))
+        if (nonNil(this.socket))
             return;
 
-        self.socket = self.socketFactory();
+        this.socket = this.socketFactory();
 
         const onDisconnect = () => {
-            const conn = self.connectionSbj.getValue();
+            const conn = this.connectionSbj.getValue();
 
             conn.disconnect();
 
-            self.connectionSbj.next(conn);
+            this.connectionSbj.next(conn);
         };
 
-        self.socket.on('connect_error', onDisconnect);
+        this.socket.on('connect_error', onDisconnect);
 
-        self.socket.on('disconnect', onDisconnect);
+        this.socket.on('disconnect', onDisconnect);
 
-        self.socket.on('agents:stat', ({clusters, count}) => {
-            const conn = self.connectionSbj.getValue();
+        this.socket.on('agents:stat', ({clusters, count}) => {
+            const conn = this.connectionSbj.getValue();
 
-            conn.update(self.isDemoMode(), count, clusters);
+            conn.update(this.isDemoMode(), count, clusters);
 
-            self.connectionSbj.next(conn);
+            this.connectionSbj.next(conn);
         });
 
-        self.socket.on('cluster:changed', (cluster) => this.updateCluster(cluster));
+        this.socket.on('cluster:changed', (cluster) => this.updateCluster(cluster));
 
-        self.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
+        this.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
     }
 
     saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
@@ -286,30 +289,28 @@ export default class AgentManager {
      * @returns {ng.IPromise}
      */
     startAgentWatch(backText, backState) {
-        const self = this;
+        this.backText = backText;
+        this.backState = backState;
 
-        self.backText = backText;
-        self.backState = backState;
-
-        const conn = self.connectionSbj.getValue();
+        const conn = this.connectionSbj.getValue();
 
         conn.useConnectedCluster();
 
-        self.connectionSbj.next(conn);
+        this.connectionSbj.next(conn);
 
         this.modalSubscription && this.modalSubscription.unsubscribe();
 
-        self.modalSubscription = this.connectionSbj.subscribe({
+        this.modalSubscription = this.connectionSbj.subscribe({
             next: ({state}) => {
                 switch (state) {
                     case State.CONNECTED:
                     case State.CLUSTER_DISCONNECTED:
-                        this.AgentModal.hide();
+                        this.agentModal.hide();
 
                         break;
 
                     case State.AGENT_DISCONNECTED:
-                        this.AgentModal.agentDisconnected(self.backText, self.backState);
+                        this.agentModal.agentDisconnected(this.backText, this.backState);
 
                         break;
 
@@ -319,7 +320,7 @@ export default class AgentManager {
             }
         });
 
-        return self.awaitAgent();
+        return this.awaitAgent();
     }
 
     /**
@@ -328,34 +329,32 @@ export default class AgentManager {
      * @returns {ng.IPromise}
      */
     startClusterWatch(backText, backState) {
-        const self = this;
+        this.backText = backText;
+        this.backState = backState;
 
-        self.backText = backText;
-        self.backState = backState;
-
-        const conn = self.connectionSbj.getValue();
+        const conn = this.connectionSbj.getValue();
 
         conn.useConnectedCluster();
 
-        self.connectionSbj.next(conn);
+        this.connectionSbj.next(conn);
 
         this.modalSubscription && this.modalSubscription.unsubscribe();
 
-        self.modalSubscription = this.connectionSbj.subscribe({
+        this.modalSubscription = this.connectionSbj.subscribe({
             next: ({state}) => {
                 switch (state) {
                     case State.CONNECTED:
-                        this.AgentModal.hide();
+                        this.agentModal.hide();
 
                         break;
 
                     case State.AGENT_DISCONNECTED:
-                        this.AgentModal.agentDisconnected(self.backText, self.backState);
+                        this.agentModal.agentDisconnected(this.backText, this.backState);
 
                         break;
 
                     case State.CLUSTER_DISCONNECTED:
-                        self.AgentModal.clusterDisconnected(self.backText, self.backState);
+                        this.agentModal.clusterDisconnected(this.backText, this.backState);
 
                         break;
 
@@ -365,9 +364,9 @@ export default class AgentManager {
             }
         });
 
-        self.$transitions.onExit({}, () => self.stopWatch());
+        this.$transitions.onExit({}, () => this.stopWatch());
 
-        return self.awaitCluster();
+        return this.awaitCluster();
     }
 
     stopWatch() {
@@ -414,12 +413,8 @@ export default class AgentManager {
     }
 
     /**
-     * @param {Object} jdbcDriverJar
-     * @param {Object} jdbcDriverClass
-     * @param {Object} jdbcUrl
-     * @param {Object} user
-     * @param {Object} password
-     * @returns {Promise}
+     * @param {{jdbcDriverJar: String, jdbcDriverClass: String, jdbcUrl: String, user: String, password: String}}
+     * @returns {ng.IPromise}
      */
     schemas({jdbcDriverJar, jdbcDriverClass, jdbcUrl, user, password}) {
         const info = {user, password};
@@ -428,13 +423,7 @@ export default class AgentManager {
     }
 
     /**
-     * @param {Object} jdbcDriverJar
-     * @param {Object} jdbcDriverClass
-     * @param {Object} jdbcUrl
-     * @param {Object} user
-     * @param {Object} password
-     * @param {Object} schemas
-     * @param {Object} tablesOnly
+     * @param {{jdbcDriverJar: String, jdbcDriverClass: String, jdbcUrl: String, user: String, password: String, schemas: String, tablesOnly: String}}
      * @returns {ng.IPromise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
      */
     tables({jdbcDriverJar, jdbcDriverClass, jdbcUrl, user, password, schemas, tablesOnly}) {
@@ -444,12 +433,61 @@ export default class AgentManager {
     }
 
     /**
+     * @param {Object} cluster
+     * @param {Object} credentials
+     * @param {String} event
+     * @param {Object} params
+     * @returns {ng.IPromise}
+     * @private
+     */
+    _executeOnActiveCluster(cluster, credentials, event, params) {
+        return this._sendToAgent(event, {clusterId: cluster.id, params, credentials})
+            .then((res) => {
+                const {status = SuccessStatus.STATUS_SUCCESS} = res;
+
+                switch (status) {
+                    case SuccessStatus.STATUS_SUCCESS:
+                        if (cluster.secured)
+                            this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
+
+                        if (res.zipped)
+                            return this.pool.postMessage(res.data);
+
+                        return res;
+
+                    case SuccessStatus.STATUS_FAILED:
+                        if (res.error.startsWith('Failed to handle request - unknown session token (maybe expired session)')) {
+                            this.clustersSecrets.get(cluster.id).resetSessionToken();
+
+                            return this._executeOnCluster(event, params);
+                        }
+
+                        throw new Error(res.error);
+
+                    case SuccessStatus.AUTH_FAILED:
+                        this.clustersSecrets.get(cluster.id).resetCredentials();
+
+                        throw new Error('Failed to authenticate in cluster with provided credentials');
+
+                    case SuccessStatus.SECURITY_CHECK_FAILED:
+                        throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
+
+                    default:
+                        throw new Error('Illegal status in node response');
+                }
+            });
+    }
+
+    /**
      * @param {String} event
      * @param {Object} params
      * @returns {Promise}
      * @private
      */
-    _executeOnCurrentCluster(event, params) {
+    _executeOnCluster(event, params) {
+        if (this.isDemoMode())
+            return Promise.resolve(this._executeOnActiveCluster({}, {}, event, params));
+
         return this.connectionSbj.first().toPromise()
             .then(({cluster}) => {
                 if (_.isNil(cluster))
@@ -473,43 +511,7 @@ export default class AgentManager {
 
                 return {cluster, credentials: {}};
             })
-            .then(({cluster, credentials}) => {
-                return this._sendToAgent(event, {clusterId: cluster.id, params, credentials})
-                    .then((res) => {
-                        const {status = SuccessStatus.STATUS_SUCCESS} = res;
-
-                        switch (status) {
-                            case SuccessStatus.STATUS_SUCCESS:
-                                if (cluster.secured)
-                                    this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
-
-                                if (res.zipped)
-                                    return this.pool.postMessage(res.data);
-
-                                return res;
-
-                            case SuccessStatus.STATUS_FAILED:
-                                if (res.error.startsWith('Failed to handle request - unknown session token (maybe expired session)')) {
-                                    this.clustersSecrets.get(cluster.id).resetSessionToken();
-
-                                    return this._executeOnCurrentCluster(event, params);
-                                }
-
-                                throw new Error(res.error);
-
-                            case SuccessStatus.AUTH_FAILED:
-                                this.clustersSecrets.get(cluster.id).resetCredentials();
-
-                                throw new Error('Failed to authenticate in cluster with provided credentials');
-
-                            case SuccessStatus.SECURITY_CHECK_FAILED:
-                                throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
-
-                            default:
-                                throw new Error('Illegal status in node response');
-                        }
-                    });
-            });
+            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params));
     }
 
     /**
@@ -518,14 +520,14 @@ export default class AgentManager {
      * @returns {Promise}
      */
     topology(attr = false, mtr = false) {
-        return this._executeOnCurrentCluster('node:rest', {cmd: 'top', attr, mtr});
+        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr});
     }
 
     /**
      * @returns {Promise}
      */
     metadata() {
-        return this._executeOnCurrentCluster('node:rest', {cmd: 'metadata'})
+        return this._executeOnCluster('node:rest', {cmd: 'metadata'})
             .then((caches) => {
                 let types = [];
 
@@ -628,7 +630,7 @@ export default class AgentManager {
 
         nids = _.isArray(nids) ? nids.join(';') : maskNull(nids);
 
-        return this._executeOnCurrentCluster('node:visor', {taskId, nids, args});
+        return this._executeOnCluster('node:visor', {taskId, nids, args});
     }
 
     /**
