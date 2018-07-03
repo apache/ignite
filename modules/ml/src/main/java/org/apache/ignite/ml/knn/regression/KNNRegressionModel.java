@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.ml.knn.regression;
 
+import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
@@ -23,8 +24,6 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
-
-import java.util.List;
 
 /**
  * This class provides kNN Multiple Linear Regression or Locally [weighted] regression (Simple and Weighted versions).
@@ -37,7 +36,7 @@ import java.util.List;
  *     <li>Regression means approximating a function.</li>
  * </ul>
  */
-public class KNNRegressionModel<K,V> extends KNNClassificationModel<K,V> {
+public class KNNRegressionModel extends KNNClassificationModel {
     /** */
     private static final long serialVersionUID = -721836321291120543L;
 
