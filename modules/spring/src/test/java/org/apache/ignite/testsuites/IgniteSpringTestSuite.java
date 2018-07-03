@@ -22,7 +22,6 @@ import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
 import org.apache.ignite.cache.spring.SpringCacheTest;
-import org.apache.ignite.encryption.SpringEncryptedCacheGroupCreateTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
 import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
 import org.apache.ignite.internal.IgniteSpringBeanTest;
@@ -94,7 +93,6 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(SpringCacheTest.class);
 
         suite.addTestSuite(SpringEncryptedCacheRestartTest.class);
-        suite.addTestSuite(SpringEncryptedCacheGroupCreateTest.class);
 
         return suite;
     }

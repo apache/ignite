@@ -20,12 +20,14 @@ package org.apache.ignite.encryption;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /** */
 public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
@@ -89,5 +91,55 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
             assertEquals(cacheName, key0.key(), key1.key());
             assertEquals(cacheName, key1.key(), key2.key());
         }
+    }
+
+
+    /** @throws Exception If failed. */
+    public void testCreateEncryptedCacheGroup() throws Exception {
+        IgniteEx g0 = (IgniteEx)G.start(
+            IgniteUtils.resolveIgnitePath(
+                "modules/spring/src/test/config/ignite-config-with-encryption-2.xml").getAbsolutePath());
+
+        IgniteEx g1 = (IgniteEx)G.start(
+            IgniteUtils.resolveIgnitePath(
+                "modules/spring/src/test/config/ignite-config-with-encryption-3.xml").getAbsolutePath());
+
+        g1.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        IgniteInternalCache<Object, Object> encrypted = g0.cachex("encrypted");
+
+        assertNotNull(encrypted);
+
+        IgniteInternalCache<Object, Object> encrypted2 = g0.cachex("encrypted-2");
+
+        assertNotNull(encrypted2);
+
+        EncryptionKey<?> key = g0.context().encryption().groupKey(
+            CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
+
+        assertNotNull(key);
+        assertNotNull(key.key());
+
+        EncryptionKey<?> key2 = g0.context().encryption().groupKey(
+            CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
+
+        assertNotNull(key2);
+        assertNotNull(key2.key());
+
+        assertEquals(key.key(), key2.key());
+    }
+
+    /** @throws Exception If failed. */
+    public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
+        IgniteEx g0 = (IgniteEx)G.start(
+            IgniteUtils.resolveIgnitePath(
+                "modules/spring/src/test/config/ignite-config-with-encryption-4.xml").getAbsolutePath());
+
+        GridTestUtils.assertThrowsWithCause(() -> {
+            G.start(IgniteUtils.resolveIgnitePath(
+                "modules/spring/src/test/config/ignite-config-with-encryption-5.xml").getAbsolutePath());
+        }, IgniteCheckedException.class);
     }
 }
