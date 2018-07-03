@@ -316,6 +316,16 @@ public class IgniteNativeIoLib {
     public static native int fsync(int fd);
 
     /**
+     * Synchronize a file's in-core state with storage device. See "man 2 fsync".
+     *
+     * Similar to {@link #fsync(int)}, but does not flush modified metadata unless that metadata is needed in order to allow a subsequent data retrieval to be correctly handled
+     *
+     * @param fd file descriptor.
+     * @return On success return zero. On error, -1 is returned, and errno is set appropriately.
+     */
+    public static native int fdatasync(int fd);
+
+    /**
      * Allocates size bytes and places the address of the allocated memory in {@code memptr}.
      * The address of the allocated memory will be a multiple of {@code alignment}.
      *

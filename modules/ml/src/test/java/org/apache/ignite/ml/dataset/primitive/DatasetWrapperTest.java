@@ -59,7 +59,8 @@ public class DatasetWrapperTest {
     public void testComputeWithCtx() {
         doReturn(42).when(dataset).computeWithCtx(any(IgniteTriFunction.class), any(), any());
 
-        Integer res = wrapper.computeWithCtx(mock(IgniteTriFunction.class), mock(IgniteBinaryOperator.class), null);
+        Integer res = wrapper.computeWithCtx(mock(IgniteTriFunction.class), mock(IgniteBinaryOperator.class),
+            (Integer) null);
 
         assertEquals(42, res.intValue());
         verify(dataset, times(1)).computeWithCtx(any(IgniteTriFunction.class), any(), any());
@@ -71,7 +72,7 @@ public class DatasetWrapperTest {
     public void testCompute() {
         doReturn(42).when(dataset).compute(any(IgniteBiFunction.class), any(), any());
 
-        Integer res = wrapper.compute(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class), null);
+        Integer res = wrapper.compute(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class), (Integer) null);
 
         assertEquals(42, res.intValue());
         verify(dataset, times(1)).compute(any(IgniteBiFunction.class), any(), any());

@@ -372,15 +372,16 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
                     return null;
                 }
-            }, SQLException.class, "Failed to communicate with Ignite cluster");
-
-            assertTrue(id[0] > 0);
+            }, SQLException.class, "Failed to communicate with Ignite cluster on JDBC streaming");
 
             int minId = id[0];
 
             restart(allNodes);
 
             final Statement stmt1 = conn.createStatement();
+
+            stmt1.execute("SET STREAMING 1 BATCH_SIZE 10 ALLOW_OVERWRITE 0 " +
+                " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY 1000");
 
             for (int i = 0; i < 10; ++i, id[0]++)
                 stmt1.execute("INSERT INTO TEST(id, val) values (" + id[0] + ", " + id[0] + ")");

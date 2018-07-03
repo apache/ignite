@@ -46,6 +46,7 @@ import buttonImportModels from './components/button-import-models';
 import buttonDownloadProject from './components/button-download-project';
 import buttonPreviewProject from './components/button-preview-project';
 import previewPanel from './components/preview-panel';
+import pcSplitButton from './components/pc-split-button';
 
 import {errorState} from './transitionHooks/errorState';
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
@@ -106,7 +107,8 @@ export default angular
         buttonImportModels.name,
         buttonDownloadProject.name,
         buttonPreviewProject.name,
-        previewPanel.name
+        previewPanel.name,
+        pcSplitButton.name
     ])
     .config(registerStates)
     .config(['DefaultStateProvider', (DefaultState) => {
@@ -164,7 +166,6 @@ export default angular
                     state: actionsWindow.filter((a) => !actions.includes(a)).reduce(ConfigureState._combinedReducer, {})
                 };
             })
-            .debug('UNDOED')
             .do((a) => ConfigureState.dispatchAction(a))
             .subscribe();
         ConfigEffects.connect();

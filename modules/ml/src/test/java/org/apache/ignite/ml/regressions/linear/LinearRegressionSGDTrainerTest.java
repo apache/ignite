@@ -19,7 +19,7 @@ package org.apache.ignite.ml.regressions.linear;
 
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

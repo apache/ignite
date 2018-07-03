@@ -584,6 +584,11 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public String label() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void resume() {
             // No-op.
         }

@@ -33,8 +33,10 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
@@ -112,11 +114,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -543,7 +540,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         assert conn.isClosed();
 
-        assert !conn.isValid(2): "Connection must be closed";
+        assert !conn.isValid(2) : "Connection must be closed";
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1211,7 +1208,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     conn.getWarnings();
                 }
             });
-
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
@@ -1918,15 +1914,51 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
      */
-    public void testAuthenticateDisableOnServerClientTryAuthenticate()  {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?user=test&password=test");
+    public void testMultithreadingException() throws Exception {
+        int threadCnt = 10;
 
-                return null;
+        final boolean end[] = new boolean[] {false};
+
+        final SQLException exs [] = new SQLException[threadCnt];
+
+        final AtomicInteger exCnt = new AtomicInteger(0);
+
+        try (final Connection conn = DriverManager.getConnection(URL)) {
+            final IgniteInternalFuture f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        conn.createStatement();
+
+                        while (!end[0])
+                            conn.createStatement().execute("SELECT 1");
+
+                        conn.createStatement().execute("SELECT 1");
+                    }
+                    catch (SQLException e) {
+                        end[0] = true;
+                        exs[exCnt.getAndIncrement()] = e;
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace(System.err);
+
+                        fail("Unexpected exception (see details above): " + e.getMessage());
+                    }
+                }
+            }, threadCnt, "run-query");
+
+            f.get();
+
+            boolean exceptionFound = false;
+
+            for (SQLException e : exs) {
+                if (e != null && e.getMessage().contains("Concurrent access to JDBC connection is not allowed"))
+                    exceptionFound = true;
             }
-        }, SQLException.class, "Can not perform the operation because the authentication is not enabled for the cluster");
+
+            assertTrue("Concurrent access to JDBC connection is not allowed", exceptionFound);
+        }
     }
 
     /**

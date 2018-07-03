@@ -60,33 +60,6 @@ public class GAGridUtils {
     }
 
     /**
-     * @param ignite Ignite
-     * @param chromosome Chromosome
-     * @return List of Genes
-     */
-    public static List<Gene> getGenesForChromosome(Ignite ignite, Chromosome chromosome) {
-        List<Gene> genes = new ArrayList<Gene>();
-        IgniteCache<Long, Gene> cache = ignite.cache(GAGridConstants.GENE_CACHE);
-        StringBuffer sbSqlClause = new StringBuffer();
-        sbSqlClause.append("_key IN ");
-        String sqlInClause = Arrays.toString(chromosome.getGenes());
-
-        sqlInClause = sqlInClause.replace("[", "(");
-        sqlInClause = sqlInClause.replace("]", ")");
-
-        sbSqlClause.append(sqlInClause);
-
-        SqlQuery sql = new SqlQuery(Gene.class, sbSqlClause.toString());
-
-        try (QueryCursor<Entry<Long, Gene>> cursor = cache.query(sql)) {
-            for (Entry<Long, Gene> e : cursor)
-                genes.add(e.getValue());
-        }
-
-        return genes;
-    }
-
-    /**
      * Retrieve genes in order
      *
      * @param ignite Ignite

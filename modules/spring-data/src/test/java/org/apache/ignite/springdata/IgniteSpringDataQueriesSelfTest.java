@@ -64,10 +64,9 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
                 "lastName" + Integer.toHexString((i + 16) % 256)));
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
-
-        super.afterTestsStopped();
     }
 
     /** */

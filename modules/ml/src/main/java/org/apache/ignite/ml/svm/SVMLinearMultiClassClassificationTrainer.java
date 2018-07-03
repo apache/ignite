@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.structures.partition.LabelPartitionContext;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 
@@ -89,12 +89,12 @@ public class SVMLinearMultiClassClassificationTrainer
     private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, LabelPartitionContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
+        PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
 
         List<Double> res = new ArrayList<>();
 
-        try (Dataset<LabelPartitionContext, LabelPartitionDataOnHeap> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new LabelPartitionContext(),
+        try (Dataset<EmptyContext, LabelPartitionDataOnHeap> dataset = datasetBuilder.build(
+            (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             final Set<Double> clsLabels = dataset.compute(data -> {

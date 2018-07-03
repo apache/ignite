@@ -86,6 +86,12 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
+    private static final String  USER_PARAM = "user";
+
+    /** */
+    private static final String  PWD_PARAM = "password";
+
+    /** */
     private static final String  CACHE_NAME_PARAM = "cacheName";
 
     /** */
@@ -100,10 +106,10 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /** */
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
     private static final String IGNITE_LOGIN = "ignite.login";
 
-    /** */
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
     private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
@@ -731,6 +737,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case AUTHENTICATE: {
+                restReq = new GridRestRequest();
+
+                break;
+            }
+
             case ADD_USER:
             case REMOVE_USER:
             case UPDATE_USER: {
@@ -840,12 +852,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey(IGNITE_LOGIN) || params.containsKey(IGNITE_PASSWORD)) {
-            SecurityCredentials cred = new SecurityCredentials(
-                (String)params.get(IGNITE_LOGIN), (String)params.get(IGNITE_PASSWORD));
-
-            restReq.credentials(cred);
-        }
+        // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
+        if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))
+            credentials(params, USER_PARAM, PWD_PARAM, restReq);
 
         String clientId = (String)params.get("clientId");
 
@@ -870,14 +879,40 @@ public class GridJettyRestHandler extends AbstractHandler {
         String sesTokStr = (String)params.get("sessionToken");
 
         try {
-            if (sesTokStr != null)
-                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
+            if (sesTokStr != null) {
+                // Token is a UUID encoded as 16 bytes as HEX.
+                byte[] bytes = U.hexString2ByteArray(sesTokStr);
+
+                if (bytes.length == 16)
+                    restReq.sessionToken(bytes);
+            }
         }
         catch (IllegalArgumentException ignored) {
             // Ignore invalid session token.
         }
 
         return restReq;
+    }
+
+    /**
+     *
+     * @param params Parameters.
+     * @param userParam Parameter name to take user name.
+     * @param pwdParam Parameter name to take password.
+     * @param restReq Request to add credentials if any.
+     * @return {@code true} If params contains credentials.
+     */
+    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam, GridRestRequest restReq) {
+        boolean hasCreds = params.containsKey(userParam) || params.containsKey(pwdParam);
+
+        if (hasCreds) {
+            SecurityCredentials cred = new SecurityCredentials((String)params.get(userParam),
+                (String)params.get(pwdParam));
+
+            restReq.credentials(cred);
+        }
+
+        return hasCreds;
     }
 
     /**

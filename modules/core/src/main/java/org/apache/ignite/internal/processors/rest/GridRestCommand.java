@@ -169,6 +169,9 @@ public enum GridRestCommand {
     CLUSTER_CURRENT_STATE("currentstate"),
 
     /** */
+    AUTHENTICATE("authenticate"),
+
+    /** */
     ADD_USER("adduser"),
 
     /** */

@@ -78,6 +78,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public bool IsAllowAtomicOpsInTx {
+            get { return _cache.IsAllowAtomicOpsInTx; }
+        }
+
+        /** <inheritDoc /> */
         public ICache<TK, TV> WithSkipStore()
         {
             return _cache.WithSkipStore().WrapAsync();
@@ -94,7 +99,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             return _cache.WithKeepBinary<TK1, TV1>().WrapAsync();
         }
-        
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithAllowAtomicOpsInTx()
+        {
+            return _cache.WithAllowAtomicOpsInTx().WrapAsync();
+        }
+
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
@@ -572,6 +583,16 @@ namespace Apache.Ignite.Core.Tests.Cache
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public IQueryMetrics GetQueryMetrics()
+        {
+            return _cache.GetQueryMetrics();
+        }
+
+        public void ResetQueryMetrics()
+        {
+            _cache.ResetQueryMetrics();
         }
     }
 

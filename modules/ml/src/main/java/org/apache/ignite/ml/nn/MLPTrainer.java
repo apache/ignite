@@ -33,7 +33,6 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.util.Utils;
 
 import java.io.Serializable;

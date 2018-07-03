@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.record.BaselineTopologyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -53,9 +52,6 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     /** Serializer of {@link TxRecord} records. */
     private final TxRecordSerializer txRecordSerializer;
 
-    /** Serializer of {@link BaselineTopologyRecord} records. */
-    private final BaselineTopologyRecordSerializer bltRecSerializer;
-
     /**
      * Create an instance of V2 data serializer.
      *
@@ -64,7 +60,6 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer) {
         this.delegateSerializer = delegateSerializer;
         this.txRecordSerializer = new TxRecordSerializer();
-        this.bltRecSerializer = new BaselineTopologyRecordSerializer(delegateSerializer.cctx());
     }
 
     /** {@inheritDoc} */
@@ -92,13 +87,10 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return 8 + 1;
 
             case EXCHANGE:
-               return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
+                return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)rec);
-
-            case BASELINE_TOP_RECORD:
-                return bltRecSerializer.size((BaselineTopologyRecord)rec);
 
             default:
                 return delegateSerializer.size(rec);
@@ -156,9 +148,6 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 return txRecordSerializer.read(in);
-
-            case BASELINE_TOP_RECORD:
-                return bltRecSerializer.read(in);
 
             default:
                 return delegateSerializer.readRecord(type, in);
@@ -228,11 +217,6 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 txRecordSerializer.write((TxRecord)rec, buf);
-
-                break;
-
-            case BASELINE_TOP_RECORD:
-                bltRecSerializer.write((BaselineTopologyRecord)rec, buf);
 
                 break;
 

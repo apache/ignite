@@ -209,7 +209,6 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7946");
         int duration = 90 * 1000;
         int qryThreadNum = 5;
         int restartThreadsNum = 2; // 2 of 4 data nodes

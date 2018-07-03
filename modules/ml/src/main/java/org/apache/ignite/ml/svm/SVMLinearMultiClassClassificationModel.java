@@ -29,6 +29,9 @@ import org.apache.ignite.ml.math.Vector;
 
 /** Base class for multi-classification model for set of SVM classifiers. */
 public class SVMLinearMultiClassClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearMultiClassClassificationModel>, Serializable {
+    /** */
+    private static final long serialVersionUID = -667986511191350227L;
+
     /** List of models associated with each class. */
     private Map<Double, SVMLinearBinaryClassificationModel> models;
 

@@ -455,8 +455,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
-        write(ByteBuffer.wrap(buf, off, len));
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
@@ -471,7 +471,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void force(boolean withMetadata) throws IOException {
-        if (IgniteNativeIoLib.fsync(fdCheckOpened()) < 0)
+        int fd = fdCheckOpened();
+
+        int res = withMetadata ? IgniteNativeIoLib.fsync(fd) : IgniteNativeIoLib.fdatasync(fd);
+
+        if (res < 0)
             throw new IOException(String.format("Error fsync()'ing %s, got %s", file, getLastError()));
     }
 

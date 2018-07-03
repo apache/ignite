@@ -116,6 +116,11 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return cache.metrics0().getCacheSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getKeySize() {
         return cache.metrics0().getKeySize();
     }
@@ -363,6 +368,14 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalPartitionsCount() {
         return cache.metrics0().getTotalPartitionsCount();
+    }
+
+    @Override public long getRebalancedKeys() {
+        return cache.metrics0().getRebalancedKeys();
+    }
+
+    @Override public long getEstimatedRebalancingKeys() {
+        return cache.metrics0().getEstimatedRebalancingKeys();
     }
 
     /** {@inheritDoc} */

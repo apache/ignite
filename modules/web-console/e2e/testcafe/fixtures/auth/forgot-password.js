@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-import { dropTestDB, resolveUrl, insertTestUser } from '../../envtools';
-import {PageSignIn} from '../../page-models/PageSignIn';
+import { dropTestDB, resolveUrl, insertTestUser } from '../../environment/envtools';
+import {PageSignIn} from '../../page-models/pageSignin';
 import {errorNotification} from '../../components/notifications';
-
-const page = new PageSignIn();
+import {pageForgotPassword as page} from '../../page-models/pageForgotPassword';
 
 fixture('Password reset')
-    .page(resolveUrl('/signin'))
+    .page(resolveUrl('/forgot-password'))
     .before(async() => {
         await dropTestDB();
         await insertTestUser();
@@ -33,26 +32,22 @@ fixture('Password reset')
 
 test('Incorrect email', async(t) => {
     await t
-        .click(page.showForgotPasswordButton)
-        .typeText(page.forgotPassword.email.control, 'aa')
-        .expect(page.forgotPassword.email.getError('email').exists).ok('Marks field as invalid')
-        .expect(page.remindPasswordButton.getAttribute('disabled')).ok('Disables submit button');
+        .typeText(page.email.control, 'aa')
+        .expect(page.email.getError('email').exists).ok('Marks field as invalid');
 });
 
 test('Unknown email', async(t) => {
     await t
-        .click(page.showForgotPasswordButton)
-        .typeText(page.forgotPassword.email.control, 'nonexisting@mail.com', {replace: true})
+        .typeText(page.email.control, 'nonexisting@mail.com', {replace: true})
         .click(page.remindPasswordButton)
         .expect(errorNotification.withText('Account with that email address does not exists!').exists).ok('Shows global error notification')
-        .expect(page.forgotPassword.email.getError('server').exists).ok('Marks input as server-invalid');
+        .expect(page.email.getError('server').exists).ok('Marks input as server-invalid');
 });
 
 // TODO: IGNITE-8028 Implement this test as unit test.
 test.skip('Successful reset', async(t) => {
     await t
-        .click(page.showForgotPasswordButton)
-        .typeText(page.forgotPassword.email.control, 'a@a', {replace: true})
+        .typeText(page.email.control, 'a@a', {replace: true})
         .click(page.remindPasswordButton)
-        .expect(page.forgotPassword.email.getError('server').exists).notOk('No errors happen');
+        .expect(page.email.getError('server').exists).notOk('No errors happen');
 });

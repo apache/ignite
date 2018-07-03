@@ -20,6 +20,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
+#include <openssl/err.h>
 
 #include "ignite/odbc/ssl/ssl_gateway.h"
 
@@ -173,13 +174,94 @@ namespace ignite
                     TLSEXT_NAMETYPE_host_name, const_cast<char*>(name));
             }
 
+            inline void SSL_set_connect_state_(SSL* s)
+            {
+                typedef void(FuncType)(SSL*);
 
+                FuncType* fp = reinterpret_cast<FuncType*>(
+                    SslGateway::GetInstance().GetFunctions().fpSSL_set_connect_state);
 
-            inline const SSL_METHOD *SSLv23_method()
+                return fp(s);
+            }
+
+            inline int SSL_connect_(SSL* s)
+            {
+                typedef int(FuncType)(SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_connect);
+
+                return fp(s);
+            }
+
+            inline int SSL_get_error_(const SSL *s, int ret)
+            {
+                typedef int(FuncType)(const SSL*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_get_error);
+
+                return fp(s, ret);
+            }
+
+            inline int SSL_want_(const SSL *s)
+            {
+                typedef int(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_want);
+
+                return fp(s);
+            }
+
+            inline int SSL_write_(SSL *s, const void *buf, int num)
+            {
+                typedef int(FuncType)(SSL*, const void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_write);
+
+                return fp(s, buf, num);
+            }
+
+            inline int SSL_read_(SSL *s, void *buf, int num)
+            {
+                typedef int(FuncType)(SSL*, void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_read);
+
+                return fp(s, buf, num);
+            }
+
+            inline int SSL_pending_(const SSL *ssl)
+            {
+                typedef int(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_pending);
+
+                return fp(ssl);
+            }
+
+            inline int SSL_get_fd_(const SSL *ssl)
+            {
+                typedef int(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_get_fd);
+
+                return fp(ssl);
+            }
+
+            inline void SSL_free_(SSL *ssl)
+            {
+                typedef void(FuncType)(SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_free);
+
+                fp(ssl);
+            }
+
+            inline const SSL_METHOD *SSLv23_client_method_()
             {
                 typedef const SSL_METHOD*(FuncType)();
 
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSLv23_method);
+                FuncType* fp = reinterpret_cast<FuncType*>(
+                    SslGateway::GetInstance().GetFunctions().fpSSLv23_client_method);
 
                 return fp();
             }
@@ -212,24 +294,6 @@ namespace ignite
                 return fp(ctx);
             }
 
-            inline int BIO_write(BIO *b, const void *data, int len)
-            {
-                typedef int(FuncType)(BIO*, const void*, int);
-
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_write);
-
-                return fp(b, data, len);
-            }
-
-            inline int BIO_read(BIO *b, void *data, int len)
-            {
-                typedef int(FuncType)(BIO*, const void*, int);
-
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_read);
-
-                return fp(b, data, len);
-            }
-
             inline void BIO_free_all(BIO *a)
             {
                 typedef void(FuncType)(BIO*);
@@ -237,20 +301,6 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_free_all);
 
                 fp(a);
-            }
-
-            inline int BIO_test_flags(const BIO *b, int flags)
-            {
-                typedef int(FuncType)(const BIO*, int);
-
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_test_flags);
-
-                return fp(b, flags);
-            }
-
-            inline int BIO_should_retry_(const BIO *b)
-            {
-                return ssl::BIO_test_flags(b, BIO_FLAGS_SHOULD_RETRY);
             }
 
             inline long BIO_ctrl(BIO *bp, int cmd, long larg, void *parg)
@@ -265,16 +315,6 @@ namespace ignite
             inline long BIO_get_fd_(BIO *bp, int *fd)
             {
                 return ssl::BIO_ctrl(bp, BIO_C_GET_FD, 0, reinterpret_cast<void*>(fd));
-            }
-
-            inline long BIO_do_handshake_(BIO *bp)
-            {
-                return ssl::BIO_ctrl(bp, BIO_C_DO_STATE_MACHINE, 0, NULL);
-            }
-
-            inline long BIO_do_connect_(BIO *bp)
-            {
-                return ssl::BIO_do_handshake_(bp);
             }
 
             inline long BIO_get_ssl_(BIO *bp, SSL** ssl)
@@ -292,9 +332,23 @@ namespace ignite
                 return ssl::BIO_ctrl(bp, BIO_C_SET_CONNECT, 0, const_cast<char*>(name));
             }
 
-            inline long BIO_pending_(BIO *bp)
+            inline unsigned long ERR_get_error_()
             {
-                return ssl::BIO_ctrl(bp, BIO_CTRL_PENDING, 0, NULL);
+                typedef unsigned long(FuncType)();
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpERR_get_error);
+
+                return fp();
+            }
+
+            inline void ERR_error_string_n_(unsigned long e, char *buf, size_t len)
+            {
+                typedef void(FuncType)(unsigned long, char*, size_t);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(
+                    SslGateway::GetInstance().GetFunctions().fpERR_error_string_n);
+
+                fp(e, buf, len);
             }
         }
     }

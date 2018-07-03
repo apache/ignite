@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeplo
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsNearTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDaemonNodePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedOnlyP2PDisabledByteArrayValuesSelfTest;
@@ -206,6 +207,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheAsyncOperationsTest.class);
 
         suite.addTestSuite(IgniteTxRemoveTimeoutObjectsTest.class);
+        suite.addTestSuite(IgniteTxRemoveTimeoutObjectsNearTest.class);
 
         return suite;
     }

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposed
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -107,7 +109,6 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
@@ -244,12 +245,20 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            if (!ctx.clientNode() && serviceCache.context().affinityNode()) {
+            if (!ctx.clientNode()) {
+                DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+                boolean isLocLsnr = !clusterState.hasBaselineTopology() ||
+                    CU.baselineNode(ctx.cluster().get().localNode(), clusterState);
+
+                // Register query listener and run it for local entries, if data is available locally.
+                // It is also invoked on rebalancing.
+                // Otherwise remote listener is registered.
                 serviceCache.context().continuousQueries().executeInternalQuery(
-                    new ServiceEntriesListener(), null, true, true, false
+                    new ServiceEntriesListener(), null, isLocLsnr, true, false, false
                 );
             }
-            else {
+            else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
                 assert !ctx.isDaemon();
 
                 ctx.closure().runLocalSafe(new Runnable() {
@@ -324,6 +333,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         synchronized (locSvcs) {
             for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
+
+            locSvcs.clear();
         }
 
         for (ServiceContextImpl ctx : ctxs) {
@@ -1627,6 +1638,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
+            // Process deployment on coordinator only.
             if (oldest.isLocal())
                 onDeployment(dep, topVer);
         }

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Cache;
@@ -252,7 +253,7 @@ namespace Apache.Ignite.Core.Tests
 
             var messaging = _grid1.GetMessaging();
 
-            var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
+            var senders = TaskRunner.Run(() => TestUtils.RunMultiThreaded(() =>
             {
                 messaging.Send(NextMessage());
                 Thread.Sleep(50);
@@ -423,7 +424,7 @@ namespace Apache.Ignite.Core.Tests
 
             var messaging = _grid1.GetMessaging();
 
-            var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
+            var senders = TaskRunner.Run(() => TestUtils.RunMultiThreaded(() =>
             {
                 MessagingTestHelper.ClearReceived(int.MaxValue);
                 messaging.Send(NextMessage());

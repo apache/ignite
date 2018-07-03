@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -104,6 +105,7 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFi
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -145,6 +147,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_KEY_VALIDATION_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
@@ -483,7 +486,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        CacheOperationContext opCtx = new CacheOperationContext(false, subjId, false, null, false, null, false);
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            subjId,
+            false,
+            null,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -495,14 +506,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
-        CacheOperationContext opCtx = new CacheOperationContext(true, null, false, null, false, null, false);
+        CacheOperationContext opCtx = new CacheOperationContext(
+            true,
+            null,
+            false,
+            null,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
-        CacheOperationContext opCtx = new CacheOperationContext(false, null, true, null, false, null, false);
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            null,
+            true,
+            null,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
@@ -516,14 +543,45 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         assert !CU.isUtilityCache(ctx.name());
 
-        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc, false, null, false);
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            null,
+            false,
+            plc,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public final IgniteInternalCache<K, V> withNoRetries() {
-        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, null, true, null, false);
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            null,
+            false,
+            null,
+            true,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final IgniteInternalCache<K, V> withAllowAtomicOpsInTx() {
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            null,
+            false,
+            null,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -2571,10 +2629,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    return resMap.isEmpty() ? new CacheInvokeResult<>() : resMap.values().iterator().next();
                 }
 
-                return null;
+                return new CacheInvokeResult<>();
             }
         });
     }
@@ -4080,7 +4138,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     READ_COMMITTED,
                     tCfg.getDefaultTxTimeout(),
                     !ctx.skipStore(),
-                    0
+                    0,
+                    null
                 );
 
                 assert tx != null;
@@ -4104,7 +4163,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 tx.xid(), e);
                         }
                         catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
-                            U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
+                            U.error(log, "Failed to rollback transaction (cache may contain stale locks): " +
+                                CU.txString(tx), e1);
 
                             if (e != e1)
                                 e.addSuppressed(e1);
@@ -4179,7 +4239,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     READ_COMMITTED,
                     txCfg.getDefaultTxTimeout(),
                     !skipStore,
-                    0);
+                    0,
+                    null);
 
                 return asyncOp(tx, op, opCtx, /*retry*/false);
             }
@@ -4223,6 +4284,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             final GridNearTxLocal tx0 = tx;
 
+            final CX1 clo = new CX1<IgniteInternalFuture<T>, T>() {
+                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                    try {
+                        return tFut.get();
+                    }
+                    catch (IgniteTxTimeoutCheckedException | IgniteTxRollbackCheckedException | NodeStoppingException e) {
+                        throw e;
+                    }
+                    catch (IgniteCheckedException e1) {
+                        try {
+                            tx0.rollbackNearTxLocalAsync();
+                        }
+                        catch (Throwable e2) {
+                            if (e1 != e2)
+                                e1.addSuppressed(e2);
+                        }
+
+                        throw e1;
+                    }
+                    finally {
+                        ctx.shared().txContextReset();
+                    }
+                }
+            };
+
             if (fut != null && !fut.isDone()) {
                 IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
                     new IgniteOutClosure<IgniteInternalFuture>() {
@@ -4232,31 +4318,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
 
                             try {
-                                return op.op(tx0, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                    @Override
-                                    public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                                        try {
-                                            return tFut.get();
-                                        }
-                                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
-                                            throw e;
-                                        }
-                                        catch (IgniteCheckedException e1) {
-                                            try {
-                                                tx0.rollbackNearTxLocalAsync();
-                                            }
-                                            catch (Throwable e2) {
-                                                if (e1 != e2)
-                                                    e1.addSuppressed(e2);
-                                            }
-
-                                            throw e1;
-                                        }
-                                        finally {
-                                            ctx.shared().txContextReset();
-                                        }
-                                    }
-                                });
+                                return op.op(tx0, opCtx).chain(clo);
                             }
                             finally {
                                 // It is necessary to clear tx context in this thread as well.
@@ -4270,33 +4332,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return f;
             }
 
+            /**
+             * Wait for concurrent tx operation to finish.
+             * See {@link GridDhtTxLocalAdapter#updateLockFuture(IgniteInternalFuture, IgniteInternalFuture)}
+             */
+            if (!tx0.txState().implicitSingle())
+                tx0.txState().awaitLastFuture(ctx.shared());
+
             IgniteInternalFuture<T> f;
 
             try {
-                f = op.op(tx, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                    @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                        try {
-                            return tFut.get();
-                        }
-                        catch (IgniteTxRollbackCheckedException | NodeStoppingException e) {
-                            throw e;
-                        }
-                        catch (IgniteCheckedException e1) {
-                            try {
-                                tx0.rollbackNearTxLocalAsync();
-                            }
-                            catch (Throwable e2) {
-                                if (e2 != e1)
-                                    e1.addSuppressed(e2);
-                            }
-
-                            throw e1;
-                        }
-                        finally {
-                            ctx.shared().txContextReset();
-                        }
-                    }
-                });
+                f = op.op(tx, opCtx).chain(clo);
             }
             finally {
                 // It is necessary to clear tx context in this thread as well.
@@ -4857,7 +4903,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 READ_COMMITTED,
                 CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
-                0);
+                0,
+                null);
 
             IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx, retry);
 

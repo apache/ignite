@@ -94,11 +94,6 @@ public class JdbcNoCacheStreamingSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param allowOverwrite Allow overwriting of existing keys.
      * @return Connection to use for the test.

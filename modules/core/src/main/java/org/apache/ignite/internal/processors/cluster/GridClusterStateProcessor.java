@@ -321,6 +321,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override @Nullable public IgniteInternalFuture<Boolean> onLocalJoin(DiscoCache discoCache) {
         final DiscoveryDataClusterState state = globalState;
 
+        if (state.active())
+            checkLocalNodeInBaseline(state.baselineTopology());
+
         if (state.transition()) {
             joinFut = new TransitionOnJoinWaitFuture(state, discoCache);
 
@@ -334,6 +337,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 changeGlobalState0(true, state.baselineTopology(), false);
 
         return null;
+    }
+
+    /**
+     * Checks whether local node participating in Baseline Topology and warn if not.
+     */
+    private void checkLocalNodeInBaseline(BaselineTopology blt) {
+        if (blt == null || blt.consistentIds() == null || ctx.clientNode() || ctx.isDaemon())
+            return;
+
+        if (!CU.isPersistenceEnabled(ctx.config()))
+            return;
+
+        if (!blt.consistentIds().contains(ctx.discovery().localNode().consistentId())) {
+            U.quietAndInfo(log, "Local node is not included in Baseline Topology and will not be used " +
+                "for persistent data storage. Use control.(sh|bat) script or IgniteCluster interface to include " +
+                "the node to Baseline Topology.");
+        }
     }
 
     /**
@@ -1035,7 +1055,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", client=" + ctx.clientNode() +
                 ", daemon" + ctx.isDaemon() + "]");
         }
-        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+
+        ClusterGroupAdapter clusterGroupAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
+
+        if (F.isEmpty(clusterGroupAdapter.nodes()))
+            return false;
+
+        IgniteCompute comp = clusterGroupAdapter.compute();
 
         return comp.call(new IgniteCallable<Boolean>() {
             @IgniteInstanceResource
@@ -1094,6 +1120,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      */
     private void onFinalActivate(final StateChangeRequest req) {
         ctx.dataStructures().onBeforeActivate();
+
+        checkLocalNodeInBaseline(globalState.baselineTopology());
 
         ctx.closure().runLocalSafe(new Runnable() {
             @Override public void run() {

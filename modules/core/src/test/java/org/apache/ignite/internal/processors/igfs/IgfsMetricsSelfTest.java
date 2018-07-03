@@ -89,11 +89,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         startPrimary();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
-    }
-
     /**
      * Start a grid with the primary file system.
      *

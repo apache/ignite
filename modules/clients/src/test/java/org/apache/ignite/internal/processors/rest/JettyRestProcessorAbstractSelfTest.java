@@ -18,13 +18,8 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -34,7 +29,6 @@ import java.text.DateFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +36,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -148,7 +141,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -163,118 +155,20 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  * Tests for Jetty REST protocol.
  */
 @SuppressWarnings("unchecked")
-public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorSelfTest {
-    /** Grid count. */
-    private static final int GRID_CNT = 3;
-
+public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
-    /** JSON to java mapper. */
-    private static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(restPort()));
-
         super.beforeTestsStarted();
 
         initCache();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_JETTY_PORT);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
-    }
-
-    /**
-     * @return Port to use for rest. Needs to be changed over time because Jetty has some delay before port unbind.
-     */
-    protected abstract int restPort();
-
-    /**
-     * @return Test URL
-     */
-    protected String restUrl() {
-        return "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
-    }
-
-    /**
-     * @return Security enabled flag. Should be the same with {@code ctx.security().enabled()}.
-     */
-    protected boolean securityEnabled() {
-        return false;
-    }
-
-    /**
-     * Execute REST command and return result.
-     *
-     * @param params Command parameters.
-     * @return Returned content.
-     * @throws Exception If failed.
-     */
-    protected String content(Map<String, String> params) throws Exception {
-        SB sb = new SB(restUrl());
-
-        for (Map.Entry<String, String> e : params.entrySet())
-            sb.a(e.getKey()).a('=').a(e.getValue()).a('&');
-
-        URL url = new URL(sb.toString());
-
-        URLConnection conn = url.openConnection();
-
-        String signature = signature();
-
-        if (signature != null)
-            conn.setRequestProperty("X-Signature", signature);
-
-        InputStream in = conn.getInputStream();
-
-        StringBuilder buf = new StringBuilder(256);
-
-        try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, "UTF-8"))) {
-            for (String line = rdr.readLine(); line != null; line = rdr.readLine())
-                buf.append(line);
-        }
-
-        return buf.toString();
-    }
-
-    /**
-     * @param cacheName Optional cache name.
-     * @param cmd REST command.
-     * @param params Command parameters.
-     * @return Returned content.
-     * @throws Exception If failed.
-     */
-    protected String content(String cacheName, GridRestCommand cmd, String... params) throws Exception {
-        Map<String, String> paramsMap = new LinkedHashMap<>();
-
-        if (cacheName != null)
-            paramsMap.put("cacheName", cacheName);
-
-        paramsMap.put("cmd", cmd.key());
-
-        if (params != null) {
-            assertEquals(0, params.length % 2);
-
-            for (int i = 0; i < params.length; i += 2)
-                paramsMap.put(params[i], params[i + 1]);
-        }
-
-        return content(paramsMap);
     }
 
     /**
@@ -294,14 +188,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
     /**
      * @param content Content to check.
+     * @return JSON node with actual response.
      */
-    private JsonNode jsonCacheOperationResponse(String content, boolean bulk) throws IOException {
+    protected JsonNode assertResponseSucceeded(String content, boolean bulk) throws IOException {
         assertNotNull(content);
         assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(bulk, node.get("affinityNodeId").isNull());
+        JsonNode affNode = node.get("affinityNodeId");
+
+        if (affNode != null)
+            assertEquals(bulk, affNode.isNull());
+
         assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
@@ -315,7 +214,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, false);
+        JsonNode ret = assertResponseSucceeded(content, false);
 
         assertEquals(String.valueOf(res), ret.isObject() ? ret.toString() : ret.asText());
     }
@@ -325,7 +224,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheBulkOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertEquals(String.valueOf(res), ret.asText());
     }
@@ -334,7 +233,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param content Content to check.
      */
     private void assertCacheMetrics(String content) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertTrue(ret.isObject());
     }
@@ -349,7 +248,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
@@ -367,7 +266,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
         assertFalse(node.get("response").isNull());
 
@@ -403,7 +302,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws IOException If failed.
      */
     private void checkJson(String json, Person p) throws IOException {
-        JsonNode res = jsonCacheOperationResponse(json, false);
+        JsonNode res = assertResponseSucceeded(json, false);
 
         assertEquals(p.id.intValue(), res.get("id").asInt());
         assertEquals(p.getOrganizationId().intValue(), res.get("orgId").asInt());
@@ -455,7 +354,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals("Alex", res.get("NAME").asText());
         assertEquals(300, res.get("SALARY").asInt());
@@ -476,8 +375,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode json = jsonCacheOperationResponse(ret, false);
+        JsonNode json = assertResponseSucceeded(ret, false);
         assertEquals(ref1.name, json.get("name").asText());
+        assertEquals(ref1.ref.toString(), json.get("ref").toString());
 
         ref2.ref(ref1);
 
@@ -552,7 +452,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(p.id, res.get("id").asInt());
         assertEquals(p.name, res.get("name").asText());
@@ -637,7 +537,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(t.getKey(), res.get("key").asText());
         assertEquals(t.getValue(), res.get("value").asText());
@@ -775,11 +675,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get all command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, true);
+        JsonNode res = assertResponseSucceeded(ret, true);
 
         assertTrue(res.isObject());
 
-        assertTrue(entries.equals(JSON_MAPPER.treeToValue(res, Map.class)));
+        assertEquals(entries, JSON_MAPPER.treeToValue(res, Map.class));
     }
 
     /**
@@ -1100,7 +1000,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertNull(jcache().localPeek("rmvKey2"));
         assertNull(jcache().localPeek("rmvKey3"));
         assertNull(jcache().localPeek("rmvKey4"));
-        assertTrue(jcache().localSize() == 0);
+        assertEquals(0, jcache().localSize());
 
         assertCacheBulkOperation(ret, true);
     }
@@ -1353,20 +1253,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             assertNotNull(keyClasses);
             assertFalse(keyClasses.isNull());
 
-            assertTrue(meta.keyClasses().equals(JSON_MAPPER.treeToValue(keyClasses, Map.class)));
+            assertEquals(meta.keyClasses(), JSON_MAPPER.treeToValue(keyClasses, Map.class));
 
             JsonNode valClasses = item.get("valClasses");
 
             assertNotNull(valClasses);
             assertFalse(valClasses.isNull());
 
-            assertTrue(meta.valClasses().equals(JSON_MAPPER.treeToValue(valClasses, Map.class)));
+            assertEquals(meta.valClasses(), JSON_MAPPER.treeToValue(valClasses, Map.class));
 
             JsonNode fields = item.get("fields");
 
             assertNotNull(fields);
             assertFalse(fields.isNull());
-            assertTrue(meta.fields().equals(JSON_MAPPER.treeToValue(fields, Map.class)));
+            assertEquals(meta.fields(), JSON_MAPPER.treeToValue(fields, Map.class));
 
             JsonNode indexesByType = item.get("indexes");
 
@@ -1493,7 +1393,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode res = jsonResponse(ret);
 
-        assertEquals(GRID_CNT, res.size());
+        assertEquals(gridCount(), res.size());
 
         for (JsonNode node : res) {
             assertTrue(node.get("attributes").isNull());
@@ -2599,18 +2499,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * @return Signature.
-     * @throws Exception If failed.
-     */
-    protected abstract String signature() throws Exception;
-
-    /**
      * @return True if any query cursor is available.
      */
     private boolean queryCursorFound() {
         boolean found = false;
 
-        for (int i = 0; i < GRID_CNT; ++i) {
+        for (int i = 0; i < gridCount(); ++i) {
             Map<GridRestCommand, GridRestCommandHandler> handlers =
                 GridTestUtils.getFieldValue(grid(i).context().rest(), "handlers");
 
@@ -2754,6 +2648,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          */
         public void ref(CircularRef ref) {
             this.ref = ref;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            SB sb = new SB();
+
+            sb.a('{')
+                .a('"').a("id").a('"').a(':').a(id).a(',')
+                .a('"').a("name").a('"').a(':').a('"').a(name).a('"').a(',')
+                .a('"').a("ref").a('"').a(':').a(ref)
+                .a('}');
+
+            return sb.toString();
         }
     }
 
@@ -3057,7 +2964,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
         drCfg.setName("testDataRegion");
-        drCfg.setMaxSize(100 * 1024 * 1024);
+        drCfg.setMaxSize(100L * 1024 * 1024);
 
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 

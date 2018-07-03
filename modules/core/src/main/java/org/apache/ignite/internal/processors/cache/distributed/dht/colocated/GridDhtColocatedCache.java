@@ -194,7 +194,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<V>() {
                 @Override public IgniteInternalFuture<V> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
-                    IgniteInternalFuture<Map<Object, Object>>  fut = tx.getAllAsync(ctx,
+                    IgniteInternalFuture<Map<Object, Object>> fut = tx.getAllAsync(ctx,
                         readyTopVer,
                         Collections.singleton(ctx.toCacheKeyObject(key)),
                         deserializeBinary,
@@ -425,7 +425,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (expiryPlc == null)
             expiryPlc = expiryPolicy(null);
 
-        // Optimisation: try to resolve value locally and escape 'get future' creation.
+        // Optimization: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
             try {
                 Map<K, V> locVals = null;

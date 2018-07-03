@@ -54,13 +54,6 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
         return 2 * 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

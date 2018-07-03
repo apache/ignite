@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -391,6 +394,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * Test timeouts with random values and different tx configurations.
      */
     public void testRandomMixedTxConfigurations() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8509");
+
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -434,6 +439,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                         final Long v = (Long)node.cache(CACHE_NAME).get(k);
 
+                        assertNotNull("Expecting not null value: " + tx, v);
+
                         final int delay = r.nextInt(400);
 
                         if (delay > 0)
@@ -445,10 +452,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                         cntr1.add(1);
                     }
-                    catch (TransactionOptimisticException | InterruptedException e) {
-                        // Expected.
-                        cntr3.add(1);
-                    }
                     catch (TransactionTimeoutException e) {
                         cntr2.add(1);
                     }
@@ -456,6 +459,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         assertEquals(TransactionTimeoutException.class, X.getCause(e).getClass());
 
                         cntr2.add(1);
+                    }
+                    catch (Exception e) {
+                        cntr3.add(1);
                     }
                 }
             }
@@ -472,7 +478,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             ", failed=" + cntr3.sum() +
             ", timedOut=" + cntr2.sum());
 
-        assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() + cntr3.sum());
+        assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() +
+            cntr3.sum());
     }
 
     /**
@@ -489,6 +496,107 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             for (TransactionIsolation isolation : TransactionIsolation.values())
                 testTimeoutOnPrimaryDhtNode0(prim, concurrency, isolation);
         }
+    }
+
+    /**
+     *
+     */
+    public void testLockRelease() throws Exception {
+        final Ignite client = startClient();
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        final int threadCnt = Runtime.getRuntime().availableProcessors() * 2;
+
+        final CountDownLatch readStartLatch = new CountDownLatch(1);
+
+        final CountDownLatch commitLatch = new CountDownLatch(threadCnt - 1);
+
+        final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                final int idx0 = idx.getAndIncrement();
+
+                if (idx0 == 0) {
+                    try(final Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                        client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
+
+                        readStartLatch.countDown();
+
+                        U.awaitQuiet(commitLatch);
+
+                        tx.commit();
+                    }
+                }
+                else {
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 300, 1)) {
+                        U.awaitQuiet(readStartLatch);
+
+                        client.cache(CACHE_NAME).get(0); // Lock acquisition is queued.
+                    }
+                    catch (CacheException e) {
+                        assertTrue(e.getMessage(), X.hasCause(e, TransactionTimeoutException.class));
+                    }
+
+                    commitLatch.countDown();
+                }
+            }
+        }, threadCnt, "tx-async");
+
+        fut.get();
+
+        Thread.sleep(500);
+
+        assertEquals(0, client.cache(CACHE_NAME).get(0));
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final IgniteInternalFuture<?> f = ig.context().cache().context().
+                partitionReleaseFuture(new AffinityTopologyVersion(G.allGrids().size() + 1, 0));
+
+            assertTrue("Unexpected incomplete future", f.isDone());
+        }
+
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyRead() throws Exception {
+        testEnlistMany(false);
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyWrite() throws Exception {
+        testEnlistMany(true);
+    }
+
+    /**
+     *
+     */
+    private void testEnlistMany(boolean write) throws Exception {
+        final Ignite client = startClient();
+
+        Map<Integer, Integer> entries = new HashMap<>();
+
+        for (int i = 0; i < 1000000; i++)
+            entries.put(i, i);
+
+        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
+            if (write)
+                client.cache(CACHE_NAME).putAll(entries);
+            else
+                client.cache(CACHE_NAME).getAll(entries.keySet());
+
+            tx.commit();
+        }
+        catch (Throwable t) {
+            assertTrue(X.hasCause(t, TransactionTimeoutException.class));
+        }
+
+        assertEquals(0, client.cache(CACHE_NAME).size());
     }
 
     /**

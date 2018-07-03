@@ -47,11 +47,6 @@ public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return igniteInstanceName.endsWith("2") ?
             new StopNodeOrHaltFailureHandler(false, 0) :

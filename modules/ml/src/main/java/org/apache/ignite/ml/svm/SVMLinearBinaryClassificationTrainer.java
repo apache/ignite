@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.svm;
 
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -59,15 +60,15 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
 
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, SVMPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+        PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor
         );
 
         Vector weights;
 
-        try(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new SVMPartitionContext(),
+        try(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
+            (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             final int cols = dataset.compute(data -> data.colSize(), (a, b) -> a == null ? b : a);
@@ -90,7 +91,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
     }
 
     /** */
-    private Vector calculateUpdates(Vector weights, Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
+    private Vector calculateUpdates(Vector weights, Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset) {
         return dataset.compute(data -> {
             Vector copiedWeights = weights.copy();
             Vector deltaWeights = initializeWeightsWithZeros(weights.size());

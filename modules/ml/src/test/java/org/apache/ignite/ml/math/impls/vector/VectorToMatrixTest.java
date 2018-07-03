@@ -27,7 +27,6 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.junit.Test;
 
@@ -42,38 +41,14 @@ public class VectorToMatrixTest {
     private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
 
     /** */
-    private static final List<Class<? extends Vector>> likeMatrixUnsupported = Arrays.asList(FunctionVector.class,
-        SingleElementVector.class, SingleElementVectorView.class, ConstantVector.class);
-
-    /** */
     @Test
-    public void testHaveLikeMatrix() throws InstantiationException, IllegalAccessException {
+    public void testHaveLikeMatrix() {
         for (Class<? extends Vector> key : typesMap.keySet()) {
             Class<? extends Matrix> val = typesMap.get(key);
 
-            if (val == null && likeMatrixSupported(key))
+            if (val == null)
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
         }
-    }
-
-    /** */
-    @Test
-    public void testLikeMatrixUnsupported() throws Exception {
-        consumeSampleVectors((v, desc) -> {
-            if (likeMatrixSupported(v.getClass()))
-                return;
-
-            boolean expECaught = false;
-
-            try {
-                assertNull("Null view instead of exception in " + desc, v.likeMatrix(1, 1));
-            }
-            catch (UnsupportedOperationException uoe) {
-                expECaught = true;
-            }
-
-            assertTrue("Expected exception was not caught in " + desc, expECaught);
-        });
     }
 
     /** */
@@ -223,9 +198,6 @@ public class VectorToMatrixTest {
 
     /** */
     private void fillWithNonZeroes(Vector sample) {
-        if (sample instanceof RandomVector)
-            return;
-
         for (Vector.Element e : sample.all())
             e.set(1 + e.index());
     }
@@ -233,9 +205,6 @@ public class VectorToMatrixTest {
     /** */
     private boolean availableForTesting(Vector v) {
         assertNotNull("Error in test: vector is null", v);
-
-        if (!likeMatrixSupported(v.getClass()))
-            return false;
 
         final boolean availableForTesting = typesMap.get(v.getClass()) != null;
 
@@ -245,15 +214,6 @@ public class VectorToMatrixTest {
             availableForTesting || actualLikeMatrix == null);
 
         return availableForTesting;
-    }
-
-    /** Ignore test for given vector type. */
-    private boolean likeMatrixSupported(Class<? extends Vector> clazz) {
-        for (Class<? extends Vector> ignoredClass : likeMatrixUnsupported)
-            if (ignoredClass.isAssignableFrom(clazz))
-                return false;
-
-        return true;
     }
 
     /** */
@@ -266,13 +226,7 @@ public class VectorToMatrixTest {
         return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>>() {{
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
-            put(RandomVector.class, RandomMatrix.class);
             put(SparseLocalVector.class, SparseLocalOnHeapMatrix.class);
-            put(SingleElementVector.class, null); // TODO: IGNTIE-5723, find out if we need SingleElementMatrix to match, or skip it.
-            put(ConstantVector.class, null);
-            put(FunctionVector.class, null);
-            put(PivotedVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
-            put(SingleElementVectorView.class, null);
             put(MatrixVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             put(DelegatingVector.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture

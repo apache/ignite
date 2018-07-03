@@ -159,16 +159,18 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             ClientListenerResponse resp = handler.handle(req);
 
-            if (log.isDebugEnabled()) {
-                long dur = (System.nanoTime() - startTime) / 1000;
+            if (resp != null) {
+                if (log.isDebugEnabled()) {
+                    long dur = (System.nanoTime() - startTime) / 1000;
 
-                log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
-                    ", resp=" + resp.status() + ']');
+                    log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
+                        ", resp=" + resp.status() + ']');
+                }
+
+                byte[] outMsg = parser.encode(resp);
+
+                ses.send(outMsg);
             }
-
-            byte[] outMsg = parser.encode(resp);
-
-            ses.send(outMsg);
         }
         catch (Exception e) {
             U.error(log, "Failed to process client request [req=" + req + ']', e);
@@ -216,7 +218,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(clientType);
+            connCtx = prepareContext(ses, clientType);
 
             ensureClientPermissions(clientType);
 
@@ -270,17 +272,18 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /**
      * Prepare context.
      *
+     * @param ses Session.
      * @param clientType Client type.
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, maxCursors);
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx, maxCursors);

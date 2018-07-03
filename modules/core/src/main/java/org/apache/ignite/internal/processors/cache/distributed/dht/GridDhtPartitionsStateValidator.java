@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 
@@ -71,9 +72,9 @@ public class GridDhtPartitionsStateValidator {
     public void validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture fut,
                                                   GridDhtPartitionTopology top,
                                                   Map<UUID, GridDhtPartitionsSingleMessage> messages) throws IgniteCheckedException {
-        // Ignore just joined nodes.
         final Set<UUID> ignoringNodes = new HashSet<>();
 
+        // Ignore just joined nodes.
         for (DiscoveryEvent evt : fut.events().events())
             if (evt.type() == EVT_NODE_JOINED)
                 ignoringNodes.add(evt.eventNode().id());
@@ -94,8 +95,49 @@ public class GridDhtPartitionsStateValidator {
 
         // Validate cache sizes.
         result = validatePartitionsSizes(top, messages, ignoringNodes);
+
         if (!result.isEmpty())
             throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
+    }
+
+    /**
+     * Checks what partitions from given {@code singleMsg} message should be excluded from validation.
+     *
+     * @param top Topology to validate.
+     * @param nodeId Node which sent single message.
+     * @param singleMsg Single message.
+     * @return Set of partition ids should be excluded from validation.
+     */
+    @Nullable private Set<Integer> shouldIgnore(GridDhtPartitionTopology top, UUID nodeId, GridDhtPartitionsSingleMessage singleMsg) {
+        CachePartitionPartialCountersMap countersMap = singleMsg.partitionUpdateCounters(top.groupId(), top.partitions());
+        Map<Integer, Long> sizesMap = singleMsg.partitionSizes(top.groupId());
+
+        Set<Integer> ignore = null;
+
+        for (int p = 0; p < top.partitions(); p++) {
+            if (top.partitionState(nodeId, p) != GridDhtPartitionState.OWNING) {
+                if (ignore == null)
+                    ignore = new HashSet<>();
+
+                ignore.add(p);
+
+                continue;
+            }
+
+            int partIdx = countersMap.partitionIndex(p);
+            long updateCounter = partIdx >= 0 ? countersMap.updateCounterAt(partIdx) : 0;
+            long size = sizesMap.containsKey(p) ? sizesMap.get(p) : 0;
+
+            // Do not validate partitions with zero update counter and size.
+            if (updateCounter == 0 && size == 0) {
+                if (ignore == null)
+                    ignore = new HashSet<>();
+
+                ignore.add(p);
+            }
+        }
+
+        return ignore;
     }
 
     /**
@@ -117,7 +159,10 @@ public class GridDhtPartitionsStateValidator {
 
         // Populate counters statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
+            if (part.state() != GridDhtPartitionState.OWNING)
+                continue;
+
+            if (part.updateCounter() == 0 && part.fullSize() == 0)
                 continue;
 
             updateCountersAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.updateCounter()));
@@ -133,8 +178,10 @@ public class GridDhtPartitionsStateValidator {
 
             CachePartitionPartialCountersMap countersMap = e.getValue().partitionUpdateCounters(top.groupId(), partitions);
 
+            Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, e.getValue());
+
             for (int part = 0; part < partitions; part++) {
-                if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
+                if (ignorePartitions != null && ignorePartitions.contains(part))
                     continue;
 
                 int partIdx = countersMap.partitionIndex(part);
@@ -166,7 +213,10 @@ public class GridDhtPartitionsStateValidator {
 
         // Populate sizes statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
+            if (part.state() != GridDhtPartitionState.OWNING)
+                continue;
+
+            if (part.updateCounter() == 0 && part.fullSize() == 0)
                 continue;
 
             sizesAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.fullSize()));
@@ -182,8 +232,10 @@ public class GridDhtPartitionsStateValidator {
 
             Map<Integer, Long> sizesMap = e.getValue().partitionSizes(top.groupId());
 
+            Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, e.getValue());
+
             for (int part = 0; part < partitions; part++) {
-                if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
+                if (ignorePartitions != null && ignorePartitions.contains(part))
                     continue;
 
                 long currentSize = sizesMap.containsKey(part) ? sizesMap.get(part) : 0L;

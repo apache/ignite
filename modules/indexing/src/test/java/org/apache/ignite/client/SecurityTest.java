@@ -127,25 +127,23 @@ public class SecurityTest {
 
     /** Test valid user authentication. */
     @Test
-    public void testInvalidUserAuthentication() throws Exception {
+    public void testInvalidUserAuthentication() {
+        Exception authError = null;
+
         try (Ignite ignored = igniteWithAuthentication();
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
                  .setUserName("JOE")
                  .setUserPassword("password")
              )
         ) {
-            Exception authError = null;
-
-            try {
-                client.getOrCreateCache("testAuthentication");
-            }
-            catch (Exception e) {
-                authError = e;
-            }
-
-            assertNotNull("Authentication with invalid credentials succeeded", authError);
-            assertTrue("Invalid type of authentication error", authError instanceof ClientAuthenticationException);
+            client.getOrCreateCache("testAuthentication");
         }
+        catch (Exception e) {
+            authError = e;
+        }
+
+        assertNotNull("Authentication with invalid credentials succeeded", authError);
+        assertTrue("Invalid type of authentication error", authError instanceof ClientAuthenticationException);
     }
 
     /** Test valid user authentication. */

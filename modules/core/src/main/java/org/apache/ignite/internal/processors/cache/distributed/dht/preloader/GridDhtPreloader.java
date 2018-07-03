@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -187,7 +188,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        CachePartitionFullCountersMap cntrMap = top.fullUpdateCounters();
+        CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -202,7 +203,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
+                GridDhtLocalPartition part = top.localPartition(p);
 
                 assert part != null;
                 assert part.id() == p;
@@ -223,15 +224,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 // If partition was destroyed recreate it.
                 if (part.state() == EVICTED) {
+                    part.awaitDestroy();
+
                     part = top.localPartition(p, topVer, true);
                 }
 
-                assert part != null && part.state() == MOVING : "Partition has invalid state for rebalance " + part;
+                assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
 
                 ClusterNode histSupplier = null;
 
                 if (grp.persistenceEnabled() && exchFut != null) {
-                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
+                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);
@@ -251,7 +254,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
-                    msg.partitions().addHistorical(p, cntrMap.initialUpdateCounter(p), cntrMap.updateCounter(p), partCnt);
+                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partCnt);
                 }
                 else {
                     Collection<ClusterNode> picked = pickOwners(p, topVer);
@@ -287,6 +290,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             }
         }
+
+        if (!assignments.isEmpty())
+            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
         return assignments;
     }

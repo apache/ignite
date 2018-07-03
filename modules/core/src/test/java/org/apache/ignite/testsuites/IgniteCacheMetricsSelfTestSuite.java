@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsEnableRuntimeTest;
@@ -73,6 +74,8 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         // Cluster wide metrics.
         suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
         suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
+
+        suite.addTestSuite(TransactionMetricsMxBeanImplTest.class);
 
         return suite;
     }

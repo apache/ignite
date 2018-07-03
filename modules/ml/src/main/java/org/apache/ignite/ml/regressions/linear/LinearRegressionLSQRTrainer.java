@@ -17,17 +17,16 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.isolve.LinSysPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import java.util.Arrays;
 
 /**
  * Trainer of the linear regression model based on LSQR algorithm.
@@ -43,7 +42,10 @@ public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<Li
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
-            new LinSysPartitionDataBuilderOnHeap<>(new FeatureExtractorWrapper<>(featureExtractor), lbExtractor)
+            new SimpleLabeledDatasetDataBuilder<>(
+                new FeatureExtractorWrapper<>(featureExtractor),
+                lbExtractor.andThen(e -> new double[]{e})
+            )
         )) {
             res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
         }

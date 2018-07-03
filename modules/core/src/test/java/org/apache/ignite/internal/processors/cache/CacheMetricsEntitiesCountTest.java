@@ -86,11 +86,6 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test entities count, calculated by different implementations.
      */

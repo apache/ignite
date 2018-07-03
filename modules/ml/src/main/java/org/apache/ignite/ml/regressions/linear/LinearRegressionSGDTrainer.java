@@ -30,7 +30,7 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -110,6 +110,9 @@ public class LinearRegressionSGDTrainer<P extends Serializable> implements Singl
 
         double[] p = mlp.parameters().getStorage().data();
 
-        return new LinearRegressionModel(new DenseLocalOnHeapVector(Arrays.copyOf(p, p.length - 1)), p[p.length - 1]);
+        return new LinearRegressionModel(new DenseLocalOnHeapVector(
+            Arrays.copyOf(p, p.length - 1)),
+            p[p.length - 1]
+        );
     }
 }

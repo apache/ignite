@@ -53,6 +53,14 @@ namespace ignite
                     std::map<int32_t, SPSnap>::iterator it = snapshots->find(typeId);
                     if (it != snapshots->end())
                         return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(it->second));
+
+                    for (int32_t i = 0; i < pending->size(); ++i)
+                    {
+                        SPSnap& snap = (*pending)[i];
+
+                        if (snap.Get()->GetTypeId() == typeId)
+                            return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(snap));
+                    }
                 }
 
                 SPSnap snapshot = SPSnap(new Snap(typeName ,typeId));

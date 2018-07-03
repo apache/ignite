@@ -241,29 +241,6 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 2em;
 }
 
-.login-footer {
-    padding: 15px 0;
-    text-align: right;
-    border-top: 1px solid #e5e5e5;
-
-    label {
-        float: left;
-        margin: 0;
-    }
-
-    .btn:last-child {
-        margin-right: 0;
-    }
-
-    .checkbox {
-        margin: 0;
-    }
-
-    .btn {
-        margin-right: 0;
-    }
-}
-
 body {
     overflow-x: hidden;
     display: flex;
@@ -1229,12 +1206,12 @@ label {
 }
 
 .fa-chevron-circle-down {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
 .fa-chevron-circle-right {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
@@ -1664,7 +1641,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }
@@ -1907,10 +1884,6 @@ treecontrol.tree-classic {
     color: $btn-primary-color;
     background: $btn-primary-border;
 
-    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-
     right: -42px;
     -moz-transform: rotate(45deg);
     -webkit-transform: rotate(45deg);
@@ -1935,6 +1908,16 @@ treecontrol.tree-classic {
         -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
         -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
         text-shadow: 0 0 10px rgba(0,0,0,0.31);
+    }
+}
+
+.ribbon-wrapper.left {
+    overflow: visible;
+
+    .ribbon {
+        transform: rotate(-45deg);
+        left: -75px;
+        top: 10px;
     }
 }
 

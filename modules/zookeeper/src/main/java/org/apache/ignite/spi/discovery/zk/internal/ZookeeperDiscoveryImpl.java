@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,7 +51,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -59,8 +59,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -71,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -92,7 +89,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
-import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -191,6 +187,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private long prevSavedEvtsTopVer;
 
+    /** */
+    private final ZookeeperDiscoveryStatistics stats;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -200,6 +199,7 @@ public class ZookeeperDiscoveryImpl {
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
      * @param internalLsnr Internal listener (used for testing only).
+     * @param stats Zookeeper DiscoverySpi statistics collector.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -209,7 +209,8 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
-        IgniteDiscoverySpiInternalListener internalLsnr) {
+        IgniteDiscoverySpiInternalListener internalLsnr,
+        ZookeeperDiscoveryStatistics stats) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
         MarshallerUtils.setNodeName(marsh, igniteInstanceName);
@@ -235,6 +236,8 @@ public class ZookeeperDiscoveryImpl {
 
         if (internalLsnr != null)
             this.internalLsnr = internalLsnr;
+
+        this.stats = stats;
     }
 
     /**
@@ -1360,7 +1363,16 @@ public class ZookeeperDiscoveryImpl {
                 if (prevEvts.clusterId.equals(newEvts.clusterId)) {
                     U.warn(log, "All server nodes failed, notify all clients [locId=" + locNode.id() + ']');
 
-                    generateNoServersEvent(newEvts, stat);
+                    try {
+                        generateNoServersEvent(newEvts, stat);
+                    }
+                    catch (KeeperException.BadVersionException ignored) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to save no servers message. Path version changed.");
+
+                        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null,
+                            new CheckClientsStatusCallback(rtState));
+                    }
                 }
                 else
                     U.warn(log, "All server nodes failed (received events from new cluster).");
@@ -1420,14 +1432,7 @@ public class ZookeeperDiscoveryImpl {
 
         byte[] newEvtsBytes = marshalZip(evtsData);
 
-        try {
-            rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
-        }
-        catch (KeeperException.BadVersionException e) {
-            // Version can change if new cluster started and saved new events.
-            if (log.isDebugEnabled())
-                log.debug("Failed to save no servers message");
-        }
+        rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
     }
 
     /**
@@ -2184,6 +2189,8 @@ public class ZookeeperDiscoveryImpl {
         joinCtx.addJoinedNode(nodeEvtData, commonData);
 
         rtState.evtsData.onNodeJoin(joinedNode);
+
+        stats.onNodeJoined();
     }
 
     /**
@@ -2949,8 +2956,6 @@ public class ZookeeperDiscoveryImpl {
                 if (node.order() >= locNode.order())
                     break;
 
-                node.setMetrics(new ClusterMetricsSnapshot());
-
                 rtState.top.addNode(node);
             }
 
@@ -3442,8 +3447,6 @@ public class ZookeeperDiscoveryImpl {
         joinedNode.order(joinedEvtData.topVer);
         joinedNode.internalId(joinedEvtData.joinedInternalId);
 
-        joinedNode.setMetrics(new ClusterMetricsSnapshot());
-
         rtState.top.addNode(joinedNode);
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
@@ -3485,6 +3488,8 @@ public class ZookeeperDiscoveryImpl {
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             null);
+
+        stats.onNodeFailed();
     }
 
     /**
@@ -3655,7 +3660,7 @@ public class ZookeeperDiscoveryImpl {
         ZkDiscoveryCustomEventData ackEvtData = new ZkDiscoveryCustomEventData(
             evtId,
             origEvt.eventId(),
-            origEvt.topologyVersion(), // Use topology version from original event.
+            rtState.evtsData.topVer, // Use actual topology version because topology version must be growing.
             locNode.id(),
             null,
             null);
@@ -4460,5 +4465,25 @@ public class ZookeeperDiscoveryImpl {
         DISCONNECTED,
         /** */
         STOPPED
+    }
+
+    /** */
+    public UUID getCoordinator() {
+        Map.Entry<Long, ZookeeperClusterNode> e = rtState.top.nodesByOrder.firstEntry();
+
+        return e != null ? e.getValue().id() : null;
+    }
+
+    /** */
+    public String getSpiState() {
+        return rtState.zkClient.state();
+    }
+
+    /** */
+    public String getZkSessionId() {
+        if (rtState.zkClient != null && rtState.zkClient.zk() != null)
+            return Long.toHexString(rtState.zkClient.zk().getSessionId());
+        else
+            return null;
     }
 }

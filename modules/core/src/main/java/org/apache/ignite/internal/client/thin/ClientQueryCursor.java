@@ -54,6 +54,7 @@ class ClientQueryCursor<T> implements QueryCursor<T> {
             pager.close();
         }
         catch (Exception ignored) {
+            // No-op.
         }
     }
 
@@ -76,7 +77,10 @@ class ClientQueryCursor<T> implements QueryCursor<T> {
                         currPageIt = currPage.iterator();
                     }
                     catch (ClientException e) {
-                        throw new RuntimeException("Failed to retrieve query results", e);
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        throw new ClientException("Failed to retrieve query results", e);
                     }
                 }
 

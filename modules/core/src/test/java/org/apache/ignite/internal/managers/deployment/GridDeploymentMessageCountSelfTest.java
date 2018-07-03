@@ -58,13 +58,6 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

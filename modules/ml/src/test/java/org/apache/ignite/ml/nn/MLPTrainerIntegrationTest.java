@@ -31,7 +31,6 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.*;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.Serializable;

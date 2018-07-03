@@ -255,6 +255,11 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return getEntriesStat().cacheSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getKeySize() {
         return getEntriesStat().keySize();
     }
@@ -754,6 +759,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
         int size = 0;
+        long sizeLong = 0L;
         boolean isEmpty;
 
         try {
@@ -765,8 +771,9 @@ public class CacheMetricsImpl implements CacheMetrics {
                     offHeapBackupEntriesCnt = offHeapEntriesCnt;
 
                     size = cctx.cache().size();
+                    sizeLong = cctx.cache().sizeLong();
 
-                    heapEntriesCnt = size;
+                    heapEntriesCnt = sizeLong;
                 }
             }
             else {
@@ -806,6 +813,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
                     heapEntriesCnt += part.publicSize(cctx.cacheId());
                 }
+
+                sizeLong = offHeapEntriesCnt;
             }
         }
         catch (Exception e) {
@@ -816,6 +825,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             offHeapBackupEntriesCnt = -1L;
             heapEntriesCnt = -1L;
             size = -1;
+            sizeLong = -1L;
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
@@ -827,6 +837,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
         stat.size(size);
+        stat.cacheSize(sizeLong);
         stat.keySize(size);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
@@ -843,6 +854,16 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
         return getEntriesStat().rebalancingPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancedKeys() {
+        return rebalancedKeys.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys.get();
     }
 
     /** {@inheritDoc} */
@@ -924,7 +945,10 @@ public class CacheMetricsImpl implements CacheMetrics {
      * First rebalance supply message callback.
      * @param keysCnt Estimated number of keys.
      */
-    public void onRebalancingKeysCountEstimateReceived(long keysCnt) {
+    public void onRebalancingKeysCountEstimateReceived(Long keysCnt) {
+        if (keysCnt == null)
+            return;
+
         estimatedRebalancingKeys.addAndGet(keysCnt);
     }
 
@@ -1038,6 +1062,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         /** Size. */
         private int size;
+
+        /** Long size. */
+        private long cacheSize;
 
         /** Key size. */
         private int keySize;
@@ -1155,6 +1182,20 @@ public class CacheMetricsImpl implements CacheMetrics {
          */
         public void keySize(int keySize) {
             this.keySize = keySize;
+        }
+
+        /**
+         * @return Long size.
+         */
+        public long cacheSize() {
+            return cacheSize;
+        }
+
+        /**
+         * @param cacheSize Size long.
+         */
+        public void cacheSize(long cacheSize) {
+            this.cacheSize = cacheSize;
         }
 
         /**

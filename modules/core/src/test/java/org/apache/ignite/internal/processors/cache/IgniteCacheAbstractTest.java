@@ -78,8 +78,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         storeMap.clear();
     }
 

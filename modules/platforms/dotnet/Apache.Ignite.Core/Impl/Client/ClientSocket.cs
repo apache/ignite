@@ -28,11 +28,11 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Xml.Schema;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Wrapper over framework socket for Ignite thin client operations.
@@ -117,18 +117,18 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Continuously and asynchronously wait for data from server.
-            Task.Factory.StartNew(WaitForMessages);
+            TaskRunner.Run(WaitForMessages);
         }
 
         /// <summary>
         /// Validate configuration.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        private void Validate(IgniteClientConfiguration cfg)
+        private static void Validate(IgniteClientConfiguration cfg)
         {
-            if (cfg.Username != null)
+            if (cfg.UserName != null)
             {
-                if (cfg.Username.Length == 0)
+                if (cfg.UserName.Length == 0)
                     throw new IgniteClientException("IgniteClientConfiguration.Username cannot be empty.");
 
                 if (cfg.Password == null)
@@ -140,8 +140,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (cfg.Password.Length == 0)
                     throw new IgniteClientException("IgniteClientConfiguration.Password cannot be empty.");
 
-                if (cfg.Username == null)
-                    throw new IgniteClientException("IgniteClientConfiguration.Username cannot be null when Password is set.");
+                if (cfg.UserName == null)
+                    throw new IgniteClientException("IgniteClientConfiguration.UserName cannot be null when Password is set.");
             }
         }
 
@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var task = SendRequestAsync(ref reqMsg);
 
             // Decode.
-            return task.ContinueWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
+            return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
         }
 
         /// <summary>
@@ -262,7 +262,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
         {
-            bool auth = version.CompareTo(Ver110) >= 0 && clientConfiguration.Username != null;
+            bool auth = version.CompareTo(Ver110) >= 0 && clientConfiguration.UserName != null;
 
             // Send request.
             int messageLen;
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
-                    writer.WriteString(clientConfiguration.Username);
+                    writer.WriteString(clientConfiguration.UserName);
                     writer.WriteString(clientConfiguration.Password);
 
                     BinaryUtils.Marshaller.FinishMarshal(writer);

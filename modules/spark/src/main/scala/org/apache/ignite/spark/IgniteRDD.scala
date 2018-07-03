@@ -344,6 +344,11 @@ class IgniteRDD[K, V] (
 
 object IgniteRDD {
     /**
+      * Default decimal type.
+      */
+    private[spark] val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3)
+
+    /**
       * Gets Spark data type based on type name.
       *
       * @param typeName Type name.
@@ -357,7 +362,7 @@ object IgniteRDD {
         case "java.lang.Long" ⇒ LongType
         case "java.lang.Float" ⇒ FloatType
         case "java.lang.Double" ⇒ DoubleType
-        case "java.math.BigDecimal" ⇒ DataTypes.createDecimalType()
+        case "java.math.BigDecimal" ⇒ DECIMAL
         case "java.lang.String" ⇒ StringType
         case "java.util.Date" ⇒ DateType
         case "java.sql.Date" ⇒ DateType

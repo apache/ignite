@@ -1050,7 +1050,9 @@ public class GridSqlQueryParser {
         for (IndexColumn pkIdxCol : pkIdxCols) {
             GridSqlColumn gridCol = cols.get(pkIdxCol.columnName);
 
-            assert gridCol != null;
+            if (gridCol == null)
+                throw new IgniteSQLException("PRIMARY KEY column is not defined: " + pkIdxCol.columnName,
+                    IgniteQueryErrorCode.PARSING);
 
             pkCols.add(gridCol.columnName());
         }

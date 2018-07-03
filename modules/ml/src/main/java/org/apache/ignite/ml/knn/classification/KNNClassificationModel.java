@@ -32,7 +32,7 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.knn.partitions.KNNPartitionContext;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -44,6 +44,9 @@ import org.jetbrains.annotations.NotNull;
  * kNN algorithm model to solve multi-class classification task.
  */
 public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Exportable<KNNModelFormat> {
+    /** */
+    private static final long serialVersionUID = -127386523291350345L;
+
     /** Amount of nearest neighbors. */
     protected int k = 5;
 
@@ -54,13 +57,13 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
     protected KNNStrategy stgy = KNNStrategy.SIMPLE;
 
     /** Dataset. */
-    private Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
+    private Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset;
 
     /**
      * Builds the model via prepared dataset.
      * @param dataset Specially prepared object to run algorithm over it.
      */
-    public KNNClassificationModel(Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
+    public KNNClassificationModel(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset) {
         this.dataset = dataset;
     }
 
@@ -148,19 +151,29 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
      */
     @NotNull private LabeledVector[] getKClosestVectors(LabeledDataset<Double, LabeledVector> trainingData,
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
-        LabeledVector[] res = new LabeledVector[k];
-        int i = 0;
-        final Iterator<Double> iter = distanceIdxPairs.keySet().iterator();
-        while (i < k) {
-            double key = iter.next();
-            Set<Integer> idxs = distanceIdxPairs.get(key);
-            for (Integer idx : idxs) {
-                res[i] = trainingData.getRow(idx);
-                i++;
-                if (i >= k)
-                    break; // go to next while-loop iteration
+        LabeledVector[] res;
+
+        if (trainingData.rowSize() <= k) {
+            res = new LabeledVector[trainingData.rowSize()];
+            for (int i = 0; i < trainingData.rowSize(); i++)
+                res[i] = trainingData.getRow(i);
+        }
+        else {
+            res = new LabeledVector[k];
+            int i = 0;
+            final Iterator<Double> iter = distanceIdxPairs.keySet().iterator();
+            while (i < k) {
+                double key = iter.next();
+                Set<Integer> idxs = distanceIdxPairs.get(key);
+                for (Integer idx : idxs) {
+                    res[i] = trainingData.getRow(idx);
+                    i++;
+                    if (i >= k)
+                        break; // go to next while-loop iteration
+                }
             }
         }
+
         return res;
     }
 

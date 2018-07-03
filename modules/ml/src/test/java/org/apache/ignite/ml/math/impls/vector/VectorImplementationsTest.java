@@ -304,7 +304,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     @Test
     public void sortTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v) || !v.isArrayBased()) {
+            if (readOnly() || !v.isArrayBased()) {
                 boolean expECaught = false;
 
                 try {
@@ -350,7 +350,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     @Test
     public void assignDoubleTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v))
+            if (readOnly())
                 return;
 
             for (double val : new double[] {0, -1, 0, 1}) {
@@ -370,7 +370,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     @Test
     public void assignDoubleArrTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v))
+            if (readOnly())
                 return;
 
             final int size = v.size();
@@ -393,7 +393,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     @Test
     public void assignVectorTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v))
+            if (readOnly())
                 return;
 
             final int size = v.size();
@@ -416,7 +416,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     @Test
     public void assignFunctionTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v))
+            if (readOnly())
                 return;
 
             final int size = v.size();
@@ -502,13 +502,12 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     /** */
     private boolean getXOutOfBoundsOK(Vector v) {
         // TODO: IGNTIE-5723, find out if this is indeed OK
-        return v instanceof RandomVector || v instanceof ConstantVector
-            || v instanceof SingleElementVector || v instanceof SingleElementVectorView;
+        return false;
     }
 
     /** */
     private void mutateAtIdxTest(Vector v, String desc, MutateAtIdx operation) {
-        if (readOnly(v)) {
+        if (readOnly()) {
             if (v.size() < 1)
                 return;
 
@@ -540,9 +539,6 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     /** */
     private Class<? extends Vector> expLikeType(Vector v) {
         Class<? extends Vector> clazz = v.getClass();
-
-        if (clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class))
-            return null;
 
         if (clazz.isAssignableFrom(MatrixVectorView.class) || clazz.isAssignableFrom(DelegatingVector.class))
             return DenseLocalOnHeapVector.class; // IMPL NOTE per fixture
@@ -698,8 +694,8 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     }
 
     /** */
-    private static boolean readOnly(Vector v) {
-        return v instanceof RandomVector || v instanceof ConstantVector;
+    private static boolean readOnly() {
+        return false;
     }
 
     /** */
@@ -725,7 +721,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
 
             this.nonNegative = nonNegative;
 
-            refReadOnly = readOnly(v) && ref == null ? new double[v.size()] : null;
+            refReadOnly = readOnly() && ref == null ? new double[v.size()] : null;
 
             init(v, ref);
         }
@@ -765,7 +761,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
 
         /** */
         void assertNewMinElement(Vector v) {
-            if (readOnly(v))
+            if (readOnly())
                 return;
 
             int exp = v.size() / 2;
@@ -777,7 +773,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
 
         /** */
         void assertNewMaxElement(Vector v) {
-            if (readOnly(v))
+            if (readOnly())
                 return;
 
             int exp = v.size() / 2;
@@ -789,7 +785,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
 
         /** */
         private void init(Vector v, double[] ref) {
-            if (readOnly(v)) {
+            if (readOnly()) {
                 initReadonly(v, ref);
 
                 return;

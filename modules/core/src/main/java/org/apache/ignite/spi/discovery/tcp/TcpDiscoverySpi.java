@@ -2236,6 +2236,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Checks whether local node is coordinator. Nodes that are leaving or failed
+     * (but are still in topology) are removed from search.
+     *
+     * @return {@code true} if local node is coordinator.
+     */
+    public boolean isLocalNodeCoordinator() {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).isLocalNodeCoordinator();
+
+        return false;
+    }
+
+    /**
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
@@ -2347,6 +2360,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Nullable @Override public UUID getCoordinator() {
             return impl.getCoordinator();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String getCoordinatorNodeFormatted() {
+            return String.valueOf(impl.getNode(impl.getCoordinator()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLocalNodeFormatted() {
+            return String.valueOf(getLocalNode());
         }
 
         /** {@inheritDoc} */

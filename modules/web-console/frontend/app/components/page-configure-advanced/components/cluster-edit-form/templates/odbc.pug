@@ -30,8 +30,8 @@ panel-collapsible(
         | ODBC server configuration. 
         | #[a.link-success(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`$ctrl.available(["1.0.0", "2.1.0"]) && ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6
-            .settings-row
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
                 +sane-form-field-checkbox({
                     label: 'Enabled',
                     model: enabled,
@@ -44,7 +44,7 @@ panel-collapsible(
                     ui-validate-watch='$ctrl.Clusters.odbc.odbcEnabled.correctMarshallerWatch("$ctrl.clonedCluster")'
                 )
                     +form-field-feedback(null, 'correctMarshaller', 'ODBC can only be used with BinaryMarshaller')
-            .settings-row
+            .pc-form-grid-col-60
                 +text-ip-address-with-port-range('ODBC endpoint address:', `${model}.endpointAddress`, '"endpointAddress"', enabled, '0.0.0.0:10800..10810',
                     'ODBC endpoint address. <br/>\
                     The following address formats are permitted:\
@@ -53,17 +53,17 @@ panel-collapsible(
                         <li>hostname:port - will use provided hostname and port</li>\
                         <li>hostname:port_from..port_to - will use provided hostname and port range</li>\
                     </ul>')
-            .settings-row
+            .pc-form-grid-col-30
                 +number('Send buffer size:', `${model}.socketSendBufferSize`, '"ODBCSocketSendBufferSize"', enabled, '0', '0',
                     'Socket send buffer size.<br/>\
                     When set to <b>0</b>, operation system default will be used')
-            .settings-row
+            .pc-form-grid-col-30
                 +number('Socket receive buffer size:', `${model}.socketReceiveBufferSize`, '"ODBCSocketReceiveBufferSize"', enabled, '0', '0',
                     'Socket receive buffer size.<br/>\
                     When set to <b>0</b>, operation system default will be used')
-            .settings-row
+            .pc-form-grid-col-30
                 +number('Maximum open cursors', `${model}.maxOpenCursors`, '"maxOpenCursors"', enabled, '128', '1', 'Maximum number of opened cursors per connection')
-            .settings-row
+            .pc-form-grid-col-30
                 +number('Pool size:', `${model}.threadPoolSize`, '"ODBCThreadPoolSize"', enabled, 'max(8, availableProcessors)', '1',
                     'Size of thread pool that is in charge of processing ODBC tasks')
         .pca-form-column-6

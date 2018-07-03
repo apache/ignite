@@ -173,14 +173,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

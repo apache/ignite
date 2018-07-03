@@ -367,7 +367,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
-            new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode));
+            new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode, grpDesc.persistenceEnabled()));
 
         assert old == null : old;
     }
@@ -687,11 +687,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                    if (incMinorTopVer)
+                        ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
                 }
-                else
+                else {
                     nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
-                ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
+                    ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
+                }
 
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
@@ -1372,18 +1376,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Prints the latest topology info into log taking into account logging/verbosity settings.
      *
      * @param topVer Topology version.
+     * @param evtType Event type.
+     * @param evtNode Event node.
      */
-    public void ackTopology(long topVer) {
-        ackTopology(topVer, false);
+    public void ackTopology(long topVer, int evtType, ClusterNode evtNode) {
+        ackTopology(topVer, evtType, evtNode, false);
     }
 
     /**
      * Logs grid size for license compliance.
      *
      * @param topVer Topology version.
+     * @param evtType Event type.
+     * @param evtNode Event node.
      * @param throttle Suppress printing if this topology was already printed.
      */
-    private void ackTopology(long topVer, boolean throttle) {
+    private void ackTopology(long topVer, int evtType, ClusterNode evtNode, boolean throttle) {
         assert !isLocDaemon;
 
         DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
@@ -1430,7 +1438,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1481,7 +1489,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
     }
 
     /**
@@ -1557,14 +1565,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * @param clo Wrapper of logger.
      * @param topVer Topology version.
+     * @param discoCache Discovery cache.
+     * @param evtType Event type.
+     * @param evtNode Event node.
      * @param srvNodesNum Server nodes number.
      * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @param offheap Offheap size.
      */
-    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, int srvNodesNum,
-        int clientNodesNum, int totalCpus, double heap, double offheap) {
+    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
+        int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
+        double offheap) {
         String summary = PREFIX + " [" +
             (discoOrdered ? "ver=" + topVer + ", " : "") +
             "servers=" + srvNodesNum +
@@ -1574,6 +1586,41 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ", heap=" + heap + "GB]";
 
         clo.apply(summary);
+
+        DiscoveryDataClusterState state = discoCache.state();
+
+        clo.apply("  ^-- Node [id=" + discoCache.localNode().id().toString().toUpperCase() + ", clusterState="
+            + (state.active() ? "ACTIVE" : "INACTIVE") + ']');
+
+        BaselineTopology blt = state.baselineTopology();
+
+        if (blt != null && discoCache.baselineNodes() != null) {
+            int bltSize = discoCache.baselineNodes().size();
+            int bltOnline = discoCache.aliveBaselineNodes().size();
+            int bltOffline = bltSize - bltOnline;
+
+            clo.apply("  ^-- Baseline [id=" + blt.id() + ", size=" + bltSize + ", online=" + bltOnline
+                + ", offline=" + bltOffline + ']');
+
+            if (!state.active() && ctx.config().isAutoActivationEnabled()) {
+                String offlineConsistentIds = "";
+
+                if (bltOffline > 0 && bltOffline <= 5) {
+                    Collection<BaselineNode> offlineNodes = new HashSet<>(discoCache.baselineNodes());
+
+                    offlineNodes.removeAll(discoCache.aliveBaselineNodes());
+
+                    offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
+                }
+
+                if (bltOffline == 0) {
+                    if (evtType == EVT_NODE_JOINED && discoCache.baselineNode(evtNode))
+                        clo.apply("  ^-- All baseline nodes are online, will start auto-activation");
+                }
+                else
+                    clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
+            }
+        }
 
         DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
 
@@ -2093,7 +2140,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @return Wrapped DiscoverySpi SPI.
      */
-    private DiscoverySpi getInjectedDiscoverySpi() {
+    public DiscoverySpi getInjectedDiscoverySpi() {
         try {
             inject();
         }
@@ -2340,12 +2387,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         assert !rmtNodes.contains(loc) : "Remote nodes collection shouldn't contain local node" +
             " [rmtNodes=" + rmtNodes + ", loc=" + loc + ']';
 
-        Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
-        Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
-        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(NodeOrderComparator.getInstance());
-
-        fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches);
-
         BaselineTopology blt = state.baselineTopology();
 
         if (blt != null) {
@@ -2387,6 +2428,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             baselineNodes = null;
         }
+
+        Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
+        Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
+        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(NodeOrderComparator.getInstance());
+
+        fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches,
+                nodeIdToConsIdx == null ? null : nodeIdToConsIdx.keySet());
 
         return new DiscoCache(
             topVer,
@@ -2742,7 +2790,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (log.isInfoEnabled())
                                 log.info("Added new node to topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), type, node, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
@@ -2763,7 +2811,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (log.isInfoEnabled())
                                 log.info("Node left topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), type, node, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node left topology: " + node);
@@ -2785,7 +2833,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         log.info("Client node reconnected to topology: " + node);
 
                     if (!isLocDaemon)
-                        ackTopology(topVer.topologyVersion(), true);
+                        ackTopology(topVer.topologyVersion(), type, node, true);
 
                     break;
                 }
@@ -2799,7 +2847,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (!isLocDaemon) {
                             U.warn(log, "Node FAILED: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), type, node, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node FAILED: " + node);
@@ -3080,23 +3128,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Cache mode. */
         private final CacheMode cacheMode;
 
+        /** Persistent cache group or not. */
+        private final boolean persistentCacheGrp;
+
         /**
          * @param name Name.
          * @param cacheFilter Node filter.
          * @param cacheMode Cache mode.
+         * @param persistentCacheGrp Persistence is configured for cache or not.
          */
         CacheGroupAffinity(
-            String name,
-            IgnitePredicate<ClusterNode> cacheFilter,
-            CacheMode cacheMode) {
+                String name,
+                IgnitePredicate<ClusterNode> cacheFilter,
+                CacheMode cacheMode,
+                boolean persistentCacheGrp) {
             this.name = name;
             this.cacheFilter = cacheFilter;
             this.cacheMode = cacheMode;
+            this.persistentCacheGrp = persistentCacheGrp;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "CacheGroupAffinity [name=" + name + ']';
+            return S.toString(CacheGroupAffinity.class, this);
         }
     }
 
@@ -3221,14 +3275,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * Fills affinity node caches.
-     *
      * @param allNodes All nodes.
      * @param allCacheNodes All cache nodes.
      * @param cacheGrpAffNodes Cache group aff nodes.
      * @param rmtNodesWithCaches Rmt nodes with caches.
+     * @param bltNodes Baseline node ids.
      */
-    private void fillAffinityNodeCaches(List<ClusterNode> allNodes, Map<Integer, List<ClusterNode>> allCacheNodes,
-        Map<Integer, List<ClusterNode>> cacheGrpAffNodes, Set<ClusterNode> rmtNodesWithCaches) {
+    private void fillAffinityNodeCaches(
+        List<ClusterNode> allNodes,
+        Map<Integer, List<ClusterNode>> allCacheNodes,
+        Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
+        Set<ClusterNode> rmtNodesWithCaches,
+        Set<UUID> bltNodes
+    ) {
         for (ClusterNode node : allNodes) {
             assert node.order() != 0 : "Invalid node order [locNode=" + localNode() + ", node=" + node + ']';
             assert !node.isDaemon();
@@ -3238,6 +3297,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Integer grpId = e.getKey();
 
                 if (CU.affinityNode(node, grpAff.cacheFilter)) {
+                    if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
+                        continue;
+                    
                     List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
 
                     if (nodes == null)
@@ -3277,7 +3339,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
         Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(NodeOrderComparator.getInstance());
 
-        fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches);
+        Map<UUID, Short> nodeIdToConsIdx = discoCache.nodeIdToConsIdx;
+
+        fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches,
+                nodeIdToConsIdx == null ? null : nodeIdToConsIdx.keySet());
 
         return new DiscoCache(
             topVer,
@@ -3293,7 +3358,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             cacheGrpAffNodes,
             discoCache.nodeMap,
             discoCache.alives,
-            discoCache.nodeIdToConsIdx,
+            nodeIdToConsIdx,
             discoCache.consIdxToNodeId,
             discoCache.minimumNodeVersion(),
             discoCache.minimumServerNodeVersion());

@@ -17,7 +17,11 @@
 
 package org.apache.ignite.ml.knn;
 
-import org.apache.ignite.internal.util.IgniteUtils;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -26,25 +30,36 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Assert;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
-public class KNNRegressionTest extends BaseKNNTest {
-    /** */
-    private double[] y;
+@RunWith(Parameterized.class)
+public class KNNRegressionTest {
+    /** Number of parts to be tested. */
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 100};
+
+    /** Number of partitions. */
+    @Parameterized.Parameter
+    public int parts;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
+    public static Iterable<Integer[]> data() {
+        List<Integer[]> res = new ArrayList<>();
+
+        for (int part : partsToBeTested)
+            res.add(new Integer[] {part});
+
+        return res;
+    }
 
     /** */
-    private double[][] x;
-
-    /** */
+    @Test
     public void testSimpleRegressionWithOneNeighbour() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {11.0, 0, 0, 0, 0, 0});
         data.put(1, new double[] {12.0, 2.0, 0, 0, 0, 0});
@@ -56,7 +71,7 @@ public class KNNRegressionTest extends BaseKNNTest {
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0]
         ).withK(1)
@@ -69,10 +84,8 @@ public class KNNRegressionTest extends BaseKNNTest {
     }
 
     /** */
+    @Test
     public void testLongly() {
-
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {60323, 83.0, 234289, 2356, 1590, 107608, 1947});
         data.put(1, new double[] {61122, 88.5, 259426, 2325, 1456, 108632, 1948});
@@ -93,7 +106,7 @@ public class KNNRegressionTest extends BaseKNNTest {
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0]
         ).withK(3)
@@ -106,9 +119,8 @@ public class KNNRegressionTest extends BaseKNNTest {
     }
 
     /** */
+    @Test
     public void testLonglyWithWeightedStrategy() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {60323, 83.0, 234289, 2356, 1590, 107608, 1947});
         data.put(1, new double[] {61122, 88.5, 259426, 2325, 1456, 108632, 1948});
@@ -129,7 +141,7 @@ public class KNNRegressionTest extends BaseKNNTest {
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0]
         ).withK(3)

@@ -777,6 +777,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 try {
                     storeMgr.read(grpId, pageId, buf);
+
+                    memMetrics.onPageRead();
                 }
                 catch (IgniteDataIntegrityViolationException ignore) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
@@ -785,6 +787,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     buf.rewind();
 
                     tryToRestorePage(fullId, buf);
+
+                    memMetrics.onPageRead();
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
@@ -1144,7 +1148,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             assert success : "Page was pin when we resolve abs pointer, it can not be evicted";
 
-            if (tmpRelPtr != INVALID_REL_PTR){
+            if (tmpRelPtr != INVALID_REL_PTR) {
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
@@ -1158,9 +1162,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 checkpointPool.releaseFreePage(tmpRelPtr);
 
-                // We pinned the page when allocated the temp buffer, release it now.
-                PageHeader.releasePage(absPtr);
-
                 // Need release again because we pin page when resolve abs pointer,
                 // and page did not have tmp buffer page.
                 if (!pageSingleAcquire)
@@ -1171,18 +1172,21 @@ public class PageMemoryImpl implements PageMemoryEx {
                 copyInBuffer(absPtr, outBuf);
 
                 PageHeader.dirty(absPtr, false);
-
-                // We pinned the page when resolve abs pointer.
-                PageHeader.releasePage(absPtr);
             }
 
             assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
             assert PageIO.getVersion(outBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
+            memMetrics.onPageWritten();
+
             return true;
         }
         finally {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+            // We pinned the page either when allocated the temp buffer, or when resolved abs pointer.
+            // Must release the page only after write unlock.
+            PageHeader.releasePage(absPtr);
         }
     }
 
@@ -2195,7 +2199,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                         relRmvAddr = metaAddr;
                 }
 
-                assert relRmvAddr != INVALID_REL_PTR;
+                if (relRmvAddr == INVALID_REL_PTR)
+                    return tryToFindSequentially(cap, saveDirtyPage);
 
                 final long absRmvAddr = absolute(relRmvAddr);
 

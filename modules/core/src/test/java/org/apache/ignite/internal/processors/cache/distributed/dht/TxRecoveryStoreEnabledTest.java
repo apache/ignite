@@ -32,6 +32,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -80,6 +81,8 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
         ccfg.setWriteBehindEnabled(false);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg;
     }

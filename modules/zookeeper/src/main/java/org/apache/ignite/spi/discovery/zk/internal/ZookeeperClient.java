@@ -162,6 +162,13 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /** */
+    String state() {
+        synchronized (stateMux) {
+            return state.toString();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void process(WatchedEvent evt) {
         if (closing)
@@ -481,6 +488,31 @@ public class ZookeeperClient implements Watcher {
             }
         }
     }
+
+    /**
+     * @param path Path.
+     * @return Children nodes.
+     * @throws KeeperException.NoNodeException If provided path does not exist.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    List<String> getChildrenIfPathExists(String path) throws
+        KeeperException.NoNodeException, InterruptedException, ZookeeperClientFailedException {
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                return zk.getChildren(path, false);
+            }
+            catch (KeeperException.NoNodeException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
 
     /**
      * @param path Path.

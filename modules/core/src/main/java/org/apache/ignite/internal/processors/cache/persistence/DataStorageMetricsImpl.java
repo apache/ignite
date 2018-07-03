@@ -16,8 +16,14 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 
 /**
@@ -73,7 +79,19 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile boolean metricsEnabled;
 
     /** */
-    private IgniteWriteAheadLogManager wal;
+    private volatile IgniteWriteAheadLogManager wal;
+
+    /** */
+    private volatile IgniteOutClosure<Long> walSizeProvider;
+
+    /** */
+    private volatile long lastWalSegmentRollOverTime;
+
+    /** */
+    private final AtomicLong totalCheckpointTime = new AtomicLong();
+
+    /** */
+    private volatile Collection<DataRegionMetrics> regionMetrics;
 
     /**
      * @param metricsEnabled Metrics enabled flag.
@@ -226,11 +244,238 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         resetRates();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getWalTotalSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteOutClosure<Long> walSize = this.walSizeProvider;
+
+        return walSize != null ? walSize.apply() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalLastRollOverTime() {
+        if (!metricsEnabled)
+            return 0;
+
+        return lastWalSegmentRollOverTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointTotalTime() {
+        if (!metricsEnabled)
+            return 0;
+
+        return totalCheckpointTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDirtyPages() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long dirtyPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            dirtyPages += rm.getDirtyPages();
+
+        return dirtyPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long readPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            readPages += rm.getPagesRead();
+
+        return readPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long writtenPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            writtenPages += rm.getPagesWritten();
+
+        return writtenPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long replacedPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            replacedPages += rm.getPagesReplaced();
+
+        return replacedPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long offHeapSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            offHeapSize += rm.getOffHeapSize();
+
+        return offHeapSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long offHeapUsedSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            offHeapUsedSize += rm.getOffheapUsedSize();
+
+        return offHeapUsedSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long totalAllocatedSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            totalAllocatedSize += rm.getTotalAllocatedSize();
+
+        return totalAllocatedSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferPages() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long usedCheckpointBufferPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            usedCheckpointBufferPages += rm.getUsedCheckpointBufferPages();
+
+        return usedCheckpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long usedCheckpointBufferSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            usedCheckpointBufferSize += rm.getUsedCheckpointBufferSize();
+
+        return usedCheckpointBufferSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize(){
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long checkpointBufferSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            checkpointBufferSize += rm.getCheckpointBufferSize();
+
+        return checkpointBufferSize;
+    }
+
     /**
      * @param wal Write-ahead log manager.
      */
     public void wal(IgniteWriteAheadLogManager wal) {
         this.wal = wal;
+    }
+
+    /**
+     * @param walSizeProvider Wal size provider.
+     */
+    public void setWalSizeProvider(IgniteOutClosure<Long> walSizeProvider){
+        this.walSizeProvider = walSizeProvider;
+    }
+
+    /**
+     *
+     */
+    public void onWallRollOver() {
+        this.lastWalSegmentRollOverTime = U.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
+    public void regionMetrics(Collection<DataRegionMetrics> regionMetrics){
+        this.regionMetrics = regionMetrics;
     }
 
     /**
@@ -269,6 +514,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpTotalPages = totalPages;
             lastCpDataPages = dataPages;
             lastCpCowPages = cowPages;
+
+            totalCheckpointTime.addAndGet(duration);
         }
     }
 

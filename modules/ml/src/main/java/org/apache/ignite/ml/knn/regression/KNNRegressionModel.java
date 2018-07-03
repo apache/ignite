@@ -17,8 +17,8 @@
 package org.apache.ignite.ml.knn.regression;
 
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.knn.partitions.KNNPartitionContext;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.structures.LabeledDataset;
@@ -38,11 +38,14 @@ import java.util.List;
  * </ul>
  */
 public class KNNRegressionModel<K,V> extends KNNClassificationModel<K,V> {
+    /** */
+    private static final long serialVersionUID = -721836321291120543L;
+
     /**
      * Builds the model via prepared dataset.
      * @param dataset Specially prepared object to run algorithm over it.
      */
-    public KNNRegressionModel(Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
+    public KNNRegressionModel(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset) {
         super(dataset);
     }
 

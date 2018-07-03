@@ -81,6 +81,8 @@ final class ReliableChannel implements AutoCloseable {
 
         primary = addrs.get(new Random().nextInt(addrs.size())); // we already verified there is at least one address
 
+        ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+
         for (InetSocketAddress a : addrs)
             if (a != primary)
                 this.backups.add(a);

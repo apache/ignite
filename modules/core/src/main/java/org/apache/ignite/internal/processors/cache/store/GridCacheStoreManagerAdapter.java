@@ -1431,6 +1431,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public String label() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public long timeout() {
             return tx.timeout();
         }
