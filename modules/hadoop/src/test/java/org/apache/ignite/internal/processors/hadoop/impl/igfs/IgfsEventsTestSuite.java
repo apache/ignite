@@ -158,9 +158,9 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         /** {@inheritDoc} */
         @Override protected void beforeTestsStarted() throws Exception {
-            super.beforeTestsStarted();
-
             igfsSec = startSecondary();
+
+            super.beforeTestsStarted();
         }
 
         /** {@inheritDoc} */
