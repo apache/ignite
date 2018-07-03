@@ -181,10 +181,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         key = (KeyCacheObject)cctx.kernalContext().cacheObjects().prepareForCache(key, cctx);
 
-        if (key.partition() == -1) {
-            int k = 2;
-        }
-
         assert key != null;
 
         this.key = key;
@@ -2764,10 +2760,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     storeValue(val, expTime, ver, null);
                 }
-                else {
-                    if (!preload)
-                        log.warning("Rejected update: " + this);
-                }
             }
             else // Optimization to access storage only once.
                 update = storeValue(val, expTime, ver, null, p);
@@ -2831,10 +2823,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 return true;
-            }
-            else {
-                if (!preload)
-                    log.warning("Rejected update: " + this);
             }
 
             return false;

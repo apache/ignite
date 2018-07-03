@@ -371,10 +371,6 @@ class GridDhtPartitionSupplier {
 
                 GridCacheEntryInfo info = new GridCacheEntryInfo();
 
-                if (row.key().partition() == -1) {
-                    int k = 2;
-                }
-
                 info.key(row.key());
                 info.expireTime(row.expireTime());
                 info.version(row.version());

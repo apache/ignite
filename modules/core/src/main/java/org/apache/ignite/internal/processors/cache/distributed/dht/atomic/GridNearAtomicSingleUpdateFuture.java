@@ -545,10 +545,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
-        if (cacheKey.partition() < 0) {
-            int k = 2;
-        }
-
         if (op != TRANSFORM) {
             val = cctx.toCacheObject(val);
 
