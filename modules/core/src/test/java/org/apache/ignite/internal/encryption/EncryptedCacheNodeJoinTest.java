@@ -41,7 +41,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
     /** */
     private static final String KEYSTORE_PATH_2 =
-        IgniteUtils.resolveIgnitePath("modules/core/src/test/resources/tde2.jks").getAbsolutePath();
+        IgniteUtils.resolveIgnitePath("modules/core/src/test/resources/other_tde_keystore.jks").getAbsolutePath();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
