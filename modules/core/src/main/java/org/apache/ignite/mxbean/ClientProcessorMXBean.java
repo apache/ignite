@@ -23,20 +23,20 @@ import java.util.UUID;
 /**
  * MXBean interface that provides access to ODBC\JDBC\Thin client connections.
  */
-@MXBeanDescription("MBean that provides information about client connections")
+@MXBeanDescription("MBean that provides information about client connections.")
 public interface ClientProcessorMXBean {
     /**
      * Returns list of active connections.
      *
      * @return Sessions.
      */
-    @MXBeanDescription("List of client connections")
+    @MXBeanDescription("List of client connections.")
     List<String> getConnections();
 
     /**
      * Drop all active connections.
      */
-    @MXBeanDescription("Drop all client connections")
+    @MXBeanDescription("Drop all client connections.")
     void dropAllConnections();
 
     /**
@@ -45,7 +45,7 @@ public interface ClientProcessorMXBean {
      * @param id connection id.
      * @return {@code True} if connection has been dropped successfully, {@code false} otherwise.
      */
-    @MXBeanDescription("Drop client connection by ID")
+    @MXBeanDescription("Drop client connection by ID.")
     @MXBeanParametersNames(
         "id"
     )

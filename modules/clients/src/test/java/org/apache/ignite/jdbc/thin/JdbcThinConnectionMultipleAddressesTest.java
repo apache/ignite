@@ -251,7 +251,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
             for (int i = 0; i < NODES_CNT; i++) {
                 serverMxBean = clientProcessorBean(i);
 
-                if (!serverMxBean.getActiveConnections().isEmpty())
+                if (!serverMxBean.getConnections().isEmpty())
                     break;
             }
 
@@ -315,7 +315,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
             assertNotNull(mxBean);
 
-            activeClients.addAll(mxBean.getActiveConnections());
+            activeClients.addAll(mxBean.getConnections());
         }
         return activeClients;
     }
@@ -329,7 +329,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         ObjectName mbeanName = null;
 
         try {
-            mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "ClientProcessor",
+            mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "Clients",
                 ClientListenerProcessor.class.getSimpleName());
         }
         catch (MalformedObjectNameException e) {
