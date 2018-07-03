@@ -26,8 +26,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -48,7 +48,7 @@ public class Step_2_Imputing {
                     IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
-                            (k, v) -> Vector.of((double)v[0], (double)v[5], (double)v[6]) // "pclass", "sibsp", "parch"
+                            (k, v) -> VectorUtils.of((double)v[0], (double)v[5], (double)v[6]) // "pclass", "sibsp", "parch"
                         );
 
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);

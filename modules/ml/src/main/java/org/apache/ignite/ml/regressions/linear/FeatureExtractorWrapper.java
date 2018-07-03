@@ -17,10 +17,10 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-
 import java.util.Arrays;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
  * Feature extractor wrapper that adds additional column filled by 1.
@@ -51,6 +51,6 @@ public class FeatureExtractorWrapper<K, V> implements IgniteBiFunction<K, V, Vec
 
         row[featureRow.length] = 1.0;
 
-        return Vector.of(row);
+        return VectorUtils.of(row);
     }
 }

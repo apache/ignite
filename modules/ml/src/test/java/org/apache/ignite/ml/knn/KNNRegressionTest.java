@@ -27,6 +27,7 @@ import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Assert;
@@ -72,7 +73,7 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
@@ -107,7 +108,7 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
@@ -142,7 +143,7 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())

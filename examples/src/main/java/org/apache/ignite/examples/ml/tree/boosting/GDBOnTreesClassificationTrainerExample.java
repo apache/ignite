@@ -69,7 +69,7 @@ public class GDBOnTreesClassificationTrainerExample {
                 Model<Vector, Double> mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] { v[0] },
+                    (k, v) -> VectorUtils.of(v[0]),
                     (k, v) -> v[1]
                 );
 

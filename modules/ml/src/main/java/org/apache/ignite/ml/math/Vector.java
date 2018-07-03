@@ -27,7 +27,6 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * A vector interface.
@@ -514,14 +513,5 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public default double[] asArray() {
         return getStorage().data();
-    }
-
-    /**
-     * Creates vector based on array of doubles.
-     * @param values Values.
-     * @return Vector.
-     */
-    public static Vector of(double ... values) {
-        return new DenseLocalOnHeapVector(values);
     }
 }

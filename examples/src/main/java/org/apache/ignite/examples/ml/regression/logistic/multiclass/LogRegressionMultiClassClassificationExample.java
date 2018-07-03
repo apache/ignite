@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -74,7 +75,7 @@ public class LogRegressionMultiClassClassificationExample {
                     dataCache,
                     (k, v) -> {
                         double[] arr = v.asArray();
-                        return Vector.of(Arrays.copyOfRange(arr, 1, arr.length));
+                        return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
                     },
                     (k, v) -> v.get(0)
                 );
@@ -89,7 +90,7 @@ public class LogRegressionMultiClassClassificationExample {
                     dataCache,
                     (k, v) -> {
                         double[] arr = v.asArray();
-                        return Vector.of(Arrays.copyOfRange(arr, 1, arr.length));
+                        return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
                     }
                 );
 
@@ -178,7 +179,7 @@ public class LogRegressionMultiClassClassificationExample {
         IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
 
         for (int i = 0; i < data.length; i++)
-            cache.put(i, Vector.of(data[i]));
+            cache.put(i, VectorUtils.of(data[i]));
 
         return cache;
     }

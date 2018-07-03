@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.Vector;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -57,10 +57,10 @@ public class MinMaxScalerTrainerTest {
     @Test
     public void testFit() {
         Map<Integer, Vector> data = new HashMap<>();
-        data.put(1, Vector.of(2, 4, 1));
-        data.put(2, Vector.of(1, 8, 22));
-        data.put(3, Vector.of(4, 10, 100));
-        data.put(4, Vector.of(0, 22, 300));
+        data.put(1, VectorUtils.of(2, 4, 1));
+        data.put(2, VectorUtils.of(1, 8, 22));
+        data.put(3, VectorUtils.of(4, 10, 100));
+        data.put(4, VectorUtils.of(0, 22, 300));
 
         DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 

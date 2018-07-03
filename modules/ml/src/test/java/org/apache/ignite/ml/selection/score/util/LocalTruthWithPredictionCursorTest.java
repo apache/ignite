@@ -19,7 +19,7 @@ package org.apache.ignite.ml.selection.score.util;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.junit.Test;
 
@@ -40,7 +40,7 @@ public class LocalTruthWithPredictionCursorTest {
         TruthWithPredictionCursor<Integer> cursor = new LocalTruthWithPredictionCursor<>(
             data,
             (k, v) -> v % 2 == 0,
-            (k, v) -> Vector.of(v),
+            (k, v) -> VectorUtils.of(v),
             (k, v) -> v,
             vec -> (int)vec.get(0)
         );

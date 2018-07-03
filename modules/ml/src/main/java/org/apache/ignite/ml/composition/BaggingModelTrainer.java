@@ -27,6 +27,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
@@ -155,7 +156,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         return featureExtractor.andThen((IgniteFunction<Vector, Vector>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.size()];
             featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues.get(featureValueId));
-            return Vector.of(newFeaturesValues);
+            return VectorUtils.of(newFeaturesValues);
         });
     }
 }

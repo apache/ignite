@@ -17,6 +17,9 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -24,7 +27,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
@@ -32,10 +35,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.thread.IgniteThread;
-
-import javax.cache.Cache;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Run linear regression model over cached dataset.
@@ -123,7 +122,7 @@ public class LinearRegressionSGDTrainerExample {
                 LinearRegressionModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Vector.of(Arrays.copyOfRange(v, 1, v.length)),
+                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 );
 

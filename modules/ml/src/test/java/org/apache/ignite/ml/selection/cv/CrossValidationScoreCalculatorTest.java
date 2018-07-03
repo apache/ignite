@@ -19,7 +19,7 @@ package org.apache.ignite.ml.selection.cv;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -52,7 +52,7 @@ public class CrossValidationScoreCalculatorTest {
             new AccuracyScoreCalculator<>(),
             data,
             1,
-            (k, v) -> Vector.of(k),
+            (k, v) -> VectorUtils.of(k),
             (k, v) -> v,
             folds
         );
@@ -83,7 +83,7 @@ public class CrossValidationScoreCalculatorTest {
             new AccuracyScoreCalculator<>(),
             data,
             1,
-            (k, v) -> Vector.of(k),
+            (k, v) -> VectorUtils.of(k),
             (k, v) -> v,
             folds
         );

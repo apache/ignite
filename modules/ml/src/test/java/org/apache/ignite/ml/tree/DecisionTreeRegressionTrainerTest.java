@@ -17,12 +17,16 @@
 
 package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.math.Vector;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.*;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -66,7 +70,7 @@ public class DecisionTreeRegressionTrainerTest {
         DecisionTreeNode tree = trainer.fit(
             data,
             parts,
-            (k, v) -> Vector.of(Arrays.copyOf(v, v.length - 1)),
+            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
             (k, v) -> v[v.length - 1]
         );
 

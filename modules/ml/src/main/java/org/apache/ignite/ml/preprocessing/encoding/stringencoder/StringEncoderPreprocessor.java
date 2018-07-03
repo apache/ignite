@@ -20,6 +20,7 @@ package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownStringValue;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
@@ -80,6 +81,6 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, V
             } else
                 res[i] = (double)tmpObj;
         }
-        return Vector.of(res);
+        return VectorUtils.of(res);
     }
 }

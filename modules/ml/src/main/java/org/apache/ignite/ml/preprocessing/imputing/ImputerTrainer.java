@@ -26,6 +26,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
@@ -86,10 +87,10 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, 
 
             switch (imputingStgy) {
                 case MEAN:
-                    imputingValues = Vector.of(calculateImputingValuesBySumsAndCounts(dataset));
+                    imputingValues = VectorUtils.of(calculateImputingValuesBySumsAndCounts(dataset));
                     break;
                 case MOST_FREQUENT:
-                    imputingValues = Vector.of(calculateImputingValuesByFrequencies(dataset));
+                    imputingValues = VectorUtils.of(calculateImputingValuesByFrequencies(dataset));
                     break;
                 default: throw new UnsupportedOperationException("The chosen strategy is not supported");
             }

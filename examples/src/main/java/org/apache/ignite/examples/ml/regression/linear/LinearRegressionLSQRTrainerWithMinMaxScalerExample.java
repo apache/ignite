@@ -17,6 +17,9 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -25,17 +28,13 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
-
-import javax.cache.Cache;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Run linear regression model over cached dataset.
@@ -123,7 +122,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
                     dataCache,
                     (k, v) -> {
                         double[] arr = v.asArray();
-                        return Vector.of(Arrays.copyOfRange(arr, 1, arr.length));
+                        return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
                     }
                 );
 
@@ -174,7 +173,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
         IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
 
         for (int i = 0; i < data.length; i++)
-            cache.put(i, Vector.of(data[i]));
+            cache.put(i, VectorUtils.of(data[i]));
 
         return cache;
     }

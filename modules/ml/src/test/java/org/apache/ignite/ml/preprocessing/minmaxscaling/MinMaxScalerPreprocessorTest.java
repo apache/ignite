@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -50,6 +51,6 @@ public class MinMaxScalerPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(standardData[i], preprocessor.apply(i, Vector.of(data[i])).asArray(), 1e-8);
+           assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
 }

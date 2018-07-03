@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -64,7 +64,7 @@ public class CacheBasedTruthWithPredictionCursorTest extends GridCommonAbstractT
         TruthWithPredictionCursor<Integer> cursor = new CacheBasedTruthWithPredictionCursor<>(
             data,
             (k, v) -> v % 2 == 0,
-            (k, v) -> Vector.of(v),
+            (k, v) -> VectorUtils.of(v),
             (k, v) -> v,
             vec -> (int)vec.get(0)
         );

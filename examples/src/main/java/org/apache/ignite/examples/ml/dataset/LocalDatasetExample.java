@@ -25,7 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 
 /**
  * Example that shows how to create dataset based on an existing local storage and then use it to calculate {@code mean}
@@ -43,7 +43,7 @@ public class LocalDatasetExample {
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                 persons,
                 2,
-                (k, v) -> Vector.of(v.getAge(), v.getSalary())
+                (k, v) -> VectorUtils.of(v.getAge(), v.getSalary())
             )) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
                 double[] mean = dataset.mean();

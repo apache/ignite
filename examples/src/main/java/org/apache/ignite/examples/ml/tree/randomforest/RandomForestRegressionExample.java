@@ -28,8 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -61,7 +60,7 @@ public class RandomForestRegressionExample {
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
-                        (k, v) -> Vector.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+                        (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
                         (k, v) -> v[v.length - 1]
                 );
 
@@ -75,7 +74,7 @@ public class RandomForestRegressionExample {
                         double[] inputs = Arrays.copyOfRange(val, 0, val.length - 1);
                         double groundTruth = val[val.length - 1];
 
-                        double prediction = randomForest.apply(Vector.of(inputs));
+                        double prediction = randomForest.apply(VectorUtils.of(inputs));
 
                         mse += Math.pow(prediction - groundTruth, 2.0);
                         mae += Math.abs(prediction - groundTruth);
