@@ -28,6 +28,6 @@
         <property name="groupName" value="encrypted-group"/>
     </bean>
 
-    <import resource="ignite-config-with-encryption.xml"/>
+    <import resource="base-enc-cfg.xml"/>
 </beans>
 

@@ -26,8 +26,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -49,11 +47,11 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-0.xml").getAbsolutePath(), "grid-0");
+                "modules/spring/src/test/config/enc/enc-cache.xml").getAbsolutePath(), "grid-0");
 
         IgniteEx g1 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-0.xml").getAbsolutePath(), "grid-1");
+                "modules/spring/src/test/config/enc/enc-cache.xml").getAbsolutePath(), "grid-1");
 
         g1.cluster().active(true);
 
@@ -68,7 +66,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         IgniteEx g2 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-2.xml").getAbsolutePath(), "grid-2");
+                "modules/spring/src/test/config/enc/enc-group-2.xml").getAbsolutePath(), "grid-2");
 
         Collection<String> cacheNames = Arrays.asList("encrypted", "encrypted-2");
 
@@ -101,11 +99,11 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     public void testCreateEncryptedCacheGroup() throws Exception {
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-1.xml").getAbsolutePath(), "grid-0");
+                "modules/spring/src/test/config/enc/enc-group.xml").getAbsolutePath(), "grid-0");
 
         IgniteEx g1 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-2.xml").getAbsolutePath(), "grid-1");
+                "modules/spring/src/test/config/enc/enc-group-2.xml").getAbsolutePath(), "grid-1");
 
         g1.cluster().active(true);
 
@@ -138,12 +136,12 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
-                "modules/spring/src/test/config/ignite-config-with-encryption-1.xml").getAbsolutePath(), "grid-0");
+                "modules/spring/src/test/config/enc/enc-group.xml").getAbsolutePath(), "grid-0");
 
         GridTestUtils.assertThrowsWithCause(() -> {
             try {
                 IgnitionEx.start(IgniteUtils.resolveIgnitePath(
-                    "modules/spring/src/test/config/ignite-config-with-encryption-3.xml").getAbsolutePath(), "grid-1");
+                    "modules/spring/src/test/config/enc/not-encrypted-cache-in-group.xml").getAbsolutePath(), "grid-1");
             }
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);

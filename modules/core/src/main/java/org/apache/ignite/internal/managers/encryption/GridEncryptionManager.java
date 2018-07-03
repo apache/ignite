@@ -30,6 +30,7 @@ import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -41,8 +42,6 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
@@ -509,31 +508,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return {@code true} if local node is coordinator.
      */
     private boolean isLocalNodeCoordinator() {
-        DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
+        ClusterNode oldest = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
-        if (spi instanceof TcpDiscoverySpi)
-            return ((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
-        else
-            return F.eq(ctx.localNodeId(), coordinator().id());
-    }
-
-    /**
-     * Get current coordinator node.
-     *
-     * @return Coordinator node.
-     */
-    private ClusterNode coordinator() {
-        ClusterNode res = null;
-
-        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
-            if (res == null || res.order() > node.order())
-                res = node;
-        }
-
-        if (res == null)
-            throw new IgniteException("Can't find coordinator node");
-
-        return res;
+        return F.eq(ctx.localNodeId(), oldest.id());
     }
 
     /** */
