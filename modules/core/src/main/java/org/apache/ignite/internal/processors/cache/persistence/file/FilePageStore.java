@@ -165,7 +165,7 @@ public class FilePageStore implements PageStore {
      */
     private long initFile(FileIO fileIO) throws IOException {
         try {
-            ByteBuffer hdr = header(type, dbCfg.getPageSize());
+            ByteBuffer hdr = header();
 
             while (hdr.remaining() > 0)
                 fileIO.write(hdr);
