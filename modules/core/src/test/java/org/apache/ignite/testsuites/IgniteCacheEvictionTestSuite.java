@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictio
 /**
  * Test suite for cache eviction.
  */
-public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
+public class IgniteCacheEvictionTestSuite extends TestSuite {
     /**
      * @return Cache eviction test suite.
      * @throws Exception If failed.
