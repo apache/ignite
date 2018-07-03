@@ -144,8 +144,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 if (newEncKeys == null)
                     return;
 
-                for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet())
+                for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
                     groupKey(entry.getKey(), entry.getValue());
+
+                    if (log.isInfoEnabled())
+                        log.info("Added encryption key on local join [grpId=" + entry.getKey() + "]");
+                }
             }
         });
     }
@@ -163,13 +167,21 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (res != null)
             return res;
 
-        if (!discoData.hasJoiningNodeData())
+        if (!discoData.hasJoiningNodeData()) {
+            if (log.isInfoEnabled())
+                log.info("Joining node doesn't have encryption data [node=" + node.id() + "]");
+
             return null;
+        }
 
         NodeEncryptionKeys nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData();
 
-        if (nodeEncKeys == null || F.isEmpty(nodeEncKeys.knownKeys))
+        if (nodeEncKeys == null || F.isEmpty(nodeEncKeys.knownKeys)) {
+            if (log.isInfoEnabled())
+                log.info("Joining node doesn't have stored group keys [node=" + node.id() + "]");
+
             return null;
+        }
 
         synchronized (mux) {
             for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
@@ -182,7 +194,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     continue;
 
                 return new IgniteNodeValidationResult(ctx.localNodeId(),
-                    "Cache key differs! Node join is rejected. [nodeId=" + node.id() + "]",
+                    "Cache key differs! Node join is rejected. [node=" + node.id() + ", grp=" + entry.getKey() + "]",
                     "Cache key differs! Node join is rejected.");
             }
         }
@@ -205,7 +217,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return null;
 
         return new IgniteNodeValidationResult(ctx.localNodeId(),
-            "Master key digest differs! Node join is rejected. [nodeId=" + node.id() + "]",
+            "Master key digest differs! Node join is rejected. [node=" + node.id() + "]",
             "Master key digest differs! Node join is rejected.");
     }
 
@@ -219,6 +231,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (knownEncKeys == null && newKeys == null)
             return;
 
+        if (log.isInfoEnabled()) {
+            String knownGrps = F.isEmpty(knownEncKeys) ? null : F.concat(knownEncKeys.keySet(), ",");
+
+            if (knownGrps != null)
+                log.info("Sending stored group keys to coordinator [grps=" + knownGrps + "]");
+
+            String newGrps = F.isEmpty(newKeys) ? null : F.concat(newKeys.keySet(), ",");
+
+            if (newGrps != null)
+                log.info("Sending new group keys to coordinator [grps=" + newGrps + "]");
+        }
+
         dataBag.addJoiningNodeData(ENCRYPTION_MGR.ordinal(), new NodeEncryptionKeys(knownEncKeys, newKeys));
     }
 
@@ -231,8 +255,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         synchronized (mux) {
             for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
-                if (!grpEncKeys.containsKey(entry.getKey()))
+                if (groupKey(entry.getKey()) == null) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Store group key received from joining node [node=" +
+                            data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
+                    }
+
                     groupKey(entry.getKey(), entry.getValue());
+                }
+                else if (log.isInfoEnabled()) {
+                    log.info("Skip group key received from joining node. Already exists. [node=" +
+                        data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
+                }
             }
         }
     }
@@ -273,8 +307,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (F.isEmpty(encKeysFromCluster))
                 return;
 
-            for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet())
+            for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet()) {
+                if (log.isInfoEnabled())
+                    log.info("Store group key received from coordinator [grp=" + entry.getKey() + "]");
+
                 groupKey(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -304,6 +342,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         EncryptionKey encKey = getSpi().decryptKey(encGrpKey);
 
         synchronized (mux) {
+            if (log.isDebugEnabled())
+                log.debug("Key added. [grp=" + grpId + "]");
+
             if (metaStorage == null) {
                 if (grpEncKeysToStore == null)
                     grpEncKeysToStore = new HashMap<>();
@@ -353,6 +394,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             grpEncKeys.remove(grpId);
 
             metaStorage.remove(ENCRYPTION_KEY_PREFIX + grpId);
+
+            if (log.isDebugEnabled())
+                log.debug("Key removed. [grp=" + grpId + "]");
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to clear meta storage", e);
@@ -379,6 +423,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 EncryptionKey<?> old = grpEncKeys.putIfAbsent(grpId, grpKey);
 
                 assert old == null;
+            }
+
+
+            if (log.isInfoEnabled()) {
+                if (!grpEncKeys.isEmpty()) {
+                    log.info("Encryption keys loaded from metastore. [grps=" +
+                        F.concat(grpEncKeys.keySet(), ",") + "]");
+                }
             }
         }
         catch (IgniteCheckedException e) {
