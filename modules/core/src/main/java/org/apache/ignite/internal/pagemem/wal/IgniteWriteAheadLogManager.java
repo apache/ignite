@@ -151,13 +151,6 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public boolean disabled(int grpId);
 
     /**
-     * Disable WAL logging.
-     *
-     * @param disable True if need disable WAL, False if need enable.
-     */
-    public void disableWal(boolean disable) throws IgniteCheckedException;
-
-    /**
      * Cleanup all directories relating to WAL (e.g. work WAL dir, archive WAL dir).
      */
     public void cleanupWalDirectories() throws IgniteCheckedException;

@@ -88,7 +88,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -123,8 +122,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.PersistentStorageIOException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -158,7 +155,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -353,10 +349,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
-
-    /** */
-    private volatile WALDisableContext walDisableContext;
-
     /**
      * @param ctx Kernal context.
      */
@@ -491,10 +483,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             persStoreMetrics.wal(cctx.wal());
 
-            walDisableContext = new WALDisableContext(this, cctx.wal(), cctx.pageStore());
-
-            cctx.kernalContext().internalSubscriptionProcessor().registerMetastorageListener(walDisableContext);
-
             // Here we can get data from metastorage
             readMetastore();
         }
@@ -503,7 +491,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Cleanup checkpoint directory from all temporary files {@link #FILE_TMP_SUFFIX}.
      */
-    private void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
+    public void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(
                 cpDir.toPath(),
@@ -2143,7 +2131,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        walDisableContext.execute(() -> {
+        cctx.walState().runWithOutWAL(() -> {
             if (it != null) {
                 while (it.hasNext()) {
                     IgniteBiTuple<WALPointer, WALRecord> next = it.next();
@@ -4549,144 +4537,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public RestoreLogicalState(long lastArchivedSegment, IgniteLogger log) {
             super(lastArchivedSegment, log);
-        }
-    }
-
-    /**
-     *
-     */
-    public static class WALDisableContext implements MetastorageLifecycleListener {
-        /** */
-        public static final String WAL_DISABLED = "wal-disabled";
-
-        /** */
-        private final GridCacheDatabaseSharedManager dbMgr;
-
-        /** */
-        private volatile ReadWriteMetastorage metaStorage;
-
-        /** */
-        private final IgniteWriteAheadLogManager walMgr;
-
-        /** */
-        private final IgnitePageStoreManager pageStoreMgr;
-
-        /** */
-        private volatile boolean resetWalFlag;
-
-        /**
-         * @param dbMgr  Database manager.
-         * @param walMgr Write-Ahead-log manager.
-         * @param pageStoreMgr Page store manager.
-         *
-         */
-        public WALDisableContext(
-            GridCacheDatabaseSharedManager dbMgr,
-            IgniteWriteAheadLogManager walMgr,
-            IgnitePageStoreManager pageStoreMgr
-        ) {
-            this.dbMgr = dbMgr;
-            this.walMgr = walMgr;
-            this.pageStoreMgr = pageStoreMgr;
-        }
-
-        /**
-         * @param cls Closure to execute with disabled WAL.
-         * @throws IgniteCheckedException If execution failed.
-         */
-        public void execute(IgniteRunnable cls) throws IgniteCheckedException {
-            if (cls == null)
-                throw new IgniteCheckedException("Task to execute is not specified.");
-
-            if (metaStorage == null)
-                throw new IgniteCheckedException("Meta storage is not ready.");
-
-            writeMetaStoreDisableWALFlag();
-
-            dbMgr.waitForCheckpoint("Checkpoint before apply updates on recovery.");
-
-            disableWAL(true);
-
-            try {
-                cls.run();
-            }
-            catch (IgniteException e) {
-                throw new IgniteCheckedException(e);
-            }
-            finally {
-                disableWAL(false);
-
-                dbMgr.waitForCheckpoint("Checkpoint after apply updates on recovery.");
-
-                removeMetaStoreDisableWALFlag();
-            }
-        }
-
-        /**
-         * @throws IgniteCheckedException If write meta store flag failed.
-         */
-        protected void writeMetaStoreDisableWALFlag() throws IgniteCheckedException {
-            dbMgr.checkpointReadLock();
-
-            try {
-                metaStorage.write(WAL_DISABLED, Boolean.TRUE);
-            }
-            finally {
-                dbMgr.checkpointReadUnlock();
-            }
-        }
-
-        /**
-         * @throws IgniteCheckedException If remove meta store flag failed.
-         */
-        protected void removeMetaStoreDisableWALFlag() throws IgniteCheckedException {
-            dbMgr.checkpointReadLock();
-
-            try {
-                metaStorage.remove(WAL_DISABLED);
-            }
-            finally {
-                dbMgr.checkpointReadUnlock();
-            }
-        }
-
-        /**
-         * @param disable Flag wal disable.
-         */
-        protected void disableWAL(boolean disable) throws IgniteCheckedException {
-            dbMgr.checkpointReadLock();
-
-            try {
-                walMgr.disableWal(disable);
-            }
-            finally {
-                dbMgr.checkpointReadUnlock();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onReadyForRead(ReadOnlyMetastorage ms) throws IgniteCheckedException {
-            Boolean disabled = (Boolean)ms.read(WAL_DISABLED);
-
-            // Node crash when WAL was disabled.
-            if (disabled != null && disabled){
-                resetWalFlag = true;
-
-                pageStoreMgr.cleanupPersistentSpace();
-
-                dbMgr.cleanupTempCheckpointDirectory();
-
-                dbMgr.cleanupCheckpointDirectory();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onReadyForReadWrite(ReadWriteMetastorage ms) throws IgniteCheckedException {
-            // On new node start WAL always enabled. Remove flag from metastore.
-            if (resetWalFlag)
-                ms.remove(WAL_DISABLED);
-
-            metaStorage = ms;
         }
     }
 }

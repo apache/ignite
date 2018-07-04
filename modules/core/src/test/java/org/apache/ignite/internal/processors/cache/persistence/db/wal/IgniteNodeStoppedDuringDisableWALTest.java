@@ -32,10 +32,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -114,8 +115,9 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         GridCacheSharedContext<Object, Object> sharedContext = ig0.context().cache().context();
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedContext.database();
+        IgniteWriteAheadLogManager WALmgr = sharedContext.wal();
 
-        WALDisableContext walDisableContext = new WALDisableContext(dbMgr, sharedContext.wal(), sharedContext.pageStore()) {
+        WALDisableContext walDisableContext = new WALDisableContext(dbMgr, sharedContext.pageStore(), log) {
             @Override protected void writeMetaStoreDisableWALFlag() throws IgniteCheckedException {
                 if (nodeStopPoint == NodeStopPoint.BEFORE_WRITE_KEY_TO_META_STORE)
                     failNode(nodeStopPoint);
@@ -156,7 +158,9 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
             }
         };
 
-        setFieldValue(dbMgr, "walDisableContext", walDisableContext);
+        setFieldValue(sharedContext.walState(), "walDisableContext", walDisableContext);
+
+        setFieldValue(WALmgr, "walDisableContext", walDisableContext);
 
         ig0.context().internalSubscriptionProcessor().registerMetastorageListener(walDisableContext);
 

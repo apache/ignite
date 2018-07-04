@@ -107,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -268,14 +269,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
 
+    /** */
+    private volatile IgniteOutClosure<Boolean> walDisableContext;
+
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
      * See {@link DataStorageConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
      */
     private final long walAutoArchiveAfterInactivity;
-
-    /** */
-    private volatile boolean walDisabled;
 
     /**
      * Container with last WAL record logged timestamp.<br>
@@ -385,6 +386,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                 decompressor = new FileDecompressor(log);
             }
+
+            walDisableContext = cctx.walState().walDisableContext();
 
             if (mode != WALMode.NONE) {
                 if (log.isInfoEnabled())
@@ -640,8 +643,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         FileWriteHandle currWrHandle = currentHandle();
 
+        IgniteOutClosure<Boolean> isDisable = walDisableContext;
+
         // Logging was not resumed yet.
-        if (currWrHandle == null || walDisabled)
+        if (currWrHandle == null || (isDisable != null && isDisable.apply()))
             return null;
 
         // Need to calculate record size first.
@@ -894,18 +899,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
-        CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
-
-        return ctx != null && !ctx.walEnabled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableWal(boolean disable) throws IgniteCheckedException {
-        flush(null, true);
-
-        walDisabled = disable;
-
-        log.info("WAL logging " + (disable ? "disabled" : "enabled"));
+        return cctx.walState().isDisabled(grpId);
     }
 
     /** {@inheritDoc} */
