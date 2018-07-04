@@ -78,10 +78,11 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * Constructor.
      * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        super(ctx);
+    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
