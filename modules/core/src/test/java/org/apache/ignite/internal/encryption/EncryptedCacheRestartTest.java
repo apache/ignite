@@ -46,7 +46,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheGroupId(cacheName(), null);
 
-        EncryptionKey<?> keyBeforeRestart =
+        EncryptionKey keyBeforeRestart =
             grids.get1().context().encryption().groupKey(grpId);
 
         stopAllGrids();
@@ -55,7 +55,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
         checkEncCaches(grids.get1(), grids.get2());
 
-        EncryptionKey<?> keyAfterRestart = grids.get1().context().encryption().groupKey(grpId);
+        EncryptionKey keyAfterRestart = grids.get1().context().encryption().groupKey(grpId);
 
         assertNotNull(keyAfterRestart);
         assertNotNull(keyAfterRestart.key());

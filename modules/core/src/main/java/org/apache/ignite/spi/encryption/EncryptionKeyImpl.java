@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * @see Key
  * @see EncryptionSpiImpl
  */
-public class EncryptionKeyImpl implements EncryptionKey<Key> {
+public class EncryptionKeyImpl implements EncryptionKey {
     /** */
     private static final long serialVersionUID = 0L;
 

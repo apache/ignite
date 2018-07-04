@@ -93,7 +93,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         (IgnitePredicate<String>)key -> key.startsWith(ENCRYPTION_KEY_PREFIX);
 
     /** Group encryption keys. */
-    private Map<Integer, EncryptionKey<?>> grpEncKeys = new HashMap<>();
+    private Map<Integer, EncryptionKey> grpEncKeys = new HashMap<>();
 
     /** Group encryption keys to store. */
     private volatile Map<Integer, byte[]> grpEncKeysToStore;
@@ -298,10 +298,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return;
 
         for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet()) {
-            if (log.isInfoEnabled())
-                log.info("Store group key received from coordinator [grp=" + entry.getKey() + "]");
+            if (groupKey(entry.getKey()) == null) {
+                if (log.isInfoEnabled())
+                    log.info("Store group key received from coordinator [grp=" + entry.getKey() + "]");
 
-            groupKey(entry.getKey(), entry.getValue());
+                groupKey(entry.getKey(), entry.getValue());
+            }
+            else if (log.isInfoEnabled())
+                log.info("Skip group key received from coordinator. Already exists. [grp=" + entry.getKey() + "]");
         }
     }
 
@@ -311,7 +315,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Group id.
      * @return Group encryption key.
      */
-    @Nullable public EncryptionKey<?> groupKey(int grpId) {
+    @Nullable public EncryptionKey groupKey(int grpId) {
         return grpEncKeys.get(grpId);
     }
 
@@ -322,11 +326,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param encGrpKey Encrypted group key.
      */
     public void groupKey(int grpId, byte[] encGrpKey) {
-        assert !grpEncKeys.containsKey(grpId) ||
-            Arrays.equals(getSpi().encryptKey(grpEncKeys.get(grpId)), encGrpKey);
-
-        if (grpEncKeys.containsKey(grpId))
-            return;
+        assert !grpEncKeys.containsKey(grpId);
 
         EncryptionKey encKey = getSpi().decryptKey(encGrpKey);
 
@@ -334,40 +334,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (log.isDebugEnabled())
                 log.debug("Key added. [grp=" + grpId + "]");
 
-            if (metaStorage == null) {
+            grpEncKeys.put(grpId, encKey);
+
+            if (metaStorage != null)
+                writeToMetaStore(grpId, encGrpKey);
+            else {
                 if (grpEncKeysToStore == null)
                     grpEncKeysToStore = new HashMap<>();
 
                 grpEncKeysToStore.put(grpId, encGrpKey);
-
-                grpEncKeys.put(grpId, encKey);
-
-                return;
             }
-
-            grpEncKeys.put(grpId, encKey);
-
-            writeToMetaStore(grpId, encGrpKey);
-        }
-    }
-
-    /**
-     * Writes encryption key to metastore.
-     *
-     * @param grpId Group id.
-     * @param encGrpKey Group encryption key.
-     */
-    private void writeToMetaStore(int grpId, byte[] encGrpKey) {
-        ctx.cache().context().database().checkpointReadLock();
-
-        try {
-            metaStorage.write(ENCRYPTION_KEY_PREFIX + grpId, encGrpKey);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
-        }
-        finally {
-            ctx.cache().context().database().checkpointReadUnlock();
         }
     }
 
@@ -407,9 +383,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 byte[] encGrpKey = (byte[])encKeys.get(key);
 
-                EncryptionKey<?> grpKey = getSpi().decryptKey(encGrpKey);
+                EncryptionKey grpKey = getSpi().decryptKey(encGrpKey);
 
-                EncryptionKey<?> old = grpEncKeys.putIfAbsent(grpId, grpKey);
+                EncryptionKey old = grpEncKeys.putIfAbsent(grpId, grpKey);
 
                 assert old == null;
             }
@@ -455,6 +431,26 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * Writes encryption key to metastore.
+     *
+     * @param grpId Group id.
+     * @param encGrpKey Group encryption key.
+     */
+    private void writeToMetaStore(int grpId, byte[] encGrpKey) {
+        ctx.cache().context().database().checkpointReadLock();
+
+        try {
+            metaStorage.write(ENCRYPTION_KEY_PREFIX + grpId, encGrpKey);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
      * @param knownKeys Saved keys set.
      * @return New keys for local cache groups.
      */
@@ -485,7 +481,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         HashMap<Integer, byte[]> knownKeys = new HashMap<>();
 
-        for (Map.Entry<Integer, EncryptionKey<?>> entry : grpEncKeys.entrySet())
+        for (Map.Entry<Integer, EncryptionKey> entry : grpEncKeys.entrySet())
             knownKeys.put(entry.getKey(), getSpi().encryptKey(entry.getValue()));
 
         return knownKeys;

@@ -190,7 +190,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
         ensureStarted();
 
-        return doEncryption(data, key, ENCRYPT_MODE);
+        return doEncryption(data, (EncryptionKeyImpl)key, ENCRYPT_MODE);
     }
 
     /** {@inheritDoc} */
@@ -199,7 +199,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
         ensureStarted();
 
-        return doEncryption(data, key, DECRYPT_MODE);
+        return doEncryption(data, (EncryptionKeyImpl)key, DECRYPT_MODE);
     }
 
     /** {@inheritDoc} */
@@ -244,7 +244,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
      * @see Cipher#DECRYPT_MODE
      * @see Cipher#ENCRYPT_MODE
      */
-    private byte[] doEncryption(byte[] data, EncryptionKey<Key> key, int mode) {
+    private byte[] doEncryption(byte[] data, EncryptionKeyImpl key, int mode) {
         try {
             IvParameterSpec initVector = new IvParameterSpec(INIT_VECTOR);
 

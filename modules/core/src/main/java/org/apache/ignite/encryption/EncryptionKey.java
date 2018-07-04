@@ -28,9 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
  * @see CacheConfiguration#setEncrypted(boolean)
  * @see CacheConfiguration#isEncrypted()
  */
-public interface EncryptionKey<T> extends Serializable {
+public interface EncryptionKey extends Serializable {
     /**
      * @return Encryption key.
      */
-    T key();
+    Object key();
 }

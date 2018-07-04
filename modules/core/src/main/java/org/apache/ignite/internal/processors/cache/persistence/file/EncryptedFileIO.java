@@ -62,7 +62,7 @@ public class EncryptedFileIO implements FileIO {
     /**
      * Encryption key.
      */
-    private EncryptionKey<?> key;
+    private EncryptionKey key;
 
     /**
      * @param plainFileIO Underlying file.
@@ -148,7 +148,7 @@ public class EncryptedFileIO implements FileIO {
     /**
      * @return Encryption key.
      */
-    private EncryptionKey<?> key() {
+    private EncryptionKey key() {
         if (key == null)
             return key = encMgr.groupKey(groupId);
 
