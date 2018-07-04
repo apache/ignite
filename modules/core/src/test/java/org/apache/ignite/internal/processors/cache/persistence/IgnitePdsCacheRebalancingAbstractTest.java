@@ -140,8 +140,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
-            .setPageSize(1024)
-            .setCheckpointFrequency(10 * 1000)
+            .setCheckpointFrequency(checkpointFrequency())
             .setWalMode(WALMode.LOG_ONLY)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
@@ -168,6 +167,13 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             res[i] = cacheCfgs.get(i);
 
         return res;
+    }
+
+    /**
+     * @return Checkpoint frequency;
+     */
+    protected long checkpointFrequency() {
+        return DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
     }
 
     /** {@inheritDoc} */
@@ -318,11 +324,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
-        final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
+        final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
         final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
-        final int topChanges = 50;
+        final int topChanges = 25;
         final boolean allowRemoves = true;
 
         final AtomicLong orderCounter = new AtomicLong();

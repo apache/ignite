@@ -35,6 +35,11 @@ public class IgnitePdsTxHistoricalRebalancingTest extends IgnitePdsTxCacheRebala
     }
 
     /** {@inheritDoc */
+    @Override protected long checkpointFrequency() {
+        return 15 * 1000;
+    }
+
+    /** {@inheritDoc */
     @Override protected void beforeTest() throws Exception {
         // Use rebalance from WAL if possible.
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
