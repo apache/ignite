@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.cursor;
 
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 
 /**
  * Closeable iterable that supplies pairs of truth and predictions (abstraction that hides a difference between querying
@@ -25,5 +25,5 @@ import org.apache.ignite.ml.selection.score.TruthWithPrediction;
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public interface TruthWithPredictionCursor<L> extends Iterable<TruthWithPrediction<L>>, AutoCloseable {
+public interface LabelPairCursor<L> extends Iterable<LabelPair<L>>, AutoCloseable {
 }

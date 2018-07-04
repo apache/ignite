@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring;
 
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.ml.selection.score.util.TruthWithPredictionCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class TestTruthWithPredictionCursor<L> implements TruthWithPredictionCursor<L> {
+public class TestLabelPairCursor<L> implements LabelPairCursor<L> {
     /** List of truth values. */
     private final List<L> truth;
 
@@ -40,7 +40,7 @@ public class TestTruthWithPredictionCursor<L> implements TruthWithPredictionCurs
      * @param truth List of truth values.
      * @param predicted List of predicted values.
      */
-    public TestTruthWithPredictionCursor(List<L> truth, List<L> predicted) {
+    public TestLabelPairCursor(List<L> truth, List<L> predicted) {
         this.truth = truth;
         this.predicted = predicted;
     }
@@ -51,7 +51,7 @@ public class TestTruthWithPredictionCursor<L> implements TruthWithPredictionCurs
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<TruthWithPrediction<L>> iterator() {
+    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
         return new TestTruthWithPredictionIterator<>(truth.iterator(), predicted.iterator());
     }
 
@@ -60,7 +60,7 @@ public class TestTruthWithPredictionCursor<L> implements TruthWithPredictionCurs
      *
      * @param <L> Type of a label (truth or prediction).
      */
-    private static final class TestTruthWithPredictionIterator<L> implements Iterator<TruthWithPrediction<L>> {
+    private static final class TestTruthWithPredictionIterator<L> implements Iterator<LabelPair<L>> {
         /** Iterator of truth values. */
         private final Iterator<L> truthIter;
 
@@ -84,8 +84,8 @@ public class TestTruthWithPredictionCursor<L> implements TruthWithPredictionCurs
         }
 
         /** {@inheritDoc} */
-        @Override public TruthWithPrediction<L> next() {
-            return new TruthWithPrediction<>(truthIter.next(), predictedIter.next());
+        @Override public LabelPair<L> next() {
+            return new LabelPair<>(truthIter.next(), predictedIter.next());
         }
     }
 }
