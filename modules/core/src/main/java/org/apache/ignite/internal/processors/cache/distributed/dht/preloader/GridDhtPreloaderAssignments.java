@@ -40,7 +40,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private boolean cancelled;
 
-    /** Default {@code True} for empty and cancelled assignments. */
+    /** */
     @GridToStringInclude
     private boolean changed = true;
 
@@ -78,14 +78,14 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     }
 
     /**
-     * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     * @return {@code True } if assignments are changed from previously rebalanced topology version.
      */
     public boolean changed() {
         return changed;
     }
 
     /**
-     * @param changed {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     * @param changed Set {@code True } if assignments are changed from previously rebalanced topology version.
      */
     void changed(boolean changed) {
         this.changed = changed;

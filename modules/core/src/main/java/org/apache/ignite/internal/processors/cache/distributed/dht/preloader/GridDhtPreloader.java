@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -166,9 +168,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /**
      * @param oldTopVer Previous topology version.
-     * @param newTopVer New topology version to check requested result.
-     * @return {@code True} if affinity assignments changed between this two versions or there is no
-     * affinity assignments information about old topology version.
+     * @param newTopVer New topology version to check result.
+     * @return {@code True} if affinity assignments changed between this two versions
+     * for {@link GridCacheSharedContext#localNode()} or there is no affinity assignments information
+     * about old topology version.
      */
     private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
         AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
@@ -178,7 +181,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         AffinityAssignment prevAff = !oldTopVer.initialized() || !grp.affinity().cachedVersions().contains(oldTopVer) ?
             aff : grp.affinity().cachedAffinity(oldTopVer);
 
-        // If assigns calculated on the same affinities then rebalance need to be scheduled.
+        // No affinity information about old topology version. Should return true value.
         boolean assignsChanged = aff == prevAff;
 
         int parts = grp.affinity().partitions();
@@ -191,12 +194,27 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void afterExchange(GridDhtPartitionsExchangeFuture exchFut) {
-        AffinityTopologyVersion topVer = exchFut.context().events().topologyVersion();
+        if (!ctx.kernalContext().clientNode()) {
+            AffinityTopologyVersion lastTopVer = exchFut.context().events().topologyVersion();
 
-        AffinityTopologyVersion rebTopVer = demander.requestedRebalanceTopVer();
+            AffinityTopologyVersion actTopVer = demander.activeRebalanceTopVer();
 
-        if (rebTopVer.initialized() && isAssignsChanged(rebTopVer, topVer))
-            demander.requestedRebalanceTopVer(topVer);
+            Collection<UUID> aliveNodes = grp.shared().discovery().aliveServerNodes()
+                .stream().map(ClusterNode::id).collect(Collectors.toList());
+
+            Collection<UUID> requestedRebNodes = demander.requestedNodes();
+
+            if (!actTopVer.initialized() ||
+                isAssignsChanged(actTopVer, lastTopVer) // Local node may have no affinity changes.
+                || !aliveNodes.containsAll(requestedRebNodes)) { // If some of nodes left before rabalance compelete.
+                // Mark current rebalance as obsolete and allow assignmnent generation.
+                demander.topVerToPreload(lastTopVer);
+            }
+            else {
+                // Assignments are the same, just update last rebalance version.
+                demander.updateRebalanceFuture(lastTopVer);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -221,6 +239,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             ", topVer=" + top.readyTopologyVersion() + ']';
 
         GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
+
+        // Skip assignment generation if they have no changes from previous affinity.
+        if (!topVer.equals(demander.topVerToPreload()) && exchFut != null) {
+            if (log.isDebugEnabled())
+                log.debug("Skipping assignments creation, no affinity assignments changes found [exchId=" +
+                    exchId + ", topVer=" + topVer + "]");
+
+            assignments.changed(false);
+
+            return assignments;
+        }
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
@@ -327,11 +356,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty()) {
+        if (!assignments.isEmpty())
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
-
-            assignments.changed(isAssignsChanged(demander.requestedRebalanceTopVer(), topVer));
-        }
 
         return assignments;
     }

@@ -69,8 +69,8 @@ public interface GridCachePreloader {
 
     /**
      * @param exchId Exchange ID.
-     * @param exchFut Exchange future.
-     * @return Assignments or {@code null} if detected that there are pending exchanges.
+     * @param exchFut Exchange future. Can be {@code null} if forced or reassigned generation performed.
+     * @return Generated assignments. Assignments can be cancelled due to pending exchanges.
      */
     @Nullable public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
                                                                      @Nullable GridDhtPartitionsExchangeFuture exchFut);
@@ -127,7 +127,7 @@ public interface GridCachePreloader {
      * restarted at current or pending topology.
      *
      * Note that topology change creates new futures and finishes previous. Previous future
-     * does not cancelled if assignments not changed, only topology version updated.
+     * does not cancels if assignments not changed, only topology version updated.
      */
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 

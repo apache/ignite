@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -108,7 +109,7 @@ public class GridDhtPartitionDemander {
      * Shows the last topology version to be rebalanced. Can be changed by exchange thread if calculated
      * affinity assignments are different from the previous requested version.
      */
-    private volatile AffinityTopologyVersion requestedRebTopVer = AffinityTopologyVersion.ZERO;
+    private volatile AffinityTopologyVersion topVerToPreload = AffinityTopologyVersion.ZERO;
 
     /** Last timeout object. */
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
@@ -245,7 +246,7 @@ public class GridDhtPartitionDemander {
      * @return {@code True} if topology changed.
      */
     private boolean topologyChanged(RebalanceFuture fut, AffinityTopologyVersion topVer) {
-        return requestedRebTopVer.compareTo(topVer) > 0 || fut != rebalanceFut;
+        return topVerToPreload.compareTo(topVer) > 0 || fut != rebalanceFut;
     }
 
     /**
@@ -259,24 +260,40 @@ public class GridDhtPartitionDemander {
 
     /**
      * @return {@code AffinityTopologyVersion.ZERO} if rebalance have never been started or cancelled or
-     * dummy exchange need to be processed. Look at {@see GridCachePartitionExchangeManager#forceReassign} for details.
-     * Otherwise the last requested rebalance topology version returned.
+     * dummy exchange need to be processed. For dummdy exchanges look at {@see RebalanceReassignExchangeTask}
+     * usages for details. Otherwise the last requested rebalance topology version returned.
      */
-    AffinityTopologyVersion requestedRebalanceTopVer() {
+    AffinityTopologyVersion activeRebalanceTopVer() {
         final RebalanceFuture fut = rebalanceFut;
 
-        return fut.isDone() && !fut.result() ? AffinityTopologyVersion.ZERO : requestedRebTopVer;
+        return fut.isDone() && fut.result() != null && !fut.result() ? AffinityTopologyVersion.ZERO : fut.topVer;
     }
 
     /**
-     * @param topVer Target rebalance topology version to be requested.
+     * @return Collection of nodes from which partitions was previously demanded.
      */
-    void requestedRebalanceTopVer(AffinityTopologyVersion topVer) {
-        if (log.isDebugEnabled())
-            log.debug("Change last requested rebalance topology version [topVer=" + rebalanceFut.topVer +
-                ", latestTopVer=" + rebalanceFut.topologyVersion() + ", grp=" + grp.cacheOrGroupName() + "]");
+    Collection<UUID> requestedNodes() {
+        return rebalanceFut.requestedNodes();
+    }
 
-        requestedRebTopVer = topVer;
+    /**
+     * @return Topology version to be preloaded.
+     */
+    AffinityTopologyVersion topVerToPreload() {
+        return topVerToPreload;
+    }
+
+    /**
+     * @param topVer Target rebalance topology version to be preloaded.
+     */
+    void topVerToPreload(AffinityTopologyVersion topVer) {
+        if (topVerToPreload.compareTo(topVer) < 0) {
+            if (log.isDebugEnabled())
+                log.debug("Change rebalance topology version to preload [topVer=" + rebalanceFut.topVer +
+                    ", latestTopVer=" + rebalanceFut.topologyVersion() + ", grp=" + grp.cacheOrGroupName() + "]");
+
+            topVerToPreload = topVer;
+        }
     }
 
     /**
@@ -321,9 +338,9 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) && assignments != null) {
-            final AffinityTopologyVersion topVer = assignments.topologyVersion();
-
+        if ((delay == 0 || force) &&
+            assignments != null &&
+            assignments.changed()) { // Should have changes from previous rebalace.
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
@@ -332,7 +349,7 @@ public class GridDhtPartitionDemander {
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
                         if (future.get())
-                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
+                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
                     }
                 });
 
@@ -373,17 +390,6 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-            if (assignments.cancelled()) { // Pending exchange.
-                if (log.isDebugEnabled())
-                    log.debug("Rebalancing skipped due to cancelled assignments.");
-
-                fut.onDone(false);
-
-                fut.sendRebalanceFinishedEvent();
-
-                return null;
-            }
-
             if (assignments.isEmpty()) { // Nothing to rebalance.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to empty assignments.");
@@ -393,9 +399,6 @@ public class GridDhtPartitionDemander {
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
                 fut.sendRebalanceFinishedEvent();
-
-                if (requestedRebTopVer.compareTo(topVer) < 0)
-                    requestedRebalanceTopVer(topVer);
 
                 return null;
             }
@@ -567,9 +570,6 @@ public class GridDhtPartitionDemander {
                             synchronized (fut) {
                                 if (fut.isDone())
                                     fut.cleanupRemoteContexts(node.id());
-
-                                if (requestedRebTopVer.compareTo(fut.topVer) < 0)
-                                    requestedRebalanceTopVer(fut.topVer);
                             }
 
                             if (log.isDebugEnabled())
@@ -989,6 +989,9 @@ public class GridDhtPartitionDemander {
         /** */
         private final IgniteLogger log;
 
+        /** Nodes on which demanded message prepared for beeing sent. */
+        private final Collection<UUID> requestedNodes;
+
         /** Remaining. T2: startTime, partitions */
         private final Map<UUID, T2<Long, IgniteDhtDemandedPartitionsMap>> remaining = new HashMap<>();
 
@@ -1027,7 +1030,8 @@ public class GridDhtPartitionDemander {
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
             latestTopVer = topVer;
-
+            requestedNodes = assignments.keySet().stream()
+                .map(ClusterNode::id).collect(Collectors.toList());
             this.grp = grp;
             this.log = log;
             this.rebalanceId = rebalanceId;
@@ -1041,7 +1045,8 @@ public class GridDhtPartitionDemander {
         RebalanceFuture() {
             this.exchId = null;
             this.topVer = AffinityTopologyVersion.ZERO;
-            this.latestTopVer = AffinityTopologyVersion.ZERO;
+            latestTopVer = AffinityTopologyVersion.ZERO;
+            requestedNodes = new ArrayList<>();
             this.ctx = null;
             this.grp = null;
             this.log = null;
@@ -1068,6 +1073,13 @@ public class GridDhtPartitionDemander {
          */
         private boolean isInitial() {
             return !topVer.initialized();
+        }
+
+        /**
+         * @return Collection on wich demanded request partition has been sent.
+         */
+        private Collection<UUID> requestedNodes() {
+            return requestedNodes;
         }
 
         /**
