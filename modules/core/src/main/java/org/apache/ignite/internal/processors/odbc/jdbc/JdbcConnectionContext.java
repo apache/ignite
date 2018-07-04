@@ -86,14 +86,15 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /**
      * Constructor.
-     *
-     * @param ctx Kernal Context.
+     *  @param ctx Kernal Context.
      * @param ses Session.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, int maxCursors) {
-        super(ctx);
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
+        int maxCursors) {
+        super(ctx, connId);
 
         this.ses = ses;
         this.busyLock = busyLock;
