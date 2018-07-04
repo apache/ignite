@@ -26,7 +26,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.tree.DecisionTreeClassificationTrainerExample;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.score.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;

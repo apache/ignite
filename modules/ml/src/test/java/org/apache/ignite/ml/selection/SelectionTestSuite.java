@@ -18,9 +18,13 @@
 package org.apache.ignite.ml.selection;
 
 import org.apache.ignite.ml.selection.cv.CrossValidationTest;
-import org.apache.ignite.ml.selection.score.AccuracyTest;
-import org.apache.ignite.ml.selection.score.util.CacheBasedLabelPairCursorTest;
-import org.apache.ignite.ml.selection.score.util.LocalLabelPairCursorTest;
+import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
+import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
+import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
+import org.apache.ignite.ml.selection.scoring.metric.Fmeasure;
+import org.apache.ignite.ml.selection.scoring.metric.FmeasureTest;
+import org.apache.ignite.ml.selection.scoring.metric.PrecisionTest;
+import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapperTest;
 import org.junit.runner.RunWith;
@@ -35,6 +39,9 @@ import org.junit.runners.Suite;
     CacheBasedLabelPairCursorTest.class,
     LocalLabelPairCursorTest.class,
     AccuracyTest.class,
+    PrecisionTest.class,
+    RecallTest.class,
+    FmeasureTest.class,
     SHA256UniformMapperTest.class,
     TrainTestDatasetSplitterTest.class
 })

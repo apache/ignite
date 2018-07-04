@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -25,7 +25,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.selection.score.LabelPair;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.jetbrains.annotations.NotNull;
 
 /**

@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring.metric;
 
 import java.util.Iterator;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 
 /**
  * Base interface for score calculators.

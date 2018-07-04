@@ -15,15 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.metric;
 
-import org.apache.ignite.ml.selection.score.LabelPair;
+import java.util.Arrays;
+import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Closeable iterable that supplies pairs of truth and predictions (abstraction that hides a difference between querying
- * data from Ignite cache and from local Map).
- *
- * @param <L> Type of a label (truth or prediction).
+ * Tests for {@link Recall}.
  */
-public interface LabelPairCursor<L> extends Iterable<LabelPair<L>>, AutoCloseable {
+public class RecallTest {
+    /** */
+    @Test
+    public void testScore() {
+        Metric<Integer> scoreCalculator = new Recall<>(1);
+
+        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1, 0, 1, 0, 1, 0),
+            Arrays.asList(1, 0, 0, 1, 1, 0)
+        );
+
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals((double)2/3, score, 1e-12);
+    }
 }

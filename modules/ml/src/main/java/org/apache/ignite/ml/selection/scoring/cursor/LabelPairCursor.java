@@ -15,30 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring.cursor;
 
-import java.util.Arrays;
-import org.apache.ignite.ml.selection.score.util.LabelPairCursor;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 
 /**
- * Tests for {@link Accuracy}.
+ * Closeable iterable that supplies pairs of truth and predictions (abstraction that hides a difference between querying
+ * data from Ignite cache and from local Map).
+ *
+ * @param <L> Type of a label (truth or prediction).
  */
-public class AccuracyTest {
-    /** */
-    @Test
-    public void testScore() {
-        Metric<Integer> scoreCalculator = new Accuracy<>();
-
-        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
-            Arrays.asList(1, 1, 1, 1),
-            Arrays.asList(1, 1, 0, 1)
-        );
-
-        double score = scoreCalculator.score(cursor.iterator());
-
-        assertEquals(0.75, score, 1e-12);
-    }
+public interface LabelPairCursor<L> extends Iterable<LabelPair<L>>, AutoCloseable {
 }

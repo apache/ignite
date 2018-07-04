@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.Iterator;
 import javax.cache.Cache;
@@ -27,7 +27,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.selection.score.LabelPair;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -68,6 +68,23 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
         this.mdl = mdl;
     }
 
+    /**
+     * Constructs a new instance of cache based truth with prediction cursor.
+     *
+     * @param upstreamCache Ignite cache with {@code upstream} data.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param mdl Model for inference.
+     */
+    public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+        Model<Vector, L> mdl) {
+        this.cursor = query(upstreamCache);
+        this.featureExtractor = featureExtractor;
+        this.lbExtractor = lbExtractor;
+        this.mdl = mdl;
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
         cursor.close();
@@ -88,6 +105,18 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     private QueryCursor<Cache.Entry<K, V>> query(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         ScanQuery<K, V> qry = new ScanQuery<>();
         qry.setFilter(filter);
+
+        return upstreamCache.query(qry);
+    }
+
+    /**
+     * Queries the specified cache using the specified filter.
+     *
+     * @param upstreamCache Ignite cache with {@code upstream} data.
+     * @return Query cursor.
+     */
+    private QueryCursor<Cache.Entry<K, V>> query(IgniteCache<K, V> upstreamCache) {
+        ScanQuery<K, V> qry = new ScanQuery<>();
 
         return upstreamCache.query(qry);
     }

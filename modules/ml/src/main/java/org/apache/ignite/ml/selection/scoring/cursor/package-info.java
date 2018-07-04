@@ -15,38 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
-
 /**
- * Pair of truth value and predicated by model.
- *
- * @param <L> Type of a label (truth or prediction).
+ * <!-- Package description. -->
+ * Util classes used for score calculation.
  */
-public class LabelPair<L> {
-    /** Truth value. */
-    private final L truth;
-
-    /** Predicted value. */
-    private final L prediction;
-
-    /**
-     * Constructs a new instance of truth with prediction.
-     *
-     * @param truth Truth value.
-     * @param prediction Predicted value.
-     */
-    public LabelPair(L truth, L prediction) {
-        this.truth = truth;
-        this.prediction = prediction;
-    }
-
-    /** */
-    public L getTruth() {
-        return truth;
-    }
-
-    /** */
-    public L getPrediction() {
-        return prediction;
-    }
-}
+package org.apache.ignite.ml.selection.scoring.cursor;

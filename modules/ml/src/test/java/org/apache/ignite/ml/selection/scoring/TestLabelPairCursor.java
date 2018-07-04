@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring;
 
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.ml.selection.score.util.LabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.jetbrains.annotations.NotNull;
 
 /**
