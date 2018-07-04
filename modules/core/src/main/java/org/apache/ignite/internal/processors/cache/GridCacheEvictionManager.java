@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
@@ -61,13 +63,17 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         CacheConfiguration cfg = cctx.config();
 
         if (cctx.isNear()) {
-            plc = (cfg.getNearConfiguration().getNearEvictionPolicyFactory() != null) ?
-                (EvictionPolicy)cfg.getNearConfiguration().getNearEvictionPolicyFactory().create() :
-                cfg.getNearConfiguration().getNearEvictionPolicy();
+            if (cfg.getNearConfiguration().getNearEvictionPolicyFactory() != null) {
+                plc = (EvictionPolicy)cfg.getNearConfiguration().getNearEvictionPolicyFactory().create();
+                registerEvictionMbean(plc,cfg.getName(), true);
+            }else
+               plc = cfg.getNearConfiguration().getNearEvictionPolicy();
+
         }
-        else if (cfg.getEvictionPolicyFactory() != null)
+        else if (cfg.getEvictionPolicyFactory() != null) {
             plc = (EvictionPolicy)cfg.getEvictionPolicyFactory().create();
-        else
+            registerEvictionMbean(plc, cfg.getName(), false);
+        }else
             plc = cfg.getEvictionPolicy();
 
         plcEnabled = plc != null;
@@ -76,6 +82,39 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         if (log.isDebugEnabled())
             log.debug("Eviction manager started on node: " + cctx.nodeId());
+    }
+
+
+    private void registerEvictionMbean(Object obj, @Nullable String cacheName, boolean near)
+        throws IgniteCheckedException {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        assert obj != null;
+
+        MBeanServer srvr = cctx.kernalContext().config().getMBeanServer();
+
+        assert srvr != null;
+
+        cacheName = U.maskName(cacheName);
+
+        cacheName = near ? cacheName + "-near" : cacheName;
+
+        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
+
+        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
+            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
+                try {
+                    U.registerMBean(srvr, cctx.igniteInstanceName(), cacheName, obj.getClass().getName(), mbeanImpl,
+                        (Class<Object>)itf);
+                }
+                catch (Throwable e) {
+                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
+                }
+
+                break;
+            }
+        }
     }
 
     /** {@inheritDoc} */
