@@ -63,10 +63,11 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * Ctor.
      *
      * @param ctx Kernal context.
+     * @param connId Connection ID.
      * @param maxCursors Max active cursors.
      */
-    public ClientConnectionContext(GridKernalContext ctx, int maxCursors) {
-        super(ctx);
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
+        super(ctx, connId);
 
         parser = new ClientMessageParser(ctx);
 
