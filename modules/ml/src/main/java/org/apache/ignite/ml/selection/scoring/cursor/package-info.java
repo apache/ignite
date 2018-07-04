@@ -19,4 +19,4 @@
  * <!-- Package description. -->
  * Util classes used for score calculation.
  */
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.cursor;

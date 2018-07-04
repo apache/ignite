@@ -19,14 +19,10 @@ package org.apache.ignite.examples.ml.tutorial;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
@@ -36,8 +32,9 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.thread.IgniteThread;
@@ -47,12 +44,12 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * Let's win with the LogisticRegressionSGDTrainer!
  */
-public class Step_9_Change_algorithm {
+public class Step_9_Go_to_LogReg {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_9_Change_algorithm.class.getSimpleName(), () -> {
+                Step_9_Go_to_LogReg.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
@@ -60,6 +57,8 @@ public class Step_9_Change_algorithm {
                     // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+
+                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
                     TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
                         .split(0.75);
@@ -120,17 +119,17 @@ public class Step_9_Change_algorithm {
                                             SimpleGDParameterUpdate::avg
                                         ), maxIterations, batchSize, locIterations, 123L);
 
-                                        CrossValidationScoreCalculator<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
-                                            = new CrossValidationScoreCalculator<>();
+                                        CrossValidation<LogisticRegressionModel, Double, Integer, Object[]> scoreCalculator
+                                            = new CrossValidation<>();
 
                                         double[] scores = scoreCalculator.score(
                                             trainer,
-                                            new AccuracyScoreCalculator<>(),
+                                            new Accuracy<>(),
                                             ignite,
                                             dataCache,
                                             split.getTrainFilter(),
                                             normalizationPreprocessor,
-                                            (k, v) -> (double)v[1],
+                                            lbExtractor,
                                             3
                                         );
 
@@ -188,55 +187,20 @@ public class Step_9_Change_algorithm {
                         dataCache,
                         split.getTrainFilter(),
                         normalizationPreprocessor,
-                        (k, v) -> (double)v[1]
+                        lbExtractor
                     );
 
+                    double accuracy = Evaluator.evaluate(
+                        dataCache,
+                        split.getTestFilter(),
+                        bestMdl,
+                        normalizationPreprocessor,
+                        lbExtractor,
+                        new Accuracy<>()
+                    );
 
-                    System.out.println("----------------------------------------------------------------");
-                    System.out.println("| Prediction\t| Ground Truth\t| Name\t|");
-                    System.out.println("----------------------------------------------------------------");
-
-                    int amountOfErrors = 0;
-                    int totalAmount = 0;
-
-                    // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                    int[][] confusionMtx = {{0, 0}, {0, 0}};
-
-                    ScanQuery<Integer, Object[]> qry = new ScanQuery<>();
-                    qry.setFilter(split.getTestFilter());
-
-                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(qry)) {
-                        for (Cache.Entry<Integer, Object[]> observation : observations) {
-
-                            Object[] val = observation.getValue();
-                            double groundTruth = (double)val[1];
-                            String name = (String)val[2];
-
-                            double prediction = bestMdl.apply(new DenseLocalOnHeapVector(
-                                normalizationPreprocessor.apply(observation.getKey(), val)));
-
-                            totalAmount++;
-                            if (groundTruth != prediction)
-                                amountOfErrors++;
-
-                            int idx1 = (int)prediction;
-                            int idx2 = (int)groundTruth;
-
-                            confusionMtx[idx1][idx2]++;
-
-                            System.out.printf("| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
-                        }
-
-                        System.out.println("---------------------------------");
-
-                        System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                        double accuracy = 1 - amountOfErrors / (double)totalAmount;
-                        System.out.println("\n>>> Accuracy " + accuracy);
-                        System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                        System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-                        System.out.println(">>> ---------------------------------");
-                    }
+                    System.out.println("\n>>> Accuracy " + accuracy);
+                    System.out.println("\n>>> Test Error " + (1 - accuracy));
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();
