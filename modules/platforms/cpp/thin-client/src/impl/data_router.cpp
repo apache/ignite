@@ -64,12 +64,12 @@ namespace ignite
             {
                 using ignite::thin::SslMode;
 
+                UpdateLocalAddresses();
+
+                channels.clear();
+
                 if (config.GetEndPoints().empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
-
-                SP_DataChannel channel(new DataChannel(config, typeMgr));
-
-                bool connected = false;
 
                 for (std::vector<net::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
                 {
@@ -77,19 +77,26 @@ namespace ignite
 
                     for (uint16_t port = range.port; port <= range.port + range.range; ++port)
                     {
-                        connected = channel.Get()->Connect(range.host, port, connectionTimeout);
+                        SP_DataChannel channel(new DataChannel(config, typeMgr));
+
+                        bool connected = channel.Get()->Connect(range.host, port, connectionTimeout);
 
                         if (connected)
+                        {
+                            common::concurrent::CsLockGuard lock(channelsMutex);
+
+                            channels[channel.Get()->GetAddress()].Swap(channel);
+
                             break;
+                        }
                     }
+
+                    if (!channels.empty())
+                        break;
                 }
 
-                if (!connected)
+                if (channels.empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Failed to establish connection with any host.");
-
-                common::concurrent::CsLockGuard lock(channelsMutex);
-
-                channels[channel.Get()->GetAddress()].Swap(channel);
             }
 
             void DataRouter::Close()
@@ -149,7 +156,7 @@ namespace ignite
                 if (ipv4)
                     return host.compare(0, 3, s127) == 0;
 
-                return host == "::1" || host == "0:0:0:0:0:0:0:1" || common::ToLower(host) == "localhost";
+                return host == "::1" || host == "0:0:0:0:0:0:0:1";
             }
 
             bool DataRouter::IsProvidedByUser(const net::EndPoint& endPoint)
@@ -171,8 +178,6 @@ namespace ignite
                     return GetRandomChannel();
 
                 bool localHost = IsLocalHost(hint);
-
-                UpdateLocalAddresses();
 
                 for (std::vector<net::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
                 {
@@ -216,6 +221,8 @@ namespace ignite
                 ranges.clear();
 
                 utility::ParseAddress(str, ranges, DEFAULT_PORT);
+
+                std::random_shuffle(ranges.begin(), ranges.end());
             }
         }
     }
