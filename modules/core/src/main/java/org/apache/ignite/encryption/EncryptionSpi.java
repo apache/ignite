@@ -23,7 +23,7 @@ import org.apache.ignite.spi.IgniteSpi;
 /**
  * SPI provides encryption features for an Ignite.
  */
-public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
+public interface EncryptionSpi extends IgniteSpi {
     /**
      * Returns master key digest.
      * Should always return same digest for a same key.
@@ -39,7 +39,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
      * @return Newly created encryption key.
      * @throws IgniteException If key creation failed.
      */
-    K create() throws IgniteException;
+    EncryptionKey create() throws IgniteException;
 
     /**
      * Encrypts data.
@@ -48,7 +48,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
      * @param key Encryption key.
      * @return Encrypted data.
      */
-    byte[] encrypt(byte[] data, K key);
+    byte[] encrypt(byte[] data, EncryptionKey key);
 
     /**
      * Decrypts data.
@@ -57,7 +57,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
      * @param key Encryption key.
      * @return Decrypted data.
      */
-    byte[] decrypt(byte[] data, K key);
+    byte[] decrypt(byte[] data, EncryptionKey key);
 
     /**
      * Encrypts key.
@@ -66,7 +66,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
      * @param key Key to encrypt.
      * @return Encrypted key.
      */
-    byte[] encryptKey(K key);
+    byte[] encryptKey(EncryptionKey key);
 
     /**
      * Decrypts key and checks it integrity.
@@ -74,7 +74,7 @@ public interface EncryptionSpi<K extends EncryptionKey> extends IgniteSpi {
      * @param key Key to decrypt.
      * @return Encrypted key.
      */
-    K decryptKey(byte[] key);
+    EncryptionKey decryptKey(byte[] key);
 
     /**
      * @param dataSize Size of plain data in bytes.

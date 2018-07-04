@@ -63,7 +63,7 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * @see NoopEncryptionSpi
  * @see EncryptionKeyImpl
  */
-public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi<EncryptionKeyImpl> {
+public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi {
     /**
      * Key store entry name to store Encryption master key.
      */
@@ -185,22 +185,30 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encrypt(byte[] data, EncryptionKeyImpl key) {
+    @Override public byte[] encrypt(byte[] data, EncryptionKey key) {
+        assert key instanceof EncryptionKeyImpl;
+
         ensureStarted();
 
         return doEncryption(data, key, ENCRYPT_MODE);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decrypt(byte[] data, EncryptionKeyImpl key) {
+    @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
+        assert key instanceof EncryptionKeyImpl;
+
         ensureStarted();
 
         return doEncryption(data, key, DECRYPT_MODE);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encryptKey(EncryptionKeyImpl key) {
-        key.digest = makeDigest(key.key().getEncoded());
+    @Override public byte[] encryptKey(EncryptionKey key) {
+        assert key instanceof EncryptionKeyImpl;
+
+        EncryptionKeyImpl key0 = (EncryptionKeyImpl)key;
+
+        key0.digest = makeDigest(key0.key().getEncoded());
 
         byte[] serKey = U.toBytes(key);
 

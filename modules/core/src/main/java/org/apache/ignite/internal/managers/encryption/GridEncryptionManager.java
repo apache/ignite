@@ -450,7 +450,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @return Encryption spi.
      */
-    public EncryptionSpi<EncryptionKey<?>> spi() {
+    public EncryptionSpi spi() {
         return getSpi();
     }
 

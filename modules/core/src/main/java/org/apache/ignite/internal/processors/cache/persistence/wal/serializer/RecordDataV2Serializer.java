@@ -62,7 +62,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     private final TxRecordSerializer txRecordSerializer;
 
     /** Encryption SPI. */
-    private final EncryptionSpi<EncryptionKey<?>> encryptionSpi;
+    private final EncryptionSpi encryptionSpi;
 
     /**
      * Create an instance of V2 data serializer.
@@ -70,8 +70,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
      * @param delegateSerializer V1 data serializer.
      * @param encryptionSpi Encryption SPI.
      */
-    public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer,
-        EncryptionSpi<EncryptionKey<?>> encryptionSpi) {
+    public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer, EncryptionSpi encryptionSpi) {
         this.delegateSerializer = delegateSerializer;
         this.txRecordSerializer = new TxRecordSerializer();
         this.encryptionSpi = encryptionSpi;

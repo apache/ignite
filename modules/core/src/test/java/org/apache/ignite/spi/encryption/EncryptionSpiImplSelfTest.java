@@ -31,7 +31,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
     /** @throws Exception If failed. */
     public void testCantStartWithEmptyParam() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
-            EncryptionSpi<EncryptionKeyImpl> encSpi = new EncryptionSpiImpl();
+            EncryptionSpi encSpi = new EncryptionSpiImpl();
 
             encSpi.spiStart("default");
         }, IgniteException.class);
@@ -62,7 +62,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
 
     /** @throws Exception If failed. */
     public void testEncryptDecrypt() throws Exception {
-        EncryptionSpi<EncryptionKeyImpl> encSpi = spi();
+        EncryptionSpi encSpi = spi();
 
         EncryptionKeyImpl k = GridTestUtils.getFieldValue(encSpi, "masterKey");
         
@@ -86,9 +86,9 @@ public class EncryptionSpiImplSelfTest extends TestCase {
 
     /** @throws Exception If failed. */
     public void testKeyEncryptDecrypt() throws Exception {
-        EncryptionSpi<EncryptionKeyImpl> encSpi = spi();
+        EncryptionSpi encSpi = spi();
         
-        EncryptionKeyImpl k = encSpi.create();
+        EncryptionKeyImpl k = (EncryptionKeyImpl)encSpi.create();
 
         assertNotNull(k);
         assertNotNull(k.key());
@@ -98,13 +98,13 @@ public class EncryptionSpiImplSelfTest extends TestCase {
         assertNotNull(encGrpKey);
         assertTrue(encGrpKey.length > 0);
 
-        EncryptionKeyImpl k2 = encSpi.decryptKey(encGrpKey);
+        EncryptionKeyImpl k2 = (EncryptionKeyImpl)encSpi.decryptKey(encGrpKey);
 
         assertEquals(k.key(), k2.key());
     }
 
     /** */
-    @NotNull private EncryptionSpi<EncryptionKeyImpl> spi() throws Exception {
+    @NotNull private EncryptionSpi spi() throws Exception {
         EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
 
         encSpi.setKeyStorePath(KEYSTORE_PATH);

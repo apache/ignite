@@ -34,34 +34,34 @@ import org.jetbrains.annotations.Nullable;
  * @see EncryptionKeyImpl
  */
 @IgniteSpiNoop
-public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi<EncryptionKeyImpl> {
+public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
     /** {@inheritDoc} */
     @Override public byte[] masterKeyDigest() {
         return new byte[0];
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl create() throws IgniteException {
+    @Override public EncryptionKey create() throws IgniteException {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encrypt(byte[] data, EncryptionKeyImpl key) {
+    @Override public byte[] encrypt(byte[] data, EncryptionKey key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decrypt(byte[] data, EncryptionKeyImpl key) {
+    @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encryptKey(EncryptionKeyImpl key) {
+    @Override public byte[] encryptKey(EncryptionKey key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl decryptKey(byte[] key) {
+    @Override public EncryptionKey decryptKey(byte[] key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 

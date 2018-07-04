@@ -124,7 +124,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private TxRecordSerializer txRecordSerializer;
 
     /** Encryption SPI instance. */
-    private final EncryptionSpi<EncryptionKey<?>> encryptionSpi;
+    private final EncryptionSpi encryptionSpi;
 
     /** */
     static final byte ENCRYPTED = 1;
