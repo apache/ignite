@@ -1402,22 +1402,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = bytesCntToFormat;
 
-            if (mode == WALMode.FSYNC) {
-                while (left > 0) {
-                    int toWrite = Math.min(FILL_BUF.length, left);
-
-                    if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite) {
-                        final StorageException ex = new StorageException("Failed to extend WAL segment file: " +
-                            file.getName() + ". Probably disk is too busy, please check your device.");
-
-                        if (failureProcessor != null)
-                            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-
-                        throw ex;
-                    }
-
-                    left -= toWrite;
-                }
+            if (mode == WALMode.FSYNC || mmap) {
+                while ((left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left))) > 0)
+                    ;
 
                 fileIO.force();
             }
@@ -1425,7 +1412,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 fileIO.clear();
         }
         catch (IOException e) {
-            throw new StorageException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
+            StorageException ex = new StorageException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
+
+            if (failureProcessor != null)
+                failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+            throw ex;
         }
     }
 
@@ -2168,17 +2160,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                          FileIO io = ioFactory.create(unzipTmp)) {
                         zis.getNextEntry();
 
-                        int bytesRead;
-                        while ((bytesRead = zis.read(arr)) > 0)
-                            if (io.write(arr, 0, bytesRead) < bytesRead) {
-                                final IgniteCheckedException ex = new IgniteCheckedException("Failed to extend file: " +
-                                    unzipTmp.getName() + ". Probably disk is too busy, please check your device.");
-
-                                if (failureProcessor != null)
-                                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-
-                                throw ex;
-                            }
+                        while (io.writeFully(arr, 0, zis.read(arr)) > 0)
+                            ;
                     }
 
                     try {
@@ -3475,12 +3458,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 assert hdl.written == hdl.fileIO.position();
 
-                do {
-                    hdl.fileIO.write(buf);
-                }
-                while (buf.hasRemaining());
-
-                hdl.written += size;
+                hdl.written += hdl.fileIO.writeFully(buf);
 
                 metrics.onWalBytesWritten(size);
 
