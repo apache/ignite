@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring.metric;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.selection.score.util.TruthWithPredictionCursor;
+import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link AccuracyScoreCalculator}.
+ * Tests for {@link Recall}.
  */
-public class AccuracyScoreCalculatorTest {
+public class RecallTest {
     /** */
     @Test
     public void testScore() {
-        ScoreCalculator<Integer> scoreCalculator = new AccuracyScoreCalculator<>();
+        Metric<Integer> scoreCalculator = new Recall<>(1);
 
-        TruthWithPredictionCursor<Integer> cursor = new TestTruthWithPredictionCursor<>(
-            Arrays.asList(1, 1, 1, 1),
-            Arrays.asList(1, 1, 0, 1)
+        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1, 0, 1, 0, 1, 0),
+            Arrays.asList(1, 0, 0, 1, 1, 0)
         );
 
         double score = scoreCalculator.score(cursor.iterator());
 
-        assertEquals(0.75, score, 1e-12);
+        assertEquals((double)2/3, score, 1e-12);
     }
 }

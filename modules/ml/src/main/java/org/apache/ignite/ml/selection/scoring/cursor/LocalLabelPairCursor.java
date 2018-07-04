@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -25,7 +25,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPredictionCursor<L> {
+public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
     /** Map with {@code upstream} data. */
     private final Map<K, V> upstreamMap;
 
@@ -60,9 +60,9 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
      * @param lbExtractor Label extractor.
      * @param mdl Model for inference.
      */
-    public LocalTruthWithPredictionCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<Vector, L> mdl) {
+    public LocalLabelPairCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
+                                IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+                                Model<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.featureExtractor = featureExtractor;
@@ -76,14 +76,14 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<TruthWithPrediction<L>> iterator() {
+    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
         return new TruthWithPredictionIterator(upstreamMap.entrySet().iterator());
     }
 
     /**
      * Util iterator that filters map entries and makes predictions using the model.
      */
-    private class TruthWithPredictionIterator implements Iterator<TruthWithPrediction<L>> {
+    private class TruthWithPredictionIterator implements Iterator<LabelPair<L>> {
         /** Base iterator. */
         private final Iterator<Map.Entry<K, V>> iter;
 
@@ -107,7 +107,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
         }
 
         /** {@inheritDoc} */
-        @Override public TruthWithPrediction<L> next() {
+        @Override public LabelPair<L> next() {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -119,7 +119,7 @@ public class LocalTruthWithPredictionCursor<L, K, V, T> implements TruthWithPred
 
             nextEntry = null;
 
-            return new TruthWithPrediction<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
+            return new LabelPair<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
         }
 
         /**
