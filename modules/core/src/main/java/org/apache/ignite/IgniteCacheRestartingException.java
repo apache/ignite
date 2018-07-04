@@ -31,7 +31,7 @@ public class IgniteCacheRestartingException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteFuture<?> restartFut;
+    private transient final IgniteFuture<?> restartFut;
 
     /**
      * @param restartFut Restart future.
