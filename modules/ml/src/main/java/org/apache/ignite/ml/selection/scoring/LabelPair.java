@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring;
 
 /**
  * Pair of truth value and predicated by model.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class TruthWithPrediction<L> {
+public class LabelPair<L> {
     /** Truth value. */
     private final L truth;
 
@@ -35,7 +35,7 @@ public class TruthWithPrediction<L> {
      * @param truth Truth value.
      * @param prediction Predicted value.
      */
-    public TruthWithPrediction(L truth, L prediction) {
+    public LabelPair(L truth, L prediction) {
         this.truth = truth;
         this.prediction = prediction;
     }

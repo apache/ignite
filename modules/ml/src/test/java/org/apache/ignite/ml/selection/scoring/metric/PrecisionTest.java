@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
+package org.apache.ignite.ml.selection.scoring.metric;
 
-import java.util.Iterator;
+import java.util.Arrays;
+import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Base interface for score calculators.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Tests for {@link Precision}.
  */
-public interface ScoreCalculator<L> {
-    /**
-     * Calculates score.
-     *
-     * @param iter Iterator that supplies pairs of truth values and predicated.
-     * @return Score.
-     */
-    public double score(Iterator<TruthWithPrediction<L>> iter);
+public class PrecisionTest {
+    /** */
+    @Test
+    public void testScore() {
+        Metric<Integer> scoreCalculator = new Precision<>(0);
+
+        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1, 0, 1, 0, 1, 0),
+            Arrays.asList(1, 0, 0, 1, 1, 0)
+        );
+
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals((double)2/3, score, 1e-12);
+    }
 }

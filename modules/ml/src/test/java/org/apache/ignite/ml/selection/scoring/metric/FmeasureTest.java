@@ -15,40 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.metric;
 
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import java.util.Arrays;
+import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link LocalTruthWithPredictionCursor}.
+ * Tests for {@link Fmeasure}.
  */
-public class LocalTruthWithPredictionCursorTest {
+public class FmeasureTest {
     /** */
     @Test
-    public void testIterate() {
-        Map<Integer, Integer> data = new HashMap<>();
+    public void testScore() {
+        Metric<Integer> scoreCalculator = new Fmeasure<>(1);
 
-        for (int i = 0; i < 1000; i++)
-            data.put(i, i);
-
-        TruthWithPredictionCursor<Integer> cursor = new LocalTruthWithPredictionCursor<>(
-            data,
-            (k, v) -> v % 2 == 0,
-            (k, v) -> new double[]{v},
-            (k, v) -> v,
-            vec -> (int)vec.get(0)
+        LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1, 0, 1, 0, 1, 0),
+            Arrays.asList(1, 0, 0, 1, 1, 0)
         );
 
-        int cnt = 0;
-        for (TruthWithPrediction<Integer> e : cursor) {
-            assertEquals(e.getPrediction(), e.getTruth());
-            cnt++;
-        }
-        assertEquals(500, cnt);
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals((double)2/3, score, 1e-12);
     }
 }
