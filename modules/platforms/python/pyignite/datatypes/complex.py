@@ -83,6 +83,7 @@ def tc_map(key: bytes):
         TC_COLLECTION: CollectionObject,
         TC_MAP: MapObject,
 
+        TC_COMPLEX_OBJECT: BinaryObject,
         TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
     }[key]
 
@@ -357,9 +358,16 @@ class ObjectArrayObject(AnyDataObject):
         return buffer
 
 
-class WrappedDataObject(ObjectArrayObject):
+class WrappedDataObject:
+    """
+    One or more binary objects can be wrapped in an array. This allows reading,
+    storing, passing and writing objects efficiently without understanding
+    their contents, performing simple byte copy.
+
+    Python representation: tuple(payload: bytes, offset: integer). Offset
+    points to the root object of the array.
+    """
     tc_type = TC_ARRAY_WRAPPED_OBJECTS
-    type_or_id_name = 'offset'
 
     @classmethod
     def build_header(cls):
@@ -377,43 +385,42 @@ class WrappedDataObject(ObjectArrayObject):
 
     @classmethod
     def parse(cls, conn: Connection):
-        intermediate_class, buffer = super().parse(conn)
-        # deal with offset
+        header_class = cls.build_header()
+        buffer = conn.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+
         final_class = type(
             cls.__name__,
-            (intermediate_class,),
+            (header_class,),
             {
                 '_pack_': 1,
                 '_fields_': [
+                    ('payload', ctypes.c_byte*header.length),
                     ('offset', ctypes.c_int),
                 ],
             }
         )
         buffer += conn.recv(
-            ctypes.sizeof(final_class) - ctypes.sizeof(intermediate_class)
+            ctypes.sizeof(final_class) - ctypes.sizeof(header_class)
         )
         return final_class, buffer
 
     @classmethod
+    def to_python(cls, ctype_object):
+        return bytes(ctype_object.payload), ctype_object.offset
+
+    @classmethod
     def from_python(cls, value):
-        offset, value = value
+        payload, offset = value
         header_class = cls.build_header()
         header = header_class()
         header.type_code = int.from_bytes(
             cls.tc_type,
             byteorder=PROTOCOL_BYTE_ORDER
         )
-        try:
-            length = len(value)
-        except TypeError:
-            value = [value]
-            length = 1
+        length = len(value)
         header.length = length
-        buffer = bytes(header)
-
-        for x in value:
-            buffer += super().from_python(x)
-        return buffer + Int.from_python(offset)
+        return bytes(header) + payload + Int.from_python(offset)
 
 
 class CollectionObject(ObjectArrayObject):
@@ -563,3 +570,64 @@ class MapObject(Map):
     def from_python(cls, value):
         type_id, value = value
         return super().from_python(value, type_id)
+
+
+class BinaryObject:
+    tc_type = TC_COMPLEX_OBJECT
+
+    USER_TYPE = 0x0001
+    HAS_SCHEMA = 0x0002
+    HAS_RAW_DATA = 0x0004
+    OFFSET_ONE_BYTE = 0x0008
+    OFFSET_TWO_BYTES = 0x0010
+    COMPACT_FOOTER = 0x0020
+
+    @classmethod
+    def build_header(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('type_code', ctypes.c_byte),
+                    ('version', ctypes.c_byte),
+                    ('flags', ctypes.c_short),
+                    ('type_id', ctypes.c_int),
+                    ('hash_code', ctypes.c_int),
+                    ('length', ctypes.c_int),
+                    ('schema_id', ctypes.c_int),
+                ],
+            }
+        )
+
+    @classmethod
+    def parse(cls, conn: Connection):
+        # from .cache_config import StructArray
+
+        header_class = cls.build_header()
+        buffer = conn.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+
+        buffer += conn.recv(
+            header.length - ctypes.sizeof(header_class)
+        )
+
+        if header.flags & cls.HAS_RAW_DATA:
+            raw_data_offset, raw_data_offset_buffer = Int.parse(conn)
+            buffer += raw_data_offset_buffer
+
+        # HAS_SCHEMA
+
+        return header_class, buffer
+
+    @classmethod
+    def to_python(cls, ctype_object):
+        result = {
+            'version': ctype_object.version,
+            'type_id': ctype_object.type_id,
+            'schema_id': ctype_object.schema_id,
+        }
+
+        # not ready
+        return result

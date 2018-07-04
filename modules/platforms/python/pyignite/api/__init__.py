@@ -76,4 +76,7 @@ from .sql import (
     sql_fields_cursor_get_page,
     resource_close,
 )
+from .binary import (
+    get_binary_type,
+)
 from .result import APIResult, hashcode

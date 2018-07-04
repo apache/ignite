@@ -14,7 +14,9 @@
 # limitations under the License.
 
 from pyignite.api import (
-    hashcode, sql_fields, cache_create, cache_get_configuration
+    hashcode, sql_fields, cache_create, cache_get_configuration,
+    cache_get_names, cache_get, scan,
+    get_binary_type,
 )
 
 
@@ -39,6 +41,11 @@ CREATE TABLE {} (
 )
 '''.format(table_sql_name)
 
+insert_query = '''
+INSERT INTO {} (
+  test_pk, test_decimal, test_str
+) VALUES (2, 2.5, 'qwertyasdf1230-=[]')'''.format(table_sql_name)
+
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
 
 
@@ -59,6 +66,20 @@ def test_sql_types_creation(conn):
 
     assert result.status == 0, result.message
 
-    result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
+    result = cache_get_names(conn)
+    assert result.status == 0
 
+    result = sql_fields(
+        conn,
+        scheme_hash_code,
+        insert_query,
+        page_size
+    )
+    assert result.status == 0
+
+    result = scan(conn, table_hash_code, 100)
+    # assert result.status == 0
+    pass
+
+    result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
     assert result.status == 0, result.message
