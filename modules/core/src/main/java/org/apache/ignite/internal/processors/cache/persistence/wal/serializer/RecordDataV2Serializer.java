@@ -92,7 +92,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return 8 + 1;
 
             case EXCHANGE:
-               return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
+                return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)rec);

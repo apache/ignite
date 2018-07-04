@@ -40,6 +40,8 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
+
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
@@ -1052,7 +1054,8 @@ export default class {
                     unit: 60000,
                     installed: false
                 },
-                qryType: 'query'
+                qryType: 'query',
+                lazy: true
             });
 
             $scope.addParagraph(paragraph, sz);
@@ -1402,7 +1405,7 @@ export default class {
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy))
+                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy, args.collocated))
                 .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
@@ -1435,6 +1438,15 @@ export default class {
             return false;
         };
 
+        $scope.collocatedJoinsAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...COLLOCATED_QUERY_SINCE));
+
+            return false;
+        };
+
         $scope.enforceJoinOrderAvailable = (paragraph) => {
             const cache = _.find($scope.caches, {name: paragraph.cacheName});
 
@@ -1462,10 +1474,15 @@ export default class {
             return false;
         };
 
+        $scope.cacheNameForSql = (paragraph) => {
+            return $scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
+        };
+
         $scope.execute = (paragraph, local = false) => {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
+            const collocated = !!paragraph.collocated;
 
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
@@ -1481,21 +1498,22 @@ export default class {
                         .then(() => {
                             const args = paragraph.queryArgs = {
                                 type: 'QUERY',
-                                cacheName: ($scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema) ? null : paragraph.cacheName,
+                                cacheName: $scope.cacheNameForSql(paragraph),
                                 query: paragraph.query,
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
                                 enforceJoinOrder,
                                 localNid: local ? nid : null,
-                                lazy
+                                lazy,
+                                collocated
                             };
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : paragraph.query;
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
+                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy, collocated);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1541,14 +1559,14 @@ export default class {
                 .then((nid) => {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
-                        cacheName: paragraph.cacheName,
+                        cacheName: $scope.cacheNameForSql(paragraph),
                         query: 'EXPLAIN ' + paragraph.query,
                         pageSize: paragraph.pageSize
                     };
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1565,10 +1583,9 @@ export default class {
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
-            paragraph.localQueryMode = local;
-
             $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
+                    paragraph.localQueryMode = local;
                     paragraph.scanningInProgress = true;
 
                     Notebook.save($scope.notebook)
@@ -1743,7 +1760,7 @@ export default class {
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
+                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy, !!args.collocated))
                 .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => {

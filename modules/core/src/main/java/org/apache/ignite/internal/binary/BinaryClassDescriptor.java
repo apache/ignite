@@ -188,7 +188,7 @@ public class BinaryClassDescriptor {
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
-            U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+            U.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
@@ -514,6 +514,18 @@ public class BinaryClassDescriptor {
         assert isWriteReplace();
 
         return writeReplacer.replace(obj);
+    }
+
+    /**
+     * Register current stable schema if applicable.
+     */
+    public void registerStableSchema() {
+        if (schemaReg != null && stableSchema != null) {
+            int schemaId = stableSchema.schemaId();
+
+            if (schemaReg.schema(schemaId) == null)
+                schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+        }
     }
 
     /**

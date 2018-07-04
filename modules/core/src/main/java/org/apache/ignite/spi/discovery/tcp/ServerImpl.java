@@ -71,6 +71,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -93,6 +95,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -131,6 +134,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -788,8 +792,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
-            msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                U.marshal(spi.marshaller(), evt)));
+            TcpDiscoveryAbstractMessage msg;
+
+            if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+            else
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+
+            msgWorker.addMessage(msg);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -1456,7 +1468,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      *
      * @return {@code true} if local node is coordinator.
      */
-    private boolean isLocalNodeCoordinator() {
+    public boolean isLocalNodeCoordinator() {
         synchronized (mux) {
             boolean crd = spiState == CONNECTED && locNode.equals(resolveCoordinator());
 
@@ -3311,7 +3323,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Whether to redirect message to client nodes.
          */
         private boolean redirectToClients(TcpDiscoveryAbstractMessage msg) {
-            return msg.verified() && U.getAnnotation(msg.getClass(), TcpDiscoveryRedirectToClient.class) != null;
+            return msg.verified() && U.hasDeclaredAnnotation(msg, TcpDiscoveryRedirectToClient.class);
         }
 
         /**
@@ -3522,6 +3534,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
                         }
                         else {
+                            String authFailedMsg = null;
+
                             if (!(subj instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
@@ -3530,9 +3544,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", addrs=" +
                                         U.addressesAsString(node) + ']');
 
+                                authFailedMsg = "Authentication subject is not serializable";
+                            }
+                            else if (!node.isClient() &&
+                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
+                                authFailedMsg = "Node is not authorised to join as a server node";
+
+                            if (authFailedMsg != null) {
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                    log.debug(authFailedMsg + " [nodeId=" + node.id() +
                                         ", addrs=" + U.addressesAsString(node));
 
                                 try {
@@ -4166,6 +4187,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
                     assert dataPacket != null : msg;
+
+                    dataPacket.joiningNodeClient(msg.client());
 
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));

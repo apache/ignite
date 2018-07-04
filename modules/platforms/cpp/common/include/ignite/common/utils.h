@@ -476,6 +476,13 @@ namespace ignite
         {
             return BoundInstance<R, T>(instance, mfunc);
         }
+
+        /**
+         * Get dynamic library full name.
+         * @param name Name without extension.
+         * @return Full name.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
     }
 }
 

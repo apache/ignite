@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -117,10 +118,18 @@ public interface GridDhtPartitionTopology {
     /**
      * @param affVer Affinity version.
      * @param exchFut Exchange future.
+     * @return {@code True} if partitions must be refreshed.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut)
+    public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut)
         throws IgniteInterruptedCheckedException;
+
+    /**
+     * Initializes local data structures after partitions are restored from persistence.
+     *
+     * @param topVer Topology version.
+     */
+    public void afterStateRestored(AffinityTopologyVersion topVer);
 
     /**
      * Post-initializes this topology.
@@ -362,15 +371,15 @@ public interface GridDhtPartitionTopology {
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 
     /**
-     * Make nodes from provided set owners for a given partition.
-     * State of all current owners that aren't contained in the set will be reset to MOVING.
+     * Calculates nodes and partitions which have non-actual state and must be rebalanced.
+     * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
      *
-     * @param p Partition ID.
-     * @param updateSeq If should increment sequence when updated.
-     * @param owners Set of new owners.
-     * @return Set of node IDs that should reload partitions.
+     * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
+     *                            (update counter is maximal) and should hold OWNING state for such partition).
+     * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory);
 
     /**
      * Callback on exchange done.

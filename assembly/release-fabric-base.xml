@@ -216,6 +216,7 @@
                 <include>rest/**</include>
                 <include>memcached/**</include>
                 <include>redis/**</include>
+                <include>sql/**</include>
             </includes>
         </fileSet>
 

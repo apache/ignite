@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandLegacyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -367,6 +368,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 }
                                 else if (m instanceof GridDhtPartitionDemandMessage) {
                                     grp.preloader().handleDemandMessage(idx, id, (GridDhtPartitionDemandMessage) m);
+
+                                    return;
+                                }
+                                else if (m instanceof GridDhtPartitionDemandLegacyMessage) {
+                                    grp.preloader().handleDemandMessage(idx, id,
+                                        new GridDhtPartitionDemandMessage((GridDhtPartitionDemandLegacyMessage) m));
 
                                     return;
                                 }
@@ -904,7 +911,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return {@code True} if pending future queue is empty.
+     * @return {@code True} if pending future queue contains exchange task.
      */
     public boolean hasPendingExchange() {
         return exchWorker.hasPendingExchange();
@@ -965,7 +972,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
-    private void refreshPartitions() {
+    public void refreshPartitions() {
         // TODO https://issues.apache.org/jira/browse/IGNITE-6857
         if (cctx.snapshot().snapshotOperationInProgress()) {
             scheduleResendPartitions();
@@ -2219,6 +2226,26 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
+         * @return Whether pending exchange future triggered by non client node exists.
+         */
+        boolean hasPendingServerExchange() {
+            if (!futQ.isEmpty()) {
+                for (CachePartitionExchangeWorkerTask task : futQ) {
+                    if (task instanceof GridDhtPartitionsExchangeFuture) {
+                        // First event is enough to check,
+                        // because only current exchange future can have multiple discovery events (exchange merge).
+                        ClusterNode triggeredBy = ((GridDhtPartitionsExchangeFuture) task).firstEvent().eventNode();
+
+                        if (!CU.clientNode(triggeredBy))
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /**
          * Dump debug info.
          */
         void dumpExchangeDebugInfo() {
@@ -2240,7 +2267,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
-            int cnt = 0;
+            long cnt = 0;
 
             while (!isCancelled()) {
                 cnt++;
@@ -2395,7 +2422,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
-                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingExchange())
+                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingServerExchange())
                                 refreshPartitions();
                         }
 
@@ -2413,7 +2440,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
-                                    assigns = grp.preloader().assign(exchId, exchFut);
+                                    assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }

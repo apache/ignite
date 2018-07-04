@@ -1163,6 +1163,16 @@ public class BinaryContext {
     }
 
     /**
+     * Register user types schemas.
+     */
+    public void registerUserTypesSchema() {
+        for (BinaryClassDescriptor desc : predefinedTypes.values()) {
+            if (desc.userType())
+                desc.registerStableSchema();
+        }
+    }
+
+    /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
      * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
@@ -1253,6 +1263,13 @@ public class BinaryContext {
      */
     @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata0(typeId) : null;
+    }
+
+    /**
+     * @return All metadata known to this node.
+     */
+    public Collection<BinaryType> metadata() throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata() : Collections.emptyList();
     }
 
     /**

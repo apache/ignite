@@ -53,8 +53,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-
 /**
  *
  */
@@ -499,7 +497,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
+        cleanPersistenceDir();
     }
 
     /**
@@ -510,6 +508,6 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
+        cleanPersistenceDir();
     }
 }

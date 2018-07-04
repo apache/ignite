@@ -96,6 +96,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1158,7 +1159,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
         TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation);) {
+        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1283,11 +1284,15 @@ public class GridCacheUtils {
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
 
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
+        CacheException ce = X.cause(e, CacheException.class);
+        if (ce != null)
+            return ce;
 
         if (e.getCause() instanceof NullPointerException)
             return (NullPointerException)e.getCause();
+
+        if (e.getCause() instanceof SecurityException)
+            return (SecurityException)e.getCause();
 
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
@@ -1678,18 +1683,8 @@ public class GridCacheUtils {
 
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
-        if (!F.isEmpty(entities)) {
-            Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
-
-            for (QueryEntity entity : entities) {
-                if (!F.isEmpty(entity.getNotNullFields()))
-                    QueryUtils.checkNotNullAllowed(cfg);
-
-                normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
-            }
-
-            cfg.clearQueryEntities().setQueryEntities(normalEntities);
-        }
+        if (!F.isEmpty(entities))
+            cfg.clearQueryEntities().setQueryEntities(QueryUtils.normalizeQueryEntities(entities, cfg));
     }
 
     /**

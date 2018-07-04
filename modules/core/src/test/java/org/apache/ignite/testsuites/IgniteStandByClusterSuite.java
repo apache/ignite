@@ -47,7 +47,7 @@ public class IgniteStandByClusterSuite extends TestSuite {
      * @return Test suite.
      */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suit");
+        TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suite");
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
 

@@ -43,6 +43,9 @@ namespace
     /** SQL state 01S02 constant. */
     const std::string STATE_01S02 = "01S02";
 
+    /** SQL state 01S07 constant. */
+    const std::string STATE_01S07 = "01S07";
+
     /** SQL state 07009 constant. */
     const std::string STATE_07009 = "07009";
 
@@ -63,6 +66,9 @@ namespace
 
     /** SQL state 08S01 constant. */
     const std::string STATE_08S01 = "08S01";
+
+    /** SQL state 22002 constant. */
+    const std::string STATE_22002 = "22002";
 
     /** SQL state 22026 constant. */
     const std::string STATE_22026 = "22026";
@@ -281,8 +287,14 @@ namespace ignite
                     case SqlState::S01S02_OPTION_VALUE_CHANGED:
                         return STATE_01S02;
 
+                    case SqlState::S01S07_FRACTIONAL_TRUNCATION:
+                        return STATE_01S07;
+
                     case SqlState::S07006_RESTRICTION_VIOLATION:
                         return STATE_07006;
+
+                    case SqlState::S22002_INDICATOR_NEEDED:
+                        return STATE_22002;
 
                     case SqlState::S22026_DATA_LENGTH_MISMATCH:
                         return STATE_22026;

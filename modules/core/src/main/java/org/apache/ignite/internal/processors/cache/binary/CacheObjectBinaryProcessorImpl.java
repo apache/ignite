@@ -197,6 +197,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
                 }
+
+                @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+                    return CacheObjectBinaryProcessorImpl.this.metadata();
+                }
             };
 
             BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
@@ -442,6 +446,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+
+            //metadata requested to be added is exactly the same as already presented in the cache
+            if (mergedMeta == oldMeta)
+                return;
 
             MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
 

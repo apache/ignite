@@ -8,7 +8,8 @@
     "test": "cross-env NODE_ENV=test CONFIG_PATH='./test/config/settings.json' node ./test/index.js",
     "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter ./ -- --eff-by-issue",
     "start": "node ./index.js",
-    "build": "pkg . --out-path build"
+    "build": "pkg . --out-path build",
+    "mongodb-download": "./node_modules/.bin/mongodb-download"
   },
   "author": "",
   "contributors": [
@@ -71,7 +72,8 @@
     "passport-local-mongoose": "4.0.0",
     "passport.socketio": "3.7.0",
     "socket.io": "1.7.3",
-    "uuid": "3.1.0"
+    "uuid": "3.1.0",
+    "pkg": "4.2.4"
   },
   "devDependencies": {
     "chai": "4.1.0",
@@ -81,7 +83,6 @@
     "mocha": "3.4.2",
     "mocha-teamcity-reporter": "1.1.1",
     "mockgoose": "6.0.8",
-    "pkg": "4.2.4",
     "supertest": "3.0.0"
   }
 }

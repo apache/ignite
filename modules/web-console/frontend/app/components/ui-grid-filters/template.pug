@@ -20,9 +20,9 @@
         ng-class="{'ui-grid-filter-cancel-button-hidden' : colFilter.disableCancelFilterButton === true }"
         ng-switch='colFilter.type')
         div(ng-switch-when='select')
-            button.btn-ignite.btn-ignite--link-dashed-success(
+            button.btn-ignite.btn-ignite--link-dashed-success.uigf-btn(
                 ng-class=`{
-                    'bold': colFilter.term.length !== colFilter.selectOptions.length
+                    'uigf-btn--active': colFilter.term.length !== colFilter.selectOptions.length
                 }`
                 type='button'
                 title='{{ colFilter.$$multiselectFilterTooltip() }}'
@@ -33,6 +33,15 @@
                 data-trigger='click'
                 data-placement='bottom-left'
                 protect-from-bs-select-render
+            ) {{ col.displayName }}
+        div(ng-switch-when='dialog')
+            button.btn-ignite.btn-ignite--link-dashed-success.uigf-btn(
+                ng-class=`{
+                    'uigf-btn--active': colFilter.term.length !== colFilter.selectOptions.length
+                }`
+                ng-click='colFilter.selectDialog(grid, colFilter)'
+                type='button'
+                title='{{ colFilter.$$multiselectFilterTooltip() }}'               
             ) {{ col.displayName }}
 
     .ui-grid-cell-contents(role='button')
