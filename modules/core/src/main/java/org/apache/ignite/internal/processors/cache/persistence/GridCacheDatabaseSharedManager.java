@@ -537,7 +537,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         ) {
             List<CheckpointEntry> checkpoints = new ArrayList<>();
 
-            ByteBuffer buf = ByteBuffer.allocate(16);
+            ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
             buf.order(ByteOrder.nativeOrder());
 
             for (Path cpFile : cpFiles) {
@@ -875,7 +875,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String fileName = U.currentTimeMillis() + NODE_STARTED_FILE_NAME_SUFFIX;
         String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
-        ByteBuffer buf = ByteBuffer.allocate(20);
+        ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
         buf.order(ByteOrder.nativeOrder());
 
         try {
@@ -889,7 +889,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 buf.flip();
 
-                io.write(buf);
+                io.writeFully(buf);
 
                 buf.clear();
 
@@ -919,7 +919,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cpDir.toPath(),
             path -> path.toFile().getName().endsWith(NODE_STARTED_FILE_NAME_SUFFIX))
         ) {
-            ByteBuffer buf = ByteBuffer.allocate(20);
+            ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
             buf.order(ByteOrder.nativeOrder());
 
             for (Path path : nodeStartedFiles) {
@@ -930,7 +930,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Long ts = Long.valueOf(name.substring(0, name.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
 
                 try (FileIO io = ioFactory.create(f, READ)) {
-                    io.read(buf);
+                    io.readFully(buf);
 
                     buf.flip();
 
@@ -1216,8 +1216,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             ByteBuffer hdr = ByteBuffer.allocate(minimalHdr).order(ByteOrder.LITTLE_ENDIAN);
 
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
+            fileIO.readFully(hdr);
 
             hdr.rewind();
 
@@ -1854,7 +1853,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        ByteBuffer buf = ByteBuffer.allocate(20);
+        ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
         buf.order(ByteOrder.nativeOrder());
 
         if (startFile != null)
@@ -1880,7 +1879,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         buf.position(0);
 
         try (FileIO io = ioFactory.create(cpMarkerFile, READ)) {
-            io.read(buf);
+            io.readFully(buf);
 
             buf.flip();
 
@@ -2629,7 +2628,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
                 StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
-                io.write(entryBuf);
+                io.writeFully(entryBuf);
 
                 entryBuf.clear();
 

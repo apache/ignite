@@ -165,8 +165,7 @@ public class FilePageStore implements PageStore {
         try {
             ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-            while (hdr.remaining() > 0)
-                fileIO.write(hdr);
+        fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
             return headerSize() + dbCfg.getPageSize();
@@ -188,8 +187,7 @@ public class FilePageStore implements PageStore {
     private long checkFile(FileIO fileIO) throws IOException {
         ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
-        while (hdr.remaining() > 0)
-            fileIO.read(hdr);
+        fileIO.readFully(hdr);
 
         hdr.rewind();
 
@@ -596,19 +594,7 @@ public class FilePageStore implements PageStore {
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
-                    int len = pageSize;
-
-                    if (fileIO == null)
-                        throw new IOException("FileIO has stopped");
-
-                    do {
-                        int n = fileIO.write(pageBuf, off);
-
-                        off += n;
-
-                        len -= n;
-                    }
-                    while (len > 0);
+                    fileIO.writeFully(pageBuf, off);
 
                     PageIO.setCrc(pageBuf, 0);
 
