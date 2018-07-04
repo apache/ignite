@@ -15,20 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 /**
- * Tests for partitioned cache queries.
+ * <!-- Package description. -->
+ * Root package for score calculators.
  */
-public class IgniteCachePartitionedQueryP2PDisabledSelfTest extends IgniteCachePartitionedQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        c.setPeerClassLoadingEnabled(false);
-
-        return c;
-    }
-}
+package org.apache.ignite.ml.selection.scoring;

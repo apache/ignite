@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
+package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.Iterator;
 import javax.cache.Cache;
@@ -27,7 +27,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPredictionCursor<L> {
+public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     /** Query cursor. */
     private final QueryCursor<Cache.Entry<K, V>> cursor;
 
@@ -59,10 +59,27 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
      * @param lbExtractor Label extractor.
      * @param mdl Model for inference.
      */
-    public CacheBasedTruthWithPredictionCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
+    public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
+                                     IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+                                     Model<Vector, L> mdl) {
+        this.cursor = query(upstreamCache, filter);
+        this.featureExtractor = featureExtractor;
+        this.lbExtractor = lbExtractor;
+        this.mdl = mdl;
+    }
+
+    /**
+     * Constructs a new instance of cache based truth with prediction cursor.
+     *
+     * @param upstreamCache Ignite cache with {@code upstream} data.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param mdl Model for inference.
+     */
+    public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         Model<Vector, L> mdl) {
-        this.cursor = query(upstreamCache, filter);
+        this.cursor = query(upstreamCache);
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
         this.mdl = mdl;
@@ -74,7 +91,7 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<TruthWithPrediction<L>> iterator() {
+    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
         return new TruthWithPredictionIterator(cursor.iterator());
     }
 
@@ -93,9 +110,21 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
     }
 
     /**
+     * Queries the specified cache using the specified filter.
+     *
+     * @param upstreamCache Ignite cache with {@code upstream} data.
+     * @return Query cursor.
+     */
+    private QueryCursor<Cache.Entry<K, V>> query(IgniteCache<K, V> upstreamCache) {
+        ScanQuery<K, V> qry = new ScanQuery<>();
+
+        return upstreamCache.query(qry);
+    }
+
+    /**
      * Util iterator that makes predictions using the model.
      */
-    private class TruthWithPredictionIterator implements Iterator<TruthWithPrediction<L>> {
+    private class TruthWithPredictionIterator implements Iterator<LabelPair<L>> {
         /** Base iterator. */
         private final Iterator<Cache.Entry<K, V>> iter;
 
@@ -114,13 +143,13 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
         }
 
         /** {@inheritDoc} */
-        @Override public TruthWithPrediction<L> next() {
+        @Override public LabelPair<L> next() {
             Cache.Entry<K, V> entry = iter.next();
 
             Vector features = featureExtractor.apply(entry.getKey(), entry.getValue());
             L lb = lbExtractor.apply(entry.getKey(), entry.getValue());
 
-            return new TruthWithPrediction<>(lb, mdl.apply(features));
+            return new LabelPair<>(lb, mdl.apply(features));
         }
     }
 }

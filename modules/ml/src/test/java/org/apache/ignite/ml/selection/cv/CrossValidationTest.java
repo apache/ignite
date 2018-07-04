@@ -19,8 +19,8 @@ package org.apache.ignite.ml.selection.cv;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
@@ -29,9 +29,9 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link CrossValidationScoreCalculator}.
+ * Tests for {@link CrossValidation}.
  */
-public class CrossValidationScoreCalculatorTest {
+public class CrossValidationTest {
     /** */
     @Test
     public void testScoreWithGoodDataset() {
@@ -42,14 +42,14 @@ public class CrossValidationScoreCalculatorTest {
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
-            new CrossValidationScoreCalculator<>();
+        CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
+            new CrossValidation<>();
 
         int folds = 4;
 
         double[] scores = scoreCalculator.score(
             trainer,
-            new AccuracyScoreCalculator<>(),
+            new Accuracy<>(),
             data,
             1,
             (k, v) -> VectorUtils.of(k),
@@ -73,14 +73,14 @@ public class CrossValidationScoreCalculatorTest {
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
-            new CrossValidationScoreCalculator<>();
+        CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
+            new CrossValidation<>();
 
         int folds = 4;
 
         double[] scores = scoreCalculator.score(
             trainer,
-            new AccuracyScoreCalculator<>(),
+            new Accuracy<>(),
             data,
             1,
             (k, v) -> VectorUtils.of(k),
