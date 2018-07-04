@@ -21,8 +21,8 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**

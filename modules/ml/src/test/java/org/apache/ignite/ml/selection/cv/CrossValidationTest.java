@@ -19,8 +19,8 @@ package org.apache.ignite.ml.selection.cv;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
