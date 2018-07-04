@@ -49,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -58,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static java.util.Collections.unmodifiableSet;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -360,7 +360,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             boolean hasOwning = false;
 
-            for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+            Iterable<GridDhtLocalPartition> parts = grp.topology().currentLocalPartitions();
+
+            Iterator<GridDhtLocalPartition> it = parts.iterator();
+
+            boolean empty = !it.hasNext();
+
+            while (it.hasNext()){
+                GridDhtLocalPartition locPart = it.next();
+
                 if (locPart.state() == OWNING) {
                     hasOwning = true;
 
@@ -378,7 +386,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (hasOwning && !grp.localWalEnabled()) {
                 grpsToEnableWal.add(grp.groupId());
             }
-            else if (!hasOwning && grp.localWalEnabled()) {
+            else if (!empty && !hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
 
                 grpsWithWalDisabled.add(grp.groupId());
@@ -1065,8 +1073,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         /** */
         public TemporaryDisabledWal(
             Set<Integer> disabledGrps,
-            AffinityTopologyVersion topVer) {
-            this.disabledGrps = Collections.unmodifiableSet(disabledGrps);
+            AffinityTopologyVersion topVer
+        ) {
+            this.disabledGrps = unmodifiableSet(disabledGrps);
             this.remainingGrps = new HashSet<>(disabledGrps);
             this.topVer = topVer;
         }
