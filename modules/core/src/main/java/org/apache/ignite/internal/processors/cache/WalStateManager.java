@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -165,7 +166,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
 
         walDisableContext = new WALDisableContext(
-            (GridCacheDatabaseSharedManager)cctx.cache().context().database(),
+            cctx.cache().context().database(),
             cctx.pageStore(),
             log
         );
@@ -1134,7 +1135,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         private final IgniteLogger log;
 
         /** */
-        private final GridCacheDatabaseSharedManager dbMgr;
+        private final IgniteCacheDatabaseSharedManager dbMgr;
 
         /** */
         private volatile ReadWriteMetastorage metaStorage;
@@ -1155,7 +1156,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
          *
          */
         public WALDisableContext(
-            GridCacheDatabaseSharedManager dbMgr,
+            IgniteCacheDatabaseSharedManager dbMgr,
             IgnitePageStoreManager pageStoreMgr,
             @Nullable IgniteLogger log
         ) {
