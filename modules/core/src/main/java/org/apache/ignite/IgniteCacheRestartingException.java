@@ -18,6 +18,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +33,8 @@ public class IgniteCacheRestartingException extends IgniteException {
 
     /** */
     private transient final IgniteFuture<?> restartFut;
+
+    private AffinityTopologyVersion topologyVersion;
 
     /**
      * @param restartFut Restart future.
@@ -60,5 +63,13 @@ public class IgniteCacheRestartingException extends IgniteException {
      */
     public IgniteFuture<?> restartFuture() {
         return restartFut;
+    }
+
+    public void setTopologyVersion(AffinityTopologyVersion topologyVersion) {
+        this.topologyVersion = topologyVersion;
+    }
+
+    public AffinityTopologyVersion getTopologyVersion() {
+        return topologyVersion;
     }
 }

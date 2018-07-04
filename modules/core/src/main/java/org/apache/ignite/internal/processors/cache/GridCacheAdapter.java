@@ -6172,7 +6172,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!waitAffinityReadyFuture())
                 return null;
 
-            IgniteInternalCache cache = ((IgniteEx) ignite).context().cache().cache(cacheName);
+            IgniteInternalCache cache;
+
+            try {
+                cache = ((IgniteEx) ignite).context().cache().cache(cacheName);
+            } catch (IgniteCacheRestartingException e) {
+                e.setTopologyVersion(((IgniteEx)ignite).context().cache().context().exchange().lastTopologyFuture().initialVersion());
+
+                throw e;
+            }
 
             return localExecute(cache);
         }

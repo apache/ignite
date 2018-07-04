@@ -244,13 +244,21 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.loadCache(p, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.loadCache(p, args);
+
+                    return;
+                }
+                finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                //TODO
+            }
         }
     }
 
@@ -262,7 +270,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.loadCacheAsync(p, args);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -274,7 +282,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             delegate.localLoadCache(p, args);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -286,7 +294,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.localLoadCacheAsync(p, args);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -298,7 +306,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAndPutIfAbsent(key, val);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -310,7 +318,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAndPutIfAbsentAsync(key, val);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -332,7 +340,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.isLocalLocked(key, byCurrThread);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -344,7 +352,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.query(qry);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -356,7 +364,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.query(qry);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -368,7 +376,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.queryMultipleStatements(qry);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -380,7 +388,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.query(qry, transformer);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -392,7 +400,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.localEntries(peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -404,7 +412,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.queryMetrics();
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -416,7 +424,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             delegate.resetQueryMetrics();
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -428,7 +436,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.queryDetailMetrics();
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -440,7 +448,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             delegate.resetQueryDetailMetrics();
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -452,7 +460,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             delegate.localEvict(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -464,19 +472,28 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.localPeek(key, peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.size(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.size(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                try {
+                    delegate.context().kernalContext().cache().context().exchange().affinityReadyFuture(e.topologyVersion).get();
+                } catch (IgniteCheckedException e1) {
+                    e1.printStackTrace(); //TODO
+                }
+            }
         }
     }
 
@@ -488,7 +505,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.sizeAsync(peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -500,7 +517,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.sizeLong(peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -512,7 +529,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.sizeLongAsync(peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -524,7 +541,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.sizeLong(partition, peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -536,7 +553,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.sizeLongAsync(partition, peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -548,7 +565,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.localSize(peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -560,7 +577,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.localSizeLong(peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -572,7 +589,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.localSizeLong(partition, peekModes);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -584,7 +601,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.invokeAll(map, args);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -596,7 +613,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.invokeAllAsync(map, args);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -608,7 +625,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.get(key);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -620,7 +637,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAsync(key);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -632,7 +649,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getEntry(key);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -644,7 +661,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getEntryAsync(key);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -656,7 +673,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAll(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -668,7 +685,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAllAsync(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -680,7 +697,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getEntries(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -692,7 +709,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getEntriesAsync(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -704,7 +721,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAllOutTx(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -716,7 +733,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAllOutTxAsync(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -728,7 +745,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.containsKey(key);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -740,7 +757,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             delegate.loadAll(keys, replaceExisting, completionListener);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -752,7 +769,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.containsKeyAsync(key);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -764,7 +781,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.containsKeys(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -776,7 +793,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.containsKeysAsync(keys);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -788,7 +805,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             delegate.put(key, val);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -800,7 +817,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.putAsync(key, val);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
@@ -812,7 +829,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return delegate.getAndPut(key, val);
         }
         finally {
-            onLeave(opGate);
+            onLeave(opGate); //TODO
         }
     }
 
