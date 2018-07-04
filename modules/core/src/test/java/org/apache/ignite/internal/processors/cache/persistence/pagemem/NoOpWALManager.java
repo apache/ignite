@@ -158,7 +158,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public long fileIdxToDelete() {
+    @Override public long maxArchivedSegmentToDelete() {
         return -1;
     }
 }

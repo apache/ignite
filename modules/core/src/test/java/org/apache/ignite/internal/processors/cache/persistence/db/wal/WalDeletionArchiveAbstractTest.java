@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -77,6 +78,8 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "100");//reset to default.
     }
 
     /** {@inheritDoc} */
@@ -156,7 +159,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         assertTrue(totalSize <= allowedThresholdWalArchiveSize);
         assertFalse(Stream.of(files).anyMatch(desc -> desc.file().getName().endsWith("00001.wal")));
 
-        GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
+        CheckpointHistory hist = dbMgr.checkpointHistory();
 
         assertTrue(hist.checkpoints().size() > 0);
     }
@@ -211,8 +214,8 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         }
 
         //then: number of checkpoints less or equal than walHistorySize
-        GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
-        assertTrue(hist.checkpoints().size() <= walHistorySize);
+        CheckpointHistory hist = dbMgr.checkpointHistory();
+        assertTrue(hist.checkpoints().size() == walHistorySize);
 
         File[] cpFiles = dbMgr.checkpointDirectory().listFiles();
 
@@ -254,7 +257,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         assertTrue(hasFirstSegment);
 
-        GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
+        CheckpointHistory hist = dbMgr.checkpointHistory();
 
         assertTrue(hist.checkpoints().size() == 2);
     }

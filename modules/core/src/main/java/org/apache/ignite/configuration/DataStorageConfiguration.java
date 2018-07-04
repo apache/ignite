@@ -515,6 +515,15 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * If WalHistorySize was set by user will use this parameter for compatibility.
+     *
+     * @return {@code true} if use WalHistorySize for compatibility.
+     */
+    public boolean isWalHistorySizeParameterUsed() {
+        return getWalHistorySize() != DFLT_WAL_HISTORY_SIZE && getWalHistorySize() != Integer.MAX_VALUE;
+    }
+
+    /**
      * Gets a max allowed size of WAL archives. In bytes.
      *
      * @return max size of WAL archive directory.

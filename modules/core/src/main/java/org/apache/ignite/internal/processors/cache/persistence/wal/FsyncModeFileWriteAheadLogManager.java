@@ -878,10 +878,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
     }
 
-    /**
-     * @return Max allowed index of files to delete.(including this file).
-     */
-    @Override public long fileIdxToDelete() {
+    /** {@inheritDoc} */
+    @Override public long maxArchivedSegmentToDelete() {
         //When maxWalArchiveSize==MAX_VALUE deleting files is not permit.
         if (dsCfg.getMaxWalArchiveSize() == Long.MAX_VALUE)
             return -1;

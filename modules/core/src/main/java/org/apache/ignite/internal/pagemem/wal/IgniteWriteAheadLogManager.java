@@ -128,9 +128,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public long lastArchivedSegment();
 
     /**
-     * @return Max allowed index of WAL files to delete or -1 if it does not exist.
+     * @return Max allowed index of archived segment to delete or -1 if it does not exist.
      */
-    public long fileIdxToDelete();
+    public long maxArchivedSegmentToDelete();
 
     /**
      * Checks if WAL segment is under lock or reserved
