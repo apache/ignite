@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from decimal import Decimal
+
 from pyignite.api import (
     hashcode, sql_fields, cache_create, cache_get_configuration,
     cache_get_names, cache_get, scan,
@@ -44,7 +46,7 @@ CREATE TABLE {} (
 insert_query = '''
 INSERT INTO {} (
   test_pk, test_decimal, test_str
-) VALUES (2, 2.5, 'qwertyasdf1230-=[]')'''.format(table_sql_name)
+) VALUES (?, ?, ?)'''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
 
@@ -67,19 +69,36 @@ def test_sql_types_creation(conn):
     assert result.status == 0, result.message
 
     result = cache_get_names(conn)
-    assert result.status == 0
+    assert result.status == 0, result.message
 
     result = sql_fields(
         conn,
         scheme_hash_code,
         insert_query,
-        page_size
+        page_size,
+        query_args=[
+            1,
+            Decimal('2.4'),
+            'asdf',
+        ]
     )
-    assert result.status == 0
+    assert result.status == 0, result.message
+
+    result = sql_fields(
+        conn,
+        scheme_hash_code,
+        insert_query,
+        page_size,
+        query_args=[
+            2,
+            Decimal('2.5'),
+            'zxcvb',
+        ]
+    )
+    assert result.status == 0, result.message
 
     result = scan(conn, table_hash_code, 100)
-    # assert result.status == 0
-    pass
+    assert result.status == 0, result.message
 
     result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
     assert result.status == 0, result.message

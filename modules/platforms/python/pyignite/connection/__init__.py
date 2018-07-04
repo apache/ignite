@@ -17,8 +17,28 @@ import socket
 import ssl
 
 from pyignite.constants import *
-from pyignite.exceptions import SocketError
+from pyignite.exceptions import SocketError, SocketWriteError
 from .handshake import HandshakeRequest, read_response
+
+
+class BufferedConnection:
+    """
+    Mock socket reads. Allows deserializers to work with static buffers.
+    """
+
+    def __init__(self, buffer: bytes):
+        self.buffer = buffer
+        self.pos = 0
+
+    def send(self, data: bytes):
+        raise SocketWriteError(
+            'Attempt to send `{}` to read-only connection'.format(data)
+        )
+
+    def recv(self, buffersize: int):
+        received = self.buffer[self.pos:self.pos+buffersize]
+        self.pos += buffersize
+        return received
 
 
 class Connection:

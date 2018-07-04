@@ -20,3 +20,7 @@ class ParseError(Exception):
 
 class SocketError(Exception):
     pass
+
+
+class SocketWriteError(SocketError):
+    pass
