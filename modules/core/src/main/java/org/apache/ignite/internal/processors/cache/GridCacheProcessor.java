@@ -925,6 +925,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                 continue;
 
+            checkRebalanceConfiguration(n);
+
             checkTransactionConfiguration(n);
 
             checkMemoryConfiguration(n);
@@ -3679,11 +3681,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
             return;
 
-        Long rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+        Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);;
 
         if (rebalanceThreadPoolSize != null && rebalanceThreadPoolSize != ctx.config().getRebalanceThreadPoolSize())
                 throw new IgniteCheckedException("Rebalance configuration mismatch (fix configuration or set -D" +
-                    IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property) [rmtNodeId=" + rmt.id() +
+                    IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)." +
+                    " Different values of such parameter may lead to rebalance process instability and hanging. " +
+                    " [rmtNodeId=" + rmt.id() +
                     ", locRebalanceThreadPoolSize = " + ctx.config().getRebalanceThreadPoolSize() +
                     ", rmtRebalanceThreadPoolSize = " + rebalanceThreadPoolSize + "]");
     }
