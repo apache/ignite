@@ -380,23 +380,26 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             boolean hasOwning = false;
             boolean hasMoving = false;
 
+            int parts = 0;
+
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == OWNING) {
                     hasOwning = true;
 
-                    if (hasNonEmptyOwning)
-                        break;
-
-                    if (locPart.updateCounter() > 0) {
+                    if (locPart.updateCounter() > 0)
                         hasNonEmptyOwning = true;
 
-                        break;
-                    }
                 }
 
                 if (locPart.state() == MOVING)
                     hasMoving = true;
+
+                parts++;
             }
+
+            log.info("Prepare change WAL state, grp=" + grp.cacheOrGroupName() +
+                ", grpId=" + grp.groupId() + ", hasOwning=" + hasOwning + ", hasMoving=" + hasMoving +
+                ",WALState=" + grp.walEnabled() + ", parts=" + parts);
 
             if (hasOwning && !grp.localWalEnabled()) {
                 grpsToEnableWal.add(grp.groupId());
