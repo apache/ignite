@@ -63,59 +63,28 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         CacheConfiguration cfg = cctx.config();
 
         if (cctx.isNear()) {
-            if (cfg.getNearConfiguration().getNearEvictionPolicyFactory() != null) {
-                plc = (EvictionPolicy)cfg.getNearConfiguration().getNearEvictionPolicyFactory().create();
-                registerEvictionMbean(plc,cfg.getName(), true);
-            }else
-               plc = cfg.getNearConfiguration().getNearEvictionPolicy();
-
+            plc = (cfg.getNearConfiguration().getNearEvictionPolicyFactory() != null) ?
+                (EvictionPolicy)cfg.getNearConfiguration().getNearEvictionPolicyFactory().create() :
+                cfg.getNearConfiguration().getNearEvictionPolicy();
         }
-        else if (cfg.getEvictionPolicyFactory() != null) {
+        else if (cfg.getEvictionPolicyFactory() != null)
             plc = (EvictionPolicy)cfg.getEvictionPolicyFactory().create();
-            registerEvictionMbean(plc, cfg.getName(), false);
-        }else
+        else
             plc = cfg.getEvictionPolicy();
 
         plcEnabled = plc != null;
 
         filter = cfg.getEvictionFilter();
+        if (plcEnabled)
+            cctx.kernalContext().cache().prepare(cctx.config(),plc,cctx.isNear());
+
 
         if (log.isDebugEnabled())
             log.debug("Eviction manager started on node: " + cctx.nodeId());
     }
 
 
-    private void registerEvictionMbean(Object obj, @Nullable String cacheName, boolean near)
-        throws IgniteCheckedException {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
 
-        assert obj != null;
-
-        MBeanServer srvr = cctx.kernalContext().config().getMBeanServer();
-
-        assert srvr != null;
-
-        cacheName = U.maskName(cacheName);
-
-        cacheName = near ? cacheName + "-near" : cacheName;
-
-        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
-
-        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
-            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
-                try {
-                    U.registerMBean(srvr, cctx.igniteInstanceName(), cacheName, obj.getClass().getName(), mbeanImpl,
-                        (Class<Object>)itf);
-                }
-                catch (Throwable e) {
-                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
-                }
-
-                break;
-            }
-        }
-    }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
@@ -349,5 +318,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /** For test purposes. */
     public EvictionPolicy getEvictionPolicy() {
         return plc;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel, boolean destroy) {
+
+        cctx.kernalContext().cache().cleanup(cctx.config(),plc,cctx.isNear());
     }
 }
