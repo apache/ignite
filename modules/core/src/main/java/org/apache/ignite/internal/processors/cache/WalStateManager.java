@@ -60,6 +60,7 @@ import java.util.UUID;
 import static java.util.Collections.unmodifiableSet;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -359,16 +360,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 continue;
 
             boolean hasOwning = false;
+            boolean hasMoving = false;
 
-            Iterable<GridDhtLocalPartition> parts = grp.topology().currentLocalPartitions();
-
-            Iterator<GridDhtLocalPartition> it = parts.iterator();
-
-            boolean empty = !it.hasNext();
-
-            while (it.hasNext()){
-                GridDhtLocalPartition locPart = it.next();
-
+            for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == OWNING) {
                     hasOwning = true;
 
@@ -381,12 +375,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         break;
                     }
                 }
+
+                if (locPart.state() == MOVING)
+                    hasMoving = true;
             }
 
             if (hasOwning && !grp.localWalEnabled()) {
                 grpsToEnableWal.add(grp.groupId());
             }
-            else if (!empty && !hasOwning && grp.localWalEnabled()) {
+            else if (hasMoving && !hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
 
                 grpsWithWalDisabled.add(grp.groupId());
@@ -402,7 +399,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         try {
             if (hasNonEmptyOwning && !grpsToEnableWal.isEmpty())
-                triggerCheckpoint(0).finishFuture().get();
+                triggerCheckpoint("wal-local-state-change-" + topVer).finishFuture().get();
         }
         catch (IgniteCheckedException ex) {
             throw new IgniteException(ex);
@@ -446,7 +443,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 tmpDisabledWal = null;
             }
 
-            CheckpointFuture cpFut = triggerCheckpoint(0);
+            CheckpointFuture cpFut = triggerCheckpoint("wal-local-state-changed-rebalance-finished-" + topVer);
 
             assert cpFut != null;
 
@@ -599,7 +596,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         res = new WalStateResult(msg, false);
                     else {
                         // Initiate a checkpoint.
-                        CheckpointFuture cpFut = triggerCheckpoint(msg.groupId());
+                        CheckpointFuture cpFut = triggerCheckpoint("wal-state-change-grp-" + msg.groupId());
 
                         if (cpFut != null) {
                             try {
@@ -990,11 +987,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /**
      * Force checkpoint.
      *
-     * @param grpId Group ID.
+     * @param msg Message.
      * @return Checkpoint future or {@code null} if failed to get checkpointer.
      */
-    @Nullable private CheckpointFuture triggerCheckpoint(int grpId) {
-        return cctx.database().forceCheckpoint("wal-state-change-grp-" + grpId);
+    @Nullable private CheckpointFuture triggerCheckpoint(String msg) {
+        return cctx.database().forceCheckpoint(msg);
     }
 
     /**
