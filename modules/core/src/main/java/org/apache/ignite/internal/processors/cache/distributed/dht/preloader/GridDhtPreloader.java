@@ -205,10 +205,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             Collection<UUID> requestedRebNodes = demander.requestedNodes();
 
             if (!actTopVer.initialized() ||
-                isAssignsChanged(actTopVer, lastTopVer) // Local node may have no affinity changes.
-                || !aliveNodes.containsAll(requestedRebNodes)) { // If some of nodes left before rabalance compelete.
+                isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
+                !aliveNodes.containsAll(requestedRebNodes)) { // If some of nodes left before rabalance compelete.
                 // Mark current rebalance as obsolete and allow assignmnent generation.
-                demander.topVerToPreload(lastTopVer);
+                demander.topologyVersionToDemand(lastTopVer);
             }
             else {
                 // Assignments are the same, just update last rebalance version.
@@ -239,17 +239,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             ", topVer=" + top.readyTopologyVersion() + ']';
 
         GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
-
-        // Skip assignment generation if they have no changes from previous affinity.
-        if (!topVer.equals(demander.topVerToPreload()) && exchFut != null) {
-            if (log.isDebugEnabled())
-                log.debug("Skipping assignments creation, no affinity assignments changes found [exchId=" +
-                    exchId + ", topVer=" + topVer + "]");
-
-            assignments.changed(false);
-
-            return assignments;
-        }
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
@@ -356,8 +345,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty())
+        if (!assignments.isEmpty()) {
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+
+            // Skip assignment (set changed = false) if they are not marked as preloading.
+            assignments.changed(topVer.equals(demander.topologyVersionToDemand()) || exchFut == null);
+        }
 
         return assignments;
     }
