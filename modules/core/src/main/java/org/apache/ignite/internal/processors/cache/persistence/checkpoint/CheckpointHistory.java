@@ -193,12 +193,38 @@ public class CheckpointHistory {
     }
 
     /**
-     * Clears checkpoint history after checkpoint finish.
+     * Logs and clears checkpoint history after checkpoint finish.
      *
      * @return List of checkpoints removed from history.
      */
     public List<CheckpointEntry> onCheckpointFinished(GridCacheDatabaseSharedManager.Checkpoint chp, boolean truncateWal) {
         List<CheckpointEntry> removed = new ArrayList<>();
+
+        final Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
+
+        assert lastEntry != null;
+
+        final Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
+
+        final WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
+
+        long lastIdx = 0;
+
+        long prevIdx = 0;
+
+        final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
+
+        if (lastWALPointer instanceof FileWALPointer) {
+            lastIdx = ((FileWALPointer)lastWALPointer).index();
+
+            if (previousEntry != null)
+                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
+        }
+
+        for (long walCovered = prevIdx; walCovered < lastIdx; walCovered++)
+            walSegmentsCovered.add(walCovered);
+
+        chp.walSegmentsCovered(walSegmentsCovered);
 
         int deleted = 0;
 
