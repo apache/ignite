@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.Cache;
-import javax.cache.event.EventType;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -37,12 +36,6 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     /** Entry. */
     @GridToStringExclude
     private final CacheContinuousQueryEntry e;
-
-    /** Store value for optimization by using benign races trick. */
-    private volatile V val = null;
-
-    /** Store old value for optimization by using benign races trick. */
-    private volatile V oldVal = null;
 
     /**
      * @param src Source cache.
@@ -77,33 +70,12 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
 
     /** {@inheritDoc} */
     @Override public V getValue() {
-        if (e.value() == null)
-            return null;
-
-        V locVal = val;
-        if (locVal != null)
-            return locVal;
-
-        locVal = (V) cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false);
-
-        val = locVal;
-
-        return locVal;
+        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false);
     }
 
     /** {@inheritDoc} */
     @Override public V getOldValue() {
-        if (e.oldValue() == null)
-            return null;
-
-        V locVal = oldVal;
-        if (locVal != null)
-            return locVal;
-
-        locVal = (V) cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.oldValue(), e.isKeepBinary(), false);
-        oldVal = locVal;
-
-        return locVal;
+        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.oldValue(), e.isKeepBinary(), false);
     }
 
     /** {@inheritDoc} */
