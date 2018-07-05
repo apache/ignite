@@ -149,10 +149,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public int size(WALRecord rec) throws IgniteCheckedException {
-        int clSz = plainSize(rec);
+    @Override public int size(WALRecord record) throws IgniteCheckedException {
+        int clSz = plainSize(record);
 
-        if (needEncryption(rec))
+        if (needEncryption(record))
             return encryptionSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE;
 
         return clSz;
@@ -165,11 +165,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             if (encryptionSpi == null) {
                 T2<Integer, RecordType> knownData = skipEncryptedRec(in);
 
+                //This happen on offline WAL iteration(we don't have encryption keys available).
                 return new EncryptedRecord(knownData.get1(), knownData.get2());
             }
 
             T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, true);
 
+            //This happen during startup. On first WAL iteration we restore only metastore.
+            //So, no encryption keys available. See GridCacheDatabaseSharedManager#readMetastore
             if (clData.get1() == null)
                 return new EncryptedRecord(clData.get2(), clData.get3());
 
@@ -219,7 +222,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * Reads and decrypt data from {@code in} stream.
      *
      * @param in Input stream.
-     * @return Plain data stream.
+     * @param readType If {@code true} plain record type will be read from {@code in}.
+     * @return Plain data stream, group id, plain record type,
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
@@ -251,7 +255,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * Should be used only for a offline WAL iteration.
      *
      * @param in Data stream.
-     * @return Group id of skipped record.
+     * @return Group id and type of skipped record.
      */
     T2<Integer, RecordType> skipEncryptedRec(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int grpId = in.readInt();
@@ -278,6 +282,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         dst.putInt(grpId);
         dst.putInt(dtSz);
+
         if (plainRecType != null)
             putRecordType(dst, plainRecType);
 
