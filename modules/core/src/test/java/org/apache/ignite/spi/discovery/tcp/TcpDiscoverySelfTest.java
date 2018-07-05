@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -52,6 +53,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
@@ -77,6 +79,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -87,6 +90,7 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -217,9 +221,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setFailureDetectionTimeout(6_000);
 
             cfg.setGridLogger(strLog = new GridStringLogger());
+
+            strLog.logLength(300_000);
         }
-        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
+        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode")) {
             cfg.setGridLogger(strLog = new GridStringLogger());
+
+            strLog.logLength(300_000);
+        }
 
         cfg.setClientMode(client);
 
@@ -1667,15 +1676,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             startGrid(1);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite2 = startGrid(2);
 
@@ -1691,6 +1700,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param failOrder Fail order.
+     * @return Failed node spi.
+     */
+    @NotNull private TestFailedNodesSpi createFailedNodeSpi(int failOrder) {
+        TestFailedNodesSpi spi = new TestFailedNodesSpi(failOrder);
+
+        spi.setConnectionRecoveryTimeout(0);
+
+        return spi;
+    }
+
+    /**
      * Coordinator is added in failed list, concurrent nodes start.
      *
      * @throws Exception If failed.
@@ -1699,11 +1720,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             startGrid(1);
 
@@ -1713,7 +1734,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int idx = nodeIdx.incrementAndGet();
 
-                    nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+                    nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
                     startGrid(idx);
 
@@ -1741,11 +1762,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testFailedNodes3() throws Exception {
         try {
-            nodeSpi.set(new TestFailedNodesSpi(-1));
+            nodeSpi.set(createFailedNodeSpi(-1));
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(2));
+            nodeSpi.set(createFailedNodeSpi(2));
 
             Ignite ignite1 = startGrid(1);
 
@@ -1776,15 +1797,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite1 = startGrid(1);
 
-            TestFailedNodesSpi spi = new TestFailedNodesSpi(FAIL_ORDER);
+            TestFailedNodesSpi spi = createFailedNodeSpi(FAIL_ORDER);
 
             spi.stopBeforeSndFail = true;
 
@@ -1823,7 +1844,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 final int NODES = iter == 0 ? 2 : rnd.nextInt(3, 6);
 
                 for (int i = 0; i < NODES; i++) {
-                    nodeSpi.set(new TestFailedNodesSpi(-1));
+                    nodeSpi.set(createFailedNodeSpi(-1));
 
                     startGrid(i);
                 }
@@ -2069,6 +2090,46 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testFailedNodeRestoreConnection() throws Exception {
+        try {
+            TestRestoreConnectedSpi.startTest = false;
+
+            for (int i = 1; i < 5; i++) {
+                TestRestoreConnectedSpi spi = new TestRestoreConnectedSpi(3);
+
+                spi.setConnectionRecoveryTimeout(0);
+
+                nodeSpi.set(spi);
+
+                startGrid(i);
+            }
+
+            awaitPartitionMapExchange();
+
+            info("Start fail test");
+
+            TestRestoreConnectedSpi.startTest = true;
+
+            waitNodeStop(getTestIgniteInstanceName(3));
+
+            U.sleep(5000);
+
+            for (int i = 1; i < 5; i++) {
+                if (i != 3) {
+                    Ignite node = ignite(i);
+
+                    assertEquals(3, node.cluster().nodes().size());
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
@@ -2167,6 +2228,77 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
     private static class Employee { }
+
+    /**
+     *
+     */
+    private static class TestRestoreConnectedSpi extends TcpDiscoverySpi {
+        /** */
+        static volatile boolean startTest;
+
+        /** */
+        private long sleepEndTime;
+
+        /** */
+        private long errNodeOrder;
+
+        /** */
+        private ClusterNode errNext;
+
+        /**
+         * @param errNodeOrder
+         */
+        TestRestoreConnectedSpi(long errNodeOrder) {
+            this.errNodeOrder = errNodeOrder;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(ClusterNode node,
+            Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            if (startTest && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
+                if (node.order() == errNodeOrder) {
+                    log.info("Fail write on message send [node=" + node.id() + ", msg=" + msg + ']');
+
+                    throw new SocketTimeoutException();
+                }
+                else if (locNode.order() == errNodeOrder) {
+                    if (sleepEndTime == 0) {
+                        errNext = node;
+
+                        sleepEndTime = System.currentTimeMillis() + 3000;
+                    }
+
+                    long sleepTime = sleepEndTime - System.currentTimeMillis();
+
+                    if (sleepTime > 0) {
+                        log.info("Start sleep on message send: " + msg);
+
+                        try {
+                            U.sleep(sleepTime);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            log.error("Interrupted on socket write: " + e, e);
+
+                            throw new IOException(e);
+                        }
+
+                        log.info("Stop sleep on message send: " + msg);
+
+                        if (node.equals(errNext)) {
+                            log.info("Fail write after sleep [node=" + node.id() + ", msg=" + msg + ']');
+
+                            throw new SocketTimeoutException();
+                        }
+                    }
+                }
+            }
+
+            super.writeToSocket(node, sock, out, msg, timeout);
+        }
+    }
 
     /**
      *

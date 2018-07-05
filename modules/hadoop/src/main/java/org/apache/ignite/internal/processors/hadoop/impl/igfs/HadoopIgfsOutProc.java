@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsBlockLocation;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -54,7 +54,6 @@ import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.INFO;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_FILES;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_PATHS;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MAKE_DIRECTORIES;
-import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MODE_RESOLVER;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_APPEND;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_CREATE;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_READ;
@@ -123,7 +122,7 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     private final HadoopIgfsIpcIo io;
 
     /** Event listeners. */
-    private final Map<Long, HadoopIgfsStreamEventListener> lsnrs = new ConcurrentHashMap8<>();
+    private final Map<Long, HadoopIgfsStreamEventListener> lsnrs = new ConcurrentHashMap<>();
 
     /**
      * Constructor for TCP endpoint.

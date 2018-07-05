@@ -25,11 +25,11 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 /**
  * Test checks whether hadoop system cache doesn't use user defined TX config.
  */
-public class HadoopTxConfigCacheTest  extends IgniteTxConfigCacheSelfTest {
+public class HadoopTxConfigCacheTest extends IgniteTxConfigCacheSelfTest {
     /**
      * Success if system caches weren't timed out.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testSystemCacheTx() throws Exception {
         final Ignite ignite = grid(0);

@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -45,11 +46,13 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -57,6 +60,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -65,7 +69,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -79,6 +83,7 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -90,6 +95,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -148,7 +154,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor authProc;
+    private GridSecurityProcessor securityProc;
 
     /** */
     @GridToStringExclude
@@ -161,7 +167,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private SqlListenerProcessor sqlListenerProc;
+    private ClientListenerProcessor sqlListenerProc;
 
     /** */
     @GridToStringInclude
@@ -285,6 +291,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private IgniteAuthenticationProcessor authProc;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -352,6 +362,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
+    @GridToStringExclude
+    private WorkersRegistry workersRegistry;
+
+    /** */
     private IgniteEx grid;
 
     /** */
@@ -377,6 +391,15 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     private volatile boolean disconnected;
+
+    /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
+    private PdsFoldersResolver pdsFolderRslvr;
+
+    /** */
+    private GridInternalSubscriptionProcessor internalSubscriptionProc;
+
+    /** Failure processor. */
+    private FailureProcessor failureProc;
 
     /**
      * No-arg constructor is required by externalization.
@@ -408,6 +431,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param schemaExecSvc Schema executor service.
      * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
+     * @param workerRegistry Worker registry.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -431,7 +455,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
-        List<PluginProvider> plugins
+        List<PluginProvider> plugins,
+        IgnitePredicate<String> clsFilter,
+        WorkersRegistry workerRegistry
     ) {
         assert grid != null;
         assert cfg != null;
@@ -456,8 +482,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.qryExecSvc = qryExecSvc;
         this.schemaExecSvc = schemaExecSvc;
         this.customExecSvcs = customExecSvcs;
+        this.workersRegistry = workerRegistry;
 
-        marshCtx = new MarshallerContextImpl(plugins);
+        marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
         try {
             spring = SPRING.create(false);
@@ -513,7 +540,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
-            authProc = (GridSecurityProcessor)comp;
+            securityProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -524,6 +551,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
          * ==========
          */
 
+        else if (comp instanceof FailureProcessor)
+            failureProc = (FailureProcessor)comp;
         else if (comp instanceof GridTaskProcessor)
             taskProc = (GridTaskProcessor)comp;
         else if (comp instanceof GridJobProcessor)
@@ -537,7 +566,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
-            stateProc =(GridClusterStateProcessor)comp;
+            stateProc = (GridClusterStateProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -568,8 +597,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
-        else if (comp instanceof SqlListenerProcessor)
-            sqlListenerProc = (SqlListenerProcessor)comp;
+        else if (comp instanceof ClientListenerProcessor)
+            sqlListenerProc = (ClientListenerProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -577,11 +606,17 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
         else if (comp instanceof PoolProcessor)
-            poolProc = (PoolProcessor) comp;
+            poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
+        else if (comp instanceof PdsFoldersResolver)
+            pdsFolderRslvr = (PdsFoldersResolver)comp;
+        else if (comp instanceof GridInternalSubscriptionProcessor)
+            internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
+        else if (comp instanceof IgniteAuthenticationProcessor)
+            authProc = (IgniteAuthenticationProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
-                || comp instanceof PlatformPluginProcessor))
+            || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -607,15 +642,19 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return ((IgniteKernal)grid).isStopping();
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID localNodeId() {
-        if (locNode != null)
-            return locNode.id();
-
-        if (discoMgr != null)
+    /** */
+    @Nullable private ClusterNode localNode() {
+        if (locNode == null && discoMgr != null)
             locNode = discoMgr.localNode();
 
-        return locNode != null ? locNode.id() : config().getNodeId();
+        return locNode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID localNodeId() {
+        ClusterNode locNode0 = localNode();
+
+        return locNode0 != null ? locNode0.id() : config().getNodeId();
     }
 
     /** {@inheritDoc} */
@@ -735,7 +774,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridSecurityProcessor security() {
-        return authProc;
+        return securityProc;
     }
 
     /** {@inheritDoc} */
@@ -746,6 +785,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WorkersRegistry workersRegistry() {
+        return workersRegistry;
     }
 
     /** {@inheritDoc} */
@@ -825,13 +869,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProcessor sqlListener() {
+    @Override public ClientListenerProcessor sqlListener() {
         return sqlListenerProc;
     }
 
     /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return dataStructuresProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return authProc;
     }
 
     /** {@inheritDoc} */
@@ -842,16 +891,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public IgniteLogger log(Class<?> cls) {
         return log(cls.getName());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void markSegmented() {
-        segFlag = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean segmented() {
-        return segFlag;
     }
 
     /** {@inheritDoc} */
@@ -870,7 +909,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        ClusterNode locNode0 = localNode();
+
+        return locNode0 != null ? locNode0.isDaemon() :
+            (config().isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON));
     }
 
     /** {@inheritDoc} */
@@ -1006,7 +1048,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    public Map<String, ? extends ExecutorService> customExecutors() {
+    @Override public Map<String, ? extends ExecutorService> customExecutors() {
         return customExecSvcs;
     }
 
@@ -1052,10 +1094,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean clientDisconnected() {
-        if (locNode == null)
-            locNode = discoMgr != null ? discoMgr.localNode() : null;
+        ClusterNode locNode0 = localNode();
 
-        return locNode != null ? (locNode.isClient() && disconnected) : false;
+        return locNode0 != null ? (locNode0.isClient() && disconnected) : false;
     }
 
     /** {@inheritDoc} */
@@ -1063,11 +1104,33 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return platformProc;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+        return internalSubscriptionProc;
+    }
+
     /**
      * @param disconnected Disconnected flag.
      */
     void disconnected(boolean disconnected) {
         this.disconnected = disconnected;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PdsFoldersResolver pdsFolderResolver() {
+        return pdsFolderRslvr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean invalid() {
+        FailureProcessor failureProc = failure();
+
+        return failureProc != null && failureProc.failureContext() != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FailureProcessor failure() {
+        return failureProc;
     }
 
     /** {@inheritDoc} */

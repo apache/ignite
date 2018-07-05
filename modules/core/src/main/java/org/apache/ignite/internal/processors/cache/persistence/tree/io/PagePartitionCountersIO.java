@@ -18,11 +18,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
- *
+ * Page IO for Partition Counters, IO for pages containing cache ID mapping to its size. Used only for caches in shared
+ * cache groups.
  */
 public class PagePartitionCountersIO extends PageIO {
     /** */
@@ -37,8 +42,14 @@ public class PagePartitionCountersIO extends PageIO {
     /** */
     private static final int ITEMS_OFF = NEXT_COUNTERS_PAGE_OFF + 8;
 
-    /** */
-    private static final int ITEM_SIZE = 12;
+    /** Serialized size in bytes of cache ID (int) */
+    private static final int CACHE_ID_SIZE = 4;
+
+    /** Serialized size in bytes of cache ID (int) */
+    private static final int CACHE_SIZE_SIZE = 8;
+
+    /** One serialized entry size: Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes */
+    public static final int ITEM_SIZE = CACHE_ID_SIZE + CACHE_SIZE_SIZE;
 
     /** */
     private static final byte LAST_FLAG = 0b1;
@@ -53,6 +64,22 @@ public class PagePartitionCountersIO extends PageIO {
      */
     public PagePartitionCountersIO(int ver) {
         super(T_PART_CNTRS, ver);
+    }
+
+    /**
+     * @param cacheSizes Cache sizes: cache Id in shared group mapped to its size. Not null.
+     * @return Serialized cache sizes or 0-byte length array if map was empty.
+     */
+    public byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
+        byte[] data = new byte[cacheSizes.size() * ITEM_SIZE];
+        long off = GridUnsafe.BYTE_ARR_OFF;
+
+        for (Map.Entry<Integer, Long> entry : cacheSizes.entrySet()) {
+            GridUnsafe.putInt(data, off, entry.getKey()); off += CACHE_ID_SIZE;
+            GridUnsafe.putLong(data, off, entry.getValue()); off += CACHE_SIZE_SIZE;
+        }
+
+        return data;
     }
 
     /** {@inheritDoc} */
@@ -122,12 +149,12 @@ public class PagePartitionCountersIO extends PageIO {
 
         for (int i = 0; i < cnt; i++) {
             int cacheId = PageUtils.getInt(pageAddr, off);
-            off += 4;
+            off += CACHE_ID_SIZE;
 
             assert cacheId != 0;
 
             long cacheSize = PageUtils.getLong(pageAddr, off);
-            off += 8;
+            off += CACHE_SIZE_SIZE;
 
             assert cacheSize >= 0 : cacheSize;
 
@@ -139,10 +166,17 @@ public class PagePartitionCountersIO extends PageIO {
         return getLastFlag(pageAddr);
     }
 
+    /**
+     * @param pageAddr Page address.
+     */
     private boolean getLastFlag(long pageAddr) {
         return PageUtils.getByte(pageAddr, LAST_FLAG_OFF) == LAST_FLAG;
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @param last Last.
+     */
     private void setLastFlag(long pageAddr, boolean last) {
         PageUtils.putByte(pageAddr, LAST_FLAG_OFF, last ? LAST_FLAG : ~LAST_FLAG);
     }
@@ -171,5 +205,22 @@ public class PagePartitionCountersIO extends PageIO {
      */
     private int getCapacity(int pageSize) {
         return (pageSize - ITEMS_OFF) / ITEM_SIZE;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("PagePartitionCounters [\n\tcount=").a(getCount(addr))
+            .a(",\n\tlastFlag=").a(getLastFlag(addr))
+            .a(",\n\tnextCountersPageId=").appendHex(getNextCountersPageId(addr))
+            .a(",\n\tsize={");
+
+        Map<Integer, Long> sizes = new HashMap<>();
+
+        readCacheSizes(addr, sizes);
+
+        for (Map.Entry<Integer, Long> e : sizes.entrySet())
+            sb.a("\n\t\t").a(e.getKey()).a("=").a(e.getValue());
+
+        sb.a("\n\t}\n]");
     }
 }

@@ -18,8 +18,16 @@
 package org.apache.ignite.ml;
 
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
+import org.apache.ignite.ml.dataset.DatasetTestSuite;
+import org.apache.ignite.ml.genetic.GAGridTestSuite;
+import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
+import org.apache.ignite.ml.nn.MLPTestSuite;
+import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
+import org.apache.ignite.ml.selection.SelectionTestSuite;
+import org.apache.ignite.ml.svm.SVMTestSuite;
+import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,7 +38,16 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     MathImplMainTestSuite.class,
     RegressionsTestSuite.class,
-    ClusteringTestSuite.class
+    SVMTestSuite.class,
+    ClusteringTestSuite.class,
+    DecisionTreeTestSuite.class,
+    KNNTestSuite.class,
+    LocalModelsTest.class,
+    MLPTestSuite.class,
+    DatasetTestSuite.class,
+    PreprocessingTestSuite.class,
+    GAGridTestSuite.class,
+    SelectionTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

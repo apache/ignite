@@ -152,6 +152,10 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public int getSize();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Number of non-null values in the cache as a long value.")
+    public long getCacheSize();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Number of keys in the cache (possibly with null values).")
     public int getKeySize();
 
@@ -282,4 +286,24 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     /** {@inheritDoc} */
     @MXBeanDescription("True when a cache is in write-through mode.")
     public boolean isWriteThrough();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("True when a cache topology is valid for read operations.")
+    public boolean isValidForReading();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("True when a cache topology is valid for write operations.")
+    public boolean isValidForWriting();
+
+    /**
+     * Enable statistic collection for the cache.
+     */
+    @MXBeanDescription("Enable statistic collection for the cache.")
+    public void enableStatistics();
+
+    /**
+     * Disable statistic collection for the cache.
+     */
+    @MXBeanDescription("Disable statistic collection for the cache.")
+    public void disableStatistics();
 }

@@ -21,12 +21,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 
 /**
  * JDBC request.
  */
-public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinarylizable {
+public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBinarylizable {
     /** Execute sql query request. */
     static final byte QRY_EXEC = 2;
 
@@ -60,6 +60,11 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Get schemas metadata request. */
     static final byte META_SCHEMAS = 12;
 
+    /** Send a batch of a data from client to server. */
+    static final byte BULK_LOAD_BATCH = 13;
+
+    /** Ordered batch request. */
+    static final byte BATCH_EXEC_ORDERED = 14;
 
     /** Request type. */
     private byte type;
@@ -151,6 +156,16 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case META_SCHEMAS:
                 req = new JdbcMetaSchemasRequest();
+
+                break;
+
+            case BULK_LOAD_BATCH:
+                req = new JdbcBulkLoadBatchRequest();
+
+                break;
+
+            case BATCH_EXEC_ORDERED:
+                req = new JdbcOrderedBatchExecuteRequest();
 
                 break;
 

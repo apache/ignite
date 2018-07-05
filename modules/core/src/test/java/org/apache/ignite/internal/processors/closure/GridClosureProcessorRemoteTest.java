@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.closure;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -33,16 +37,22 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Closure Processor")
 public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
-    /**
-     *
-     */
-    public GridClosureProcessorRemoteTest() {
-        super(true); // Start grid.
-    }
+    /** Number of grids started for tests. Should not be less than 2. */
+    public static final int NODES_CNT = 2;
+
+    /** Local counter that won't be affected by remote jobs. */
+    private static AtomicInteger execCntr = new AtomicInteger(0);
+
 
     /** {@inheritDoc} */
-    @Override public String getTestIgniteInstanceName() {
-        return null;
+    @Override protected boolean isMultiJvm() {
+        return true;
+    }
+
+        /** {@inheritDoc} */
+    @SuppressWarnings({"ConstantConditions"})
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(NODES_CNT);
     }
 
     /** {@inheritDoc} */
@@ -58,36 +68,50 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of failure.
      */
     public void testAnonymousBroadcast() throws Exception {
-        Ignite g = grid();
+        Ignite g = grid(0);
 
-        assert g.cluster().nodes().size() >= 2;
+        assert g.cluster().nodes().size() == NODES_CNT;
 
-        g.compute().run(new CA() {
+        execCntr.set(0);
+
+        g.compute().broadcast(new CARemote() {
             @Override public void apply() {
-                System.out.println("BROADCASTING....");
+                log.info("BROADCASTING....");
+
+                ignite.countDownLatch("broadcast", 2, false, true).countDown();
+
+                execCntr.incrementAndGet();
             }
         });
 
-        Thread.sleep(2000);
+        assertTrue(g.countDownLatch("broadcast", 2, false, true).await(2000));
+        assertEquals(1, execCntr.get());
     }
 
     /**
      * @throws Exception Thrown in case of failure.
      */
     public void testAnonymousUnicast() throws Exception {
-        Ignite g = grid();
+        Ignite g = grid(0);
 
-        assert g.cluster().nodes().size() >= 2;
+        assert g.cluster().nodes().size() == NODES_CNT;
+
+        execCntr.set(0);
 
         ClusterNode rmt = F.first(g.cluster().forRemotes().nodes());
 
-        compute(g.cluster().forNode(rmt)).run(new CA() {
+        compute(g.cluster().forNode(rmt)).run(new CARemote() {
             @Override public void apply() {
-                System.out.println("UNICASTING....");
+                log.info("UNICASTING....");
+
+                ignite.countDownLatch("unicast", 1, false, true).countDown();
+
+                execCntr.incrementAndGet();
             }
         });
 
-        Thread.sleep(2000);
+        assertTrue(g.countDownLatch("unicast", 1, false, true).await(2000));
+        assertEquals(0, execCntr.get());
     }
 
     /**
@@ -95,27 +119,45 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of failure.
      */
     public void testAnonymousUnicastRequest() throws Exception {
-        Ignite g = grid();
+        Ignite g = grid(0);
 
-        assert g.cluster().nodes().size() >= 2;
+        assert g.cluster().nodes().size() == NODES_CNT;
+
+        execCntr.set(0);
 
         ClusterNode rmt = F.first(g.cluster().forRemotes().nodes());
         final ClusterNode loc = g.cluster().localNode();
 
-        compute(g.cluster().forNode(rmt)).run(new CA() {
+        compute(g.cluster().forNode(rmt)).run(new CARemote() {
             @Override public void apply() {
-                message(grid().cluster().forNode(loc)).localListen(new IgniteBiPredicate<UUID, String>() {
+                message(grid(1).cluster().forNode(loc)).localListen(null, new IgniteBiPredicate<UUID, String>() {
                     @Override public boolean apply(UUID uuid, String s) {
-                        System.out.println("Received test message [nodeId: " + uuid + ", s=" + s + ']');
+                        log.info("Received test message [nodeId: " + uuid + ", s=" + s + ']');
+
+                        ignite.countDownLatch("messagesPending", 1, false, true).countDown();
+
+                        execCntr.incrementAndGet();
 
                         return false;
                     }
-                }, null);
+                });
             }
         });
 
         message(g.cluster().forNode(rmt)).send(null, "TESTING...");
 
-        Thread.sleep(2000);
+        assertTrue(g.countDownLatch("messagesPending", 1, false, true).await(2000));
+        assertEquals(0, execCntr.get());
+    }
+
+    /** Base class for remote tasks. */
+    private abstract class CARemote extends CA {
+        /** Ignite instance local to that node. */
+        @IgniteInstanceResource
+        protected Ignite ignite;
+
+        /** Logger to use. */
+        @LoggerResource
+        protected IgniteLogger log;
     }
 }

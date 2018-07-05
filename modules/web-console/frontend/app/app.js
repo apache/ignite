@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import './vendor';
 import '../public/stylesheets/style.scss';
 import '../app/primitives';
 
@@ -22,15 +23,10 @@ import './app.config';
 
 import './modules/form/form.module';
 import './modules/agent/agent.module';
-import './modules/sql/sql.module';
 import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
-import './modules/states/signin.state';
 import './modules/states/logout.state';
-import './modules/states/password.state';
-import './modules/states/configuration.state';
-import './modules/states/profile.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
 
@@ -45,6 +41,7 @@ import './modules/dialog/dialog.module';
 import './modules/ace.module';
 import './modules/socket.module';
 import './modules/loading/loading.module';
+import servicesModule from './services';
 // endignite
 
 // Data
@@ -64,8 +61,6 @@ import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive.j
 import igniteOnEscape from './directives/on-escape.directive.js';
 import igniteOnFocusOut from './directives/on-focus-out.directive.js';
 import igniteRestoreInputFocus from './directives/restore-input-focus.directive.js';
-import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
-import igniteUiAceSpring from './directives/ui-ace-spring/ui-ace-spring.directive';
 import igniteUiAceCSharp from './directives/ui-ace-sharp/ui-ace-sharp.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -73,10 +68,11 @@ import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directiv
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
 import btnIgniteLink from './directives/btn-ignite-link';
+import exposeInput from './components/expose-ignite-form-field-control';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Confirm from './services/Confirm.service.js';
+import {default as IgniteConfirm, Confirm} from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
@@ -91,8 +87,11 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
-import Clusters from './services/Clusters';
 import Caches from './services/Caches';
+import {CSV} from './services/CSV';
+import {$exceptionHandler} from './services/exceptionHandler.js';
+import IGFSs from './services/IGFSs';
+import Models from './services/Models';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -106,56 +105,79 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 import id8 from './filters/id8.filter';
 
-// Controllers
-import profile from 'Controllers/profile-controller';
-import resetPassword from './controllers/reset-password.controller';
-
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
-import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
+import pageAdmin from './components/page-admin';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
+import pageQueries from './components/page-queries';
+import pageConfigureOverview from './components/page-configure-overview';
 import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
+import gridNoData from './components/grid-no-data';
+import gridExport from './components/grid-export';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
+import uiGridFilters from './components/ui-grid-filters';
+import uiGridColumnResizer from './components/ui-grid-column-resizer';
+import listEditable from './components/list-editable';
+import breadcrumbs from './components/breadcrumbs';
+import panelCollapsible from './components/panel-collapsible';
+import clusterSelector from './components/cluster-selector';
+import connectedClusters from './components/connected-clusters-badge';
+import connectedClustersDialog from './components/connected-clusters-dialog';
+import pageLanding from './components/page-landing';
+import passwordVisibility from './components/password-visibility';
+import progressLine from './components/progress-line';
+import formField from './components/form-field';
 
-// Inject external modules.
-import IgniteModules from 'IgniteModules/index';
+import pageProfile from './components/page-profile';
+import pagePasswordChanged from './components/page-password-changed';
+import pagePasswordReset from './components/page-password-reset';
+import pageSignup from './components/page-signup';
+import pageSignin from './components/page-signin';
+import pageForgotPassword from './components/page-forgot-password';
+
+import igniteServices from './services';
+
+import uiAceJava from './directives/ui-ace-java';
+import uiAceSpring from './directives/ui-ace-spring';
 
 import baseTemplate from 'views/base.pug';
+import * as icons from '../public/images/icons';
 
-angular.module('ignite-console', [
+export default angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
+    'ngMessages',
     // Third party libs.
-    'ngRetina',
     'btford.socket-io',
-    'mgcrea.ngStrap',
-    'ui.router',
-    'ui.router.state.events',
-    'gridster',
     'dndLists',
+    'gridster',
+    'mgcrea.ngStrap',
     'nvd3',
+    'pascalprecht.translate',
     'smart-table',
     'treeControl',
-    'pascalprecht.translate',
     'ui.grid',
-    'ui.grid.saveState',
-    'ui.grid.selection',
-    'ui.grid.resizeColumns',
     'ui.grid.autoResize',
     'ui.grid.exporter',
+    'ui.grid.resizeColumns',
+    'ui.grid.saveState',
+    'ui.grid.selection',
+    'ui.router',
+    'ui.router.state.events',
+    'ui.carousel',
     // Base modules.
     'ignite-console.core',
     'ignite-console.ace',
@@ -165,15 +187,10 @@ angular.module('ignite-console', [
     'ignite-console.branding',
     'ignite-console.socket',
     'ignite-console.agent',
-    'ignite-console.sql',
     'ignite-console.nodes',
     'ignite-console.demo',
     // States.
-    'ignite-console.states.login',
     'ignite-console.states.logout',
-    'ignite-console.states.password',
-    'ignite-console.states.configuration',
-    'ignite-console.states.profile',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
     // Common modules.
@@ -188,21 +205,49 @@ angular.module('ignite-console', [
     webConsoleHeader.name,
     webConsoleFooter.name,
     igniteIcon.name,
+    igniteServices.name,
     versionPicker.name,
     userNotifications.name,
+    pageAdmin.name,
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
+    pageQueries.name,
+    pageConfigureOverview.name,
     gridColumnSelector.name,
     gridItemSelected.name,
+    gridNoData.name,
+    gridExport.name,
     bsSelectMenu.name,
     uiGridHovering.name,
+    uiGridFilters.name,
+    uiGridColumnResizer.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
-    // Ignite modules.
-    IgniteModules.name
+    listEditable.name,
+    panelCollapsible.name,
+    clusterSelector.name,
+    servicesModule.name,
+    connectedClusters.name,
+    connectedClustersDialog.name,
+    igniteListOfRegisteredUsers.name,
+    pageProfile.name,
+    exposeInput.name,
+    pageLanding.name,
+    pagePasswordChanged.name,
+    pagePasswordReset.name,
+    pageSignup.name,
+    pageSignin.name,
+    pageForgotPassword.name,
+    uiAceJava.name,
+    uiAceSpring.name,
+    breadcrumbs.name,
+    passwordVisibility.name,
+    progressLine.name,
+    formField.name
 ])
+.service($exceptionHandler.name, $exceptionHandler)
 // Directives.
 .directive(...igniteAutoFocus)
 .directive(...igniteBsAffixUpdate)
@@ -210,13 +255,11 @@ angular.module('ignite-console', [
 .directive(...igniteCopyToClipboard)
 .directive(...igniteHideOnStateChange)
 .directive(...igniteInformation)
-.directive(...igniteMatch)
+.directive('igniteMatch', igniteMatch)
 .directive(...igniteOnClickFocus)
 .directive(...igniteOnEnter)
 .directive(...igniteOnEnterFocusMove)
 .directive(...igniteOnEscape)
-.directive(...igniteUiAceSpring)
-.directive(...igniteUiAceJava)
 .directive(...igniteUiAceCSharp)
 .directive(...igniteUiAcePojos)
 .directive(...igniteUiAcePom)
@@ -225,8 +268,6 @@ angular.module('ignite-console', [
 .directive(...igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
-.directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
-.directive('igniteClusterSelect', clusterSelect)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
 .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.
@@ -234,8 +275,9 @@ angular.module('ignite-console', [
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
-.service(...Confirm)
-.service(...ConfirmBatch)
+.service(...IgniteConfirm)
+.service(Confirm.name, Confirm)
+.service('IgniteConfirmBatch', ConfirmBatch)
 .service(...CopyToClipboard)
 .service(...Countries)
 .service(...Focus)
@@ -247,11 +289,10 @@ angular.module('ignite-console', [
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
-.service('Clusters', Clusters)
 .service('Caches', Caches)
-// Controllers.
-.controller(...resetPassword)
-.controller(...profile)
+.service(CSV.name, CSV)
+.service('IGFSs', IGFSs)
+.service('Models', Models)
 // Filters.
 .filter('byName', byName)
 .filter('defaultName', defaultName)
@@ -286,7 +327,16 @@ angular.module('ignite-console', [
     $root.gettingStarted = gettingStarted;
 }])
 .run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    $root.$on('user', () => agentMgr.connect());
+    let lastUser;
+
+    $root.$on('user', (e, user) => {
+        if (lastUser)
+            return;
+
+        lastUser = user;
+
+        agentMgr.connect();
+    });
 }])
 .run(['$transitions', ($transitions) => {
     $transitions.onSuccess({ }, (trans) => {
@@ -309,13 +359,10 @@ angular.module('ignite-console', [
         $root.revertIdentity = () => {
             $http.get('/api/v1/admin/revert/identity')
                 .then(() => User.load())
-                .then((user) => {
-                    $root.$broadcast('user', user);
-
-                    $state.go('base.settings.admin');
-                })
+                .then(() => $state.go('base.settings.admin'))
                 .then(() => Notebook.load())
                 .catch(Messages.showError);
         };
     }
-]);
+])
+.run(['IgniteIcon', (IgniteIcon) => IgniteIcon.registerIcons(icons)]);

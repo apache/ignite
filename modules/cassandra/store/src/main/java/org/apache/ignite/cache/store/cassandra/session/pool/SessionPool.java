@@ -45,23 +45,23 @@ public class SessionPool {
                         return;
                     }
 
-                    List<Map.Entry<CassandraSessionImpl, SessionWrapper>> expiredSessions = new LinkedList<>();
+                    List<Map.Entry<CassandraSessionImpl, IdleSession>> expiredSessions = new LinkedList<>();
 
                     int sessionsCnt;
 
                     synchronized (sessions) {
                         sessionsCnt = sessions.size();
 
-                        for (Map.Entry<CassandraSessionImpl, SessionWrapper> entry : sessions.entrySet()) {
+                        for (Map.Entry<CassandraSessionImpl, IdleSession> entry : sessions.entrySet()) {
                             if (entry.getValue().expired())
                                 expiredSessions.add(entry);
                         }
 
-                        for (Map.Entry<CassandraSessionImpl, SessionWrapper> entry : expiredSessions)
+                        for (Map.Entry<CassandraSessionImpl, IdleSession> entry : expiredSessions)
                             sessions.remove(entry.getKey());
                     }
 
-                    for (Map.Entry<CassandraSessionImpl, SessionWrapper> entry : expiredSessions)
+                    for (Map.Entry<CassandraSessionImpl, IdleSession> entry : expiredSessions)
                         entry.getValue().release();
 
                     // all sessions in the pool expired, thus we don't need additional thread to manage sessions in the pool
@@ -79,7 +79,7 @@ public class SessionPool {
     private static final long SLEEP_TIMEOUT = 60000; // 1 minute.
 
     /** Sessions which were returned to pool. */
-    private static final Map<CassandraSessionImpl, SessionWrapper> sessions = new HashMap<>();
+    private static final Map<CassandraSessionImpl, IdleSession> sessions = new HashMap<>();
 
     /** Singleton instance. */
     private static SessionMonitor monitorSingleton;
@@ -102,10 +102,10 @@ public class SessionPool {
         if (cassandraSes == null || driverSes == null)
             return;
 
-        SessionWrapper old;
+        IdleSession old;
 
         synchronized (sessions) {
-            old = sessions.put(cassandraSes, new SessionWrapper(driverSes, expirationTimeout));
+            old = sessions.put(cassandraSes, new IdleSession(driverSes, expirationTimeout));
 
             if (monitorSingleton == null || State.TERMINATED.equals(monitorSingleton.getState())) {
                 monitorSingleton = new SessionMonitor();
@@ -129,7 +129,7 @@ public class SessionPool {
         if (cassandraSes == null)
             return null;
 
-        SessionWrapper wrapper;
+        IdleSession wrapper;
 
         synchronized (sessions) {
             wrapper = sessions.remove(cassandraSes);
@@ -142,7 +142,7 @@ public class SessionPool {
      * Releases all session from pool and closes all their connections to Cassandra database.
      */
     public static void release() {
-        Collection<SessionWrapper> wrappers;
+        Collection<IdleSession> wrappers;
 
         synchronized (sessions) {
             try {
@@ -151,7 +151,7 @@ public class SessionPool {
 
                 wrappers = new LinkedList<>();
 
-                for (SessionWrapper wrapper : sessions.values())
+                for (IdleSession wrapper : sessions.values())
                     wrappers.add(wrapper);
 
                 sessions.clear();
@@ -167,7 +167,7 @@ public class SessionPool {
             }
         }
 
-        for (SessionWrapper wrapper : wrappers)
+        for (IdleSession wrapper : wrappers)
             wrapper.release();
     }
 }

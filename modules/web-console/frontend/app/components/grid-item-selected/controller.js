@@ -27,12 +27,15 @@ export default class {
             this.applyValues();
 
             this.gridApi.grid.registerDataChangeCallback(() => this.applyValues(), [this.uiGridConstants.dataChange.ROW]);
+            // Used to toggle selected of one row.
             this.gridApi.selection.on.rowSelectionChanged(this.$scope, () => this.applyValues());
+            // Used to toggle all selected of rows.
+            this.gridApi.selection.on.rowSelectionChangedBatch(this.$scope, () => this.applyValues());
         }
     }
 
     applyValues() {
-        this.selected = this.gridApi.selection.getSelectedRows().length;
+        this.selected = this.gridApi.selection.legacyGetSelectedRows().length;
         this.count = this.gridApi.grid.rows.length;
     }
 }

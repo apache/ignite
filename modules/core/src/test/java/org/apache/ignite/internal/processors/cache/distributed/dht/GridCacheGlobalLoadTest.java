@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -32,7 +33,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -102,7 +102,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
         assertTrue(asyncCache.isAsync());
 
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         if (async) {
             if (oldAsyncApi) {
@@ -129,7 +129,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         assertEquals(cache.get(2), (Integer)2);
         assertEquals(cache.get(3), (Integer)3);
 
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         if (async) {
             asyncCache.loadCache(new IgniteBiPredicate<Integer, Integer>() {

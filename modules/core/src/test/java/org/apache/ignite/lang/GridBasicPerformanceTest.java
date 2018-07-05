@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Tests synchronization performance vs. lock.
@@ -712,7 +712,7 @@ public class GridBasicPerformanceTest {
         int lim = 10000;
 
         for (int i = 0; i < arr.length; i++)
-            arr[i] = ThreadLocalRandom8.current().nextInt(lim);
+            arr[i] = ThreadLocalRandom.current().nextInt(lim);
 
         Arrays.sort(arr);
 
@@ -720,9 +720,9 @@ public class GridBasicPerformanceTest {
 
         for (int i = 0; i < MAX; i++) {
             if (sort)
-                Arrays.binarySearch(arr, ThreadLocalRandom8.current().nextInt(lim));
+                Arrays.binarySearch(arr, ThreadLocalRandom.current().nextInt(lim));
             else
-                F.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
+                F.contains(arr, ThreadLocalRandom.current().nextInt(lim));
         }
 
         long time =  System.currentTimeMillis() - start;
@@ -738,7 +738,7 @@ public class GridBasicPerformanceTest {
         int lim = 10000;
 
         for (int i = 0; i < arr.length; i++)
-            arr[i] = ThreadLocalRandom8.current().nextLong(lim);
+            arr[i] = ThreadLocalRandom.current().nextLong(lim);
 
         Arrays.sort(arr);
 
@@ -746,9 +746,9 @@ public class GridBasicPerformanceTest {
 
         for (int i = 0; i < MAX; i++) {
             if (sort)
-                Arrays.binarySearch(arr, ThreadLocalRandom8.current().nextInt(lim));
+                Arrays.binarySearch(arr, ThreadLocalRandom.current().nextInt(lim));
             else
-                F.contains(arr, ThreadLocalRandom8.current().nextInt(lim));
+                F.contains(arr, ThreadLocalRandom.current().nextInt(lim));
         }
 
         long time =  System.currentTimeMillis() - start;

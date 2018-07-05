@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -120,6 +122,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Rebalancing rate in bytes. */
     private HitRateMetrics rebalancingBytesRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+
+    /** Number of currently clearing partitions for rebalancing. */
+    private AtomicLong rebalanceClearingPartitions = new AtomicLong();
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -219,45 +224,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        GridCacheAdapter<?, ?> cache = cctx.cache();
-
-        return cache != null ? cache.offHeapEntriesCount() : -1;
+        return getEntriesStat().offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        try {
-            return cctx.cache().localSize(ONHEAP_PEEK_MODES);
-        }
-        catch (IgniteCheckedException ignored) {
-            return 0;
-        }
+        return getEntriesStat().heapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        try {
-            return cctx.offheap().cacheEntriesCount(cctx.cacheId(),
-                true,
-                false,
-                cctx.affinity().affinityTopologyVersion());
-        }
-        catch (IgniteCheckedException ignored) {
-            return 0;
-        }
+        return getEntriesStat().offHeapPrimaryEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        try {
-            return cctx.offheap().cacheEntriesCount(cctx.cacheId(),
-                false,
-                true,
-                cctx.affinity().affinityTopologyVersion());
-        }
-        catch (IgniteCheckedException ignored) {
-            return 0;
-        }
+        return getEntriesStat().offHeapBackupEntriesCount();
     }
 
     /** {@inheritDoc} */
@@ -269,21 +251,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        GridCacheAdapter<?, ?> cache = cctx.cache();
+        return getEntriesStat().size();
+    }
 
-        return cache != null ? cache.size() : 0;
+    /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return getEntriesStat().cacheSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return getSize();
+        return getEntriesStat().keySize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        GridCacheAdapter<?, ?> cache = cctx.cache();
-
-        return cache == null || cache.isEmpty();
+        return getEntriesStat().isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -328,7 +311,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxDhtThreadMapSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().threadMapSize() : -1;
+        return cctx.tm().threadMapSize();
     }
 
     /** {@inheritDoc} */
@@ -716,6 +699,36 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isWriteThrough();
     }
 
+    /**
+     * Checks whether cache topology is valid for operations.
+     *
+     * @param read {@code True} if validating read operations, {@code false} if validating write.
+     * @return Valid ot not.
+     */
+    private boolean isValidForOperation(boolean read) {
+        if (cctx.isLocal())
+            return true;
+
+        try {
+            GridDhtTopologyFuture fut = cctx.shared().exchange().lastFinishedFuture();
+
+            return (fut != null && fut.validateCache(cctx, false, read, null, null) == null);
+        }
+        catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return isValidForOperation(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return isValidForOperation(false);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
         CacheConfiguration ccfg = cctx.config();
@@ -725,9 +738,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        CacheConfiguration ccfg = cctx.config();
-
-        return ccfg != null && ccfg.isStatisticsEnabled();
+        return cctx.statisticsEnabled();
     }
 
     /** {@inheritDoc} */
@@ -737,34 +748,122 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isManagementEnabled();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalPartitionsCount() {
-        int res = 0;
+    /**
+     * Calculates entries count/partitions count metrics using one iteration over local partitions for all metrics
+     */
+    public EntriesStatMetrics getEntriesStat() {
+        int owningPartCnt = 0;
+        int movingPartCnt = 0;
+        long offHeapEntriesCnt = 0L;
+        long offHeapPrimaryEntriesCnt = 0L;
+        long offHeapBackupEntriesCnt = 0L;
+        long heapEntriesCnt = 0L;
+        int size = 0;
+        long sizeLong = 0L;
+        boolean isEmpty;
 
-        if (cctx.isLocal())
-            return res;
+        try {
+            if (cctx.isLocal()) {
+                if (cctx.cache() != null) {
+                    offHeapEntriesCnt = cctx.cache().offHeapEntriesCount();
 
-        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
-            if (e.getValue() == GridDhtPartitionState.OWNING || e.getValue() == GridDhtPartitionState.MOVING)
-                res++;
+                    offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
+                    offHeapBackupEntriesCnt = offHeapEntriesCnt;
+
+                    size = cctx.cache().size();
+                    sizeLong = cctx.cache().sizeLong();
+
+                    heapEntriesCnt = sizeLong;
+                }
+            }
+            else {
+                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
+                Set<Integer> primaries = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
+                Set<Integer> backups = cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+
+                if (cctx.isNear() && cctx.cache() != null)
+                    heapEntriesCnt = cctx.cache().nearSize();
+
+                for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
+                    // Partitions count.
+                    GridDhtPartitionState partState = part.state();
+
+                    if (partState == GridDhtPartitionState.OWNING)
+                        owningPartCnt++;
+
+                    if (partState == GridDhtPartitionState.MOVING)
+                        movingPartCnt++;
+
+                    // Offheap entries count
+                    if (cctx.cache() == null)
+                        continue;
+
+                    long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+
+                    offHeapEntriesCnt += cacheSize;
+
+                    if (primaries.contains(part.id()))
+                        offHeapPrimaryEntriesCnt += cacheSize;
+
+                    if (backups.contains(part.id()))
+                        offHeapBackupEntriesCnt += cacheSize;
+
+                    size = (int)offHeapEntriesCnt;
+
+                    heapEntriesCnt += part.publicSize(cctx.cacheId());
+                }
+
+                sizeLong = offHeapEntriesCnt;
+            }
+        }
+        catch (Exception e) {
+            owningPartCnt = -1;
+            movingPartCnt = 0;
+            offHeapEntriesCnt = -1L;
+            offHeapPrimaryEntriesCnt = -1L;
+            offHeapBackupEntriesCnt = -1L;
+            heapEntriesCnt = -1L;
+            size = -1;
+            sizeLong = -1L;
         }
 
-        return res;
+        isEmpty = (offHeapEntriesCnt == 0);
+
+        EntriesStatMetrics stat = new EntriesStatMetrics();
+
+        stat.offHeapEntriesCount(offHeapEntriesCnt);
+        stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
+        stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
+        stat.heapEntriesCount(heapEntriesCnt);
+        stat.size(size);
+        stat.cacheSize(sizeLong);
+        stat.keySize(size);
+        stat.isEmpty(isEmpty);
+        stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
+        stat.rebalancingPartitionsCount(movingPartCnt);
+
+        return stat;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return getEntriesStat().totalPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
-        int res = 0;
+        return getEntriesStat().rebalancingPartitionsCount();
+    }
 
-        if (cctx.isLocal())
-            return res;
+    /** {@inheritDoc} */
+    @Override public long getRebalancedKeys() {
+        return rebalancedKeys.get();
+    }
 
-        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
-            if (e.getValue() == GridDhtPartitionState.MOVING)
-                res++;
-        }
-
-        return res;
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys.get();
     }
 
     /** {@inheritDoc} */
@@ -803,15 +902,12 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      */
     public void startRebalance(long delay){
-        rebalanceStartTime.addAndGet(delay + U.currentTimeMillis());
+        rebalanceStartTime.set(delay + U.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
-        long rate = rebalancingKeysRate.getRate();
-
-        return rate <= 0 ? -1L :
-            ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
+        return getEstimatedRebalancingFinishTime();
     }
 
     /** {@inheritDoc} */
@@ -819,11 +915,40 @@ public class CacheMetricsImpl implements CacheMetrics {
         return rebalanceStartTime.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        long rate = rebalancingKeysRate.getRate();
+
+        return rate <= 0 ? -1L :
+            ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return rebalanceStartTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return rebalanceClearingPartitions.get();
+    }
+
+    /**
+     * Sets clearing partitions number.
+     * @param partitions Partitions number.
+     */
+    public void rebalanceClearingPartitions(int partitions) {
+        rebalanceClearingPartitions.set(partitions);
+    }
+
     /**
      * First rebalance supply message callback.
      * @param keysCnt Estimated number of keys.
      */
-    public void onRebalancingKeysCountEstimateReceived(long keysCnt) {
+    public void onRebalancingKeysCountEstimateReceived(Long keysCnt) {
+        if (keysCnt == null)
+            return;
+
         estimatedRebalancingKeys.addAndGet(keysCnt);
     }
 
@@ -911,5 +1036,180 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsImpl.class, this);
+    }
+
+    /**
+     * Entries and partitions metrics holder class.
+     */
+    public static class EntriesStatMetrics {
+        /** Total partitions count. */
+        private int totalPartsCnt;
+
+        /** Rebalancing partitions count. */
+        private int rebalancingPartsCnt;
+
+        /** Offheap entries count. */
+        private long offHeapEntriesCnt;
+
+        /** Offheap primary entries count. */
+        private long offHeapPrimaryEntriesCnt;
+
+        /** Offheap backup entries count. */
+        private long offHeapBackupEntriesCnt;
+
+        /** Onheap entries count. */
+        private long heapEntriesCnt;
+
+        /** Size. */
+        private int size;
+
+        /** Long size. */
+        private long cacheSize;
+
+        /** Key size. */
+        private int keySize;
+
+        /** Is empty. */
+        private boolean isEmpty;
+
+        /**
+         * @return Total partitions count.
+         */
+        public int totalPartitionsCount() {
+            return totalPartsCnt;
+        }
+
+        /**
+         * @param totalPartsCnt Total partitions count.
+         */
+        public void totalPartitionsCount(int totalPartsCnt) {
+            this.totalPartsCnt = totalPartsCnt;
+        }
+
+        /**
+         * @return Rebalancing partitions count.
+         */
+        public int rebalancingPartitionsCount() {
+            return rebalancingPartsCnt;
+        }
+
+        /**
+         * @param rebalancingPartsCnt Rebalancing partitions count.
+         */
+        public void rebalancingPartitionsCount(int rebalancingPartsCnt) {
+            this.rebalancingPartsCnt = rebalancingPartsCnt;
+        }
+
+        /**
+         * @return Offheap entries count.
+         */
+        public long offHeapEntriesCount() {
+            return offHeapEntriesCnt;
+        }
+
+        /**
+         * @param offHeapEntriesCnt Offheap entries count.
+         */
+        public void offHeapEntriesCount(long offHeapEntriesCnt) {
+            this.offHeapEntriesCnt = offHeapEntriesCnt;
+        }
+
+        /**
+         * @return Offheap primary entries count.
+         */
+        public long offHeapPrimaryEntriesCount() {
+            return offHeapPrimaryEntriesCnt;
+        }
+
+        /**
+         * @param offHeapPrimaryEntriesCnt Offheap primary entries count.
+         */
+        public void offHeapPrimaryEntriesCount(long offHeapPrimaryEntriesCnt) {
+            this.offHeapPrimaryEntriesCnt = offHeapPrimaryEntriesCnt;
+        }
+
+        /**
+         * @return Offheap backup entries count.
+         */
+        public long offHeapBackupEntriesCount() {
+            return offHeapBackupEntriesCnt;
+        }
+
+        /**
+         * @param offHeapBackupEntriesCnt Offheap backup entries count.
+         */
+        public void offHeapBackupEntriesCount(long offHeapBackupEntriesCnt) {
+            this.offHeapBackupEntriesCnt = offHeapBackupEntriesCnt;
+        }
+
+        /**
+         * @return Heap entries count.
+         */
+        public long heapEntriesCount() {
+            return heapEntriesCnt;
+        }
+
+        /**
+         * @param heapEntriesCnt Onheap entries count.
+         */
+        public void heapEntriesCount(long heapEntriesCnt) {
+            this.heapEntriesCnt = heapEntriesCnt;
+        }
+
+        /**
+         * @return Size.
+         */
+        public int size() {
+            return size;
+        }
+
+        /**
+         * @param size Size.
+         */
+        public void size(int size) {
+            this.size = size;
+        }
+
+        /**
+         * @return Key size.
+         */
+        public int keySize() {
+            return keySize;
+        }
+
+        /**
+         * @param keySize Key size.
+         */
+        public void keySize(int keySize) {
+            this.keySize = keySize;
+        }
+
+        /**
+         * @return Long size.
+         */
+        public long cacheSize() {
+            return cacheSize;
+        }
+
+        /**
+         * @param cacheSize Size long.
+         */
+        public void cacheSize(long cacheSize) {
+            this.cacheSize = cacheSize;
+        }
+
+        /**
+         * @return Is empty.
+         */
+        public boolean isEmpty() {
+            return isEmpty;
+        }
+
+        /**
+         * @param isEmpty Is empty flag.
+         */
+        public void isEmpty(boolean isEmpty) {
+            this.isEmpty = isEmpty;
+        }
     }
 }

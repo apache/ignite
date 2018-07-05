@@ -192,6 +192,15 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeLongArray(String name, long[] val, int len) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeLongArray(val, len);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeFloatArray(String name, @Nullable float[] val) {
         DirectByteBufferStream stream = state.item().stream;
 

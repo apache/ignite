@@ -28,11 +28,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
 /**
  * Task for SQL batched update statements execution through {@link IgniteJdbcDriver}.
@@ -117,10 +120,14 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
             cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
 
         if (cache == null) {
-            if (cacheName == null)
-                throw new SQLException("Failed to execute query. No suitable caches found.");
-            else
-                throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+            if (cacheName == null) {
+                throw createJdbcSqlException("Failed to execute query. No suitable caches found.",
+                    IgniteQueryErrorCode.CACHE_NOT_FOUND);
+            }
+            else {
+                throw createJdbcSqlException("Cache not found [cacheName=" + cacheName + ']',
+                    IgniteQueryErrorCode.CACHE_NOT_FOUND);
+            }
         }
 
         int batchSize = F.isEmpty(sql) ? sqlBatch.size() : batchArgs.size();
@@ -156,7 +163,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
      * @throws SQLException If failed.
      */
     private Integer doSingleUpdate(IgniteCache<?, ?> cache, String sqlText, List<Object> args) throws SQLException {
-        SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sqlText, false);
+        SqlFieldsQuery qry = new SqlFieldsQueryEx(sqlText, false);
 
         qry.setPageSize(fetchSize);
         qry.setLocal(locQry);
@@ -167,8 +174,10 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
 
         QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
-        if (qryCursor.isQuery())
-            throw new SQLException(getError("Query produced result set", qry));
+        if (qryCursor.isQuery()) {
+            throw createJdbcSqlException(getError("Query produced result set", qry),
+                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+        }
 
         List<List<?>> rows = qryCursor.getAll();
 

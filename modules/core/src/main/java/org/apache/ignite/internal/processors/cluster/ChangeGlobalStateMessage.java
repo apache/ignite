@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -50,6 +53,15 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     private List<StoredCacheData> storedCfgs;
 
     /** */
+    @Nullable private BaselineTopology baselineTopology;
+
+    /** */
+    private boolean forceChangeBaselineTopology;
+
+    /** */
+    private long timestamp;
+
+    /** */
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
@@ -63,7 +75,10 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         UUID reqId,
         UUID initiatingNodeId,
         @Nullable List<StoredCacheData> storedCfgs,
-        boolean activate
+        boolean activate,
+        BaselineTopology baselineTopology,
+        boolean forceChangeBaselineTopology,
+        long timestamp
     ) {
         assert reqId != null;
         assert initiatingNodeId != null;
@@ -72,6 +87,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
         this.activate = activate;
+        this.baselineTopology = baselineTopology;
+        this.forceChangeBaselineTopology = forceChangeBaselineTopology;
+        this.timestamp = timestamp;
     }
 
     /**
@@ -112,7 +130,18 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-   /**
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
+        return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
+    }
+
+    /**
     * @return Node initiated state change.
     */
     public UUID initiatorNodeId() {
@@ -124,6 +153,27 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public boolean activate() {
         return activate;
+    }
+
+    /**
+     * @return Force change BaselineTopology flag.
+     */
+    public boolean forceChangeBaselineTopology() {
+        return forceChangeBaselineTopology;
+    }
+
+    /**
+     * @return Baseline topology.
+     */
+    @Nullable public BaselineTopology baselineTopology() {
+        return baselineTopology;
+    }
+
+    /**
+     * @return Timestamp.
+     */
+    public long timestamp() {
+        return timestamp;
     }
 
     /**

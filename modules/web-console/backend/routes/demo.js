@@ -17,6 +17,9 @@
 
 'use strict';
 
+const express = require('express');
+const _ = require('lodash');
+
 // Fire me up!
 
 const clusters = require('./demo/clusters.json');
@@ -26,7 +29,7 @@ const igfss = require('./demo/igfss.json');
 
 module.exports = {
     implements: 'routes/demo',
-    inject: ['require(lodash)', 'require(express)', 'errors', 'settings', 'mongo', 'services/spaces']
+    inject: ['errors', 'settings', 'mongo', 'services/spaces']
 };
 
 /**
@@ -39,7 +42,7 @@ module.exports = {
  * @param spacesService
  * @return {Promise}
  */
-module.exports.factory = (_, express, errors, settings, mongo, spacesService) => {
+module.exports.factory = (errors, settings, mongo, spacesService) => {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -92,10 +95,12 @@ module.exports.factory = (_, express, errors, settings, mongo, spacesService) =>
 
                                             domain.space = cacheDoc.space;
                                             domain.caches.push(cacheDoc._id);
+                                            domain.clusters.push(cluster._id);
 
                                             return domain.save()
                                                 .then((domainDoc) => {
                                                     cacheDoc.domains.push(domainDoc._id);
+                                                    cluster.models.push(domainDoc._id);
 
                                                     return cacheDoc.save();
                                                 });

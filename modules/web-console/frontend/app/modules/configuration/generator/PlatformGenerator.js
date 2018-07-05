@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// import _ from 'lodash';
+import {nonEmpty} from 'app/utils/lodashMixins';
 import { EmptyBean, Bean } from './Beans';
 
 export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults', (JavaTypes, clusterDflts, cacheDflts) => {
@@ -219,7 +219,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
         // Generate events group.
         static clusterEvents(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-            if (_.nonEmpty(cluster.includeEventTypes))
+            if (nonEmpty(cluster.includeEventTypes))
                 cfg.eventTypes('events', 'includeEventTypes', cluster.includeEventTypes);
 
             return cfg;
@@ -262,7 +262,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         static clusterCaches(cluster, caches, igfss, isSrvCfg, cfg = this.igniteConfigurationBean(cluster)) {
             // const cfg = this.clusterGeneral(cluster, cfg);
             //
-            // if (_.nonEmpty(caches)) {
+            // if (nonEmpty(caches)) {
             //     const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache));
             //
             //     cfg.collectionProperty('', '', ccfgs, );
@@ -285,19 +285,19 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
             ccfg.intProperty('copyOnRead');
 
             if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
-                ccfg.intProperty('invalidate');
+                ccfg.intProperty('isInvalidate', 'invalidate');
 
             return ccfg;
         }
 
         // Generate cache memory group.
-        static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
+        static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
             ccfg.enumProperty('memoryMode');
 
             if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
                 ccfg.intProperty('offHeapMaxMemory');
 
-            // this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
+            // this._evictionPolicy(ccfg, available, false, cache.evictionPolicy, cacheDflts.evictionPolicy);
 
             ccfg.intProperty('startSize')
                 .boolProperty('swapEnabled', 'EnableSwap');
@@ -483,7 +483,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
                 bean.intProperty('nearStartSize');
 
-                this._evictionPolicy(bean, 'nearEvictionPolicy',
+                this._evictionPolicy(bean, true,
                     bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
 
                 ccfg.beanProperty('nearConfiguration', bean);

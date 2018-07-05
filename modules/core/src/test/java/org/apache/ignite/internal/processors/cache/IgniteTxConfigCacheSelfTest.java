@@ -103,11 +103,6 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Success if user tx was timed out.
      *
@@ -185,6 +180,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         try (final Transaction tx = ignite.transactions().txStart()) {
             assert tx != null;
 
+            cache.put("key0", "val0");
+
             sleepForTxFailure();
 
             cache.put("key", "val");
@@ -195,7 +192,19 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
             assert e.getCause() instanceof TransactionTimeoutException;
         }
 
+        assertNull(ignite.transactions().tx());
+
+        assert !cache.containsKey("key0");
         assert !cache.containsKey("key");
+
+        // New transaction must succeed.
+        try (final Transaction tx = ignite.transactions().txStart()) {
+            cache.put("key", "val");
+
+            tx.commit();
+        }
+
+        assert cache.containsKey("key");
     }
 
     /**

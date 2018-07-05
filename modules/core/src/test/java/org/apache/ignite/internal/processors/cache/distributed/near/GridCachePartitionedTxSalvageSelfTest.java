@@ -181,8 +181,8 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         List<Integer> dhtSizes = new ArrayList<>(GRID_CNT - 1);
 
         for (int i = 1; i < GRID_CNT; i++) {
-            nearSizes.add(near(i).context().tm().txs().size());
-            dhtSizes.add(dht(i).context().tm().txs().size());
+            nearSizes.add(near(i).context().tm().activeTransactions().size());
+            dhtSizes.add(dht(i).context().tm().activeTransactions().size());
         }
 
         stopNodeAndSleep(SALVAGE_TIMEOUT - DELTA_BEFORE);
@@ -247,7 +247,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @param ctx Cache context.
      */
     private void checkTxsEmpty(GridCacheContext ctx) {
-        Collection txs = ctx.tm().txs();
+        Collection txs = ctx.tm().activeTransactions();
 
         assert txs.isEmpty() : "Not all transactions were salvaged: " + txs;
     }
@@ -259,7 +259,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @param exp Expected amount of transactions.
      */
     private void checkTxsNotEmpty(GridCacheContext ctx, int exp) {
-        int size = ctx.tm().txs().size();
+        int size = ctx.tm().activeTransactions().size();
 
         assertEquals("Some transactions were salvaged unexpectedly", exp, size);
     }

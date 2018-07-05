@@ -15,52 +15,54 @@
  * limitations under the License.
  */
 
+import {Observable} from 'rxjs/Observable';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/take';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/merge';
+import 'rxjs/add/operator/catch';
+import 'rxjs/add/operator/withLatestFrom';
+import 'rxjs/add/observable/empty';
+import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/from';
+import 'rxjs/add/observable/forkJoin';
+import 'rxjs/add/observable/timer';
+import cloneDeep from 'lodash/cloneDeep';
+
 import {
-    ADD_CLUSTER,
-    UPDATE_CLUSTER,
-    UPSERT_CLUSTERS,
-    LOAD_LIST,
-    UPSERT_CACHES
-} from '../reducer';
+    ofType
+} from '../store/effects';
+
+import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
+import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
 
 export default class PageConfigure {
-    static $inject = ['IgniteConfigurationResource', '$state', '$q', 'ConfigureState'];
-
-    constructor(configuration, $state, $q, ConfigureState) {
-        Object.assign(this, {configuration, $state, $q, ConfigureState});
+    static $inject = [ConfigureState.name, ConfigSelectors.name];
+    /**
+     * @param {ConfigureState} ConfigureState
+     * @param {ConfigSelectors} ConfigSelectors
+     */
+    constructor(ConfigureState, ConfigSelectors) {
+        this.ConfigureState = ConfigureState;
+        this.ConfigSelectors = ConfigSelectors;
     }
 
-    onStateEnterRedirect(toState) {
-        if (toState.name !== 'base.configuration.tabs')
-            return this.$q.resolve();
-
-        return this.configuration.read()
-            .then((data) => {
-                this.loadList(data);
-
-                return this.$q.resolve(data.clusters.length
-                    ? 'base.configuration.tabs.advanced'
-                    : 'base.configuration.tabs.basic');
-            });
-    }
-
-    loadList(list) {
-        this.ConfigureState.dispatchAction({type: LOAD_LIST, list});
-    }
-
-    addCluster(cluster) {
-        this.ConfigureState.dispatchAction({type: ADD_CLUSTER, cluster});
-    }
-
-    updateCluster(cluster) {
-        this.ConfigureState.dispatchAction({type: UPDATE_CLUSTER, cluster});
-    }
-
-    upsertCaches(caches) {
-        this.ConfigureState.dispatchAction({type: UPSERT_CACHES, caches});
-    }
-
-    upsertClusters(clusters) {
-        this.ConfigureState.dispatchAction({type: UPSERT_CLUSTERS, clusters});
+    getClusterConfiguration({clusterID, isDemo}) {
+        return Observable.merge(
+            Observable
+                .timer(1)
+                .take(1)
+                .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_COMPLETE_CONFIGURATION', clusterID, isDemo}))
+                .ignoreElements(),
+            this.ConfigureState.actions$.let(ofType('LOAD_COMPLETE_CONFIGURATION_ERR')).take(1).map((e) => {throw e;}),
+            this.ConfigureState.state$
+                .let(this.ConfigSelectors.selectCompleteClusterConfiguration({clusterID, isDemo}))
+                .filter((c) => c.__isComplete)
+                .take(1)
+                .map((data) => ({...data, clusters: [cloneDeep(data.cluster)]}))
+        )
+        .take(1)
+        .toPromise();
     }
 }

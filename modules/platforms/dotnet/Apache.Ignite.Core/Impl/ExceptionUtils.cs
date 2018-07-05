@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -90,7 +91,6 @@ namespace Apache.Ignite.Core.Impl
             Exs["javax.cache.integration.CacheLoaderException"] = (c, m, e, i) => new CacheStoreException(m, e);
             Exs["javax.cache.integration.CacheWriterException"] = (c, m, e, i) => new CacheStoreException(m, e);
             Exs["javax.cache.processor.EntryProcessorException"] = (c, m, e, i) => new CacheEntryProcessorException(m, e);
-            Exs["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = (c, m, e, i) => new CacheAtomicUpdateTimeoutException(m, e);
 
             // Transaction exceptions.
             Exs["org.apache.ignite.transactions.TransactionOptimisticException"] = (c, m, e, i) => new TransactionOptimisticException(m, e);
@@ -103,26 +103,47 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.IgniteAuthenticationException"] = (c, m, e, i) => new SecurityException(m, e);
             Exs["org.apache.ignite.plugin.security.GridSecurityException"] = (c, m, e, i) => new SecurityException(m, e);
 
-            // Future exceptions
+            // Future exceptions.
             Exs["org.apache.ignite.lang.IgniteFutureCancelledException"] = (c, m, e, i) => new IgniteFutureCancelledException(m, e);
             Exs["org.apache.ignite.internal.IgniteFutureCancelledCheckedException"] = (c, m, e, i) => new IgniteFutureCancelledException(m, e);
+
+            // Service exceptions.
+            Exs["org.apache.ignite.services.ServiceDeploymentException"] = (c, m, e, i) => new ServiceDeploymentException(m, e);
         }
 
         /// <summary>
         /// Creates exception according to native code class and message.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
+        /// <param name="igniteInt">The ignite.</param>
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
         /// <param name="stackTrace">Native stack trace.</param>
         /// <param name="reader">Error data reader.</param>
         /// <param name="innerException">Inner exception.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(IIgniteInternal ignite, string clsName, string msg, string stackTrace,
+        public static Exception GetException(IIgniteInternal igniteInt, string clsName, string msg, string stackTrace,
             BinaryReader reader = null, Exception innerException = null)
         {
             // Set JavaException as immediate inner.
-            innerException = new JavaException(clsName, msg, stackTrace, innerException);
+            var jex = new JavaException(clsName, msg, stackTrace, innerException);
+
+            return GetException(igniteInt, jex, reader);
+        }
+
+        /// <summary>
+        /// Creates exception according to native code class and message.
+        /// </summary>
+        /// <param name="igniteInt">The ignite.</param>
+        /// <param name="innerException">Java exception.</param>
+        /// <param name="reader">Error data reader.</param>
+        /// <returns>Exception.</returns>
+        public static Exception GetException(IIgniteInternal igniteInt, JavaException innerException,
+            BinaryReader reader = null)
+        {
+            var ignite = igniteInt == null ? null : igniteInt.GetIgnite();
+
+            var msg = innerException.JavaMessage;
+            var clsName = innerException.JavaClassName;
 
             ExceptionFactory ctor;
 
@@ -135,7 +156,8 @@ namespace Apache.Ignite.Core.Impl
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
                 {
                     return ctor(clsName, msg,
-                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), ignite);
+                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), 
+                        ignite);
                 }
 
                 return ctor(clsName, msg, innerException, ignite);
@@ -150,12 +172,12 @@ namespace Apache.Ignite.Core.Impl
                     "variable?): " + msg, innerException);
 
             if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
-                return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
+                return ProcessCachePartialUpdateException(igniteInt, msg, innerException.Message, reader);
 
             // Predefined mapping not found - check plugins.
-            if (ignite != null && ignite.PluginProcessor != null)
+            if (igniteInt != null && igniteInt.PluginProcessor != null)
             {
-                ctor = ignite.PluginProcessor.GetExceptionMapping(clsName);
+                ctor = igniteInt.PluginProcessor.GetExceptionMapping(clsName);
 
                 if (ctor != null)
                 {

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Store;
 
@@ -49,6 +50,13 @@ namespace Apache.Ignite.Core.Datastream
     ///         right away and are buffered internally for better performance and network utilization. 
     ///         This setting controls the size of internal per-node buffer before buffered data is sent to 
     ///         remote node. Default value is 1024.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>PerThreadBufferSize</term>
+    ///         <description>When entries are added to data streamer they are not sent to Ignite 
+    ///         right away and are buffered internally on per thread basis for better performance and network utilization. 
+    ///         This setting controls the size of internal per-thread buffer before buffered data is sent to 
+    ///         remote node. Default value is 4096.</description>
     ///     </item>
     ///     <item>
     ///         <term>PerNodeParallelOperations</term>
@@ -110,16 +118,29 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <c>1024</c>.
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
         /// </summary>
+        [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
         int PerNodeBufferSize { get; set; }
+
+        /// <summary>
+        /// Size of per thread key-value pairs buffer.
+        /// <para />
+        /// Setter must be called before any add/remove operation.
+        /// <para />
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
+        /// </summary>
+        [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
+        int PerThreadBufferSize { get; set; }
 
         /// <summary>
         /// Maximum number of parallel load operations for a single node.
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <c>16</c>.
+        /// Default is 0, which means Ignite calculates this automatically as 
+        /// <see cref="IgniteConfiguration.DataStreamerThreadPoolSize"/> * 
+        /// <see cref="DataStreamerDefaults.DefaultParallelOperationsMultiplier"/>.
         /// </summary>
         int PerNodeParallelOperations { get; set; }
 
@@ -208,5 +229,18 @@ namespace Apache.Ignite.Core.Datastream
         /// <typeparam name="TV1">Value type in binary mode.</typeparam>
         /// <returns>Streamer instance with binary mode enabled.</returns>
         IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>();
+
+        /// <summary>
+        /// Gets or sets the timeout. Negative values mean no timeout.
+        /// Default is <see cref="DataStreamerDefaults.DefaultTimeout"/>.
+        /// <para />
+        /// Timeout is used in the following cases:
+        /// <li>Any data addition method can be blocked when all per node parallel operations are exhausted.
+        /// The timeout defines the max time you will be blocked waiting for a permit to add a chunk of data
+        /// into the streamer;</li> 
+        /// <li>Total timeout time for <see cref="Flush"/> operation;</li>
+        /// <li>Total timeout time for <see cref="Close"/> operation.</li>
+        /// </summary>
+        TimeSpan Timeout { get; set; }
     }
 }

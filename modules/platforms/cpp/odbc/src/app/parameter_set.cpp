@@ -28,6 +28,7 @@ namespace ignite
                 paramTypes(),
                 paramBindOffset(0),
                 processedParamRows(0),
+                paramsStatus(0),
                 paramSetSize(1),
                 paramSetPos(0),
                 currentParamIdx(0),
@@ -99,9 +100,27 @@ namespace ignite
                 processedParamRows = ptr;
             }
 
-            SqlUlen* ParameterSet::GetParamsProcessedPtr()
+            SqlUlen* ParameterSet::GetParamsProcessedPtr() const
             {
                 return processedParamRows;
+            }
+
+            void ParameterSet::SetParamsStatusPtr(SQLUSMALLINT* value)
+            {
+                paramsStatus = value;
+            }
+
+            SQLUSMALLINT* ParameterSet::GetParamsStatusPtr() const
+            {
+                return paramsStatus;
+            }
+
+            void ParameterSet::SetParamStatus(int64_t idx, SQLUSMALLINT status) const
+            {
+                if (idx < 0 || !paramsStatus || idx >= static_cast<int64_t>(paramSetSize))
+                    return;
+
+                paramsStatus[idx] = status;
             }
 
             void ParameterSet::SetParamsProcessed(SqlUlen processed) const

@@ -110,5 +110,18 @@ namespace Apache.Ignite.Linq
         /// performance and network optimizations by grouping data on remote nodes.
         /// </summary>
         public bool Colocated { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query is lazy.
+        /// <para />
+        /// By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+        /// For small and medium result sets this provides optimal performance and minimize duration of internal
+        /// database locks, thus increasing concurrency.
+        /// <para />
+        /// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+        /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+        /// consumption at the cost of moderate performance hit.
+        /// </summary>
+        public bool Lazy { get; set; }
     }
 }

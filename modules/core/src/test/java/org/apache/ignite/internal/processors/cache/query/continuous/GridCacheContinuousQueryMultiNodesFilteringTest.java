@@ -54,7 +54,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -74,7 +73,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     public static final int KEYS = 2_000;
 
     /** Cache entry operations' counts. */
-    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap<>();
 
     /** Client. */
     private static boolean client = false;

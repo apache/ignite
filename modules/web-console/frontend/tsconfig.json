@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "target": "ES2017",
+        "moduleResolution": "Node",
+        "allowJs": true,
+        "checkJs": true,
+        "baseUrl": "."
+    },
+    "exclude": [
+        "build"
+    ]
+}

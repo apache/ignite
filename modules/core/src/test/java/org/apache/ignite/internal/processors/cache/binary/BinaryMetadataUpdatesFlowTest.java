@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingDeque;
@@ -25,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -36,6 +39,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -51,6 +55,8 @@ import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  *
@@ -178,6 +184,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * Starts new ignite node and submits computation job to it.
      * @param idx Index.
      * @param stopFlag Stop flag.
+     * @throws Exception If failed.
      */
     private void startComputation(int idx, AtomicBoolean stopFlag) throws Exception {
         clientMode = false;
@@ -193,6 +200,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @param deafClient Deaf client.
      * @param observedIds Observed ids.
+     * @throws Exception If failed.
      */
     private void startListening(int idx, boolean deafClient, Set<Integer> observedIds) throws Exception {
         clientMode = true;
@@ -263,7 +271,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testFlowNoConflicts() throws Exception {
         startComputation(0, stopFlag0);
@@ -305,10 +313,13 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testFlowNoConflictsWithClients() throws Exception {
         startComputation(0, stopFlag0);
+
+        if (!tcpDiscovery())
+            return;
 
         startComputation(1, stopFlag1);
 
@@ -340,6 +351,48 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         killer.interrupt();
         resurrection.interrupt();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentMetadataUpdates() throws Exception {
+        startGrid(0);
+
+        final Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+
+        final IgniteCache<Integer, Object> cache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
+
+        int threadsNum = 10;
+        final int updatesNum = 2000;
+
+        List<IgniteInternalFuture> futs = new ArrayList<>();
+
+        for (int i = 0; i < threadsNum; i++) {
+            final int threadId = i;
+
+            IgniteInternalFuture fut = runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        for (int j = 0; j < updatesNum; j++) {
+                            BinaryObjectBuilder bob = client.binary().builder(BINARY_TYPE_NAME);
+
+                            bob.setField("field" + j, threadId);
+
+                            cache.put(threadId, bob.build());
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, "updater-" + i);
+
+            futs.add(fut);
+        }
+
+        for (IgniteInternalFuture fut : futs)
+            fut.get();
     }
 
     /**
@@ -568,6 +621,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
             while (!updatesQueue.isEmpty()) {
                 BinaryUpdateDescription desc = updatesQueue.poll();
+
+                if (desc == null)
+                    break;
 
                 BinaryObjectBuilder builder = ignite.binary().builder(BINARY_TYPE_NAME);
 

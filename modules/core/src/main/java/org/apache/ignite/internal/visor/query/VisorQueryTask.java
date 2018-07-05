@@ -23,9 +23,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorEither;
@@ -70,19 +73,40 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
         /** {@inheritDoc} */
         @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
-                IgniteCache<Object, Object> c = ignite.cache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();
 
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
                 qry.setPageSize(arg.getPageSize());
                 qry.setLocal(arg.isLocal());
                 qry.setDistributedJoins(arg.isDistributedJoins());
+                qry.setCollocated(arg.isCollocated());
                 qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
                 qry.setReplicatedOnly(arg.isReplicatedOnly());
+                qry.setLazy(arg.getLazy());
 
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
+                List<FieldsQueryCursor<List<?>>> qryCursors;
+
+                String cacheName = arg.getCacheName();
+
+                if (F.isEmpty(cacheName))
+                    qryCursors = ignite.context().query().querySqlFields(qry, true, false);
+                else {
+                    IgniteCache<Object, Object> c = ignite.cache(cacheName);
+
+                    if (c == null)
+                        throw new SQLException("Fail to execute query. Cache not found: " + cacheName);
+
+                    qryCursors = ((IgniteCacheProxy)c.withKeepBinary()).queryMultipleStatements(qry);
+                }
+
+                // In case of multiple statements leave opened only last cursor.
+                for (int i = 0; i < qryCursors.size() - 1; i++)
+                    U.closeQuiet(qryCursors.get(i));
+
+                // In case of multiple statements return last cursor as result.
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 

@@ -63,7 +63,6 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryParser != null);
             Debug.Assert(executor != null);
-            Debug.Assert(ignite != null);
             Debug.Assert(cacheConfiguration != null);
             Debug.Assert(cacheValueType != null);
 
@@ -85,6 +84,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the ignite.
         /// </summary>
+        [Obsolete("Deprecated, null for thin client, only used for ICacheQueryable.")]
         public IIgnite Ignite
         {
             get { return _ignite; }
@@ -220,17 +220,20 @@ namespace Apache.Ignite.Linq.Impl
             // Try with full type name (this works when TableName is not set).
             var valueTypeName = cacheValueType.FullName;
 
-            if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+            if (valueTypeName != null)
             {
-                return EscapeTableName(valueTypeName);
-            }
+                if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+                {
+                    return EscapeTableName(valueTypeName);
+                }
 
-            // Remove namespace and nested class qualification and try again.
-            valueTypeName = EscapeTableName(valueTypeName);
+                // Remove namespace and nested class qualification and try again.
+                valueTypeName = EscapeTableName(valueTypeName);
 
-            if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
-            {
-                return valueTypeName;
+                if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+                {
+                    return valueTypeName;
+                }
             }
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -34,7 +35,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -66,16 +66,16 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     private CacheMode secondCacheMode;
 
     /** Caches rebalance finish times. */
-    private ConcurrentHashMap8<Integer, ConcurrentHashMap8<String, Long>> times;
+    private ConcurrentHashMap<Integer, ConcurrentHashMap<String, Long>> times;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTestsStarted();
 
-        times = new ConcurrentHashMap8<>();
+        times = new ConcurrentHashMap<>();
 
         for (int i = 0; i < GRID_CNT; i++)
-            times.put(i, new ConcurrentHashMap8<String, Long>());
+            times.put(i, new ConcurrentHashMap<String, Long>());
     }
 
     /** {@inheritDoc} */

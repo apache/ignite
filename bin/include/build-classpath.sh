@@ -42,6 +42,9 @@ case "`uname`" in
 esac
 
 includeToClassPath() {
+    SAVEIFS=$IFS
+    IFS=$(echo -en "\n\b")
+
     for file in $1/*
     do
         if [ -d ${file} ] && [ -d "${file}/target" ]; then
@@ -58,6 +61,8 @@ includeToClassPath() {
             fi
         fi
     done
+    
+    IFS=$SAVEIFS
 }
 
 #
@@ -68,4 +73,4 @@ includeToClassPath modules
 #
 # Include target libraries for opensourse modules to classpath.
 #
-includeToClassPath ${IGNITE_HOME}/modules
+includeToClassPath "${IGNITE_HOME}"/modules

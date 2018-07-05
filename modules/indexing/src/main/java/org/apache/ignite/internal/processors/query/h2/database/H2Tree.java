@@ -21,19 +21,25 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -60,7 +66,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         }
     };
 
+    /** Row cache. */
+    private final H2RowCache rowCache;
+
     /**
+     * Constructor.
+     *
      * @param name Tree name.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
@@ -69,6 +80,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param rowStore Row data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param rowCache Row cache.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -83,7 +95,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         boolean initNew,
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
-        int inlineSize
+        int inlineSize,
+        @Nullable H2RowCache rowCache
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
@@ -105,28 +118,59 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         for (int i = 0; i < cols.length; i++)
             columnIds[i] = cols[i].column.getColumnId();
 
+        this.rowCache = rowCache;
+
         setIos(H2ExtrasInnerIO.getVersions(inlineSize), H2ExtrasLeafIO.getVersions(inlineSize));
 
         initTree(initNew, inlineSize);
     }
 
     /**
-     * @return Row store.
+     * Create row from link.
+     *
+     * @param link Link.
+     * @return Row.
+     * @throws IgniteCheckedException if failed.
      */
-    public H2RowFactory getRowFactory() {
-        return rowStore;
+    public GridH2Row createRowFromLink(long link) throws IgniteCheckedException {
+        if (rowCache != null) {
+            GridH2Row row = rowCache.get(link);
+
+            if (row == null) {
+                row = rowStore.getRow(link);
+
+                if (row instanceof GridH2KeyValueRowOnheap)
+                    rowCache.put((GridH2KeyValueRowOnheap)row);
+            }
+
+            return row;
+        }
+        else
+            return rowStore.getRow(link);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx, Object ignore)
+    @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx, Object filter)
         throws IgniteCheckedException {
+        if (filter != null) {
+            // Filter out not interesting partitions without deserializing the row.
+            IndexingQueryCacheFilter filter0 = (IndexingQueryCacheFilter)filter;
+
+            long link = ((H2RowLinkIO)io).getLink(pageAddr, idx);
+
+            int part = PageIdUtils.partId(PageIdUtils.pageId(link));
+
+            if (!filter0.applyPartition(part))
+                return null;
+        }
+
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
     }
 
     /**
      * @return Inline size.
      */
-    public int inlineSize() {
+    private int inlineSize() {
         return inlineSize;
     }
 
@@ -158,6 +202,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
         SearchRow row) throws IgniteCheckedException {
         if (inlineSize() == 0)
@@ -203,6 +248,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 int idx0 = col.column.getColumnId();
 
                 Value v2 = row.getValue(idx0);
+
                 if (v2 == null) {
                     // Can't compare further.
                     return 0;
@@ -211,6 +257,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 Value v1 = rowData.getValue(idx0);
 
                 int c = compareValues(v1, v2);
+
                 if (c != 0)
                     return InlineIndexHelper.fixSort(c, col.sortType);
             }
@@ -220,31 +267,40 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     }
 
     /**
-     * Compare two rows.
+     * Compares two H2 rows.
      *
      * @param r1 Row 1.
      * @param r2 Row 2.
-     * @return Compare result.
+     * @return Compare result: see {@link Comparator#compare(Object, Object)} for values.
      */
-    private int compareRows(GridH2Row r1, SearchRow r2) {
+    public int compareRows(SearchRow r1, SearchRow r2) {
         if (r1 == r2)
             return 0;
 
         for (int i = 0, len = cols.length; i < len; i++) {
             int idx = columnIds[i];
+
             Value v1 = r1.getValue(idx);
             Value v2 = r2.getValue(idx);
+
             if (v1 == null || v2 == null) {
-                // can't compare further
+                // Can't compare further.
                 return 0;
             }
+
             int c = compareValues(v1, v2);
+
             if (c != 0)
                 return InlineIndexHelper.fixSort(c, cols[i].sortType);
         }
+
         return 0;
     }
 
-    /** Compares two Values. */
+    /**
+     * @param v1 First value.
+     * @param v2 Second value.
+     * @return Comparison result.
+     */
     public abstract int compareValues(Value v1, Value v2);
 }

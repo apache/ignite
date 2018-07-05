@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jsr166.ConcurrentHashMap8;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class HadoopLazyConcurrentMap<K, V extends Closeable> {
     /** The map storing the actual values. */
-    private final ConcurrentMap<K, ValueWrapper> map = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<K, ValueWrapper> map = new ConcurrentHashMap<>();
 
     /** The factory passed in by the client. Will be used for lazy value creation. */
     private final ValueFactory<K, V> factory;

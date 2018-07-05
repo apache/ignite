@@ -52,11 +52,9 @@ public final class IgniteExecutorServiceExample {
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                exec.submit(new IgniteRunnable() {
-                    @Override public void run() {
-                        System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
-                    }
+                exec.submit((IgniteRunnable)() -> {
+                    System.out.println();
+                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
             }
 

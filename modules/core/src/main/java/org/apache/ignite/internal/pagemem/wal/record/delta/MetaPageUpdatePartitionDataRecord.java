@@ -32,7 +32,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private long globalRmvId;
 
-    /** */
+    /** TODO: Partition size may be long */
     private int partSize;
 
     /** */
@@ -129,6 +129,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MetaPageUpdatePartitionDataRecord.class, this);
+        return S.toString(MetaPageUpdatePartitionDataRecord.class, this, "super", super.toString());
     }
 }

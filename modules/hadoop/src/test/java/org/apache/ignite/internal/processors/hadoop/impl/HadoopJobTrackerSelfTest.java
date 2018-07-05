@@ -71,13 +71,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         latch.put("mapAwaitLatch", new CountDownLatch(1));
         latch.put("reduceAwaitLatch", new CountDownLatch(1));
@@ -121,7 +114,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             HadoopJobId jobId = new HadoopJobId(globalId, 1);
 
-            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
             checkStatus(jobId, false);
 
@@ -168,7 +161,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             HadoopJobId jobId = new HadoopJobId(globalId, 1);
 
-            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
             checkStatus(jobId, false);
 

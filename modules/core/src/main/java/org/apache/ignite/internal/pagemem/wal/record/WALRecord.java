@@ -43,7 +43,7 @@ public abstract class WALRecord {
         /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,
 
-        /** */
+        /** WAL segment header record. */
         HEADER_RECORD,
 
         // Delta records.
@@ -153,7 +153,13 @@ public abstract class WALRecord {
         /** Page list meta reset count record. */
         PAGE_LIST_META_RESET_COUNT_RECORD,
 
-        /** Switch segment record. */
+        /** Switch segment record.
+         *  Marker record for indicate end of segment.
+         *  If the next one record is written down exactly at the end of segment,
+         *  SWITCH_SEGMENT_RECORD will not be written, if not then it means that we have more
+         *  that one byte in the end,then we write SWITCH_SEGMENT_RECORD as marker end of segment.
+         *  No need write CRC or WAL pointer for this record. It is byte marker record.
+         *  */
         SWITCH_SEGMENT_RECORD,
 
         /** */
@@ -163,8 +169,22 @@ public abstract class WALRecord {
         BTREE_META_PAGE_INIT_ROOT2,
 
         /** Partition destroy. */
-        PARTITION_DESTROY
-        ;
+        PARTITION_DESTROY,
+
+        /** Snapshot record. */
+        SNAPSHOT,
+
+        /** Metastore data record. */
+        METASTORE_DATA_RECORD,
+
+        /** Exchange record. */
+        EXCHANGE,
+
+        /** Reserved for future record. */
+        RESERVED,
+
+        /** Rotated id part record. */
+        ROTATED_ID_PART_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -177,7 +197,7 @@ public abstract class WALRecord {
         /**
          * Fake record type, causes stop iterating and indicates segment EOF
          * <b>Note:</b> regular record type is incremented by 1 and minimal value written to file is also 1
-         * For {@link WALMode#DEFAULT} this value is at least came from padding
+         * For {@link WALMode#FSYNC} this value is at least came from padding
          */
         public static final int STOP_ITERATION_RECORD_TYPE = 0;
     }
@@ -253,6 +273,13 @@ public abstract class WALRecord {
         assert size >= 0: size;
 
         this.size = size;
+    }
+
+    /**
+     * @return Need wal rollOver.
+     */
+    public boolean rollOver(){
+        return false;
     }
 
     /**

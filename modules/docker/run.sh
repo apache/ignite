@@ -29,12 +29,8 @@ if [ ! -z "$EXTERNAL_LIBS" ]; then
   IFS=, LIBS_LIST=("$EXTERNAL_LIBS")
 
   for lib in ${LIBS_LIST[@]}; do
-    echo $lib >> temp
+    wget $lib -P $IGNITE_HOME/libs
   done
-
-  wget -i temp -P $IGNITE_HOME/libs
-
-  rm temp
 fi
 
 QUIET=""

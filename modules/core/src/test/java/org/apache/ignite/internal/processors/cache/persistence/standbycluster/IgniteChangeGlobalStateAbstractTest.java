@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -61,7 +61,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
 
         startPrimaryNodes(primaryNodes());
 
@@ -84,7 +84,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
     }
 
     /**
@@ -198,6 +198,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         IgniteConfiguration cfg = getConfiguration(name);
 
         cfg.setConsistentId(node);
+        cfg.setAutoActivationEnabled(false);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(backUpIpFinder);
 
@@ -340,28 +341,21 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
-        pCfg.setPersistentStorePath(testName() + "/db");
+        pCfg.setStoragePath(testName() + "/db");
         pCfg.setWalArchivePath(testName() + "/db/wal/archive");
-        pCfg.setWalStorePath(testName() + "/db/wal");
+        pCfg.setWalPath(testName() + "/db/wal");
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        pCfg.setPageSize(1024);
+        pCfg.setConcurrencyLevel(64);
 
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
+        pCfg.setWalMode(WALMode.LOG_ONLY);
 
-        memCfg.setPageSize(1024);
-        memCfg.setConcurrencyLevel(64);
+        pCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true));
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        memPlcCfg.setInitialSize(200 * 1024 * 1024);
-        memPlcCfg.setMaxSize(200 * 1024 * 1024);
-        memPlcCfg.setName("dfltMemPlc");
-
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(pCfg);
 
         return cfg;
     }

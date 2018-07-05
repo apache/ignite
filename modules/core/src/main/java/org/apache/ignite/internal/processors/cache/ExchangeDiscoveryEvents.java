@@ -125,22 +125,17 @@ public class ExchangeDiscoveryEvents {
         this.lastEvt = evt;
         this.discoCache = cache;
 
-        if (evt.type() != EVT_DISCOVERY_CUSTOM_EVT) {
-            ClusterNode node = evt.eventNode();
+        ClusterNode node = evt.eventNode();
 
-            if (!CU.clientNode(node)) {
-                lastSrvEvt = evt;
+        if (!CU.clientNode(node)) {
+            lastSrvEvt = evt;
 
-                srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
+            srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
 
-                if (evt.type()== EVT_NODE_JOINED)
-                    srvJoin = true;
-                else {
-                    assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
-
-                    srvLeft = !CU.clientNode(node);
-                }
-            }
+            if (evt.type()== EVT_NODE_JOINED)
+                srvJoin = true;
+            else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+                srvLeft = !CU.clientNode(node);
         }
     }
 
@@ -157,6 +152,14 @@ public class ExchangeDiscoveryEvents {
      */
     public static boolean serverLeftEvent(DiscoveryEvent evt) {
         return  ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) && !CU.clientNode(evt.eventNode()));
+    }
+
+    /**
+     * @param evt Event.
+     * @return {@code True} if given event is {@link EventType#EVT_NODE_JOINED}.
+     */
+    public static boolean serverJoinEvent(DiscoveryEvent evt) {
+        return  (evt.type() == EVT_NODE_JOINED && !CU.clientNode(evt.eventNode()));
     }
 
     /**

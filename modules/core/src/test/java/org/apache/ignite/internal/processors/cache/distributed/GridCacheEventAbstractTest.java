@@ -65,6 +65,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /** */
     private static volatile int gridCnt;
 
+    /** Event listener. */
+    protected static volatile EventListener evtLsnr;
+
     /**
      * @return {@code True} if partitioned.
      */
@@ -78,8 +81,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
         gridCnt = gridCount();
 
+        evtLsnr = createEventListener();
+
         for (int i = 0; i < gridCnt; i++)
-            grid(i).events().localListen(new TestEventListener(partitioned()), EVTS_CACHE);
+            grid(i).events().localListen(evtLsnr, EVTS_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +94,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         if (TEST_INFO)
             info("Called beforeTest() callback.");
 
-        TestEventListener.reset();
+        evtLsnr.reset();
     }
 
     /** {@inheritDoc} */
@@ -97,14 +102,21 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         if (TEST_INFO)
             info("Called afterTest() callback.");
 
-        TestEventListener.stopListen();
+        evtLsnr.stopListen();
 
         try {
             super.afterTest();
         }
         finally {
-            TestEventListener.listen();
+            evtLsnr.listen();
         }
+    }
+
+    /**
+     * Create event listener.
+     */
+    protected EventListener createEventListener() {
+        return new TestEventListener(partitioned());
     }
 
     /**
@@ -117,7 +129,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     private void waitForEvents(int gridIdx, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         if (!F.isEmpty(evtCnts))
             try {
-                TestEventListener.waitForEventCount(evtCnts);
+                evtLsnr.waitForEventCount(evtCnts);
             }
             catch (IgniteCheckedException e) {
                 printEventCounters(gridIdx, evtCnts);
@@ -136,7 +148,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         for (IgniteBiTuple<Integer, Integer> t : expCnts) {
             Integer evtType = t.get1();
 
-            int actCnt = TestEventListener.eventCount(evtType);
+            int actCnt = evtLsnr.eventCount(evtType);
 
             info("Event [evtType=" + evtType + ", expCnt=" + t.get2() + ", actCnt=" + actCnt + ']');
         }
@@ -178,13 +190,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             }
             finally {
                 // This call is mainly required to correctly clear event futures.
-                TestEventListener.reset();
+                evtLsnr.reset();
 
                 clearCaches();
 
                 // This call is required for the second time to reset counters for
                 // the previous call.
-                TestEventListener.reset();
+                evtLsnr.reset();
             }
         }
     }
@@ -649,20 +661,52 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     }
 
     /**
+     * Event listener interface.
+     */
+    protected static interface EventListener extends IgnitePredicate<Event> {
+        /**
+         * Start listen.
+         */
+        void listen();
+
+        /**
+         * Stop listen.
+         */
+        void stopListen();
+
+        /**
+         * Gets events count by type.
+         *
+         * @param type Type.
+         */
+        int eventCount(int type);
+
+        /**
+         * Reset event counters.
+         */
+        void reset();
+
+        /**
+         * @param evtCnts Event counters.
+         */
+        void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts) throws IgniteCheckedException;
+    }
+
+    /**
      * Local event listener.
      */
-    private static class TestEventListener implements IgnitePredicate<Event> {
+    private static class TestEventListener implements EventListener {
         /** Events count map. */
-        private static ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
+        private ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
         /** Event futures. */
-        private static Collection<EventTypeFuture> futs = new GridConcurrentHashSet<>();
+        private Collection<EventTypeFuture> futs = new GridConcurrentHashSet<>();
 
         /** */
-        private static volatile boolean listen = true;
+        private volatile boolean listen = true;
 
         /** */
-        private static boolean partitioned;
+        private boolean partitioned;
 
         /**
          * @param p Partitioned flag.
@@ -674,14 +718,14 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          *
          */
-        private static void listen() {
+        public void listen() {
             listen = true;
         }
 
         /**
          *
          */
-        private static void stopListen() {
+        public void stopListen() {
             listen = false;
         }
 
@@ -689,7 +733,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param type Event type.
          * @return Count.
          */
-        static int eventCount(int type) {
+        public int eventCount(int type) {
             assert type > 0;
 
             AtomicInteger cntr = cntrs.get(type);
@@ -700,7 +744,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          * Reset listener.
          */
-        static void reset() {
+        public void reset() {
             cntrs.clear();
 
             futs.clear();
@@ -734,7 +778,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count.
          * @throws IgniteCheckedException If failed to wait.
          */
-        private static void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
+        public void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
             throws IgniteCheckedException {
             if (F.isEmpty(evtCnts))
                 return;

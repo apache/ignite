@@ -19,7 +19,9 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_SET_FREE_LIST_PAGE;
 
@@ -50,7 +52,7 @@ public class DataPageSetFreeListPageRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
         io.setFreeListPageId(pageAddr, freeListPage);
     }
@@ -58,5 +60,10 @@ public class DataPageSetFreeListPageRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return DATA_PAGE_SET_FREE_LIST_PAGE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataPageSetFreeListPageRecord.class, this, "super", super.toString());
     }
 }

@@ -34,7 +34,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
@@ -44,7 +44,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private volatile boolean writeThrough = true;
 
     /** */
-    private static ConcurrentHashMap8<Object, Object> storeMap;
+    private static ConcurrentHashMap<Object, Object> storeMap;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -64,7 +64,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        storeMap = new ConcurrentHashMap8<>();
+        storeMap = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */

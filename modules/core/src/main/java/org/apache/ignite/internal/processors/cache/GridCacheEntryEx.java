@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.jetbrains.annotations.Nullable;
@@ -96,11 +97,6 @@ public interface GridCacheEntryEx {
      * @return Partition ID.
      */
     public int partition();
-
-    /**
-     * @return Start version.
-     */
-    public long startVersion();
 
     /**
      * @return Key.
@@ -869,13 +865,13 @@ public interface GridCacheEntryEx {
     /**
      * Update index from within entry lock, passing key, value, and expiration time to provided closure.
      *
+     * @param filter Row filter.
      * @param clo Closure to apply to key, value, and expiration time.
-     * @param link Link.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
-        GridCacheEntryRemovedException;
+    public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.
@@ -918,13 +914,6 @@ public interface GridCacheEntryEx {
      * @param ttl Time to live.
      */
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
-
-    /**
-     * Ensures that the value stored in the entry is also inserted in the indexing.
-     *
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
      * @return Value.
@@ -1026,4 +1015,28 @@ public interface GridCacheEntryEx {
      * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
      */
     public void onUnlock();
+
+    /**
+     * Locks entry to protect from concurrent access.
+     * Intended to be used instead of inherent java synchronization.
+     * This allows to separate locking from unlocking in time and/or code units.
+     *
+     * @see GridCacheEntryEx#unlockEntry().
+     */
+    public void lockEntry();
+
+    /**
+     * Unlocks entry previously locked by {@link GridCacheEntryEx#lockEntry()}.
+     */
+    public void unlockEntry();
+
+    /**
+     * Tests whether the entry is locked currently.
+     *
+     * @see GridCacheEntryEx#lockEntry().
+     * @see GridCacheEntryEx#unlockEntry().
+     *
+     * @return {@code True} if the entry is locked.
+     */
+    public boolean lockedByCurrentThread();
 }

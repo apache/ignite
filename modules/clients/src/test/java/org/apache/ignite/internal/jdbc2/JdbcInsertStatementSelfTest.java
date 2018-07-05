@@ -164,15 +164,12 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
             }
         }, SQLException.class, null);
 
-        assertNotNull(reason.getCause());
-
-        reason = reason.getCause().getCause();
+        reason = reason.getCause();
 
         assertNotNull(reason);
 
-        assertEquals(IgniteSQLException.class, reason.getClass());
-
-        assertEquals("Failed to INSERT some keys because they are already in cache [keys=[p2]]", reason.getMessage());
+        assertTrue(reason.getMessage().contains(
+            "Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
     }

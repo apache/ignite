@@ -257,6 +257,14 @@ namespace Apache.Ignite.Core.Cache
         int Size { get; }
 
         /// <summary>
+        /// Gets number of non-null values in the cache.
+        /// </summary>
+        /// <returns>
+        /// Number of non-null values in the cache.
+        /// </returns>
+        long CacheSize { get; }
+
+        /// <summary>
         /// Gets number of keys in the cache, possibly with null values.
         /// </summary>
         /// <returns>
@@ -554,5 +562,115 @@ namespace Apache.Ignite.Core.Cache
         /// True when a cache is in "write-through" mode.
         /// </returns>
         bool IsWriteThrough { get; }
+
+        /// <summary>
+        /// Checks whether cache topology is valid for read operations.
+        /// </summary>
+        /// <returns>
+        /// True when cache topology is valid for reading.
+        /// </returns>
+        bool IsValidForReading { get; }
+
+        /// <summary>
+        /// Checks whether cache topology is valid for write operations.
+        /// </summary>
+        /// <returns>
+        /// True when cache topology is valid for writing.
+        /// </returns>
+        bool IsValidForWriting { get; }
+
+        /// <summary>
+        /// Gets total number of partitions on current node.
+        /// </summary>
+        /// <returns>
+        /// Total number of partitions on current node.
+        /// </returns>
+        int TotalPartitionsCount { get; }
+
+        /// <summary>
+        /// Gets number of currently rebalancing partitions on current node.
+        /// </summary>
+        /// <returns>
+        /// Number of currently rebalancing partitions on current node.
+        /// </returns>
+        int RebalancingPartitionsCount { get; }
+
+        /// <summary>
+        /// Gets estimated number of keys to be rebalanced on current node.
+        /// </summary>
+        /// <returns>
+        /// Estimated number of keys to be rebalanced on current node.
+        /// </returns>
+        long KeysToRebalanceLeft { get; }
+
+        /// <summary>
+        /// Gets estimated rebalancing speed in keys.
+        /// </summary>
+        /// <returns>
+        /// Estimated rebalancing speed in keys.
+        /// </returns>
+        long RebalancingKeysRate { get; }
+
+        /// <summary>
+        /// Gets estimated rebalancing speed in bytes.
+        /// </summary>
+        /// <returns>
+        /// Estimated rebalancing speed in bytes.
+        /// </returns>
+        long RebalancingBytesRate { get; }
+
+        /// <summary>
+        /// Gets the number of cache entries in heap memory, including entries held by active transactions,
+        /// entries in onheap cache and near entries.
+        /// </summary>
+        /// <returns>
+        /// Number of entries in heap memory.
+        /// </returns>
+        long HeapEntriesCount { get; }
+
+        /// <summary>
+        /// Gets estimated rebalancing finish time.
+        /// entries in onheap cache and near entries.
+        /// </summary>
+        /// <returns>
+        /// Estimated rebalancing finish time.
+        /// </returns>
+        long EstimatedRebalancingFinishTime { get; }
+
+        /// <summary>
+        /// Gets rebalancing start time.
+        /// entries in onheap cache and near entries.
+        /// </summary>
+        /// <returns>
+        /// Rebalancing start time.
+        /// </returns>
+        long RebalancingStartTime { get; }
+
+        /// <summary>
+        /// Gets number of partitions.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of clearing partitions for rebalance.
+        /// </returns>
+        long RebalanceClearingPartitionsLeft { get; }
+
+        /// <summary>
+        /// Gets number of already rebalanced keys.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of already rebalanced keys.
+        /// </returns>
+        long RebalancedKeys { get; }
+
+        /// <summary>
+        /// Gets number of estimated keys to rebalance.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of estimated keys to rebalance.
+        /// </returns>
+        long EstimatedRebalancingKeys { get; }
     }
 }

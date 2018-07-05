@@ -19,9 +19,12 @@ import _ from 'lodash';
 
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
+import VersionService from 'app/services/Version.service';
+
+const versionService = new VersionService();
 
 export default class IgniteSpringTransformer extends AbstractTransformer {
-    static escapeXml(str) {
+    static escapeXml(str = '') {
         return str.replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&apos;')
@@ -94,7 +97,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                 case 'java.lang.Class':
                     return this.javaTypes.fullClassName(item);
                 case 'long':
-                    return `${item}L`;
+                    return `${item}`;
                 case 'java.lang.String':
                 case 'PATH':
                     return this.escapeXml(item);
@@ -252,10 +255,13 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
      * Build final XML.
      *
      * @param {Bean} cfg Ignite configuration.
+     * @param {Object} targetVer Version of Ignite for generated project.
      * @param {Boolean} clientNearCaches
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, clientNearCaches) {
+    static igniteConfiguration(cfg, targetVer, clientNearCaches) {
+        const available = versionService.since.bind(versionService, targetVer.ignite);
+
         const sb = new StringBuilder();
 
         // 0. Add header.
@@ -302,7 +308,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         _.forEach(clientNearCaches, (cache) => {
             this.commentBlock(sb, `Configuration of near cache for cache "${cache.name}"`);
 
-            this.appendBean(sb, this.generator.cacheNearClient(cache), true);
+            this.appendBean(sb, this.generator.cacheNearClient(cache, available), true);
 
             sb.emptyLine();
         });
@@ -322,6 +328,6 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
             cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
-        return this.igniteConfiguration(cfg, clientNearCaches);
+        return this.igniteConfiguration(cfg, targetVer, clientNearCaches);
     }
 }

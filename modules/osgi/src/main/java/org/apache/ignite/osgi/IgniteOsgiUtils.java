@@ -20,7 +20,7 @@ package org.apache.ignite.osgi;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
@@ -32,7 +32,7 @@ public class IgniteOsgiUtils {
     private static boolean osgi = FrameworkUtil.getBundle(IgniteOsgiUtils.class) != null;
 
     /** Maps Ignite instances to the ClassLoaders of the bundles they were started from. */
-    private static final ConcurrentMap<Ignite, ClassLoader> CLASSLOADERS = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Ignite, ClassLoader> CLASSLOADERS = new ConcurrentHashMap<>();
 
     /**
      * Private constructor.

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Cluster
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IClusterNode
+    public interface IClusterNode : IBaselineNode
     {
         /// <summary>
         /// Globally unique node ID. A new ID is generated every time a node restarts.
@@ -66,6 +66,7 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <returns>All node attributes.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        [Obsolete("Use Attributes property.")]
         IDictionary<string, object> GetAttributes();
 
         /// <summary>

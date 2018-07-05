@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.failure.FailureType;
+
 /**
  * Server listener adapter providing empty methods implementation for rarely used methods.
  */
@@ -28,6 +30,15 @@ public abstract class GridNioServerListenerAdapter<T> implements GridNioServerLi
 
     /** {@inheritDoc} */
     @Override public void onSessionIdleTimeout(GridNioSession ses) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMessageSent(GridNioSession ses, T msg) {
+        // No-op.
+    }
+
+    @Override public void onFailure(FailureType failureType, Throwable failure) {
         // No-op.
     }
 }

@@ -41,9 +41,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
@@ -56,6 +57,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -125,8 +127,14 @@ public class CacheGroupContext {
     /** */
     private GridCachePreloader preldr;
 
+    /** Partition evictor. */
+    private GridDhtPartitionsEvictor evictor;
+
     /** */
-    private final MemoryPolicy memPlc;
+    private final DataRegion dataRegion;
+
+    /** Persistence enabled flag. */
+    private final boolean persistenceEnabled;
 
     /** */
     private final CacheObjectContext cacheObjCtx;
@@ -143,18 +151,29 @@ public class CacheGroupContext {
     /** */
     private boolean qryEnabled;
 
+    /** MXBean. */
+    private CacheGroupMetricsMXBean mxBean;
+
+    /** */
+    private volatile boolean localWalEnabled;
+
+    /** */
+    private volatile boolean globalWalEnabled;
+
     /**
-     * @param grpId Group ID.
      * @param ctx Context.
+     * @param grpId Group ID.
      * @param rcvdFrom Node ID cache group was received from.
      * @param cacheType Cache type.
      * @param ccfg Cache configuration.
      * @param affNode Affinity node flag.
-     * @param memPlc Memory policy.
+     * @param dataRegion data region.
      * @param cacheObjCtx Cache object context.
      * @param freeList Free list.
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
+     * @param persistenceEnabled Persistence enabled flag.
+     * @param walEnabled Wal enabled flag.
      */
     CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -163,13 +182,16 @@ public class CacheGroupContext {
         CacheType cacheType,
         CacheConfiguration ccfg,
         boolean affNode,
-        MemoryPolicy memPlc,
+        DataRegion dataRegion,
         CacheObjectContext cacheObjCtx,
         FreeList freeList,
         ReuseList reuseList,
-        AffinityTopologyVersion locStartVer) {
+        AffinityTopologyVersion locStartVer,
+        boolean persistenceEnabled,
+        boolean walEnabled
+    ) {
         assert ccfg != null;
-        assert memPlc != null || !affNode;
+        assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
 
         this.grpId = grpId;
@@ -177,22 +199,29 @@ public class CacheGroupContext {
         this.ctx = ctx;
         this.ccfg = ccfg;
         this.affNode = affNode;
-        this.memPlc = memPlc;
+        this.dataRegion = dataRegion;
         this.cacheObjCtx = cacheObjCtx;
         this.freeList = freeList;
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
+        this.globalWalEnabled = walEnabled;
+        this.persistenceEnabled = persistenceEnabled;
+        this.localWalEnabled = true;
+
+        persistGlobalWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
 
-        storeCacheId = affNode && memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+        storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
+
+        mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
     /**
@@ -228,6 +257,13 @@ public class CacheGroupContext {
      */
     public GridCachePreloader preloader() {
         return preldr;
+    }
+
+    /**
+     * @return Partitions evictor.
+     */
+    public GridDhtPartitionsEvictor evictor() {
+        return evictor;
     }
 
     /**
@@ -284,7 +320,7 @@ public class CacheGroupContext {
             drEnabled = true;
 
         this.caches = caches;
-   }
+    }
 
     /**
      * @param cctx Cache context.
@@ -342,7 +378,9 @@ public class CacheGroupContext {
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
 
-        assert !sharedGroup() && caches.size() == 1 : ctx.kernalContext().isStopping();
+        assert !sharedGroup() && caches.size() == 1 :
+            "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+                ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -391,7 +429,7 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            if (cctx.recordEvent(type)) {
+            if (!cctx.config().isEventsDisabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
                     "Cache rebalancing event.",
@@ -403,6 +441,7 @@ public class CacheGroupContext {
             }
         }
     }
+
     /**
      * Adds partition unload event.
      *
@@ -418,14 +457,15 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
-                cctx.localNode(),
-                "Cache unloading event.",
-                EVT_CACHE_REBALANCE_PART_UNLOADED,
-                part,
-                null,
-                0,
-                0));
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache unloading event.",
+                    EVT_CACHE_REBALANCE_PART_UNLOADED,
+                    part,
+                    null,
+                    0,
+                    0));
         }
     }
 
@@ -456,20 +496,21 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            cctx.events().addEvent(part,
-                key,
-                evtNodeId,
-                (IgniteUuid)null,
-                null,
-                type,
-                newVal,
-                hasNewVal,
-                oldVal,
-                hasOldVal,
-                null,
-                null,
-                null,
-                keepBinary);
+            if (!cctx.config().isEventsDisabled())
+                cctx.events().addEvent(part,
+                    key,
+                    evtNodeId,
+                    (IgniteUuid)null,
+                    null,
+                    type,
+                    newVal,
+                    hasNewVal,
+                    oldVal,
+                    hasOldVal,
+                    null,
+                    null,
+                    null,
+                    keepBinary);
         }
     }
 
@@ -478,13 +519,6 @@ public class CacheGroupContext {
      */
     public boolean queriesEnabled() {
         return qryEnabled;
-    }
-
-    /**
-     * @return {@code True} if fast eviction is allowed.
-     */
-    public boolean allowFastEviction() {
-        return ctx.database().persistenceEnabled() && !queriesEnabled();
     }
 
     /**
@@ -523,10 +557,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Memory policy.
+     * @return data region.
      */
-    public MemoryPolicy memoryPolicy() {
-        return memPlc;
+    public DataRegion dataRegion() {
+        return dataRegion;
     }
 
     /**
@@ -544,6 +578,16 @@ public class CacheGroupContext {
             throw new IllegalStateException("Topology is not initialized: " + cacheOrGroupName());
 
         return top;
+    }
+
+    /**
+     * @return {@code True} if current thread holds lock on topology.
+     */
+    public boolean isTopologyLocked() {
+        if (top == null)
+            return false;
+
+        return top.holdsLock();
     }
 
     /**
@@ -671,7 +715,7 @@ public class CacheGroupContext {
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     void stopCache(GridCacheContext cctx, boolean destroy) {
         if (top != null)
@@ -688,6 +732,8 @@ public class CacheGroupContext {
     void stopGroup() {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        evictor.stop();
 
         aff.cancelFutures(err);
 
@@ -841,7 +887,8 @@ public class CacheGroupContext {
             ccfg.getAffinity(),
             ccfg.getNodeFilter(),
             ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL);
+            ccfg.getCacheMode() == LOCAL,
+            persistenceEnabled());
 
         if (ccfg.getCacheMode() != LOCAL) {
             top = new GridDhtPartitionTopologyImpl(ctx, this);
@@ -862,7 +909,9 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
+        evictor = new GridDhtPartitionsEvictor(this);
+
+        if (persistenceEnabled()) {
             try {
                 offheapMgr = new GridCacheOffheapManager();
             }
@@ -876,6 +925,13 @@ public class CacheGroupContext {
         offheapMgr.start(ctx, this);
 
         ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean persistenceEnabled() {
+        return persistenceEnabled;
     }
 
     /**
@@ -966,8 +1022,68 @@ public class CacheGroupContext {
         preldr.onReconnected();
     }
 
+    /**
+     * @return MXBean.
+     */
+    public CacheGroupMetricsMXBean mxBean() {
+        return mxBean;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
+    }
+
+    /**
+     * WAL enabled flag.
+     */
+    public boolean walEnabled() {
+        return localWalEnabled && globalWalEnabled;
+    }
+
+    /**
+     * Local WAL enabled flag.
+     */
+    public boolean localWalEnabled() {
+        return localWalEnabled;
+    }
+
+    /**
+     * @return Global WAL enabled flag.
+     */
+    public boolean globalWalEnabled() {
+        return globalWalEnabled;
+    }
+
+    /**
+     * @param enabled Global WAL enabled flag.
+     */
+    public void globalWalEnabled(boolean enabled) {
+        persistGlobalWalState(enabled);
+
+        this.globalWalEnabled = enabled;
+    }
+
+    /**
+     * @param enabled Local WAL enabled flag.
+     */
+    public void localWalEnabled(boolean enabled) {
+        persistLocalWalState(enabled);
+
+        this.localWalEnabled = enabled;
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistGlobalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, false);
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistLocalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, true);
     }
 }

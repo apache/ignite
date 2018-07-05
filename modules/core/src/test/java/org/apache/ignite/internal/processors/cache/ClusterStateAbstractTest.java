@@ -19,8 +19,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -29,14 +28,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -44,9 +40,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  *
@@ -275,125 +270,67 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that state doesn't change until all acquired locks are released.
+     * Tests that deactivation is prohibited if explicit lock is held in current thread.
      *
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingLock() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
-
         startGrids(GRID_CNT);
-
-        final CountDownLatch finishedLatch = new CountDownLatch(1);
 
         Lock lock = grid(0).cache(CACHE_NAME).lock(1);
 
-        IgniteInternalFuture<?> fut;
-
         lock.lock();
 
-        try {
-            fut = multithreadedAsync(new Runnable() {
-                @Override public void run() {
-                    grid(1).active(false);
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).active(false);
 
-                    finishedLatch.countDown();
-                }
-            }, 1);
-
-            U.sleep(2000);
-
-            assert !fut.isDone();
-
-            boolean hasActive = false;
-
-            for (int g = 0; g < GRID_CNT; g++) {
-                IgniteEx grid = grid(g);
-
-                if (grid.active()) {
-                    hasActive = true;
-
-                    break;
-                }
-
+                return null;
             }
+        }, IgniteException.class,
+            "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
 
-            assertTrue(hasActive);
-        }
-        finally {
-            lock.unlock();
-        }
-
-        fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-        checkInactive(GRID_CNT);
-
-        finishedLatch.await();
+        lock.unlock();
     }
 
     /**
-     * Tests that state doesn't change until all pending transactions are finished.
+     * Tests that deactivation is prohibited if transaction is active in current thread.
      *
-     * @throws Exception If fails.
+     * @throws Exception If failed.
      */
     public void testDeactivationWithPendingTransaction() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
-
         startGrids(GRID_CNT);
 
-        final CountDownLatch finishedLatch = new CountDownLatch(1);
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values())
+                deactivateWithPendingTransaction(concurrency, isolation);
+        }
+    }
 
+    /**
+     * @throws Exception if failed.
+     */
+    private void deactivateWithPendingTransaction(TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws Exception {
         final Ignite ignite0 = grid(0);
 
         final IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
-        IgniteInternalFuture<?> fut;
+        try (Transaction tx = ignite0.transactions().txStart(concurrency, isolation)) {
+            cache0.put(1, "1");
 
-        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            cache0.get(1);
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    grid(0).active(false);
 
-            fut = multithreadedAsync(new Runnable() {
-                @Override public void run() {
-                    ignite0.active(false);
-
-                    finishedLatch.countDown();
+                    return null;
                 }
-            }, 1);
-
-            U.sleep(2000);
-
-            assert !fut.isDone();
-
-            boolean hasActive = false;
-
-            for (int g = 0; g < GRID_CNT; g++) {
-                IgniteEx grid = grid(g);
-
-                if (grid.active()) {
-                    hasActive = true;
-
-                    break;
-                }
-
-            }
-
-            assertTrue(hasActive);
-
-            cache0.put(1, 2);
-
-            tx.commit();
+            }, IgniteException.class,
+                "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
         }
 
-        fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-        checkInactive(GRID_CNT);
-
-        ignite0.active(true);
-
-        for (int g = 0; g < GRID_CNT; g++)
-            assertEquals(2, grid(g).cache(CACHE_NAME).get(1));
-
-        finishedLatch.await();
+        assertNull(cache0.get(1));
+        assertNull(ignite0.transactions().tx());
     }
 
     /**

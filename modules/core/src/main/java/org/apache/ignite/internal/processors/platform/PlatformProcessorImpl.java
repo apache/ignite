@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,6 +68,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
+import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
 
 /**
  * GridGain platform processor.
@@ -136,6 +142,30 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_RELEASE_START = 22;
+
+    /** */
+    private static final int OP_ADD_CACHE_CONFIGURATION = 23;
+
+    /** */
+    private static final int OP_SET_BASELINE_TOPOLOGY_VER = 24;
+
+    /** */
+    private static final int OP_SET_BASELINE_TOPOLOGY_NODES = 25;
+
+    /** */
+    private static final int OP_GET_BASELINE_TOPOLOGY = 26;
+
+    /** */
+    private static final int OP_DISABLE_WAL = 27;
+
+    /** */
+    private static final int OP_ENABLE_WAL = 28;
+
+    /** */
+    private static final int OP_IS_WAL_ENABLED = 29;
+
+    /** */
+    private static final int OP_SET_TX_TIMEOUT_ON_PME = 30;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -397,11 +427,17 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
-                return loggerIsLevelEnabled((int) val) ? PlatformAbstractTarget.TRUE : PlatformAbstractTarget.FALSE;
+                return loggerIsLevelEnabled((int) val) ? TRUE : FALSE;
             }
 
             case OP_RELEASE_START: {
                 releaseStart();
+
+                return 0;
+            }
+
+            case OP_SET_BASELINE_TOPOLOGY_VER: {
+                ctx.grid().cluster().setBaselineTopology(val);
 
                 return 0;
             }
@@ -424,6 +460,47 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return 0;
             }
+
+            case OP_SET_BASELINE_TOPOLOGY_NODES: {
+                int cnt = reader.readInt();
+                Collection<BaselineNode> nodes = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    Object consId = reader.readObjectDetached();
+                    Map<String, Object> attrs = PlatformUtils.readNodeAttributes(reader);
+
+                    nodes.add(new DetachedClusterNode(consId, attrs));
+                }
+
+                ctx.grid().cluster().setBaselineTopology(nodes);
+
+                return 0;
+            }
+
+            case OP_ADD_CACHE_CONFIGURATION:
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                ctx.grid().addCacheConfiguration(cfg);
+
+                return 0;
+
+            case OP_DISABLE_WAL:
+                ctx.grid().cluster().disableWal(reader.readString());
+
+                return 0;
+
+            case OP_ENABLE_WAL:
+                ctx.grid().cluster().enableWal(reader.readString());
+
+                return 0;
+
+            case OP_SET_TX_TIMEOUT_ON_PME:
+                ctx.grid().cluster().setTxTimeoutOnPartitionMapExchange(reader.readLong());
+
+                return 0;
+
+            case OP_IS_WAL_ENABLED:
+                return ctx.grid().cluster().isWalEnabled(reader.readString()) ? TRUE : FALSE;
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -572,6 +649,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return createPlatformCache(cache);
             }
+
+            case OP_GET_TRANSACTIONS: {
+                String lbl = reader.readString();
+
+                return new PlatformTransactions(platformCtx, lbl);
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -601,6 +684,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (String name : names)
                     writer.writeString(name);
+
+                return;
+            }
+
+            case OP_GET_BASELINE_TOPOLOGY: {
+                Collection<BaselineNode> blt = ignite().cluster().currentBaselineTopology();
+                writer.writeInt(blt.size());
+
+                for (BaselineNode n : blt) {
+                    writer.writeObjectDetached(n.consistentId());
+                    PlatformUtils.writeNodeAttributes(writer, n.attributes());
+                }
 
                 return;
             }

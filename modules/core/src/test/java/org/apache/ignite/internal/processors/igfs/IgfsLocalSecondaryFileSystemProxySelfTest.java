@@ -226,7 +226,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
     public void testAffinityMaxLen() throws Exception {
         awaitPartitionMapExchange();
 
-        long fileSize = 32 * 1024 * 1024;
+        long fileSize = 32L * 1024 * 1024;
 
         IgfsPath filePath = new IgfsPath("/file");
 

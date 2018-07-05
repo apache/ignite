@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesExceptio
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
@@ -63,7 +63,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
 
     /** Request futures map. */
     private ConcurrentMap<Long, HadoopIgfsFuture> reqMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Request ID counter. */
     private AtomicLong reqIdCnt = new AtomicLong();
@@ -98,7 +98,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
 
     /** Cached connections. */
     private static final ConcurrentMap<String, HadoopIgfsIpcIo> ipcCache =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Striped lock that prevents multiple instance creation in {@link #get(Log, String)}. */
     private static final GridStripedLock initLock = new GridStripedLock(32);

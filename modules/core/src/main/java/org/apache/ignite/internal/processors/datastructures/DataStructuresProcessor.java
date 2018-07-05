@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.event.CacheEntryEvent;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -77,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -102,10 +104,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
-    private static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+    public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
 
     /** */
-    private static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
+    private static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
 
     /** */
     private static final String DS_CACHE_NAME_PREFIX = "datastructures_";
@@ -129,7 +131,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration dfltAtomicCfg;
 
     /** Map of continuous query IDs. */
-    private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<Integer, UUID> qryIdMap = new ConcurrentHashMap<>();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -163,19 +165,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public DataStructuresProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        dsMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
         dfltAtomicCfg = ctx.config().getAtomicConfiguration();
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start() {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) {
         if (ctx.config().isDaemon() || !active)
             return;
 
@@ -185,7 +187,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      *
      */
-    private void onKernalStart0(){
+    public void onBeforeActivate() {
+        initLatch = new CountDownLatch(1);
+    }
+
+    /**
+     *
+     */
+    private void onKernalStart0() {
         initLatch.countDown();
     }
 
@@ -203,7 +212,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                             new DataStructuresEntryFilter(),
                             cctx.isReplicated() && cctx.affinityNode(),
                             false,
-                            false
+                            false,
+                            true
                         ));
                 }
             }
@@ -222,10 +232,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 ((GridCacheLockEx)ds).onStop();
         }
 
-        if (initLatch.getCount() > 0) {
+        CountDownLatch init0 = initLatch;
+
+        if (init0 != null && init0.getCount() > 0) {
             initFailed = true;
 
-            initLatch.countDown();
+            init0.countDown();
+
+            initLatch = null;
         }
 
         Iterator<Map.Entry<Integer, UUID>> iter = qryIdMap.entrySet().iterator();
@@ -242,22 +256,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext ctx) {
         if (log.isDebugEnabled())
-            log.debug("Activate data structure processor [nodeId=" + ctx.localNodeId() +
+            log.debug("Activating data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
         initFailed = false;
-
-        initLatch = new CountDownLatch(1);
 
         qryIdMap.clear();
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        onKernalStart0();
-
         restoreStructuresState(ctx);
+
+        onKernalStart0();
     }
 
     /**
@@ -281,11 +293,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @Override public void onDeActivate(GridKernalContext ctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate data structure processor [nodeId=" + ctx.localNodeId() +
-                " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+                ", topVer=" + ctx.discovery().topologyVersionEx() + "]");
 
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         onKernalStop(false);
+
+        initLatch = null;
 
         for (GridCacheRemovable v : dsMap.values()) {
             if (v instanceof IgniteChangeGlobalStateSupport)
@@ -611,11 +625,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
+    private <T> void removeDataStructure(
+        @Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
         final String name,
         String grpName,
         final DataStructureType type,
-        @Nullable final IgniteInClosureX<T> afterRmv) throws IgniteCheckedException {
+        @Nullable final IgniteInClosureX<T> afterRmv
+    ) throws IgniteCheckedException {
         assert name != null;
         assert grpName != null;
         assert type != null;
@@ -631,35 +647,72 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
                 if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        AtomicDataStructureValue val = cache.get(key);
+                    boolean isInterrupted = Thread.interrupted();
 
-                        if (val == null)
-                            return null;
+                    try {
+                        while(true) {
+                            try {
+                                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                                    AtomicDataStructureValue val = cache.get(key);
 
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Data structure has different type " +
-                                "[name=" + name +
-                                ", expectedType=" + type +
-                                ", actualType=" + val.type() + ']');
+                                    if (val == null)
+                                        return null;
 
-                        if (pred == null || pred.applyx(val)) {
-                            cache.remove(key);
+                                    if (val.type() != type)
+                                        throw new IgniteCheckedException("Data structure has different type " +
+                                            "[name=" + name +
+                                            ", expectedType=" + type +
+                                            ", actualType=" + val.type() + ']');
 
-                            tx.commit();
+                                    if (pred == null || pred.applyx(val)) {
+                                        cache.remove(key);
 
-                            if (afterRmv != null)
-                                afterRmv.applyx(null);
+                                        tx.commit();
+
+                                        if (afterRmv != null)
+                                            afterRmv.applyx(null);
+                                    }
+                                }
+
+                                break;
+                            }
+                            catch (IgniteCheckedException e) {
+                                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class))
+                                    isInterrupted = Thread.interrupted();
+                                else
+                                    throw e;
+                            }
                         }
                     }
                     finally {
                         cache.context().gate().leave();
+
+                        if (isInterrupted)
+                            Thread.currentThread().interrupt();
                     }
                 }
 
                 return null;
             }
         });
+    }
+
+    public void suspend(String cacheName) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cacheName))
+                e.getValue().suspend();
+        }
+    }
+
+    public void restart(IgniteInternalCache cache) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cache.name()))
+                e.getValue().restart(cache);
+        }
     }
 
     /**
@@ -952,6 +1005,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert name != null;
         assert type.isCollection() : type;
+        assert !create || cfg != null;
 
         if (grpName == null) {
             if (cfg != null && cfg.getGroupName() != null)
@@ -960,17 +1014,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 grpName = DEFAULT_DS_GROUP_NAME;
         }
 
-        assert !create || cfg != null;
-
         final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
 
         if (metaCache0 == null) {
-            if (!create)
-                return null;
+            CacheConfiguration ccfg = null;
 
-            ctx.cache().dynamicStartCache(metaCacheConfiguration(cfg, metaCacheName, grpName),
+            if (!create) {
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(metaCacheName);
+
+                if (desc == null)
+                    return null;
+            }
+            else
+                ccfg = metaCacheConfiguration(cfg, metaCacheName, grpName);
+
+            ctx.cache().dynamicStartCache(ccfg,
                 metaCacheName,
                 null,
                 CacheType.DATA_STRUCTURES,
@@ -1042,9 +1102,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Awaits for processor initialization.
      */
     private void awaitInitialization() {
-        if (initLatch.getCount() > 0) {
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null)
+            throw new IllegalStateException("Ignite cluster is not active");
+
+        if (latch0.getCount() > 0) {
             try {
-                U.await(initLatch);
+                U.await(latch0);
 
                 if (initFailed)
                     throw new IllegalStateException("Failed to initialize data structures processor.");
@@ -1171,6 +1236,37 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
+
+                //check Cluster state against semaphore state
+                if (val != null && failoverSafe) {
+                    GridCacheSemaphoreState semState = (GridCacheSemaphoreState) val;
+
+                    boolean updated = false;
+
+                    Map<UUID,Integer> waiters = semState.getWaiters();
+
+                    Integer permit = ((GridCacheSemaphoreState) val).getCount();
+
+                    for (UUID nodeId : new HashSet<>(waiters.keySet())) {
+
+                        ClusterNode node = ctx.cluster().get().node(nodeId);
+
+                        if (node == null) {
+
+                            permit += waiters.get(nodeId);
+
+                            waiters.remove(nodeId);
+
+                            updated = true;
+                        }
+                    }
+                    if (updated) {
+                        semState.setWaiters(waiters);
+                        semState.setCount(permit);
+
+                        retVal = semState;
+                    }
+                }
 
                 return new T2<>(sem0, retVal);
             }

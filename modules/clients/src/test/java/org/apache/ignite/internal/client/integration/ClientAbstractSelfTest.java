@@ -136,11 +136,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         exec = Executors.newCachedThreadPool();
 

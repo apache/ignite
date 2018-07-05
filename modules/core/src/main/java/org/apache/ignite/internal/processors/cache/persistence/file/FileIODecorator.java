@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 /**
  * Decorator class for File I/O
  */
-public class FileIODecorator implements FileIO {
-
+public class FileIODecorator extends AbstractFileIO {
     /** File I/O delegate */
     private final FileIO delegate;
 
@@ -47,38 +47,48 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        return delegate.read(destinationBuffer);
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        return delegate.read(destBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        return delegate.read(destinationBuffer, position);
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        return delegate.read(destBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        return delegate.read(buffer, offset, length);
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        return delegate.read(buf, off, len);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        return delegate.write(sourceBuffer);
+    @Override public int write(ByteBuffer srcBuf) throws IOException {
+        return delegate.write(srcBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        return delegate.write(sourceBuffer, position);
+    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        return delegate.write(srcBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        delegate.write(buffer, offset, length);
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return delegate.write(buf, off, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        return delegate.map(sizeBytes);
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
         delegate.force();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
+        delegate.force(withMetadata);
     }
 
     /** {@inheritDoc} */

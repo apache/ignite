@@ -18,8 +18,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * GridCacheConcurrentMap implementation for local and near caches.
@@ -41,7 +41,7 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
 
         this.cacheId = cctx.cacheId();
         this.entryMap = new CacheMapHolder(cctx,
-            new ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
+            new ConcurrentHashMap<KeyCacheObject, GridCacheMapEntry>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
     }
 
     /** {@inheritDoc} */

@@ -38,5 +38,10 @@ include /app/helpers/jade/mixins
                             div(ignite-ace='{onLoad: $ctrl.onLoad, mode: "xml"}' ng-trim='true' ng-model='$ctrl.message')
 
             .modal-footer
+                .pull-left
+                    label.show-message
+                        input(type='checkbox' ng-model='$ctrl.isShown')
+                        span Show message
+
                 button.btn-ignite.btn-ignite--link-success(id='btn-cancel' ng-click='$hide()') Cancel
                 button.btn-ignite.btn-ignite--success(id='btn-submit' ng-click='$ctrl.submit()') Submit

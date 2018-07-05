@@ -53,6 +53,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: keep binary. */
         private readonly bool _flagKeepBinary;
 
+        /** Flag: allow atomic operations in transactions. */
+        private readonly bool _flagAllowAtomicOpsInTx;
+
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
 
@@ -73,18 +76,20 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
+        /// <param name="flagAllowAtomicOpsInTx">Allow atomic operations in transactions flag.</param>
         public CacheImpl(IPlatformTargetInternal target,
-            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover)
-            : base(target)
+            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover,
+            bool flagAllowAtomicOpsInTx) : base(target)
         {
             _ignite = target.Marshaller.Ignite;
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
+            _flagAllowAtomicOpsInTx = flagAllowAtomicOpsInTx;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
-                ? new CacheTransactionManager(_ignite.GetTransactions())
+                ? new CacheTransactionManager(_ignite.GetIgnite().GetTransactions())
                 : null;
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
@@ -93,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get { return _ignite; }
+            get { return _ignite.GetIgnite(); }
         }
 
         /// <summary>
@@ -172,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
-                true, _flagKeepBinary, true, _flagPartitionRecover);
+                true, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
         /// <summary>
@@ -196,7 +201,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
-                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
+                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithAllowAtomicOpsInTx()
+        {
+            if (_flagAllowAtomicOpsInTx)
+                return this;
+
+            return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithSkipStore),
+                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true);
         }
 
         /** <inheritDoc /> */
@@ -207,13 +222,18 @@ namespace Apache.Ignite.Core.Impl.Cache
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
             return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, 
-                _flagNoRetries, _flagPartitionRecover);
+                _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
         public bool IsKeepBinary
         {
             get { return _flagKeepBinary; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsAllowAtomicOpsInTx {
+            get { return _flagAllowAtomicOpsInTx; }
         }
 
         /** <inheritDoc /> */
@@ -250,17 +270,21 @@ namespace Apache.Ignite.Core.Impl.Cache
                 var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK) k, (TV) v)),
                     Marshaller, IsKeepBinary);
 
-                writer.WriteObject(p0);
+                writer.WriteObjectDetached(p0);
             }
             else
-                writer.WriteObject<CacheEntryFilterHolder>(null);
+            {
+                writer.WriteObjectDetached<CacheEntryFilterHolder>(null);
+            }
 
             if (args != null && args.Length > 0)
             {
                 writer.WriteInt(args.Length);
 
                 foreach (var o in args)
-                    writer.WriteObject(o);
+                {
+                    writer.WriteObjectDetached(o);
+                }
             }
             else
             {
@@ -337,8 +361,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var res = DoOutInOpX((int)CacheOp.Peek,
                 w =>
                 {
-                    w.Write(key);
-                    w.WriteInt(EncodePeekModes(modes));
+                    w.WriteObjectDetached(key);
+                    w.WriteInt(IgniteUtils.EncodePeekModes(modes));
                 },
                 (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
                 _readException);
@@ -473,8 +497,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.GetAndPutAsync, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(val);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
             }, r => GetCacheResult(r));
         }
 
@@ -499,8 +523,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.GetAndReplaceAsync, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(val);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
             }, r => GetCacheResult(r));
         }
 
@@ -567,8 +591,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.GetAndPutIfAbsentAsync, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(val);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
             }, r => GetCacheResult(r));
         }
 
@@ -617,9 +641,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync<bool>(CacheOp.Replace3Async, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(oldVal);
-                w.WriteObject(newVal);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(oldVal);
+                w.WriteObjectDetached(newVal);
             });
         }
 
@@ -804,7 +828,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            var modes0 = EncodePeekModes(modes);
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
 
             return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
         }
@@ -817,7 +841,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private int Size0(bool loc, params CachePeekMode[] modes)
         {
-            var modes0 = EncodePeekModes(modes);
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
@@ -838,8 +862,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int) CacheOp.Invoke,
                 writer =>
                 {
-                    writer.Write(key);
-                    writer.Write(holder);
+                    writer.WriteObjectDetached(key);
+                    writer.WriteObjectDetached(holder);
                 },
                 (input, res) => res == True ? Unmarshal<TRes>(input) : default(TRes),
                 _readException);
@@ -858,8 +882,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.InvokeAsync, writer =>
                 {
-                    writer.Write(key);
-                    writer.Write(holder);
+                    writer.WriteObjectDetached(key);
+                    writer.WriteObjectDetached(holder);
                 },
                 r =>
                 {
@@ -1013,7 +1037,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
-                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
+                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -1023,7 +1047,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
-                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
+                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -1050,17 +1074,26 @@ namespace Apache.Ignite.Core.Impl.Cache
         #region Queries
 
         /** <inheritDoc /> */
+        public IFieldsQueryCursor Query(SqlFieldsQuery qry)
+        {
+            var cursor = QueryFieldsInternal(qry);
+
+            return new FieldsQueryCursor(cursor, _flagKeepBinary, 
+                (reader, count) => ReadFieldsArrayList(reader, count));
+        }
+
+        /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            return QueryFields(qry, ReadFieldsArrayList);
+            return Query(qry, (reader, count) => (IList) ReadFieldsArrayList(reader, count));
         }
 
         /// <summary>
         /// Reads the fields array list.
         /// </summary>
-        private static IList ReadFieldsArrayList(IBinaryRawReader reader, int count)
+        private static List<object> ReadFieldsArrayList(IBinaryRawReader reader, int count)
         {
-            IList res = new ArrayList(count);
+            var res = new List<object>(count);
 
             for (var i = 0; i < count; i++)
                 res.Add(reader.ReadObject<object>());
@@ -1069,15 +1102,21 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        public IQueryCursor<T> Query<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        {
+            var cursor = QueryFieldsInternal(qry);
+
+            return new FieldsQueryCursor<T>(cursor, _flagKeepBinary, readerFunc);
+        }
+
+        private IPlatformTargetInternal QueryFieldsInternal(SqlFieldsQuery qry)
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
-            IgniteArgumentCheck.NotNull(readerFunc, "readerFunc");
 
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
 
-            var cursor = DoOutOpObject((int) CacheOp.QrySqlFields, writer =>
+            return DoOutOpObject((int) CacheOp.QrySqlFields, writer =>
             {
                 writer.WriteBoolean(qry.Local);
                 writer.WriteString(qry.Sql);
@@ -1087,14 +1126,12 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 writer.WriteBoolean(qry.EnableDistributedJoins);
                 writer.WriteBoolean(qry.EnforceJoinOrder);
-                writer.WriteBoolean(false); // Lazy flag.
+                writer.WriteBoolean(qry.Lazy); // Lazy flag.
                 writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
                 writer.WriteBoolean(qry.ReplicatedOnly);
                 writer.WriteBoolean(qry.Colocated);
                 writer.WriteString(qry.Schema); // Schema
             });
-        
-            return new FieldsQueryCursor<T>(cursor, _flagKeepBinary, readerFunc);
         }
 
         /** <inheritDoc /> */
@@ -1143,7 +1180,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(CachePeekMode[] peekModes)
         {
-            return new CacheEnumerable<TK, TV>(this, EncodePeekModes(peekModes));
+            return new CacheEnumerable<TK, TV>(this, IgniteUtils.EncodePeekModes(peekModes));
         }
 
         /** <inheritdoc /> */
@@ -1182,22 +1219,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         protected override T Unmarshal<T>(IBinaryStream stream)
         {
             return Marshaller.Unmarshal<T>(stream, _flagKeepBinary);
-        }
-
-        /// <summary>
-        /// Encodes the peek modes into a single int value.
-        /// </summary>
-        private static int EncodePeekModes(CachePeekMode[] modes)
-        {
-            int modesEncoded = 0;
-
-            if (modes != null)
-            {
-                foreach (var mode in modes)
-                    modesEncoded |= (int) mode;
-            }
-
-            return modesEncoded;
         }
 
         /// <summary>
@@ -1319,8 +1340,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoOutInOpX((int) op, w =>
             {
-                w.Write(x);
-                w.Write(y);
+                w.WriteObjectDetached(x);
+                w.WriteObjectDetached(y);
             }, _readException);
         }
 
@@ -1331,9 +1352,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoOutInOpX((int) op, w =>
             {
-                w.Write(x);
-                w.Write(y);
-                w.Write(z);
+                w.WriteObjectDetached(x);
+                w.WriteObjectDetached(y);
+                w.WriteObjectDetached(z);
             }, _readException);
         }
 
@@ -1364,8 +1385,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int)cacheOp,
                 w =>
                 {
-                    w.Write(x);
-                    w.Write(y);
+                    w.WriteObjectDetached(x);
+                    w.WriteObjectDetached(y);
                 },
                 (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(),
                 _readException);
@@ -1406,6 +1427,23 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             if (_txManager != null)
                 _txManager.StartTx();
+        }
+
+        /** <inheritdoc /> */
+        public IQueryMetrics GetQueryMetrics()
+        {
+            return DoInOp((int)CacheOp.QueryMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                return new QueryMetricsImpl(reader);
+            });
+        }
+
+        /** <inheritdoc /> */
+        public void ResetQueryMetrics()
+        {
+            DoOutInOp((int)CacheOp.ResetQueryMetrics);
         }
     }
 }

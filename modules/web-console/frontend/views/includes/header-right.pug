@@ -14,22 +14,22 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-demo-toggle(ng-controller='demoController')
+.wch-demo-toggle(ng-if='!$root.user.becomeUsed' ng-controller='demoController')
     button.btn-ignite.btn-ignite--success(
         ng-if='!IgniteDemoMode'
         ng-click='startDemo()'
     ) Start Demo
 
-ignite-cluster-select.wch-nav-item(ng-if='!IgniteDemoMode')
+web-console-header-extension
 
 .wch-nav-item(ignite-userbar)
-    div(
+    .user-name-wrapper(
         ng-class='{active: $state.includes("base.settings")}'
         ng-click='$event.stopPropagation()'
         bs-dropdown='userbar.items'
-        data-placement='bottom-right'
+        data-placement='bottom-left'
         data-trigger='hover focus'
         data-container='self'
     )
         span {{$root.user.firstName}} {{$root.user.lastName}}
-            span.caret
+        span.caret

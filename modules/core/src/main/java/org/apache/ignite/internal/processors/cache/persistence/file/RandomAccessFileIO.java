@@ -17,94 +17,99 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
 
 /**
- * File I/O implementation based on {@code java.io.RandomAccessFile}.
+ * File I/O implementation based on {@link FileChannel}.
  */
-public class RandomAccessFileIO implements FileIO {
-
+public class RandomAccessFileIO extends AbstractFileIO {
     /**
-     * Random access file associated with this I/O
+     * File channel.
      */
-    private final RandomAccessFile file;
-
-    /**
-     * File channel associated with {@code file}
-     */
-    private final FileChannel channel;
+    private final FileChannel ch;
 
     /**
      * Creates I/O implementation for specified {@code file}
      *
-     * @param file Random access file
+     * @param file File.
+     * @param modes Open modes.
      */
-    public RandomAccessFileIO(RandomAccessFile file) {
-        this.file = file;
-        this.channel = file.getChannel();
+    public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
+        ch = FileChannel.open(file.toPath(), modes);
     }
 
     /** {@inheritDoc} */
     @Override public long position() throws IOException {
-        return channel.position();
+        return ch.position();
     }
 
     /** {@inheritDoc} */
     @Override public void position(long newPosition) throws IOException {
-        channel.position(newPosition);
+        ch.position(newPosition);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        return channel.read(destinationBuffer);
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        return ch.read(destBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        return channel.read(destinationBuffer, position);
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        return ch.read(destBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        return file.read(buffer, offset, length);
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        return ch.read(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        return channel.write(sourceBuffer);
+    @Override public int write(ByteBuffer srcBuf) throws IOException {
+        return ch.write(srcBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        return channel.write(sourceBuffer, position);
+    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        return ch.write(srcBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        file.write(buffer, offset, length);
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return ch.write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
-    @Override public void force() throws IOException {
-        channel.force(false);
+    @Override public void force(boolean withMetadata) throws IOException {
+        ch.force(withMetadata);
     }
 
     /** {@inheritDoc} */
     @Override public long size() throws IOException {
-        return channel.size();
+        return ch.size();
     }
 
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
-        channel.position(0);
-        file.setLength(0);
+        ch.truncate(0);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        file.close();
+        ch.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        return ch.map(FileChannel.MapMode.READ_WRITE, 0, sizeBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force() throws IOException {
+        force(false);
     }
 }

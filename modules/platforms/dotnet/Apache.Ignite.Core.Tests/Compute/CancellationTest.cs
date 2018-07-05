@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Cancellation tests.
     /// </summary>
-    public class CancellationTest : IgniteTestBase
+    public class CancellationTest : SpringTestBase
     {
         public CancellationTest() 
             : base("config\\compute\\compute-grid1.xml", "config\\compute\\compute-grid2.xml")

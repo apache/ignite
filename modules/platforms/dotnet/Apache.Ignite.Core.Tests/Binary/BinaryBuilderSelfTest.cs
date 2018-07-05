@@ -50,8 +50,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void SetUp()
         {
-            TestUtils.KillProcesses();
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration
@@ -1600,7 +1598,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(IdMapper.TestTypeId, _grid.GetBinary().GetTypeId(IdMapper.TestTypeName));
             
-            Assert.AreEqual(BinaryUtils.GetStringHashCode("someTypeName"), _grid.GetBinary().GetTypeId("someTypeName"));
+            Assert.AreEqual(BinaryUtils.GetStringHashCodeLowerCase("someTypeName"), _grid.GetBinary().GetTypeId("someTypeName"));
         }
 
         /// <summary>
@@ -1615,7 +1613,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var binType = bin.GetBinaryType();
 
-            Assert.AreEqual(BinaryUtils.GetStringHashCode(NameMapper.TestTypeName + "_"), binType.TypeId);
+            Assert.AreEqual(BinaryUtils.GetStringHashCodeLowerCase(NameMapper.TestTypeName + "_"), binType.TypeId);
             Assert.AreEqual(17, bin.GetField<int>(NameMapper.TestFieldName));
         }
 
@@ -1666,7 +1664,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var enumVal = TestEnumRegistered.Two;
             var intVal = (int) enumVal;
             var typeName = GetTypeName(typeof(TestEnumRegistered));
-            var typeId = BinaryUtils.GetStringHashCode(typeName);
+            var typeId = BinaryUtils.GetStringHashCodeLowerCase(typeName);
 
             var binEnums = new[]
             {
@@ -2170,13 +2168,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** <inheritdoc /> */
         public int GetTypeId(string typeName)
         {
-            return typeName == TestTypeName ? TestTypeId : BinaryUtils.GetStringHashCode(typeName);
+            return typeName == TestTypeName ? TestTypeId : BinaryUtils.GetStringHashCodeLowerCase(typeName);
         }
 
         /** <inheritdoc /> */
         public int GetFieldId(int typeId, string fieldName)
         {
-            return BinaryUtils.GetStringHashCode(fieldName);
+            return BinaryUtils.GetStringHashCodeLowerCase(fieldName);
         }
     }
 

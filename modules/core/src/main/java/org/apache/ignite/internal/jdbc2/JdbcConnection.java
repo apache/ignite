@@ -58,6 +58,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -80,13 +81,17 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_MULTIPLE_STMTS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
 /**
  * JDBC connection implementation.
@@ -162,6 +167,12 @@ public class JdbcConnection implements Connection {
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private final boolean streamAllowOverwrite;
 
+    /** Allow queries with multiple statements. */
+    private final boolean multipleStmts;
+
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -189,8 +200,10 @@ public class JdbcConnection implements Connection {
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
 
-        if (stream && cacheName == null)
-            throw new SQLException("Cache name cannot be null when streaming is enabled.");
+        if (stream && cacheName == null) {
+            throw new SQLException("Cache name cannot be null when streaming is enabled.",
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
 
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
@@ -199,6 +212,9 @@ public class JdbcConnection implements Connection {
         // If value is zero, server data-streamer pool size multiplied
         // by IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER will be used
         streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
+
+        multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
+        skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -212,14 +228,18 @@ public class JdbcConnection implements Connection {
 
             ignite = getIgnite(cfg);
 
-            if (!isValid(2))
-                throw new SQLException("Client is invalid. Probably cache name is wrong.");
+            if (!isValid(2)) {
+                throw new SQLException("Client is invalid. Probably cache name is wrong.",
+                    SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
 
             if (cacheName != null) {
                 DynamicCacheDescriptor cacheDesc = ignite().context().cache().cacheDescriptor(cacheName);
 
-                if (cacheDesc == null)
-                    throw new SQLException("Cache doesn't exist: " + cacheName);
+                if (cacheDesc == null) {
+                    throw createJdbcSqlException("Cache doesn't exist: " + cacheName,
+                        IgniteQueryErrorCode.CACHE_NOT_FOUND);
+                }
 
                 schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
             }
@@ -229,15 +249,14 @@ public class JdbcConnection implements Connection {
         catch (Exception e) {
             close();
 
-            if (e instanceof SQLException)
-                throw (SQLException)e;
-            else
-                throw new SQLException("Failed to start Ignite node.", e);
+            throw convertToSqlException(e, "Failed to start Ignite node. " + e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
     }
 
     /**
      * @param cfgUrl Config url.
+     * @return Ignite client node.
+     * @throws IgniteCheckedException On error.
      */
     private Ignite getIgnite(String cfgUrl) throws IgniteCheckedException {
         while (true) {
@@ -594,9 +613,12 @@ public class JdbcConnection implements Connection {
 
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            if (!idx.isInsertStatement(nativeStmt))
-                throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            try {
+                idx.checkStatementStreamable(nativeStmt);
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
+            }
 
             IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
 
@@ -704,7 +726,7 @@ public class JdbcConnection implements Connection {
                 return task.call();
         }
         catch (IgniteClientDisconnectedException | ComputeTaskTimeoutException e) {
-            throw new SQLException("Failed to establish connection.", e);
+            throw new SQLException("Failed to establish connection.", SqlStateCode.CONNECTION_FAILURE, e);
         }
         catch (IgniteException ignored) {
             return false;
@@ -832,6 +854,20 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsAllowed() {
+        return multipleStmts;
+    }
+
+    /**
+     * @return {@code true} if update on server is enabled, {@code false} otherwise.
+     */
+    boolean skipReducerOnUpdate() {
+        return skipReducerOnUpdate;
+    }
+
+    /**
      * @return Local query flag.
      */
     boolean isLocalQuery() {
@@ -873,7 +909,7 @@ public class JdbcConnection implements Connection {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Connection is closed.");
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
 
     /**
@@ -887,6 +923,7 @@ public class JdbcConnection implements Connection {
     /**
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @throws SQLException On error.
      */
     PreparedStatement prepareNativeStatement(String sql) throws SQLException {
         return ignite().context().query().prepareNativeStatement(schemaName(), sql);

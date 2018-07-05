@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * This class defines custom JDK object input stream.
@@ -30,17 +31,21 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
     /** */
     private final ClassLoader clsLdr;
 
+    /** Class name filter. */
+    private final IgnitePredicate<String> clsFilter;
+
     /**
      * @param in Parent input stream.
      * @param clsLdr Custom class loader.
      * @throws IOException If initialization failed.
      */
-    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
+    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr, IgnitePredicate<String> clsFilter) throws IOException {
         super(in);
 
         assert clsLdr != null;
 
         this.clsLdr = clsLdr;
+        this.clsFilter = clsFilter;
 
         enableResolveObject(true);
     }
@@ -51,7 +56,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return U.forName(desc.getName(), clsLdr);
+        return U.forName(desc.getName(), clsLdr, clsFilter);
     }
 
     /** {@inheritDoc} */

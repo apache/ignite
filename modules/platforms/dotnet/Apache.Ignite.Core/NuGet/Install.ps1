@@ -33,7 +33,7 @@ $project.ConfigurationManager | % {
     $binDir = ($_.Properties | Where Name -match OutputPath).Value
 
     $binPath = Join-Path $projPath $binDir
-    $libsPath = Join-Path $binPath "Libs"
+    $libsPath = Join-Path $binPath "libs"
 
     Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $libsPath
 }

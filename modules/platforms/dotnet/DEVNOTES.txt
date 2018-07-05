@@ -1,12 +1,12 @@
-Apache Ignite.NET Build Instructions
-====================================
+Apache Ignite.NET Build Instructions (Windows)
+==============================================
 
 Requirements:
 * Windows (XP and up), Windows Server (2008 and up)
-* Oracle JDK 7 and above
+* Oracle JDK 8 and above
 * .NET Framework 4.0
 * PowerShell 3.0+
-* Visual Studio 2010 (later versions require upgrading "common" C++ project, see below)
+* Visual Studio 2010+
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)
 * Apache Maven bin directory in PATH, or MAVEN_HOME environment variable
 
@@ -14,16 +14,61 @@ Building binaries:
   build.bat -skipCodeAnalysis
 Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 
-Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
+Running built binaries: resulting "bin" folder is self contained, you can copy it anywhere and run
   bin\Apache.Ignite.exe  
+  
+Running examples and Apache.Ignite.exe from project directories:
+  Set IGNITE_NATIVE_TEST_CLASSPATH environment variable to "true"
 
-NOTE: 
-* x86 solution platform requires x86 Oracle JDK.
-* x64 solution platform requires x64 Oracle JDK.
-* AnyCPU platform requires at least one of the above. 
-To build truly universal AnyCPU binaries (suitable for x86 and x64 modes), both x64 and x86 Oracle JDKs should be installed.
 
-Building in later versions of Visual Studio:
-* Open Apache.Ignite.sln in Visual Studio
-* You will be prompted to "Update VC++ Compiler and Libraries", click "Update"
-* OR, right-click "common" project in the Solution Explorer and select "Upgrade VC++ Compiler and Libraries"
+Cross-Platform Support
+======================
+
+Main Apache.Ignite.sln solution targets .NET 4.0 & VS 2010: we care for backwards compatibility.
+
+However, this does not prevent us from supporting .NET Standard 2.0 and .NET Core 2.0,
+because of ".NET Framework compatibility mode", which allows referencing any libraries
+from .NET Core 2.0 projects. So we release binaries which target .NET 4.0, and they work
+both with .NET 4.0+ and .NET Core 2.0+.
+  
+
+Cross-Platform Development with .NET Core (Linux, macOS)
+========================================
+
+Ignite.NET can be built, developed, and tested with .NET Core on Linux and macOS, but only partially.
+A subset of functionality and tests is available. See Apache.Ignite.DotNetCore.sln.
+
+Requirements:
+* .NET Core SDK (2.1.4+): https://www.microsoft.com/net/download/linux
+* JDK 8+: sudo apt-get install default-jdk
+* Maven: sudo apt-get install maven
+* IDE: Not required. Rider is recommended. VSCode works, but has issues with tests.
+
+Getting started:
+* Build Java and .NET:
+  ./build.sh
+* Run tests:
+  cd Apache.Ignite.Core.Tests.DotNetCore
+  dotnet test --logger "console;verbosity=normal"
+* Run specific test:
+  dotnet test --filter CacheTest --logger "console;verbosity=normal"
+* IDE: Open Apache.Ignite.DotNetCore.sln
+
+
+Cross-Platform Development with Mono (Linux, macOS)
+========================================
+
+Full Ignite.NET solution can be built, developed, and tested with Mono.
+
+Requirements:
+* Mono: http://www.mono-project.com/download/
+* NuGet: sudo apt-get install nuget
+* JDK: sudo apt-get install default-jdk
+* Maven: sudo apt-get install maven
+* IDE: Not required. Rider is recommended, MonoDevelop also works.
+
+Getting started:
+* Build Java and .NET:
+  ./build-mono.sh
+* Run tests: 
+  mono Apache.Ignite.Core.Tests/bin/Debug/Apache.Ignite.Core.Tests.exe -basicTests

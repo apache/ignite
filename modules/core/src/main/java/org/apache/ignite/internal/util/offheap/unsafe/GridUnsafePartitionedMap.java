@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.offheap.unsafe;
 
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  * Off-heap map based on {@code Unsafe} implementation.
@@ -65,7 +65,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     private final int parts;
 
     /** */
-    private final LongAdder8 totalCnt = new LongAdder8();
+    private final LongAdder totalCnt = new LongAdder();
 
     /**
      * @param parts Partitions.

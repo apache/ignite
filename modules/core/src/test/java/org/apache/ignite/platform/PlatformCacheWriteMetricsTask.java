@@ -405,6 +405,16 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isValidForReading() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isValidForWriting() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override public int getTotalPartitionsCount() {
             return 54;
         }
@@ -443,6 +453,35 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long rebalancingStartTime() {
             return 61;
         }
+
+        /** {@inheritDoc} */
+        @Override public long getEstimatedRebalancingFinishTime() {
+            return 62;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalancingStartTime() {
+            return 63;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalanceClearingPartitionsLeft() {
+            return 64;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheSize() {
+            return 65;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalancedKeys() {
+            return 66;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEstimatedRebalancingKeys() {
+            return 67;
+        }
     }
 }
-

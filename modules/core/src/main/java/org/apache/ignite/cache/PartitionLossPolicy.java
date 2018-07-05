@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,6 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * <code>READ_ONLY_*</code> and <code>READ_WRITE_*</code> policies do not automatically change partition state
  * and thus do not change rebalancing assignments for such partitions.
+ *
+ * @see Ignite#resetLostPartitions(Collection)
+ * @see IgniteCache#lostPartitions()
  */
 public enum PartitionLossPolicy {
     /**

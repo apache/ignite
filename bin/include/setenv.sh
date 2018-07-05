@@ -56,12 +56,17 @@ esac
 #
 IGNITE_LIBS="${IGNITE_HOME}/libs/*"
 
+SAVEIFS=$IFS
+IFS=$(echo -en "\n\b")
+
 for file in ${IGNITE_HOME}/libs/*
 do
     if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
         IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/*
     fi
 done
+
+IFS=$SAVEIFS
 
 if [ "${USER_LIBS}" != "" ]; then
     IGNITE_LIBS=${USER_LIBS}${SEP}${IGNITE_LIBS}

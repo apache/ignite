@@ -81,13 +81,6 @@ public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(NODES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

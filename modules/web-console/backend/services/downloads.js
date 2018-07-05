@@ -17,24 +17,25 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
+const JSZip = require('jszip');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/agents',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'settings', 'agents-handler', 'errors']
+    inject: ['settings', 'agents-handler', 'errors']
 };
 
 /**
- * @param _
- * @param fs
- * @param path
- * @param JSZip
  * @param settings
  * @param agentsHnd
  * @param errors
  * @returns {DownloadsService}
  */
-module.exports.factory = (_, fs, path, JSZip, settings, agentsHnd, errors) => {
+module.exports.factory = (settings, agentsHnd, errors) => {
     class DownloadsService {
         /**
          * Get agent archive with user agent configuration.
@@ -63,6 +64,8 @@ module.exports.factory = (_, fs, path, JSZip, settings, agentsHnd, errors) => {
                             prop.push(`server-uri=${host}`);
                             prop.push('#Uncomment following options if needed:');
                             prop.push('#node-uri=http://localhost:8080');
+                            prop.push('#node-login=ignite');
+                            prop.push('#node-password=ignite');
                             prop.push('#driver-folder=./jdbc-drivers');
 
                             zip.file(`${folder}/default.properties`, prop.join('\n'));

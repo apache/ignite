@@ -95,8 +95,6 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stores = null;
-
-        super.afterTestsStopped();
     }
 
     /**

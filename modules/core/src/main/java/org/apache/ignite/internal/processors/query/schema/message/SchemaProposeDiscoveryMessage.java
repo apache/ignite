@@ -60,6 +60,11 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     }
 
     /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean exchange() {
         return exchange;
     }
@@ -99,9 +104,8 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
      * @param err Error.
      */
     public void onError(SchemaOperationException err) {
-        if (!hasError()) {
+        if (!hasError())
             this.err = err;
-        }
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
 
@@ -51,6 +52,27 @@ public interface IgniteMXBean {
     public String getStartTimestampFormatted();
 
     /**
+     * Gets rebalance enabled flag.
+     *
+     * @return Rebalance enabled flag.
+     */
+    @MXBeanDescription("Rebalance enabled flag.")
+    public boolean isRebalanceEnabled();
+
+    /**
+     * Enable or disable cache partition rebalance per node.
+     *
+     * @param rebalanceEnabled If {@code true} then set rebalance to enabled state.
+     */
+    @MXBeanParametersDescriptions(
+        {
+            "Enable cache partitions rebalance on node.",
+            "Disable cache partitions rebalance on node."
+        }
+    )
+    public void rebalanceEnabled(boolean rebalanceEnabled);
+
+    /**
      * Gets string presentation of up-time for the kernal.
      *
      * @return String presentation of up-time for the kernal.
@@ -73,6 +95,30 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Up-time of the kernal.")
     public long getUpTime();
+
+    /**
+     * Gets long JVM pauses count.
+     *
+     * @return Long JVM pauses count.
+     */
+    @MXBeanDescription("Long JVM pauses count.")
+    public long getLongJVMPausesCount();
+
+    /**
+     * Gets long JVM pauses total duration.
+     *
+     * @return Long JVM pauses total duration.
+     */
+    @MXBeanDescription("Long JVM pauses total duration.")
+    public long getLongJVMPausesTotalDuration();
+
+    /**
+     * Gets long JVM pause last events.
+     *
+     * @return Long JVM pause last events.
+     */
+    @MXBeanDescription("Long JVM pause last events.")
+    public Map<Long, Long> getLongJVMPauseLastEvents();
 
     /**
      * Gets a list of formatted user-defined attributes added to this node.
@@ -387,6 +433,20 @@ public interface IgniteMXBean {
     public void dumpDebugInfo();
 
     /**
+     * Gets a formatted properties of current coordinator.
+     */
+    @MXBeanDescription("Formatted properties of current coordinator.")
+    public String getCurrentCoordinatorFormatted();
+
+    /**
+     * Gets a flag whether local node is in baseline. Returns false if baseline topology is not established.
+     *
+     * @return Return a baseline flag.
+     */
+    @MXBeanDescription("Baseline node flag.")
+    public boolean isNodeInBaseline();
+
+    /**
      * Runs IO latency test against all remote server nodes in cluster.
      *
      * @param warmup Warmup duration in milliseconds.
@@ -429,4 +489,10 @@ public interface IgniteMXBean {
         int payLoadSize,
         boolean procFromNioThread
     );
+
+    /**
+     * Clears node local map.
+     */
+    @MXBeanDescription("Clears local node map.")
+    void clearNodeLocalMap();
 }

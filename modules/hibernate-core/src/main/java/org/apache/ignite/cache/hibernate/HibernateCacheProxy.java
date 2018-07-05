@@ -627,6 +627,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx() {
+        return delegate.withAllowAtomicOpsInTx();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheContext context() {
         return delegate.context();
     }
@@ -645,11 +650,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         @Nullable Object... args
     ) {
         return delegate.localLoadCacheAsync(p, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getTopologySafe(Object key) throws IgniteCheckedException {
-        return delegate.getTopologySafe(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */

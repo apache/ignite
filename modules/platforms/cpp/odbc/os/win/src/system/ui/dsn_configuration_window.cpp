@@ -16,10 +16,14 @@
  */
 
 #include <Windowsx.h>
+#include <Shlwapi.h>
 
 #include "ignite/odbc/log.h"
+#include "ignite/odbc/ssl/ssl_mode.h"
 
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
+#include "ignite/odbc/config/config_tools.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
 {
@@ -32,8 +36,11 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(280),
+                    height(580),
                     connectionSettingsGroupBox(),
+                    sslSettingsGroupBox(),
+                    authSettingsGroupBox(),
+                    additionalSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
@@ -48,6 +55,10 @@ namespace ignite
                     collocatedCheckBox(),
                     protocolVersionLabel(),
                     protocolVersionComboBox(),
+                    userLabel(),
+                    userEdit(),
+                    passwordLabel(),
+                    passwordEdit(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -89,99 +100,249 @@ namespace ignite
 
                 void DsnConfigurationWindow::OnCreate()
                 {
-                    int margin = 10;
-                    int interval = 10;
+                    int groupPosY = MARGIN;
+                    int groupSizeY = width - 2 * MARGIN;
 
-                    int labelSizeX = 80;
-                    int labelPosX = margin + interval;
+                    groupPosY += INTERVAL + CreateConnectionSettingsGroup(MARGIN, groupPosY, groupSizeY);
+                    groupPosY += INTERVAL + CreateAuthSettingsGroup(MARGIN, groupPosY, groupSizeY);
+                    groupPosY += INTERVAL + CreateSslSettingsGroup(MARGIN, groupPosY, groupSizeY);
+                    groupPosY += INTERVAL + CreateAdditionalSettingsGroup(MARGIN, groupPosY, groupSizeY);
 
-                    int editSizeX = width - labelSizeX - 2 * margin - 3 * interval;
-                    int editPosX = margin + labelSizeX + 2 * interval;
+                    int cancelPosX = width - MARGIN - BUTTON_WIDTH;
+                    int okPosX = cancelPosX - INTERVAL - BUTTON_WIDTH;
 
-                    int rowSize = 20;
-                    int rowPos = margin + 2 * interval;
+                    okButton = CreateButton(okPosX, groupPosY, BUTTON_WIDTH, BUTTON_HEIGHT, "Ok", ChildId::OK_BUTTON);
+                    cancelButton = CreateButton(cancelPosX, groupPosY, BUTTON_WIDTH, BUTTON_HEIGHT,
+                        "Cancel", ChildId::CANCEL_BUTTON);
+                }
 
-                    int checkBoxSize = (editSizeX - interval) / 2;
+                int DsnConfigurationWindow::CreateConnectionSettingsGroup(int posX, int posY, int sizeX)
+                {
+                    enum { LABEL_WIDTH = 100 };
 
-                    int sectionBegin = margin;
+                    int labelPosX = posX + INTERVAL;
+
+                    int editSizeX = sizeX - LABEL_WIDTH - 3 * INTERVAL;
+                    int editPosX = labelPosX + LABEL_WIDTH + INTERVAL;
+
+                    int rowPos = posY + 2 * INTERVAL;
 
                     const char* val = config.GetDsn().c_str();
-                    nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ChildId::NAME_LABEL);
-                    nameEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::NAME_EDIT);
+                    nameLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Data Source Name:", ChildId::NAME_LABEL);
+                    nameEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::NAME_EDIT);
 
-                    rowPos += interval + rowSize;
+                    rowPos += INTERVAL + ROW_HEIGHT;
 
-                    val = config.GetAddress().c_str();
-                    addressLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Address:", ChildId::ADDRESS_LABEL);
-                    addressEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::ADDRESS_EDIT);
+                    std::string addr = config::AddressesToString(config.GetAddresses());
 
-                    rowPos += interval + rowSize;
+                    val = addr.c_str();
+                    addressLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Address:", ChildId::ADDRESS_LABEL);
+                    addressEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::ADDRESS_EDIT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSchema().c_str();
-                    schemaLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Schema name:", ChildId::SCHEMA_LABEL);
-                    schemaEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::SCHEMA_EDIT);
+                    schemaLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Schema name:", ChildId::SCHEMA_LABEL);
+                    schemaEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SCHEMA_EDIT);
 
-                    rowPos += interval + rowSize;
+                    rowPos += INTERVAL + ROW_HEIGHT;
 
-                    std::string tmp = common::LexicalCast<std::string>(config.GetPageSize());
-                    val = tmp.c_str();
-                    pageSizeLabel = CreateLabel(labelPosX, rowPos, labelSizeX,
-                        rowSize, "Page size:", ChildId::PAGE_SIZE_LABEL);
-
-                    pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX, 
-                        rowSize, val, ChildId::PAGE_SIZE_EDIT, ES_NUMBER);
-
-                    rowPos += interval + rowSize;
-
-                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize,
+                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
                         "Protocol version:", ChildId::PROTOCOL_VERSION_LABEL);
-                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize,
+                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
                         "Protocol version", ChildId::PROTOCOL_VERSION_COMBO_BOX);
 
                     int id = 0;
 
                     const ProtocolVersion::VersionSet& supported = ProtocolVersion::GetSupported();
 
+                    ProtocolVersion version = ProtocolVersion::GetCurrent();
                     ProtocolVersion::VersionSet::const_iterator it;
                     for (it = supported.begin(); it != supported.end(); ++it)
                     {
                         protocolVersionComboBox->AddString(it->ToString());
 
                         if (*it == config.GetProtocolVersion())
+                        {
                             protocolVersionComboBox->SetSelection(id);
+                            version = *it;
+                        }
 
                         ++id;
                     }
 
-                    rowPos += interval + rowSize;
+                    rowPos += INTERVAL + ROW_HEIGHT;
 
-                    distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                    connectionSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
+                        "Connection settings", ChildId::CONNECTION_SETTINGS_GROUP_BOX);
+
+                    return rowPos - posY;
+                }
+
+                int DsnConfigurationWindow::CreateAuthSettingsGroup(int posX, int posY, int sizeX)
+                {
+                    enum { LABEL_WIDTH = 120 };
+
+                    int labelPosX = posX + INTERVAL;
+
+                    int editSizeX = sizeX - LABEL_WIDTH - 3 * INTERVAL;
+                    int editPosX = labelPosX + LABEL_WIDTH + INTERVAL;
+
+                    int rowPos = posY + 2 * INTERVAL;
+
+                    const char* val = config.GetUser().c_str();
+
+                    userLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "User :", ChildId::USER_LABEL);
+                    userEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::USER_EDIT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    val = config.GetPassword().c_str();
+                    passwordLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Password:", ChildId::PASSWORD_LABEL);
+                    passwordEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::USER_EDIT, ES_PASSWORD);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    authSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
+                        "Authentication settings", ChildId::AUTH_SETTINGS_GROUP_BOX);
+
+                    return rowPos - posY;
+                }
+
+                int DsnConfigurationWindow::CreateSslSettingsGroup(int posX, int posY, int sizeX)
+                {
+                    using ssl::SslMode;
+
+                    enum { LABEL_WIDTH = 120 };
+
+                    int labelPosX = posX + INTERVAL;
+
+                    int editSizeX = sizeX - LABEL_WIDTH - 3 * INTERVAL;
+                    int editPosX = labelPosX + LABEL_WIDTH + INTERVAL;
+
+                    int rowPos = posY + 2 * INTERVAL;
+
+                    SslMode::Type sslMode = config.GetSslMode();
+                    std::string sslModeStr = SslMode::ToString(sslMode);
+
+                    const char* val = sslModeStr.c_str();
+
+                    sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Mode:", ChildId::SSL_MODE_LABEL);
+                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        "", ChildId::SSL_MODE_COMBO_BOX);
+
+                    sslModeComboBox->AddString("disable");
+                    sslModeComboBox->AddString("require");
+
+                    sslModeComboBox->SetSelection(sslMode);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    val = config.GetSslKeyFile().c_str();
+                    sslKeyFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Private Key:", ChildId::SSL_KEY_FILE_LABEL);
+                    sslKeyFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_KEY_FILE_EDIT);
+
+                    SHAutoComplete(sslKeyFileEdit->GetHandle(), SHACF_DEFAULT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    val = config.GetSslCertFile().c_str();
+                    sslCertFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Certificate:", ChildId::SSL_CERT_FILE_LABEL);
+                    sslCertFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_CERT_FILE_EDIT);
+
+                    SHAutoComplete(sslCertFileEdit->GetHandle(), SHACF_DEFAULT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    val = config.GetSslCaFile().c_str();
+                    sslCaFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Certificate Authority:", ChildId::SSL_CA_FILE_LABEL);
+                    sslCaFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_CA_FILE_EDIT);
+
+                    SHAutoComplete(sslCaFileEdit->GetHandle(), SHACF_DEFAULT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    sslSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
+                        "SSL settings", ChildId::SSL_SETTINGS_GROUP_BOX);
+
+                    sslKeyFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                    sslCertFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                    sslCaFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+
+                    return rowPos - posY;
+                }
+
+                int DsnConfigurationWindow::CreateAdditionalSettingsGroup(int posX, int posY, int sizeX)
+                {
+                    enum { LABEL_WIDTH = 80 };
+
+                    int labelPosX = posX + INTERVAL;
+
+                    int editSizeX = sizeX - LABEL_WIDTH - 3 * INTERVAL;
+                    int editPosX = labelPosX + LABEL_WIDTH + INTERVAL;
+
+                    int checkBoxSize = (sizeX - 3 * INTERVAL) / 2;
+
+                    const ProtocolVersion version = config.GetProtocolVersion();
+
+                    int rowPos = posY + 2 * INTERVAL;
+
+                    std::string tmp = common::LexicalCast<std::string>(config.GetPageSize());
+                    const char* val = tmp.c_str();
+                    pageSizeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH,
+                        ROW_HEIGHT, "Page size:", ChildId::PAGE_SIZE_LABEL);
+
+                    pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX,
+                        ROW_HEIGHT, val, ChildId::PAGE_SIZE_EDIT, ES_NUMBER);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    distributedJoinsCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
                         "Distributed Joins", ChildId::DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
 
-                    enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
-                        rowSize, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+                    enforceJoinOrderCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL,
+                        rowPos, checkBoxSize, ROW_HEIGHT, "Enforce Join Order",
+                        ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
-                    rowPos += rowSize;
+                    rowPos += ROW_HEIGHT;
 
-                    replicatedOnlyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                    replicatedOnlyCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
                         "Replicated Only", ChildId::REPLICATED_ONLY_CHECK_BOX, config.IsReplicatedOnly());
 
-                    collocatedCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
-                        rowSize, "Collocated", ChildId::COLLOCATED_CHECK_BOX, config.IsCollocated());
+                    collocatedCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL, rowPos, checkBoxSize,
+                        ROW_HEIGHT, "Collocated", ChildId::COLLOCATED_CHECK_BOX, config.IsCollocated());
 
-                    rowPos += interval * 2 + rowSize;
+                    rowPos += ROW_HEIGHT;
 
-                    connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
-                        rowPos - interval - sectionBegin, "Connection settings", ChildId::CONNECTION_SETTINGS_GROUP_BOX);
+                    lazyCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
+                        "Lazy", ChildId::LAZY_CHECK_BOX, config.IsLazy());
 
-                    int buttonSizeX = 80;
-                    int cancelPosX = width - margin - buttonSizeX;
-                    int okPosX = cancelPosX - interval - buttonSizeX;
+                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
 
-                    rowSize = 25;
+                    skipReducerOnUpdateCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL, rowPos,
+                        checkBoxSize, ROW_HEIGHT, "Skip reducer on update", ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
+                        config.IsSkipReducerOnUpdate());
 
-                    okButton = CreateButton(okPosX, rowPos, buttonSizeX, rowSize, "Ok", ChildId::OK_BUTTON);
-                    cancelButton = CreateButton(cancelPosX, rowPos, buttonSizeX, rowSize, "Cancel", ChildId::CANCEL_BUTTON);
+                    skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
+                    rowPos += ROW_HEIGHT + INTERVAL;
+
+                    additionalSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
+                        "Additional settings", ChildId::ADDITIONAL_SETTINGS_GROUP_BOX);
+
+                    return rowPos - posY;
                 }
 
                 bool DsnConfigurationWindow::OnMessage(UINT msg, WPARAM wParam, LPARAM lParam)
@@ -246,7 +407,48 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::LAZY_CHECK_BOX:
+                                {
+                                    lazyCheckBox->SetChecked(!lazyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX:
+                                {
+                                    skipReducerOnUpdateCheckBox->SetChecked(!skipReducerOnUpdateCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
+                                {
+                                    std::string versionStr;
+                                    protocolVersionComboBox->GetText(versionStr);
+
+                                    ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+                                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
+                                    skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
+                                    break;
+                                }
+
+                                case ChildId::SSL_MODE_COMBO_BOX:
+                                {
+                                    using ssl::SslMode;
+
+                                    std::string sslModeStr;
+                                    sslModeComboBox->GetText(sslModeStr);
+
+                                    SslMode::Type sslMode = SslMode::FromString(sslModeStr, SslMode::DISABLE);
+
+                                    sslKeyFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                                    sslCertFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                                    sslCaFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+
+                                    break;
+                                }
+
                                 default:
                                     return false;
                             }
@@ -270,21 +472,109 @@ namespace ignite
 
                 void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
                 {
-                    std::string dsn;
-                    std::string address;
-                    std::string schema;
+                    RetrieveConnectionParameters(cfg);
+                    RetrieveAuthParameters(cfg);
+                    RetrieveSslParameters(cfg);
+                    RetrieveAdditionalParameters(cfg);
+                }
+
+                void DsnConfigurationWindow::RetrieveConnectionParameters(config::Configuration& cfg) const
+                {
+                    std::string dsnStr;
+                    std::string addressStr;
+                    std::string schemaStr;
+                    std::string versionStr;
+
+                    nameEdit->GetText(dsnStr);
+                    addressEdit->GetText(addressStr);
+                    schemaEdit->GetText(schemaStr);
+                    protocolVersionComboBox->GetText(versionStr);
+
+                    common::StripSurroundingWhitespaces(addressStr);
+                    common::StripSurroundingWhitespaces(dsnStr);
+                    // Stripping of whitespaces off the schema skipped intentionally
+
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("DSN:                " << dsnStr);
+                    LOG_MSG("Address:            " << addressStr);
+                    LOG_MSG("Schema:             " << schemaStr);
+                    LOG_MSG("Protocol version:   " << versionStr);
+
+                    if (dsnStr.empty())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
+
+                    diagnostic::DiagnosticRecordStorage diag;
+
+                    std::vector<EndPoint> addresses;
+
+                    config::ParseAddress(addressStr, addresses, &diag);
+
+                    if (diag.GetStatusRecordsNumber() > 0)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            diag.GetStatusRecord(1).GetMessageText().c_str());
+                    }
+
+                    ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+
+                    if (!version.IsSupported())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol version is not supported.");
+
+                    cfg.SetDsn(dsnStr);
+                    cfg.SetAddresses(addresses);
+                    cfg.SetSchema(schemaStr);
+                    cfg.SetProtocolVersion(version);
+                }
+
+                void DsnConfigurationWindow::RetrieveAuthParameters(config::Configuration& cfg) const
+                {
+                    std::string user;
+                    std::string password;
+
+                    userEdit->GetText(user);
+                    passwordEdit->GetText(password);
+
+                    cfg.SetUser(user);
+                    cfg.SetPassword(password);
+                }
+
+                void DsnConfigurationWindow::RetrieveSslParameters(config::Configuration& cfg) const
+                {
+                    std::string sslModeStr;
+                    std::string sslKeyStr;
+                    std::string sslCertStr;
+                    std::string sslCaStr;
+
+                    sslModeComboBox->GetText(sslModeStr);
+                    sslKeyFileEdit->GetText(sslKeyStr);
+                    sslCertFileEdit->GetText(sslCertStr);
+                    sslCaFileEdit->GetText(sslCaStr);
+
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("SSL Mode:           " << sslModeStr);
+                    LOG_MSG("SSL Key:            " << sslKeyStr);
+                    LOG_MSG("SSL Certificate:    " << sslCertStr);
+                    LOG_MSG("SSL CA:             " << sslCaStr);
+
+                    ssl::SslMode::Type sslMode = ssl::SslMode::FromString(sslModeStr, ssl::SslMode::DISABLE);
+
+                    cfg.SetSslMode(sslMode);
+                    cfg.SetSslKeyFile(sslKeyStr);
+                    cfg.SetSslCertFile(sslCertStr);
+                    cfg.SetSslCaFile(sslCaStr);
+                }
+
+                void DsnConfigurationWindow::RetrieveAdditionalParameters(config::Configuration& cfg) const
+                {
                     std::string pageSizeStr;
-                    std::string version;
 
                     bool distributedJoins;
                     bool enforceJoinOrder;
                     bool replicatedOnly;
                     bool collocated;
+                    bool lazy;
+                    bool skipReducerOnUpdate;
 
-                    nameEdit->GetText(dsn);
-                    addressEdit->GetText(address);
-                    schemaEdit->GetText(schema);
-                    protocolVersionComboBox->GetText(version);
                     pageSizeEdit->GetText(pageSizeStr);
 
                     int32_t pageSize = common::LexicalCast<int32_t>(pageSizeStr);
@@ -292,37 +582,29 @@ namespace ignite
                     if (pageSize <= 0)
                         pageSize = config.GetPageSize();
 
-                    common::StripSurroundingWhitespaces(address);
-                    common::StripSurroundingWhitespaces(dsn);
+                    distributedJoins = distributedJoinsCheckBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
+                    replicatedOnly = replicatedOnlyCheckBox->IsChecked();
+                    collocated = collocatedCheckBox->IsChecked();
+                    lazy = lazyCheckBox->IsChecked();
+                    skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
-                    distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
-                    enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
-                    replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
-                    collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("Page size:              " << pageSize);
+                    LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:             " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:                   " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("DSN:                " << dsn);
-                    LOG_MSG("Address:            " << address);
-                    LOG_MSG("Schema:             " << schema);
-                    LOG_MSG("Page size:          " << pageSize);
-                    LOG_MSG("Protocol version:   " << version);
-                    LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
-                    LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
-                    LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
-                    LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
-
-                    if (dsn.empty())
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
-
-                    cfg.SetDsn(dsn);
-                    cfg.SetAddress(address);
-                    cfg.SetSchema(schema);
                     cfg.SetPageSize(pageSize);
-                    cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);
                     cfg.SetCollocated(collocated);
+                    cfg.SetLazy(lazy);
+                    cfg.SetSkipReducerOnUpdate(skipReducerOnUpdate);
                 }
             }
         }

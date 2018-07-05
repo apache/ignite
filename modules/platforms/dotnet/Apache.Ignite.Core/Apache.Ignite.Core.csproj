@@ -12,47 +12,6 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <Optimize>true</Optimize>
-    <DocumentationFile>bin\x64\Release\Apache.Ignite.Core.XML</DocumentationFile>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <PlatformTarget>x86</PlatformTarget>
-    <OutputPath>bin\x86\Debug\</OutputPath>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\x86\Debug\Apache.Ignite.Core.XML</DocumentationFile>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <PlatformTarget>x86</PlatformTarget>
-    <OutputPath>bin\x86\Release\</OutputPath>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <Optimize>true</Optimize>
-    <DocumentationFile>bin\x86\Release\Apache.Ignite.Core.XML</DocumentationFile>
-    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
@@ -67,9 +26,8 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>CODE_ANALYSIS;DEBUG</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Debug\Apache.Ignite.Core.XML</DocumentationFile>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
@@ -82,10 +40,11 @@
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DebugType>none</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Xml" />
@@ -93,18 +52,96 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Cache\IQueryMetrics.cs" />
+    <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
+    <Compile Include="Client\IgniteClientConfigurationSection.cs" />
+    <Compile Include="Client\ISslStreamFactory.cs" />
+    <Compile Include="Client\SslStreamFactory.cs" />
+    <Compile Include="Cluster\IBaselineNode.cs" />
+    <Compile Include="Configuration\CheckpointWriteOrder.cs" />
+    <Compile Include="Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Configuration\DataRegionConfiguration.cs" />
+    <Compile Include="Configuration\DataStorageConfiguration.cs" />
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
     <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Cache\IMemoryMetrics.cs" />
+    <Compile Include="Cache\Query\IFieldsQueryCursor.cs" />
+    <Compile Include="Client\Cache\ICacheClient.cs" />
+    <Compile Include="Client\IgniteClientConfiguration.cs" />
+    <Compile Include="Client\IgniteClientException.cs" />
+    <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Failure\IFailureHandler.cs" />
+    <Compile Include="Failure\NoOpFailureHandler.cs" />
+    <Compile Include="Failure\StopNodeFailureHandler.cs" />
+    <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
+    <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Common\TaskRunner.cs" />
+    <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
+    <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
+    <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
+    <Compile Include="Datastream\DataStreamerDefaults.cs" />
+    <Compile Include="IDataRegionMetrics.cs" />
+    <Compile Include="IDataStorageMetrics.cs" />
+    <Compile Include="Configuration\WalMode.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
+    <Compile Include="Impl\Binary\IBinaryRawWriteAware.cs" />
+    <Compile Include="Impl\Binary\MultidimensionalArrayHolder.cs" />
+    <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
+    <Compile Include="Impl\Binary\OptimizedMarshallerObject.cs" />
+    <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientFieldsQueryCursor.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
+    <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
+    <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
+    <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientQueryCursorBase.cs" />
+    <Compile Include="Impl\Client\Cache\Query\StatementType.cs" />
+    <Compile Include="Client\ClientStatusCode.cs" />
+    <Compile Include="Events\LocalEventListener.cs" />
+    <Compile Include="Impl\Cluster\BaselineNode.cs" />
+    <Compile Include="Ssl\SslContextFactory.cs" />
+    <Compile Include="Impl\Ssl\SslFactorySerializer.cs" />
+    <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
+    <Compile Include="Impl\Client\Cache\CacheClient.cs" />
+    <Compile Include="Impl\Client\ClientOp.cs" />
+    <Compile Include="Impl\Client\ClientProtocolVersion.cs" />
+    <Compile Include="Impl\Client\ClientSocket.cs" />
+    <Compile Include="Impl\Client\IgniteClient.cs" />
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
+    <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\Services\DynamicServiceProxy.cs" />
+    <Compile Include="Impl\Services\ServiceProxyFactory.cs" />
+    <Compile Include="Impl\Services\ServiceProxyTypeGenerator.cs" />
+    <Compile Include="Impl\Shell.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\DllLoader.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\AppDomains.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\CallbackDelegates.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\Callbacks.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\ConsoleWriter.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\EnvDelegates.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\Env.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\EnvInterface.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmDll.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmInitArgs.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmInterface.cs" />
     <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
     <Compile Include="Impl\PlatformJniTarget.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\GlobalRef.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmOption.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\MethodId.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\NativeMethod.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JniResult.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\Jvm.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmDelegates.cs" />
+    <Compile Include="Impl\Unmanaged\Os.cs" />
+    <Compile Include="PersistentStore\CheckpointWriteOrder.cs" />
     <Compile Include="PersistentStore\IPersistentStoreMetrics.cs" />
     <Compile Include="PersistentStore\Package-Info.cs" />
     <Compile Include="PersistentStore\PersistentStoreConfiguration.cs" />
@@ -142,7 +179,6 @@
     <Compile Include="Cache\Affinity\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
-    <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
@@ -211,7 +247,7 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
-    <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
+    <Compile Include="Impl\Binary\Io\IBinaryStreamProcessor.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
@@ -321,7 +357,7 @@
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
     <Compile Include="Impl\Cache\ICacheInternal.cs" />
     <Compile Include="Impl\Cache\MutableCacheEntry.cs" />
-    <Compile Include="Impl\Cache\Query\AbstractQueryCursor.cs" />
+    <Compile Include="Impl\Cache\Query\QueryCursorBase.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilter.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilterHolder.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryHandleImpl.cs" />
@@ -410,10 +446,9 @@
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
-    <Compile Include="Impl\NativeMethods.cs" />
-    <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
+    <Compile Include="Impl\MemoryInfo.cs" />
+    <Compile Include="Impl\Binary\Io\IBinaryStream.cs" />
+    <Compile Include="Impl\Binary\Io\BinaryHeapStream.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
@@ -460,7 +495,6 @@
     <Compile Include="Impl\Resource\ResourceTypeDescriptor.cs" />
     <Compile Include="Impl\Services\ServiceContext.cs" />
     <Compile Include="Impl\Services\ServiceDescriptor.cs" />
-    <Compile Include="Impl\Services\ServiceProxy.cs" />
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
@@ -468,14 +502,8 @@
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionsImpl.cs" />
-    <Compile Include="Impl\Unmanaged\IgniteJniNativeMethods.cs" />
-    <Compile Include="Impl\Unmanaged\IUnmanagedTarget.cs" />
-    <Compile Include="Impl\Unmanaged\UnmanagedCallbackHandlers.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbackOp.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbacks.cs" />
-    <Compile Include="Impl\Unmanaged\UnmanagedContext.cs" />
-    <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
-    <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Interop\IPlatformTarget.cs" />
     <Compile Include="Interop\JavaObject.cs" />
@@ -526,8 +554,10 @@
     <Compile Include="Services\IServices.cs" />
     <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
+    <Compile Include="Services\ServiceDeploymentException.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
+    <Compile Include="Transactions\ITransactionCollection.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
     <Compile Include="Transactions\Package-Info.cs" />
@@ -541,60 +571,28 @@
     <Compile Include="Transactions\TransactionState.cs" />
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.jni.dll">
-      <Link>resources\debug\x64\ignite.jni.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.jni.dll">
-      <Link>resources\release\x64\ignite.jni.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.jni.dll">
-      <Link>resources\debug\x86\ignite.jni.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.jni.dll">
-      <Link>resources\release\x86\ignite.jni.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\x64\$(Configuration)\ignite.jni.dll">
-      <Link>resources\x64\ignite.jni.dll</Link>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll')">
-      <Link>resources\x86\ignite.jni.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
-    <None Include="build-common.ps1" />
-    <None Include="NuGet\Uninstall.ps1" />
-    <None Include="NuGet\PostBuild.ps1" />
-    <None Include="NuGet\Install.ps1" />
-    <None Include="Apache.Ignite.Core.snk" />
+    <None Include="IgniteClientConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Impl\Common\JavaObjects\" />
+    <None Include="NuGet\Uninstall.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
+    <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <PreBuildEvent>cd "$(ProjectDir)"
-	set COMPLUS_ApplicationMigrationRuntimeActivationConfigPath=$(ProjectDir)
-	PowerShell.exe -executionpolicy remotesigned -File build-common.ps1 -Configuration $(ConfigurationName) -msbuildexe "$(MSBuildBinPath)\msbuild.exe"</PreBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
+  	<Message Text="MSBuildBinPath = $(MSBuildBinPath)" />
   </Target>
   <Target Name="AfterBuild">
   </Target>

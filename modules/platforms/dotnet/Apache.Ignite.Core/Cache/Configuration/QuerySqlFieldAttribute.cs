@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -28,6 +29,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class QuerySqlFieldAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QuerySqlFieldAttribute"/> class.
+        /// </summary>
+        public QuerySqlFieldAttribute()
+        {
+            IndexInlineSize = QueryIndex.DefaultInlineSize;
+        }
+
         /// <summary>
         /// Gets or sets the sql field name.
         /// If not provided, property or field name will be used.
@@ -56,5 +65,31 @@ namespace Apache.Ignite.Core.Cache.Configuration
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", 
             Justification = "Attribute initializers do not allow collections")]
         public string[] IndexGroups { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index inline size, see <see cref="QueryIndex.InlineSize"/>.
+        /// </summary>
+        [DefaultValue(QueryIndex.DefaultInlineSize)]
+        public int IndexInlineSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether null values are allowed for this field.
+        /// </summary>
+        public bool NotNull { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default value for the field (has effect when inserting with DML).
+        /// </summary>
+        public object DefaultValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets the precision for the field.
+        /// </summary>
+        public int Precision { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scale for the field.
+        /// </summary>
+        public int Scale { get; set; }
     }
 }

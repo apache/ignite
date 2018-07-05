@@ -61,7 +61,6 @@ public class InlineIndexHelper {
         Value.SHORT,
         Value.INT,
         Value.LONG,
-        Value.LONG,
         Value.FLOAT,
         Value.DOUBLE,
         Value.DATE,
@@ -383,6 +382,9 @@ public class InlineIndexHelper {
         if (type == Value.NULL)
             return Integer.MIN_VALUE;
 
+        if (v == ValueNull.INSTANCE)
+            return fixSort(1, sortType());
+
         if (this.type != type)
             throw new UnsupportedOperationException("Invalid fast index type: " + type);
 
@@ -411,6 +413,9 @@ public class InlineIndexHelper {
 
                 break;
 
+            case Value.UUID:
+                return compareAsUUID(pageAddr, off, v, type);
+
             case Value.BYTES:
                 return compareAsBytes(pageAddr, off, v);
         }
@@ -423,7 +428,37 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param type Highest value type.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation.
+     */
+    private int compareAsUUID(long pageAddr, int off, Value v, int type) {
+        // only compatible types are supported now.
+        if(PageUtils.getByte(pageAddr, off) == type) {
+            assert type == Value.UUID;
+
+            ValueUuid uuid = (ValueUuid)v.convertTo(Value.UUID);
+            long long1 = PageUtils.getLong(pageAddr, off + 1);
+
+            int c = Long.compare(long1, uuid.getHigh());
+
+            if(c != 0)
+                return fixSort(c, sortType());
+
+            long1 = PageUtils.getLong(pageAddr, off + 9);
+
+            c = Long.compare(long1, uuid.getLow());
+
+            return fixSort(c, sortType());
+        }
+
+        return Integer.MIN_VALUE;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param v Value to compare.
+     * @param type Highest value type.
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation.
      */
     private int compareAsDateTime(long pageAddr, int off, Value v, int type) {
         // only compatible types are supported now.
@@ -468,7 +503,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param type Highest value type.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation.
      */
     private int compareAsPrimitive(long pageAddr, int off, Value v, int type) {
         // only compatible types are supported now.
@@ -866,7 +901,6 @@ public class InlineIndexHelper {
             }
 
             case Value.BYTES: {
-                byte[] s;
                 short size;
 
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
@@ -881,6 +915,7 @@ public class InlineIndexHelper {
                     PageUtils.putShort(pageAddr, off + 1, size);
                     PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(val.getBytes(), 0, maxSize - 3));
                 }
+
                 return size + 3;
             }
 
@@ -917,6 +952,7 @@ public class InlineIndexHelper {
      * @param v2 Second value;
      * @return {@code true} if we can rely on compare result.
      */
+    @SuppressWarnings("RedundantIfStatement")
     protected boolean canRelyOnCompare(int c, Value shortVal, Value v2) {
         switch (type) {
             case Value.STRING:

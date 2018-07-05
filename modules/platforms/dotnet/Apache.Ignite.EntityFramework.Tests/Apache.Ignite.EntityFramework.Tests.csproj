@@ -90,12 +90,18 @@
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-		if not exist "$(TargetDir)x86" md "$(TargetDir)x86"
-		xcopy /s /y "$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\x86\*.*" "$(TargetDir)x86"
-		if not exist "$(TargetDir)amd64" md "$(TargetDir)amd64"
-		xcopy /s /y "$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\amd64\*.*" "$(TargetDir)amd64"
-	</PostBuildEvent>
-  </PropertyGroup>
+  
+  <ItemGroup>  
+    <SqlCeFiles_x86 Include="$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\x86\*.*">
+	  <InProject>false</InProject>
+	</SqlCeFiles_x86>
+    <SqlCeFiles_amd64 Include="$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\amd64\*.*">
+	  <InProject>false</InProject>
+	</SqlCeFiles_amd64>
+  </ItemGroup>  
+	
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="@(SqlCeFiles_x86)" DestinationFolder="$(TargetDir)x86" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SqlCeFiles_amd64)" DestinationFolder="$(TargetDir)amd64" SkipUnchangedFiles="true" />
+  </Target>  
 </Project>

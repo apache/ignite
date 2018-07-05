@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -150,10 +152,10 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param nextSnapshotId Next snapshot id.
+     * @param nextSnapshotTag Next snapshot tag.
      */
-    public void setNextSnapshotTag(long pageAddr, long nextSnapshotId) {
-        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotId);
+    public void setNextSnapshotTag(long pageAddr, long nextSnapshotTag) {
+        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotTag);
     }
 
     /**
@@ -225,5 +227,17 @@ public class PageMetaIO extends PageIO {
      */
     public int getCandidatePageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("PageMeta[\n\ttreeRoot=").a(getReuseListRoot(addr))
+            .a(",\n\tlastSuccessfulFullSnapshotId=").a(getLastSuccessfulFullSnapshotId(addr))
+            .a(",\n\tlastSuccessfulSnapshotId=").a(getLastSuccessfulSnapshotId(addr))
+            .a(",\n\tnextSnapshotTag=").a(getNextSnapshotTag(addr))
+            .a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(addr))
+            .a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(addr))
+            .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
+            .a("\n]");
     }
 }

@@ -27,14 +27,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -125,11 +127,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Direct memory allocator. */
     private final DirectMemoryProvider directMemoryProvider;
 
-    /** Name of MemoryPolicy this PageMemory is associated with. */
-    private final MemoryPolicyConfiguration memoryPolicyCfg;
+    /** Name of DataRegion this PageMemory is associated with. */
+    private final DataRegionConfiguration dataRegionCfg;
 
     /** Object to collect memory usage metrics. */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
     private AtomicLong freePageListHead = new AtomicLong(INVALID_REL_PTR);
@@ -158,12 +160,15 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private final boolean trackAcquiredPages;
 
+    /** Shared context. */
+    private final GridCacheSharedContext<?, ?> ctx;
+
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
-     * @param memPlcCfg Memory Policy configuration.
+     * @param dataRegionCfg Data region configuration.
      * @param memMetrics Memory Metrics.
      * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
@@ -172,8 +177,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
-        MemoryPolicyConfiguration memPlcCfg,
-        MemoryMetricsImpl memMetrics,
+        DataRegionConfiguration dataRegionCfg,
+        DataRegionMetricsImpl memMetrics,
         boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;
@@ -183,21 +188,22 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
         this.memMetrics = memMetrics;
-        memoryPolicyCfg = memPlcCfg;
+        this.dataRegionCfg = dataRegionCfg;
+        this.ctx = sharedCtx;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
         assert sysPageSize % 8 == 0 : sysPageSize;
 
-        totalPages = (int)(memPlcCfg.getMaxSize() / sysPageSize);
+        totalPages = (int)(dataRegionCfg.getMaxSize() / sysPageSize);
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        long startSize = memoryPolicyCfg.getInitialSize();
-        long maxSize = memoryPolicyCfg.getMaxSize();
+        long startSize = dataRegionCfg.getInitialSize();
+        long maxSize = dataRegionCfg.getMaxSize();
 
         long[] chunks = new long[SEG_CNT];
 
@@ -205,7 +211,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         long total = startSize;
 
-        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256 * 1024 * 1024);
+        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256L * 1024 * 1024);
 
         int lastIdx = 0;
 
@@ -225,7 +231,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (lastIdx != SEG_CNT - 1)
             chunks = Arrays.copyOf(chunks, lastIdx + 1);
 
-        directMemoryProvider.initialize(chunks);
+        if (segments == null)
+            directMemoryProvider.initialize(chunks);
 
         addSegment(null);
     }
@@ -254,7 +261,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int cacheId, int partId, byte flags) {
+    @Override public long allocatePage(int grpId, int partId, byte flags) {
         memMetrics.incrementTotalAllocatedPages();
 
         long relPtr = borrowFreePage();
@@ -288,12 +295,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             }
         }
 
-        if (relPtr == INVALID_REL_PTR)
-            throw new IgniteOutOfMemoryException("Not enough memory allocated " +
-                "(consider increasing memory policy size or enabling evictions) " +
-                "[policyName=" + memoryPolicyCfg.getName() +
-                ", size=" + U.readableSize(memoryPolicyCfg.getMaxSize(), true) + "]"
+        if (relPtr == INVALID_REL_PTR) {
+            IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
+                "name=" + dataRegionCfg.getName() +
+                ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                "  ^-- Enable eviction or expiration policies"
             );
+
+            if (ctx != null)
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
+
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 
@@ -615,7 +633,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             if (oldRef != null) {
                 if (log.isInfoEnabled())
-                    log.info("Allocated next memory segment [plcName=" + memoryPolicyCfg.getName() +
+                    log.info("Allocated next memory segment [plcName=" + dataRegionCfg.getName() +
                         ", chunkSize=" + U.readableSize(region.size(), true) + ']');
             }
 
@@ -816,5 +834,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         public int pageIndex(int seqNo) {
             return PageIdUtils.pageIndex(fromSegmentIndex(idx, seqNo - pagesInPrevSegments));
         }
+    }
+
+    /** {@inheritDoc} */
+    public int checkpointBufferPagesCount() {
+        return 0;
     }
 }

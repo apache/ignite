@@ -45,6 +45,9 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
     /** Node index to initiate operations from. */
     private final int nodeIdx;
 
+    /** Backups to configure */
+    private final int backups;
+
     /** Names of companies to use. */
     private final static List<String> COMPANIES = Arrays.asList("ASF", "GNU", "BSD");
 
@@ -61,11 +64,13 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
      * Constructor.
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
+     * @param backups Number of backups.
      * @param nodeIdx Node index.
      */
-    H2DynamicIndexingComplexTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int nodeIdx) {
+    H2DynamicIndexingComplexTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int backups, int nodeIdx) {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
+        this.backups = backups;
         this.nodeIdx = nodeIdx;
     }
 
@@ -82,24 +87,18 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
         Ignition.start(serverConfiguration(3));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /** Do test. */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOperations() {
         executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
-            ",affinitykey=city\"");
+            ",backups=" + backups + ",affinity_key=city\"");
 
         executeSql("CREATE INDEX idx on person (city asc, name asc)");
 
         executeSql("CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
-            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinitykey=name\"");
+            "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
+            ",backups=" + backups + ",affinity_key=name\"");
 
         executeSql("INSERT INTO city (name, population) values(?, ?), (?, ?), (?, ?)",
             "St. Petersburg", 6000000,
@@ -107,7 +106,9 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
             "London", 8000000
         );
 
-        for (int i = 0; i < 100; i++)
+        final long PERSON_COUNT = 100;
+
+        for (int i = 0; i < PERSON_COUNT; i++)
             executeSql("INSERT INTO person (id, name, age, company, city) values (?, ?, ?, ?, ?)",
                 i,
                 "Person " + i,
@@ -121,7 +122,11 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
             }
         });
 
-        long r = (Long)executeSqlSingle("SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
+        long r = (Long)executeSqlSingle("SELECT COUNT(*) from Person");
+
+        assertEquals(PERSON_COUNT, r);
+
+        r = (Long)executeSqlSingle("SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
 
         // Berkeley is not present in City table, although 25 people have it specified as their city.
         assertEquals(75L, r);
@@ -187,7 +192,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
             @Override public Object call() throws Exception {
                 return executeSql("SELECT * from Person");
             }
-        }, IgniteSQLException.class, "Failed to parse query: SELECT * from Person");
+        }, IgniteSQLException.class, "Table \"PERSON\" not found");
     }
 
     /**
@@ -318,7 +323,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
      * @return Run result.
      */
     private List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
-        return node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
+        return node.context().query().querySqlFields(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
     }
 
     /**

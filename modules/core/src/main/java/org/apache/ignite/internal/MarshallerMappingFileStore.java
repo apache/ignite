@@ -45,23 +45,37 @@ import org.apache.ignite.marshaller.MarshallerContext;
  * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
 final class MarshallerMappingFileStore {
+    /** File lock timeout in milliseconds. */
+    private static final int FILE_LOCK_TIMEOUT_MS = 5000;
+
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
     /** */
     private final IgniteLogger log;
 
-    /** */
+    /** Marshaller mapping directory */
     private final File workDir;
 
     /** */
     private final String FILE_EXTENSION = ".classname";
 
     /**
+     * @param igniteWorkDir Ignite work directory
      * @param log Logger.
      */
     MarshallerMappingFileStore(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
         workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
+        this.log = log;
+    }
+
+    /**
+     * Creates marshaller mapping file store with custom predefined work directory
+     * @param log logger.
+     * @param marshallerMappingFileStoreDir custom marshaller work directory
+     */
+    MarshallerMappingFileStore(final IgniteLogger log, final File marshallerMappingFileStoreDir) {
+        this.workDir = marshallerMappingFileStoreDir;
         this.log = log;
     }
 
@@ -81,14 +95,12 @@ final class MarshallerMappingFileStore {
             File file = new File(workDir, fileName);
 
             try (FileOutputStream out = new FileOutputStream(file)) {
-                FileLock fileLock = fileLock(out.getChannel(), false);
-
-                assert fileLock != null : fileName;
-
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    writer.write(typeName);
+                    try (FileLock ignored = fileLock(out.getChannel(), false)) {
+                        writer.write(typeName);
 
-                    writer.flush();
+                        writer.flush();
+                    }
                 }
             }
             catch (IOException e) {
@@ -109,11 +121,10 @@ final class MarshallerMappingFileStore {
     }
 
     /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
+     * @param fileName File name.
      */
-    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
-        String fileName = getFileName(platformId, typeId);
+    private String readMapping(String fileName) throws IgniteCheckedException {
+        ThreadLocalRandom rnd = null;
 
         Lock lock = fileLock(fileName);
 
@@ -122,22 +133,43 @@ final class MarshallerMappingFileStore {
         try {
             File file = new File(workDir, fileName);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                FileLock fileLock = fileLock(in.getChannel(), true);
+            long time = 0;
 
-                assert fileLock != null : fileName;
+            while (true) {
+                try (FileInputStream in = new FileInputStream(file)) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                        try (FileLock ignored = fileLock(in.getChannel(), true)) {
+                            if (file.length() > 0)
+                                return reader.readLine();
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    return reader.readLine();
+                            if (rnd == null)
+                                rnd = ThreadLocalRandom.current();
+
+                            if (time == 0)
+                                time = U.currentTimeMillis();
+                            else if ((U.currentTimeMillis() - time) >= FILE_LOCK_TIMEOUT_MS)
+                                return null;
+
+                            U.sleep(rnd.nextLong(50));
+                        }
+                    }
                 }
-            }
-            catch (IOException ignored) {
-                return null;
+                catch (IOException ignored) {
+                    return null;
+                }
             }
         }
         finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    String readMapping(byte platformId, int typeId) throws IgniteCheckedException {
+        return readMapping(getFileName(platformId, typeId));
     }
 
     /**
@@ -154,20 +186,40 @@ final class MarshallerMappingFileStore {
 
             int typeId = getTypeId(name);
 
-            try (FileInputStream in = new FileInputStream(file)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String className = reader.readLine();
+            String clsName = readMapping(name);
 
-                    marshCtx.registerClassNameLocally(platformId, typeId, className);
-                }
+            if (clsName == null) {
+                throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
+                    ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
+                    "Clean up marshaller directory (<work_dir>/marshaller) and restart the node. File name: " + name +
+                    ", FileSize: " + file.length());
             }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Reading marshaller mapping from file "
-                    + name
-                    + " failed."
-                    , e);
-            }
+
+            marshCtx.registerClassNameLocally(platformId, typeId, clsName);
         }
+    }
+
+    /**
+     * Checks if marshaller mapping for given [platformId, typeId] pair is already presented on disk.
+     * If so verifies that it is the same (if no {@link IgniteCheckedException} is thrown).
+     * If there is not such mapping writes it.
+     *
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param typeName Type name.
+     */
+    void mergeAndWriteMapping(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
+        String existingTypeName = readMapping(platformId, typeId);
+
+        if (existingTypeName != null) {
+            if (!existingTypeName.equals(typeName))
+                throw new IgniteCheckedException("Failed to merge new and existing marshaller mappings." +
+                    " For [platformId=" + platformId + ", typeId=" + typeId + "]" +
+                    " new typeName=" + typeName + ", existing typeName=" + existingTypeName + "." +
+                    " Consider cleaning up persisted mappings from <workDir>/marshaller directory.");
+        }
+        else
+            writeMapping(platformId, typeId, typeName);
     }
 
     /**
@@ -239,10 +291,10 @@ final class MarshallerMappingFileStore {
         while (true) {
             FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
 
-            if (fileLock == null)
-                U.sleep(rnd.nextLong(50));
-            else
+            if (fileLock != null)
                 return fileLock;
+
+            U.sleep(rnd.nextLong(50));
         }
     }
 }

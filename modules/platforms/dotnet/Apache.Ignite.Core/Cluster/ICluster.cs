@@ -88,6 +88,78 @@ namespace Apache.Ignite.Core.Cluster
         /// <value>
         /// The reconnect task.
         /// </value>
-        Task<bool> ClientReconnectTask { get; } 
+        Task<bool> ClientReconnectTask { get; }
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        void SetActive(bool isActive);
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsActive();
+
+        /// <summary>
+        /// Sets the baseline topology from the cluster topology of the given version.
+        /// This method requires active cluster (<see cref="IsActive"/>).
+        /// </summary>
+        /// <param name="topologyVersion">The topology version.</param>
+        void SetBaselineTopology(long topologyVersion);
+
+        /// <summary>
+        /// Sets the baseline topology nodes.
+        /// </summary>
+        /// <param name="nodes">The nodes.</param>
+        void SetBaselineTopology(IEnumerable<IBaselineNode> nodes);
+
+        /// <summary>
+        /// Gets the baseline topology.
+        /// Returns null if <see cref="SetBaselineTopology(long)"/> has not been called.
+        /// </summary>
+        ICollection<IBaselineNode> GetBaselineTopology();
+
+        /// <summary>
+        /// Disables write-ahead logging for specified cache. When WAL is disabled, changes are not logged to disk.
+        /// This significantly improves cache update speed.The drawback is absence of local crash-recovery guarantees.
+        /// If node is crashed, local content of WAL-disabled cache will be cleared on restart
+        /// to avoid data corruption.
+        /// <para />
+        /// Internally this method will wait for all current cache operations to finish and prevent new cache 
+        /// operations from being executed.Then checkpoint is initiated to flush all data to disk.Control is returned
+        /// to the callee when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
+        /// <para />
+        /// WAL state can be changed only for persistent caches.
+        /// </summary>
+        /// <param name="cacheName">Name of the cache.</param>
+        void DisableWal(string cacheName);
+
+        /// <summary>
+        /// Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
+        /// <see cref="DisableWal"/>.
+        /// <para />
+        /// Internally this method will wait for all current cache operations to finish and prevent new cache
+        /// operations from being executed. Then checkpoint is initiated to flush all data to disk.
+        /// Control is returned to the callee when all data is persisted to disk.
+        /// <para />
+        /// WAL state can be changed only for persistent caches.
+        /// </summary>
+        /// <param name="cacheName">Name of the cache.</param>
+        void EnableWal(string cacheName);
+
+        /// <summary>
+        /// Determines whether write-ahead logging is enabled for specified cache.
+        /// </summary>
+        /// <param name="cacheName">Name of the cache.</param>
+        bool IsWalEnabled(string cacheName);
+
+        /// <summary>
+        /// Set transaction timeout on partition map exchange
+        /// </summary>
+        /// <param name="timeout"></param>
+        void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout);
     }
 }

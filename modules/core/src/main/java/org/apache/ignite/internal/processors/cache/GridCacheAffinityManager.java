@@ -99,7 +99,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         IgniteInternalFuture<AffinityTopologyVersion> fut = aff.readyFuture(topVer);
 
-        return fut != null ? fut : new GridFinishedFuture<>(topVer);
+        return fut != null ? fut : new GridFinishedFuture<>(aff.lastVersion());
     }
 
     /**
@@ -123,7 +123,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (cctx.isLocal())
             topVer = LOC_CACHE_TOP_VER;
 
-        return aff.assignments(topVer);
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.assignments(topVer);
     }
 
     /**

@@ -47,44 +47,50 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
      * @throws Exception If test failed.
      */
     public void testQueryLocal() throws Exception {
-        IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
+        // Let's do it twice to see how prepared statement caching behaves - without recompilation
+        // check for cached prepared statements this would fail.
+        for (int i = 0; i < 2; i ++) {
+            IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
-        cache.put(1, "value1");
-        cache.put(2, "value2");
-        cache.put(3, "value3");
-        cache.put(4, "value4");
-        cache.put(5, "value5");
+            cache.put(1, "value1");
+            cache.put(2, "value2");
+            cache.put(3, "value3");
+            cache.put(4, "value4");
+            cache.put(5, "value5");
 
-        // Tests equals query.
-        QueryCursor<Cache.Entry<Integer, String>> qry =
-            cache.query(new SqlQuery<Integer, String>(String.class, "_val='value1'").setLocal(true));
+            // Tests equals query.
+            QueryCursor<Cache.Entry<Integer, String>> qry =
+                cache.query(new SqlQuery<Integer, String>(String.class, "_val='value1'").setLocal(true));
 
-        Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
+            Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
 
-        Cache.Entry<Integer, String> entry = iter.next();
+            Cache.Entry<Integer, String> entry = iter.next();
 
-        assert !iter.hasNext();
+            assert !iter.hasNext();
 
-        assert entry != null;
-        assert entry.getKey() == 1;
-        assert "value1".equals(entry.getValue());
+            assert entry != null;
+            assert entry.getKey() == 1;
+            assert "value1".equals(entry.getValue());
 
-        // Tests like query.
-        qry = cache.query(new SqlQuery<Integer, String>(String.class, "_val like 'value%'").setLocal(true));
+            // Tests like query.
+            qry = cache.query(new SqlQuery<Integer, String>(String.class, "_val like 'value%'").setLocal(true));
 
-        iter = qry.iterator();
+            iter = qry.iterator();
 
-        assert iter.next() != null;
-        assert iter.next() != null;
-        assert iter.next() != null;
-        assert iter.next() != null;
-        assert iter.next() != null;
-        assert !iter.hasNext();
+            assert iter.next() != null;
+            assert iter.next() != null;
+            assert iter.next() != null;
+            assert iter.next() != null;
+            assert iter.next() != null;
+            assert !iter.hasNext();
 
-        // Test explain for primitive index.
-        List<List<?>> res = cache.query(new SqlFieldsQuery(
-            "explain select _key from String where _val > 'value1'").setLocal(true)).getAll();
+            // Test explain for primitive index.
+            List<List<?>> res = cache.query(new SqlFieldsQuery(
+                    "explain select _key from String where _val > 'value1'").setLocal(true)).getAll();
 
-        assertTrue("__ explain: \n" + res, ((String)res.get(0).get(0)).toLowerCase().contains("_val_idx"));
+            assertTrue("__ explain: \n" + res, ((String) res.get(0).get(0)).toLowerCase().contains("_val_idx"));
+
+            cache.destroy();
+        }
     }
 }

@@ -43,4 +43,9 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator, PageSupport
      * @return Total number of loaded pages in memory.
      */
     public long loadedPages();
+
+    /**
+     * Number of pages used in checkpoint buffer.
+     */
+    public int checkpointBufferPagesCount();
 }

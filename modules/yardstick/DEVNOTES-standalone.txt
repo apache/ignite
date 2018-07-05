@@ -7,7 +7,6 @@ mvn clean package
 
 Artifacts can be found in `/target/assembly directory.`
 
-
 Writing Ignite Benchmarks
 =========================
 

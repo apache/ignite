@@ -17,79 +17,28 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 /**
  * Module interaction with agents.
  */
 module.exports = {
-    implements: 'agent-socket',
-    inject: ['require(lodash)', 'require(zlib)']
+    implements: 'agent-socket'
 };
 
 /**
- * Helper class to contract REST command.
- */
-class Command {
-    /**
-     * @param {Boolean} demo Is need run command on demo node.
-     * @param {String} name Command name.
-     */
-    constructor(demo, name) {
-        this.demo = demo;
-
-        /**
-         * Command name.
-         * @type {String}
-         */
-        this._name = name;
-
-        /**
-         * Command parameters.
-         * @type {Array.<Object.<String, String>>}
-         */
-        this._params = [];
-
-        this._paramsLastIdx = 1;
-    }
-
-    /**
-     * Add parameter to command.
-     * @param {Object} value Parameter value.
-     * @returns {Command}
-     */
-    addParam(value) {
-        this._params.push({key: `p${this._paramsLastIdx++}`, value});
-
-        return this;
-    }
-
-    /**
-     * Add parameter to command.
-     * @param {String} key Parameter key.
-     * @param {Object} value Parameter value.
-     * @returns {Command}
-     */
-    addNamedParam(key, value) {
-        this._params.push({key, value});
-
-        return this;
-    }
-}
-
-/**
- * @param _
- * @param zlib
  * @returns {AgentSocket}
  */
-module.exports.factory = function(_, zlib) {
+module.exports.factory = function() {
     /**
      * Connected agent descriptor.
      */
     class AgentSocket {
         /**
          * @param {Socket} socket Socket for interaction.
-         * @param {String} tokens Active tokens.
+         * @param {Array.<String>} tokens Agent tokens.
          * @param {String} demoEnabled Demo enabled.
          */
         constructor(socket, tokens, demoEnabled) {
@@ -108,7 +57,7 @@ module.exports.factory = function(_, zlib) {
          * Send event to agent.
          *
          * @this {AgentSocket}
-         * @param {String} event Command name.
+         * @param {String} event Event name.
          * @param {Array.<Object>} args - Transmitted arguments.
          * @param {Function} [callback] on finish
          */
@@ -136,21 +85,7 @@ module.exports.factory = function(_, zlib) {
                     if (resErr)
                         return reject(resErr);
 
-                    if (res.zipped) {
-                        // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
-                        // See: https://github.com/socketio/socket.io-client-java/issues/312
-                        // We can GZip manually for now.
-                        zlib.gunzip(new Buffer(res.data, 'base64'), (unzipErr, unzipped) => {
-                            if (unzipErr)
-                                return reject(unzipErr);
-
-                            res.data = unzipped.toString();
-
-                            resolve(res);
-                        });
-                    }
-                    else
-                        resolve(res);
+                    resolve(res);
                 })
             );
         }
@@ -192,71 +127,6 @@ module.exports.factory = function(_, zlib) {
          */
         attachToDemoCluster(browserSocket) {
             this.demo.browserSockets.push(...browserSocket);
-        }
-
-        startCollectTopology(timeout) {
-            return this.emitEvent('start:collect:topology', timeout);
-        }
-
-        stopCollectTopology(demo) {
-            return this.emitEvent('stop:collect:topology', demo);
-        }
-
-        /**
-         * Execute REST request on node.
-         *
-         * @param {Boolean} demo Is need run command on demo node.
-         * @param {String} cmd REST command.
-         * @param {Array.<String>} args - REST command arguments.
-         * @return {Promise}
-         */
-        restCommand(demo, cmd, ...args) {
-            const params = {cmd};
-
-            _.forEach(args, (arg, idx) => {
-                params[`p${idx + 1}`] = args[idx];
-            });
-
-            return this.emitEvent('node:rest', {uri: 'ignite', demo, params})
-                .then(this.restResultParse);
-        }
-
-        gatewayCommand(demo, nids, taskCls, argCls, ...args) {
-            const cmd = new Command(demo, 'exe')
-                .addNamedParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam(nids)
-                .addParam(taskCls)
-                .addParam(argCls);
-
-            _.forEach(args, (arg) => cmd.addParam(arg));
-
-            return this.restCommand(cmd);
-        }
-
-        /**
-         * @param {Boolean} demo Is need run command on demo node.
-         * @param {Boolean} attr Get attributes, if this parameter has value true. Default value: true.
-         * @param {Boolean} mtr Get metrics, if this parameter has value true. Default value: false.
-         * @returns {Promise}
-         */
-        topology(demo, attr, mtr) {
-            const cmd = new Command(demo, 'top')
-                .addNamedParam('attr', attr !== false)
-                .addNamedParam('mtr', !!mtr);
-
-            return this.restCommand(cmd);
-        }
-
-        /**
-         * @param {Boolean} demo Is need run command on demo node.
-         * @param {String} cacheName Cache name.
-         * @returns {Promise}
-         */
-        metadata(demo, cacheName) {
-            const cmd = new Command(demo, 'metadata')
-                .addNamedParam('cacheName', cacheName);
-
-            return this.restCommand(cmd);
         }
     }
 

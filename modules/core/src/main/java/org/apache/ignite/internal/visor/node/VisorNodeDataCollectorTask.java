@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -89,32 +90,32 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
 
         taskRes.getTopologyVersions().put(nid, jobRes.getTopologyVersion());
 
-        taskRes.isTaskMonitoringEnabled().put(nid, jobRes.isTaskMonitoringEnabled());
+        taskRes.getTaskMonitoringEnabled().put(nid, jobRes.isTaskMonitoringEnabled());
 
         taskRes.getErrorCounts().put(nid, jobRes.getErrorCount());
 
-        if (!jobRes.getEvents().isEmpty())
+        if (!F.isEmpty(jobRes.getEvents()))
             taskRes.getEvents().addAll(jobRes.getEvents());
 
         if (jobRes.getEventsEx() != null)
             taskRes.getEventsEx().put(nid, jobRes.getEventsEx());
 
-        if (!jobRes.getMemoryMetrics().isEmpty())
+        if (!F.isEmpty(jobRes.getMemoryMetrics()))
             taskRes.getMemoryMetrics().put(nid, jobRes.getMemoryMetrics());
 
         if (jobRes.getMemoryMetricsEx() != null)
             taskRes.getMemoryMetricsEx().put(nid, jobRes.getMemoryMetricsEx());
 
-        if (!jobRes.getCaches().isEmpty())
+        if (!F.isEmpty(jobRes.getCaches()))
             taskRes.getCaches().put(nid, jobRes.getCaches());
 
         if (jobRes.getCachesEx() != null)
             taskRes.getCachesEx().put(nid, jobRes.getCachesEx());
 
-        if (!jobRes.getIgfss().isEmpty())
+        if (!F.isEmpty(jobRes.getIgfss()))
             taskRes.getIgfss().put(nid, jobRes.getIgfss());
 
-        if (!jobRes.getIgfsEndpoints().isEmpty())
+        if (!F.isEmpty(jobRes.getIgfsEndpoints()))
             taskRes.getIgfsEndpoints().put(nid, jobRes.getIgfsEndpoints());
 
         if (jobRes.getIgfssEx() != null)
@@ -129,5 +130,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         taskRes.getReadyAffinityVersions().put(nid, jobRes.getReadyAffinityVersion());
 
         taskRes.getPendingExchanges().put(nid, jobRes.isHasPendingExchange());
+
+        taskRes.getRebalance().put(nid, jobRes.getRebalance());
     }
 }

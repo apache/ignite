@@ -56,6 +56,24 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Database schemas metadata result. */
     static final byte META_SCHEMAS = 12;
 
+    /** Multiple statements query results. */
+    static final byte QRY_EXEC_MULT = 13;
+
+    /** Columns metadata result V2. */
+    static final byte META_COLUMNS_V2 = 14;
+
+    /** Columns metadata result V3. */
+    static final byte META_COLUMNS_V3 = 15;
+
+    /** A request to send file from client to server. */
+    static final byte BULK_LOAD_ACK = 16;
+
+    /** Columns metadata result V4. */
+    static final byte META_COLUMNS_V4 = 17;
+
+    /** A result of the processing ordered batch request. */
+    static final byte BATCH_EXEC_ORDERED = 18;
+
     /** Success status. */
     private byte type;
 
@@ -136,6 +154,36 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case META_SCHEMAS:
                 res = new JdbcMetaSchemasResult();
+
+                break;
+
+            case QRY_EXEC_MULT:
+                res = new JdbcQueryExecuteMultipleStatementsResult();
+
+                break;
+
+            case META_COLUMNS_V2:
+                res = new JdbcMetaColumnsResultV2();
+
+                break;
+
+            case META_COLUMNS_V3:
+                res = new JdbcMetaColumnsResultV3();
+
+                break;
+
+            case BULK_LOAD_ACK:
+                res = new JdbcBulkLoadAckResult();
+
+                break;
+
+            case META_COLUMNS_V4:
+                res = new JdbcMetaColumnsResultV4();
+
+                break;
+
+            case BATCH_EXEC_ORDERED:
+                res = new JdbcOrderedBatchExecuteResult();
 
                 break;
 

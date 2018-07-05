@@ -57,7 +57,7 @@ module.exports.factory = (mongo, errors) => {
          */
         static spaceIds(userId, demo) {
             return this.spaces(userId, demo)
-                .then((spaces) => spaces.map((space) => space._id));
+                .then((spaces) => spaces.map((space) => space._id.toString()));
         }
 
         /**

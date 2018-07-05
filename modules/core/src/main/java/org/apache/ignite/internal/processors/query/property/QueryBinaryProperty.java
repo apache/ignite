@@ -65,6 +65,18 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** Whether user was warned about missing property. */
     private volatile boolean warned;
 
+    /** */
+    private final boolean notNull;
+
+    /** */
+    private final Object defaultValue;
+
+    /** */
+    private final int precision;
+
+    /** */
+    private final int scale;
+
     /**
      * Constructor.
      *
@@ -74,10 +86,14 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param type Result type.
      * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
      * @param alias Field alias.
+     * @param notNull {@code true} if null value is not allowed.
+     * @param defaultValue Default value.
+     * @param precision Precision.
+     * @param scale Scale.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        Class<?> type, @Nullable Boolean key, String alias) {
-
+        Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue,
+        int precision, int scale) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
@@ -86,9 +102,14 @@ public class QueryBinaryProperty implements GridQueryProperty {
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;
         this.type = type;
+        this.notNull = notNull;
 
         if (key != null)
             this.isKeyProp = key ? 1 : -1;
+
+        this.defaultValue = defaultValue;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
@@ -265,5 +286,25 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public GridQueryProperty parent() {
         return parent;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean notNull() {
+        return notNull;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object defaultValue() {
+        return defaultValue;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int precision() {
+        return precision;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int scale() {
+        return scale;
     }
 }

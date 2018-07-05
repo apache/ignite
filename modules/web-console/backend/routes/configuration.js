@@ -17,21 +17,33 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/configurations',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/configurations']
+    inject: ['mongo', 'services/configurations']
 };
 
-module.exports.factory = function(_, express, mongo, configurationsService) {
+module.exports.factory = function(mongo, configurationsService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
+
         /**
          * Get all user configuration in current space.
          */
         router.get('/list', (req, res) => {
-            configurationsService.list(req.currentUserId(), req.header('IgniteDemoMode'))
+            configurationsService.list(req.currentUserId(), req.demo())
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        /**
+         * Get user configuration in current space.
+         */
+        router.get('/:_id', (req, res) => {
+            configurationsService.get(req.currentUserId(), req.demo(), req.params._id)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

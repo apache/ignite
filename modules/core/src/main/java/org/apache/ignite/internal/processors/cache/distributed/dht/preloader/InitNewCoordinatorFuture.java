@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -113,6 +114,10 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
                         nodes.add(node);
                     }
+                    else if (!node.isLocal()) {
+                        if (log.isInfoEnabled())
+                            log.info("Init new coordinator future will skip remote node: " + node);
+                    }
                 }
 
                 if (exchFut.context().mergeExchanges() && !curDiscoCache.version().equals(discoCache.version())) {
@@ -148,8 +153,10 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
             }
 
             if (log.isInfoEnabled()) {
-                log.info("Try restore exchange result [allNodes=" + awaited +
-                    ", joined=" + joinedNodes.keySet() +  ']');
+                log.info("Try restore exchange result [awaited=" + awaited +
+                    ", joined=" + joinedNodes.keySet() +
+                    ", nodes=" + U.nodeIds(nodes) +
+                    ", discoAllNodes=" + U.nodeIds(discoCache.allNodes()) + ']');
             }
 
             if (!nodes.isEmpty()) {
@@ -228,7 +235,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
             if (awaited.remove(node.id())) {
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
-                if (fullMsg0 != null) {
+                if (fullMsg0 != null && fullMsg0.resultTopologyVersion() != null) {
                     assert fullMsg == null || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
 
                     fullMsg  = fullMsg0;
@@ -331,6 +338,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
         synchronized (this) {
             done = awaited.remove(nodeId) && awaited.isEmpty();
+
+            if (done)
+                onAllReceived();
         }
 
         if (done)

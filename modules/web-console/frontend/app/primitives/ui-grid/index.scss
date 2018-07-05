@@ -17,6 +17,14 @@
 
 @import '../../../public/stylesheets/variables';
 
+// Use this class to control grid header height
+.ui-grid-ignite__panel {
+    $panel-height: 64px;
+    $title-height: 36px;
+    padding-top: ($panel-height - $title-height) / 2 !important;
+    padding-bottom: ($panel-height - $title-height) / 2 !important;
+}
+
 .ui-grid.ui-grid--ignite {
     $height: 46px;
 
@@ -24,7 +32,7 @@
     border-top: none;
 
     [role="button"] {
-      outline: none;
+        outline: none;
     }
 
     sup, sub {
@@ -40,7 +48,7 @@
     }
 
     .ui-grid-cell {
-        height: $height;
+        height: $height - 1px;
 
         border-color: transparent;
     }
@@ -78,6 +86,10 @@
         }
     }
 
+    .ui-grid-row:last-child .ui-grid-cell {
+        border-bottom-width: 0;
+    }
+
     .ui-grid-header-viewport {
         .ui-grid-header-canvas {
             .ui-grid-header-cell {
@@ -105,8 +117,8 @@
                     }
 
                     .ui-grid-header-cell-filter {
-                        background-image: 
-                            linear-gradient(to right, $ignite-brand-success, transparent), 
+                        background-image:
+                            linear-gradient(to right, $ignite-brand-success, transparent),
                             linear-gradient(to right, $ignite-brand-success 70%, transparent 0%);
                         background-position: left bottom;
                         background-repeat: repeat-x;
@@ -114,7 +126,7 @@
 
                         &:hover {
                             background-image: none;
-                            // linear-gradient(to right, change-color($ignite-brand-success, $lightness: 26%), transparent), 
+                            // linear-gradient(to right, change-color($ignite-brand-success, $lightness: 26%), transparent),
                             // linear-gradient(to right, change-color($ignite-brand-success, $lightness: 26%) 70%, transparent 0%);
                         }
 
@@ -126,14 +138,14 @@
                             height: 20px;
                             margin-top: -20px;
 
-                            font-size: 0; 
+                            font-size: 0;
                         }
 
                         &.active {
                             color: $ignite-brand-primary;
 
-                            background-image: 
-                                linear-gradient(to right, $ignite-brand-primary, transparent), 
+                            background-image:
+                                linear-gradient(to right, $ignite-brand-primary, transparent),
                                 linear-gradient(to right, $ignite-brand-primary 70%, transparent 0%);
                         }
                     }
@@ -143,12 +155,16 @@
     }
 
     .ui-grid-header--subcategories {
+        .ui-grid-header-canvas {
+            background-color: white;
+        }
+
         .ui-grid-header-span.ui-grid-header-cell {
+            background: initial;
+
             .ui-grid-cell-contents {
                 padding: 8px 20px;
             }
-
-            background: initial;
 
             [ng-show] .ui-grid-cell-contents {
                 text-align: center;
@@ -157,6 +173,7 @@
             .ui-grid-filter-container {
                 padding-left: 20px;
                 padding-right: 20px;
+                font-weight: normal;
             }
 
             .ng-hide + .ui-grid-header-cell-row .ui-grid-header-cell {
@@ -181,7 +198,7 @@
             width: auto;
 
             .ui-grid-render-container-left {
-                .ui-grid-viewport, 
+                .ui-grid-viewport,
                 .ui-grid-header-viewport {
                     width: auto;
 
@@ -213,12 +230,12 @@
 
                     position: absolute;
                     top: 0;
-                    right: 9px;
+                    right: 15px;
                     z-index: 1000;
-                    
+
                     width: 5px;
                     height: 100%;
-                    
+
                     opacity: .2;
                     box-shadow: 2px 0 3px #000;
                     border-right: 1px solid #000;
@@ -238,6 +255,7 @@
 
     .ui-grid-row {
         height: $height;
+        border-bottom: 1px solid $table-border-color;
 
         &:nth-child(odd) {
             .ui-grid-cell {
@@ -251,10 +269,6 @@
             }
         }
 
-        &:not(:first-child) {
-            border-top: 1px solid $table-border-color;
-        }
-
         &.ui-grid-row-selected > [ui-grid-row] > .ui-grid-cell {
             background-color: #e5f2f9;
 
@@ -265,6 +279,8 @@
     .ui-grid-selection-row-header-buttons {
         position: relative;
         opacity: 1;
+        right: 3px;
+        display: block;
 
         &::before {
             content: '';
@@ -293,19 +309,19 @@
             }
 
             &::after {
-              content: '';
+                content: '';
 
-              position: absolute;
-              top: 4px;
-              left: 4px;
-              
-              width: 4px;
-              height: 8px;
+                position: absolute;
+                top: 4px;
+                left: 4px;
 
-              border: solid #FFF;
-              border-width: 0 2px 2px 0;
+                width: 4px;
+                height: 8px;
 
-              transform: rotate(35deg);
+                border: solid #FFF;
+                border-width: 0 2px 2px 0;
+
+                transform: rotate(35deg);
             }
         }
     }
@@ -340,7 +356,7 @@
 
                 &::before,
                 &::after {
-                  content: '';
+                    content: '';
                 }
             }
 
@@ -352,7 +368,7 @@
                     position: absolute;
                     top: 5px;
                     left: 2px;
-                    
+
                     width: 7px;
                     margin: 0;
 
@@ -366,7 +382,7 @@
                     position: absolute;
                     top: 2px;
                     left: 5px;
-                    
+
                     height: 7px;
                     margin: 0;
 
@@ -401,6 +417,7 @@
                             .ui-grid-column-resizer {
                                 right: -1px;
                                 opacity: 0;
+                                z-index: 1000;
                             }
                         }
                     }
@@ -433,7 +450,7 @@
 
                     width: 4px;
                     height: 46px;
-                    
+
                     background: #0067b9;
                     box-shadow: 0 -1px 0 0 rgba(0, 0, 0, .3), 0 -1px 0 0 rgba(0, 103, 185, 1);
                 }
@@ -459,6 +476,7 @@
         color: #393939;
         text-align: left;
         font-size: 14px;
+        font-weight: normal;
         line-height: 1.42857;
 
         box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
@@ -479,7 +497,7 @@
     .ui-grid-icon-cancel {
         &:before {
             content: '';
-    
+
             display: block;
             width: 12px;
             height: 12px;
@@ -501,6 +519,14 @@
             content: '';
         }
     }
+
+    .ui-grid-selection-row-header-buttons::before {
+        opacity: 1;
+    }
+
+    .ui-grid-clearfix:before, .ui-grid-clearfix:after {
+        display: flex;
+    }
 }
 
 .ui-grid--ignite.ui-grid-disabled-group-selection {
@@ -514,13 +540,20 @@
     }
 }
 
+// Obsoleted, use grid-no-data.
 .ui-grid--ignite.no-data {
     position: relative;
 
     padding: 16px 51px;
-    
+
     border-radius: 0 0 4px 4px;
-    
+
     font-style: italic;
     line-height: 16px;
+}
+
+.ui-grid {
+    input[type="text"].ui-grid-filter-input {
+        font-weight: normal;
+    }
 }

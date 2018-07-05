@@ -19,43 +19,36 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * File WAL pointer.
  */
 public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
+    /** Pointer serialized size. */
+    public static final int POINTER_SIZE = 16;
+
     /** Absolute WAL segment file index (incrementing counter) */
     private final long idx;
 
     /** */
-    private final int fileOffset;
+    private final int fileOff;
 
     /** Written record length */
     private int len;
 
-    /** Force flush flag. Used in BACKGROUND WAL mode. */
-    private boolean forceFlush;
-
     /**
-     * @param idx Absolute WAL segment file index (incremental counter)
-     * @param fileOffset Offset in file, from the beginning.
+     * @param idx Absolute WAL segment file index (incremental counter).
+     * @param fileOff Offset in file, from the beginning.
      * @param len Record length.
      */
-    public FileWALPointer(long idx, int fileOffset, int len) {
-        this(idx, fileOffset, len, false);
-    }
-
-    /**
-     * @param idx Absolute WAL segment file index .
-     * @param fileOffset Offset in file, from the beginning.
-     * @param len Record length.
-     * @param forceFlush Force flush flag.
-     */
-    public FileWALPointer(long idx, int fileOffset, int len, boolean forceFlush) {
+    public FileWALPointer(long idx, int fileOff, int len) {
         this.idx = idx;
-        this.fileOffset = fileOffset;
+        this.fileOff = fileOff;
         this.len = len;
-        this.forceFlush = forceFlush;
     }
 
     /**
@@ -69,7 +62,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
      * @return File offset.
      */
     public int fileOffset() {
-        return fileOffset;
+        return fileOff;
     }
 
     /**
@@ -93,14 +86,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
                 "(this pointer is a terminal): " + this);
 
         // Return a terminal pointer.
-        return new FileWALPointer(idx, fileOffset + len, 0);
-    }
-
-    /**
-     * @return Force flush flag.
-     */
-    public boolean forceFlush() {
-        return forceFlush;
+        return new FileWALPointer(idx, fileOff + len, 0);
     }
 
     /** {@inheritDoc} */
@@ -113,23 +99,23 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
 
         FileWALPointer that = (FileWALPointer)o;
 
-        return idx == that.idx && fileOffset == that.fileOffset;
+        return idx == that.idx && fileOff == that.fileOff;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int)(idx ^ (idx >>> 32));
+        int res = (int)(idx ^ (idx >>> 32));
 
-        result = 31 * result + fileOffset;
+        res = 31 * res + fileOff;
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(FileWALPointer o) {
+    @Override public int compareTo(@NotNull FileWALPointer o) {
         int res = Long.compare(idx, o.idx);
 
-        return res == 0 ? Integer.compare(fileOffset, o.fileOffset) : res;
+        return res == 0 ? Integer.compare(fileOff, o.fileOff) : res;
     }
 
     /** {@inheritDoc} */

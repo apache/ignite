@@ -20,13 +20,13 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Data transfer object for {@link MemoryMetrics}
+ * Data transfer object for {@link DataRegionMetrics}
  */
 public class VisorMemoryMetrics extends VisorDataTransferObject {
     /** */
@@ -59,6 +59,21 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     /** */
     private long physicalMemoryPages;
 
+    /** */
+    private long totalAllocatedSz;
+
+    /** */
+    private long physicalMemSz;
+
+    /** */
+    private long cpBufPages;
+
+    /** */
+    private long cpBufSz;
+
+    /** */
+    private int pageSize;
+
     /**
      * Default constructor.
      */
@@ -69,7 +84,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     /**
      * @param m Metrics instance to create DTO.
      */
-    public VisorMemoryMetrics(MemoryMetrics m) {
+    public VisorMemoryMetrics(DataRegionMetrics m) {
         name = m.getName();
         totalAllocatedPages = m.getTotalAllocatedPages();
         allocationRate = m.getAllocationRate();
@@ -79,6 +94,11 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         dirtyPages = m.getDirtyPages();
         pagesReplaceRate = m.getPagesReplaceRate();
         physicalMemoryPages = m.getPhysicalMemoryPages();
+        totalAllocatedSz = m.getTotalAllocatedSize();
+        physicalMemSz = m.getPhysicalMemorySize();
+        cpBufPages = m.getUsedCheckpointBufferPages();
+        cpBufSz = m.getUsedCheckpointBufferSize();
+        pageSize = m.getPageSize();
     }
 
     /**
@@ -144,6 +164,47 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         return physicalMemoryPages;
     }
 
+
+    /**
+     * @return Total size of memory allocated, in bytes.
+     */
+    public long getTotalAllocatedSize() {
+        return totalAllocatedSz;
+    }
+
+    /**
+     * @return Total size of pages loaded to RAM in bytes.
+     */
+    public long getPhysicalMemorySize() {
+        return physicalMemSz;
+    }
+
+    /**
+     * @return Checkpoint buffer size in pages.
+     */
+    public long getCheckpointBufferPages() {
+        return cpBufPages;
+    }
+
+    /**
+     * @return @return Checkpoint buffer size in bytes.
+     */
+    public long getCheckpointBufferSize() {
+        return cpBufSz;
+    }
+
+    /**
+     * @return Page size in bytes.
+     */
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
@@ -155,6 +216,11 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         out.writeLong(dirtyPages);
         out.writeFloat(pagesReplaceRate);
         out.writeLong(physicalMemoryPages);
+        out.writeLong(totalAllocatedSz);
+        out.writeLong(physicalMemSz);
+        out.writeLong(cpBufPages);
+        out.writeLong(cpBufSz);
+        out.writeInt(pageSize);
     }
 
     /** {@inheritDoc} */
@@ -168,6 +234,14 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         dirtyPages = in.readLong();
         pagesReplaceRate = in.readFloat();
         physicalMemoryPages = in.readLong();
+
+        if (protoVer > V1) {
+            totalAllocatedSz = in.readLong();
+            physicalMemSz = in.readLong();
+            cpBufPages = in.readLong();
+            cpBufSz = in.readLong();
+            pageSize = in.readInt();
+        }
     }
 
     /** {@inheritDoc} */

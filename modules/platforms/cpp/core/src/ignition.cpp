@@ -226,16 +226,10 @@ namespace ignite
         }
 
         // 2. Resolve IGNITE_HOME.
-        std::string home;
-        bool homeFound = ResolveIgniteHome(cfg.igniteHome, home);
+        std::string home = ResolveIgniteHome(cfg.igniteHome);
 
         // 3. Create classpath.
-        std::string cp;
-
-        if (homeFound)
-            cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
-        else
-            cp = CreateIgniteClasspath(cfg.jvmClassPath);
+        std::string cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
 
         if (cp.empty())
         {
@@ -307,7 +301,7 @@ namespace ignite
         // Even if the call has failed environment are going to be released by the Java.
         envTarget.release();
 
-        if (!env.Get()->GetProcessor())
+        if (!env.Get()->GetProcessor() || jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
         {
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 

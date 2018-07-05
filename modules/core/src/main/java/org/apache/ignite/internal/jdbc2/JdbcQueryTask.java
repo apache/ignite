@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,10 +32,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +52,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
  * system property.
  */
-class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
+class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -132,7 +134,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcQueryTask.QueryResult call() throws Exception {
+    @Override public JdbcQueryTaskResult call() throws Exception {
         Cursor cursor = CURSORS.get(uuid);
 
         List<String> tbls = null;
@@ -157,7 +159,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
-            SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+            SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
                 .setArgs(args);
 
             qry.setPageSize(fetchSize);
@@ -168,12 +170,24 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
+            FieldsQueryCursor<List<?>> fldQryCursor = cache.withKeepBinary().query(qry);
+
+            if (fldQryCursor instanceof BulkLoadContextCursor) {
+                fldQryCursor.close();
+
+                throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
+            }
+
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)fldQryCursor;
 
             if (isQry == null)
                 isQry = qryCursor.isQuery();
 
-            Collection<GridQueryFieldMetadata> meta = qryCursor.fieldsMeta();
+            CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
+        }
+
+        if (first || updateMetadata()) {
+            Collection<GridQueryFieldMetadata> meta = cursor.queryCursor().fieldsMeta();
 
             tbls = new ArrayList<>(meta.size());
             cols = new ArrayList<>(meta.size());
@@ -184,8 +198,6 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                 cols.add(desc.fieldName().toUpperCase());
                 types.add(desc.fieldTypeName());
             }
-
-            CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
         }
 
         List<List<?>> rows = new ArrayList<>();
@@ -208,14 +220,14 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             remove(uuid, cursor);
         else if (first) {
             if (!loc)
-                scheduleRemoval(uuid, RMV_DELAY);
+                scheduleRemoval(uuid);
         }
         else if (!loc && !CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor, cursor.iter)))
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
 
         assert isQry != null : "Query flag must be set prior to returning result";
 
-        return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
+        return new JdbcQueryTaskResult(uuid, finished, isQry, rows, cols, tbls, types);
     }
 
     /**
@@ -233,14 +245,35 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /**
+     * @return Flag to update metadata on demand.
+     */
+    protected boolean updateMetadata() {
+        return false;
+    }
+
+    /**
+     * @return Flag to update enable server side updates.
+     */
+    protected boolean skipReducerOnUpdate() {
+        return false;
+    }
+
+    /**
+     * Schedules removal of stored cursor in case of remote query execution.
+     *
+     * @param uuid Cursor UUID.
+     */
+    static void scheduleRemoval(final UUID uuid) {
+        scheduleRemoval(uuid, RMV_DELAY);
+    }
+
+    /**
      * Schedules removal of stored cursor in case of remote query execution.
      *
      * @param uuid Cursor UUID.
      * @param delay Delay in milliseconds.
      */
-    private void scheduleRemoval(final UUID uuid, long delay) {
-        assert !loc;
-
+    private static void scheduleRemoval(final UUID uuid, long delay) {
         SCHEDULER.schedule(new CAX() {
             @Override public void applyx() {
                 while (true) {
@@ -279,6 +312,14 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /**
+     * @param uuid Cursor UUID.
+     * @param c Cursor.
+     */
+    static void addCursor(UUID uuid, Cursor c) {
+        CURSORS.putIfAbsent(uuid, c);
+    }
+
+    /**
      * Closes and removes cursor.
      *
      * @param uuid Cursor UUID.
@@ -291,107 +332,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /**
-     * Result of query execution.
-     */
-    static class QueryResult implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Uuid. */
-        private final UUID uuid;
-
-        /** Finished. */
-        private final boolean finished;
-
-        /** Result type - query or update. */
-        private final boolean isQry;
-
-        /** Rows. */
-        private final List<List<?>> rows;
-
-        /** Tables. */
-        private final List<String> tbls;
-
-        /** Columns. */
-        private final List<String> cols;
-
-        /** Types. */
-        private final List<String> types;
-
-        /**
-         * @param uuid UUID..
-         * @param finished Finished.
-         * @param isQry
-         * @param rows Rows.
-         * @param cols Columns.
-         * @param tbls Tables.
-         * @param types Types.
-         */
-        public QueryResult(UUID uuid, boolean finished, boolean isQry, List<List<?>> rows, List<String> cols,
-            List<String> tbls, List<String> types) {
-            this.isQry = isQry;
-            this.cols = cols;
-            this.uuid = uuid;
-            this.finished = finished;
-            this.rows = rows;
-            this.tbls = tbls;
-            this.types = types;
-        }
-
-        /**
-         * @return Query result rows.
-         */
-        public List<List<?>> getRows() {
-            return rows;
-        }
-
-        /**
-         * @return Tables metadata.
-         */
-        public List<String> getTbls() {
-            return tbls;
-        }
-
-        /**
-         * @return Columns metadata.
-         */
-        public List<String> getCols() {
-            return cols;
-        }
-
-        /**
-         * @return Types metadata.
-         */
-        public List<String> getTypes() {
-            return types;
-        }
-
-        /**
-         * @return Query UUID.
-         */
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        /**
-         * @return {@code True} if it is finished query.
-         */
-        public boolean isFinished() {
-            return finished;
-        }
-
-        /**
-         * @return {@code true} if it is result of a query operation, not update; {@code false} otherwise.
-         */
-        public boolean isQuery() {
-            return isQry;
-        }
-    }
-
-    /**
      * Cursor.
      */
-    private static final class Cursor implements Iterable<List<?>> {
+    static final class Cursor implements Iterable<List<?>> {
         /** Cursor. */
         final QueryCursor<List<?>> cursor;
 
@@ -405,7 +348,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
          * @param cursor Cursor.
          * @param iter Iterator.
          */
-        private Cursor(QueryCursor<List<?>> cursor, Iterator<List<?>> iter) {
+        Cursor(QueryCursor<List<?>> cursor, Iterator<List<?>> iter) {
             this.cursor = cursor;
             this.iter = iter;
             this.lastAccessTime = U.currentTimeMillis();
@@ -421,6 +364,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
          */
         public boolean hasNext() {
             return iter.hasNext();
+        }
+
+        /**
+         * @return Cursor.
+         */
+        public QueryCursorImpl<List<?>> queryCursor() {
+            return (QueryCursorImpl<List<?>>)cursor;
         }
     }
 }

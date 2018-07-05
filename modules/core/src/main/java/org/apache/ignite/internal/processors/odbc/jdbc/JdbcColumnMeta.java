@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -124,6 +125,36 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
      */
     public String dataTypeClass() {
         return dataTypeClass;
+    }
+
+    /**
+     * @return Column's default value.
+     */
+    public String defaultValue() {
+        return null;
+    }
+
+    /**
+     * @return Column's precision.
+     */
+    public int precision() {
+        return -1;
+    }
+
+    /**
+     * @return Column's scale.
+     */
+    public int scale() {
+        return -1;
+    }
+
+    /**
+     * Return 'nullable' flag in compatibility mode (according with column name and column type).
+     *
+     * @return {@code true} in case the column allows null values. Otherwise returns {@code false}
+     */
+    public boolean isNullable() {
+        return JdbcUtils.nullable(colName, dataTypeClass);
     }
 
     /** {@inheritDoc} */

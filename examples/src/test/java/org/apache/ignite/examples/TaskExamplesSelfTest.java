@@ -17,25 +17,27 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.ComputeTaskMapExample;
-import org.apache.ignite.examples.computegrid.ComputeTaskSplitExample;
+//import org.apache.ignite.examples.computegrid.*;
+
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Hello world examples self test.
  */
 public class TaskExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskSplitExample() throws Exception {
-        ComputeTaskSplitExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskMapExample() throws Exception {
-        ComputeTaskMapExample.main(EMPTY_ARGS);
-    }
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8
+//    or testing method(s) should be removed if example(s) does not applicable for java 8.
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTaskSplitExample() throws Exception {
+//        ComputeTaskSplitExample.main(EMPTY_ARGS);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTaskMapExample() throws Exception {
+//        ComputeTaskMapExample.main(EMPTY_ARGS);
+//    }
 }

@@ -65,11 +65,12 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -106,7 +107,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
     /** Set keys used for set iteration. */
     private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Queues map. */
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
@@ -133,9 +134,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      */
     public CacheDataStructuresManager() {
-        queuesMap = new ConcurrentHashMap8<>(10);
+        queuesMap = new ConcurrentHashMap<>(10);
 
-        setsMap = new ConcurrentHashMap8<>(10);
+        setsMap = new ConcurrentHashMap<>(10);
     }
 
     /** {@inheritDoc} */
@@ -159,6 +160,17 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         for (GridCacheQueueProxy q : queuesMap.values())
             q.delegate().onKernalStop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        super.onDisconnected(reconnectFut);
+
+        for (Map.Entry<IgniteUuid, GridCacheQueueProxy> e : queuesMap.entrySet()) {
+            GridCacheQueueProxy queue = e.getValue();
+
+            queue.delegate().onClientDisconnected();
+        }
     }
 
     /**
@@ -311,6 +323,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     new QueueHeaderPredicate(),
                     cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
                     true,
+                    false,
                     false);
             }
 

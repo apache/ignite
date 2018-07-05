@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,14 +28,18 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
@@ -71,6 +76,12 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
         throws IgniteSpiException {
+        // All ignite code expects that 'send' fails after discovery listener for node fail finished.
+        if (getSpiContext().node(node.id()) == null) {
+            throw new IgniteSpiException(new ClusterTopologyCheckedException("Failed to send message" +
+                " (node left topology): " + node));
+        }
+
         if (msg instanceof GridIoMessage) {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
@@ -98,7 +109,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 }
 
                 if (block) {
-                    ignite.log().info("Block message [node=" + node.id() +
+                    ignite.log().info("Block message [node=" + node.id() + ", order=" + node.order() +
                         ", msg=" + ioMsg.message() + ']');
 
                     blockedMsgs.add(new T2<>(node, ioMsg));
@@ -113,6 +124,11 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         }
 
         super.sendMessage(node, msg, ackC);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        sendMessage(node, msg, null);
     }
 
     /**
@@ -187,6 +203,18 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
+     * @param cnt Number of messages to wait.
+     *
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForBlocked(int cnt) throws InterruptedException {
+        synchronized (this) {
+            while (blockedMsgs.size() < cnt)
+                wait();
+        }
+    }
+
+    /**
      * @throws InterruptedException If interrupted.
      */
     public void waitForRecorded() throws InterruptedException {
@@ -239,28 +267,41 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
-     * Stops block messages and can sends all already blocked messages.
+     * Stops block messages and sends all already blocked messages.
      */
     public void stopBlock() {
-        stopBlock(true);
+        stopBlock(true, null);
     }
 
     /**
      * Stops block messages and sends all already blocked messages if sndMsgs is 'true'.
      *
-     * @param sndMsgs If {@code true} sends blocked messages.
+     * @param sndMsgs {@code True} to send blocked messages.
      */
     public void stopBlock(boolean sndMsgs) {
-        synchronized (this) {
-            blockP = null;
+        stopBlock(sndMsgs, null);
+    }
 
+    /**
+     * Stops block messages and sends all already blocked messages if sndMsgs is 'true' optionally filtered
+     * by unblockPred.
+     *
+     * @param sndMsgs If {@code true} sends blocked messages.
+     * @param unblockPred If not null unblocks only messages allowed by predicate.
+     */
+    public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred) {
+        synchronized (this) {
             blockCls.clear();
             blockP = null;
 
+            Collection<T2<ClusterNode, GridIoMessage>> msgs =
+                unblockPred == null ? blockedMsgs : F.view(blockedMsgs, unblockPred);
+
             if (sndMsgs) {
-                for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+                for (T2<ClusterNode, GridIoMessage> msg : msgs) {
                     try {
                         ignite.log().info("Send blocked message [node=" + msg.get1().id() +
+                            ", order=" + msg.get1().order() +
                             ", msg=" + msg.get2().message() + ']');
 
                         super.sendMessage(msg.get1(), msg.get2());
@@ -271,7 +312,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 }
             }
 
-            blockedMsgs.clear();
+            msgs.clear();
         }
     }
 }

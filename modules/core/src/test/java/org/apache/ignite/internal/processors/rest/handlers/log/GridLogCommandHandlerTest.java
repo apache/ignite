@@ -64,8 +64,6 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         Files.delete(Paths.get(igniteHome + "/work/log/" + "test.log"));
         Files.delete(Paths.get(igniteHome + "/work/log/" + "ignite.log"));
         Files.delete(Paths.get(igniteHome + "/work/log/"));
-
-        super.afterTestsStopped();
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -45,16 +47,20 @@ import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC database metadata implementation.
  */
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
+    /** Driver name. */
+    public static final String DRIVER_NAME = "Apache Ignite JDBC Driver";
+
     /** Connection. */
     private final JdbcConnection conn;
 
     /** Metadata. */
-    private Map<String, Map<String, Map<String, String>>> meta;
+    private Map<String, Map<String, Map<String, ColumnInfo>>> meta;
 
     /** Index info. */
     private Collection<List<Object>> indexes;
@@ -133,7 +139,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDriverName() {
-        return "Ignite JDBC Driver";
+        return DRIVER_NAME;
     }
 
     /** {@inheritDoc} */
@@ -313,7 +319,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsMultipleResultSets() {
-        return false;
+        return conn.isMultipleStatementsAllowed();
     }
 
     /** {@inheritDoc} */
@@ -669,7 +675,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getProcedures(String catalog, String schemaPtrn,
         String procedureNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
@@ -683,7 +689,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getProcedureColumns(String catalog, String schemaPtrn, String procedureNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
@@ -709,7 +715,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows = new LinkedList<>();
 
         if (validCatalogPattern(catalog) && (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))) {
-            for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet()) {
+            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
                     for (String tbl : schema.getValue().keySet()) {
                         if (matches(tbl, tblNamePtrn))
@@ -719,7 +725,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
@@ -760,7 +766,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getCatalogs() throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.singletonList("TABLE_CAT"),
@@ -772,7 +778,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getTableTypes() throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.singletonList("TABLE_TYPE"),
@@ -791,14 +797,14 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         int cnt = 0;
 
         if (validCatalogPattern(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet()) {
+            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, String>> tbl : schema.getValue().entrySet()) {
+                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
                         if (matches(tbl.getKey(), tblNamePtrn)) {
-                            for (Map.Entry<String, String> col : tbl.getValue().entrySet()) {
+                            for (Map.Entry<String, ColumnInfo> col : tbl.getValue().entrySet()) {
                                 rows.add(columnRow(schema.getKey(), tbl.getKey(), col.getKey(),
-                                    JdbcUtils.type(col.getValue()), JdbcUtils.typeName(col.getValue()),
-                                    JdbcUtils.nullable(col.getKey(), col.getValue()), ++cnt));
+                                    JdbcUtils.type(col.getValue().typeName()), JdbcUtils.typeName(col.getValue().typeName()),
+                                    !col.getValue().isNotNull(), ++cnt));
                             }
                         }
                     }
@@ -806,19 +812,59 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
-                "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
-                "REMARKS", "COLUMN_DEF", "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE",
-                "SCOPE_CATLOG", "SCOPE_SCHEMA", "SCOPE_TABLE", "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
-                String.class.getName(), Integer.class.getName(), String.class.getName(), Integer.class.getName(),
-                Integer.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
-                String.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
-                String.class.getName(), String.class.getName(), String.class.getName(), Short.class.getName(),
-                String.class.getName()),
+            Arrays.asList(
+                "TABLE_CAT",        // 1
+                "TABLE_SCHEM",      // 2
+                "TABLE_NAME",       // 3
+                "COLUMN_NAME",      // 4
+                "DATA_TYPE",        // 5
+                "TYPE_NAME",        // 6
+                "COLUMN_SIZE",      // 7
+                "BUFFER_LENGTH",    // 8
+                "DECIMAL_DIGITS",   // 9
+                "NUM_PREC_RADIX",   // 10
+                "NULLABLE",         // 11
+                "REMARKS",          // 12
+                "COLUMN_DEF",       // 13
+                "SQL_DATA_TYPE",    // 14
+                "SQL_DATETIME_SUB", // 15
+                "CHAR_OCTET_LENGTH", // 16
+                "ORDINAL_POSITION",  // 17
+                "IS_NULLABLE",      // 18
+                "SCOPE_CATLOG",     // 19
+                "SCOPE_SCHEMA",     // 20
+                "SCOPE_TABLE",      // 21
+                "SOURCE_DATA_TYPE", // 22
+                "IS_AUTOINCREMENT", // 23
+                "IS_GENERATEDCOLUMN"), // 23
+            Arrays.asList(
+                String.class.getName(),     // 1
+                String.class.getName(),     // 2
+                String.class.getName(),     // 3
+                String.class.getName(),     // 4
+                Integer.class.getName(),    // 5
+                String.class.getName(),     // 6
+                Integer.class.getName(),    // 7
+                Integer.class.getName(),    // 8
+                Integer.class.getName(),    // 9
+                Integer.class.getName(),    // 10
+                Integer.class.getName(),    // 11
+                String.class.getName(),     // 12
+                String.class.getName(),     // 13
+                Integer.class.getName(),    // 14
+                Integer.class.getName(),    // 15
+                Integer.class.getName(),    // 16
+                Integer.class.getName(),    // 17
+                String.class.getName(),     // 18
+                String.class.getName(),     // 19
+                String.class.getName(),     // 20
+                String.class.getName(),     // 21
+                Short.class.getName(),      // 22
+                String.class.getName(),     // 23
+                String.class.getName()),    // 24
             rows, true
         );
     }
@@ -837,26 +883,30 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         boolean nullable, int pos) {
         List<Object> row = new ArrayList<>(20);
 
-        row.add(null);
-        row.add(schema);
-        row.add(tbl);
-        row.add(col);
-        row.add(type);
-        row.add(typeName);
-        row.add(null);
-        row.add(null);
-        row.add(10);
-        row.add(nullable ? columnNullable : columnNoNulls);
-        row.add(null);
-        row.add(null);
-        row.add(Integer.MAX_VALUE);
-        row.add(pos);
-        row.add("YES");
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add("NO");
+        row.add(null);                  // 1. TABLE_CAT
+        row.add(schema);                // 2. TABLE_SCHEM
+        row.add(tbl);                   // 3. TABLE_NAME
+        row.add(col);                   // 4. COLUMN_NAME
+        row.add(type);                  // 5. DATA_TYPE
+        row.add(typeName);              // 6. TYPE_NAME
+        row.add(null);                  // 7. COLUMN_SIZE
+        row.add(null);                  // 8. BUFFER_LENGTH
+        row.add(null);                  // 9. DECIMAL_DIGITS
+        row.add(10);                    // 10. NUM_PREC_RADIX
+        row.add(nullable ? columnNullable : columnNoNulls); // 11. NULLABLE
+        row.add(null);                  // 12. REMARKS
+        row.add(null);                  // 13. COLUMN_DEF
+        row.add(type);                  // 14. SQL_DATA_TYPE
+        row.add(null);                  // 15. SQL_DATETIME_SUB
+        row.add(Integer.MAX_VALUE);     // 16. CHAR_OCTET_LENGTH
+        row.add(pos);                   // 17. ORDINAL_POSITION
+        row.add(nullable ? "YES" : "NO"); // 18. IS_NULLABLE
+        row.add(null);                  // 19. SCOPE_CATALOG
+        row.add(null);                  // 20. SCOPE_SCHEMA
+        row.add(null);                  // 21. SCOPE_TABLE
+        row.add(null);                  // 22. SOURCE_DATA_TYPE
+        row.add("NO");                  // 23. IS_AUTOINCREMENT
+        row.add("NO");                  // 24. IS_GENERATEDCOLUMN
 
         return row;
     }
@@ -864,7 +914,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getColumnPrivileges(String catalog, String schema, String tbl,
         String colNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -877,7 +927,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTablePrivileges(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -890,7 +940,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getBestRowIdentifier(String catalog, String schema, String tbl, int scope,
         boolean nullable) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -902,7 +952,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getVersionColumns(String catalog, String schema, String tbl) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -920,9 +970,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows = new LinkedList<>();
 
         if (validCatalogPattern(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet()) {
+            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, String>> tbl : schema.getValue().entrySet()) {
+                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
                         if (matches(tbl.getKey(), tblNamePtrn))
                             rows.add(Arrays.<Object>asList(null, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
                     }
@@ -930,7 +980,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
@@ -942,7 +992,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getImportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -954,7 +1004,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getExportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -967,7 +1017,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTbl,
         String foreignCatalog, String foreignSchema, String foreignTbl) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -979,7 +1029,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getTypeInfo() throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -994,7 +1044,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         boolean approximate) throws SQLException {
         updateMetaData();
 
-        Collection<List<?>> rows = new ArrayList<>(indexes.size());
+        List<List<?>> rows = new ArrayList<>(indexes.size());
 
         if (validCatalogPattern(catalog)) {
             for (List<Object> idx : indexes) {
@@ -1023,7 +1073,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "NON_UNIQUE", "INDEX_QUALIFIER",
@@ -1100,7 +1150,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getUDTs(String catalog, String schemaPtrn, String typeNamePtrn,
         int[] types) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1138,7 +1188,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTypes(String catalog, String schemaPtrn,
         String typeNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1151,7 +1201,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTables(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1164,7 +1214,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getAttributes(String catalog, String schemaPtrn, String typeNamePtrn,
         String attributeNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1227,7 +1277,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
@@ -1253,7 +1303,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getClientInfoProperties() throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1266,7 +1316,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getFunctions(String catalog, String schemaPtrn,
         String functionNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
@@ -1280,7 +1330,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getFunctionColumns(String catalog, String schemaPtrn, String functionNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
@@ -1299,7 +1349,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPseudoColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new JdbcResultSet(null,
+        return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1331,7 +1381,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     @SuppressWarnings("unchecked")
     private void updateMetaData() throws SQLException {
         if (conn.isClosed())
-            throw new SQLException("Connection is closed.");
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
 
         try {
             Ignite ignite = conn.ignite();
@@ -1356,10 +1406,21 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
                 Collection<String> types = m.types();
 
-                Map<String, Map<String, String>> typesMap = U.newHashMap(types.size());
+                Map<String, Map<String, ColumnInfo>> typesMap = U.newHashMap(types.size());
 
                 for (String type : types) {
-                    typesMap.put(type.toUpperCase(), m.fields(type));
+                    Collection<String> notNullFields = m.notNullFields(type);
+
+                    Map<String, ColumnInfo> fields = new LinkedHashMap<>();
+
+                    for (Map.Entry<String, String> fld : m.fields(type).entrySet()) {
+                        ColumnInfo colInfo = new ColumnInfo(fld.getValue(),
+                            notNullFields == null ? false : notNullFields.contains(fld.getKey()));
+
+                        fields.put(fld.getKey(), colInfo);
+                    }
+
+                    typesMap.put(type.toUpperCase(), fields);
 
                     for (GridCacheSqlIndexMetadata idx : m.indexes(type)) {
                         int cnt = 0;
@@ -1375,7 +1436,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
         catch (Exception e) {
-            throw new SQLException("Failed to get meta data from Ignite.", e);
+            throw convertToSqlException(e, "Failed to get meta data from Ignite.");
         }
     }
 
@@ -1430,7 +1491,41 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         @Override public Collection<GridCacheSqlMetadata> call() throws Exception {
             IgniteCache cache = ignite.cache(cacheName);
 
-            return ((IgniteCacheProxy)cache).context().queries().sqlMetadata();
+            return ((IgniteCacheProxy)cache).context().queries().sqlMetadataV2();
+        }
+    }
+
+    /**
+     * Column info.
+     */
+    private static class ColumnInfo {
+        /** Class name. */
+        private final String typeName;
+
+        /** Not null flag. */
+        private final boolean notNull;
+
+        /**
+         * @param typeName Type name.
+         * @param notNull Not null flag.
+         */
+        private ColumnInfo(String typeName, boolean notNull) {
+            this.typeName = typeName;
+            this.notNull = notNull;
+        }
+
+        /**
+         * @return Type name.
+         */
+        public String typeName() {
+            return typeName;
+        }
+
+        /**
+         * @return Not null flag.
+         */
+        public boolean isNotNull() {
+            return notNull;
         }
     }
 }

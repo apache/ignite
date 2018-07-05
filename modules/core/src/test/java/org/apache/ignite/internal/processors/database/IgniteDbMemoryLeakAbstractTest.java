@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
@@ -34,7 +34,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  */
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
-    private static final int CONCURRENCY_LEVEL = 8;
+    private static final int CONCURRENCY_LEVEL = 16;
 
     /** */
     private static final int MIN_PAGE_CACHE_SIZE = 1048576 * CONCURRENCY_LEVEL;
@@ -76,13 +76,13 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected void configure(MemoryConfiguration mCfg) {
+    @Override protected void configure(DataStorageConfiguration mCfg) {
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
 
-        long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
+        long size = (1024 * (isLargePage() ? 16 : 4) + 24) * pagesMax();
 
-        mCfg.setDefaultMemoryPolicyName("default").setMemoryPolicies(
-            new MemoryPolicyConfiguration().setMaxSize(Math.max(size, MIN_PAGE_CACHE_SIZE)).setName("default"));
+        mCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(Math.max(size, MIN_PAGE_CACHE_SIZE)).setName("default"));
     }
 
     /**
@@ -234,7 +234,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @throws Exception If failed.
      */
     protected final void check(IgniteCache cache) throws Exception {
-        long pagesActual = ((IgniteCacheProxy)cache).context().memoryPolicy().pageMemory().loadedPages();
+        long pagesActual = ((IgniteCacheProxy)cache).context().dataRegion().pageMemory().loadedPages();
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;

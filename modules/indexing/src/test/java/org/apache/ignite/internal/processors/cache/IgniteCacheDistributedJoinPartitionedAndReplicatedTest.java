@@ -176,13 +176,6 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
         startGrid(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -194,6 +187,8 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
      * @throws Exception If failed.
      */
     public void testJoin2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5956");
+
         join(true, PARTITIONED, REPLICATED, PARTITIONED);
     }
 

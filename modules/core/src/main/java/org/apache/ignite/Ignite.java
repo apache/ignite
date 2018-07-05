@@ -27,9 +27,9 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -659,14 +659,19 @@ public interface Ignite extends AutoCloseable {
      * Checks Ignite grid is active or not active.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link IgniteCluster#active()} instead.
      */
+    @Deprecated
     public boolean active();
 
     /**
      * Changes Ignite grid state to active or inactive.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @deprecated Use {@link IgniteCluster#active(boolean)} instead.
      */
+    @Deprecated
     public void active(boolean active);
 
     /**
@@ -675,30 +680,50 @@ public interface Ignite extends AutoCloseable {
     public void resetLostPartitions(Collection<String> cacheNames);
 
     /**
-     * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
-     * instance.
-     * Returns the collection that contains the latest snapshots for each memory region
-     * configured with {@link MemoryPolicyConfiguration configuration} on this Ignite node instance.
-     *
      * @return Collection of {@link MemoryMetrics} snapshots.
+     * @deprecated Use {@link #dataRegionMetrics()} instead.
      */
+    @Deprecated
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
-     * Returns the latest {@link MemoryMetrics} snapshot for the memory region of the given name.
-     *
-     * To get the metrics for the default memory region use
-     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} as the name
-     * or a custom name if the default memory region has been renamed.
-     *
-     * @param memPlcName Name of memory region configured with {@link MemoryPolicyConfiguration config}.
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     * @deprecated Use {@link #dataRegionMetrics(String)} instead.
      */
+    @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
-     *
      * @return {@link PersistenceMetrics} snapshot.
+     * @deprecated Use {@link #dataStorageMetrics()} instead.
      */
+    @Deprecated
     public PersistenceMetrics persistentStoreMetrics();
+
+    /**
+     * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node
+     * instance.
+     * Returns the collection that contains the latest snapshots for each memory region
+     * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
+     *
+     * @return Collection of {@link DataRegionMetrics} snapshots.
+     */
+    public Collection<DataRegionMetrics> dataRegionMetrics();
+
+    /**
+     * Returns the latest {@link DataRegionMetrics} snapshot for the memory region of the given name.
+     *
+     * To get the metrics for the default memory region use
+     * {@link DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME} as the name
+     * or a custom name if the default memory region has been renamed.
+     *
+     * @param memPlcName Name of memory region configured with {@link DataRegionConfiguration config}.
+     * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     */
+    @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
+
+    /**
+     * @return {@link DataStorageMetrics} snapshot.
+     */
+    public DataStorageMetrics dataStorageMetrics();
 }

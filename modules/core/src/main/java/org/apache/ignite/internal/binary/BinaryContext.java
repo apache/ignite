@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -42,12 +41,15 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -118,7 +120,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -209,7 +210,7 @@ public class BinaryContext {
     }
 
     /** */
-    private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap<>();
 
     /** */
     private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
@@ -224,16 +225,16 @@ public class BinaryContext {
     private final Map<Class<? extends Map>, Byte> mapTypes = new HashMap<>();
 
     /** Maps typeId to mappers. */
-    private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap<>(0);
 
     /** Maps className to mapper */
-    private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, BinaryIdentityResolver> identities = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryIdentityResolver> identities = new ConcurrentHashMap<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -333,6 +334,7 @@ public class BinaryContext {
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
+        registerPredefinedType(IgniteUuid.class, 63);
 
         registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
             GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
@@ -342,6 +344,7 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
+        registerPredefinedType(BinaryTreeMap.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
@@ -552,55 +555,53 @@ public class BinaryContext {
 
         ClassLoader ldr = U.gridClassLoader();
 
-        if (ldr instanceof URLClassLoader) {
-            String pkgPath = pkgName.replaceAll("\\.", "/");
+        String pkgPath = pkgName.replaceAll("\\.", "/");
 
-            URL[] urls = ((URLClassLoader)ldr).getURLs();
+        URL[] urls = IgniteUtils.classLoaderUrls(ldr);
 
-            for (URL url : urls) {
-                String proto = url.getProtocol().toLowerCase();
+        for (URL url : urls) {
+            String proto = url.getProtocol().toLowerCase();
 
-                if ("file".equals(proto)) {
-                    try {
-                        File cpElement = new File(url.toURI());
+            if ("file".equals(proto)) {
+                try {
+                    File cpElement = new File(url.toURI());
 
-                        if (cpElement.isDirectory()) {
-                            File pkgDir = new File(cpElement, pkgPath);
+                    if (cpElement.isDirectory()) {
+                        File pkgDir = new File(cpElement, pkgPath);
 
-                            if (pkgDir.isDirectory()) {
-                                for (File file : pkgDir.listFiles()) {
-                                    String fileName = file.getName();
+                        if (pkgDir.isDirectory()) {
+                            for (File file : pkgDir.listFiles()) {
+                                String fileName = file.getName();
 
-                                    if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
-                                        clsNames.add(pkgName + '.' + fileName.substring(0, fileName.length() - 6));
-                                }
-                            }
-                        }
-                        else if (cpElement.isFile()) {
-                            try {
-                                JarFile jar = new JarFile(cpElement);
-
-                                Enumeration<JarEntry> entries = jar.entries();
-
-                                while (entries.hasMoreElements()) {
-                                    String entry = entries.nextElement().getName();
-
-                                    if (entry.startsWith(pkgPath) && entry.endsWith(".class")) {
-                                        String clsName = entry.substring(pkgPath.length() + 1, entry.length() - 6);
-
-                                        if (!clsName.contains("/") && !clsName.contains("\\"))
-                                            clsNames.add(pkgName + '.' + clsName);
-                                    }
-                                }
-                            }
-                            catch (IOException ignored) {
-                                // No-op.
+                                if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
+                                    clsNames.add(pkgName + '.' + fileName.substring(0, fileName.length() - 6));
                             }
                         }
                     }
-                    catch (URISyntaxException ignored) {
-                        // No-op.
+                    else if (cpElement.isFile()) {
+                        try {
+                            JarFile jar = new JarFile(cpElement);
+
+                            Enumeration<JarEntry> entries = jar.entries();
+
+                            while (entries.hasMoreElements()) {
+                                String entry = entries.nextElement().getName();
+
+                                if (entry.startsWith(pkgPath) && entry.endsWith(".class")) {
+                                    String clsName = entry.substring(pkgPath.length() + 1, entry.length() - 6);
+
+                                    if (!clsName.contains("/") && !clsName.contains("\\"))
+                                        clsNames.add(pkgName + '.' + clsName);
+                                }
+                            }
+                        }
+                        catch (IOException ignored) {
+                            // No-op.
+                        }
                     }
+                }
+                catch (URISyntaxException ignored) {
+                    // No-op.
                 }
             }
         }
@@ -610,17 +611,22 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered)
         throws BinaryObjectException {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
+        if (desc == null) {
+            if (failIfUnregistered)
+                throw new UnregisteredClassException(cls);
+
             desc = registerClassDescriptor(cls, deserialize);
+        }
         else if (!desc.registered()) {
             if (!desc.userType()) {
                 BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
@@ -652,8 +658,12 @@ public class BinaryContext {
                     return desc0;
                 }
             }
-            else
+            else {
+                if (failIfUnregistered)
+                    throw new UnregisteredClassException(cls);
+
                 desc = registerUserClassDescriptor(desc);
+            }
         }
 
         return desc;
@@ -1164,10 +1174,20 @@ public class BinaryContext {
     }
 
     /**
+     * Register user types schemas.
+     */
+    public void registerUserTypesSchema() {
+        for (BinaryClassDescriptor desc : predefinedTypes.values()) {
+            if (desc.userType())
+                desc.registerStableSchema();
+        }
+    }
+
+    /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
-     * only when registering class names whose {@link Class} is unknown.
+     * {@link BinaryContext#descriptorForClass(Class, boolean, boolean)} already call this functionality
+     * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
@@ -1254,6 +1274,13 @@ public class BinaryContext {
      */
     @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata0(typeId) : null;
+    }
+
+    /**
+     * @return All metadata known to this node.
+     */
+    public Collection<BinaryType> metadata() throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata() : Collections.emptyList();
     }
 
     /**
@@ -1364,6 +1391,20 @@ public class BinaryContext {
      */
     public void unregisterBinarySchemas() {
         schemas = null;
+    }
+
+    /**
+     * Unregisters the user types descriptors.
+     **/
+    public void unregisterUserTypeDescriptors() {
+        Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                it.remove();
+        }
     }
 
     /**

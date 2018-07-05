@@ -33,6 +33,7 @@ namespace ignite
 {
     namespace odbc
     {
+        class OdbcError;
         class Connection;
 
         namespace diagnostic
@@ -43,6 +44,18 @@ namespace ignite
             class DiagnosableAdapter : public Diagnosable
             {
             public:
+                /**
+                 * Constructor.
+                 *
+                 * @param connection Pointer to connection. Used to create
+                 *     diagnostic records with connection info.
+                 */
+                DiagnosableAdapter(const Connection* connection = 0) :
+                    connection(connection)
+                {
+                    // No-op.
+                }
+
                 /**
                  * Destructor.
                  */
@@ -90,21 +103,16 @@ namespace ignite
                  */
                 virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message);
 
-            protected:
                 /**
-                 * Constructor.
+                 * Add new status record.
                  *
-                 * @param connection Pointer to connection. Used to create
-                 *                   diagnostic records with connection info.
+                 * @param err Error.
                  */
-                DiagnosableAdapter(const Connection* connection = 0) :
-                    connection(connection)
-                {
-                    // No-op.
-                }
+                virtual void AddStatusRecord(const OdbcError& err);
 
+            protected:
                 /** Diagnostic records. */
-                diagnostic::DiagnosticRecordStorage diagnosticRecords;
+                DiagnosticRecordStorage diagnosticRecords;
 
             private:
                 /** Connection. */

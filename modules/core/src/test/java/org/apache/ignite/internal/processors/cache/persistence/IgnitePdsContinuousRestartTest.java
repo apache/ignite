@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -25,24 +27,25 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
 public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
@@ -52,39 +55,50 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     private static final int ENTRIES_COUNT = 10_000;
 
     /** */
-    public static final String CACHE_NAME = "cache1";
+    protected static final String CACHE_NAME = "cache1";
+
+    /** Checkpoint delay. */
+    private volatile int checkpointDelay = -1;
+
+    /** */
+    private boolean cancel = false;
+
+    /**
+     * Default constructor.
+     */
+    public IgnitePdsContinuousRestartTest() {
+    }
+
+    /**
+     * @param cancel Cancel.
+     */
+    public IgnitePdsContinuousRestartTest(boolean cancel) {
+        this.cancel = cancel;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(400L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setCheckpointFrequency(checkpointDelay);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        cfg.setDataStorageConfiguration(memCfg);
 
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setMaxSize(400 * 1024 * 1024);
-        memPlcCfg.setInitialSize(400 * 1024 * 1024);
+        CacheConfiguration ccfg = new CacheConfiguration();
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        ccfg.setName(CACHE_NAME);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+        ccfg.setBackups(2);
 
-        cfg.setMemoryConfiguration(memCfg);
-
-        CacheConfiguration ccfg1 = new CacheConfiguration();
-
-        ccfg1.setName(CACHE_NAME);
-        ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg1.setAffinity(new RendezvousAffinityFunction(false, 128));
-        ccfg1.setBackups(2);
-
-        cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -93,21 +107,14 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -197,18 +204,33 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    public void testRebalncingDuringLoad_10_10_1_1() throws Exception {
+        checkRebalancingDuringLoad(10, 10, 1, 1);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
+        checkRebalancingDuringLoad(10, 500, 8, 16);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     private void checkRebalancingDuringLoad(
         int restartDelay,
         int checkpointDelay,
         int threads,
         final int batch
     ) throws Exception {
+        this.checkpointDelay = checkpointDelay;
 
         startGrids(GRID_CNT);
 
         final Ignite load = ignite(0);
 
-        load.active(true);
+        load.cluster().active(true);
 
         try (IgniteDataStreamer<Object, Object> s = load.dataStreamer(CACHE_NAME)) {
             s.allowOverwrite(true);
@@ -226,10 +248,13 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                 Random rnd = ThreadLocalRandom.current();
 
                 while (!done.get()) {
-                    Map<Integer, Integer> map = new TreeMap<>();
+                    Map<Integer, Person> map = new TreeMap<>();
 
-                    for (int i = 0; i < batch; i++)
-                        map.put(rnd.nextInt(ENTRIES_COUNT), rnd.nextInt());
+                    for (int i = 0; i < batch; i++) {
+                        int key = rnd.nextInt(ENTRIES_COUNT);
+
+                        map.put(key, new Person("fn" + key, "ln" + key));
+                    }
 
                     cache.putAll(map);
                 }
@@ -245,7 +270,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         while (System.currentTimeMillis() < end) {
             int idx = rnd.nextInt(GRID_CNT - 1) + 1;
 
-            stopGrid(idx);
+            stopGrid(idx, cancel);
 
             U.sleep(restartDelay);
 
@@ -257,5 +282,52 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         done.set(true);
 
         busyFut.get();
+    }
+
+    /**
+     *
+     */
+    static class Person implements Serializable {
+        /** */
+        @GridToStringInclude
+        @QuerySqlField(index = true, groups = "full_name")
+        private String fName;
+
+        /** */
+        @GridToStringInclude
+        @QuerySqlField(index = true, groups = "full_name")
+        private String lName;
+
+        /**
+         * @param fName First name.
+         * @param lName Last name.
+         */
+        public Person(String fName, String lName) {
+            this.fName = fName;
+            this.lName = lName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Person.class, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IgnitePersistentStoreCacheGroupsTest.Person person = (IgnitePersistentStoreCacheGroupsTest.Person)o;
+
+            return Objects.equals(fName, person.fName) && Objects.equals(lName, person.lName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(fName, lName);
+        }
     }
 }

@@ -88,7 +88,7 @@
 
         <!-- Move .Net docs. -->
         <fileSet>
-            <directory>modules/clients/target/dotnetdoc/html</directory>
+            <directory>modules/clients/target/dotnetdoc</directory>
             <outputDirectory>/platforms/dotnet/docs</outputDirectory>
         </fileSet>
 
@@ -216,6 +216,7 @@
                 <include>rest/**</include>
                 <include>memcached/**</include>
                 <include>redis/**</include>
+                <include>sql/**</include>
             </includes>
         </fileSet>
 
@@ -239,7 +240,6 @@
             <excludes>
                 <exclude>**/package.html</exclude>
                 <exclude>src/test/**</exclude>
-                <exclude>src/main/ml/**</exclude>
             </excludes>
         </fileSet>
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -104,11 +104,6 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
         grid(0).createCache(secondCfg);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -154,17 +149,17 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
         Map<Integer, String> secondCheck = new HashMap<>();
 
         for (int i = 0; i < TX_CNT; i++) {
-            int grid = ThreadLocalRandom8.current().nextInt(nodeCount());
+            int grid = ThreadLocalRandom.current().nextInt(nodeCount());
 
             IgniteCache<Integer, String> first = grid(grid).cache(FIRST_CACHE);
             IgniteCache<Integer, String> second = grid(grid).cache(SECOND_CACHE);
 
             try (Transaction tx = grid(grid).transactions().txStart(concurrency, isolation)) {
                 try {
-                    int size = ThreadLocalRandom8.current().nextInt(24) + 1;
+                    int size = ThreadLocalRandom.current().nextInt(24) + 1;
 
                     for (int k = 0; k < size; k++) {
-                        boolean rnd = ThreadLocalRandom8.current().nextBoolean();
+                        boolean rnd = ThreadLocalRandom.current().nextBoolean();
 
                         IgniteCache<Integer, String> cache = rnd ? first : second;
                         Map<Integer, String> check = rnd ? firstCheck : secondCheck;

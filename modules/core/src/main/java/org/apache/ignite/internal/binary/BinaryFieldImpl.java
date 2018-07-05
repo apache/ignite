@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
@@ -56,6 +57,8 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     /**
      * Constructor.
      *
+     * @param ctx Binary context.
+     * @param typeId Type ID.
      * @param schemas Schemas.
      * @param fieldName Field name.
      * @param fieldId Field ID.
@@ -209,6 +212,14 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     break;
                 }
 
+                case GridBinaryMarshaller.TIME: {
+                    long time = buf.getLong();
+
+                    val = new Time(time);
+
+                    break;
+                }
+
                 case GridBinaryMarshaller.UUID: {
                     long most = buf.getLong();
                     long least = buf.getLong();
@@ -277,6 +288,9 @@ public class BinaryFieldImpl implements BinaryFieldEx {
         }
 
         int schemaId = obj.schemaId();
+
+        if (schemaId == 0)
+            return BinarySchema.ORDER_NOT_FOUND;
 
         BinarySchema schema = schemas.schema(schemaId);
 

@@ -17,31 +17,34 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
@@ -81,17 +84,15 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  */
 public class GridToStringBuilder {
     /** */
-    private static final Map<String, GridToStringClassDescriptor> classCache = new HashMap<>();
-
-    /** */
-    private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-
-    /** Maximum number of collection (map) entries to print. */
-    public static final int MAX_COL_SIZE = 200;
+    private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
     /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
     public static final boolean INCLUDE_SENSITIVE =
         IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+
+    /** */
+    private static final int COLLECTION_LIMIT =
+        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
     /** */
     private static ThreadLocal<Queue<GridToStringThreadLocal>> threadCache = new ThreadLocal<Queue<GridToStringThreadLocal>>() {
@@ -103,6 +104,14 @@ public class GridToStringBuilder {
             return queue;
         }
     };
+
+    /** */
+    private static ThreadLocal<SBLengthLimit> threadCurLen = new ThreadLocal<SBLengthLimit>() {
+        @Override protected SBLengthLimit initialValue() {
+            return new SBLengthLimit();
+        }
+    };
+
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -281,11 +290,20 @@ public class GridToStringBuilder {
         addVals[4] = val4;
         addSens[4] = sens4;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -363,11 +381,20 @@ public class GridToStringBuilder {
         addVals[5] = val5;
         addSens[5] = sens5;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -453,11 +480,20 @@ public class GridToStringBuilder {
         addVals[6] = val6;
         addSens[6] = sens6;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -547,11 +583,20 @@ public class GridToStringBuilder {
         addVals[3] = val3;
         addSens[3] = sens3;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 4);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -630,11 +675,20 @@ public class GridToStringBuilder {
         addVals[2] = val2;
         addSens[2] = sens2;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 3);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -698,11 +752,20 @@ public class GridToStringBuilder {
         addVals[1] = val1;
         addSens[1] = sens1;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 2);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -753,11 +816,20 @@ public class GridToStringBuilder {
         addVals[0] = val;
         addSens[0] = sens;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 1);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -782,12 +854,21 @@ public class GridToStringBuilder {
         // in each string() apply.
         GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(cls, tmp.getStringBuilder(), obj, tmp.getAdditionalNames(),
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, tmp.getAdditionalNames(),
                 tmp.getAdditionalValues(), null, 0);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -805,6 +886,66 @@ public class GridToStringBuilder {
     }
 
     /**
+     * Print value with length limitation
+     * @param buf buffer to print to.
+     * @param val value to print, can be {@code null}.
+     */
+    private static void toString(SBLimitedLength buf, Object val) {
+        if (val == null)
+            buf.a("null");
+        else
+            toString(buf, val.getClass(), val);
+    }
+
+    /**
+     * Print value with length limitation
+     * @param buf buffer to print to.
+     * @param valClass value class.
+     * @param val value to print
+     */
+    private static void toString(SBLimitedLength buf, Class<?> valClass, Object val) {
+        if (valClass.isArray())
+            buf.a(arrayToString(valClass, val));
+        else {
+            int overflow = 0;
+            char bracket = ' ';
+
+            if (val instanceof Collection && ((Collection)val).size() > COLLECTION_LIMIT) {
+                overflow = ((Collection)val).size() - COLLECTION_LIMIT;
+                bracket = ']';
+                val = F.retain((Collection) val, true, COLLECTION_LIMIT);
+            }
+            else if (val instanceof Map && ((Map)val).size() > COLLECTION_LIMIT) {
+                Map<Object, Object> tmp = U.newHashMap(COLLECTION_LIMIT);
+
+                overflow = ((Map)val).size() - COLLECTION_LIMIT;
+
+                bracket= '}';
+
+                int cntr = 0;
+
+                for (Object o : ((Map)val).entrySet()) {
+                    Map.Entry e = (Map.Entry)o;
+
+                    tmp.put(e.getKey(), e.getValue());
+
+                    if (++cntr >= COLLECTION_LIMIT)
+                        break;
+                }
+
+                val = tmp;
+            }
+
+            buf.a(val);
+
+            if (overflow > 0) {
+                buf.d(buf.length() - 1);
+                buf.a("... and ").a(overflow).a(" more").a(bracket);
+            }
+        }
+    }
+
+    /**
      * Creates an uniformed string presentation for the given object.
      *
      * @param cls Class of the object.
@@ -818,7 +959,10 @@ public class GridToStringBuilder {
      * @param <T> Type of object.
      */
     @SuppressWarnings({"unchecked"})
-    private static <T> String toStringImpl(Class<T> cls, SB buf, T obj,
+    private static <T> String toStringImpl(
+        Class<T> cls,
+        SBLimitedLength buf,
+        T obj,
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
@@ -844,7 +988,7 @@ public class GridToStringBuilder {
 
             for (GridToStringFieldDescriptor fd : cd.getFields()) {
                 if (!first)
-                   buf.a(", ");
+                    buf.a(", ");
                 else
                     first = false;
 
@@ -858,31 +1002,7 @@ public class GridToStringBuilder {
 
                 Class<?> fieldType = field.getType();
 
-                if (fieldType.isArray())
-                    buf.a(arrayToString(fieldType, field.get(obj)));
-                else {
-                    Object val = field.get(obj);
-
-                    if (val instanceof Collection && ((Collection)val).size() > MAX_COL_SIZE)
-                        val = F.retain((Collection)val, true, MAX_COL_SIZE);
-                    else if (val instanceof Map && ((Map)val).size() > MAX_COL_SIZE) {
-                        Map tmp = U.newHashMap(MAX_COL_SIZE);
-                        int cntr = 0;
-
-                        for (Object o : ((Map)val).entrySet()) {
-                            Map.Entry e = (Map.Entry)o;
-
-                            tmp.put(e.getKey(), e.getValue());
-
-                            if (++cntr >= MAX_COL_SIZE)
-                                break;
-                        }
-
-                        val = tmp;
-                    }
-
-                    buf.a(val);
-                }
+                toString(buf, fieldType, field.get(obj));
             }
 
             appendVals(buf, first, addNames, addVals, addSens, addLen);
@@ -893,46 +1013,14 @@ public class GridToStringBuilder {
         }
         // Specifically catching all exceptions.
         catch (Exception e) {
-            rwLock.writeLock().lock();
 
             // Remove entry from cache to avoid potential memory leak
             // in case new class loader got loaded under the same identity hash.
-            try {
-                classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
-            }
-            finally {
-                rwLock.writeLock().unlock();
-            }
+            classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
 
             // No other option here.
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * @param arrType Type of the array.
-     * @param arr Array object.
-     * @return String representation of an array.
-     */
-    public static String arrayToString(Class arrType, Object arr) {
-        if (arrType.equals(byte[].class))
-            return Arrays.toString((byte[])arr);
-        if (arrType.equals(boolean[].class))
-            return Arrays.toString((boolean[])arr);
-        if (arrType.equals(short[].class))
-            return Arrays.toString((short[])arr);
-        if (arrType.equals(int[].class))
-            return Arrays.toString((int[])arr);
-        if (arrType.equals(long[].class))
-            return Arrays.toString((long[])arr);
-        if (arrType.equals(float[].class))
-            return Arrays.toString((float[])arr);
-        if (arrType.equals(double[].class))
-            return Arrays.toString((double[])arr);
-        if (arrType.equals(char[].class))
-            return Arrays.toString((char[])arr);
-
-        return Arrays.toString((Object[])arr);
     }
 
     /**
@@ -945,6 +1033,103 @@ public class GridToStringBuilder {
      */
     public static String toString(String str, String name, @Nullable Object val) {
         return toString(str, name, val, false);
+    }
+
+    /**
+     * @param arrType Type of the array.
+     * @param arr Array object.
+     * @return String representation of an array.
+     */
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    public static <T> String arrayToString(Class arrType, Object arr) {
+        if (arr == null)
+            return "null";
+
+        String res;
+        int more = 0;
+
+        if (arrType.equals(byte[].class)) {
+            byte[] byteArr = (byte[])arr;
+            if (byteArr.length > COLLECTION_LIMIT) {
+                more = byteArr.length - COLLECTION_LIMIT;
+                byteArr = Arrays.copyOf(byteArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(byteArr);
+        }
+        else if (arrType.equals(boolean[].class)) {
+            boolean[] boolArr = (boolean[])arr;
+            if (boolArr.length > COLLECTION_LIMIT) {
+                more = boolArr.length - COLLECTION_LIMIT;
+                boolArr = Arrays.copyOf(boolArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(boolArr);
+        }
+        else if (arrType.equals(short[].class)) {
+            short[] shortArr = (short[])arr;
+            if (shortArr.length > COLLECTION_LIMIT) {
+                more = shortArr.length - COLLECTION_LIMIT;
+                shortArr = Arrays.copyOf(shortArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(shortArr);
+        }
+        else if (arrType.equals(int[].class)) {
+            int[] intArr = (int[])arr;
+            if (intArr.length > COLLECTION_LIMIT) {
+                more = intArr.length - COLLECTION_LIMIT;
+                intArr = Arrays.copyOf(intArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(intArr);
+        }
+        else if (arrType.equals(long[].class)) {
+            long[] longArr = (long[])arr;
+            if (longArr.length > COLLECTION_LIMIT) {
+                more = longArr.length - COLLECTION_LIMIT;
+                longArr = Arrays.copyOf(longArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(longArr);
+        }
+        else if (arrType.equals(float[].class)) {
+            float[] floatArr = (float[])arr;
+            if (floatArr.length > COLLECTION_LIMIT) {
+                more = floatArr.length - COLLECTION_LIMIT;
+                floatArr = Arrays.copyOf(floatArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(floatArr);
+        }
+        else if (arrType.equals(double[].class)) {
+            double[] doubleArr = (double[])arr;
+            if (doubleArr.length > COLLECTION_LIMIT) {
+                more = doubleArr.length - COLLECTION_LIMIT;
+                doubleArr = Arrays.copyOf(doubleArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(doubleArr);
+        }
+        else if (arrType.equals(char[].class)) {
+            char[] charArr = (char[])arr;
+            if (charArr.length > COLLECTION_LIMIT) {
+                more = charArr.length - COLLECTION_LIMIT;
+                charArr = Arrays.copyOf(charArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(charArr);
+        }
+        else {
+            Object[] objArr = (Object[])arr;
+            if (objArr.length > COLLECTION_LIMIT) {
+                more = objArr.length - COLLECTION_LIMIT;
+                objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(objArr);
+        }
+        if (more > 0) {
+            StringBuilder resSB = new StringBuilder(res);
+
+            resSB.deleteCharAt(resSB.length() - 1);
+            resSB.append("... and ").append(more).append(" more]");
+
+            res = resSB.toString();
+        }
+
+        return res;
     }
 
     /**
@@ -976,11 +1161,20 @@ public class GridToStringBuilder {
         propVals[0] = val;
         propSens[0] = sens;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 1);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 1);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1037,11 +1231,20 @@ public class GridToStringBuilder {
         propVals[1] = val1;
         propSens[1] = sens1;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 2);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 2);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1091,11 +1294,20 @@ public class GridToStringBuilder {
         propVals[2] = val2;
         propSens[2] = sens2;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 3);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 3);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1153,11 +1365,20 @@ public class GridToStringBuilder {
         propVals[3] = val3;
         propSens[3] = sens3;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 4);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 4);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1223,11 +1444,20 @@ public class GridToStringBuilder {
         propVals[4] = val4;
         propSens[4] = sens4;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 5);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 5);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1301,11 +1531,20 @@ public class GridToStringBuilder {
         propVals[5] = val5;
         propSens[5] = sens5;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 6);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 6);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1387,11 +1626,20 @@ public class GridToStringBuilder {
         propVals[6] = val6;
         propSens[6] = sens6;
 
+        SBLengthLimit lenLim = threadCurLen.get();
+
+        boolean newStr = false;
+
         try {
-            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 7);
+            newStr = lenLim.length() == 0;
+
+            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 7);
         }
         finally {
             queue.offer(tmp);
+
+            if (newStr)
+                lenLim.reset();
         }
     }
 
@@ -1406,7 +1654,7 @@ public class GridToStringBuilder {
      * @param propCnt Properties count.
      * @return String presentation of the object.
      */
-    private static String toStringImpl(String str, SB buf, Object[] propNames, Object[] propVals,
+    private static String toStringImpl(String str, SBLimitedLength buf, Object[] propNames, Object[] propVals,
         boolean[] propSens, int propCnt) {
 
         buf.setLength(0);
@@ -1433,7 +1681,7 @@ public class GridToStringBuilder {
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
      */
-    private static void appendVals(SB buf,
+    private static void appendVals(SBLimitedLength buf,
         boolean first,
         Object[] addNames,
         Object[] addVals,
@@ -1452,11 +1700,6 @@ public class GridToStringBuilder {
 
                     if (incAnn != null && incAnn.sensitive() && !INCLUDE_SENSITIVE)
                         continue;
-
-                    Class<?> cls = addVal.getClass();
-
-                    if (cls.isArray())
-                        addVal = arrayToString(cls, addVal);
                 }
 
                 if (!first)
@@ -1464,7 +1707,9 @@ public class GridToStringBuilder {
                 else
                     first = false;
 
-                buf.a(addNames[i]).a('=').a(addVal);
+                buf.a(addNames[i]).a('=');
+
+                toString(buf, addVal);
             }
         }
     }
@@ -1482,14 +1727,7 @@ public class GridToStringBuilder {
 
         GridToStringClassDescriptor cd;
 
-        rwLock.readLock().lock();
-
-        try {
-            cd = classCache.get(key);
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+        cd = classCache.get(key);
 
         if (cd == null) {
             cd = new GridToStringClassDescriptor(cls);
@@ -1551,20 +1789,56 @@ public class GridToStringBuilder {
 
             cd.sortFields();
 
-            /*
-             * Allow multiple puts for the same class - they will simply override.
-             */
-
-            rwLock.writeLock().lock();
-
-            try {
-                classCache.put(key, cd);
-            }
-            finally {
-                rwLock.writeLock().unlock();
-            }
+            classCache.putIfAbsent(key, cd);
         }
 
         return cd;
+    }
+
+    /**
+     * Returns sorted and compacted string representation of given {@code col}.
+     * Two nearby numbers with difference at most 1 are compacted to one continuous segment.
+     * E.g. collection of [1, 2, 3, 5, 6, 7, 10] will be compacted to [1-3, 5-7, 10].
+     *
+     * @param col Collection of integers.
+     * @return Compacted string representation of given collections.
+     */
+    public static String compact(@NotNull Collection<Integer> col) {
+        if (col.isEmpty())
+            return "[]";
+
+        SB sb = new SB();
+        sb.a('[');
+
+        List<Integer> l = new ArrayList<>(col);
+        Collections.sort(l);
+
+        int left = l.get(0), right = left;
+        for (int i = 1; i < l.size(); i++) {
+            int val = l.get(i);
+
+            if (right == val || right + 1 == val) {
+                right = val;
+                continue;
+            }
+
+            if (left == right)
+                sb.a(left);
+            else
+                sb.a(left).a('-').a(right);
+
+            sb.a(',').a(' ');
+
+            left = right = val;
+        }
+
+        if (left == right)
+            sb.a(left);
+        else
+            sb.a(left).a('-').a(right);
+
+        sb.a(']');
+
+        return sb.toString();
     }
 }

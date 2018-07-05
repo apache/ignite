@@ -53,7 +53,8 @@ fi
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-CP="${IGNITE_LIBS}"
+. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
+CP="${IGNITE_LIBS}:${IGNITE_HOME}/libs/optional/ignite-zookeeper/*"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
@@ -92,10 +93,14 @@ if [ -z "$JVM_OPTS" ] ; then
 fi
 
 #
+# Uncomment to enable experimental commands [--wal]
+#
+# JVM_OPTS="${JVM_OPTS} -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true"
+
+#
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
-# JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m"
-# JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60"
+# JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
 
 #
 # Uncomment if you get StackOverflowError.
@@ -133,6 +138,18 @@ fi
 # Uncomment and change if remote debugging is required.
 #
 # JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${JVM_OPTS}"
+
+#
+# Final JVM_OPTS for Java 9 compatibility
+#
+${JAVA_HOME}/bin/java -version 2>&1 | grep -qE 'java version "9.*"' && {
+JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
+          --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
+          --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+          --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+          --add-modules java.xml.bind \
+      ${JVM_OPTS}"
+} || true
 
 ERRORCODE="-1"
 

@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,6 +34,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -88,7 +91,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -815,12 +817,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 45: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
-            }
-
-            break;
-
             case 49: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
@@ -1063,10 +1059,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 log.debug("Finished processing cache communication message [nodeId=" + nodeId + ", msg=" + msg + ']');
         }
         catch (Throwable e) {
-            U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
+            try {
+                U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
+            }
+            catch (Throwable e0) {
+                U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=(failed to log message)", e);
 
-            if (e instanceof Error)
-                throw e;
+                U.error(log, "Failed to log message due to an error: ", e0);
+            }
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
         }
         finally {
             onMessageProcessed(msg);
@@ -1510,8 +1514,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             assert depEnabled : "Received deployment info while peer class loading is disabled [nodeId=" + nodeId +
                 ", msg=" + cacheMsg + ']';
 
-            cctx.deploy().p2pContext(nodeId, bean.classLoaderId(), bean.userVersion(),
-                bean.deployMode(), bean.participants(), bean.localDeploymentOwner());
+            cctx.deploy().p2pContext(
+                nodeId,
+                bean.classLoaderId(),
+                bean.userVersion(),
+                bean.deployMode(),
+                bean.participants()
+            );
 
             if (log.isDebugEnabled())
                 log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
@@ -1567,11 +1576,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         /** Handler registry. */
         ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
-            clsHandlers = new ConcurrentHashMap8<>();
+            clsHandlers = new ConcurrentHashMap<>();
 
         /** Ordered handler registry. */
         ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
-            new ConcurrentHashMap8<>();
+            new ConcurrentHashMap<>();
     }
 
     /**

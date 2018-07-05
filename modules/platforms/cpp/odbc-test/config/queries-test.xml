@@ -24,8 +24,7 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <!-- Imports no-ODBC Ignite configuration -->
-    <import resource="queries-test-default.xml"/>
+    <import resource="queries-default.xml"/>
 
     <bean parent="queries.cfg"/>
 </beans>

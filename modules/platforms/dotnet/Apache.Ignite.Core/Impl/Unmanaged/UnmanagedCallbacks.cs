@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
@@ -44,6 +43,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Services;
@@ -52,32 +52,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Unmanaged callbacks.
     /// </summary>
-    [SuppressMessage("ReSharper", "UnusedMember.Local")]
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
     [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
-    internal unsafe class UnmanagedCallbacks
+    internal unsafe class UnmanagedCallbacks : MarshalByRefObject
     {
-        /** Console write delegate. */
-        private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
-
-        /** Console write pointer. */
-        private static readonly void* ConsoleWritePtr =
-            Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
-
-        /** Unmanaged context. */
-        private volatile UnmanagedContext _ctx;
+        /** */
+        private long _igniteId;
 
         /** Handle registry. */
         private readonly HandleRegistry _handleRegistry = new HandleRegistry();
 
+        /** JVM. */
+        private readonly Jvm _jvm;
+
         /** Grid. */
         private volatile Ignite _ignite;
 
-        /** Keep references to created delegates. */
-        // ReSharper disable once CollectionNeverQueried.Local
-        private readonly List<Delegate> _delegates = new List<Delegate>(5);
+        /** Log. */
+        private volatile ILogger _log;
 
         /** Max op code. */
         private static readonly int MaxOpCode = Enum.GetValues(typeof(UnmanagedCallbackOp)).Cast<int>().Max();
@@ -95,37 +89,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Actions to be called upon Ignite initialization. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
-        /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
-        private readonly GCHandle _thisHnd;
-
-        /** Callbacks pointer. */
-        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
-        private readonly IntPtr _cbsPtr;
-
-        /** Log. */
-        private readonly ILogger _log;
-
-        /** Error type: generic. */
-        private const int ErrGeneric = 1;
-
-        /** Error type: initialize. */
-        private const int ErrJvmInit = 2;
-
-        /** Error type: attach. */
-        private const int ErrJvmAttach = 3;
-
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
-
-        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
-
-        private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
-        private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
-
-        private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
-
-        private delegate long InLongOutLongDelegate(void* target, int type, long val);
-        private delegate long InLongLongLongObjectOutLongDelegate(void* target, int type, long val1, long val2, long val3, void* arg);
 
         private delegate long InLongOutLongFunc(long val);
         private delegate long InLongLongLongObjectOutLongFunc(long val1, long val2, long val3, void* arg);
@@ -134,32 +99,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Constructor.
         /// </summary>
         /// <param name="log">Logger.</param>
-        public UnmanagedCallbacks(ILogger log)
+        /// <param name="jvm"></param>
+        public UnmanagedCallbacks(ILogger log, Jvm jvm)
         {
             Debug.Assert(log != null);
+            Debug.Assert(jvm != null);
 
             _log = log;
-
-            var cbs = new UnmanagedCallbackHandlers
-            {
-                target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-
-                loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
-                loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled),
-
-                inLongOutLong = CreateFunctionPointer((InLongOutLongDelegate)InLongOutLong),
-                inLongLongObjectOutLong = CreateFunctionPointer((InLongLongLongObjectOutLongDelegate)InLongLongLongObjectOutLong)
-            };
-
-            _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
-
-            Marshal.StructureToPtr(cbs, _cbsPtr, false);
-
-            _thisHnd = GCHandle.Alloc(this);
+            _jvm = jvm;
 
             InitHandlers();
+        }
+
+        /** <inheritdoc /> */
+        public override object InitializeLifetimeService()
+        {
+            // Ensure that cross-AppDomain reference lives forever.
+            return null;
         }
 
         /// <summary>
@@ -168,6 +124,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public HandleRegistry HandleRegistry
         {
             get { return _handleRegistry; }
+        }
+
+        /// <summary>
+        /// Gets the ignite identifier.
+        /// </summary>
+        public long IgniteId
+        {
+            get { return _igniteId; }
+        }
+
+        /// <summary>
+        /// Gets the JVM.
+        /// </summary>
+        public Jvm Jvm
+        {
+            get { return _jvm; }
         }
 
         #region HANDLERS
@@ -219,6 +191,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.EventFilterCreate, EventFilterCreate);
             AddHandler(UnmanagedCallbackOp.EventFilterApply, EventFilterApply);
             AddHandler(UnmanagedCallbackOp.EventFilterDestroy, EventFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventLocalListenerApply, EventLocalListenerApply);
             AddHandler(UnmanagedCallbackOp.ServiceInit, ServiceInit);
             AddHandler(UnmanagedCallbackOp.ServiceExecute, ServiceExecute);
             AddHandler(UnmanagedCallbackOp.ServiceCancel, ServiceCancel);
@@ -265,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #region IMPLEMENTATION: GENERAL PURPOSE
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private long InLongOutLong(void* target, int type, long val)
+        internal long InLongOutLong(int type, long val)
         {
             try
             {
@@ -285,15 +258,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(_ctx.NativeContext, e);
-
-                return 0;
+                throw;
             }
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private long InLongLongLongObjectOutLong(void* target, int type, long val1, long val2, long val3, void* arg)
+        internal long InLongLongLongObjectOutLong(int type, long val1, long val2, long val3, IntPtr arg)
         {
             try
             {
@@ -308,15 +278,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 if (!hnd.AllowUninitialized)
                     _initEvent.Wait();
 
-                return hnd.Handler(val1, val2, val3, arg);
+                return hnd.Handler(val1, val2, val3, arg.ToPointer());
             }
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(_ctx.NativeContext, e);
-
-                return 0;
+                throw;
             }
         }
 
@@ -679,8 +646,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 if (receiver != null)
                 {
-                    var target = new PlatformJniTarget(new UnmanagedNonReleaseableTarget(_ctx, cache), 
-                        _ignite.Marshaller);
+                    var cacheRef = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) cache);
+                    var target = new PlatformJniTarget(cacheRef, _ignite.Marshaller);
                     receiver.Receive(_ignite, target, stream, keepBinary);
                 }
 
@@ -898,24 +865,72 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
+        private long EventLocalListenerApply(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var id = stream.ReadInt();
+
+                var listeners = _ignite.Configuration.LocalEventListenersInternal;
+
+                if (listeners == null || id >= listeners.Length)
+                {
+                    return 0;
+                }
+
+                var listener = listeners[id];
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                var res = listener.Invoke(reader);
+
+                return res ? 1 : 0;
+            }
+        }
+
         #endregion
 
         #region IMPLEMENTATION: SERVICES
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
         private long ServiceInit(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                try
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                bool srvKeepBinary = reader.ReadBoolean();
-                var svc = reader.ReadObject<IService>();
+                    var srvKeepBinary = reader.ReadBoolean();
+                    var svc = reader.ReadObject<IService>();
 
-                ResourceProcessor.Inject(svc, _ignite);
+                    ResourceProcessor.Inject(svc, _ignite);
 
-                svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                return _handleRegistry.Allocate(svc);
+                    stream.Reset();
+
+                    stream.WriteBool(true);  // Success.
+
+                    stream.SynchronizeOutput();
+
+                    return _handleRegistry.Allocate(svc);
+                }
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
+
+                    stream.SynchronizeOutput();
+
+                    return 0;
+                }
             }
         }
 
@@ -1011,7 +1026,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
+        private static long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
             IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
 
@@ -1020,7 +1035,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long OnStart(long memPtr, long unused, long unused1, void* proc)
         {
-            var proc0 = UU.Acquire(_ctx, proc);
+            var proc0 = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) proc);
 
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
@@ -1032,14 +1047,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long OnStop(long unused)
         {
-            Marshal.FreeHGlobal(_cbsPtr);
-
-            // ReSharper disable once ImpureMethodCallOnReadonlyValueField
-            _thisHnd.Free();
-
-            // Allow context to be collected, which will cause resource cleanup in finalizer.
-            _ctx = null;
-
             // Notify grid
             var ignite = _ignite;
 
@@ -1047,34 +1054,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ignite.AfterNodeStop();
 
             return 0;
-        }
-
-        private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
-            int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
-        {
-            // errData mechanism is only needed for CachePartialUpdateException and is no longer used,
-            // since CacheImpl handles all errors itself.
-            Debug.Assert(errDataLen == 0);
-            Debug.Assert(errData == null);
-
-            string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
-            string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
-            string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
-
-            switch (errType)
-            {
-                case ErrGeneric:
-                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
-
-                case ErrJvmInit:
-                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg, stackTrace);
-
-                case ErrJvmAttach:
-                    throw new IgniteException("Failed to attach to JVM.");
-
-                default:
-                    throw new IgniteException("Unknown exception [cls=" + errCls + ", msg=" + errMsg + ']');
-            }
         }
 
         private long OnClientDisconnected(long unused)
@@ -1091,18 +1070,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars,
-            int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr)
+        internal void LoggerLog(int level, string message, string category, string nativeError, long memPtr)
         {
             // When custom logger in .NET is not defined, Java should not call us.
             Debug.Assert(!(_log is JavaLogger));
 
             SafeCall(() =>
             {
-                var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
-                var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
-                var nativeError = IgniteUtils.Utf8UnmanagedToString(errorInfoChars, errorInfoCharsLen);
-
                 Exception ex = null;
 
                 if (memPtr != 0 && _ignite != null)
@@ -1117,30 +1091,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
-        private bool LoggerIsLevelEnabled(void* target, int level)
+        internal bool LoggerIsLevelEnabled(int level)
         {
             // When custom logger in .NET is not defined, Java should not call us.
             Debug.Assert(!(_log is JavaLogger));
 
             return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
-        }
-
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
-        {
-            try
-            {
-                var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
-
-                var target = isErr ? Console.Error : Console.Out;
-
-                target.Write(str);
-
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
-            }
         }
 
         private long PluginProcessorIgniteStop(long val)
@@ -1161,6 +1117,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private long AffinityFunctionInit(long memPtr, long unused, long unused1, void* baseFunc)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
@@ -1175,7 +1132,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 if (affBase != null)
                 {
-                    var baseFunc0 = new PlatformJniTarget(UU.Acquire(_ctx, baseFunc), _ignite.Marshaller);
+                    var baseFuncRef = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) baseFunc);
+                    var baseFunc0 = new PlatformJniTarget(baseFuncRef, _ignite.Marshaller);
 
                     affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0));
                 }
@@ -1262,8 +1220,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(_ctx.NativeContext, e);
+                throw;
             }
         }
 
@@ -1280,31 +1237,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(_ctx.NativeContext, e);
-
-                return default(T);
+                throw;
             }
         }
 
         #endregion
         
-        /// <summary>
-        /// Callbacks pointer.
-        /// </summary>
-        public void* CallbacksPointer
-        {
-            get { return _cbsPtr.ToPointer(); }
-        }
-
-        /// <summary>
-        /// Gets the context.
-        /// </summary>
-        public UnmanagedContext Context
-        {
-            get { return _ctx; }
-        }
-
         /// <summary>
         /// Gets the log.
         /// </summary>
@@ -1314,22 +1252,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary>
-        /// Create function pointer for the given function.
+        /// Sets the context.
         /// </summary>
-        private void* CreateFunctionPointer(Delegate del)
+        public void SetContext(long igniteId)
         {
-            _delegates.Add(del); // Prevent delegate from being GC-ed.
-
-            return Marshal.GetFunctionPointerForDelegate(del).ToPointer();
-        }
-
-        /// <param name="context">Context.</param>
-        public void SetContext(void* context)
-        {
-            Debug.Assert(context != null);
-            Debug.Assert(_ctx == null);
-
-            _ctx = new UnmanagedContext(context);
+            _igniteId = igniteId;
         }
 
         /// <summary>
@@ -1359,17 +1286,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         public void Cleanup()
         {
+            // This instance crosses AppDomain boundaries and is GCed with a delay.
+            // Release all external references.
+
             _ignite = null;
+            _log = null;
+
+            _jvm.ReleaseCallbacks(_igniteId);
 
             _handleRegistry.Close();
-        }
-
-        /// <summary>
-        /// Gets the console write handler.
-        /// </summary>
-        public static void* ConsoleWriteHandler
-        {
-            get { return ConsoleWritePtr; }
         }
 
         /// <summary>

@@ -47,6 +47,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 "-J-Xmx512m",
                 "-J-DIGNITE_QUIET=false"
                 );
+            Assert.IsTrue(proc.Alive);
 
             _grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {

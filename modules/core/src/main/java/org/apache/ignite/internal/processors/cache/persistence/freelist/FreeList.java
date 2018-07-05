@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
  */
-public interface FreeList {
+public interface FreeList<T extends Storable> {
     /**
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void insertDataRow(CacheDataRow row) throws IgniteCheckedException;
+    public void insertDataRow(T row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.
@@ -36,7 +36,7 @@ public interface FreeList {
      * @return {@code True} if was able to update row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateDataRow(long link, CacheDataRow row) throws IgniteCheckedException;
+    public boolean updateDataRow(long link, T row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

@@ -56,17 +56,14 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /** */
     private final static long FAILURE_THRESHOLD = 10_000;
 
-    /** */
-    private final static long CLIENT_FAILURE_THRESHOLD = 30_000;
-
     /** Failure detection timeout for nodes configuration. */
     private static long failureThreshold = FAILURE_THRESHOLD;
 
-    /** Client failure detection timeout for nodes configuration. */
-    private static long clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
-
     /** */
     private static boolean useTestSpi;
+
+    /** */
+    private static boolean disableTopChangeRecovery;
 
     /** {@inheritDoc} */
     @Override protected boolean useFailureDetectionTimeout() {
@@ -75,7 +72,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
     /** {@inheritDoc} */
     @Override protected long clientFailureDetectionTimeout() {
-        return clientFailureThreshold;
+        return clientFailureDetectionTimeout;
     }
 
     /** {@inheritDoc} */
@@ -95,7 +92,19 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
     /** {@inheritDoc} */
     @Override protected TcpDiscoverySpi getDiscoverySpi() {
-        return useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
+        TcpDiscoverySpi spi = useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
+
+        if (disableTopChangeRecovery)
+            spi.setConnectionRecoveryTimeout(0);
+
+        return spi;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        disableTopChangeRecovery = false;
     }
 
     /**
@@ -153,7 +162,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      */
     public void testFailureTimeoutServerClient() throws Exception {
         failureThreshold = 3000;
-        clientFailureThreshold = 2000;
+        clientFailureDetectionTimeout = 2000;
 
         try {
             startServerNodes(1);
@@ -190,13 +199,12 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             long detectTime = failureDetectTime[0] - failureTime;
 
             assertTrue("Client node failure detected too fast: " + detectTime + "ms",
-                detectTime > clientFailureThreshold - 200);
+                detectTime > clientFailureDetectionTimeout - 200);
             assertTrue("Client node failure detected too slow:  " + detectTime + "ms",
-                detectTime < clientFailureThreshold + 5000);
+                detectTime < clientFailureDetectionTimeout + 5000);
         }
         finally {
             failureThreshold = FAILURE_THRESHOLD;
-            clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
         }
     }
 
@@ -207,8 +215,9 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      */
     public void testFailureTimeout3Server() throws Exception {
         failureThreshold = 1000;
-        clientFailureThreshold = 10000;
+        clientFailureDetectionTimeout = 10000;
         useTestSpi = true;
+        disableTopChangeRecovery = true;
 
         try {
             startServerNodes(3);
@@ -254,11 +263,10 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             assertTrue("Server node failure detected too fast: " + detectTime + "ms",
                 detectTime > failureThreshold - 100);
             assertTrue("Server node failure detected too slow:  " + detectTime + "ms",
-                detectTime < clientFailureThreshold);
+                detectTime < clientFailureDetectionTimeout);
         }
         finally {
             failureThreshold = FAILURE_THRESHOLD;
-            clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
             useTestSpi = false;
         }
     }

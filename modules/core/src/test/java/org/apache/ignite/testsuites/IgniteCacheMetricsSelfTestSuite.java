@@ -18,8 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsEnableRuntimeTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsEntitiesCountTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedTckMetricsSelfTestImpl;
@@ -61,10 +66,16 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
 
         suite.addTestSuite(CacheGroupsMetricsRebalanceTest.class);
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
+        suite.addTestSuite(CacheValidatorMetricsTest.class);
+        suite.addTestSuite(CacheMetricsEnableRuntimeTest.class);
+        suite.addTestSuite(CacheMetricsEntitiesCountTest.class);
 
         // Cluster wide metrics.
         suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
         suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
+
+        suite.addTestSuite(TransactionMetricsMxBeanImplTest.class);
 
         return suite;
     }

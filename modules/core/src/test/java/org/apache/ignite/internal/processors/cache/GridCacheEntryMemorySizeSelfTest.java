@@ -31,9 +31,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -114,11 +115,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param nearEnabled {@code True} if near cache should be enabled.
      * @param mode Cache mode.
@@ -165,6 +161,14 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             @Override public boolean isSystemType(String typeName) {
                 return false;
+            }
+
+            @Override public IgnitePredicate<String> classNameFilter() {
+                return null;
+            }
+
+            @Override public JdkMarshaller jdkMarshaller() {
+                return new JdkMarshaller();
             }
         });
 

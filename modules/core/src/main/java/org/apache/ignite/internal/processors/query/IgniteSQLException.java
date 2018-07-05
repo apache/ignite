@@ -22,6 +22,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.UNKNOWN;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.codeToSqlState;
+
 /**
  * Specific exception bearing information about query processing errors for more detailed
  * errors in JDBC driver.
@@ -38,45 +41,82 @@ public class IgniteSQLException extends IgniteException {
     /** Code to return as {@link SQLException#vendorCode} */
     private final int statusCode;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param msg Exception message.
+     */
     public IgniteSQLException(String msg) {
-        this(msg, null, 0);
+        this(msg, UNKNOWN, (String)null);
     }
 
     /**
-     * Minimalistic ctor accepting only {@link SQLException} as the cause.
+     * Constructor.
+     *
+     * @param cause Cause to throw this exception.
      */
     public IgniteSQLException(SQLException cause) {
         super(cause);
-        this.sqlState = null;
-        this.statusCode = 0;
+
+        this.sqlState = cause.getSQLState();
+        this.statusCode = UNKNOWN;
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param msg Exception message.
+     * @param cause Cause to throw this exception.
+     */
     public IgniteSQLException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
-        this.sqlState = null;
-        this.statusCode = 0;
+        this(msg, UNKNOWN, cause);
     }
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @param cause Cause to throw this exception.
+     * @see IgniteQueryErrorCode
+     */
     public IgniteSQLException(String msg, int statusCode, @Nullable Throwable cause) {
-        super(msg, cause);
-        this.sqlState = null;
-        this.statusCode = statusCode;
+        this(msg, statusCode, codeToSqlState(statusCode), cause);
     }
 
-    /** */
-    public IgniteSQLException(String msg, String sqlState, int statusCode) {
-        super(msg);
-        this.sqlState = sqlState;
-        this.statusCode = statusCode;
-    }
-
-    /** */
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @see IgniteQueryErrorCode
+     */
     public IgniteSQLException(String msg, int statusCode) {
-        super(msg);
-        this.sqlState = null;
+        this(msg, statusCode, codeToSqlState(statusCode));
+    }
+
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @param sqlState SQLSTATE standard code.
+     * @see IgniteQueryErrorCode
+     */
+    public IgniteSQLException(String msg, int statusCode, String sqlState) {
+        this(msg, statusCode, sqlState, null);
+    }
+
+    /**
+     * Constructor.
+     * @param msg Exception message.
+     * @param statusCode Ignite specific error code.
+     * @param sqlState SQLSTATE standard code.
+     * @param cause Cause to throw this exception.
+     * @see IgniteQueryErrorCode
+     */
+    private IgniteSQLException(String msg, int statusCode, String sqlState, @Nullable Throwable cause) {
+        super(msg, cause);
+
+        this.sqlState = sqlState;
         this.statusCode = statusCode;
     }
 
@@ -85,6 +125,15 @@ public class IgniteSQLException extends IgniteException {
      */
     public int statusCode() {
         return statusCode;
+    }
+
+    /**
+     * {@link SQLException#SQLState} getter.
+     *
+     * @return {@link SQLException#SQLState}.
+     */
+    public String sqlState() {
+        return sqlState;
     }
 
     /**

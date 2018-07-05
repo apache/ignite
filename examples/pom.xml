@@ -7,9 +7,7 @@
   The ASF licenses this file to You under the Apache License, Version 2.0
   (the "License"); you may not use this file except in compliance with
   the License.  You may obtain a copy of the License at
-
        http://www.apache.org/licenses/LICENSE-2.0
-
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +15,8 @@
   limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -28,7 +27,7 @@
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>2.2.0-SNAPSHOT</version>
+    <version>2.6.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -47,6 +46,17 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
+            <!--Remove exclusion while upgrading ignite-spring version to 5.0-->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-beans</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -63,20 +73,26 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data</artifactId>
+            <artifactId>ignite-spring-data_2.0</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+            <version>1.2</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
-            <version>2.7.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>2.8.4</version>
         </dependency>
 
         <dependency>
@@ -93,17 +109,23 @@
             <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${javassist.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <properties>
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
-        <java8.folder>src/main/java</java8.folder>
+        <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <spark.folder>src/main/java</spark.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
-        <lgpl.test.folder>src/test/java</lgpl.test.folder>
-        <java8.test.folder>src/test/java</java8.test.folder>
-        <ml.folder>src/main/java</ml.folder>
+        <tensorflow.folder>src/main/java</tensorflow.folder>
+        <tensorflow.test.folder>src/test/java</tensorflow.test.folder>
     </properties>
 
     <profiles>
@@ -140,12 +162,6 @@
                     <artifactId>ignite-spark</artifactId>
                     <version>${project.version}</version>
                 </dependency>
-
-                <dependency>
-                    <groupId>org.jboss.netty</groupId>
-                    <artifactId>netty</artifactId>
-                    <version>3.2.9.Final</version>
-                </dependency>
             </dependencies>
 
             <build>
@@ -156,99 +172,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>scala-2.10</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-                <spark.test.folder>src/test/spark</spark.test.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar_2.10</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.scalatest</groupId>
-                    <artifactId>scalatest_2.10</artifactId>
-                    <version>2.2.2</version>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.scala-lang</groupId>
-                            <artifactId>scala-library</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark_2.10</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.jboss.netty</groupId>
-                    <artifactId>netty</artifactId>
-                    <version>3.2.9.Final</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>java8</id>
-
-            <properties>
-                <java8.folder>src/main/java8</java8.folder>
-                <java8.test.folder>src/test/java8</java8.test.folder>
-            </properties>
-
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <source>1.8</source>
-                            <target>1.8</target>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>ml</id>
-
-            <properties>
-                <ml.folder>src/main/ml</ml.folder>
-                <java.ver>1.8</java.ver>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-ml</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
         </profile>
 
         <profile>
@@ -275,6 +198,23 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-geospatial</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>tensorflow</id>
+
+            <properties>
+                <tensorflow.folder>src/main/tensorflow</tensorflow.folder>
+                <tensorflow.test.folder>src/test/tensorflow</tensorflow.test.folder>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-tensorflow</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
@@ -308,9 +248,8 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.folder}</source>
-                                <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
-                                <source>${ml.folder}</source>
+                                <source>${tensorflow.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -325,12 +264,13 @@
                             <sources>
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
-                                <source>${java8.test.folder}</source>
+                                <source>${tensorflow.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

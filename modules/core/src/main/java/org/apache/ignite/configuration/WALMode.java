@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.Ignite;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -24,24 +25,39 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum WALMode {
     /**
-     * Default mode: full-sync disk writes. These writes survive power loss scenarios.
+     * FSYNC mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
+     * from the transaction commit operation, the changes are guaranteed to be persisted to disk according to the
+     * transaction write synchronization mode.
      */
-    DEFAULT,
+    FSYNC,
 
     /**
-     * Log only mode: flushes application buffers. These writes survive process crash.
+     * Log only mode: flushes application buffers. These writes survive process crash. When a control is returned
+     * from the transaction commit operation, the changes are guaranteed to be forced to the OS buffer cache.
+     * It's up to the OS to decide when to flush its caches to disk.
      */
     LOG_ONLY,
 
     /**
-     * Background mode. Does not force application buffer flush. Data may be lost in case of process crash.
+     * Background mode. Does not force application's buffer flush. Last updates may be lost in case of a process crash.
      */
     BACKGROUND,
 
     /**
-     * WAL disabled.
+     * WAL is disabled. Data is guaranteed to be persisted on disk only in case of graceful cluster shutdown using
+     * {@link Ignite#active(boolean)} method. If an Ignite node is terminated in NONE mode abruptly, it is likely
+     * that the data stored on disk is corrupted and work directory will need to be cleared for a node restart.
      */
-    NONE;
+    NONE,
+
+    /**
+     * Default mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
+     * from the transaction commit operation, the changes are guaranteed to be persisted to disk according to the
+     * transaction write synchronization mode.
+     * @deprecated This mode is no longer default and left here only for API compatibility. It is equivalent to the
+     * {@code FSYNC} mode.
+     */
+    @Deprecated DEFAULT;
 
     /**
      * Enumerated values.

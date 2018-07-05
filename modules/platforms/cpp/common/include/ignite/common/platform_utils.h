@@ -17,12 +17,15 @@
 #ifndef _IGNITE_COMMON_PLATFORM_UTILS
 #define _IGNITE_COMMON_PLATFORM_UTILS
 
+#include <iostream>
 #include <ignite/common/common.h>
 
 namespace ignite
 {
     namespace common
     {
+        typedef std::basic_ostream<char, std::char_traits<char> > StdCharOutStream;
+
         /**
          * Convert struct tm to time_t (UTC).
          *
@@ -61,10 +64,18 @@ namespace ignite
          * Read system environment variable taking thread-safety in count.
          *
          * @param name Environment variable name.
-         * @param val Environment variable value.
-         * @return True if the environment variable with such name was found.
+         * @return Environment variable value if found and empty string otherwise.
          */
-        IGNITE_IMPORT_EXPORT bool GetEnv(const std::string& name, std::string& val);
+        IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name);
+
+        /**
+         * Read system environment variable taking thread-safety in count.
+         *
+         * @param name Environment variable name.
+         * @param dflt Default value to return on fail.
+         * @return Environment variable value if found and @c dflt otherwise.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, const std::string& dflt);
 
         /**
          * Ensure that file on the given path exists in the system.
@@ -73,6 +84,33 @@ namespace ignite
          * @return True if file exists, false otherwise.
          */
         IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
+
+        /**
+         * Check if the provided path is the valid directory.
+         * @return @c true if the provided path is the valid directory.
+         */
+        IGNITE_IMPORT_EXPORT bool IsValidDirectory(const std::string& path);
+
+        /**
+         * Write file separator to a stream.
+         * @param ostr Stream.
+         * @return The same stream for chaining.
+         */
+        IGNITE_IMPORT_EXPORT StdCharOutStream& Fs(StdCharOutStream& ostr);
+
+        /**
+         * Write dynamic library expansion to a stream.
+         * @param ostr Stream.
+         * @return The same stream for chaining.
+         */
+        IGNITE_IMPORT_EXPORT StdCharOutStream& Dle(StdCharOutStream& ostr);
+
+        /**
+         * Get random seed.
+         *
+         * @return Random seed.
+         */
+        unsigned GetRandSeed();
     }
 }
 

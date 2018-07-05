@@ -28,6 +28,6 @@ public class H2DynamicIndexingComplexServerTransactionalReplicatedTest extends H
      * Constructor.
      */
     public H2DynamicIndexingComplexServerTransactionalReplicatedTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, SRV_IDX);
+        super(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, 1, SRV_IDX);
     }
 }

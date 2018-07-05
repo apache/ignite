@@ -25,17 +25,26 @@ import com.jcraft.jsch.Session;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_HOST;
@@ -51,11 +60,29 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     /** Default Ignite home path for Linux (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_LINUX = "$IGNITE_HOME";
 
+    /** Windows console encoding */
+    private static final String WINDOWS_ENCODING = "IBM866";
+
+    /** Default start script path for Windows. */
+    private static final String DFLT_SCRIPT_WIN = "bin\\ignite.bat -v -np";
+
     /** Default start script path for Linux. */
     private static final String DFLT_SCRIPT_LINUX = "bin/ignite.sh -v";
 
     /** Date format for log file name. */
     private static final SimpleDateFormat FILE_NAME_DATE_FORMAT = new SimpleDateFormat("MM-dd-yyyy--HH-mm-ss");
+
+    /** Used to register successful node start in log */
+    private static final String SUCCESSFUL_START_MSG = "Successfully bound to TCP port";
+
+    /**  */
+    private static final long EXECUTE_WAIT_TIME = 1000;
+
+    /**  */
+    private static final long NODE_START_CHECK_PERIOD = 2000;
+
+    /**  */
+    private static final long NODE_START_CHECK_LIMIT = 15;
 
     /** Specification. */
     private final IgniteRemoteStartSpecification spec;
@@ -65,13 +92,18 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
     /** Logger. */
     @LoggerResource
-    private IgniteLogger log;
+    private transient IgniteLogger log;
+
+    /** Ignite. */
+    @IgniteInstanceResource
+    private transient Ignite ignite;
 
     /**
      * Required by Externalizable.
      */
     public StartNodeCallableImpl() {
         spec = null;
+
         timeout = 0;
 
         assert false;
@@ -87,6 +119,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         assert spec != null;
 
         this.spec = spec;
+
         this.timeout = timeout;
     }
 
@@ -111,6 +144,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             boolean win = isWindows(ses);
 
+            info("Windows mode: " + win, spec.logger(), log);
+
             char separator = win ? '\\' : '/';
 
             spec.fixPaths(separator);
@@ -123,30 +158,95 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             String script = spec.script();
 
             if (script == null)
-                script = DFLT_SCRIPT_LINUX;
+                script = win ? DFLT_SCRIPT_WIN : DFLT_SCRIPT_LINUX;
 
             String cfg = spec.configuration();
 
             if (cfg == null)
                 cfg = "";
 
-            String startNodeCmd;
-            String scriptOutputFileName = FILE_NAME_DATE_FORMAT.format(new Date()) + '-'
-                + UUID.randomUUID().toString().substring(0, 8) + ".log";
+            String id = FILE_NAME_DATE_FORMAT.format(new Date()) + '-' + UUID.randomUUID().toString().substring(0, 8);
 
-            if (win)
-                throw new UnsupportedOperationException("Apache Ignite cannot be auto-started on Windows from IgniteCluster.startNodes(…) API.");
+            String scriptOutputFileName = id + ".log";
+
+            int spaceIdx = script.indexOf(' ');
+
+            String scriptPath = spaceIdx > -1 ? script.substring(0, spaceIdx) : script;
+
+            String scriptArgs = spaceIdx > -1 ? script.substring(spaceIdx + 1) : "";
+
+            String rmtLogArgs = buildRemoteLogArguments(spec.username(), spec.host());
+
+            String scriptOutputDir;
+
+            String dfltTmpDir = igniteHome + separator + "work" + separator + "log";
+
+            if (win) {
+                String tmpDir = env(ses, "%TMPDIR%", dfltTmpDir, WINDOWS_ENCODING);
+
+                if ("%TMPDIR%".equals(tmpDir))
+                    tmpDir = dfltTmpDir;
+
+                scriptOutputDir = tmpDir + "\\ignite-startNodes";
+            }
             else { // Assume Unix.
-                int spaceIdx = script.indexOf(' ');
+                String logDir = env(ses, "$TMPDIR", dfltTmpDir);
 
-                String scriptPath = spaceIdx > -1 ? script.substring(0, spaceIdx) : script;
-                String scriptArgs = spaceIdx > -1 ? script.substring(spaceIdx + 1) : "";
-                String rmtLogArgs = buildRemoteLogArguments(spec.username(), spec.host());
-                String tmpDir = env(ses, "$TMPDIR", "/tmp/");
-                String scriptOutputDir = tmpDir + "ignite-startNodes";
+                scriptOutputDir = logDir + "/ignite-startNodes";
+            }
 
-                shell(ses, "mkdir " + scriptOutputDir);
+            shell(ses, "mkdir " + scriptOutputDir);
 
+            String scriptOutputPath = scriptOutputDir + separator + scriptOutputFileName;
+
+            String findSuccess;
+
+            if (win) {
+                String scriptFileName = scriptOutputDir + '\\' + id + ".bat";
+
+                String createScript = new SB()
+                    .a("echo \"").a(igniteHome).a('\\').a(scriptPath).a("\" ")
+                    .a(scriptArgs)
+                    .a(!cfg.isEmpty() ? " \"" : "").a(cfg).a(!cfg.isEmpty() ? "\"" : "")
+                    .a(rmtLogArgs)
+                    .a(" ^> ").a(scriptOutputPath).a(" ^2^>^&^1")
+                    .a(" > ").a(scriptFileName)
+                    .toString();
+
+                info("Create script with command: " + createScript, spec.logger(), log);
+
+                shell(ses, createScript);
+
+                try {
+                    String createTask = new SB()
+                        .a("schtasks /create /f /sc onstart")
+                        .a(" /ru ").a(spec.username())
+                        .a(" /rp ").a(spec.password())
+                        .a(" /tn ").a(id)
+                        .a(" /np /tr \"").a(scriptFileName).a('\"')
+                        .toString();
+
+                    info("Create task with command: " + createTask, spec.logger(), log);
+
+                    shell(ses, createTask);
+
+                    String runTask = "schtasks /run /i /tn " + id;
+
+                    info("Run task with command: " + runTask, spec.logger(), log);
+
+                    shell(ses, runTask);
+                }
+                finally {
+                    String deleteTask = "schtasks /delete /f /tn " + id;
+
+                    info("Delete task with command: " + deleteTask, spec.logger(), log);
+
+                    shell(ses, deleteTask);
+                }
+
+                findSuccess = "find \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
+            }
+            else { // Assume Unix.
                 // Mac os don't support ~ in double quotes. Trying get home path from remote system.
                 if (igniteHome.startsWith("~")) {
                     String homeDir = env(ses, "$HOME", "~");
@@ -154,22 +254,36 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     igniteHome = igniteHome.replaceFirst("~", homeDir);
                 }
 
-                startNodeCmd = new SB().
+                String startNodeCmd = new SB()
                     // Console output is consumed, started nodes must use Ignite file appenders for log.
-                        a("nohup ").
-                    a("\"").a(igniteHome).a('/').a(scriptPath).a("\"").
-                    a(" ").a(scriptArgs).
-                    a(!cfg.isEmpty() ? " \"" : "").a(cfg).a(!cfg.isEmpty() ? "\"" : "").
-                    a(rmtLogArgs).
-                    a(" > ").a(scriptOutputDir).a("/").a(scriptOutputFileName).a(" 2>& 1 &").
-                    toString();
+                    .a("nohup ")
+                    .a("\"").a(igniteHome).a('/').a(scriptPath).a("\"")
+                    .a(" ").a(scriptArgs)
+                    .a(!cfg.isEmpty() ? " \"" : "").a(cfg).a(!cfg.isEmpty() ? "\"" : "")
+                    .a(rmtLogArgs)
+                    .a(" > ").a(scriptOutputDir).a('/').a(scriptOutputFileName).a(" 2>& 1 &")
+                    .toString();
+
+                info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
+
+                shell(ses, startNodeCmd);
+
+                findSuccess = "grep \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
             }
 
-            info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
+            for (int i = 0; i < NODE_START_CHECK_LIMIT; ++i) {
+                Thread.sleep(NODE_START_CHECK_PERIOD);
 
-            shell(ses, startNodeCmd);
+                String res = exec(ses, findSuccess, win ? WINDOWS_ENCODING : null);
 
-            return new ClusterStartNodeResultImpl(spec.host(), true, null);
+                info("Find result: " + res, spec.logger(), log);
+
+                if (res != null && res.contains(SUCCESSFUL_START_MSG))
+                    return new ClusterStartNodeResultImpl(spec.host(), true, null);
+            }
+
+            return new ClusterStartNodeResultImpl(spec.host(), false, "Remote node could not start. " +
+                "See log for details: " + scriptOutputPath);
         }
         catch (IgniteInterruptedCheckedException e) {
             return new ClusterStartNodeResultImpl(spec.host(), false, e.getMessage());
@@ -203,7 +317,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             try (PrintStream out = new PrintStream(ch.getOutputStream(), true)) {
                 out.println(cmd);
 
-                U.sleep(1000);
+                U.sleep(EXECUTE_WAIT_TIME);
             }
         }
         finally {
@@ -238,8 +352,29 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws JSchException In case of SSH error.
      */
     private String env(Session ses, String name, String dflt) throws JSchException {
+        return env(ses, name, dflt, null);
+    }
+
+    /**
+     * Gets the value of the specified environment variable.
+     *
+     * @param ses SSH session.
+     * @param name environment variable name.
+     * @param dflt default value.
+     * @param encoding Process output encoding, {@code null} for default charset encoding.
+     * @return environment variable value.
+     * @throws JSchException In case of SSH error.
+     */
+    private String env(Session ses, String name, String dflt, String encoding) throws JSchException {
         try {
-            return exec(ses, "echo " + name);
+            String res = exec(ses, "echo " + name, encoding);
+
+            if (res == null)
+                return dflt;
+
+            res = res.trim();
+
+            return res.isEmpty() ? dflt : res;
         }
         catch (IOException ignored) {
             return dflt;
@@ -256,6 +391,20 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws IOException If failed.
      */
     private String exec(Session ses, String cmd) throws JSchException, IOException {
+        return exec(ses, cmd, null);
+    }
+
+    /**
+     * Gets the value of the specified environment variable.
+     *
+     * @param ses SSH session.
+     * @param cmd environment variable name.
+     * @param encoding Process output encoding, {@code null} for default charset encoding.
+     * @return environment variable value.
+     * @throws JSchException In case of SSH error.
+     * @throws IOException If failed.
+     */
+    private String exec(Session ses, final String cmd, String encoding) throws JSchException, IOException {
         ChannelExec ch = null;
 
         try {
@@ -265,9 +414,62 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             ch.connect();
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(ch.getInputStream()))) {
-                return reader.readLine();
+            if (encoding == null)
+                encoding = Charset.defaultCharset().name();
+
+            IgniteEx grid = (IgniteEx)ignite;
+
+            GridTimeoutProcessor proc = grid.context().timeout();
+
+            GridTimeoutObject to = null;
+
+            SB out = null;
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(ch.getInputStream(), encoding))) {
+                String line;
+
+                boolean first = true;
+
+                while ((line = reader.readLine()) != null) {
+                    if (first)
+                        out = new SB();
+                    else
+                        out.a('\n');
+
+                    out.a(line);
+
+                    if (first) {
+                        to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
+                            /**  */
+                            private final Thread thread = Thread.currentThread();
+
+                            @Override public void onTimeout() {
+                                thread.interrupt();
+                            }
+
+                            @Override public String toString() {
+                                return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+                            }
+                        };
+
+                        assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
+
+                        first = false;
+                    }
+                }
             }
+            catch (InterruptedIOException ignore) {
+                // No-op.
+            }
+            finally {
+                if (to != null) {
+                    boolean r = proc.removeTimeoutObject(to);
+
+                    assert r || to.endTime() <= U.currentTimeMillis() : "Timeout object was not removed: " + to;
+                }
+            }
+
+            return out == null ? null : out.toString();
         }
         finally {
             if (ch != null && ch.isConnected())

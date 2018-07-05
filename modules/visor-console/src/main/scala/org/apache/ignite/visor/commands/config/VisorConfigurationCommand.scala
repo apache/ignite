@@ -17,19 +17,16 @@
 
 package org.apache.ignite.visor.commands.config
 
+import java.util.UUID
 import org.apache.ignite.cluster.ClusterGroupEmptyException
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 
-import java.lang.System._
-import java.util.UUID
-
-import org.apache.ignite.internal.visor.node.{VisorSpiDescription, VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
+import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask, VisorSpiDescription}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
@@ -86,13 +83,12 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
       * Starts command in interactive mode.
      */
     def config() {
-        if (isConnected)
+        if (checkConnected()) {
             askForNode("Select node from:") match {
                 case Some(id) => config("-id=" + id)
                 case None => ()
             }
-        else
-            adviseToConnect()
+        }
     }
 
     /**
@@ -106,44 +102,40 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
      * @param args Command arguments.
      */
     def config(args: String) {
-        if (!isConnected) {
-            adviseToConnect()
+        if (checkConnected()) {
+            val argLst = parseArgs(args)
 
-            return
-        }
+            val nid = parseNode(argLst) match {
+                case Left(msg) =>
+                    scold(msg)
 
-        val argLst = parseArgs(args)
+                    return
 
-        val nid = parseNode(argLst) match {
-            case Left(msg) =>
-                scold(msg)
+                case Right(None) =>
+                    scold("One of -id8 or -id is required.")
 
-                return
+                    return
 
-            case Right(None) =>
-                scold("One of -id8 or -id is required.")
+                case Right(Some(n)) =>
+                    assert(n != null)
 
-                return
+                    n.id()
+            }
 
-            case Right(Some(n)) =>
-                assert(n != null)
+            try {
+                val cfg = collectConfiguration(nid)
 
-                n.id()
-        }
+                printConfiguration(cfg)
 
-        try {
-            val cfg = collectConfiguration(nid)
+                cacheConfigurations(nid).foreach(ccfg => {
+                    println()
 
-            printConfiguration(cfg)
-
-            cacheConfigurations(nid).foreach(ccfg => {
-                println()
-
-                printCacheConfiguration(s"Cache '${escapeName(ccfg.getName)}':", ccfg)
-            })
-        }
-        catch {
-            case e: Throwable => scold(e)
+                    printCacheConfiguration(s"Cache '${escapeName(ccfg.getName)}':", ccfg)
+                })
+            }
+            catch {
+                case e: Throwable => scold(e)
+            }
         }
     }
 
@@ -162,7 +154,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         cmnT += ("Grid name", escapeName(basic.getIgniteInstanceName))
         cmnT += ("Ignite home", safe(basic.getGgHome))
         cmnT += ("Localhost", safe(basic.getLocalHost))
-        cmnT += ("Consistent ID", safe(basic.getConsistentId))
+        cmnT += ("Consistent ID", safe(basic.getConsistentId, "<Not configured explicitly>"))
         cmnT += ("Marshaller", basic.getMarshaller)
         cmnT += ("Deployment mode", safe(basic.getDeploymentMode))
         cmnT += ("ClientMode", javaBoolToStr(basic.isClientMode))
@@ -240,6 +232,34 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
 
         spisT.render()
 
+        println("\nClient connector configuration")
+
+        val cliConnCfg = cfg.getClientConnectorConfiguration
+        val cliConnTbl = VisorTextTable()
+
+        if (cliConnCfg != null) {
+            cliConnTbl += ("Host", safe(cliConnCfg.getHost, safe(basic.getLocalHost)))
+            cliConnTbl += ("Port", cliConnCfg.getPort)
+            cliConnTbl += ("Port range", cliConnCfg.getPortRange)
+            cliConnTbl += ("Socket send buffer size", formatMemory(cliConnCfg.getSocketSendBufferSize))
+            cliConnTbl += ("Socket receive buffer size", formatMemory(cliConnCfg.getSocketReceiveBufferSize))
+            cliConnTbl += ("Max connection cursors", cliConnCfg.getMaxOpenCursorsPerConnection)
+            cliConnTbl += ("Pool size", cliConnCfg.getThreadPoolSize)
+            cliConnTbl += ("Idle Timeout", cliConnCfg.getIdleTimeout + "ms")
+            cliConnTbl += ("TCP_NODELAY", bool2Str(cliConnCfg.isTcpNoDelay))
+            cliConnTbl += ("JDBC Enabled", bool2Str(cliConnCfg.isJdbcEnabled))
+            cliConnTbl += ("ODBC Enabled", bool2Str(cliConnCfg.isOdbcEnabled))
+            cliConnTbl += ("Thin Client Enabled", bool2Str(cliConnCfg.isThinClientEnabled))
+            cliConnTbl += ("SSL Enabled", bool2Str(cliConnCfg.isSslEnabled))
+            cliConnTbl += ("Ssl Client Auth", bool2Str(cliConnCfg.isSslClientAuth))
+            cliConnTbl += ("Use Ignite SSL Context Factory", bool2Str(cliConnCfg.isUseIgniteSslContextFactory))
+            cliConnTbl += ("SSL Context Factory", safe(cliConnCfg.getSslContextFactory))
+
+            cliConnTbl.render()
+        }
+        else
+            println("Client Connection is not configured")
+
         println("\nPeer-to-Peer:")
 
         val p2pT = VisorTextTable()
@@ -273,7 +293,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))
-        execSvcT += ("SQL processor thread pool size", safe(execCfg.getSqlConnectorConfigurationThreadPoolSize))
+        execSvcT += ("Client connector thread pool size", safe(execCfg.getClientConnectorConfigurationThreadPoolSize))
 
         execSvcT.render()
 
@@ -371,7 +391,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
      * @return List of strings.
      */
     private[this] def compactProperty(name: String, value: String): List[String] = {
-        val ps = getProperty("path.separator")
+        val ps = System.getProperty("path.separator")
 
         // Split all values having path separator into multiple lines (with few exceptions...).
         val lst =

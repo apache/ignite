@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -325,6 +326,12 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_GET_LOST_PARTITIONS = 84;
+
+    /** */
+    public static final int OP_QUERY_METRICS = 85;
+
+    /** */
+    public static final int OP_RESET_QUERY_METRICS = 86;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -930,7 +937,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -987,6 +994,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 }
 
                 break;
+
+            case OP_QUERY_METRICS: {
+                QueryMetrics metrics = cache.queryMetrics();
+
+                writeQueryMetrics(writer, metrics);
+
+                break;
+            }
 
             default:
                 super.processOutStream(type, writer);
@@ -1092,6 +1107,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_REMOVE_ALL2:
                 cache.removeAll();
+
+                return TRUE;
+
+            case OP_RESET_QUERY_METRICS:
+                cache.resetQueryMetrics();
 
                 return TRUE;
         }
@@ -1472,6 +1492,37 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeBoolean(metrics.isManagementEnabled());
         writer.writeBoolean(metrics.isReadThrough());
         writer.writeBoolean(metrics.isWriteThrough());
+        writer.writeBoolean(metrics.isValidForReading());
+        writer.writeBoolean(metrics.isValidForWriting());
+        writer.writeInt(metrics.getTotalPartitionsCount());
+        writer.writeInt(metrics.getRebalancingPartitionsCount());
+        writer.writeLong(metrics.getKeysToRebalanceLeft());
+        writer.writeLong(metrics.getRebalancingKeysRate());
+        writer.writeLong(metrics.getRebalancingBytesRate());
+        writer.writeLong(metrics.getHeapEntriesCount());
+        writer.writeLong(metrics.getEstimatedRebalancingFinishTime());
+        writer.writeLong(metrics.getRebalancingStartTime());
+        writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
+        writer.writeLong(metrics.getCacheSize());
+        writer.writeLong(metrics.getRebalancedKeys());
+        writer.writeLong(metrics.getEstimatedRebalancingKeys());
+    }
+
+    /**
+     * Writes query metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    public static void writeQueryMetrics(BinaryRawWriter writer, QueryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeLong(metrics.minimumTime());
+        writer.writeLong(metrics.maximumTime());
+        writer.writeDouble(metrics.averageTime());
+        writer.writeInt(metrics.executions());
+        writer.writeInt(metrics.fails());
     }
 
     /**
