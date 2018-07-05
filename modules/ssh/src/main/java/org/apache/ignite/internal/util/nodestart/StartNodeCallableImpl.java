@@ -275,7 +275,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
                 info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
 
-                shell(ses, startNodeCmd);
+                shell(ses, startNodeCmd, "\\[(\\d)\\] (\\d)+");
 
                 findSuccess = "grep \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
             }
@@ -351,15 +351,17 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 String line;
 
                 while ((line = bufferedReader.readLine()) != null) {
-                    if (ptrn.matcher(line).find())
+                    if (ptrn.matcher(line).find()) {
+                        U.sleep(10);
+
                         break;
+                    }
                 }
             }
             else
                 U.sleep(EXECUTE_WAIT_TIME);
         }
         finally {
-
             if (ch != null && ch.isConnected())
                 ch.disconnect();
         }
