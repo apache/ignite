@@ -31,6 +31,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -305,6 +306,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         }
     }
 
+
     /**
      * Executes command using {@code shell} channel.
      *
@@ -315,6 +317,21 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws IgniteInterruptedCheckedException If thread was interrupted while waiting.
      */
     private void shell(Session ses, String cmd) throws JSchException, IOException, IgniteInterruptedCheckedException {
+        shell(ses, cmd, null);
+    }
+
+    /**
+     * Executes command using {@code shell} channel.
+     *
+     * @param ses SSH session.
+     * @param cmd Command.
+     * @param regexp Regular expression to wait until it will be find in stream from node.
+     * @throws JSchException In case of SSH error.
+     * @throws IOException If IO error occurs.
+     * @throws IgniteInterruptedCheckedException If thread was interrupted while waiting.
+     */
+    private void shell(Session ses, String cmd, String regexp)
+        throws JSchException, IOException, IgniteInterruptedCheckedException {
         ChannelShell ch = null;
 
         try {
@@ -324,11 +341,25 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             try (PrintStream out = new PrintStream(ch.getOutputStream(), true)) {
                 out.println(cmd);
-
-                U.sleep(EXECUTE_WAIT_TIME);
             }
+
+            if (regexp != null) {
+                Pattern ptrn = Pattern.compile(regexp);
+
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(ch.getInputStream()));
+
+                String line;
+
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (ptrn.matcher(line).find())
+                        break;
+                }
+            }
+            else
+                U.sleep(EXECUTE_WAIT_TIME);
         }
         finally {
+
             if (ch != null && ch.isConnected())
                 ch.disconnect();
         }
