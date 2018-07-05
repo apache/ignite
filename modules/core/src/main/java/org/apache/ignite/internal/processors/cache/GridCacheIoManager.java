@@ -277,17 +277,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             }
                         };
 
-                        GridKernalContext kernalContext = cctx.kernalContext();
+                        GridKernalContext ctx = cctx.kernalContext();
 
                         if (stripe >= 0) {
-                            if (!kernalContext.isStripedExecutorDisabled())
-                                kernalContext.getStripedExecutorService().execute(stripe, c);
+                            if (!ctx.isStripedExecutorDisabled())
+                                ctx.getStripedExecutorService().execute(stripe, c);
                             else
-                                kernalContext.getSystemExecutorService().execute(c);
+                                ctx.getSystemExecutorService().execute(c);
                         }
                         else {
                             try {
-                                kernalContext.pools().poolForPolicy(plc).execute(c);
+                                ctx.pools().poolForPolicy(plc).execute(c);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(cacheMsg.messageLogger(cctx), "Failed to get pool for policy: " + plc, e);

@@ -3616,12 +3616,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            GridKernalContext kernalContext = ctx.kernalContext();
+            GridKernalContext ctx = GridDhtAtomicCache.this.ctx.kernalContext();
 
-            if (!kernalContext.isStripedExecutorDisabled())
-                kernalContext.getStripedExecutorService().execute(part, this);
+            if (!ctx.isStripedExecutorDisabled())
+                ctx.getStripedExecutorService().execute(part, this);
             else
-                kernalContext.getSystemExecutorService().execute(this);
+                ctx.getSystemExecutorService().execute(this);
         }
     }
 }

@@ -81,6 +81,8 @@ import org.apache.ignite.internal.managers.communication.GridCommunicationManage
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorConfigurationSelfTest;
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorSelfTest;
 import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
+import org.apache.ignite.internal.util.DisabledStripedExecutorFailoverTest;
+import org.apache.ignite.internal.util.DisabledStripedExecutorFullApiTest;
 import org.apache.ignite.internal.util.DisabledStripedExecutorTest;
 import org.apache.ignite.internal.util.StripedExecutorTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
@@ -169,6 +171,8 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(PublicThreadpoolStarvationTest.class);
         suite.addTestSuite(StripedExecutorTest.class);
         suite.addTestSuite(DisabledStripedExecutorTest.class);
+        suite.addTestSuite(DisabledStripedExecutorFailoverTest.class);
+        suite.addTestSuite(DisabledStripedExecutorFullApiTest.class);
         suite.addTestSuite(GridJobServicesAddNodeTest.class);
 
         suite.addTestSuite(IgniteComputeCustomExecutorConfigurationSelfTest.class);

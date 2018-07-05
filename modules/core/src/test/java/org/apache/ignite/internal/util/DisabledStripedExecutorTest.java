@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
@@ -30,7 +29,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Striped thread pool disabling test
+ * Striped thread pool disabling test.
  */
 public class DisabledStripedExecutorTest extends GridCommonAbstractTest {
     /** */
@@ -90,24 +89,6 @@ public class DisabledStripedExecutorTest extends GridCommonAbstractTest {
                 // getStripedExecutorService should not throw AssertionError.
                 ctx.getStripedExecutorService();
             }
-
-            checkCacheOperations(ignite);
         }
-    }
-
-    /**
-     * Check that GET and PUT cache operations work correctly.
-     *
-     * @param ignite Ignite instance.
-     */
-    private void checkCacheOperations(Ignite ignite) {
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache("temp-cache");
-
-        Integer key = 1;
-        Integer val = 1;
-
-        cache.put(key, val);
-
-        assertEquals("Cache should contain saved object", val, cache.get(key));
     }
 }
