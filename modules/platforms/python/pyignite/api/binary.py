@@ -46,10 +46,11 @@ def get_binary_type(conn: Connection, type_id: int, query_id=None):
     response_head_struct = Response([
         ('type_exists', Bool),
     ])
-    response_head, recv_buffer = response_head_struct.parse(conn)
+    response_head_type, recv_buffer = response_head_struct.parse(conn)
+    response_head = response_head_type.from_buffer_copy(recv_buffer)
     response_parts = []
     if response_head.type_exists:
-        resp_body_struct = Struct([
+        body_struct = Struct([
             ('type_id', Int),
             ('type_name', String),
             ('affinity_key_field', String),
@@ -60,15 +61,16 @@ def get_binary_type(conn: Connection, type_id: int, query_id=None):
             ])),
             ('is_enum', Bool),
         ])
-        resp_body, resp_body_buffer = resp_body_struct.parse(conn)
-        response_parts.append(('body', resp_body))
+        resp_body_type, resp_body_buffer = body_struct.parse(conn)
+        response_parts.append(('body', resp_body_type))
+        resp_body = resp_body_type.from_buffer_copy(resp_body_buffer)
         recv_buffer += resp_body_buffer
         if resp_body.is_enum:
-            resp_enum_struct = StructArray([
+            enum_struct = StructArray([
                 ('literal', String),
                 ('type_id', Int),
             ])
-            resp_enum, resp_enum_buffer = resp_enum_struct.parse(conn)
+            resp_enum, resp_enum_buffer = enum_struct.parse(conn)
             response_parts.append(('enums', resp_enum))
             recv_buffer += resp_enum_buffer
         schema_struct = StructArray([
@@ -77,13 +79,13 @@ def get_binary_type(conn: Connection, type_id: int, query_id=None):
                 ('schema_field_id', Int),
             ])),
         ])
-        resp_schema, resp_schema_buffer = schema_struct.parse(conn)
-        response_parts.append(('schema', resp_schema))
+        resp_schema_type, resp_schema_buffer = schema_struct.parse(conn)
+        response_parts.append(('schema', resp_schema_type))
         recv_buffer += resp_schema_buffer
 
     response_class = type(
         'GetBinaryTypeResponse',
-        (response_head,),
+        (response_head_type,),
         {
             '_pack_': 1,
             '_fields_': response_parts,
@@ -93,5 +95,13 @@ def get_binary_type(conn: Connection, type_id: int, query_id=None):
     result = APIResult(response)
     if result.status != 0:
         return result
-    # result.value = ?
+    result.value = {
+        'type_exists': response.type_exists
+    }
+    if hasattr(response, 'body'):
+        result.value.update(body_struct.to_python(response.body))
+    if hasattr(response, 'enums'):
+        result.value['enums'] = enum_struct.to_python(response.enums)
+    if hasattr(response, 'schema'):
+        result.value['schema'] = schema_struct.to_python(response.schema)
     return result

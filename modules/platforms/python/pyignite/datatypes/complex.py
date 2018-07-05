@@ -602,8 +602,17 @@ class BinaryObject:
         )
 
     @classmethod
+    def offset_c_type(cls, flags: int):
+        if flags & cls.OFFSET_ONE_BYTE:
+            return ctypes.c_byte
+        if flags & cls.OFFSET_TWO_BYTES:
+            return ctypes.c_short
+        return ctypes.c_int
+
+    @classmethod
     def parse(cls, conn: Connection):
         # from .cache_config import StructArray
+        from pyignite.api import get_binary_type
 
         header_class = cls.build_header()
         buffer = conn.recv(ctypes.sizeof(header_class))
@@ -617,7 +626,14 @@ class BinaryObject:
             raw_data_offset, raw_data_offset_buffer = Int.parse(conn)
             buffer += raw_data_offset_buffer
 
-        # HAS_SCHEMA
+        if header.flags & cls.HAS_SCHEMA:
+
+            # TODO parameterize it or move to another module
+            conn = Connection()
+            conn.connect('127.0.0.1', 10800)
+            result = get_binary_type(conn, header.type_id)
+
+            print(result.value)
 
         return header_class, buffer
 

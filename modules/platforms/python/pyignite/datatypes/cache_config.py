@@ -76,7 +76,7 @@ class StructArray:
         length = getattr(ctype_object, 'length', 0)
         for i in range(length):
             result.append(
-                Struct(self.following).to_python(
+                Struct(self.following, dict_type=dict).to_python(
                     getattr(ctype_object, 'element_{}'.format(i))
                 )
             )
@@ -101,6 +101,7 @@ class StructArray:
 class Struct:
     """ Sequence of fields, including variable-sized and nested. """
     fields = attr.ib(type=list)
+    dict_type = attr.ib(default=OrderedDict)
 
     def parse(self, conn: Connection):
         buffer = b''
@@ -124,7 +125,7 @@ class Struct:
         return data_class, buffer
 
     def to_python(self, ctype_object):
-        result = OrderedDict()
+        result = self.dict_type()
         for name, c_type in self.fields:
             result[name] = c_type.to_python(getattr(ctype_object, name))
         return result
