@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
@@ -199,14 +201,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             AffinityTopologyVersion actTopVer = demander.activeRebalanceTopVer();
 
-            Collection<UUID> aliveNodes = grp.shared().discovery().aliveServerNodes()
-                .stream().map(ClusterNode::id).collect(Collectors.toList());
+            Set<UUID> leftNodes = exchFut.context().events().events().stream()
+                .filter(ExchangeDiscoveryEvents::serverLeftEvent)
+                .map(e -> e.eventNode().id())
+                .collect(Collectors.toSet());
 
-            Collection<UUID> requestedRebNodes = demander.requestedNodes();
+            leftNodes.retainAll(demander.requestedNodes());
 
             if (!actTopVer.initialized() ||
                 isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
-                !aliveNodes.containsAll(requestedRebNodes)) { // If some of nodes left before rabalance compelete.
+                !leftNodes.isEmpty()) { // Some of nodes left before rabalance compelete.
                 // Mark current rebalance as obsolete and allow assignmnent generation.
                 demander.topologyVersionToDemand(lastTopVer);
             }
