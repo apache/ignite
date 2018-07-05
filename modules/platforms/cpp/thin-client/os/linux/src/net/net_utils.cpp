@@ -31,7 +31,8 @@
 #include <errno.h>
 
 #include <ignite/ignite_error.h>
-#include <ignite/impl/thin/net/net_utils.h>
+
+#include "impl/net/net_utils.h"
 
 namespace ignite
 {

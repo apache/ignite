@@ -29,7 +29,7 @@
 #include <ignite/common/concurrent.h>
 
 #include <ignite/ignite_error.h>
-#include <ignite/impl/thin/net/tcp_socket_client.h>
+#include "impl/net/tcp_socket_client.h"
 
 #define SOCKET_ERROR (-1)
 
