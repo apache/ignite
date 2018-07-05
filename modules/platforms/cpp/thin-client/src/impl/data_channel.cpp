@@ -251,8 +251,6 @@ namespace ignite
                 }
                 catch (const IgniteError&)
                 {
-                    // TODO: implement logging
-                    //std::cout << err.GetText() << std::endl;
                     return false;
                 }
 

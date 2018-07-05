@@ -47,25 +47,14 @@ namespace ignite
                     }
 
                     if (colonNum != 1)
-                    {
-                        //TODO: implement logging
-                        //stream << "Unexpected number of ':' characters in the following address: '"
-                        //   << value << "'. Ignoring address.";
-
                         return false;
-                    }
 
                     size_t colonPos = value.find(':');
 
                     tcpRange.host = value.substr(0, colonPos);
 
                     if (colonPos == value.size() - 1)
-                    {
-                        //TODO: implement logging
-                        //stream << "Port is missing in the following address: '" << value << "'. Ignoring address.";
-
                         return false;
-                    }
 
                     std::string portRange = value.substr(colonPos + 1);
 
@@ -124,13 +113,7 @@ namespace ignite
                     }
 
                     if (sepPos + 2 > value.size() || value[sepPos + 1] != '.')
-                    {
-                        //TODO: implement logging
-                        //stream << "Unexpected number of '.' characters in the following address: '"
-                        //    << value << "'. Ignoring address.";
-
                         return false;
-                    }
 
                     uint16_t rangeBegin = ParsePort(value.substr(0, sepPos));
 
@@ -143,13 +126,7 @@ namespace ignite
                         return false;
 
                     if (rangeEnd < rangeBegin)
-                    {
-                        //TODO: implement logging
-                        //stream << "Port range end is less than port range begin in the following address: '"
-                        //    << value << "'. Ignoring address.";
-
                         return false;
-                    }
 
                     port = rangeBegin;
                     range = rangeEnd - rangeBegin;
@@ -162,20 +139,10 @@ namespace ignite
                     std::string port = common::StripSurroundingWhitespaces(value.begin(), value.end());
 
                     if (!common::AllOf(port.begin(), port.end(), &isdigit))
-                    {
-                        //TODO: implement logging
-                        //stream << "Unexpected port characters: '" << port << "'. Ignoring address.";
-
                         return 0;
-                    }
 
                     if (port.size() >= sizeof("65535"))
-                    {
-                        //TODO: implement logging
-                        //stream << "Port value is too large: '" << port << "'. Ignoring address.";
-
                         return 0;
-                    }
 
                     int32_t intPort = 0;
                     std::stringstream conv;
@@ -184,12 +151,7 @@ namespace ignite
                     conv >> intPort;
 
                     if (intPort <= 0 || intPort > 0xFFFF)
-                    {
-                        //TODO: implement logging
-                        //stream << "Port value is out of range: '" << port << "'. Ignoring address.";
-
                         return 0;
-                    }
 
                     return static_cast<uint16_t>(intPort);
                 }

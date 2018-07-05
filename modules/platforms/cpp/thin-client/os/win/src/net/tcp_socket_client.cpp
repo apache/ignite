@@ -115,9 +115,6 @@ namespace ignite
                     static common::concurrent::CriticalSection initCs;
                     static bool networkInited = false;
 
-                    //TODO: implement logging
-                    //std::cout << hostname << ":" << port << std::endl;
-
                     // Initing networking if is not inited.
                     if (!networkInited)
                     {
@@ -151,13 +148,7 @@ namespace ignite
                     int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
 
                     if (res != 0)
-                    {
-                        // TODO implement logging.
-                        //std::string err = "Address resolving failed: " + GetLastSocketErrorMessage();
-                        //std::cout << err << std::endl;
-
                         return false;
-                    }
 
                     // Attempt to connect to an address until one succeeds
                     for (addrinfo *it = result; it != NULL; it = it->ai_next)
@@ -182,10 +173,6 @@ namespace ignite
 
                             if (lastError != WSAEWOULDBLOCK)
                             {
-                                // TODO implement logging.
-                                //std::string err = "Connection failed: " + GetSocketErrorMessage(lastError);
-                                //std::cout << err << std::endl;
-
                                 Close();
 
                                 continue;
@@ -195,10 +182,6 @@ namespace ignite
 
                             if (res < 0 || res == WaitResult::TIMEOUT)
                             {
-                                // TODO implement logging.
-                                //std::string err = "Connection timeout expired: " + GetSocketErrorMessage(-res);
-                                //std::cout << err << std::endl;
-
                                 Close();
 
                                 continue;
