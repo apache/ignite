@@ -67,7 +67,7 @@ public class DecisionTreeRegressionTrainerExample {
                     (k, v) -> v.y
                 );
 
-                System.out.println(">>> Linear regression model: " + mdl);
+                System.out.println(">>> Decision tree regression model: " + mdl);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
