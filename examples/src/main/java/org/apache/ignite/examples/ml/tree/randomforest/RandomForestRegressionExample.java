@@ -19,9 +19,6 @@ package org.apache.ignite.examples.ml.tree.randomforest;
 
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -38,9 +35,8 @@ import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on RandomForest
- * implementation for regression. It shows an initialization of {@link RandomForestTrainer} with
- * thread pool for multi-thread learning, initialization of Ignite Cache,
- * learning step and evaluation of model quality in terms of
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainer},
+ * +initialization of Ignite Cache, learning step and evaluation of model quality in terms of
  * Mean Squared Error (MSE) and Mean Absolute Error (MAE).
  *
  * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
@@ -51,8 +47,6 @@ public class RandomForestRegressionExample {
      * Run example.
      */
     public static void main(String[] args) throws InterruptedException {
-        ExecutorService threadPool = Executors.newFixedThreadPool(3);
-
         System.out.println();
         System.out.println(">>> Random Forest regression algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -63,7 +57,7 @@ public class RandomForestRegressionExample {
                     RandomForestRegressionExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0, threadPool);
+                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                         (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
@@ -99,9 +93,6 @@ public class RandomForestRegressionExample {
             igniteThread.start();
             igniteThread.join();
         }
-
-        threadPool.shutdown();
-        threadPool.awaitTermination(1, TimeUnit.MINUTES);
     }
 
     /**
