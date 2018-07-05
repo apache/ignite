@@ -26,6 +26,7 @@ import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
+import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
@@ -208,6 +209,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IoomFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(AccountTransferTransactionTest.class);
+        suite.addTestSuite(SystemWorkersTerminationTest.class);
 
         suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
 
