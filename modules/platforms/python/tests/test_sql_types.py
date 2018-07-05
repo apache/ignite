@@ -16,10 +16,10 @@
 from decimal import Decimal
 
 from pyignite.api import (
-    hashcode, sql_fields, cache_create, cache_get_configuration,
-    cache_get_names, cache_get, scan,
-    get_binary_type,
+    hashcode, sql_fields, cache_create, scan, get_binary_type,
 )
+from pyignite.datatypes.complex import BinaryObject
+from pyignite.connection import BufferedConnection
 
 
 page_size = 100
@@ -38,6 +38,7 @@ create_query = '''
 CREATE TABLE {} (
   test_pk INTEGER(11) PRIMARY KEY,
   test_bool BOOLEAN DEFAULT TRUE,
+  test_int INTEGER(11),
   test_decimal DECIMAL(11, 5),
   test_str VARCHAR(24) DEFAULT '' NOT NULL,
 )
@@ -45,60 +46,59 @@ CREATE TABLE {} (
 
 insert_query = '''
 INSERT INTO {} (
-  test_pk, test_decimal, test_str
-) VALUES (?, ?, ?)'''.format(table_sql_name)
+  test_pk, test_decimal, test_int, test_str
+) VALUES (?, ?, ?, ?)'''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
 
 
-def test_sql_types_creation(conn):
+def test_sql_read_as_binary(conn):
 
     cache_create(conn, scheme_name)
 
+    # create table
     result = sql_fields(
         conn,
         scheme_hash_code,
         create_query,
         page_size
     )
-
     assert result.status == 0, result.message
 
-    result = cache_get_configuration(conn, table_hash_code)
+    # insert some rows
+    insert_data = [
+        [1, Decimal('2.4'), 42, 'asdf'],
+        [2, Decimal('2.5'), 43, 'zxcvb'],
+        [3, Decimal('2.6'), 44, 'qwerty'],
+    ]
 
-    assert result.status == 0, result.message
-
-    result = cache_get_names(conn)
-    assert result.status == 0, result.message
-
-    result = sql_fields(
-        conn,
-        scheme_hash_code,
-        insert_query,
-        page_size,
-        query_args=[
-            1,
-            Decimal('2.4'),
-            'asdf',
-        ]
-    )
-    assert result.status == 0, result.message
-
-    result = sql_fields(
-        conn,
-        scheme_hash_code,
-        insert_query,
-        page_size,
-        query_args=[
-            2,
-            Decimal('2.5'),
-            'zxcvb',
-        ]
-    )
-    assert result.status == 0, result.message
+    for line in insert_data:
+        result = sql_fields(
+            conn,
+            scheme_hash_code,
+            insert_query,
+            page_size,
+            query_args=line
+        )
+        assert result.status == 0, result.message
 
     result = scan(conn, table_hash_code, 100)
     assert result.status == 0, result.message
 
+    # now `data` is a dict of table rows with primary index column as a key
+    # and other columns as a value, represented as a BinaryObject
+    # wrapped in WrappedDataObject
+    for key, value in result.value['data'].items():
+        # we can't automagically unwind the contents of the WrappedDataObject
+        # the same way we do for Map or Collection, we got bytes instead
+        buffer, offset = value
+        # offset is 0 in this example, but that's not granted
+        mock_conn = BufferedConnection(buffer)
+        mock_conn.pos = offset
+
+        data_class, data_bytes = BinaryObject.parse(mock_conn)
+        assert buffer == data_bytes
+
+    # cleanup
     result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
     assert result.status == 0, result.message
