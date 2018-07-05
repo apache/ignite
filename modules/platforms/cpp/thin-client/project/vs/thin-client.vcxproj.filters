@@ -93,9 +93,6 @@
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_client_configuration.h">
       <Filter>Code\cache</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h">
-      <Filter>Code\cache</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\impl\connectable_node_partitions.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
@@ -148,6 +145,9 @@
       <Filter>Code\impl\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_peek_mode.h">
       <Filter>Code\impl\cache</Filter>
     </ClInclude>
   </ItemGroup>

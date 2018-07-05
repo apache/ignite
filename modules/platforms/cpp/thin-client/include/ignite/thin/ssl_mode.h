@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::thin::SslMode.
+ */
+
 #ifndef _IGNITE_THIN_SSL_MODE
 #define _IGNITE_THIN_SSL_MODE
 
@@ -22,13 +27,15 @@ namespace ignite
 {
     namespace thin
     {
-        /** SSL Mode enum. */
+        /** SSL Mode. */
         struct SslMode
         {
             enum Type
             {
+                /** Do not try establish SSL/TLS connection. */
                 DISABLE = 0,
 
+                /** Try to establish SSL/TLS connection. Fail if the server does not support SSL/TLS. */
                 REQUIRE = 1,
             };
         };

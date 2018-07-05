@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::thin::cache::CacheClientConfiguration.
+ */
+
 #ifndef _IGNITE_THIN_CACHE_CACHE_CLIENT_CONFIGURATION
 #define _IGNITE_THIN_CACHE_CACHE_CLIENT_CONFIGURATION
 
@@ -26,12 +31,16 @@ namespace ignite
         {
             /**
              * Cache client class.
+             *
+             * Used to configure CacheClient.
              */
             class CacheClientConfiguration
             {
             public:
                 /**
                  * Constructor.
+                 *
+                 * Constructs configuration with all parameters set to default values.
                  */
                 CacheClientConfiguration() :
                     lessenLatency(false)
@@ -48,7 +57,14 @@ namespace ignite
                 }
 
                 /**
-                 * Try lessen latency.
+                 * Enable "lessen latency" feature.
+                 *
+                 * Disabled by default.
+                 *
+                 * When disabled, client sends requests to random nodes from the list, provided by user.
+                 * When enabled, client uses RendezvousAffinityFunction algorithm to find out the bets node, to send
+                 * data to. This may help lessen latency and increase throughput. For now, only can be used with caches,
+                 * that use RendezvousAffinityFunction.
                  *
                  * @param lessenLatency Lessen latency flag.
                  */
@@ -60,6 +76,8 @@ namespace ignite
                 /**
                  * Check lessen latency flag.
                  *
+                 * @see SetLessenLatency for details.
+                 *
                  * @return Lessen latency flag.
                  */
                 bool IsLessenLatency() const
@@ -68,7 +86,7 @@ namespace ignite
                 }
 
             private:
-                /** Try lessen latency. */
+                /** Lessen latency flag. */
                 bool lessenLatency;
             };
         }

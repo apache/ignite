@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::thin::IgniteClient class.
+ */
+
 #ifndef _IGNITE_THIN_IGNITE_CLIENT
 #define _IGNITE_THIN_IGNITE_CLIENT
 

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::thin::cache::CacheClient.
+ */
+
 #ifndef _IGNITE_THIN_CACHE_CACHE_CLIENT
 #define _IGNITE_THIN_CACHE_CACHE_CLIENT
 

@@ -16,7 +16,7 @@
  */
 
 #include <ignite/binary/binary_raw_reader.h>
-#include <ignite/thin/cache/cache_peek_mode.h>
+#include <ignite/impl/thin/cache/cache_peek_mode.h>
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
