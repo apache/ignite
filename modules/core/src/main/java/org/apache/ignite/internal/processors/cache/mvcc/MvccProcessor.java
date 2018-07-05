@@ -49,6 +49,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
@@ -389,6 +390,44 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         }
 
         discoData = new MvccDiscoveryData(crd);
+    }
+
+    /**
+     * Exchange start callback.
+     *
+     * @param mvccCrd Mvcc coordinator.
+     * @param exchCtx Exchange context.
+     * @param exchCrd Exchange coordinator.
+     */
+    public void onExchangeStart(MvccCoordinator mvccCrd, ExchangeContext exchCtx, ClusterNode exchCrd) {
+        if (!exchCtx.newMvccCoordinator())
+            return;
+
+        curCrd = mvccCrd;
+
+        GridLongList activeQryTrackers = collectActiveQueryTrackers();
+
+        exchCtx.addActiveQueries(ctx.localNodeId(), activeQryTrackers);
+
+        if (exchCrd == null || !mvccCrd.nodeId().equals(exchCrd.id()))
+            sendActiveQueries(mvccCrd.nodeId(), activeQryTrackers);
+    }
+
+    /**
+     * Exchange done callback.
+     *
+     * @param newCoord New coordinator flag.
+     * @param discoCache Disco cache.
+     * @param activeQueries Active queries.
+     */
+    public void onExchangeDone(boolean newCoord, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries) {
+        if (!newCoord)
+            return;
+
+        ctx.cache().context().tm().rollbackMvccTxOnCoordinatorChange();
+
+        if (ctx.localNodeId().equals(curCrd.nodeId()))
+            initCoordinator(discoCache, activeQueries);
     }
 
     /**
@@ -863,6 +902,24 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         return Collections.unmodifiableMap(activeTrackers);
     }
 
+    /**
+     * @return Active queries list.
+     */
+    private GridLongList collectActiveQueryTrackers() {
+        assert curCrd != null;
+
+        GridLongList activeQryTrackers = new GridLongList();
+
+        for (TrackableMvccQueryTracker tracker : activeTrackers().values()) {
+            long trackerId = tracker.onMvccCoordinatorChange(curCrd);
+
+            if (trackerId != MVCC_TRACKER_ID_NA)
+                activeQryTrackers.add(trackerId);
+        }
+
+        return activeQryTrackers;
+    }
+
 
     /** {@inheritDoc} */
     @Override public void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
@@ -1269,13 +1326,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     }
 
     /**
-     * @param topVer Topology version.
      * @param discoCache Discovery data.
      * @param activeQueries Current queries.
      */
-    public void initCoordinator(AffinityTopologyVersion topVer,
-        DiscoCache discoCache,
-        Map<UUID, GridLongList> activeQueries) {
+    private void initCoordinator(DiscoCache discoCache, Map<UUID, GridLongList> activeQueries) {
         assert ctx.localNodeId().equals(curCrd.nodeId());
 
         MvccCoordinator crd = discoCache.mvccCoordinator();
@@ -1289,7 +1343,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         crdVer = crd.coordinatorVersion();
 
         log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
-            ", topVer=" + topVer +
             ", crdVer=" + crdVer + ']');
 
         prevCrdQueries.init(activeQueries, discoCache, ctx.discovery());
@@ -1367,6 +1420,13 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                         MvccSnapshot s = fut.get();
 
                         continueRunVacuum(res, s);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Vacuum failed to receive an Mvcc snapshot. " +
+                                "Need to retry on the stable topology. " + e.getMessage());
+
+                        res.onDone(new VacuumMetrics());
                     }
                     catch (IgniteCheckedException e) {
                         completeWithException(res, e);

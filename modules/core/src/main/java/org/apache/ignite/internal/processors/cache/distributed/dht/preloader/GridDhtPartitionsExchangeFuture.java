@@ -87,9 +87,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -126,7 +124,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
-import static org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  * Future for exchanging partition maps.
@@ -930,23 +927,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cacheGroupStopping(top.groupId()));
         }
 
-        if (exchCtx.newMvccCoordinator()) {
-            assert mvccCrd != null;
-
-            GridLongList activeQryTrackers = new GridLongList();
-
-            for (TrackableMvccQueryTracker tracker : cctx.coordinators().activeTrackers().values()) {
-                long trackerId = tracker.onMvccCoordinatorChange(mvccCrd);
-
-                if (trackerId != MVCC_TRACKER_ID_NA)
-                    activeQryTrackers.add(trackerId);
-            }
-
-            exchCtx.addActiveQueries(cctx.localNodeId(), activeQryTrackers);
-
-            if (exchCrd == null || !mvccCrd.nodeId().equals(exchCrd.id()))
-                cctx.coordinators().sendActiveQueries(mvccCrd.nodeId(), activeQryTrackers);
-        }
+        cctx.kernalContext().coordinators().onExchangeStart(mvccCrd, exchCtx, exchCrd);
     }
 
     /**
@@ -1740,16 +1721,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (err == null) {
-            if (exchCtx.newMvccCoordinator()) {
-                // We need to abort txs with snapshot from the old coordinator.
-                for (IgniteInternalTx tx : cctx.tm().activeTransactions()) {
-                    if (tx.mvccInfo() != null)
-                        tx.setRollbackOnly(); // TODO IGNITE-8906.
-                }
-
-                if (cctx.localNodeId().equals(cctx.coordinators().currentCoordinatorId()))
-                    cctx.coordinators().initCoordinator(res, exchCtx.events().discoveryCache(), exchCtx.activeQueries());
-            }
+            cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
+                exchCtx.activeQueries());
 
             if (centralizedAff || forceAffReassignment) {
                 assert !exchCtx.mergeExchanges();

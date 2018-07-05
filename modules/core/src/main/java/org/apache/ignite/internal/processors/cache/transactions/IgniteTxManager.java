@@ -312,6 +312,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Rollback all active transactions with acquired Mvcc snapshot.
+     */
+    public void rollbackMvccTxOnCoordinatorChange() {
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.mvccInfo() != null)
+                ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
+        }
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @param txMap Transactions map.
      */

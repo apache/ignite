@@ -439,6 +439,9 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
                 tx.commit();
             }
+            catch (Exception e) {
+                handleTxException(e);
+            }
 
             checkActiveQueriesCleanup(ignite(crdIdx));
         }
@@ -597,10 +600,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                     break;
                 }
                 catch (Exception e) {
-                    if (!X.hasCause(e, ClusterTopologyException.class))
-                        fail("Unexpected error: " + e);
-                    else
-                        info("Tx error, need retry: " + e);
+                    handleTxException(e);
                 }
             }
         }
