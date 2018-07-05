@@ -44,8 +44,6 @@ public:
     ~AuthTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
-
-        ignite_test::ClearLfs();
     }
 
 private:
