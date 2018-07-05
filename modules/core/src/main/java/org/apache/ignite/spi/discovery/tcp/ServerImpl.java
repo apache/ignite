@@ -320,6 +320,27 @@ class ServerImpl extends TcpDiscoveryImpl {
         return msgWorker.connCheckFreq;
     }
 
+    /**
+     * @param text Text to be set in thread name between [] braces.
+     */
+    private void setThreadNameMeta(String text) {
+        String threadName = Thread.currentThread().getName();
+
+        int idxStart = threadName.indexOf('[');
+        int idxEnd = threadName.indexOf(']');
+
+        if (idxStart < 0 || idxEnd < 0 || idxStart >= idxEnd)
+            return;
+
+        StringBuilder sb = new StringBuilder(threadName.length());
+
+        sb.append(threadName, 0, idxStart + 1);
+        sb.append(text);
+        sb.append(threadName, idxEnd, threadName.length());
+
+        Thread.currentThread().setName(sb.toString());
+    }
+
     /** {@inheritDoc} */
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         synchronized (mux) {
@@ -2626,7 +2647,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker", log, 10,
+            super("tcp-disco-msg-worker-[]", log, 10,
                 spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
 
             initConnectionCheckFrequency();
@@ -3016,6 +3037,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 out = spi.socketStream(sock);
 
                                 openSock = true;
+
+                                setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
+                                    + ":" + sock.getPort());
 
                                 // Handshake.
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
@@ -5753,7 +5777,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log,
+            super(spi.ignite().name(), "tcp-disco-srvr-[]", log,
                 spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
@@ -5801,6 +5825,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
+                setThreadNameMeta(":" + port);
+
                 while (!isCancelled()) {
                     Socket sock = srvrSock.accept();
 
@@ -5884,7 +5910,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param sock Socket to read data from.
          */
         SocketReader(Socket sock) {
-            super(spi.ignite().name(), "tcp-disco-sock-reader", log);
+            super(spi.ignite().name(), "tcp-disco-sock-reader-[]", log);
 
             this.sock = sock;
 
@@ -6014,6 +6040,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     UUID nodeId = req.creatorNodeId();
 
                     this.nodeId = nodeId;
+
+                    setThreadNameMeta(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
+                        + ":" + sock.getPort());
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
