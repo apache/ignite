@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import org.apache.ignite.encryption.EncryptionKey;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 
 /**
@@ -60,6 +61,11 @@ public class EncryptedFileIO implements FileIO {
     private GridEncryptionManager encMgr;
 
     /**
+     * Shared database manager.
+     */
+    private EncryptionSpi encSpi;
+
+    /**
      * Encryption key.
      */
     private EncryptionKey key;
@@ -72,13 +78,14 @@ public class EncryptedFileIO implements FileIO {
      * @param encMgr Encryption manager.
      */
     EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int pageSizeOnDisk, int headerSize,
-        GridEncryptionManager encMgr) {
+        GridEncryptionManager encMgr, EncryptionSpi encSpi) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;
         this.pageSizeOnDisk = pageSizeOnDisk;
         this.headerSize = headerSize;
         this.encMgr = encMgr;
+        this.encSpi = encSpi;
     }
 
     /** {@inheritDoc} */
@@ -114,7 +121,7 @@ public class EncryptedFileIO implements FileIO {
                 "but read only " + res + " bytes");
         }
 
-        destBuf.put(encMgr.spi().decrypt(encrypted.array(), key()));
+        destBuf.put(encSpi.decrypt(encrypted.array(), key()));
 
         return res;
     }
@@ -140,7 +147,7 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.get(srcArr, 0, pageSize);
 
-        byte[] encrypted = encMgr.spi().encrypt(srcArr, key());
+        byte[] encrypted = encSpi.encrypt(srcArr, key());
 
         return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
     }

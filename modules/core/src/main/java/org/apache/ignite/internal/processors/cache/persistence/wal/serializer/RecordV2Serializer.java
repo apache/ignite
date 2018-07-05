@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
@@ -170,7 +171,10 @@ public class RecordV2Serializer implements RecordSerializer {
             ByteBuffer buf
         ) throws IgniteCheckedException {
             // Write record type.
-            RecordV1Serializer.putRecordType(buf, record);
+            if (dataSerializer.needEncryption(record))
+                RecordV1Serializer.putRecordType(buf, ENCRYPTED_RECORD);
+            else
+                RecordV1Serializer.putRecordType(buf, record.type());
 
             // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (record.type() == SWITCH_SEGMENT_RECORD)

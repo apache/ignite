@@ -30,6 +30,7 @@ import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -77,7 +78,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     /**
      * Encryption key size;
      */
-    private static final int KEY_SIZE = 128;
+    private static final int KEY_SIZE = 256;
 
     /**
      * Full name of cipher algorithm.
@@ -88,23 +89,6 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
      * Algorithm used for digest calculation.
      */
     private static final String DIGEST_ALGO = "SHA-512";
-
-    /**
-     * AES init vector.
-     */
-    private static final byte[] INIT_VECTOR;
-
-    /**
-     * Create {@code INIT_VECTOR} from constant string.
-     */
-    static {
-        try {
-            INIT_VECTOR = "ApacheIgniteTDE!".getBytes("UTF-8");
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * Path to master key store.
@@ -120,6 +104,11 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
      * Master key.
      */
     private EncryptionKeyImpl masterKey;
+
+    /**
+     * Secure random generator;
+     */
+    private SecureRandom gen;
 
     /** Logger. */
     @LoggerResource
@@ -146,6 +135,8 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
             masterKey = new EncryptionKeyImpl(ks.getKey(MASTER_KEY_NAME, keyStorePwd));
+
+            gen = new SecureRandom();
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
@@ -190,7 +181,28 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
         ensureStarted();
 
-        return doEncryption(data, (EncryptionKeyImpl)key, ENCRYPT_MODE);
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
+
+            Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
+
+            byte[] initVector = initVector(cipher);
+
+            cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(initVector));
+
+            byte[] encryptedData = cipher.doFinal(data);
+
+            byte[] res = new byte[initVector.length + encryptedData.length];
+
+            System.arraycopy(initVector, 0, res, 0, initVector.length);
+            System.arraycopy(encryptedData, 0, res, initVector.length, encryptedData.length);
+
+            return res;
+        }
+        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
+            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new IgniteSpiException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -199,7 +211,23 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
         ensureStarted();
 
-        return doEncryption(data, (EncryptionKeyImpl)key, DECRYPT_MODE);
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
+
+            Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
+
+            byte[] initVector = new byte[cipher.getBlockSize()];
+
+            System.arraycopy(data, 0, initVector, 0, cipher.getBlockSize());
+
+            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(initVector));
+
+            return cipher.doFinal(data, cipher.getBlockSize(), data.length-cipher.getBlockSize());
+        }
+        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
+            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new IgniteSpiException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -233,33 +261,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
-        return (dataSize/16 + 1)*16;
-    }
-
-    /**
-     * @param data Data to encrypt/decrypt
-     * @param key Encryption key.
-     * @param mode Encryption or decryption.
-     * @return Encrypted or decrypted data regarding to {@code mode}.
-     * @see Cipher#DECRYPT_MODE
-     * @see Cipher#ENCRYPT_MODE
-     */
-    private byte[] doEncryption(byte[] data, EncryptionKeyImpl key, int mode) {
-        try {
-            IvParameterSpec initVector = new IvParameterSpec(INIT_VECTOR);
-
-            SecretKeySpec keySpec = new SecretKeySpec(key.key().getEncoded(), CIPHER_ALGO);
-
-            Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
-
-            cipher.init(mode, keySpec, initVector);
-
-            return cipher.doFinal(data);
-        }
-        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
-            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
-            throw new IgniteSpiException(e);
-        }
+        return (dataSize/16 + 2)*16;
     }
 
     /**
@@ -277,6 +279,14 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
         catch (NoSuchAlgorithmException e) {
             throw new IgniteException(e);
         }
+    }
+
+    private byte[] initVector(Cipher cipher) {
+        byte[] iv = new byte[cipher.getBlockSize()];
+
+        gen.nextBytes(iv);
+
+        return iv;
     }
 
     /**

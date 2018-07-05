@@ -44,9 +44,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.PLAIN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.ENCRYPTED;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 
 /**
  * Record data V2 serializer.
@@ -80,15 +83,11 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     @Override public int size(WALRecord rec) throws IgniteCheckedException {
         int clSz = plainSize(rec);
 
-        if (rec.type().mayBeEncrypted()) {
-            if (delegateSerializer.needEncryption(rec))
-                return encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* cacheId */
-                    + 4 /* encrypted data size */;
+        if (delegateSerializer.needEncryption(rec))
+            return encryptionSpi.encryptedSize(clSz) + 4 /* group id */ + 4 /* encrypted data size */
+                + REC_TYPE_SIZE /* plain record type */;
 
-             return clSz + 1 /* encrypted flag */;
-        }
-
-        return clSz;
+         return clSz;
     }
 
     /** {@inheritDoc} */
@@ -96,24 +95,19 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
         RecordType type,
         ByteBufferBackedDataInput in
     ) throws IOException, IgniteCheckedException {
-        boolean needDecryption = false;
-
-        if (type.mayBeEncrypted())
-            needDecryption = in.readByte() == ENCRYPTED;
-
-        if (needDecryption) {
+        if (type == ENCRYPTED_RECORD) {
             if (encryptionSpi == null) {
-                int grpId = delegateSerializer.skipEncryptedRec(in);
+                T2<Integer, RecordType> knownData = delegateSerializer.skipEncryptedRec(in);
 
-                return new EncryptedRecord(grpId, type);
+                return new EncryptedRecord(knownData.get1(), knownData.get2());
             }
 
-            T2<ByteBufferBackedDataInput, Integer> clData = delegateSerializer.readEncryptedData(in);
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = delegateSerializer.readEncryptedData(in, true);
 
             if (clData.get1() == null)
-                return new EncryptedRecord(clData.get2(), type);
+                return new EncryptedRecord(clData.get2(), clData.get3());
 
-            return readPlainRecord(type, clData.get1());
+            return readPlainRecord(clData.get3(), clData.get1());
         }
 
         return readPlainRecord(type, in);
@@ -121,20 +115,16 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
-        if (rec.type().mayBeEncrypted()) {
-            if (delegateSerializer.needEncryption(rec)) {
-                int clSz = plainSize(rec);
+        if (delegateSerializer.needEncryption(rec)) {
+            int clSz = plainSize(rec);
 
-                ByteBuffer clData = ByteBuffer.allocate(clSz);
+            ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-                writePlainRecord(rec, clData);
+            writePlainRecord(rec, clData);
 
-                delegateSerializer.writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), clData, buf);
+            delegateSerializer.writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), rec.type(), clData, buf);
 
-                return;
-            }
-            else
-                buf.put(PLAIN);
+            return;
         }
 
         writePlainRecord(rec, buf);
@@ -319,6 +309,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             default:
                 delegateSerializer.writePlainRecord(rec, buf);
         }
+    }
+
+    /**
+     * @param rec Record to check.
+     * @return {@code True} if this record should be encrypted.
+     */
+    boolean needEncryption(WALRecord rec) {
+        return delegateSerializer.needEncryption(rec);
     }
 
     /**

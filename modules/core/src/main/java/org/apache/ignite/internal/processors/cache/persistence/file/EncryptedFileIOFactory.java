@@ -58,30 +58,37 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     private GridEncryptionManager encMgr;
 
     /**
+     * Encryption spi.
+     */
+    private EncryptionSpi encSpi;
+
+    /**
      * @param plainIOFactory Underlying file factory.
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
      * @param encMgr Encryption manager.
      */
-    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, GridEncryptionManager encMgr) {
+    EncryptedFileIOFactory(FileIOFactory plainIOFactory, int groupId, int pageSize, GridEncryptionManager encMgr,
+        EncryptionSpi encSpi) {
         this.plainIOFactory = plainIOFactory;
         this.groupId = groupId;
         this.pageSize = pageSize;
         this.encMgr = encMgr;
+        this.encSpi = encSpi;
     }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         FileIO io = plainIOFactory.create(file);
 
-        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr);
+        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr, encSpi);
     }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO io = plainIOFactory.create(file, modes);
 
-        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr);
+        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr, encSpi);
     }
 
     /**
@@ -95,6 +102,6 @@ public class EncryptedFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public int dataSizeOnDisk(int dataSize) {
-        return encMgr.spi().encryptedSize(pageSize);
+        return encSpi.encryptedSize(pageSize);
     }
 }

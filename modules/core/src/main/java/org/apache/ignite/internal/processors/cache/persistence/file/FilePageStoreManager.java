@@ -494,13 +494,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     this.pageStoreFileIoFactory,
                     grpId,
                     pageSize(),
-                    cctx.kernalContext().encryption());
+                    cctx.kernalContext().encryption(),
+                    cctx.gridConfig().getEncryptionSpi());
 
                 pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
                     this.pageStoreV1FileIoFactory,
                     grpId,
                     pageSize(),
-                    cctx.kernalContext().encryption());
+                    cctx.kernalContext().encryption(),
+                    cctx.gridConfig().getEncryptionSpi());
             }
 
             FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(

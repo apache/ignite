@@ -186,7 +186,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (locEncKey == null)
                 continue;
 
-            if (Arrays.equals(getSpi().encryptKey(locEncKey), entry.getValue()))
+            EncryptionKey rmtKey = getSpi().decryptKey(entry.getValue());
+
+            if (F.eq(locEncKey.key(), rmtKey.key()))
                 continue;
 
             return new IgniteNodeValidationResult(ctx.localNodeId(),
@@ -421,13 +423,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public DiscoveryDataExchangeType discoveryDataType() {
         return ENCRYPTION_MGR;
-    }
-
-    /**
-     * @return Encryption spi.
-     */
-    public EncryptionSpi spi() {
-        return getSpi();
     }
 
     /**
