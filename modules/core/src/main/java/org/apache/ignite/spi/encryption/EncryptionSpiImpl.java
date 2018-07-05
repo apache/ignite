@@ -21,23 +21,23 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.ShortBufferException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.Ignite;
@@ -78,7 +78,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     /**
      * Encryption key size;
      */
-    private static final int KEY_SIZE = 256;
+    public static final int KEY_SIZE = 256;
 
     /**
      * Full name of cipher algorithm.
@@ -105,11 +105,6 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
      */
     private EncryptionKeyImpl masterKey;
 
-    /**
-     * Secure random generator;
-     */
-    private SecureRandom gen;
-
     /** Logger. */
     @LoggerResource
     protected IgniteLogger log;
@@ -135,8 +130,6 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
             masterKey = new EncryptionKeyImpl(ks.getKey(MASTER_KEY_NAME, keyStorePwd));
-
-            gen = new SecureRandom();
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
@@ -186,20 +179,19 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
             Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
 
-            byte[] initVector = initVector(cipher);
+            byte[] iv = initVector(cipher);
 
-            cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(initVector));
+            byte[] res = new byte[encryptedSize(data.length)];
 
-            byte[] encryptedData = cipher.doFinal(data);
+            System.arraycopy(iv, 0, res, 0, iv.length);
 
-            byte[] res = new byte[initVector.length + encryptedData.length];
+            cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(res, 0, iv.length));
 
-            System.arraycopy(initVector, 0, res, 0, initVector.length);
-            System.arraycopy(encryptedData, 0, res, initVector.length, encryptedData.length);
+            cipher.doFinal(data, 0, data.length, res, iv.length);
 
             return res;
         }
-        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
+        catch (ShortBufferException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
             NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
@@ -216,11 +208,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
             Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
 
-            byte[] initVector = new byte[cipher.getBlockSize()];
-
-            System.arraycopy(data, 0, initVector, 0, cipher.getBlockSize());
-
-            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(initVector));
+            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
 
             return cipher.doFinal(data, cipher.getBlockSize(), data.length-cipher.getBlockSize());
         }
@@ -281,10 +269,15 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
         }
     }
 
+    /**
+     * @param cipher Cipher.
+     * @return Init vector for encryption.
+     * @see <a href="https://en.wikipedia.org/wiki/Initialization_vector">Initialization vector</a>
+     */
     private byte[] initVector(Cipher cipher) {
         byte[] iv = new byte[cipher.getBlockSize()];
 
-        gen.nextBytes(iv);
+        ThreadLocalRandom.current().nextBytes(iv);
 
         return iv;
     }

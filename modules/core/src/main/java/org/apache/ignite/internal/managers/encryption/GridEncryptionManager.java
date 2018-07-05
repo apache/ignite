@@ -95,9 +95,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Group encryption keys. */
     private Map<Integer, EncryptionKey> grpEncKeys = new HashMap<>();
 
-    /** Group encryption keys to store. */
-    private volatile Map<Integer, byte[]> grpEncKeysToStore;
-
     /** Metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
 
@@ -340,12 +337,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             if (metaStorage != null)
                 writeToMetaStore(grpId, encGrpKey);
-            else {
-                if (grpEncKeysToStore == null)
-                    grpEncKeysToStore = new HashMap<>();
-
-                grpEncKeysToStore.put(grpId, encGrpKey);
-            }
         }
     }
 
@@ -410,11 +401,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (mux) {
             this.metaStorage = metaStorage;
 
-            if (grpEncKeysToStore != null) {
-                for (Map.Entry<Integer, byte[]> entry : grpEncKeysToStore.entrySet())
-                    writeToMetaStore(entry.getKey(), entry.getValue());
+            for (Map.Entry<Integer, EncryptionKey> entry : grpEncKeys.entrySet()) {
+                if (metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
+                    continue;
 
-                grpEncKeysToStore = null;
+                writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
             }
         }
 

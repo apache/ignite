@@ -190,14 +190,14 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
      * Method to create new keystore.
      * Use it whenever you need special keystore for an encryption tests.
      */
-    protected File createKeyStore() throws Exception {
+    protected File createKeyStore(String keystorePath) throws Exception {
         KeyStore ks = KeyStore.getInstance("PKCS12");
 
         ks.load(null, null);
 
         KeyGenerator gen = KeyGenerator.getInstance(CIPHER_ALGO);
 
-        gen.init(192);
+        gen.init(EncryptionSpiImpl.KEY_SIZE);
 
         SecretKey key = gen.generateKey();
 
@@ -206,7 +206,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             new KeyStore.SecretKeyEntry(key),
             new KeyStore.PasswordProtection(KEYSTORE_PASSWORD.toCharArray()));
 
-        File keyStoreFile = File.createTempFile(EncryptionSpiImplSelfTest.class.getSimpleName(), "jks");
+        File keyStoreFile = new File(keystorePath);
 
         keyStoreFile.createNewFile();
 

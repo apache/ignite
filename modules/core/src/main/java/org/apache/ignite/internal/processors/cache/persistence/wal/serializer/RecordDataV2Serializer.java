@@ -97,7 +97,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     ) throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD) {
             if (encryptionSpi == null) {
-                T2<Integer, RecordType> knownData = delegateSerializer.skipEncryptedRec(in);
+                T2<Integer, RecordType> knownData = delegateSerializer.skipEncryptedRec(in, true);
 
                 return new EncryptedRecord(knownData.get1(), knownData.get2());
             }
