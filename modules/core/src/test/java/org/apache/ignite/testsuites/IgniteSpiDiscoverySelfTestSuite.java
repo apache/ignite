@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
@@ -105,6 +106,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoveryWithWrongServerTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoverySpiReconnectDelayTest.class));
+
+        suite.addTest(new TestSuite(IgniteDiscoveryMassiveNodeFailTest.class));
 
         // Client connect.
         suite.addTest(new TestSuite(IgniteClientConnectTest.class));
