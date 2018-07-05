@@ -42,7 +42,7 @@ public class WaitTopologyException extends IgniteException {
     /**
      * @return Topology version which we should wait.
      */
-    public AffinityTopologyVersion getTopologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topologyVersion;
     }
 }
