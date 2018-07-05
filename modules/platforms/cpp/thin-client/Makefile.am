@@ -24,6 +24,7 @@ SUBDIRS = \
 
 AM_CPPFLAGS = \
     -I$(srcdir)/include \
+    -I$(srcdir)/src \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
     -I@top_srcdir@/binary/include \
