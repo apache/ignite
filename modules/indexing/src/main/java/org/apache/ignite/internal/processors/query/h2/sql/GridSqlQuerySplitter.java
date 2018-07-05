@@ -194,20 +194,6 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
-        if (forUpdate) {
-            String newQry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(prepared);
-
-            assert newQry != null;
-
-            PreparedStatement stmt = h2.prepareNativeStatement(conn.getSchema(), newQry);
-
-            GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
-
-            prepared = prep.prepared();
-        }
-
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
         GridSqlQuery qry = parse(prepared, false);
@@ -233,6 +219,8 @@ public class GridSqlQuerySplitter {
         // the REDUCE query optimization.
         qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder),
             true);
+
+        boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
         splitter.splitQuery(qry, forUpdate);
@@ -325,28 +313,13 @@ public class GridSqlQuerySplitter {
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryPrnt.subquery();
 
-        // Let's remove last column from reduce query - SELECT FOR UPDATE makes for discrepancy
-        // between it and map query.
+        // Reset SELECT FOR UPDATE flag for reduce query.
         if (forUpdate) {
             assert qry instanceof GridSqlSelect;
 
             GridSqlSelect sel = (GridSqlSelect)qry;
 
-            int visCols = sel.visibleColumns();
-
-            int idxToRemove = visCols - 1;
-
-            List<GridSqlAst> cols = sel.columns(false);
-
-            sel.clearColumns();
-
-            // First visible columns - all but the last, as we won't actually retrieve it...
-            for (int i = 0; i < idxToRemove; i++)
-                sel.addColumn(cols.get(i), true);
-
-            // Then invisible columns.
-            for (int i = visCols; i < cols.size(); i++)
-                sel.addColumn(cols.get(i), false);
+            sel.forUpdate(false);
         }
 
         String rdcQry = qry.getSQL();

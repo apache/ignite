@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.DhtLockFuture;
@@ -52,7 +51,6 @@ public interface ResultSetEnlistFuture extends DhtLockFuture<Long> {
      *
      * @param nearNodeId   Near node ID.
      * @param nearLockVer  Near lock version.
-     * @param topVer       Topology version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId     Thread ID.
      * @param nearFutId    Near future id.
@@ -64,15 +62,15 @@ public interface ResultSetEnlistFuture extends DhtLockFuture<Long> {
      * @param rs           Result set to process.
      * @return Result set enlist future.
      */
-    static ResultSetEnlistFuture future(UUID nearNodeId, GridCacheVersion nearLockVer, AffinityTopologyVersion topVer,
+    static ResultSetEnlistFuture future(UUID nearNodeId, GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot, long threadId, IgniteUuid nearFutId, int nearMiniId, @Nullable int[] parts,
         GridDhtTxLocalAdapter tx, long timeout, GridCacheContext<?, ?> cctx, ResultSet rs) {
 
         if (cctx.isReplicated()) {
-            return new NearResultSetEnlistFuture(nearNodeId, nearLockVer, topVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
+            return new NearResultSetEnlistFuture(nearNodeId, nearLockVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
         }
         else {
-            return new DhtResultSetEnlistFuture(nearNodeId, nearLockVer, topVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
+            return new DhtResultSetEnlistFuture(nearNodeId, nearLockVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
         }
     }
 

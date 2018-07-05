@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -54,7 +53,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFut
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
-     * @param topVer Topology version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
@@ -73,7 +71,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFut
     public GridDhtTxQueryEnlistFuture(
         UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
@@ -90,7 +87,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFut
         GridCacheContext<?, ?> cctx) {
         super(nearNodeId,
             nearLockVer,
-            topVer,
             mvccSnapshot,
             threadId,
             nearFutId,
@@ -103,7 +99,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFut
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert topVer != null && topVer.topologyVersion() > 0;
         assert threadId == tx.threadId();
 
         this.cacheIds = cacheIds;
@@ -112,14 +107,12 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFut
         this.params = params;
         this.flags = flags;
         this.pageSize = pageSize;
-
-        tx.topologyVersion(topVer);
     }
 
     /** {@inheritDoc} */
     @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
         return cctx.kernalContext().query().prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry,
-                params, flags, pageSize, 0, topVer, mvccSnapshot, new GridQueryCancel());
+                params, flags, pageSize, 0, tx.topologyVersionSnapshot(), mvccSnapshot, new GridQueryCancel());
     }
 
     /** {@inheritDoc} */

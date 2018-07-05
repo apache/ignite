@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,6 +75,7 @@ import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -92,6 +95,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -656,7 +660,7 @@ public class GridMapQueryExecutor {
         // In presence of TX, we also must always have matching details.
         assert tx == null || txDetails != null;
 
-        boolean forUpdate = (tx != null);
+        boolean inTx = (tx != null);
 
         if (lazy && worker == null) {
             // Lazy queries must be re-submitted to dedicated workers.
@@ -739,7 +743,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker(), forUpdate);
+            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker(), inTx);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -789,16 +793,32 @@ public class GridMapQueryExecutor {
 
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
-                            timeout,
-                            qr.queryCancel(qryIdx));
+                        String sql = qry.query(); Collection<Object> params0 = F.asList(qry.parameters(params));
 
-                        if (forUpdate) {
+                        PreparedStatement stmt;
+
+                        try {
+                            stmt = h2.prepareStatement(conn, sql, true);
+                        }
+                        catch (SQLException e) {
+                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                        }
+
+                        Prepared p = GridSqlQueryParser.prepared(stmt);
+
+                        if (GridSqlQueryParser.isForUpdateQuery(p)) {
+                            sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
+                            stmt = h2.prepareStatement(conn, sql, true);
+                        }
+
+                        h2.bindParameters(stmt, params0);
+
+                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, timeout, qr.queryCancel(qryIdx));
+
+                        if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
                                 ctx.localNodeId(),
                                 txDetails.version(),
-                                topVer,
                                 mvccSnapshot,
                                 txDetails.threadId(),
                                 IgniteUuid.randomUuid(),
@@ -847,7 +867,7 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
-                    if (forUpdate) {
+                    if (inTx) {
                         if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
                             if (removeMapping = tx.empty() && !tx.queryEnlisted())
                                 tx.rollbackAsync().get();

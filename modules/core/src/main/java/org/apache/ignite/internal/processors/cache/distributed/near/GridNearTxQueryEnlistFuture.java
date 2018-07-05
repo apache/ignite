@@ -174,7 +174,6 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
                 GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
                     cctx.localNode().id(),
                     lockVer,
-                    topVer,
                     mvccSnapshot,
                     threadId,
                     futId,

@@ -587,7 +587,7 @@ public class GridReduceQueryExecutor {
 
             final GridNearTxSelectForUpdateFuture sfuFut;
 
-            final boolean selectForUpdateClientFirst;
+            final boolean clientFirst;
 
             AffinityTopologyVersion topVer;
 
@@ -595,27 +595,23 @@ public class GridReduceQueryExecutor {
                 // Indexing should have started TX at this point for FOR UPDATE query.
                 assert MvccUtils.mvccEnabled(ctx) && curTx != null;
 
-                sfuFut = new GridNearTxSelectForUpdateFuture(cacheContext(qry.cacheIds().get(0)), curTx, timeoutMillis);
-
-                TxTopologyVersionFuture topFut = new TxTopologyVersionFuture(curTx, cacheContext(qry.cacheIds().get(0)));
-
                 try {
-                    topFut.initTopologyVersion();
+                    TxTopologyVersionFuture topFut = new TxTopologyVersionFuture(curTx, mvccTracker.context());
 
                     topVer = topFut.get();
 
-                    selectForUpdateClientFirst = topFut.clientFirst();
+                    clientFirst = topFut.clientFirst();
                 }
                 catch (IgniteCheckedException e) {
-                    sfuFut.onDone(e);
-
                     throw new IgniteSQLException("Failed to map SELECT FOR UPDATE query on topology.", e);
                 }
+
+                sfuFut = new GridNearTxSelectForUpdateFuture(mvccTracker.context(), curTx, timeoutMillis);
             }
             else {
                 sfuFut = null;
 
-                selectForUpdateClientFirst = false;
+                clientFirst = false;
 
                 topVer = h2.readyTopologyVersion();
 
@@ -832,7 +828,7 @@ public class GridReduceQueryExecutor {
                                 curTx.subjectId(),
                                 curTx.xidVersion(),
                                 curTx.taskNameHash(),
-                                selectForUpdateClientFirst,
+                                clientFirst,
                                 curTx.remainingTime());
 
                             res.txDetails(txReq);

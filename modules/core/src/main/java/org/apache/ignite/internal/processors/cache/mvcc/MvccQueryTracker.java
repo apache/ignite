@@ -103,6 +103,14 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         return mvccSnapshot;
     }
 
+    /**
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext context() {
+        return cctx;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public synchronized MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (mvccSnapshot != null) {

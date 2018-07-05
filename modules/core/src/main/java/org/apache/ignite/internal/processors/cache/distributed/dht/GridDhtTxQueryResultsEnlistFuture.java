@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -47,7 +46,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
-     * @param topVer Topology version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
@@ -60,7 +58,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
      */
     public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
@@ -72,7 +69,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
         GridCacheOperation op) {
         super(nearNodeId,
             nearLockVer,
-            topVer,
             mvccSnapshot,
             threadId,
             nearFutId,
