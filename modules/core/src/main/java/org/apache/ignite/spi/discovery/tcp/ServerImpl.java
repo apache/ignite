@@ -2851,6 +2851,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 failureThresholdReached = false;
             }
 
+            if (next != null && sock != null) {
+                setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
+                    + ":" + sock.getPort() + (isLocalNodeCoordinator() ? " crd" : ""));
+            }
+            else
+                setThreadNameMeta("crd");
+
             spi.stats.onMessageProcessingFinished(msg);
         }
 
@@ -3038,8 +3045,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 openSock = true;
 
-                                setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
-                                    + ":" + sock.getPort());
+//                                setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
+//                                    + ":" + sock.getPort());
 
                                 // Handshake.
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
