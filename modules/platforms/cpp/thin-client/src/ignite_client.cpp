@@ -18,8 +18,8 @@
 #include <ignite/thin/ignite_client.h>
 #include <ignite/thin/ignite_client_configuration.h>
 
-#include <ignite/impl/thin/ignite_client_impl.h>
-#include <ignite/impl/thin/cache/cache_client_impl.h>
+#include "impl/ignite_client_impl.h"
+#include "impl/cache/cache_client_impl.h"
 
 using namespace ignite::impl::thin;
 using namespace cache;

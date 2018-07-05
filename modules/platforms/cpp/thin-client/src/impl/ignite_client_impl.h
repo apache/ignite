@@ -23,7 +23,8 @@
 #include <ignite/thin/cache/cache_client_configuration.h>
 
 #include <ignite/impl/thin/data_router.h>
-#include <ignite/impl/thin/cache/cache_client_impl.h>
+
+#include "impl/cache/cache_client_impl.h"
 
 namespace ignite
 {

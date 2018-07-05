@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <string>
 
-#include <ignite/impl/thin/socket_client.h>
+#include "impl/socket_client.h"
 
 namespace ignite
 {

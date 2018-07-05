@@ -69,53 +69,14 @@
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\ignite_client_impl.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h">
       <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\message.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\protocol_version.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\socket_client.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\data_router.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\net\end_point.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\ssl\secure_socket_client.h">
-      <Filter>Code\impl\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_bindings.h">
-      <Filter>Code\impl\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_gateway.h">
-      <Filter>Code\impl\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_socket_client.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\response_status.h">
-      <Filter>Code\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\utility.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h">
       <Filter>Code\cache</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_impl.h">
-      <Filter>Code\impl\cache</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\writable.h">
       <Filter>Code\impl</Filter>
@@ -126,21 +87,6 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h">
       <Filter>Code\impl\cache</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\net\remote_type_updater.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\connectable_node_partitions.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\data_channel.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_range.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\net\net_utils.h">
-      <Filter>Code\impl\net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
@@ -149,6 +95,60 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h">
       <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\connectable_node_partitions.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\data_channel.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\data_router.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ignite_client_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\message.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\protocol_version.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\response_status.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\socket_client.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\utility.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ssl\secure_socket_client.h">
+      <Filter>Code\impl\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ssl\ssl_bindings.h">
+      <Filter>Code\impl\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ssl\ssl_gateway.h">
+      <Filter>Code\impl\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\net\end_point.h">
+      <Filter>Code\impl\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\net\net_utils.h">
+      <Filter>Code\impl\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\net\remote_type_updater.h">
+      <Filter>Code\impl\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\net\tcp_range.h">
+      <Filter>Code\impl\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\net\tcp_socket_client.h">
+      <Filter>Code\impl\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h">
+      <Filter>Code\impl\cache</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

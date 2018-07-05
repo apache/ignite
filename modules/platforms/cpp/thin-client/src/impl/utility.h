@@ -20,7 +20,7 @@
 
 #include <vector>
 
-#include <ignite/impl/thin/net/tcp_range.h>
+#include "impl/net/tcp_range.h"
 
 namespace ignite
 {

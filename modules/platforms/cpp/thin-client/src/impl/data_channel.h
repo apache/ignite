@@ -22,16 +22,16 @@
 
 #include <memory>
 
+#include <ignite/thin/ignite_client_configuration.h>
+
 #include <ignite/common/concurrent.h>
 
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include <ignite/impl/thin/protocol_version.h>
-#include <ignite/impl/thin/net/end_point.h>
-#include <ignite/impl/thin/socket_client.h>
-
-#include <ignite/thin/ignite_client_configuration.h>
+#include "impl/protocol_version.h"
+#include "impl/net/end_point.h"
+#include "impl/socket_client.h"
 
 namespace ignite
 {

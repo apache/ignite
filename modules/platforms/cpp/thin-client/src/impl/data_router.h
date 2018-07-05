@@ -26,9 +26,9 @@
 #include <memory>
 #include <string>
 
-#include <ignite/common/concurrent.h>
 #include <ignite/thin/ignite_client_configuration.h>
 
+#include <ignite/common/concurrent.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/data_channel.h"

@@ -19,18 +19,16 @@
 #include <cstddef>
 
 #include <sstream>
-#include <vector>
 
 #include <ignite/common/fixed_size_array.h>
 
-#include <ignite/impl/thin/message.h>
-#include <ignite/impl/thin/ssl/ssl_gateway.h>
-#include <ignite/impl/thin/ssl/secure_socket_client.h>
-#include <ignite/impl/thin/net/tcp_socket_client.h>
-#include <ignite/impl/thin/net/remote_type_updater.h>
+#include "impl/message.h"
+#include "impl/ssl/ssl_gateway.h"
+#include "impl/ssl/secure_socket_client.h"
+#include "impl/net/tcp_socket_client.h"
+#include "impl/net/remote_type_updater.h"
 
-#include <ignite/impl/thin/data_channel.h>
-
+#include "impl/data_channel.h"
 
 namespace ignite
 {

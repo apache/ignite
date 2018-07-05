@@ -18,11 +18,11 @@
 #include <ignite/binary/binary_raw_reader.h>
 #include <ignite/thin/cache/cache_peek_mode.h>
 
-#include <ignite/impl/thin/response_status.h>
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include <ignite/impl/thin/message.h>
+#include "impl/response_status.h"
+#include "impl/message.h"
 
 namespace ignite
 {

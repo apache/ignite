@@ -23,12 +23,12 @@
 #include <iterator>
 #include <algorithm>
 
-#include <ignite/impl/thin/utility.h>
-#include <ignite/impl/thin/data_router.h>
-#include <ignite/impl/thin/message.h>
-#include <ignite/impl/thin/ssl/ssl_gateway.h>
-#include <ignite/impl/thin/net/remote_type_updater.h>
-#include <ignite/impl/thin/net/net_utils.h>
+#include "impl/utility.h"
+#include "impl/data_router.h"
+#include "impl/message.h"
+#include "impl/ssl/ssl_gateway.h"
+#include "impl/net/remote_type_updater.h"
+#include "impl/net/net_utils.h"
 
 
 namespace ignite

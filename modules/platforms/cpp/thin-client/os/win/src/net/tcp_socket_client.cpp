@@ -25,9 +25,11 @@
 
 #include <sstream>
 
+#include <ignite/ignite_error.h>
+
 #include <ignite/common/concurrent.h>
-#include <ignite/impl/thin/net/tcp_socket_client.h>
-#include "ignite/ignite_error.h"
+
+#include "impl/net/tcp_socket_client.h"
 
 namespace
 {

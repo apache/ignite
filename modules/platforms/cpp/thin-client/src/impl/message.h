@@ -25,10 +25,11 @@
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include <ignite/impl/thin/connectable_node_partitions.h>
-#include <ignite/impl/thin/protocol_version.h>
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
+
+#include "impl/connectable_node_partitions.h"
+#include "impl/protocol_version.h"
 
 namespace ignite
 {

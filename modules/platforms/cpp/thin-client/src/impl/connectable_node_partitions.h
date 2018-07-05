@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include <ignite/impl/thin/net/end_point.h>
+#include "impl/net/end_point.h"
 
 namespace ignite
 {
