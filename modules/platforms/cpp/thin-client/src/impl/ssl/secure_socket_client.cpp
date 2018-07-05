@@ -16,16 +16,15 @@
  */
 
 #include <sstream>
-#include <cstdio>
 #include <cassert>
 
 #include <ignite/common/utils.h>
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include <ignite/impl/thin/net/tcp_socket_client.h>
-#include <ignite/impl/thin/ssl/secure_socket_client.h>
-#include <ignite/impl/thin/ssl/ssl_bindings.h>
+#include "impl/net/tcp_socket_client.h"
+#include "impl/ssl/secure_socket_client.h"
+#include "impl/ssl/ssl_bindings.h"
 
 #ifndef SOCKET_ERROR
 #   define SOCKET_ERROR (-1)

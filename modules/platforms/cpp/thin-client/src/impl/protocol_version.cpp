@@ -19,7 +19,7 @@
 
 #include <ignite/ignite_error.h>
 
-#include <ignite/impl/thin/protocol_version.h>
+#include "impl/protocol_version.h"
 
 namespace ignite
 {

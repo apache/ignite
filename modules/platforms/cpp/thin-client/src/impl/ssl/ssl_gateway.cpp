@@ -20,7 +20,7 @@
 #include <ignite/ignite_error.h>
 #include <ignite/common/utils.h>
 
-#include <ignite/impl/thin/ssl/ssl_gateway.h>
+#include "impl/ssl/ssl_gateway.h"
 
 #ifndef ADDITIONAL_OPENSSL_HOME_ENV
 #   define ADDITIONAL_OPENSSL_HOME_ENV "OPEN_SSL_HOME"

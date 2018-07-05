@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#include <ignite/impl/thin/utility.h>
-#include <ignite/impl/thin/ignite_client_impl.h>
-#include <ignite/impl/thin/cache/cache_client_impl.h>
-#include <ignite/impl/thin/message.h>
-#include <ignite/impl/thin/response_status.h>
+#include "impl/utility.h"
+#include "impl/ignite_client_impl.h"
+#include "impl/cache/cache_client_impl.h"
+#include "impl/message.h"
+#include "impl/response_status.h"
 
 namespace ignite
 {

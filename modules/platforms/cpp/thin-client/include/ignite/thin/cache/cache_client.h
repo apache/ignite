@@ -38,7 +38,19 @@ namespace ignite
         namespace cache
         {
             /**
-             * Cache client class.
+             * Cache client class template.
+             *
+             * Main entry point for all Data Grid APIs.
+             *
+             * Both key and value types should be default-constructable, copy-constructable and assignable. Also
+             * BinaryType class  template should be specialized for both types, if they are not one of the basic types.
+             *
+             * This class implemented as a reference to an implementation so copying of this class instance will only
+             * create another reference to the same underlying object. Underlying object released automatically once all
+             * the instances are destructed.
+             *
+             * @tparam K Cache key type.
+             * @tparam V Cache value type.
              */
             template<typename K, typename V>
             class CacheClient

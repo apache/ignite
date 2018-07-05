@@ -22,7 +22,8 @@
 #include <ignite/binary/binary.h>
 
 #include <ignite/common/utils.h>
-#include <ignite/impl/thin/utility.h>
+
+#include "impl/utility.h"
 
 namespace ignite
 {

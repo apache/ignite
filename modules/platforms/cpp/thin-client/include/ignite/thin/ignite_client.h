@@ -38,8 +38,12 @@ namespace ignite
         /**
          * Ignite client class.
          *
-         * This is an entry point for Thin C++ Ignite client. Its main
-         * purpose is to establish connection to the remote server node.
+         * This is an entry point for Thin C++ Ignite client. Its main purpose is to establish connection to the remote
+         * server nodes.
+         *
+         * This class implemented as a reference to an implementation so copying of this class instance will only
+         * create another reference to the same underlying object. Underlying object released automatically once all
+         * the instances are destructed.
          */
         class IGNITE_IMPORT_EXPORT IgniteClient
         {

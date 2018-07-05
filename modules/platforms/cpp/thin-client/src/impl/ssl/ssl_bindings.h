@@ -22,7 +22,7 @@
 #include <openssl/conf.h>
 #include <openssl/err.h>
 
-#include <ignite/impl/thin/ssl/ssl_gateway.h>
+#include "impl/ssl/ssl_gateway.h"
 
 namespace ignite
 {
