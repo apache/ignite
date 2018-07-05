@@ -444,10 +444,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
 
-                decompressor = new FileDecompressor(log);
+                if (decompressor == null) {  // Preventing of two file-decompressor thread instantiations.
+                    decompressor = new FileDecompressor(log);
 
-                if (!cctx.kernalContext().clientNode())
                     new IgniteThread(decompressor).start();
+                }
             }
 
             walDisableContext = cctx.walState().walDisableContext();
@@ -1667,8 +1668,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
             }
-            catch (InterruptedException ignore) {
+            catch (InterruptedException t) {
                 Thread.currentThread().interrupt();
+
+                if (!stopped)
+                    err = t;
             }
             catch (Throwable t) {
                 err = t;
@@ -1678,9 +1682,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
-                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                    failureProcessor.process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
-                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                    failureProcessor.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -2141,60 +2145,80 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param log Logger.
          */
         FileDecompressor(IgniteLogger log) {
-            super(cctx.igniteInstanceName(), "wal-file-decompressor%" + cctx.igniteInstanceName(), log);
+            super(cctx.igniteInstanceName(), "wal-file-decompressor%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            while (!isCancelled()) {
-                long segmentToDecompress = -1L;
+            Throwable err = null;
 
-                try {
-                    segmentToDecompress = segmentsQueue.take();
-
-                    if (isCancelled())
-                        break;
-
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
-                    File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
-                    File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
-
-                    try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
-                         FileIO io = ioFactory.create(unzipTmp)) {
-                        zis.getNextEntry();
-
-                        while (io.writeFully(arr, 0, zis.read(arr)) > 0)
-                            ;
-                    }
+            try {
+                while (!isCancelled()) {
+                    long segmentToDecompress = -1L;
 
                     try {
-                        Files.move(unzipTmp.toPath(), unzip.toPath());
-                    }
-                    catch (FileAlreadyExistsException e) {
-                        U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
-                            "[tmp=" + unzipTmp + ", raw=" + unzip + "]", e);
+                        segmentToDecompress = segmentsQueue.take();
 
-                        if (!unzipTmp.delete())
-                            U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
-                    }
+                        if (isCancelled())
+                            break;
 
-                    synchronized (this) {
-                        decompressionFutures.remove(segmentToDecompress).onDone();
-                    }
-                }
-                catch (InterruptedException ignore) {
-                    Thread.currentThread().interrupt();
-                }
-                catch (Throwable t) {
-                    if (!isCancelled && segmentToDecompress != -1L) {
-                        IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
-                            "decompression [segmentIdx=" + segmentToDecompress + "]", t);
+                        File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
+                        File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
+                        File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
+
+                        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
+                             FileIO io = ioFactory.create(unzipTmp)) {
+                            zis.getNextEntry();
+
+                            while (io.writeFully(arr, 0, zis.read(arr)) > 0)
+                                ;
+                        }
+
+                        try {
+                            Files.move(unzipTmp.toPath(), unzip.toPath());
+                        }
+                        catch (FileAlreadyExistsException e) {
+                            U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
+                                "[tmp=" + unzipTmp + ", raw=" + unzip + "]", e);
+
+                            if (!unzipTmp.delete())
+                                U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
+                        }
 
                         synchronized (this) {
-                            decompressionFutures.remove(segmentToDecompress).onDone(e);
+                            decompressionFutures.remove(segmentToDecompress).onDone();
+                        }
+                    }
+                    catch (IOException ex) {
+                        if (!isCancelled && segmentToDecompress != -1L) {
+                            IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
+                                "decompression [segmentIdx=" + segmentToDecompress + "]", ex);
+
+                            synchronized (this) {
+                                decompressionFutures.remove(segmentToDecompress).onDone(e);
+                            }
                         }
                     }
                 }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                if (!isCancelled)
+                    err = e;
+            }
+            catch (Throwable t) {
+                err = t;
+            }
+            finally {
+                if (err == null && !isCancelled)
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    failureProcessor.process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    failureProcessor.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -2221,10 +2245,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return res;
         }
 
-        /**
-         * @throws IgniteInterruptedCheckedException If failed to wait for thread shutdown.
-         */
-        private void shutdown() throws IgniteInterruptedCheckedException {
+        /** */
+        private void shutdown() {
             synchronized (this) {
                 U.cancel(this);
 
