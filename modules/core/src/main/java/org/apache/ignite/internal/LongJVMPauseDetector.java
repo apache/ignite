@@ -118,8 +118,6 @@ class LongJVMPauseDetector {
                         }
                     }
                     catch (InterruptedException e) {
-                        log.error(getName() + " has been interrupted", e);
-
                         break;
                     }
                 }
