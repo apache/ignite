@@ -2570,7 +2570,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                    if (assigns.cancelled())
+                                    if (assigns != null && assigns.cancelled())
                                         pendingExchange = true;
                                 }
 
