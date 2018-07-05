@@ -891,6 +891,8 @@ public class GridDhtPartitionDemander {
                         log.debug("Node left during rebalancing [grp=" + grp.cacheOrGroupName() +
                             ", node=" + node.id() + ", msg=" + e.getMessage() + ']');
                     }
+
+                    fut.demanded = false;
                 }
             }
         }
@@ -898,6 +900,8 @@ public class GridDhtPartitionDemander {
             LT.error(log, e, "Error during rebalancing [grp=" + grp.cacheOrGroupName() +
                 ", srcNode=" + node.id() +
                 ", err=" + e + ']');
+
+            fut.demanded = false;
         }
     }
 
