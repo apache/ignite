@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testframework.test;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.testframework.GridRegexpLogger;
@@ -28,8 +28,6 @@ import org.junit.Test;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -51,7 +49,7 @@ public class GridRegexpLoggerTest {
      *
      */
     @BeforeClass
-    public static void beforeClass(){
+    public static void beforeClass() {
         log = new GridRegexpLogger();
     }
 
@@ -70,7 +68,7 @@ public class GridRegexpLoggerTest {
      *
      */
     @Test
-    public void testBasicLogListening(){
+    public void testBasicLogListening() {
         AtomicBoolean stopLogging = new AtomicBoolean(FALSE);
 
         log.listen("a[a-z]+", o -> stopLogging.set(TRUE));
@@ -91,36 +89,28 @@ public class GridRegexpLoggerTest {
      *
      */
     @Test
-    public void testLogWait() throws InterruptedException {
-        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
-
-        executor.scheduleWithFixedDelay(() -> log.debug("ab"), 0, 300, MILLISECONDS);
-
-        assertTrue(log.waitFor("a[a-z]+", SECONDS.toMillis(1)));
-
-        executor.shutdownNow();
-
-        if (useDelegateLog)
-            assertTrue(delegateOutput.toString().contains("ab"));
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testBrokenListener(){
-        log.listen("a[a-z]+", s -> {throw new RuntimeException();});
+    public void testBrokenListener() {
+        log.listen("a[a-z]+", s -> {
+            throw new RuntimeException();
+        });
 
         log.debug("a");
 
         GridTestUtils.assertThrowsWithCause(p -> log.debug("ab"), null, RuntimeException.class);
+
+        if (useDelegateLog)
+            assertEquals("aab", delegateOutput.toString());
     }
 
     /**
      *
      */
     @Test
-    public void testSequentialNotifying(){
+    public void testSequentialNotifying() {
+        LinkedHashMap map = new LinkedHashMap();
+
+        map.put(null, new Boolean(true));
+
         AtomicInteger cntr = new AtomicInteger(0);
 
         log.listenDebug("a[a-z]+", s -> cntr.compareAndSet(0, 1));
@@ -132,5 +122,31 @@ public class GridRegexpLoggerTest {
         log.debug("ab");
 
         assertEquals(5, cntr.get());
+
+        if (useDelegateLog)
+            assertEquals("ab", delegateOutput.toString());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testAllMessagesLogging() {
+        StringBuilder output = new StringBuilder();
+        StringBuilder debugOutput = new StringBuilder();
+
+        log.listen(null, output::append);
+        log.listenDebug(null, debugOutput::append);
+
+        log.debug("a");
+        log.warning("b");
+        log.info("c");
+        log.debug("d");
+
+        assertEquals("abcd", output.toString());
+        assertEquals("ad", debugOutput.toString());
+
+        if (useDelegateLog)
+            assertEquals("abcd", delegateOutput.toString());
     }
 }

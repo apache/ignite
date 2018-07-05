@@ -17,16 +17,13 @@
 
 package org.apache.ignite.testframework;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
+import javafx.util.Pair;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,19 +35,19 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
     private IgniteLogger delegate;
 
     /** Error lsnrs. */
-    private Map<Matcher, IgniteInClosure<String>> errorLsnrs = new LinkedHashMap<>();
+    private List<Pair<Matcher, IgniteInClosure<String>>> errorLsnrs = new ArrayList<>();
 
     /** Warning lsnrs. */
-    private Map<Matcher, IgniteInClosure<String>> warningLsnrs = new LinkedHashMap<>();
+    private List<Pair<Matcher, IgniteInClosure<String>>> warningLsnrs = new ArrayList<>();
 
     /** Info lsnrs. */
-    private Map<Matcher, IgniteInClosure<String>> infoLsnrs = new LinkedHashMap<>();
+    private List<Pair<Matcher, IgniteInClosure<String>>> infoLsnrs = new ArrayList<>();
 
     /** Trace lsnrs. */
-    private Map<Matcher, IgniteInClosure<String>> traceLsnrs = new LinkedHashMap<>();
+    private List<Pair<Matcher, IgniteInClosure<String>>> traceLsnrs = new ArrayList<>();
 
     /** Debug lsnrs. */
-    private Map<Matcher, IgniteInClosure<String>> debugLsnrs = new LinkedHashMap<>();
+    private List<Pair<Matcher, IgniteInClosure<String>>> debugLsnrs = new ArrayList<>();
 
     /**
      * @param echo IgniteLogger implementation, all logs are delegated to.
@@ -88,9 +85,12 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
         if (delegate != null)
             delegate.trace(msg);
 
-        traceLsnrs.forEach((matcher, igniteInClosure) -> {
-            if (matcher.reset(msg).matches())
-                igniteInClosure.apply(msg);
+        traceLsnrs.forEach(pair -> {
+            Matcher matcher = pair.getKey();
+            IgniteInClosure<String> lsnr = pair.getValue();
+
+            if (matcher == null || matcher.reset(msg).matches())
+                lsnr.apply(msg);
         });
     }
 
@@ -99,9 +99,12 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
         if (delegate != null)
             delegate.debug(msg);
 
-        debugLsnrs.forEach((matcher, igniteInClosure) -> {
-            if (matcher.reset(msg).matches())
-                igniteInClosure.apply(msg);
+        debugLsnrs.forEach(pair -> {
+            Matcher matcher = pair.getKey();
+            IgniteInClosure<String> lsnr = pair.getValue();
+
+            if (matcher == null || matcher.reset(msg).matches())
+                lsnr.apply(msg);
         });
     }
 
@@ -110,9 +113,12 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
         if (delegate != null)
             delegate.info(msg);
 
-        infoLsnrs.forEach((matcher, igniteInClosure) -> {
-            if (matcher.reset(msg).matches())
-                igniteInClosure.apply(msg);
+        infoLsnrs.forEach(pair -> {
+            Matcher matcher = pair.getKey();
+            IgniteInClosure<String> lsnr = pair.getValue();
+
+            if (matcher == null || matcher.reset(msg).matches())
+                lsnr.apply(msg);
         });
     }
 
@@ -121,9 +127,12 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
         if (delegate != null)
             delegate.warning(msg);
 
-        warningLsnrs.forEach((matcher, igniteInClosure) -> {
-            if (matcher.reset(msg).matches())
-                igniteInClosure.apply(msg);
+        warningLsnrs.forEach(pair -> {
+            Matcher matcher = pair.getKey();
+            IgniteInClosure<String> lsnr = pair.getValue();
+
+            if (matcher == null || matcher.reset(msg).matches())
+                lsnr.apply(msg);
         });
     }
 
@@ -132,9 +141,12 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
         if (delegate != null)
             delegate.error(msg);
 
-        errorLsnrs.forEach((matcher, igniteInClosure) -> {
-            if (matcher.reset(msg).matches())
-                igniteInClosure.apply(msg);
+        errorLsnrs.forEach(pair -> {
+            Matcher matcher = pair.getKey();
+            IgniteInClosure<String> lsnr = pair.getValue();
+
+            if (matcher == null || matcher.reset(msg).matches())
+                lsnr.apply(msg);
         });
     }
 
@@ -195,12 +207,12 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
     }
 
     /**
-     * Set log message listener.
+     * Set log message listener. Pass null-regexp to match every log message.
      *
      * @param regexp Regexp matched against log messages.
      * @param lsnr Listener to execute.
      */
-    public void listen(String regexp, IgniteInClosure<String> lsnr) {
+    public void listen(@Nullable String regexp, IgniteInClosure<String> lsnr) {
         listenDebug(regexp, lsnr);
         listenError(regexp, lsnr);
         listenInfo(regexp, lsnr);
@@ -209,202 +221,52 @@ public class GridRegexpLogger implements IgniteLogger, Cloneable {
     }
 
     /**
-     * Set error log message listener.
+     * Set error log message listener. Pass null-regexp to match every log message.
      *
      * @param regexp Regexp matched against log messages.
      * @param lsnr Listener to execute.
      */
-    public void listenError(String regexp, IgniteInClosure<String> lsnr) {
-        errorLsnrs.put(Pattern.compile(regexp).matcher(""), lsnr);
+    public void listenError(@Nullable String regexp, IgniteInClosure<String> lsnr) {
+        errorLsnrs.add(new Pair<>(regexp != null ? Pattern.compile(regexp).matcher("") : null, lsnr));
     }
 
     /**
-     * Set warning log message listener.
+     * Set warning log message listener. Pass null-regexp to match every log message.
      *
      * @param regexp Regexp matched against log messages.
      * @param lsnr Listener to execute.
      */
-    public void listenWarning(String regexp, IgniteInClosure<String> lsnr) {
-        warningLsnrs.put(Pattern.compile(regexp).matcher(""), lsnr);
+    public void listenWarning(@Nullable String regexp, IgniteInClosure<String> lsnr) {
+        warningLsnrs.add(new Pair<>(regexp != null ? Pattern.compile(regexp).matcher("") : null, lsnr));
     }
 
     /**
-     * Set info log message listener.
+     * Set info log message listener. Pass null-regexp to match every log message.
      *
      * @param regexp Regexp matched against log messages.
      * @param lsnr Listener to execute.
      */
-    public void listenInfo(String regexp, IgniteInClosure<String> lsnr) {
-        infoLsnrs.put(Pattern.compile(regexp).matcher("meow"), lsnr);
+    public void listenInfo(@Nullable String regexp, IgniteInClosure<String> lsnr) {
+        infoLsnrs.add(new Pair<>(regexp != null ? Pattern.compile(regexp).matcher("") : null, lsnr));
     }
 
     /**
-     * Set trace log message listener.
+     * Set trace log message listener. Pass null-regexp to match every log message.
      *
      * @param regexp Regexp matched against log messages.
      * @param lsnr Listener to execute.
      */
-    public void listenTrace(String regexp, IgniteInClosure<String> lsnr) {
-        traceLsnrs.put(Pattern.compile(regexp).matcher(""), lsnr);
+    public void listenTrace(@Nullable String regexp, IgniteInClosure<String> lsnr) {
+        traceLsnrs.add(new Pair<>(regexp != null ? Pattern.compile(regexp).matcher("") : null, lsnr));
     }
 
     /**
-     * Set debug log message listener.
+     * Set debug log message listener. Pass null-regexp to match every log message.
      *
      * @param regexp Regexp matched against log messages.
      * @param lsnr Listener to execute.
      */
-    public void listenDebug(String regexp, IgniteInClosure<String> lsnr) {
-        debugLsnrs.put(Pattern.compile(regexp).matcher(""), lsnr);
-    }
-
-    /**
-     * Waits timeout time for the log message to occur.
-     *
-     * @param regexp Regexp matched against log messages.
-     * @param timeout Timeout time to wait.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean waitFor(String regexp, long timeout) throws InterruptedException {
-        CompletableFuture fut = new CompletableFuture();
-
-        listen(regexp, o -> fut.complete(null));
-
-        try {
-            fut.get(timeout, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            assert false;
-        }
-        catch (TimeoutException e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Waits timeout time for the debug log message to occur.
-     *
-     * @param regexp Regexp matched against log messages.
-     * @param timeout Timeout time to wait.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean waitForDebug(String regexp, long timeout) throws InterruptedException {
-        CompletableFuture fut = new CompletableFuture();
-
-        listenDebug(regexp, o -> fut.complete(null));
-
-        try {
-            fut.get(timeout, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            assert false;
-        }
-        catch (TimeoutException e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Waits timeout time for the warning log message to occur.
-     *
-     * @param regexp Regexp matched against log messages.
-     * @param timeout Timeout time to wait.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean waitForWarning(String regexp, long timeout) throws InterruptedException {
-        CompletableFuture fut = new CompletableFuture();
-
-        listenWarning(regexp, o -> fut.complete(null));
-
-        try {
-            fut.get(timeout, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            assert false;
-        }
-        catch (TimeoutException e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Waits timeout time for the trace log message to occur.
-     *
-     * @param regexp Regexp matched against log messages.
-     * @param timeout Timeout time to wait.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean waitForTrace(String regexp, long timeout) throws InterruptedException {
-        CompletableFuture fut = new CompletableFuture();
-
-        listenTrace(regexp, o -> fut.complete(null));
-
-        try {
-            fut.get(timeout, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            assert false;
-        }
-        catch (TimeoutException e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Waits timeout time for the info log message to occur.
-     *
-     * @param regexp Regexp matched against log messages.
-     * @param timeout Timeout time to wait.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean waitForInfo(String regexp, long timeout) throws InterruptedException {
-        CompletableFuture fut = new CompletableFuture();
-
-        listenInfo(regexp, o -> fut.complete(null));
-
-        try {
-            fut.get(timeout, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            assert false;
-        }
-        catch (TimeoutException e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Waits timeout time for the error log message to occur.
-     *
-     * @param regexp Regexp matched against log messages.
-     * @param timeout Timeout time to wait.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean waitForError(String regexp, long timeout) throws InterruptedException {
-        CompletableFuture fut = new CompletableFuture();
-
-        listenError(regexp, o -> fut.complete(null));
-
-        try {
-            fut.get(timeout, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            assert false;
-        }
-        catch (TimeoutException e) {
-            return false;
-        }
-
-        return true;
+    public void listenDebug(@Nullable String regexp, IgniteInClosure<String> lsnr) {
+        debugLsnrs.add(new Pair<>(regexp != null ? Pattern.compile(regexp).matcher("") : null, lsnr));
     }
 }
