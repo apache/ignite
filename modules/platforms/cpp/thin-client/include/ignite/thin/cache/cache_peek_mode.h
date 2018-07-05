@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::thin::cache::CachePeekMode.
+ */
+
 #ifndef _IGNITE_IMPL_THIN_CACHE_CACHE_PEEK_MODE
 #define _IGNITE_IMPL_THIN_CACHE_CACHE_PEEK_MODE
 

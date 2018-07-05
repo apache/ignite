@@ -143,6 +143,8 @@ namespace ignite
                  * Gets the number of all entries cached across all nodes.
                  * @note This operation is distributed and will query all participating nodes for their cache sizes.
                  *
+                 * @see CachePeekMode for details.
+                 *
                  * @param peekModes Peek modes mask.
                  * @return Cache size across all nodes.
                  */
