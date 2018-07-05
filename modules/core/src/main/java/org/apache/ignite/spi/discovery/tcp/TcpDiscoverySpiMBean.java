@@ -56,6 +56,14 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     public int getReconnectCount();
 
     /**
+     * Gets connection check interval in ms.
+     *
+     * @return Number of connection attempts.
+     */
+    @MXBeanDescription("Connection check interval.")
+    public long getConnectionCheckInterval();
+
+    /**
      * Gets network timeout.
      *
      * @return Network timeout.
