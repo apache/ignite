@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: IgniteClient.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: IgniteClient.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+'use strict';
+
+const CacheClient = require('./CacheClient');
+const IgniteClientConfiguration = require('./IgniteClientConfiguration');
+const CacheConfiguration = require('./CacheConfiguration');
+const BinaryUtils = require('./internal/BinaryUtils');
+const BinaryWriter = require('./internal/BinaryWriter');
+const BinaryReader = require('./internal/BinaryReader');
+const BinaryTypeStorage = require('./internal/BinaryTypeStorage');
+const ArgumentChecker = require('./internal/ArgumentChecker');
+const Logger = require('./internal/Logger');
+
+/**
+ * State of Ignite client.
+ *
+ * @typedef IgniteClient.STATE
+ * @enum
+ * @readonly
+ * @property DISCONNECTED The client is not connected to any Ignite node,
+ *     operations with the Ignite server are not allowed.
+ *     This is initial state after a client instance creation.
+ *     If connect() method is called, the client moves to CONNECTING state.
+ * @property CONNECTING The client tries to connect to an Ignite node,
+ *     operations with the Ignite server are not allowed.
+ *     If disconnect() method is called, the client moves to DISCONNECTED state.
+ *     If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
+ *     If connection to an Ignite node is successful, the client moves to CONNECTED state.
+ * @property CONNECTED The client is connected to an Ignite node,
+ *     all operations with the Ignite server are allowed.
+ *     If connection with the Ignite node is lost, the client moves to CONNECTING state.
+ *     If disconnect() method is called, the client moves to DISCONNECTED state.
+ */
+const STATE = Object.freeze({
+    DISCONNECTED : 0,
+    CONNECTING : 1,
+    CONNECTED : 2
+});
+
+/**
+ * Class representing Ignite client.
+ * 
+ */
+class IgniteClient {
+
+    /**
+     * Public constructor.
+     *
+     * @param {IgniteClient.onStateChanged} [onStateChanged] -
+     * callback called everytime when the client has moved to a new state {@link IgniteClient.STATE}.
+     *
+     * @return {IgniteClient} - new IgniteClient instance.
+     */
+    constructor(onStateChanged = null) {
+        const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
+        this._socket = new ClientFailoverSocket(onStateChanged);
+        BinaryTypeStorage.createEntity(this._socket);
+    }
+
+    static get STATE() {
+        return STATE;
+    }
+
+    /**
+     * onStateChanged callback.
+     * @callback IgniteClient.onStateChanged
+     * @param {IgniteClient.STATE} state - the new state of the client.
+     * @param {string} reason - the reason why the state has been changed.
+     */
+
+    /**
+     * Connects the client.
+     *
+     * Should be called from DISCONNECTED state only.
+     * Moves the client to CONNECTING state.
+     *
+     * @async
+     *
+     * @param {IgniteClientConfiguration} config - the client configuration.
+     *
+     * @throws {IllegalStateError} if the client is not in DISCONNECTED {@link IgniteClient.STATE}.
+     * @throws {IgniteClientError} if other error.
+     */
+    async connect(config) {
+        ArgumentChecker.notEmpty(config, 'config');
+        ArgumentChecker.hasType(config, 'config', false, IgniteClientConfiguration);
+        await this._socket.connect(config);
+    }
+
+    /**
+     * Disconnects the client.
+     *
+     * Moves the client to DISCONNECTED state from any other state.
+     * Does nothing if the client already disconnected.
+     */
+    disconnect() {
+        if (this._socket) {
+            this._socket.disconnect();
+        }
+    }
+
+    /**
+     * Creates new cache with the provided name and optional configuration.
+     *
+     * @async
+     *
+     * @param {string} name - cache name.
+     * @param {CacheConfiguration} [cacheConfig] - cache configuration.
+     *
+     * @return {Promise&lt;CacheClient>} - new cache client instance for the created cache.
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {OperationError} if cache with the provided name already exists.
+     * @throws {IgniteClientError} if other error.
+     */
+    async createCache(name, cacheConfig = null) {
+        ArgumentChecker.notEmpty(name, 'name');
+        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
+
+        await this._socket.send(
+            cacheConfig ?
+                BinaryUtils.OPERATION.CACHE_CREATE_WITH_CONFIGURATION :
+                BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
+            async (payload) => {
+                await this._writeCacheNameOrConfig(payload, name, cacheConfig);
+            });
+        return this._getCache(name, cacheConfig);
+    }
+
+    /**
+     * Gets existing cache with the provided name
+     * or creates new one with the provided name and optional configuration.
+     *
+     * @async
+     *
+     * @param {string} name - cache name.
+     * @param {CacheConfiguration} [cacheConfig] - cache configuration (ignored if cache
+     *   with the provided name already exists).
+     *
+     * @return {Promise&lt;CacheClient>} - new cache client instance for the existing or created cache.
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {IgniteClientError} if other error.
+     */
+    async getOrCreateCache(name, cacheConfig = null) {
+        ArgumentChecker.notEmpty(name, 'name');
+        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
+        await this._socket.send(
+            cacheConfig ?
+                BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
+                BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
+            async (payload) => {
+                await this._writeCacheNameOrConfig(payload, name, cacheConfig);
+            });
+        return this._getCache(name, cacheConfig);
+    }
+
+    /**
+     * Gets cache client instance of cache with the provided name.
+     * The method does not check if the cache with the provided name exists.
+     *
+     * @param {string} name - cache name.
+     *
+     * @return {CacheClient} - new cache client instance.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    getCache(name) {
+        ArgumentChecker.notEmpty(name, 'name');
+        return this._getCache(name);
+    }
+
+    /**
+     * Destroys cache with the provided name.
+     *
+     * @async
+     *
+     * @param {string} name - cache name.
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {OperationError} if cache with the provided name does not exist.
+     * @throws {IgniteClientError} if other error.
+     */
+    async destroyCache(name) {
+        ArgumentChecker.notEmpty(name, 'name');
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_DESTROY,
+            async (payload) => {
+                payload.writeInteger(CacheClient._calculateId(name));
+            });
+    }
+
+    /**
+     * Returns configuration of cache with the provided name.
+     *
+     * @async
+     *
+     * @param {string} name - cache name.
+     *
+     * @return {Promise&lt;CacheConfiguration>} - cache configuration
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {OperationError} if cache with the provided name does not exist.
+     * @throws {IgniteClientError} if other error.
+     */
+    async getCacheConfiguration(name) {
+        ArgumentChecker.notEmpty(name, 'name');
+        let config;
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_GET_CONFIGURATION,
+            async (payload) => {
+                payload.writeInteger(CacheClient._calculateId(name));
+                payload.writeByte(0);
+            },
+            async (payload) => {
+                config = new CacheConfiguration();
+                await config._read(payload);
+            });
+        return config;
+    }
+
+    /**
+     * Gets existing cache names.
+     *
+     * @async
+     *
+     * @return {Promise&lt;Array&lt;string>>} - array with the existing cache names.
+     *     The array is empty if no caches exist.
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {IgniteClientError} if other error.
+     */
+    async cacheNames() {
+        let names;
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_GET_NAMES,
+            null,
+            async (payload) => {
+                names = await BinaryReader.readStringArray(payload);
+            });
+        return names;
+    }
+
+    /**
+     * Enables/disables the library debug output (including errors logging).
+     * Disabled by default.
+     *
+     * @param {boolean} value - true to enable, false to disable
+     */
+    setDebug(value) {
+        Logger.debug = value;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    _getCache(name, cacheConfig = null) {
+        return new CacheClient(name, cacheConfig, this._socket);
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeCacheNameOrConfig(buffer, name, cacheConfig) {
+        if (cacheConfig) {
+            await cacheConfig._write(buffer, name);
+        }
+        else {
+            await BinaryWriter.writeString(buffer, name);
+        }
+    }
+}
+
+module.exports = IgniteClient;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="CollectionObjectType.html">CollectionObjectType</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="EnumItem.html">EnumItem</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="ScanQuery.html">ScanQuery</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li><li><a href="Timestamp.html">Timestamp</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue May 22 2018 12:08:48 GMT+0300 (Russia TZ 2 Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

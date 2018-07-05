@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.tree.performance;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -60,7 +60,7 @@ public class DecisionTreeMNISTTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
-            double res = mdl.apply(e.getPixels());
+            double res = mdl.apply(new DenseLocalOnHeapVector(e.getPixels()));
 
             if (res == e.getLabel())
                 correctAnswers++;
