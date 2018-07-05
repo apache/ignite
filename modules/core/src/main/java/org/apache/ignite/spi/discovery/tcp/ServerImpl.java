@@ -6725,13 +6725,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param node Node.
          */
-        private boolean pingJoiningNode(TcpDiscoveryNode node) throws IOException {
-            for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
+        private boolean pingJoiningNode(TcpDiscoveryNode node) {
+            for (InetSocketAddress addr : spi.getNodeAddresses(node, false)) {
                 try {
-                    IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
+                    if (!(addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr))) {
+                        IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), null);
 
-                    if (t != null)
-                        return true;
+                        if (t != null)
+                            return true;
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -6740,8 +6742,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Failed to ping joining node, closing connection. [node=" + node + ']');
+            if (log.isInfoEnabled())
+                log.warning("Failed to ping joining node, closing connection. [node=" + node + ']');
 
             return false;
         }

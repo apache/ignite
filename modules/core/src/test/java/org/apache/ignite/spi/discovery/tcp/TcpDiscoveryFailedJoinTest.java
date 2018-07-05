@@ -18,16 +18,18 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Collections;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -39,11 +41,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * to node join and, as a consequence, to start exchange process.
  */
 public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
+    /** */
+    private static final int FAIL_PORT = 47503;
+
+    /** */
+    private SpiFailType failType = SpiFailType.REFUSE;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        FailTcpDiscoverySpi discoSpi = new FailTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = failType == SpiFailType.REFUSE ? new FailTcpDiscoverySpi() : new DropTcpDiscoverySpi();
 
         discoSpi.setLocalPort(Integer.parseInt(gridName.split("-")[1]));
 
@@ -52,6 +60,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         finder.setAddresses(Collections.singleton("127.0.0.1:47500..47503"));
 
         discoSpi.setIpFinder(finder);
+        discoSpi.setNetworkTimeout(2_000);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -72,7 +81,9 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDiscovery() throws Exception {
+    public void testDiscoveryRefuse() throws Exception {
+        failType = SpiFailType.REFUSE;
+
         startGrid("server-47500");
         startGrid("server-47501");
         startGrid("server-47502");
@@ -82,21 +93,38 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         // Client in server mode.
         assertStartFailed("client_server-47503");
 
-        // Regular client start normally.
+        // Regular client starts normally.
+        startGrid("client-47503");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDiscoveryDrop() throws Exception {
+        failType = SpiFailType.DROP;
+
+        startGrid("server-47500");
+        startGrid("server-47501");
+        startGrid("server-47502");
+
+        assertStartFailed("server-47503");
+
+        // Client in server mode.
+        assertStartFailed("client_server-47503");
+
+        // Regular client starts normally.
         startGrid("client-47503");
     }
 
     /**
      * @param name Name.
      */
-    private void assertStartFailed(final String name) throws Exception {
+    private void assertStartFailed(final String name) {
         //noinspection ThrowableNotThrown
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                startGrid(name);
+        GridTestUtils.assertThrows(log, () -> {
+            startGrid(name);
 
-                return null;
-            }
+            return null;
         }, IgniteCheckedException.class, null);
     }
 
@@ -107,7 +135,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Socket openSocket(InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-            if (sockAddr.getPort() == 47503)
+            if (sockAddr.getPort() == FAIL_PORT)
                 throw new SocketException("Connection refused");
 
             return super.openSocket(sockAddr, timeoutHelper);
@@ -116,12 +144,61 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-            if (remAddr.getPort() == 47503)
+            if (remAddr.getPort() == FAIL_PORT)
                 throw new SocketException("Connection refused");
 
             return super.openSocket(sock, remAddr, timeoutHelper);
         }
     }
 
+    /**
+     *
+     */
+    private static class DropTcpDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
+            long timeout) throws IOException {
+            if (sock.getPort() != FAIL_PORT)
+                super.writeToSocket(sock, msg, data, timeout);
+        }
 
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            if (sock.getPort() != FAIL_PORT)
+                super.writeToSocket(sock, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
+            TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            if (sock.getPort() != FAIL_PORT)
+                super.writeToSocket(node, sock, out, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            if (sock.getPort() != FAIL_PORT)
+                super.writeToSocket(sock, out, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
+            long timeout) throws IOException {
+            if (sock.getPort() != FAIL_PORT)
+                super.writeToSocket(msg, sock, res, timeout);
+        }
+    }
+
+    /**
+     *
+     */
+    private enum SpiFailType {
+        /** */
+        REFUSE,
+
+        /** */
+        DROP
+    }
 }
