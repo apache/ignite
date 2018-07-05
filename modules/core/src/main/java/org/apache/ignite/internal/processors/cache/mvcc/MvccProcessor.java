@@ -68,8 +68,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -98,7 +96,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_INITIAL_CNTR;
@@ -106,6 +103,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_RE
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_OP_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
+import static org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 
@@ -174,7 +172,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private BlockingQueue<VacuumTask> cleanupQueue;
 
     /** Active query trackers. */
-    private final ConcurrentMap<Long, MvccQueryTracker> activeTrackers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, TrackableMvccQueryTracker> activeTrackers = new ConcurrentHashMap<>();
 
     /** For tests only. */
     private volatile Throwable vacuumError;
@@ -402,122 +400,87 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     }
 
     /**
-     * @return Coordinator init future.
+     * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
+     * {@code Null} in other cases.
      */
-    public IgniteInternalFuture<Void> coordinatorInitFuture() {
-        return crdInitFut;
+    public MvccSnapshot tryRequestSnapshotLocal(boolean forTx) {
+        if (!ctx.localNodeId().equals(currentCoordinatorId()) || !crdInitFut.isDone())
+            return  null;
+
+        return forTx ? assignTxSnapshot(0L) : activeQueries.assignQueryCounter(ctx.localNodeId(), 0L);
     }
 
     /**
      * @return Counter.
      */
-    public MvccSnapshot requestTxSnapshotOnCoordinator() {
-        assert ctx.localNodeId().equals(currentCoordinatorId());
-        assert crdInitFut.isDone();
+    public IgniteInternalFuture<MvccSnapshot> requestSnapshotAsync(boolean forTx) {
+        MvccCoordinator crd = currentCoordinator();
 
-        return assignTxSnapshot(0L);
-    }
+        if (ctx.localNodeId().equals(crd.nodeId())) { // Wait for the local coordinator init.
+            GridFutureAdapter<MvccSnapshot> res = new GridFutureAdapter<>();
 
-    /**
-     * @return Counter.
-     */
-    @Nullable public IgniteInternalFuture<MvccSnapshot> requestTxSnapshot(MvccSnapshotResponseListener lsnr) {
-        if (ctx.localNodeId().equals(currentCoordinator().nodeId())) {
-            if (crdInitFut.isDone()) {
-                lsnr.onResponse(ctx.localNodeId(), assignTxSnapshot(0L));
+            crdInitFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                @Override public void apply(IgniteInternalFuture<Void> fut) {
+                    MvccSnapshot snapshot = forTx ? assignTxSnapshot(0L) :
+                        activeQueries.assignQueryCounter(ctx.localNodeId(), 0L);
 
-                return null;
+                    res.onDone(snapshot);
+                }
+            });
+
+            return res;
+        }
+        else { // Send request to the remote coordinator.
+            MvccSnapshotFuture fut = new MvccSnapshotFuture(futIdCntr.incrementAndGet(), crd);
+
+            snapshotFuts.put(fut.id, fut);
+
+            MvccMessage msg = forTx ? new MvccTxSnapshotRequest(fut.id) : new MvccQuerySnapshotRequest(fut.id);
+
+            try {
+                sendMessage(crd.nodeId(), msg);
             }
-            else {
-                GridFutureAdapter<MvccSnapshot> fut = new GridFutureAdapter<>();
-
-                crdInitFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> f) {
-                        try {
-                            f.get();
-
-                            MvccSnapshot snapshot = assignTxSnapshot(0L);
-
-                            lsnr.onResponse(ctx.localNodeId(), snapshot);
-
-                            fut.onDone(snapshot);
-                        }
-                        catch (IgniteCheckedException e) {
-                            lsnr.onError(e);
-
-                            fut.onDone(e);
-                        }
-                    }
-                });
-
-                return fut;
+            catch (IgniteCheckedException e) {
+                if (snapshotFuts.remove(fut.id) != null)
+                    fut.onDone(e);
             }
 
-
+            return fut;
         }
-        else
-            return requestTxSnapshotOnRemote(lsnr);
     }
 
     /**
-     * @param lsnr Response listener.
-     * @return Counter request future.
-     */
-    private IgniteInternalFuture<MvccSnapshot> requestTxSnapshotOnRemote(MvccSnapshotResponseListener lsnr) {
-        MvccCoordinator crd0 = currentCoordinator();
-
-        assert !ctx.localNodeId().equals(crd0.nodeId());
-
-        MvccSnapshotFuture fut = new MvccSnapshotFuture(futIdCntr.incrementAndGet(), crd0, lsnr);
-
-        snapshotFuts.put(fut.id, fut);
-
-        try {
-            sendMessage(crd0.nodeId(), new MvccTxSnapshotRequest(fut.id));
-        }
-        catch (IgniteCheckedException e) {
-            if (snapshotFuts.remove(fut.id) != null)
-                fut.onError(e);
-        }
-
-        return fut;
-    }
-
-    /**
-     * @param trackerIdOnly {@code True} if there is no need to send ack to coordinator and only tracker id should
-     * be handled in case of coordinator change. This is the case when query runs inside a tx.
      * @param snapshot Query version.
-     * @param qryTrackerId Query tracker ID.
      */
-    public void ackQueryDone(boolean trackerIdOnly, MvccSnapshot snapshot, long qryTrackerId) {
-        if (qryTrackerId == MVCC_TRACKER_ID_NA) {
-            assert trackerIdOnly;
+    public void ackQueryDone(MvccSnapshot snapshot) {
+        long trackCntr = queryTrackCounter(snapshot);
 
-            return;
-        }
-
-        removeQueryTracker(qryTrackerId);
+        Message msg = new MvccAckRequestQuery(trackCntr);
 
         MvccCoordinator crd = currentCoordinator();
 
-        Message msg;
-
-        boolean crdChanged = crd.coordinatorVersion() != snapshot.coordinatorVersion();
-
-        if (crdChanged)
-            msg = new MvccNewQueryAckRequest(qryTrackerId);
-        else {
-            if (!trackerIdOnly) {
-                long trackCntr = queryTrackCounter(snapshot);
-
-                msg = new MvccAckRequestQuery(trackCntr);
-            }
-            else
-                return;
-        }
-
         try {
             sendMessage(crd.nodeId(), msg);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send query ack, node left [crd=" + crd + ", msg=" + msg + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send query ack [crd=" + crd + ", msg=" + msg + ']', e);
+        }
+    }
+
+    /**
+     * @param qryTrackerId Query tracker ID.
+     */
+    public void ackQueryDoneNewCoordinator(long qryTrackerId) {
+        Message msg = new MvccNewQueryAckRequest(qryTrackerId);
+
+        MvccCoordinator crd = currentCoordinator();
+
+        try {
+            sendMessage(currentCoordinatorId(), msg);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -547,28 +510,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         }
 
         return trackCntr;
-    }
-
-    /**
-     * @param crd Coordinator.
-     * @return Counter request future.
-     */
-    public IgniteInternalFuture<MvccSnapshot> requestQuerySnapshot(MvccCoordinator crd) {
-        assert crd != null;
-
-        MvccSnapshotFuture fut = new MvccSnapshotFuture(futIdCntr.incrementAndGet(), crd, null);
-
-        snapshotFuts.put(fut.id, fut);
-
-        try {
-            sendMessage(crd.nodeId(), new MvccQuerySnapshotRequest(fut.id));
-        }
-        catch (IgniteCheckedException e) {
-            if (snapshotFuts.remove(fut.id) != null)
-                fut.onError(e);
-        }
-
-        return fut;
     }
 
     /**
@@ -609,9 +550,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         @Nullable MvccSnapshot readVer,
         long qryTrackerId) {
         assert updateVer != null;
-
-        if (qryTrackerId != MVCC_TRACKER_ID_NA)
-            removeQueryTracker(qryTrackerId);
 
         MvccCoordinator crd = curCrd;
 
@@ -681,9 +619,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * @param qryTrackerId Query tracker id.
      */
     public void ackTxRollback(MvccSnapshot updateVer, @Nullable MvccSnapshot readVer, long qryTrackerId) {
-        if (qryTrackerId != MVCC_TRACKER_ID_NA)
-            removeQueryTracker(qryTrackerId);
-
         MvccCoordinator crd = curCrd;
 
         if (crd.coordinatorVersion() != updateVer.coordinatorVersion())
@@ -747,7 +682,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
             return;
         }
 
-        MvccSnapshotResponse res = assignQueryCounter(nodeId, msg.futureId());
+        MvccSnapshotResponse res = activeQueries.assignQueryCounter(nodeId, msg.futureId());
 
         try {
             sendMessage(node.id(), res);
@@ -771,7 +706,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         MvccSnapshotFuture fut = snapshotFuts.remove(msg.futureId());
 
         if (fut != null)
-            fut.onResponse(msg);
+            fut.onDone(msg);
         else {
             if (ctx.discovery().alive(nodeId))
                 U.warn(log, "Failed to find query version future [node=" + nodeId + ", msg=" + msg + ']');
@@ -906,10 +841,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     /**
      * @param tracker Query tracker.
      */
-    public void addQueryTracker(MvccQueryTracker tracker) {
+    public void addQueryTracker(TrackableMvccQueryTracker tracker) {
         assert tracker.id() != MVCC_TRACKER_ID_NA;
 
-        MvccQueryTracker tr = activeTrackers.put(tracker.id(), tracker);
+        TrackableMvccQueryTracker tr = activeTrackers.put(tracker.id(), tracker);
 
         assert tr == null;
     }
@@ -924,7 +859,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     /**
      * @return Active query trackers.
      */
-    public Map<Long, MvccQueryTracker> activeTrackers() {
+    public Map<Long, TrackableMvccQueryTracker> activeTrackers() {
         return Collections.unmodifiableMap(activeTrackers);
     }
 
@@ -1145,6 +1080,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
 
             res.init(futId, crdVer, ver, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA, tracking);
 
+
             return res;
         }
 
@@ -1158,7 +1094,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
 
             AtomicInteger cntr = nodeMap.get(ver);
 
-            assert cntr != null && cntr.get() > 0;
+            assert cntr != null && cntr.get() > 0 : "onQueryDone ver=" + ver;
 
             if (cntr.decrementAndGet() == 0) {
                 nodeMap.remove(ver);
@@ -1191,16 +1127,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
 
             return min;
         }
-    }
-
-    /**
-     * @param qryNodeId Node initiated query.
-     * @return Counter for query.
-     */
-    private synchronized MvccSnapshotResponse assignQueryCounter(UUID qryNodeId, long futId) {
-        assert crdVer != 0;
-
-        return activeQueries.assignQueryCounter(qryNodeId, futId);
     }
 
     /**
@@ -1430,17 +1356,23 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         final GridCompoundIdentityFuture<VacuumMetrics> res =
             new GridCompoundIdentityFuture<>(new VacuumMetricsReducer());
 
-        requestTxSnapshot(new MvccSnapshotResponseListener() {
-            /** {@inheritDoc} */
-            @Override public void onResponse(UUID crdId, MvccSnapshot snapshot) {
-                continueRunVacuum(res, snapshot);
-            }
+        MvccSnapshot snapshot = tryRequestSnapshotLocal(true);
 
-            /** {@inheritDoc} */
-            @Override public void onError(IgniteCheckedException e) {
-                completeWithException(res, e);
-            }
-        });
+        if (snapshot != null)
+            continueRunVacuum(res, snapshot);
+        else
+            requestSnapshotAsync(true).listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+                @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
+                    try {
+                        MvccSnapshot s = fut.get();
+
+                        continueRunVacuum(res, s);
+                    }
+                    catch (IgniteCheckedException e) {
+                        completeWithException(res, e);
+                    }
+                }
+            });
 
         return res;
     }
@@ -1542,47 +1474,20 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         private final Long id;
 
         /** */
-        private MvccSnapshotResponseListener lsnr;
-
-        /** */
-        public final MvccCoordinator crd;
+        private final MvccCoordinator crd;
 
         /**
          * @param id Future ID.
          * @param crd Mvcc coordinator.
-         * @param lsnr Listener.
          */
-        MvccSnapshotFuture(Long id, MvccCoordinator crd, @Nullable MvccSnapshotResponseListener lsnr) {
+        MvccSnapshotFuture(Long id, MvccCoordinator crd) {
             this.id = id;
             this.crd = crd;
-            this.lsnr = lsnr;
         }
 
         /** {@inheritDoc} */
         @Override public UUID coordinatorNodeId() {
             return crd.nodeId();
-        }
-
-        /**
-         * @param res Response.
-         */
-        void onResponse(MvccSnapshotResponse res) {
-            assert res.counter() != MVCC_COUNTER_NA;
-
-            if (lsnr != null)
-                lsnr.onResponse(crd.nodeId(), res);
-
-            onDone(res);
-        }
-
-        /**
-         * @param err Error.
-         */
-        void onError(IgniteCheckedException err) {
-            if (lsnr != null)
-                lsnr.onError(err);
-
-            onDone(err);
         }
 
         /**
@@ -1593,7 +1498,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                 ClusterTopologyCheckedException err = new ClusterTopologyCheckedException("Failed to request mvcc " +
                     "version, coordinator failed: " + nodeId);
 
-                onError(err);
+                onDone(err);
             }
         }
 

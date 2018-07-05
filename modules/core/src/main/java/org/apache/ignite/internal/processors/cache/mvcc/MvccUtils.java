@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -707,7 +707,7 @@ public class MvccUtils {
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+    @NotNull public static TrackableMvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(cctx.kernalContext());
@@ -716,12 +716,11 @@ public class MvccUtils {
             tx = txStart(cctx, 0);
 
         if (tx != null)
-            return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(),
-                requestMvccVersion(cctx, tx), true);
+            return new TrackableMvccQueryTracker(cctx, requestMvccVersion(cctx, tx));
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-        MvccQueryTracker tracker = new MvccQueryTracker(cctx, true,
+        TrackableMvccQueryTracker tracker = new TrackableMvccQueryTracker(cctx, true,
             new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
                 @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
                     fut.onDone(null, e);
@@ -752,14 +751,18 @@ public class MvccUtils {
 
             assert crd != null : tx.topologyVersion();
 
-            if (crd.nodeId().equals(cctx.localNodeId())) {
-                if (!mvccProc.coordinatorInitFuture().isDone())
-                    mvccProc.coordinatorInitFuture().get();
+            MvccSnapshot snapshot = mvccProc.tryRequestSnapshotLocal(true);
 
-                tx.mvccInfo(new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator()));
+            if (snapshot != null)
+                tx.mvccInfo(new MvccTxInfo(snapshot));
+            else {
+                IgniteInternalFuture<MvccSnapshot> snapshotFut = mvccProc.requestSnapshotAsync(true);
+
+                // TODO get
+                snapshot = snapshotFut.get(); // TODO IGNITE-7388
+
+                tx.mvccInfo(new MvccTxInfo(snapshot));
             }
-            else
-                mvccProc.requestTxSnapshot(new MvccTxSnapshotResponseListener(tx)).get(); // TODO IGNITE-7388
         }
 
         return tx.mvccInfo().snapshot();
@@ -845,29 +848,6 @@ public class MvccUtils {
         @Override public MvccVersion apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) {
             return newMvccCrd == MVCC_CRD_COUNTER_NA ? null : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
-        }
-    }
-
-    /** */
-    private static class MvccTxSnapshotResponseListener implements MvccSnapshotResponseListener {
-        /** */
-        private final GridNearTxLocal tx;
-
-        /**
-         * @param tx Transaction.
-         */
-        MvccTxSnapshotResponseListener(GridNearTxLocal tx) {
-            this.tx = tx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onResponse(UUID crdId, MvccSnapshot res) {
-            tx.mvccInfo(new MvccTxInfo(crdId, res));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onError(IgniteCheckedException e) {
-            // No-op.
         }
     }
 }

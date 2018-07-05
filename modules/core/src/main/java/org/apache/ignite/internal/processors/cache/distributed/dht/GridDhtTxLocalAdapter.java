@@ -235,7 +235,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     public void markQueryEnlisted(MvccSnapshot ver) {
         if (!queryEnlisted) {
             if (mvccInfo == null)
-                mvccInfo = new MvccTxInfo(cctx.coordinators().currentCoordinatorId(), ver);
+                mvccInfo = new MvccTxInfo(ver);
 
             cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
 

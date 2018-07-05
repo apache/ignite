@@ -18,21 +18,17 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * TODO: Remove
  */
 public class MvccTxInfo implements Message {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private UUID crd;
 
     /** */
     private MvccSnapshot mvccSnapshot;
@@ -45,14 +41,11 @@ public class MvccTxInfo implements Message {
     }
 
     /**
-     * @param crd Coordinator node ID.
      * @param mvccSnapshot MVCC snapshot.
      */
-    public MvccTxInfo(UUID crd, MvccSnapshot mvccSnapshot) {
-        assert crd != null;
+    public MvccTxInfo(MvccSnapshot mvccSnapshot) {
         assert mvccSnapshot != null;
 
-        this.crd = crd;
         this.mvccSnapshot = mvccSnapshot;
     }
 
@@ -65,14 +58,7 @@ public class MvccTxInfo implements Message {
         if (mvccSnapshot0 == mvccSnapshot)
             return this;
 
-        return new MvccTxInfo(crd, mvccSnapshot0);
-    }
-
-    /**
-     * @return Coordinator node ID.
-     */
-    public UUID coordinatorNodeId() {
-        return crd;
+        return new MvccTxInfo(mvccSnapshot0);
     }
 
     /**
@@ -95,12 +81,6 @@ public class MvccTxInfo implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("crd", crd))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
@@ -120,14 +100,6 @@ public class MvccTxInfo implements Message {
 
         switch (reader.state()) {
             case 0:
-                crd = reader.readUuid("crd");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
@@ -147,7 +119,7 @@ public class MvccTxInfo implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

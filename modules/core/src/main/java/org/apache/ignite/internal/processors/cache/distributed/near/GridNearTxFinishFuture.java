@@ -479,7 +479,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                     assert mvccInfo != null;
 
-                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(mvccInfo.coordinatorNodeId(),
+                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(cctx.coordinators().currentCoordinatorId(),
                         waitTxs);
 
                     add(fut);

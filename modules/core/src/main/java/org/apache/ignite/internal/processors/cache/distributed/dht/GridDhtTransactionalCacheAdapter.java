@@ -2226,9 +2226,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req0.taskNameHash(),
                     false);
 
-                tx.mvccInfo(new MvccTxInfo(ctx.shared().coordinators().currentCoordinatorId(),
-                    new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(), MVCC_OP_COUNTER_NA,
-                        req0.cleanupVersion())));
+                tx.mvccInfo(new MvccTxInfo(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
+                    MVCC_OP_COUNTER_NA, req0.cleanupVersion())));
 
                 tx = ctx.tm().onCreated(null, tx);
 

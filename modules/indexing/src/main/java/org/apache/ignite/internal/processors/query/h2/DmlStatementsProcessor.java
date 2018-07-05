@@ -543,12 +543,10 @@ public class DmlStatementsProcessor {
                             .setPageSize(fieldsQry.getPageSize())
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
-                        MvccQueryTracker mvccQueryTracker = new MvccQueryTracker(cctx,
-                            cctx.shared().coordinators().currentCoordinator(),
-                            mvccSnapshot, false);
+                        MvccQueryTracker mvccQryTracker = new MvccQueryTracker(mvccSnapshot);
 
                         QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName,
-                            newFieldsQry, null, true, true, mvccQueryTracker, cancel).get(0);
+                            newFieldsQry, null, true, true, mvccQryTracker, cancel).get(0);
 
                         it = plan.iteratorForTransaction(idx, cur, op);
                     }
@@ -1161,12 +1159,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot, false), cancel).get(0);
+                new MvccQueryTracker(mvccSnapshot), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot, false));
+                new MvccQueryTracker(mvccSnapshot));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

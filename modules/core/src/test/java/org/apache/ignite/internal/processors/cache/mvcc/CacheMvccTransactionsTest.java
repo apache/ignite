@@ -3238,7 +3238,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessor crd = cctx.kernalContext().coordinators();
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccSnapshot> fut = crd.requestQuerySnapshot(crd.currentCoordinator());
+        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync(false);
 
         fut.get();
 
@@ -3314,7 +3314,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         cctx.offheap().mvccRemoveAll((GridCacheMapEntry)cctx.cache().entryEx(key));
 
-        crd.ackQueryDone(false, fut.get(), 0);
+        crd.ackQueryDone(fut.get());
     }
 
     /**

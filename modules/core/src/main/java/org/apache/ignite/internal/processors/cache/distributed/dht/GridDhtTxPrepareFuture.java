@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
@@ -111,7 +110,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware, MvccSnapshotResponseListener {
+    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1258,10 +1257,29 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 assert crd != null : tx.topologyVersion();
 
-                IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(this);
+                MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(true);
 
-                if (tx.onePhaseCommit())
-                    waitCrdCntrFut = crdCntrFut;
+                if (snapshot != null)
+                    tx.mvccInfo(new MvccTxInfo(snapshot));
+                else {
+                    IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(true);
+
+                    if (tx.onePhaseCommit())
+                        waitCrdCntrFut = snapshotFut;
+
+                    snapshotFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> f) {
+                            try {
+                                MvccSnapshot s = f.get();
+
+                                tx.mvccInfo(new MvccTxInfo(s));
+                            }
+                            catch (IgniteCheckedException e) {
+                                onError(e);
+                            }
+                        }
+                    });
+                }
             }
 
             onEntriesLocked();
@@ -1315,16 +1333,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (!skipInit)
                 markInitialized();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onResponse(UUID crdId, MvccSnapshot res) {
-        tx.mvccInfo(new MvccTxInfo(crdId, res));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(IgniteCheckedException e) {
-        onError((Throwable) e);
     }
 
     /**

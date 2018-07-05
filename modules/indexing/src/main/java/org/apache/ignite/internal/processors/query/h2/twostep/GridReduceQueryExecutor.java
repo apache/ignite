@@ -1174,7 +1174,7 @@ public class GridReduceQueryExecutor {
     public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
         boolean distributedJoins, MvccQueryTracker mvccTracker) {
         if (mvccTracker != null)
-            mvccTracker.onQueryDone();
+            mvccTracker.onDone();
 
         // For distributedJoins need always send cancel request to cleanup resources.
         if (distributedJoins)

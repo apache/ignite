@@ -353,9 +353,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     this.tx.taskNameHash(),
                     false);
 
-                dhtTx.mvccInfo(new MvccTxInfo(cctx.shared().coordinators().currentCoordinatorId(),
-                    new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter(),
-                        MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion())));
+                dhtTx.mvccInfo(new MvccTxInfo(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
+                    mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion())));
 
                 dhtTx = cctx.tm().onCreated(null, dhtTx);
 

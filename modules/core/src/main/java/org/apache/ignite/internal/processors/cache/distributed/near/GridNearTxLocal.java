@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -187,7 +187,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Tx label. */
     private @Nullable String lb;
     /** */
-    private MvccQueryTracker mvccTracker;
+    private TrackableMvccQueryTracker mvccTracker;
 
     /** Whether this transaction is for SQL operations or not.<p>
      * {@code null} means there haven't been any calls made on this transaction, and first operation will give this
@@ -265,7 +265,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @return Mvcc query version tracker.
      */
-    MvccQueryTracker mvccQueryTracker() {
+    TrackableMvccQueryTracker mvccQueryTracker() {
         return mvccTracker;
     }
 
@@ -1900,7 +1900,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             boolean canRemap = cctx.lockedTopologyVersion(null) == null;
 
-            mvccTracker = new MvccQueryTracker(cacheCtx, canRemap,
+            mvccTracker = new TrackableMvccQueryTracker(cacheCtx, canRemap,
                 new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
                     @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
                         if (e == null) {

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -279,8 +277,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /**
      *
      */
-    class MvccSnapshotFuture extends GridFutureAdapter implements MvccSnapshotResponseListener,
-        IgniteInClosure<IgniteInternalFuture<Void>> {
+    class MvccSnapshotFuture extends GridFutureAdapter implements IgniteInClosure<IgniteInternalFuture<Void>> {
         /** */
         MvccCoordinator crd;
 
@@ -321,28 +318,41 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
             assert remaining >= 0 : remaining;
 
-            if (remaining == 0)
-                cctx.coordinators().requestTxSnapshot(this);
-        }
+            if (remaining == 0) {
+                MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(true);
 
-        /** {@inheritDoc} */
-        @Override public void onResponse(UUID crdId, MvccSnapshot res) {
-            tx.mvccInfo(new MvccTxInfo(crdId, res));
+                if (snapshot != null) {
+                    tx.mvccInfo(new MvccTxInfo(snapshot));
 
-            onDone();
-        }
+                    onDone();
+                }
+                else {
+                    IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(true);
 
-        /** {@inheritDoc} */
-        @Override public void onError(IgniteCheckedException e) {
-            if (e instanceof ClusterTopologyCheckedException) {
-                IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
+                    snapshotFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> f) {
+                            try {
+                                MvccSnapshot s = f.get();
 
-                ((ClusterTopologyCheckedException)e).retryReadyFuture(fut);
+                                tx.mvccInfo(new MvccTxInfo(s));
+
+                                onDone();
+                            }
+                            catch (IgniteCheckedException e) {
+                                if (e instanceof ClusterTopologyCheckedException) {
+                                    IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
+
+                                    ((ClusterTopologyCheckedException)e).retryReadyFuture(fut);
+                                }
+
+                                ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+
+                                onDone();
+                            }
+                        }
+                    });
+                }
             }
-
-            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
-
-            onDone();
         }
 
         /** {@inheritDoc} */
