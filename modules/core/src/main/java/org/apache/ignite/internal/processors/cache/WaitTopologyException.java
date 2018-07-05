@@ -20,10 +20,29 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
+/**
+ * Exception which means that we should wait the given topology version before trying to make any progress.
+ */
 public class WaitTopologyException extends IgniteException {
-    public final AffinityTopologyVersion topologyVersion;
+    /** */
+    private static final long serialVersionUID = 0L;
 
+    /**
+     *
+     */
+    private final AffinityTopologyVersion topologyVersion;
+
+    /**
+     * @param topologyVersion Topology version which we should wait.
+     */
     public WaitTopologyException(AffinityTopologyVersion topologyVersion) {
         this.topologyVersion = topologyVersion;
+    }
+
+    /**
+     * @return Topology version which we should wait.
+     */
+    public AffinityTopologyVersion getTopologyVersion() {
+        return topologyVersion;
     }
 }
