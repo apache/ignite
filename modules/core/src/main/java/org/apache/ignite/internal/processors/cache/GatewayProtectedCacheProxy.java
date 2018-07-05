@@ -489,7 +489,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 }
             } catch (WaitTopologyException e) {
                 try {
-                    delegate.context().kernalContext().cache().context().exchange().affinityReadyFuture(e.topologyVersion).get();
+                    delegate.context().kernalContext().cache().context().exchange().affinityReadyFuture(e.topologyVersion()).get();
                 } catch (IgniteCheckedException e1) {
                     e1.printStackTrace(); //TODO
                 }
