@@ -93,9 +93,10 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
+        id = U.readGridUuid(in);
+        collocated = in.readBoolean();
+
         try {
-            id = U.readGridUuid(in);
-            collocated = in.readBoolean();
             separated = in.readBoolean();
         }
         catch (EOFException ignore) {
