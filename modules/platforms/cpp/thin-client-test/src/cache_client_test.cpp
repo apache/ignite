@@ -80,13 +80,10 @@ public:
 
         IgniteClient client = IgniteClient::Start(cfg);
 
-        cache::CacheClientConfiguration cacheCfg;
-        cacheCfg.SetLessenLatency(true);
-
         cache::CacheClient<KeyType, int64_t> cache =
-            client.GetCache<KeyType, int64_t>("partitioned", cacheCfg);
+            client.GetCache<KeyType, int64_t>("partitioned");
 
-        cache.UpdatePartitions();
+        cache.RefreshAffinityMapping();
 
         for (int64_t i = 1; i < num; ++i)
             cache.Put(static_cast<KeyType>(i * 39916801), i * 5039);
@@ -412,13 +409,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClientConfiguration cacheCfg;
-    cacheCfg.SetLessenLatency(true);
-
     cache::CacheClient<std::string, int64_t> cache =
-        client.GetCache<std::string, int64_t>("partitioned", cacheCfg);
+        client.GetCache<std::string, int64_t>("partitioned");
 
-    cache.UpdatePartitions();
+    cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
@@ -444,13 +438,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClientConfiguration cacheCfg;
-    cacheCfg.SetLessenLatency(true);
-
     cache::CacheClient<ignite::Guid, int64_t> cache =
-        client.GetCache<ignite::Guid, int64_t>("partitioned", cacheCfg);
+        client.GetCache<ignite::Guid, int64_t>("partitioned");
 
-    cache.UpdatePartitions();
+    cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::Guid(i * 406586897, i * 87178291199), i * 5039);
@@ -476,13 +467,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClientConfiguration cacheCfg;
-    cacheCfg.SetLessenLatency(true);
-
     cache::CacheClient<ignite::ComplexType, int64_t> cache =
-        client.GetCache<ignite::ComplexType, int64_t>("partitioned", cacheCfg);
+        client.GetCache<ignite::ComplexType, int64_t>("partitioned");
 
-    cache.UpdatePartitions();
+    cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)
     {
@@ -524,13 +512,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClientConfiguration cacheCfg;
-    cacheCfg.SetLessenLatency(true);
-
     cache::CacheClient<ignite::Date, int64_t> cache =
-        client.GetCache<ignite::Date, int64_t>("partitioned", cacheCfg);
+        client.GetCache<ignite::Date, int64_t>("partitioned");
 
-    cache.UpdatePartitions();
+    cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::common::MakeDateGmt(
@@ -570,13 +555,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClientConfiguration cacheCfg;
-    cacheCfg.SetLessenLatency(true);
-
     cache::CacheClient<ignite::Time, int64_t> cache =
-        client.GetCache<ignite::Time, int64_t>("partitioned", cacheCfg);
+        client.GetCache<ignite::Time, int64_t>("partitioned");
 
-    cache.UpdatePartitions();
+    cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 100; ++i)
         cache.Put(ignite::common::MakeTimeGmt(
@@ -610,13 +592,10 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    cache::CacheClientConfiguration cacheCfg;
-    cacheCfg.SetLessenLatency(true);
-
     cache::CacheClient<ignite::Timestamp, int64_t> cache =
-        client.GetCache<ignite::Timestamp, int64_t>("partitioned", cacheCfg);
+        client.GetCache<ignite::Timestamp, int64_t>("partitioned");
 
-    cache.UpdatePartitions();
+    cache.RefreshAffinityMapping();
 
     for (int64_t i = 1; i < 1000; ++i)
         cache.Put(ignite::common::MakeTimestampGmt(

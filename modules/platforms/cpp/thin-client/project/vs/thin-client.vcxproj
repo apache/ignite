@@ -174,7 +174,6 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\writable.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\writable_key.h" />
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h" />
-    <ClInclude Include="..\..\include\ignite\thin\cache\cache_client_configuration.h" />
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />

@@ -205,11 +205,13 @@ namespace ignite
                 }
 
                 /**
-                 * Update cache partitions info.
+                 * Refresh affinity mapping.
+                 *
+                 * TODO
                  */
-                void UpdatePartitions()
+                void RefreshAffinityMapping()
                 {
-                    proxy.UpdatePartitions();
+                    proxy.RefreshAffinityMapping();
                 }
 
             private:

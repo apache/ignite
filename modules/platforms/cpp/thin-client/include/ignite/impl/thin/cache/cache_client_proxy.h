@@ -107,7 +107,7 @@ namespace ignite
                     /**
                      * Update cache partitions info.
                      */
-                    void UpdatePartitions();
+                    void RefreshAffinityMapping();
 
                     /**
                      * Removes given key mapping from cache. If cache previously contained value for the given key,

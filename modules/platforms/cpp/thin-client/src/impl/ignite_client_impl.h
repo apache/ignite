@@ -20,7 +20,6 @@
 
 #include <ignite/thin/ignite_client.h>
 #include <ignite/thin/ignite_client_configuration.h>
-#include <ignite/thin/cache/cache_client_configuration.h>
 
 #include <ignite/impl/thin/data_router.h>
 
@@ -69,16 +68,6 @@ namespace ignite
                 common::concurrent::SharedPointer<cache::CacheClientImpl> GetCache(const char* name) const;
 
                 /**
-                 * Get cache.
-                 *
-                 * @param name Cache name.
-                 * @param config Cache config.
-                 * @return Cache.
-                 */
-                common::concurrent::SharedPointer<cache::CacheClientImpl> GetCache(const char* name,
-                    const ignite::thin::cache::CacheClientConfiguration& config) const;
-
-                /**
                  * Get or create cache.
                  *
                  * @param name Cache name.
@@ -87,32 +76,12 @@ namespace ignite
                 common::concurrent::SharedPointer<cache::CacheClientImpl> GetOrCreateCache(const char* name);
 
                 /**
-                 * Get or create cache.
-                 *
-                 * @param name Cache name.
-                 * @param config Cache config.
-                 * @return Cache.
-                 */
-                common::concurrent::SharedPointer<cache::CacheClientImpl> GetOrCreateCache(const char* name,
-                    const ignite::thin::cache::CacheClientConfiguration& config);
-
-                /**
                  * Create cache.
                  *
                  * @param name Cache name.
                  * @return Cache.
                  */
                 common::concurrent::SharedPointer<cache::CacheClientImpl> CreateCache(const char* name);
-
-                /**
-                 * Create cache.
-                 *
-                 * @param name Cache name.
-                 * @param config Cache config.
-                 * @return Cache.
-                 */
-                common::concurrent::SharedPointer<cache::CacheClientImpl> CreateCache(const char* name,
-                    const ignite::thin::cache::CacheClientConfiguration& config);
 
                 /**
                  * Destroy cache by name.
@@ -136,14 +105,12 @@ namespace ignite
                  *
                  * @param router Data router instance.
                  * @param name Cache name.
-                 * @param config Configuration.
                  * @param id Cache ID.
                  * @return Cache implementation.
                  */
                 static common::concurrent::SharedPointer<cache::CacheClientImpl> MakeCacheImpl(
                         const SP_DataRouter& router,
                         const std::string& name,
-                        const ignite::thin::cache::CacheClientConfiguration& config,
                         int32_t id);
 
                 /**

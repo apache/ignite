@@ -22,7 +22,6 @@
 #include <string>
 
 #include <ignite/impl/thin/data_router.h>
-#include "ignite/thin/cache/cache_client_configuration.h"
 
 namespace ignite
 {
@@ -55,13 +54,11 @@ namespace ignite
                      *
                      * @param router Data router instance.
                      * @param name Cache name.
-                     * @param config Configuration.
                      * @param id Cache ID.
                      */
                     CacheClientImpl(
                         const SP_DataRouter& router,
                         const std::string& name,
-                        const ignite::thin::cache::CacheClientConfiguration& config,
                         int32_t id);
 
                     /**
@@ -153,7 +150,7 @@ namespace ignite
                     /**
                      * Update cache partitions info.
                      */
-                    void UpdatePartitions();
+                    void RefreshAffinityMapping();
 
                 private:
                     /**
@@ -180,9 +177,6 @@ namespace ignite
 
                     /** Cache name. */
                     std::string name;
-
-                    /** Cache configuration. */
-                    ignite::thin::cache::CacheClientConfiguration config;
 
                     /** Cache ID. */
                     int32_t id;
