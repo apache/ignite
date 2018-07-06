@@ -20,13 +20,13 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,20 +42,25 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -68,6 +73,8 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -104,7 +111,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -115,6 +121,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.CONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.DISCONNECTED;
@@ -207,7 +214,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         b.append("Internal threads: ").append(U.nl());
 
-        b.append("    Message worker: ").append(threadStatus(msgWorker)).append(U.nl());
+        b.append("    Message worker: ").append(threadStatus(msgWorker.runner())).append(U.nl());
         b.append("    Socket reader: ").append(threadStatus(sockReader)).append(U.nl());
         b.append("    Socket writer: ").append(threadStatus(sockWriter)).append(U.nl());
 
@@ -264,8 +271,13 @@ class ClientImpl extends TcpDiscoveryImpl {
         if (spi.ipFinder.isShared())
             registerLocalNodeAddress();
 
-        msgWorker = new MessageWorker();
-        msgWorker.start();
+        msgWorker = new MessageWorker(log);
+
+        new IgniteSpiThread(msgWorker.igniteInstanceName(), msgWorker.name(), log) {
+            @Override protected void body() {
+                msgWorker.run();
+            }
+        }.start();
 
         try {
             joinLatch.await();
@@ -289,7 +301,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        if (msgWorker != null && msgWorker.isAlive()) { // Should always be alive
+        if (msgWorker != null && !msgWorker.isDone()) { // Should always be alive
             msgWorker.addMessage(SPI_STOP);
 
             try {
@@ -306,13 +318,20 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         rmtNodes.clear();
 
-        U.interrupt(msgWorker);
+        if (msgWorker != null)
+            U.interrupt(msgWorker.runner());
+
         U.interrupt(sockWriter);
         U.interrupt(sockReader);
 
-        U.join(msgWorker, log);
+        if (msgWorker != null)
+            U.join(msgWorker.runner(), log);
+
         U.join(sockWriter, log);
-        U.join(sockReader, log);
+
+        // SocketReader may loose interruption, this hack is made to overcome that case.
+        while (!U.join(sockReader, log, 200))
+            U.interrupt(sockReader);
 
         timer.cancel();
 
@@ -405,11 +424,15 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void disconnect() throws IgniteSpiException {
-        U.interrupt(msgWorker);
+        if (msgWorker != null)
+            U.interrupt(msgWorker.runner());
+
         U.interrupt(sockWriter);
         U.interrupt(sockReader);
 
-        U.join(msgWorker, log);
+        if (msgWorker != null)
+            U.join(msgWorker.runner(), log);
+
         U.join(sockWriter, log);
         U.join(sockReader, log);
 
@@ -846,12 +869,14 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.warn(log, "Simulating client node failure: " + getLocalNodeId());
 
         U.interrupt(sockWriter);
-        U.interrupt(msgWorker);
+
+        if (msgWorker != null)
+            U.interrupt(msgWorker.runner());
 
         U.join(sockWriter, log);
-        U.join(
-            msgWorker,
-            log);
+
+        if (msgWorker != null)
+            U.join(msgWorker.runner(), log);
     }
 
     /** {@inheritDoc} */
@@ -879,7 +904,20 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override protected Collection<IgniteSpiThread> threads() {
-        return Arrays.asList(sockWriter, msgWorker);
+        ArrayList<IgniteSpiThread> res = new ArrayList<>();
+
+        res.add(sockWriter);
+
+        MessageWorker msgWorker0 = msgWorker;
+
+        if (msgWorker0 != null) {
+            Thread runner = msgWorker0.runner();
+
+            if (runner instanceof IgniteSpiThread)
+                res.add((IgniteSpiThread)runner);
+        }
+
+        return res;
     }
 
     /**
@@ -889,7 +927,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     public void waitForClientMessagePrecessed() {
         Object last = msgWorker.queue.peekLast();
 
-        while (last != null && msgWorker.isAlive() && msgWorker.queue.contains(last)) {
+        while (last != null && !msgWorker.isDone() && msgWorker.queue.contains(last)) {
             try {
                 Thread.sleep(10);
             }
@@ -908,6 +946,13 @@ class ClientImpl extends TcpDiscoveryImpl {
         joinErr.compareAndSet(null, err);
 
         joinLatch.countDown();
+    }
+
+    /** */
+    private WorkersRegistry getWorkersRegistry() {
+        Ignite ignite = spi.ignite();
+
+        return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
     }
 
     /**
@@ -1030,6 +1075,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 U.error(log, "Failed to read message [sock=" + sock + ", " +
                                     "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
+
+                            // Exists possibility that exception raised on interruption.
+                            if (X.hasCause(e, InterruptedException.class, InterruptedIOException.class,
+                                IgniteInterruptedCheckedException.class, IgniteInterruptedException.class))
+                                interrupt();
 
                             IOException ioEx = X.cause(e, IOException.class);
 
@@ -1530,7 +1580,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     /**
      * Message worker.
      */
-    protected class MessageWorker extends IgniteSpiThread {
+    protected class MessageWorker extends GridWorker {
         /** Message queue. */
         private final BlockingDeque<Object> queue = new LinkedBlockingDeque<>();
 
@@ -1544,10 +1594,10 @@ class ClientImpl extends TcpDiscoveryImpl {
         private boolean nodeAdded;
 
         /**
-         *
+         * @param log Logger.
          */
-        private MessageWorker() {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log);
+        private MessageWorker(IgniteLogger log) {
+            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -1788,6 +1838,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                         processDiscoveryMessage((TcpDiscoveryAbstractMessage)msg);
                     }
                 }
+            }
+            catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            catch (Throwable t) {
+                if (spi.ignite() instanceof IgniteEx)
+                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, t));
             }
             finally {
                 SocketStream currSock = this.currSock;

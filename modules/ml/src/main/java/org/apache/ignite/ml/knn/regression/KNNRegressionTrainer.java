@@ -36,6 +36,6 @@ public class KNNRegressionTrainer implements SingleLabelDatasetTrainer<KNNRegres
      */
     public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return new KNNRegressionModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
+        return new KNNRegressionModel(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
     }
 }

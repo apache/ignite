@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -200,6 +201,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
+            if(!(cctx.affinityNode() && cctx.ttl().eagerTtlEnabled()))
+                return false;  /* Pending tree never contains entries for that cache */
+
             boolean more = cctx.offheap().expire(dhtCtx, expireC, amount);
 
             if (more)
@@ -213,6 +217,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process entry expiration: " + e, e);
+        }
+        catch (IgniteException e) {
+            if (e.hasCause(NodeStoppingException.class)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to expire because node is stopped: " + e);
+            }
+            else
+                throw e;
         }
 
         return false;

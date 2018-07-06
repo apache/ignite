@@ -24,6 +24,9 @@ export class FormField {
     static CONTROL_SELECTOR = '[ng-model]';
     static ERRORS_SELECTOR = '.ignite-form-field__errors';
 
+    /** @type {ReturnType<Selector>} */
+    _selector;
+
     constructor({id = '', label = '', model = ''} = {}) {
         if (!id && !label && !model) throw new Error('ID, label or model are required');
         if (id)

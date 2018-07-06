@@ -297,9 +297,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Separator for formatted coordinator properties. */
     public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
-    static {
-        LongJVMPauseDetector.start();
-    }
+    /** Long jvm pause detector. */
+    private LongJVMPauseDetector longJVMPauseDetector;
 
     /** */
     @GridToStringExclude
@@ -472,17 +471,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesCount() {
-        return LongJVMPauseDetector.longPausesCount();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesCount() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesTotalDuration() {
-        return LongJVMPauseDetector.longPausesTotalDuration();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesTotalDuration() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
-        return LongJVMPauseDetector.longPauseEvents();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPauseEvents() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -759,6 +758,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param schemaExecSvc Schema executor service.
      * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
+     * @param workerRegistry Worker registry.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
@@ -780,7 +780,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
-        GridAbsClosure errHnd
+        GridAbsClosure errHnd,
+        WorkersRegistry workerRegistry
     )
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
@@ -829,6 +830,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
+
+        longJVMPauseDetector = new LongJVMPauseDetector(log);
+
+        longJVMPauseDetector.start();
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
@@ -897,7 +902,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 schemaExecSvc,
                 customExecSvcs,
                 plugins,
-                MarshallerUtils.classNameFilter(this.getClass().getClassLoader())
+                MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
+                workerRegistry
             );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -2138,6 +2144,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (longOpDumpTask != null)
                 longOpDumpTask.close();
+
+            if (longJVMPauseDetector != null)
+                longJVMPauseDetector.stop();
 
             boolean interrupted = false;
 

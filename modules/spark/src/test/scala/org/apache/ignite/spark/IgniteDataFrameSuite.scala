@@ -20,7 +20,7 @@ package org.apache.ignite.spark
 import org.scalatest.Suites
 
 /**
-  * Test suite for Spark DataFram API implementation.
+  * Test suite for Spark DataFrame API implementation.
   */
 class IgniteDataFrameSuite extends Suites (
     new IgniteDataFrameSchemaSpec,
@@ -35,5 +35,6 @@ class IgniteDataFrameSuite extends Suites (
     new IgniteOptimizationAggregationFuncSpec,
     new IgniteOptimizationSystemFuncSpec,
     new IgniteOptimizationJoinSpec,
+    new IgniteOptimizationDateFuncSpec,
     new IgniteOptimizationDisableEnableSpec
 )
