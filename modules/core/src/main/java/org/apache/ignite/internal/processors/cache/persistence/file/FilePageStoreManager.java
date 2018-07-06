@@ -92,7 +92,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    public static final String CACHE_DATA_TMP_FILENAME = "cache_data.dat.tmp";
+    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + ".tmp";
 
     /** */
     public static final String DFLT_STORE_DIR = "db";
@@ -301,6 +301,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (overwrite || !file.exists() || file.length() == 0) {
             try {
                 File tmp = new File(file.getParent(), file.getName() + ".tmp");
+
+                tmp.createNewFile();
 
                 // Pre-existing file will be truncated upon stream open.
                 try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
@@ -748,9 +750,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
         catch (IgniteCheckedException | IOException e) {
                 throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
-                    conf.getAbsolutePath() + "]. You may want to remove the configuration file; cache will be running " +
-                    "after next node start if static Ignite Configuration contains correct configuration of this cache. " +
-                    "If it was started dynamically, you may need to start it again (all data will be present).", e);
+                    conf.getAbsolutePath() + "]", e);
         }
     }
 
