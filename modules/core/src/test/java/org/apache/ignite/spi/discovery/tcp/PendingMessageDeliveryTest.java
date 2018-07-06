@@ -13,30 +13,32 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
+    /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
     private AtomicBoolean blockMsgs;
 
-    private Set<IgniteUuid> receivedCustomMsgs;
+    /** */
+    private Set<TcpDiscoveryAbstractMessage> receivedEnsuredMsgs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         blockMsgs = new AtomicBoolean(false);
-        receivedCustomMsgs = new ConcurrentHashSet<>();
+        receivedEnsuredMsgs = new ConcurrentHashSet<>();
     }
 
     /** {@inheritDoc} */
@@ -70,6 +72,12 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         Ignite coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
 
+        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new ConcurrentHashSet<>();
+        coordDisco.addSendMessageListener(msg -> {
+            if (coordDisco.ensured(msg))
+                sentEnsuredMsgs.add(msg);
+        });
+
         // Victim doesn't send acknowledges, so we need an intermediate node to accept messages,
         // so the coordinator could mark them as pending.
         Ignite mediator = startGrid("mediator");
@@ -78,18 +86,17 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
 
         startGrid("listener");
 
+        sentEnsuredMsgs.clear();
+        receivedEnsuredMsgs.clear();
+
         // Initial custom message will travel across the ring and will be discarded.
         sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                log.info("Waiting for initial custom message: " + receivedCustomMsgs.size());
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            log.info("Waiting for messages delivery");
 
-                return receivedCustomMsgs.size() == 1;
-            }
+            return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
         }, 10000));
-
-        receivedCustomMsgs.clear();
 
         blockMsgs.set(true);
 
@@ -104,12 +111,10 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         mediator.close();
         victim.close();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                log.info("Received custom messages: " + receivedCustomMsgs.size());
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            log.info("Waiting for messages delivery");
 
-                return receivedCustomMsgs.size() == msgsNum;
-            }
+            return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
         }, 10000));
     }
 
@@ -119,6 +124,12 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
     public void testCustomMessageInSingletonCluster() throws Exception {
         Ignite coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
+
+        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new ConcurrentHashSet<>();
+        coordDisco.addSendMessageListener(msg -> {
+            if (coordDisco.ensured(msg))
+                sentEnsuredMsgs.add(msg);
+        });
 
         // Custom message on a singleton cluster shouldn't break consistency of PendingMessages.
         sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
@@ -131,7 +142,8 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
 
         startGrid("listener");
 
-        assertTrue(receivedCustomMsgs.isEmpty());
+        sentEnsuredMsgs.clear();
+        receivedEnsuredMsgs.clear();
 
         blockMsgs.set(true);
 
@@ -146,38 +158,47 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         mediator.close();
         victim.close();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                log.info("Received custom messages: " + receivedCustomMsgs.size());
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            log.info("Waiting for messages delivery");
 
-                return receivedCustomMsgs.size() == msgsNum;
-            }
+            return sentEnsuredMsgs.equals(receivedEnsuredMsgs);
         }, 10000));
     }
 
+    /**
+     * @param disco Discovery SPI.
+     * @param id Message id.
+     */
     private void sendDummyCustomMessage(TcpDiscoverySpi disco, IgniteUuid id) {
         disco.sendCustomEvent(new CustomMessageWrapper(new DummyCustomDiscoveryMessage(id)));
     }
 
+    /**
+     * Discovery SPI, that makes a node stop sending messages when {@code blockMsgs} is set to {@code true}.
+     */
     private class DyingDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
             if (!blockMsgs.get())
                 super.writeToSocket(sock, msg, data, timeout);
         }
 
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (!blockMsgs.get())
                 super.writeToSocket(sock, msg, timeout);
         }
 
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (!blockMsgs.get())
                 super.writeToSocket(sock, out, msg, timeout);
         }
 
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
             long timeout) throws IOException {
             if (!blockMsgs.get())
@@ -185,48 +206,52 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     private class ListeningDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                TcpDiscoveryCustomEventMessage tcpCustomMsg = (TcpDiscoveryCustomEventMessage)msg;
-                try {
-                    DiscoverySpiCustomMessage customMsg = tcpCustomMsg.message(marshaller(), U.gridClassLoader());
-                    DiscoveryCustomMessage delegate = ((CustomMessageWrapper)customMsg).delegate();
-
-                    if (delegate instanceof DummyCustomDiscoveryMessage)
-                        receivedCustomMsgs.add(delegate.id());
-                }
-                catch (Throwable throwable) {
-                    throwable.printStackTrace();
-                }
-            }
+            if (ensured(msg))
+                receivedEnsuredMsgs.add(msg);
         }
     }
 
+    /**
+     *
+     */
     private static class DummyCustomDiscoveryMessage implements DiscoveryCustomMessage {
+        /** */
         private final IgniteUuid id;
 
-        public DummyCustomDiscoveryMessage(IgniteUuid id) {
+        /**
+         * @param id Message id.
+         */
+        DummyCustomDiscoveryMessage(IgniteUuid id) {
             this.id = id;
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteUuid id() {
             return id;
         }
 
+        /** {@inheritDoc} */
         @Nullable @Override public DiscoveryCustomMessage ackMessage() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isMutable() {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean stopProcess() {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
             DiscoCache discoCache) {
             throw new UnsupportedOperationException();
