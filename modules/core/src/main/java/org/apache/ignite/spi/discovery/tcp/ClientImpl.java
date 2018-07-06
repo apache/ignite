@@ -41,6 +41,7 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.Comparator;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -225,18 +226,19 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.quietAndInfo(log, b.toString());
     }
 
-    /**
-     *
-     * @param log Logger.
-     */
-    @Override
-    public void dumpRingStructure(IgniteLogger log) {
+    /** {@inheritDoc} */
+    @Override public void dumpRingStructure(IgniteLogger log) {
         ClusterNode[] serverNodes = getRemoteNodes().stream()
                 .filter(node -> !node.isClient())
-                .sorted((o1, o2) -> (int)(o1.order() - o2.order()))
+                .sorted(Comparator.comparingLong(ClusterNode::order))
                 .toArray(ClusterNode[]::new);
 
         U.quietAndInfo(log, Arrays.toString(serverNodes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentTopologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */

@@ -232,9 +232,18 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     * Dumps ring structure to logger.
+     *
      * @param log Logger.
      */
     public abstract void dumpRingStructure(IgniteLogger log);
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    public abstract long getCurrentTopologyVersion();
 
     /**
      * @param igniteInstanceName Ignite instance name.
