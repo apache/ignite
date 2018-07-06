@@ -38,7 +38,7 @@ namespace ignite
             BinaryReaderImpl::BinaryReaderImpl(InteropInputStream* stream, BinaryIdResolver* idRslvr,
                 int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
                 int32_t footerBegin, int32_t footerEnd, BinaryOffsetType::Type schemaType) :
-                stream(stream), idRslvr(idRslvr), pos(pos), usrType(usrType), typeId(typeId), 
+                stream(stream), idRslvr(idRslvr), pos(pos), usrType(usrType), typeId(typeId),
                 hashCode(hashCode), len(len), rawOff(rawOff), rawMode(false), elemIdGen(0), elemId(0),
                 elemCnt(-1), elemRead(0), footerBegin(footerBegin), footerEnd(footerEnd), schemaType(schemaType)
             {
@@ -55,9 +55,9 @@ namespace ignite
 
             int8_t BinaryReaderImpl::ReadInt8()
             {
-                return ReadRaw<int8_t>(BinaryUtils::ReadInt8);                
+                return ReadRaw<int8_t>(BinaryUtils::ReadInt8);
             }
-            
+
             int32_t BinaryReaderImpl::ReadInt8Array(int8_t* res, const int32_t len)
             {
                 return ReadRawArray<int8_t>(res, len, BinaryUtils::ReadInt8Array, IGNITE_TYPE_ARRAY_BYTE);
@@ -449,14 +449,14 @@ namespace ignite
             {
                 CheckRawMode(true);
                 CheckSingleMode(true);
-                
+
                 int8_t hdr = stream->ReadInt8();
 
                 if (hdr == IGNITE_HDR_NULL)
                     res.clear();
 
                 if (hdr != IGNITE_TYPE_STRING)
-                    ThrowOnInvalidHeader(IGNITE_TYPE_ARRAY, hdr);
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
 
                 int32_t realLen = stream->ReadInt32();
 
@@ -546,7 +546,7 @@ namespace ignite
                     return realLen;
                 }
                 else if (hdr != IGNITE_HDR_NULL)
-                    ThrowOnInvalidHeader(IGNITE_TYPE_ARRAY, hdr);
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
 
                 return -1;
             }
@@ -670,7 +670,7 @@ namespace ignite
             CollectionType::Type BinaryReaderImpl::ReadCollectionType()
             {
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
-                
+
                 return ReadCollectionTypeUnprotected();
             }
 
@@ -978,7 +978,7 @@ namespace ignite
                 {
                     int32_t cnt = stream->ReadInt32();
 
-                    if (cnt != 0) 
+                    if (cnt != 0)
                     {
                         elemId = ++elemIdGen;
                         elemCnt = cnt;

@@ -220,7 +220,7 @@ namespace ignite
             /** SSL client key path */
             std::string sslKeyFile;
 
-            /** SSL client certificate authority path */            
+            /** SSL client certificate authority path */
             std::string sslCaFile;
         };
     }

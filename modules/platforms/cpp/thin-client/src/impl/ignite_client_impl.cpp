@@ -57,7 +57,7 @@ namespace ignite
             cache::SP_CacheClientImpl IgniteClientImpl::GetOrCreateCache(const char* name)
             {
                 CheckCacheName(name);
-                
+
                 int32_t cacheId = utility::GetCacheId(name);
 
                 GetOrCreateCacheWithNameRequest req(name);
@@ -67,7 +67,7 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
-                
+
                 return MakeCacheImpl(router, name, cacheId);
             }
 

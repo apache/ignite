@@ -280,7 +280,7 @@ namespace ignite
                     if (res != OPERATION_SUCCESS)
                     {
                         ssl::BIO_free_all(bio);
-                        
+
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not set SSL connection hostname.");
                     }
 
@@ -337,7 +337,7 @@ namespace ignite
 
                         case SSL_ERROR_WANT_WRITE:
                             return std::string("SSL_connect wants write");
-                        
+
                         case SSL_ERROR_WANT_READ:
                             return std::string("SSL_connect wants read");
 
