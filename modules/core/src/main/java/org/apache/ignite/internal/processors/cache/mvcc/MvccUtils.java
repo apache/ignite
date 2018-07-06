@@ -720,14 +720,14 @@ public class MvccUtils {
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-        TrackableMvccQueryTracker tracker = new TrackableMvccQueryTracker(cctx, true,
+        TrackableMvccQueryTracker tracker = new TrackableMvccQueryTracker(cctx, true);
+
+        tracker.requestVersion(cctx.shared().exchange().readyAffinityVersion(),
             new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
                 @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
                     fut.onDone(null, e);
                 }
             });
-
-        tracker.requestVersion(cctx.shared().exchange().readyAffinityVersion());
 
         fut.get();
 

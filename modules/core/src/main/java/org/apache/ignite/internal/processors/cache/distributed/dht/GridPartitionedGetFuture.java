@@ -171,13 +171,13 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         if (cctx.mvccEnabled() && mvccSnapshot == null) {
-            mvccTracker = new TrackableMvccQueryTracker(cctx, canRemap, this);
+            mvccTracker = new TrackableMvccQueryTracker(cctx, canRemap);
 
             trackable = true;
 
             cctx.mvcc().addFuture(this, futId);
 
-            mvccTracker.requestVersion(topVer);
+            mvccTracker.requestVersion(topVer, this);
 
             return;
         }

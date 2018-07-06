@@ -1900,7 +1900,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             boolean canRemap = cctx.lockedTopologyVersion(null) == null;
 
-            mvccTracker = new TrackableMvccQueryTracker(cacheCtx, canRemap,
+            mvccTracker = new TrackableMvccQueryTracker(cacheCtx, canRemap);
+
+            mvccTracker.requestVersion(topologyVersion(),
                 new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
                     @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
                         if (e == null) {
@@ -1926,10 +1928,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         else
                             fut.onDone(e);
                     }
-                }
-            );
-
-            mvccTracker.requestVersion(topologyVersion());
+                });
 
             return fut;
         }

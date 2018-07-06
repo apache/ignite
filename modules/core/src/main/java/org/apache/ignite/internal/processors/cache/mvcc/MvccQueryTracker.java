@@ -38,6 +38,8 @@ public class MvccQueryTracker {
      * @param mvccSnapshot Mvcc snapshot.
      */
     public MvccQueryTracker(MvccSnapshot mvccSnapshot) {
+        assert mvccSnapshot != null;
+
         this.mvccSnapshot = mvccSnapshot;
     }
 

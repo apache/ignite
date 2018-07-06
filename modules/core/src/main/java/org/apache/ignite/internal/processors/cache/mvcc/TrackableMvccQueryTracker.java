@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -43,14 +42,6 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
     public static final long MVCC_TRACKER_ID_NA = -1;
 
     /** */
-    private static final IgniteBiInClosure<AffinityTopologyVersion,IgniteCheckedException> NO_OP_LSNR = new CI2<AffinityTopologyVersion, IgniteCheckedException>() {
-        @Override public void apply(AffinityTopologyVersion version, IgniteCheckedException e) {
-            // No-op
-        }
-    };
-
-
-    /** */
     @GridToStringExclude
     protected final GridCacheContext cctx;
 
@@ -64,36 +55,29 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
     private final boolean canRemap;
 
     /** */
-    @GridToStringExclude
-    private final IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr;
-
-    /** */
     private final long id;
 
     /** */
     private final boolean notifyQryDone;
 
     /**
+     * Constructor for an optimistic tx trackers and not-in-tx query trackers.
+     *
      * @param cctx Cache context.
      * @param canRemap {@code True} if can wait for topology changes.
-     * @param lsnr Listener.
      */
-    public TrackableMvccQueryTracker(GridCacheContext cctx, boolean canRemap,
-        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
+    public TrackableMvccQueryTracker(GridCacheContext cctx, boolean canRemap) {
         assert cctx.mvccEnabled() : cctx.name();
 
         this.cctx = cctx;
         this.canRemap = canRemap;
         this.id = idCntr.getAndIncrement();
         this.notifyQryDone = true;
-
-        if (lsnr != null)
-            this.lsnr = lsnr;
-        else
-            this.lsnr = NO_OP_LSNR;
     }
 
     /**
+     * Constructor for a pessimistic tx query trackers.
+     *
      * @param cctx Cache context.
      * @param mvccSnapshot Mvcc snapshot.
      */
@@ -101,13 +85,10 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
         super(mvccSnapshot);
         assert cctx.mvccEnabled() : cctx.name();
         assert cctx != null;
-        assert mvccSnapshot != null;
-
 
         this.cctx = cctx;
         this.mvccCrdVer = mvccSnapshot.coordinatorVersion();
         this.canRemap = false;
-        this.lsnr = NO_OP_LSNR;
         this.id = idCntr.getAndIncrement();
         this.notifyQryDone = false; // It is a tx snapshot. No need to notify coordinator by tracker.
 
@@ -140,8 +121,11 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
     /**
      * @param topVer Topology version.
      */
-    public void requestVersion(final AffinityTopologyVersion topVer) {
-        boolean validTop = validateTopologyVersion(topVer);
+    public void requestVersion(final AffinityTopologyVersion topVer,
+        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
+        assert mvccSnapshot == null;
+
+        boolean validTop = validateTopologyVersion(topVer, lsnr);
 
         if (!validTop)
             return;
@@ -149,7 +133,7 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
         MvccSnapshot snapshot = cctx.shared().coordinators().tryRequestSnapshotLocal(false);
 
         if (snapshot != null)
-            onSnapshot(snapshot, topVer);
+            onSnapshot(snapshot, topVer, lsnr);
         else {
             IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.shared().coordinators().requestSnapshotAsync(false);
 
@@ -158,7 +142,7 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
                     try {
                         MvccSnapshot rcvdSnapshot = fut.get();
 
-                        onSnapshot(rcvdSnapshot, topVer);
+                        onSnapshot(rcvdSnapshot, topVer, lsnr);
                     }
                     catch (ClusterTopologyCheckedException e) {
                         IgniteLogger log = cctx.logger(TrackableMvccQueryTracker.class);
@@ -166,10 +150,10 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
                         if (log.isDebugEnabled())
                             log.debug("Mvcc coordinator failed, need remap: " + e);
 
-                        tryRemap(topVer);
+                        tryRemap(topVer, lsnr);
                     }
                     catch (IgniteCheckedException e) {
-                        onError(e);
+                        onError(e, lsnr);
                     }
                 }
             });
@@ -245,11 +229,12 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
      * @param topVer Topology version.
      * @return {@code True} if topology is valid.
      */
-    private boolean validateTopologyVersion(AffinityTopologyVersion topVer) {
+    private boolean validateTopologyVersion(AffinityTopologyVersion topVer,
+        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
         MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
 
         if (mvccCrd0 == null) {
-            onError(noCoordinatorError(topVer));
+            onError(noCoordinatorError(topVer), lsnr);
 
             return false;
         }
@@ -264,12 +249,12 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
             assert cctx.topology().topologyVersionFuture().initialVersion().compareTo(topVer) > 0;
 
             if (!canRemap) {
-                onError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."));
+                onError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."), lsnr);
 
                 return false;
             }
             else {
-                waitNextTopology(topVer);
+                waitNextTopology(topVer, lsnr);
 
                 return false;
             }
@@ -282,7 +267,8 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
      * @param snapshot Mvcc snapshot.
      * @param topVer Topology version.
      */
-    private void onSnapshot(MvccSnapshot snapshot, AffinityTopologyVersion topVer) {
+    private void onSnapshot(MvccSnapshot snapshot, AffinityTopologyVersion topVer,
+        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
         assert snapshot != null;
 
         boolean needRemap = false;
@@ -302,41 +288,44 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
         if (!needRemap) {
             cctx.shared().coordinators().addQueryTracker(this);
 
-            lsnr.apply(topVer, null);
+            if (lsnr != null)
+                lsnr.apply(topVer, null);
         }
         else  // Coordinator failed or reassigned, need remap.
-            tryRemap(topVer);
+            tryRemap(topVer, lsnr);
     }
 
     /**
      * @param topVer Topology version.
      */
-    private void tryRemap(AffinityTopologyVersion topVer) {
+    private void tryRemap(AffinityTopologyVersion topVer,
+        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
         if (canRemap)
-            waitNextTopology(topVer);
+            waitNextTopology(topVer, lsnr);
         else
-            onError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator failed."));
+            onError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator failed."), lsnr);
     }
 
     /**
      * @param topVer Current topology version.
      */
-    private void waitNextTopology(AffinityTopologyVersion topVer) {
+    private void waitNextTopology(AffinityTopologyVersion topVer,
+        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
         assert canRemap;
 
         IgniteInternalFuture<AffinityTopologyVersion> waitFut =
             cctx.shared().exchange().affinityReadyFuture(topVer.nextMinorVersion());
 
         if (waitFut == null)
-            requestVersion(cctx.shared().exchange().readyAffinityVersion());
+            requestVersion(cctx.shared().exchange().readyAffinityVersion(), lsnr);
         else {
             waitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                     try {
-                        requestVersion(fut.get());
+                        requestVersion(fut.get(), lsnr);
                     }
                     catch (IgniteCheckedException e) {
-                        onError(e);
+                        onError(e, lsnr);
                     }
                 }
             });
@@ -346,12 +335,14 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
     /**
      * @param e Exception.
      */
-    private void onError(IgniteCheckedException e) {
+    private void onError(IgniteCheckedException e,
+        @Nullable IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr) {
         assert e != null;
 
         cctx.kernalContext().coordinators().removeQueryTracker(id);
 
-        lsnr.apply(null, e);
+        if (lsnr != null)
+            lsnr.apply(null, e);
     }
 
     /**

@@ -64,7 +64,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1480,8 +1480,64 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    final void verifyOldVersionsCleaned() throws Exception {
-        GridCompoundFuture fut = new GridCompoundFuture();
+    private void verifyOldVersionsCleaned() throws Exception {
+        runVacuumSync();
+
+        // Check versions.
+        boolean cleaned = checkOldVersions(false);
+
+        if (!cleaned) { // Retry on a stable topology with a newer snapshot.
+            awaitPartitionMapExchange();
+
+            runVacuumSync();
+
+            checkOldVersions(true);
+        }
+    }
+
+    /**
+     * Checks if outdated versions were cleaned after the vacuum process.
+     *
+     * @param failIfNotCleaned Fail test if not cleaned.
+     * @return {@code False} if not cleaned.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean checkOldVersions(boolean failIfNotCleaned) throws IgniteCheckedException {
+        for (Ignite node : G.allGrids()) {
+            for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
+                GridCacheContext cctx = cache.context();
+
+                if (!cctx.userCache() || !cctx.group().mvccEnabled())
+                    continue;
+
+                for (Object e : cache.withKeepBinary()) {
+                    IgniteBiTuple entry = (IgniteBiTuple)e;
+
+                    KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+                    List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
+                        .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
+
+                    if (vers.size() > 1) {
+                        if (failIfNotCleaned)
+                            fail("[key="  + key.value(null, false) + "; vers=" + vers + ']');
+                        else
+                            return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Runs vacuum on all nodes and waits for its completion.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void runVacuumSync() throws IgniteCheckedException {
+        GridCompoundIdentityFuture<VacuumMetrics> fut = new GridCompoundIdentityFuture<>();
 
         // Run vacuum manually.
         for (Ignite node : G.allGrids()) {
@@ -1500,27 +1556,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         // Wait vacuum finished.
         fut.get();
-
-        // Check versions.
-        for (Ignite node : G.allGrids()) {
-            for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
-                GridCacheContext cctx = cache.context();
-
-                if (!cctx.userCache() || !cctx.group().mvccEnabled())
-                    continue;
-
-                for (Object e : cache.withKeepBinary()) {
-                    IgniteBiTuple entry = (IgniteBiTuple)e;
-
-                    KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
-
-                    List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
-                        .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
-
-                    assertTrue("[key="  + key.value(null, false) + "; vers=" + vers + ']', vers.size() <= 1);
-                }
-            }
-        }
     }
 
     /**
