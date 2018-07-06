@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -229,13 +228,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     *
      * @param ver Mvcc version.
      */
     public void markQueryEnlisted(MvccSnapshot ver) {
         if (!queryEnlisted) {
-            if (mvccInfo == null)
-                mvccInfo = new MvccTxInfo(ver);
+            if (mvccSnapshot == null)
+                mvccSnapshot = ver;
 
             cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
 
@@ -891,7 +889,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @param oldFut Old future.
      * @param newFut New future.
-     *
      * @return {@code true} If future was changed.
      */
     public boolean updateLockFuture(IgniteInternalFuture<?> oldFut, IgniteInternalFuture<?> newFut) {
@@ -913,11 +910,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     *
      * @param f Future to finish.
      * @param err Error.
      * @param clearLockFut {@code True} if need to clear lock future.
-     *
      * @return Finished future.
      */
     public <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable err, boolean clearLockFut) {
@@ -937,7 +932,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     public @Nullable IgniteInternalFuture<?> tryRollbackAsync() {
         IgniteInternalFuture<?> fut;
 
-        while(true) {
+        while (true) {
             fut = lockFut;
 
             if (fut != null)
@@ -958,8 +953,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (commitOnPrepare()) {
             return finishFuture().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridNearTxPrepareResponse>() {
                 @Override public GridNearTxPrepareResponse applyx(IgniteInternalFuture<IgniteInternalTx> finishFut)
-                    throws IgniteCheckedException
-                {
+                    throws IgniteCheckedException {
                     return prepFut.get();
                 }
             });

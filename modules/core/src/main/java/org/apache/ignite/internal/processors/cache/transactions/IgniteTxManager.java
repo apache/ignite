@@ -316,7 +316,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void rollbackMvccTxOnCoordinatorChange() {
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.mvccInfo() != null)
+            if (tx.mvccSnapshot() != null)
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
         }
     }

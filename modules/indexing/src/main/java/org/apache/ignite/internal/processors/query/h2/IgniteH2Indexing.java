@@ -1189,13 +1189,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         ResultSet rs = executeSqlQueryWithTimer(stmt0, conn, qry0, params, timeout0, cancel);
 
                         if (sfuFut != null) {
-                            assert topVer != null && tx0 != null && tx0.mvccInfo() != null;
+                            assert topVer != null && tx0 != null && tx0.mvccSnapshot() != null;
 
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
                                 IgniteH2Indexing.this.ctx.localNodeId(),
                                 tx0.nearXidVersion(),
                                 topVer,
-                                tx0.mvccInfo().snapshot(),
+                                tx0.mvccSnapshot(),
                                 tx0.threadId(),
                                 IgniteUuid.randomUuid(),
                                 -1,

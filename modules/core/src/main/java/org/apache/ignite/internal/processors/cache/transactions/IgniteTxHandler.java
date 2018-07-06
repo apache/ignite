@@ -859,7 +859,7 @@ public class IgniteTxHandler {
             tx = ctx.tm().tx(dhtVer);
 
         if (tx != null) {
-            tx.mvccInfo(req.mvccInfo());
+            tx.mvccSnapshot(req.mvccSnapshot());
 
             req.txState(tx.txState());
         }
@@ -1311,7 +1311,7 @@ public class IgniteTxHandler {
                 tx.commitVersion(req.commitVersion());
                 tx.invalidate(req.isInvalidate());
                 tx.systemInvalidate(req.isSystemInvalidate());
-                tx.mvccInfo(req.mvccInfo());
+                tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1323,7 +1323,7 @@ public class IgniteTxHandler {
             }
             else {
                 tx.doneRemote(req.baseVersion(), null, null, null);
-                tx.mvccInfo(req.mvccInfo());
+                tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
             }
         }
@@ -1358,7 +1358,7 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
-            tx.mvccInfo(req.mvccInfo());
+            tx.mvccSnapshot(req.mvccSnapshot());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);

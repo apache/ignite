@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -322,7 +321,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
 
                 if (snapshot != null) {
-                    tx.mvccInfo(new MvccTxInfo(snapshot));
+                    tx.mvccSnapshot(snapshot);
 
                     onDone();
                 }
@@ -334,7 +333,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                             try {
                                 MvccSnapshot s = f.get();
 
-                                tx.mvccInfo(new MvccTxInfo(s));
+                                tx.mvccSnapshot(s);
 
                                 onDone();
                             }

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.CIX1;
 
@@ -46,13 +46,13 @@ public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteIn
         assert fut.isDone();
 
         TrackableMvccQueryTracker qryTracker = tx.mvccQueryTracker();
-        MvccTxInfo mvccInfo = tx.mvccInfo();
+        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-        assert qryTracker != null || mvccInfo != null;
+        assert qryTracker != null || mvccSnapshot != null;
 
         if (qryTracker != null) // Optimistic tx.
             qryTracker.onDone(tx, false);
         else // Pessimistic tx.
-            tx.context().coordinators().ackTxRollback(mvccInfo.snapshot(), null, MVCC_TRACKER_ID_NA);
+            tx.context().coordinators().ackTxRollback(mvccSnapshot, null, MVCC_TRACKER_ID_NA);
     }
 }

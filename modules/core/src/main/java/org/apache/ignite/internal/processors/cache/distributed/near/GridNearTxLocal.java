@@ -1855,11 +1855,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             @Override protected Long postLock(Long val) throws IgniteCheckedException {
                 Long res = fut.get();
 
-                assert mvccInfo != null;
+                assert mvccSnapshot != null;
                 assert res != null;
 
                 if (res > 0)
-                    mvccInfo.snapshot().incrementOperationCounter();
+                    mvccSnapshot.incrementOperationCounter();
 
                 return res;
             }
@@ -3640,7 +3640,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (commit)
             return txState.mvccEnabled(cctx) ? new GridNearTxFinishAndAckFuture(fut) : fut;
 
-        if (mvccQueryTracker() != null || mvccInfo != null)
+        if (mvccQueryTracker() != null || mvccSnapshot != null)
             fut.listen(new AckCoordinatorOnRollback(this));
 
         return fut;

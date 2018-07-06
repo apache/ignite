@@ -183,8 +183,8 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
 
         cctx.shared().coordinators().removeQueryTracker(id);
 
-        if (tx != null && tx.mvccInfo() != null && tx.mvccInfo().snapshot() != null)
-            return onTxDone(tx.mvccInfo().snapshot(), qrySnapshot, commit);
+        if (tx != null && tx.mvccSnapshot() != null)
+            return onTxDone(tx.mvccSnapshot(), qrySnapshot, commit);
         else
             onQueryDone(qrySnapshot);
 

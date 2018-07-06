@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -475,9 +475,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 GridLongList waitTxs = tx.mvccWaitTransactions();
 
                 if (waitTxs != null) {
-                    MvccTxInfo mvccInfo = tx.mvccInfo();
+                    MvccSnapshot snapshot = tx.mvccSnapshot();
 
-                    assert mvccInfo != null;
+                    assert snapshot != null;
 
                     IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(cctx.coordinators().currentCoordinatorId(),
                         waitTxs);
@@ -803,7 +803,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash(),
-            tx.mvccInfo(),
+            tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled()
         );
 

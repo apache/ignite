@@ -743,9 +743,9 @@ public class MvccUtils {
     public static MvccSnapshot requestMvccVersion(GridCacheContext cctx, GridNearTxLocal tx) throws IgniteCheckedException {
         tx.addActiveCache(cctx, false);
 
-        MvccTxInfo mvccInfo = tx.mvccInfo();
+        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-        if (mvccInfo == null) {
+        if (mvccSnapshot == null) {
             MvccProcessor mvccProc = cctx.shared().coordinators();
             MvccCoordinator crd = mvccProc.currentCoordinator();
 
@@ -754,17 +754,17 @@ public class MvccUtils {
             MvccSnapshot snapshot = mvccProc.tryRequestSnapshotLocal(tx);
 
             if (snapshot != null)
-                tx.mvccInfo(new MvccTxInfo(snapshot));
+                tx.mvccSnapshot(snapshot);
             else {
                 IgniteInternalFuture<MvccSnapshot> snapshotFut = mvccProc.requestSnapshotAsync(tx);
 
                 snapshot = snapshotFut.get(); // TODO IGNITE-7388
 
-                tx.mvccInfo(new MvccTxInfo(snapshot));
+                tx.mvccSnapshot(snapshot);
             }
         }
 
-        return tx.mvccInfo().snapshot();
+        return tx.mvccSnapshot();
     }
 
     /** */

@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRe
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -2226,8 +2225,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req0.taskNameHash(),
                     false);
 
-                tx.mvccInfo(new MvccTxInfo(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
-                    MVCC_OP_COUNTER_NA, req0.cleanupVersion())));
+                tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
+                    MVCC_OP_COUNTER_NA, req0.cleanupVersion()));
 
                 tx = ctx.tm().onCreated(null, tx);
 
@@ -2239,7 +2238,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             assert tx != null;
 
-            MvccSnapshot s0 = tx.mvccInfo().snapshot();
+            MvccSnapshot s0 = tx.mvccSnapshot();
 
             MvccSnapshot snapshot = new MvccSnapshotWithoutTxs(s0.coordinatorVersion(), s0.counter(),
                 req.operationCounter(), s0.cleanupVersion());

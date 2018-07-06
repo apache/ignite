@@ -805,8 +805,8 @@ public class GridReduceQueryExecutor {
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
 
-                if (curTx != null && curTx.mvccInfo() != null)
-                    req.mvccSnapshot(curTx.mvccInfo().snapshot());
+                if (curTx != null && curTx.mvccSnapshot() != null)
+                    req.mvccSnapshot(curTx.mvccSnapshot());
                 else if (mvccTracker != null)
                     req.mvccSnapshot(mvccTracker.snapshot());
 

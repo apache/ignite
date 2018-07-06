@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbst
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -353,8 +352,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     this.tx.taskNameHash(),
                     false);
 
-                dhtTx.mvccInfo(new MvccTxInfo(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
-                    mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion())));
+                dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
+                    mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
 
                 dhtTx = cctx.tm().onCreated(null, dhtTx);
 
