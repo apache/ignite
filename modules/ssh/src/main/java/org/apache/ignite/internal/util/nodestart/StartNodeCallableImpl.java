@@ -91,6 +91,9 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     /** Connection timeout. */
     private final int timeout;
 
+    /** Timeout processor. */
+    private GridTimeoutProcessor proc;
+
     /** Logger. */
     @LoggerResource
     private transient IgniteLogger log;
@@ -131,6 +134,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         Session ses = null;
 
         try {
+            proc = ((IgniteEx)ignite).context().timeout();
+
             if (spec.key() != null)
                 ssh.addIdentity(spec.key().getAbsolutePath());
 
@@ -334,6 +339,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         throws JSchException, IOException, IgniteInterruptedCheckedException {
         ChannelShell ch = null;
 
+        GridTimeoutObject to = null;
+
         try {
             ch = (ChannelShell)ses.openChannel("shell");
 
@@ -347,6 +354,21 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 Pattern ptrn = Pattern.compile(regexp);
 
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(ch.getInputStream()));
+
+                to = new GridTimeoutObjectAdapter(2000) {
+                    /**  */
+                    private final Thread thread = Thread.currentThread();
+
+                    @Override public void onTimeout() {
+                        thread.interrupt();
+                    }
+
+                    @Override public String toString() {
+                        return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+                    }
+                };
+
+                assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
 
                 String line;
 
@@ -362,6 +384,12 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 U.sleep(EXECUTE_WAIT_TIME);
         }
         finally {
+            if (to != null) {
+                boolean r = proc.removeTimeoutObject(to);
+
+                assert r || to.endTime() <= U.currentTimeMillis() : "Timeout object was not removed: " + to;
+            }
+
             if (ch != null && ch.isConnected())
                 ch.disconnect();
         }
@@ -457,10 +485,6 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             if (encoding == null)
                 encoding = Charset.defaultCharset().name();
-
-            IgniteEx grid = (IgniteEx)ignite;
-
-            GridTimeoutProcessor proc = grid.context().timeout();
 
             GridTimeoutObject to = null;
 
