@@ -731,7 +731,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
             nodeId,
             req.version(),
-            req.topologyVersion(),
             req.mvccSnapshot(),
             req.threadId(),
             req.futureId(),
@@ -2013,7 +2012,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtTxQueryResultsEnlistFuture fut = new GridDhtTxQueryResultsEnlistFuture(
             nodeId,
             req.version(),
-            req.topologyVersion(),
             req.mvccSnapshot(),
             req.threadId(),
             req.futureId(),

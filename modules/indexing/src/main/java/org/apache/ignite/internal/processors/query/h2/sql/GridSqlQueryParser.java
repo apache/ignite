@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -599,33 +600,43 @@ public class GridSqlQueryParser {
 
     /**
      * @param p Statement to rewrite, if needed.
+     * @param inTx Whether there is an active transaction.
      * @return Query with {@code key} and {@code val} columns appended to the list of columns,
      *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
      */
-    @Nullable public static String rewriteQueryForUpdateIfNeeded(Prepared p) {
-        if (!isForUpdateQuery(p))
-            return null;
-
+    @NotNull public static String rewriteQueryForUpdateIfNeeded(Prepared p, boolean inTx) {
         GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(p);
+        return rewriteQueryForUpdateIfNeeded(gridStmt, inTx);
+    }
 
+    /**
+     * @param stmt Statement to rewrite, if needed.
+     * @param inTx Whether there is an active transaction.
+     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
+     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
+     */
+    @NotNull public static String rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean inTx) {
         // We have checked above that it's not an UNION query, so it's got to be SELECT.
-        assert gridStmt instanceof GridSqlSelect;
+        assert stmt instanceof GridSqlSelect;
 
-        GridSqlSelect sel = (GridSqlSelect)gridStmt;
+        GridSqlSelect sel = (GridSqlSelect)stmt;
 
         // How'd we get here otherwise?
         assert sel.isForUpdate();
 
-        GridSqlAst from = sel.from();
+        if (inTx) {
+            GridSqlAst from = sel.from();
 
-        GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
-            ((GridSqlAlias)from).child();
+            GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+                ((GridSqlAlias)from).child();
 
-        GridH2Table tbl = gridTbl.dataTable();
+            GridH2Table tbl = gridTbl.dataTable();
 
-        Column keyCol = tbl.getColumn(0);
+            Column keyCol = tbl.getColumn(0);
 
-        sel.addColumn(new GridSqlColumn(keyCol, null, keyCol.getName()), true);
+            sel.addColumn(new GridSqlAlias("_key_" + IgniteUuid.vmId(),
+                new GridSqlColumn(keyCol, null, keyCol.getName()), true), true);
+        }
 
         // We need to remove this flag for final flag we'll feed to H2.
         sel.forUpdate(false);

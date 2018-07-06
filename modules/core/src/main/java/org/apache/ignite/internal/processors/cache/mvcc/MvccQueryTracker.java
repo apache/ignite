@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,19 +30,24 @@ public class MvccQueryTracker {
     /** */
     protected volatile MvccSnapshot mvccSnapshot;
 
+    /** */
+    @GridToStringExclude
+    protected final GridCacheContext cctx;
+
     /**
      *
      */
-    MvccQueryTracker() {
+    private MvccQueryTracker() {
+        cctx = null;
     }
 
     /**
      * @param mvccSnapshot Mvcc snapshot.
+     * @param cctx Cache context.
      */
-    public MvccQueryTracker(MvccSnapshot mvccSnapshot) {
-        assert mvccSnapshot != null;
-
+    public MvccQueryTracker(MvccSnapshot mvccSnapshot, GridCacheContext cctx) {
         this.mvccSnapshot = mvccSnapshot;
+        this.cctx = cctx;
     }
 
     /**
@@ -50,6 +57,14 @@ public class MvccQueryTracker {
         assert mvccSnapshot != null : this;
 
         return mvccSnapshot;
+    }
+
+    /**
+     *
+     * @return Cache context.
+     */
+    public GridCacheContext context() {
+        return cctx;
     }
 
     /**

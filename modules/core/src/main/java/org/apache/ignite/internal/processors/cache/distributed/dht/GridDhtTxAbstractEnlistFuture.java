@@ -133,9 +133,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     /** Lock version. */
     protected final GridCacheVersion lockVer;
 
-    /** Topology version. */
-    protected final AffinityTopologyVersion topVer;
-
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
@@ -194,10 +191,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     private Map<Integer, Boolean> movingParts;
 
     /**
-     *
-     * @param nearNodeId Near node ID.
+     *  @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
-     * @param topVer Topology version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
@@ -209,7 +204,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
@@ -222,7 +216,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert topVer != null && topVer.topologyVersion() > 0;
         assert threadId == tx.threadId();
 
         this.threadId = threadId;
@@ -232,7 +225,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         this.nearFutId = nearFutId;
         this.nearMiniId = nearMiniId;
         this.mvccSnapshot = mvccSnapshot;
-        this.topVer = topVer;
         this.timeout = timeout;
         this.tx = tx;
         this.parts = parts;
@@ -356,6 +348,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         GridDhtCacheAdapter cache = cctx.dhtCache();
         GridCacheOperation op = it.operation();
+        AffinityTopologyVersion topVer = tx.topologyVersionSnapshot();
 
         try {
             while (true) {
@@ -756,7 +749,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
                 futId,
                 cctx.localNodeId(),
-                topVer,
+                tx.topologyVersionSnapshot(),
                 lockVer,
                 mvccSnapshot,
                 tx.remainingTime(),
@@ -841,7 +834,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         if (parts == null)
             parts = U.toIntArray(
                 cctx.affinity()
-                    .primaryPartitions(cctx.localNodeId(), topVer));
+                    .primaryPartitions(cctx.localNodeId(), tx.topologyVersionSnapshot()));
 
         GridDhtPartitionTopology top = cctx.topology();
 

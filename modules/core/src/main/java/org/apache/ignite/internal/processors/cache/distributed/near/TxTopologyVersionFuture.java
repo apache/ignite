@@ -46,10 +46,12 @@ public class TxTopologyVersionFuture extends GridFutureAdapter<AffinityTopologyV
     public TxTopologyVersionFuture(GridNearTxLocal tx, GridCacheContext cctx) {
         this.tx = tx;
         this.cctx = cctx;
+
+        init();
     }
 
     /** */
-    public void initTopologyVersion() {
+    private void init() {
         // Obtain the topology version to use.
         long threadId = Thread.currentThread().getId();
 

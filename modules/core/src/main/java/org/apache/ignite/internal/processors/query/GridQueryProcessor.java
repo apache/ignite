@@ -1822,12 +1822,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      * @param newRow New row.
      * @param prevRow Previous row.
-     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
-        boolean prevRowAvailable, boolean idxRebuild)
+        boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
@@ -1870,7 +1869,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable, idxRebuild);
+            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();

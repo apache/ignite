@@ -458,7 +458,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
         GridDhtTxQueryResultsEnlistFuture fut = new GridDhtTxQueryResultsEnlistFuture(nodeId,
             lockVer,
-            topVer,
             mvccSnapshot,
             threadId,
             futId,

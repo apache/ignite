@@ -543,7 +543,7 @@ public class DmlStatementsProcessor {
                             .setPageSize(fieldsQry.getPageSize())
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
-                        MvccQueryTracker mvccQryTracker = new MvccQueryTracker(mvccSnapshot);
+                        MvccQueryTracker mvccQryTracker = new MvccQueryTracker(mvccSnapshot, cctx);
 
                         QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName,
                             newFieldsQry, null, true, true, mvccQryTracker, cancel).get(0);
@@ -1159,12 +1159,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new MvccQueryTracker(mvccSnapshot), cancel).get(0);
+                new MvccQueryTracker(mvccSnapshot, cctx), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new MvccQueryTracker(mvccSnapshot));
+                new MvccQueryTracker(mvccSnapshot, cctx));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

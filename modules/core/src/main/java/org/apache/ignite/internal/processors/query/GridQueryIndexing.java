@@ -273,15 +273,13 @@ public interface GridQueryIndexing {
      * @param row New row.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
-     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException If failed.
      */
     public void store(GridCacheContext cctx,
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         CacheDataRow prevRow,
-        boolean prevRowAvailable,
-        boolean idxRebuild) throws IgniteCheckedException;
+        boolean prevRowAvailable) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.

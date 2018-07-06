@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.ResultSet;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -39,7 +38,6 @@ public class NearResultSetEnlistFuture extends GridNearTxQueryResultsEnlistFutur
     /**
      * @param nearNodeId   Near node ID.
      * @param nearLockVer  Near lock version.
-     * @param topVer       Topology version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId     Thread ID.
      * @param nearFutId    Near future id.
@@ -50,9 +48,9 @@ public class NearResultSetEnlistFuture extends GridNearTxQueryResultsEnlistFutur
      * @param cctx         Cache context.
      * @param rs           Result set to process.
      */
-    public NearResultSetEnlistFuture(UUID nearNodeId, GridCacheVersion nearLockVer, AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot, long threadId, IgniteUuid nearFutId, int nearMiniId, @Nullable int[] parts,
-        GridDhtTxLocalAdapter tx, long timeout, GridCacheContext<?, ?> cctx, ResultSet rs) {
+    public NearResultSetEnlistFuture(UUID nearNodeId, GridCacheVersion nearLockVer, MvccSnapshot mvccSnapshot,
+        long threadId, IgniteUuid nearFutId, int nearMiniId, @Nullable int[] parts, GridDhtTxLocalAdapter tx,
+        long timeout, GridCacheContext<?, ?> cctx, ResultSet rs) {
         super(cctx, (GridNearTxLocal)tx, timeout, ResultSetEnlistFuture.createIterator(rs), 0, true);
     }
 

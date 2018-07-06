@@ -42,10 +42,6 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
     public static final long MVCC_TRACKER_ID_NA = -1;
 
     /** */
-    @GridToStringExclude
-    protected final GridCacheContext cctx;
-
-    /** */
     private static final AtomicLong idCntr = new AtomicLong();
 
     /** */
@@ -67,9 +63,9 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
      * @param canRemap {@code True} if can wait for topology changes.
      */
     public TrackableMvccQueryTracker(GridCacheContext cctx, boolean canRemap) {
+        super(null, cctx);
         assert cctx.mvccEnabled() : cctx.name();
 
-        this.cctx = cctx;
         this.canRemap = canRemap;
         this.id = idCntr.getAndIncrement();
         this.notifyQryDone = true;
@@ -82,11 +78,10 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
      * @param mvccSnapshot Mvcc snapshot.
      */
     public TrackableMvccQueryTracker(GridCacheContext cctx, MvccSnapshot mvccSnapshot) {
-        super(mvccSnapshot);
+        super(mvccSnapshot, cctx);
         assert cctx.mvccEnabled() : cctx.name();
         assert cctx != null;
 
-        this.cctx = cctx;
         this.mvccCrdVer = mvccSnapshot.coordinatorVersion();
         this.canRemap = false;
         this.id = idCntr.getAndIncrement();
