@@ -25,6 +25,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
  */
 public class DisabledStripedExecutorFullApiTest extends GridCacheAbstractFullApiSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        // Clear caches.
+        afterTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setStripedPoolSize(-1);
     }
