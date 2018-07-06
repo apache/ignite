@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,6 +64,19 @@ public class CheckpointHistory {
 
     /** The maximal number of checkpoints hold in memory. */
     private final int maxCpHistMemSize;
+
+    /** History reserve traces since last exchange init. */
+    private final ArrayList<String> debugExchangeReserveTraces = new ArrayList<>();
+
+    /** History reserve indexes since last exchange init. */
+    private final ArrayList<Long> debugExchangeReserveIndexes = new ArrayList<>();
+
+    /** History release traces since last exchange init. */
+    private final ArrayList<String> debugExchangeReleaseTraces = new ArrayList<>();
+
+    /** History release indexes since last exchange init. */
+    private final ArrayList<Long> debugExchangeReleaseIndexes = new ArrayList<>();
+
 
     /**
      * Constructor.
@@ -296,30 +311,20 @@ public class CheckpointHistory {
 
                 boolean reserved = cctx.wal().reserve(chpEntry.checkpointMark());
 
+                if (reserved)
+                    debugLogReserve(new Exception(), ((FileWALPointer)(chpEntry.checkpointMark())).index());
+
                 // If checkpoint WAL history can't be reserved, stop searching.
                 if (!reserved)
                     break;
 
-                for (Integer grpId : groupsAndPartitions.keySet())
+                for (Integer grpId : new HashSet<>(groupsAndPartitions.keySet()))
                     if (!isCheckpointApplicableForGroup(grpId, chpEntry))
                         groupsAndPartitions.remove(grpId);
 
-                // All groups are no more applicable, release history and stop searching.
-                if (groupsAndPartitions.isEmpty()) {
-                    cctx.wal().release(chpEntry.checkpointMark());
-
-                    break;
-                }
-
-                // Release previous checkpoint marker.
-                if (prevReserved != null)
-                    cctx.wal().release(prevReserved.checkpointMark());
-
-                prevReserved = chpEntry;
-
                 for (Map.Entry<Integer, CheckpointEntry.GroupState> state : chpEntry.groupState(cctx).entrySet()) {
                     int grpId = state.getKey();
-                    CheckpointEntry.GroupState cpGroupState = state.getValue();
+                    CheckpointEntry.GroupState cpGrpState = state.getValue();
 
                     Set<Integer> applicablePartitions = groupsAndPartitions.get(grpId);
 
@@ -329,7 +334,7 @@ public class CheckpointHistory {
                     Set<Integer> inapplicablePartitions = null;
 
                     for (Integer partId : applicablePartitions) {
-                        int pIdx = cpGroupState.indexByPartition(partId);
+                        int pIdx = cpGrpState.indexByPartition(partId);
 
                         if (pIdx >= 0)
                             res.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, chpEntry);
@@ -348,9 +353,28 @@ public class CheckpointHistory {
                 }
 
                 // Remove groups from search with empty set of applicable partitions.
-                for (Map.Entry<Integer, Set<Integer>> e : groupsAndPartitions.entrySet())
+                for (Map.Entry<Integer, Set<Integer>> e : new HashSet<>(groupsAndPartitions.entrySet()))
                     if (e.getValue().isEmpty())
                         groupsAndPartitions.remove(e.getKey());
+
+                // All groups are no more applicable, release history and stop searching.
+                if (groupsAndPartitions.isEmpty()) {
+                    debugLogRelease(new Exception(), ((FileWALPointer)(chpEntry.checkpointMark())).index());
+
+                    cctx.wal().release(chpEntry.checkpointMark());
+
+                    break;
+                }
+                else {
+                    // Release previous checkpoint marker.
+                    if (prevReserved != null) {
+                        debugLogRelease(new Exception(), ((FileWALPointer)(prevReserved.checkpointMark())).index());
+
+                        cctx.wal().release(prevReserved.checkpointMark());
+                    }
+
+                    prevReserved = chpEntry;
+                }
             }
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to process checkpoint: " + (chpEntry != null ? chpEntry : "none"), ex);
@@ -358,6 +382,63 @@ public class CheckpointHistory {
         }
 
         return res;
+    }
+
+    /**
+     * Logs history reserve for IGNITE-8946 debug.
+     *
+     * @param e Exception.
+     */
+    public synchronized void debugLogReserve(Exception e, long idx) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+
+        e.printStackTrace(pw);
+
+        pw.flush();
+
+        debugExchangeReserveTraces.add(sw.toString());
+
+        debugExchangeReserveIndexes.add(idx);
+    }
+
+    /**
+     * Logs history release for IGNITE-8946 debug.
+     *
+     * @param e Exception.
+     */
+    public synchronized void debugLogRelease(Exception e, long idx) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+
+        e.printStackTrace(pw);
+
+        pw.flush();
+
+        debugExchangeReleaseTraces.add(sw.toString());
+
+        debugExchangeReleaseIndexes.add(idx);
+    }
+
+    /**
+     * Clears IGNITE-8946 debug log.
+     */
+    public synchronized void debugClearLog() {
+        debugExchangeReserveTraces.clear();
+        debugExchangeReleaseTraces.clear();
+
+        debugExchangeReserveIndexes.clear();
+        debugExchangeReleaseIndexes.clear();
+    }
+
+    /**
+     * Prints IGNITE-8946 debug log.
+     */
+    public synchronized String debugPrintLog() {
+        return "reserveIdxs=" + debugExchangeReserveIndexes.toString() + "\n" +
+            "reserveTraces=" + debugExchangeReserveTraces.toString() + "\n" +
+            "releaseIdxs=" + debugExchangeReleaseIndexes.toString() + "\n" +
+            "releaseTraces=" + debugExchangeReleaseTraces.toString() + "\n";
     }
 
     /**

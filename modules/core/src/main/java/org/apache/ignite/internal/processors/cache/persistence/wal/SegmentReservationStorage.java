@@ -51,7 +51,8 @@ class SegmentReservationStorage {
     synchronized void release(long absIdx) {
         Integer cur = reserved.get(absIdx);
 
-        assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
+        if (!(cur != null && cur >= 1))
+            throw new AssertionError("cur=" + cur + ", absIdx=" + absIdx);
 
         if (cur == 1)
             reserved.remove(absIdx);

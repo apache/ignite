@@ -1602,6 +1602,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public synchronized Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
         assert reservedForExchange == null : reservedForExchange;
 
+        checkpointHistory().debugClearLog();
+
         reservedForExchange = new HashMap<>();
 
         Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGroupsAndPartitions = partitionsApplicableForWalRebalance();
@@ -1688,7 +1690,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             : "Earliest checkpoint WAL pointer is not reserved for exchange: " + earliestPtr;
 
         try {
-            cctx.wal().release(earliestPtr);
+            checkpointHistory().debugLogRelease(new Exception(), earliestPtr.index());
+
+            try {
+                cctx.wal().release(earliestPtr);
+            }
+            catch (AssertionError e) {
+                log.error(checkpointHistory().debugPrintLog());
+
+                throw e;
+            }
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to release earliest checkpoint WAL pointer: " + earliestPtr, e);
