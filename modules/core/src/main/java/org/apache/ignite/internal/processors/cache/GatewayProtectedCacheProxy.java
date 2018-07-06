@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -2066,7 +2067,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (fut != null)
                 fut.get();
         } catch (IgniteCheckedException e1) {
-            e1.printStackTrace(); //TODO
+            U.error(delegate.context().logger(getClass()), "Error while waiting for affinity ready future, ver="
+                    + e.topologyVersion(), e);
         }
     }
 
