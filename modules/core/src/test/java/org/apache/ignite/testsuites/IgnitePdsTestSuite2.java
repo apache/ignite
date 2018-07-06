@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorage
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedCacheDataTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
@@ -175,8 +174,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
 
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
-
-        suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
 
         suite.addTestSuite(IgniteWalIteratorSwitchSegmentTest.class);
 
