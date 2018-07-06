@@ -46,7 +46,7 @@ public class ImputingExample {
                 v.getSalary()
             };
 
-            // Defines second preprocessor that normalizes features.
+            // Defines second preprocessor that imputing features.
             IgniteBiFunction<Integer, Person, double[]> preprocessor = new ImputerTrainer<Integer, Person>()
                 .fit(ignite, persons, featureExtractor);
 

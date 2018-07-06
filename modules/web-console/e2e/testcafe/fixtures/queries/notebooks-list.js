@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import { Selector } from 'testcafe';
-import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../environment/envtools';
 import { createRegularUser } from '../../roles';
 import { PageQueriesNotebooksList } from '../../page-models/PageQueries';
 

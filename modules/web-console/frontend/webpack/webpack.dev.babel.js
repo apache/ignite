@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import webpack from 'webpack';
 import merge from 'webpack-merge';
 
 import path from 'path';
@@ -52,7 +51,8 @@ export default merge(commonCfg, {
                     {
                         loader: 'sass-loader',
                         options: {
-                            sourceMap: true
+                            sourceMap: true,
+                            includePaths: [ path.join(__dirname, '../') ]
                         }
                     }
                 ]

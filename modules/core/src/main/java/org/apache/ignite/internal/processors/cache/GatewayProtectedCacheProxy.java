@@ -175,6 +175,23 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            boolean allowed = opCtx.allowedAtomicOpsInTx();
+
+            if (allowed)
+                return this;
+
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setAllowAtomicOpsInTx(), lock);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withNoRetries() {
         CacheOperationGate opGate = onEnter();
 
@@ -316,7 +333,14 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public Lock lock(K key) {
-        return delegate.lock(key);
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.lock(key);
+        }
+        finally {
+            onLeave(opGate);
+        }
     }
 
     /** {@inheritDoc} */
