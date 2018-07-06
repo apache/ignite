@@ -42,12 +42,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -57,12 +59,15 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeFinishedCheckRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeFinishedCheckResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -358,6 +363,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     processSinglePartitionRequest(node, msg);
                 }
             });
+
+        cctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
+            if (msg instanceof PartitionsExchangeFinishedCheckRequest)
+                processExchangeCheckRequest(nodeId, (PartitionsExchangeFinishedCheckRequest) msg);
+            else if (msg instanceof PartitionsExchangeFinishedCheckResponse) {
+                processExchangeCheckResponse(nodeId, (PartitionsExchangeFinishedCheckResponse) msg);
+            }
+        });
 
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
@@ -1619,6 +1632,27 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         finally {
             leaveBusy();
         }
+    }
+
+    private void processExchangeCheckRequest(UUID nodeId, PartitionsExchangeFinishedCheckRequest request) {
+        GridDhtTopologyFuture lastFut = lastFinishedFut.get();
+
+        try {
+            cctx.kernalContext().io().sendToGridTopic(nodeId, GridTopic.TOPIC_EXCHANGE,
+                new PartitionsExchangeFinishedCheckResponse(
+                    lastFut != null ? lastFut.topologyVersion() : AffinityTopologyVersion.NONE,
+                    (lastFut != null && lastFut instanceof GridDhtPartitionsExchangeFuture) &&
+                        ((GridDhtPartitionsExchangeFuture)lastFut).receivedSingleMessageFromNode(nodeId)
+                ),
+                SYSTEM_POOL);
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
+    }
+
+    private void processExchangeCheckResponse(UUID nodeId, PartitionsExchangeFinishedCheckResponse response) {
+        lastInitializedFut.onCrdLastFinishedVersionReceived(response.topVer(), response.receivedSingleMessage());
     }
 
     /**

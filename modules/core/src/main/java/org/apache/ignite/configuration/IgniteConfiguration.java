@@ -214,6 +214,12 @@ public class IgniteConfiguration {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default partition map exchange hard timeout in millis. */
+    public static final long DFLT_EXCHANGE_HARD_TIMEOUT = 5 * 60 * 1000;
+
+    /** Default partition map exchange soft timeout in millis. */
+    public static final long DFLT_EXCHANGE_SOFT_TIMEOUT = 60 * 1000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -496,6 +502,12 @@ public class IgniteConfiguration {
     /** Communication failure resolver */
     private CommunicationFailureResolver commFailureRslvr;
 
+    /** Exchange hard timeout. */
+    private long exchangeHardTimeout = DFLT_EXCHANGE_HARD_TIMEOUT;
+
+    /** Exchange soft timeout. */
+    private long exchangeSoftTimeout = DFLT_EXCHANGE_SOFT_TIMEOUT;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -551,6 +563,8 @@ public class IgniteConfiguration {
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
+        exchangeHardTimeout = cfg.getExchangeHardTimeout();
+        exchangeSoftTimeout = cfg.getExchangeSoftTimeout();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
@@ -2997,6 +3011,26 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
+
+        return this;
+    }
+
+    public long getExchangeHardTimeout() {
+        return exchangeHardTimeout;
+    }
+
+    public IgniteConfiguration setExchangeHardTimeout(long timeout) {
+        this.exchangeHardTimeout = timeout;
+
+        return this;
+    }
+
+    public long getExchangeSoftTimeout() {
+        return exchangeSoftTimeout;
+    }
+
+    public IgniteConfiguration setExchangeSoftTimeout(long timeout) {
+        this.exchangeSoftTimeout = timeout;
 
         return this;
     }

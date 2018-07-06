@@ -13,15 +13,6 @@ public class PartitionsExchangeFinishedCheckRequest implements Message {
     public PartitionsExchangeFinishedCheckRequest() {
     }
 
-    public PartitionsExchangeFinishedCheckRequest(
-        AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    public AffinityTopologyVersion topVer() {
-        return topVer;
-    }
-
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -30,15 +21,6 @@ public class PartitionsExchangeFinishedCheckRequest implements Message {
                 return false;
 
             writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -50,17 +32,6 @@ public class PartitionsExchangeFinishedCheckRequest implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (reader.state()) {
-            case 0:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
         return reader.afterMessageRead(PartitionsExchangeFinishedCheckRequest.class);
     }
 
@@ -69,7 +40,7 @@ public class PartitionsExchangeFinishedCheckRequest implements Message {
     }
 
     @Override public byte fieldsCount() {
-        return 1;
+        return 0;
     }
 
     @Override public void onAckReceived() {

@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
@@ -50,6 +51,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -150,8 +152,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Default value is {@code false}.
      */
     private static final boolean SKIP_PARTITION_SIZE_VALIDATION = Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
-
-    public static final int EXCHANGE_NODE_KICK_TIMEOUT = 10_000;
 
     /** */
     private static final String DISTRIBUTED_LATCH_ID = "exchange";
@@ -1253,7 +1253,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         changeWalModeIfNeeded();
 
         // TODO : register soft/hard timeout.
-        cctx.time().schedule(this::onDistributedExchangeTimeout, EXCHANGE_NODE_KICK_TIMEOUT * (crd.isLocal() ? 1 : 2), -1);
+        cctx.time().schedule(this::onDistributedExchangeTimeout, cctx.gridConfig().getExchangeHardTimeout(), -1);
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
@@ -1273,13 +1273,35 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.discovery().failNode(remainingUuid, null);
                 }
                 else {
-                    // TODO: check if CRD finished exchange, kick if it didn't
-                    cctx.discovery().failNode(crd.id(), null);
+                    try {
+                        cctx.kernalContext().io().sendToGridTopic(
+                            crd, GridTopic.TOPIC_EXCHANGE, new PartitionsExchangeFinishedCheckRequest(), SYSTEM_POOL);
 
-//                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
+                        cctx.time().schedule(() -> {
+                            if (!isDone())
+                                cctx.kernalContext().failure().process(
+                                    new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
+                        }, cctx.gridConfig().getExchangeHardTimeout(), -1);
+                    }
+                    catch (IgniteCheckedException ex) {
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+                        throw new IgniteException(ex);
+                    }
                 }
             }
         }
+    }
+
+    public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion topVer, boolean receivedSingleMessage) {
+        if (receivedSingleMessage && topVer.compareTo(exchId.topologyVersion()) < 0)
+            cctx.discovery().failNode(crd.id(), null);
+        else
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
+    }
+
+    public boolean receivedSingleMessageFromNode(UUID nodeId) {
+        return msgs.containsKey(nodeId);
     }
 
     /**

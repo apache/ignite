@@ -10,23 +10,22 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
     private AffinityTopologyVersion topVer;
 
-    private boolean finished;
+    private boolean receivedSingleMessage;
 
     public PartitionsExchangeFinishedCheckResponse() {
     }
 
-    public PartitionsExchangeFinishedCheckResponse(
-        AffinityTopologyVersion topVer, boolean finished) {
+    public PartitionsExchangeFinishedCheckResponse(AffinityTopologyVersion topVer, boolean receivedSingleMessage) {
         this.topVer = topVer;
-        this.finished = finished;
+        this.receivedSingleMessage = receivedSingleMessage;
     }
 
     public AffinityTopologyVersion topVer() {
         return topVer;
     }
 
-    public boolean finished() {
-        return finished;
+    public boolean receivedSingleMessage() {
+        return receivedSingleMessage;
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
@@ -41,17 +40,10 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("finished", finished))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -65,21 +57,12 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                finished = reader.readBoolean("finished");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-
         }
 
         return reader.afterMessageRead(PartitionsExchangeFinishedCheckResponse.class);
@@ -90,7 +73,7 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
     }
 
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     @Override public void onAckReceived() {
