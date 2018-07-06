@@ -115,8 +115,12 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final Marshaller marshaller = new JdkMarshaller();
 
     /** */
-    public MetaStorage(GridCacheSharedContext cctx, DataRegion dataRegion, DataRegionMetricsImpl regionMetrics,
-        boolean readOnly) {
+    public MetaStorage(
+        GridCacheSharedContext cctx,
+        DataRegion dataRegion,
+        DataRegionMetricsImpl regionMetrics,
+        boolean readOnly
+    ) {
         wal = cctx.wal();
         this.dataRegion = dataRegion;
         this.regionMetrics = regionMetrics;
