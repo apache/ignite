@@ -3234,7 +3234,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessor crd = cctx.kernalContext().coordinators();
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync(false);
+        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync(null);
 
         fut.get();
 

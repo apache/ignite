@@ -130,12 +130,12 @@ public class TrackableMvccQueryTracker extends MvccQueryTracker {
         if (!validTop)
             return;
 
-        MvccSnapshot snapshot = cctx.shared().coordinators().tryRequestSnapshotLocal(false);
+        MvccSnapshot snapshot = cctx.shared().coordinators().tryRequestSnapshotLocal(null);
 
         if (snapshot != null)
             onSnapshot(snapshot, topVer, lsnr);
         else {
-            IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.shared().coordinators().requestSnapshotAsync(false);
+            IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.shared().coordinators().requestSnapshotAsync(null);
 
             snapshotFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
                 @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {

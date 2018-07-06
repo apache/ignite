@@ -319,7 +319,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             assert remaining >= 0 : remaining;
 
             if (remaining == 0) {
-                MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(true);
+                MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
 
                 if (snapshot != null) {
                     tx.mvccInfo(new MvccTxInfo(snapshot));
@@ -327,7 +327,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                     onDone();
                 }
                 else {
-                    IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(true);
+                    IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(tx);
 
                     snapshotFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
                         @Override public void apply(IgniteInternalFuture<MvccSnapshot> f) {

@@ -751,14 +751,13 @@ public class MvccUtils {
 
             assert crd != null : tx.topologyVersion();
 
-            MvccSnapshot snapshot = mvccProc.tryRequestSnapshotLocal(true);
+            MvccSnapshot snapshot = mvccProc.tryRequestSnapshotLocal(tx);
 
             if (snapshot != null)
                 tx.mvccInfo(new MvccTxInfo(snapshot));
             else {
-                IgniteInternalFuture<MvccSnapshot> snapshotFut = mvccProc.requestSnapshotAsync(true);
+                IgniteInternalFuture<MvccSnapshot> snapshotFut = mvccProc.requestSnapshotAsync(tx);
 
-                // TODO get
                 snapshot = snapshotFut.get(); // TODO IGNITE-7388
 
                 tx.mvccInfo(new MvccTxInfo(snapshot));

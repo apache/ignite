@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQuery;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -114,6 +116,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
 @SuppressWarnings("serial") public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifecycleListener {
     /** */
     private static final Waiter LOCAL_TRANSACTION_MARKER = new LocalTransactionMarker();
+
+    /** Dummy tx for vacuum. */
+    private static final IgniteInternalTx DUMMY_TX = new GridNearTxLocal();
 
     /** */
     private final Object mux = new Object();
@@ -442,8 +447,24 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * @return {@link MvccSnapshot} if this is a coordinator node and coordinator is initialized.
      * {@code Null} in other cases.
      */
-    public MvccSnapshot tryRequestSnapshotLocal(boolean forTx) {
-        if (!ctx.localNodeId().equals(currentCoordinatorId()) || !crdInitFut.isDone())
+    public MvccSnapshot tryRequestSnapshotLocal(IgniteInternalTx tx) {
+        boolean forTx = tx != null;
+
+        MvccCoordinator crd;
+
+        AffinityTopologyVersion lockedTopVer = tx != null ? tx.topologyVersionSnapshot() : null;
+
+        if (forTx && lockedTopVer != null) {
+            crd = mvccCoordinator(lockedTopVer);
+
+            if (crd == null || !crd.nodeId().equals(ctx.localNodeId()))
+                return null;
+        }
+        else
+            crd = currentCoordinator();
+
+
+        if (!ctx.localNodeId().equals(crd.nodeId()) || !crdInitFut.isDone())
             return  null;
 
         return forTx ? assignTxSnapshot(0L) : activeQueries.assignQueryCounter(ctx.localNodeId(), 0L);
@@ -452,8 +473,24 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     /**
      * @return Counter.
      */
-    public IgniteInternalFuture<MvccSnapshot> requestSnapshotAsync(boolean forTx) {
-        MvccCoordinator crd = currentCoordinator();
+    public IgniteInternalFuture<MvccSnapshot> requestSnapshotAsync(IgniteInternalTx tx) {
+        boolean forTx = tx != null;
+
+        MvccCoordinator crd;
+
+        AffinityTopologyVersion lockedTopVer = tx != null ? tx.topologyVersionSnapshot() : null;
+
+        if (forTx && lockedTopVer != null) {
+            crd = mvccCoordinator(lockedTopVer);
+
+            if (crd == null || !crd.nodeId().equals(currentCoordinatorId()))
+                return new GridFinishedFuture<>(new IgniteCheckedException("Mvcc coordinator is outdated " +
+                    "for the locked topology version. [crd=" + crd + ", curCrd=" + currentCoordinator() +
+                    ", lockedTopVer=" + lockedTopVer + ']'));
+        }
+        else
+            crd = currentCoordinator();
+
 
         if (ctx.localNodeId().equals(crd.nodeId())) { // Wait for the local coordinator init.
             GridFutureAdapter<MvccSnapshot> res = new GridFutureAdapter<>();
@@ -1280,6 +1317,24 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         return curCrd != null ? curCrd.nodeId() : null;
     }
 
+
+    /**
+     * Returns Mvcc coordinator for the given topology version.
+     *
+     * @param topVer Topology version.
+     * @return Mvcc coordinator.
+     */
+    @Nullable public MvccCoordinator mvccCoordinator(AffinityTopologyVersion topVer) {
+        for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
+            MvccCoordinator crd = grp.singleCacheContext().affinity().mvccCoordinator(topVer);
+
+            if (crd != null)
+                return crd;
+        }
+
+        return null;
+    }
+
     /**
      * @param topVer Cache affinity version (used for assert).
      * @return Coordinator.
@@ -1409,12 +1464,12 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         final GridCompoundIdentityFuture<VacuumMetrics> res =
             new GridCompoundIdentityFuture<>(new VacuumMetricsReducer());
 
-        MvccSnapshot snapshot = tryRequestSnapshotLocal(true);
+        MvccSnapshot snapshot = tryRequestSnapshotLocal(DUMMY_TX);
 
         if (snapshot != null)
             continueRunVacuum(res, snapshot);
         else
-            requestSnapshotAsync(true).listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+            requestSnapshotAsync(DUMMY_TX).listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
                 @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
                     try {
                         MvccSnapshot s = fut.get();

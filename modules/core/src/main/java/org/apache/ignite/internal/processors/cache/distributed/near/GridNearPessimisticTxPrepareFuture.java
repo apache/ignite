@@ -450,12 +450,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (mvccCrd != null) {
             assert !tx.onePhaseCommit();
 
-            MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(true);
+            MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
 
             if (snapshot != null)
                 tx.mvccInfo(new MvccTxInfo(snapshot));
             else {
-                IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(true);
+                IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(tx);
 
                 add((IgniteInternalFuture)snapshotFut);
 
