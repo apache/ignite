@@ -17,28 +17,8 @@ import socket
 import ssl
 
 from pyignite.constants import *
-from pyignite.exceptions import SocketError, SocketWriteError
+from pyignite.exceptions import ParameterError, SocketError, SocketWriteError
 from .handshake import HandshakeRequest, read_response
-
-
-class BufferedConnection:
-    """
-    Mock socket reads. Allows deserializers to work with static buffers.
-    """
-
-    def __init__(self, buffer: bytes):
-        self.buffer = buffer
-        self.pos = 0
-
-    def send(self, data: bytes):
-        raise SocketWriteError(
-            'Attempt to send `{}` to read-only connection'.format(data)
-        )
-
-    def recv(self, buffersize: int):
-        received = self.buffer[self.pos:self.pos+buffersize]
-        self.pos += buffersize
-        return received
 
 
 class Connection:
@@ -49,12 +29,27 @@ class Connection:
     """
 
     socket = None
+    host = None
+    port = None
 
-    def __init__(
-        self, use_ssl: bool=None, ssl_version=None, ssl_ciphers=None,
-        ssl_cert_requires=ssl.CERT_NONE,
-        ssl_keyfile: str=None, ssl_certfile: str=None,
-    ):
+    @staticmethod
+    def check_kwargs(kwargs):
+        expected_args = [
+            'use_ssl',
+            'ssl_version',
+            'ssl_ciphers',
+            'ssl_cert_requires',
+            'ssl_keyfile',
+            'ssl_certfile',
+        ]
+        for kw in kwargs:
+            if kw not in expected_args:
+                raise ParameterError((
+                    'Unexpected parameter for connection '
+                    'initialization: `{}`'
+                ).format(kw))
+
+    def __init__(self, **kwargs):
         """
         Initialize connection.
 
@@ -78,15 +73,19 @@ class Connection:
         :param ssl_certfile: (optional) a path to ssl certificate file
          to identify local party.
         """
+        self.check_kwargs(kwargs)
+        self.init_kwargs = kwargs
+
         _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if use_ssl:
+
+        if getattr(kwargs, 'use_ssl', None):
             _socket = ssl.wrap_socket(
                 _socket,
-                ssl_version=ssl_version or SSL_DEFAULT_VERSION,
-                ciphers=ssl_ciphers or SSL_DEFAULT_CIPHERS,
-                cert_reqs=ssl_cert_requires,
-                keyfile=ssl_keyfile,
-                certfile=ssl_certfile,
+                ssl_version=getattr(kwargs, 'ssl_version', SSL_DEFAULT_VERSION),
+                ciphers=getattr(kwargs, 'ssl_ciphers', SSL_DEFAULT_CIPHERS),
+                cert_reqs=getattr(kwargs, 'ssl_cert_requires', ssl.CERT_NONE),
+                keyfile=getattr(kwargs, 'ssl_keyfile', None),
+                certfile=getattr(kwargs, 'ssl_certfile', None),
             )
         self.socket = _socket
 
@@ -120,6 +119,19 @@ class Connection:
                     hs_response.version_patch,
                 )
             )
+        self.host, self.port = host, port
+
+    def clone(self) -> object:
+        clone = Connection(**self.init_kwargs)
+        if self.port and self.host:
+            clone.connect(self.host, self.port)
+        return clone
+
+    def make_buffered(self, buffer: bytes) -> object:
+        conn = BufferedConnection(buffer, **self.init_kwargs)
+        if self.port and self.host:
+            conn.connect(self.host, self.port)
+        return conn
 
     def send(self, data: bytes, flags=None):
         """
@@ -171,7 +183,37 @@ class Connection:
         sockets are automatically closed when they are garbage-collected.
         """
         self.socket.close()
-        self.socket = None
+        self.host = self.port = None
+
+
+class BufferedConnection(Connection):
+    """
+    Mock socket reads. Allows deserializers to work with static buffers.
+
+    You most probably do not need to use this class directly.
+    Call `Connection.make_buffered()` instead.
+    """
+
+    def __init__(self, buffer: bytes, **kwargs):
+        self.buffer = buffer
+        self.init_kwargs = kwargs
+        self.pos = 0
+
+    def connect(self, host: str, port: int):
+        self.host, self.port = host, port
+
+    def close(self):
+        self.host = self.port = None
+
+    def send(self, data: bytes):
+        raise SocketWriteError(
+            'Attempt to send `{}` to read-only connection'.format(data)
+        )
+
+    def recv(self, buffersize: int):
+        received = self.buffer[self.pos:self.pos+buffersize]
+        self.pos += buffersize
+        return received
 
 
 class PrefetchConnection(Connection):

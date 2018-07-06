@@ -93,7 +93,7 @@ def test_sql_read_as_binary(conn):
         # the same way we do for Map or Collection, we got bytes instead
         buffer, offset = value
         # offset is 0 in this example, but that's not granted
-        mock_conn = BufferedConnection(buffer)
+        mock_conn = conn.make_buffered(buffer)
         mock_conn.pos = offset
 
         data_class, data_bytes = BinaryObject.parse(mock_conn)

@@ -611,7 +611,6 @@ class BinaryObject:
 
     @classmethod
     def parse(cls, conn: Connection):
-        # from .cache_config import StructArray
         from pyignite.api import get_binary_type
 
         header_class = cls.build_header()
@@ -627,11 +626,9 @@ class BinaryObject:
             buffer += raw_data_offset_buffer
 
         if header.flags & cls.HAS_SCHEMA:
-
-            # TODO parameterize it or move to another module
-            conn = Connection()
-            conn.connect('127.0.0.1', 10800)
-            result = get_binary_type(conn, header.type_id)
+            temp_conn = conn.clone()
+            result = get_binary_type(temp_conn, header.type_id)
+            temp_conn.close()
 
             print(result.value)
 

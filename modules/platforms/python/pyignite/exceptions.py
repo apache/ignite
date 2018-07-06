@@ -24,3 +24,7 @@ class SocketError(Exception):
 
 class SocketWriteError(SocketError):
     pass
+
+
+class ParameterError(Exception):
+    pass
