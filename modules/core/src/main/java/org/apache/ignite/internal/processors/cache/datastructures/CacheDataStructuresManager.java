@@ -55,19 +55,17 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
-import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapHeader;
-import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapHeaderKey;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMapHeader;
+import org.apache.ignite.internal.processors.datastructures.GridCacheMapHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapProxy;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
-import org.apache.ignite.internal.processors.datastructures.SetItemKey;
+import org.apache.ignite.internal.processors.datastructures.MapItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -113,7 +111,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /** Set keys used for set iteration. */
-    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
+    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<MapItemKey>> setDataMap =
         new ConcurrentHashMap<>();
 
     /** Queues map. */
@@ -126,7 +124,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private IgniteInternalCache<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
 
     /** Multimap header view. */
-    private IgniteInternalCache<GridCacheMultimapHeaderKey, GridCacheMultimapHeader> multimapHdrView;
+    private IgniteInternalCache<GridCacheMapHeaderKey, GridCacheMapHeader> multimapHdrView;
 
     /** Query notifying about queue update. */
     private UUID queueQryId;
@@ -391,8 +389,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
-        if (key0 instanceof SetItemKey)
-            onSetItemUpdated((SetItemKey)key0, rmv);
+        if (key0 instanceof MapItemKey)
+            onSetItemUpdated((MapItemKey)key0, rmv);
     }
 
     /**
@@ -403,11 +401,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     public void onPartitionEvicted(int part) {
         GridCacheAffinityManager aff = cctx.affinity();
 
-        for (GridConcurrentHashSet<SetItemKey> set : setDataMap.values()) {
-            Iterator<SetItemKey> iter = set.iterator();
+        for (GridConcurrentHashSet<MapItemKey> set : setDataMap.values()) {
+            Iterator<MapItemKey> iter = set.iterator();
 
             while (iter.hasNext()) {
-                SetItemKey key = iter.next();
+                MapItemKey key = iter.next();
 
                 if (aff.partition(key) == part)
                     iter.remove();
@@ -448,22 +446,22 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         cctx.gate().enter();
 
         try {
-            GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+            GridCacheMapHeaderKey key = new GridCacheMapHeaderKey(name);
 
-            GridCacheSetHeader hdr;
+            GridCacheMapHeader hdr;
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
+                hdr = new GridCacheMapHeader(IgniteUuid.randomUuid(), collocated, 0);
 
-                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
+                GridCacheMapHeader old = (GridCacheMapHeader)cache.getAndPutIfAbsent(key, hdr);
 
                 if (old != null)
                     hdr = old;
             }
             else
-                hdr = (GridCacheSetHeader)cache.get(key);
+                hdr = (GridCacheMapHeader)cache.get(key);
 
             if (hdr == null)
                 return null;
@@ -497,7 +495,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param id Set ID.
      * @return Data for given set.
      */
-    @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
+    @Nullable public GridConcurrentHashSet<MapItemKey> setData(IgniteUuid id) {
         return setDataMap.get(id);
     }
 
@@ -518,7 +516,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             cctx.preloader().syncFuture().get();
         }
 
-        GridConcurrentHashSet<SetItemKey> set = setDataMap.get(setId);
+        GridConcurrentHashSet<MapItemKey> set = setDataMap.get(setId);
 
         if (set == null)
             return;
@@ -527,9 +525,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         final int BATCH_SIZE = 100;
 
-        Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
+        Collection<MapItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
-        for (SetItemKey key : set) {
+        for (MapItemKey key : set) {
             if (!loc && !aff.primaryByKey(cctx.localNode(), key, topVer))
                 continue;
 
@@ -639,14 +637,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param key Set item key.
      * @param rmv {@code True} if item was removed.
      */
-    private void onSetItemUpdated(SetItemKey key, boolean rmv) {
-        GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
+    private void onSetItemUpdated(MapItemKey key, boolean rmv) {
+        GridConcurrentHashSet<MapItemKey> set = setDataMap.get(key.id());
 
         if (set == null) {
             if (rmv)
                 return;
 
-            GridConcurrentHashSet<SetItemKey> old = setDataMap.putIfAbsent(key.setId(),
+            GridConcurrentHashSet<MapItemKey> old = setDataMap.putIfAbsent(key.id(),
                 set = new GridConcurrentHashSet<>());
 
             if (old != null)
@@ -676,7 +674,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<SetItemKey> keys)
+    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<MapItemKey> keys)
         throws IgniteCheckedException {
         DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -718,14 +716,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         cctx.gate().enter();
 
         try {
-            GridCacheMultimapHeaderKey key = new GridCacheMultimapHeaderKey(name);
+            GridCacheMapHeaderKey key = new GridCacheMapHeaderKey(name);
 
-            GridCacheMultimapHeader hdr;
+            GridCacheMapHeader hdr;
 
             if (create) {
-                hdr = new GridCacheMultimapHeader(IgniteUuid.randomUuid(), name, cctx.name(), colloc, 0);
+                hdr = new GridCacheMapHeader(IgniteUuid.randomUuid(), colloc, 0);
 
-                GridCacheMultimapHeader old = multimapHdrView.withNoRetries().getAndPutIfAbsent(key, hdr);
+                GridCacheMapHeader old = multimapHdrView.withNoRetries().getAndPutIfAbsent(key, hdr);
 
                 if (old != null) {
                     if (old.collocated() != colloc)
@@ -751,12 +749,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                             try {
                                 for (CacheEntryEvent<?, ?> e : evts) {
-                                    GridCacheMultimapHeaderKey key1 = (GridCacheMultimapHeaderKey)e.getKey();
-                                    GridCacheMultimapHeader hdr1 = (GridCacheMultimapHeader)e.getValue();
+                                    GridCacheMapHeaderKey key1 = (GridCacheMapHeaderKey)e.getKey();
+                                    GridCacheMapHeader hdr1 = (GridCacheMapHeader)e.getValue();
 
                                     for (final GridCacheMultimapProxy multimap : multimapsMap.values()) {
-                                        if (multimap.name().equals(key1.multimapName()) && hdr1 == null) {
-                                            GridCacheMultimapHeader oldHdr = (GridCacheMultimapHeader)e.getOldValue();
+                                        if (multimap.name().equals(key1.name()) && hdr1 == null) {
+                                            GridCacheMapHeader oldHdr = (GridCacheMapHeader)e.getOldValue();
 
                                             assert oldHdr != null;
 
@@ -847,7 +845,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> e) {
-            return e.getKey() instanceof GridCacheMultimapHeaderKey;
+            return e.getKey() instanceof GridCacheMapHeaderKey;
         }
 
         /** {@inheritDoc} */

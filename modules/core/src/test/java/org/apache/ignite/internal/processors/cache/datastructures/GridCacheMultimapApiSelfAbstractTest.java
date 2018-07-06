@@ -31,6 +31,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteMultimap;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAbstractMapImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheMultimapProxy;
 
@@ -57,7 +58,7 @@ public abstract class GridCacheMultimapApiSelfAbstractTest extends IgniteCollect
         field.setAccessible(true);
         GridCacheMultimapImpl delegate = (GridCacheMultimapImpl)field.get(multimap);
 
-        field = GridCacheMultimapImpl.class.getDeclaredField("cache");
+        field = GridCacheAbstractMapImpl.class.getDeclaredField("cache");
         field.setAccessible(true);
         return (GridCacheAdapter)field.get(delegate);
     }
@@ -379,7 +380,6 @@ public abstract class GridCacheMultimapApiSelfAbstractTest extends IgniteCollect
 
         multimap1.clear();
 
-        //TODO: add check with size()
         List<String> list1 = multimap1.get(key1);
         assertTrue(list1.isEmpty());
         List<String> list2 = multimap1.get(key2);

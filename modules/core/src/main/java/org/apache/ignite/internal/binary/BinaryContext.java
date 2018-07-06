@@ -48,6 +48,7 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.datastructures.CollocatedMapItemKey;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -70,7 +71,6 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
-import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
@@ -327,7 +327,7 @@ public class BinaryContext {
 
         // Classes with overriden default serialization flag.
         registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), true);
-        registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), true);
+        registerPredefinedType(CollocatedMapItemKey.class, 0, affinityFieldName(CollocatedMapItemKey.class), true);
         registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), true);
 
         registerPredefinedType(GridMapEntry.class, 60);

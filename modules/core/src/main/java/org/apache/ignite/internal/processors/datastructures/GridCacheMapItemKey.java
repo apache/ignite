@@ -21,49 +21,58 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Multimap header key.
+ * Item key.
  */
-public class GridCacheMultimapHeaderKey implements Externalizable, GridCacheInternal {
+public class GridCacheMapItemKey implements MapItemKey, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String name;
+    private IgniteUuid id;
+
+    /** */
+    @GridToStringInclude(sensitive = true)
+    private Object item;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheMultimapHeaderKey() {
+    public GridCacheMapItemKey() {
         // No-op.
     }
 
     /**
-     * @param name Multimap name.
+     * @param id Unique ID.
+     * @param item Item.
      */
-    public GridCacheMultimapHeaderKey(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @return Multimap name.
-     */
-    public String multimapName() {
-        return name;
+    GridCacheMapItemKey(IgniteUuid id, Object item) {
+        this.id = id;
+        this.item = item;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
+    @Override public Object item() {
+        return item;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = id.hashCode();
+
+        res = 31 * res + item.hashCode();
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -74,18 +83,25 @@ public class GridCacheMultimapHeaderKey implements Externalizable, GridCacheInte
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheMultimapHeaderKey multimapKey = (GridCacheMultimapHeaderKey)o;
+        GridCacheMapItemKey that = (GridCacheMapItemKey)o;
 
-        return name.equals(multimapKey.name);
+        return id.equals(that.id) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return name.hashCode();
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeGridUuid(out, id);
+        out.writeObject(item);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        id = U.readGridUuid(in);
+        item = in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheMultimapHeaderKey.class, this);
+        return S.toString(GridCacheMapItemKey.class, this);
     }
 }

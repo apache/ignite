@@ -23,11 +23,11 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  *
  */
-public interface SetItemKey extends GridCacheInternal {
+public interface MapItemKey extends GridCacheInternal {
     /**
      * @return Set UUID.
      */
-    public IgniteUuid setId();
+    public IgniteUuid id();
 
     /**
      * @return Set item.

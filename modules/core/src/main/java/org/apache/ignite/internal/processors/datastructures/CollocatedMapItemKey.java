@@ -25,9 +25,9 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  *
  */
-public class CollocatedSetItemKey implements SetItemKey {
+public class CollocatedMapItemKey implements MapItemKey {
     /** */
-    private IgniteUuid setId;
+    private IgniteUuid id;
 
     /** */
     @GridToStringInclude(sensitive = true)
@@ -38,19 +38,19 @@ public class CollocatedSetItemKey implements SetItemKey {
     private int setNameHash;
 
     /**
-     * @param setName Set name.
-     * @param setId Set unique ID.
-     * @param item Set item.
+     * @param name Name.
+     * @param id Unique ID.
+     * @param item Item.
      */
-    public CollocatedSetItemKey(String setName, IgniteUuid setId, Object item) {
-        this.setNameHash = setName.hashCode();
-        this.setId = setId;
+    public CollocatedMapItemKey(String name, IgniteUuid id, Object item) {
+        this.setNameHash = name.hashCode();
+        this.id = id;
         this.item = item;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid setId() {
-        return setId;
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -60,7 +60,7 @@ public class CollocatedSetItemKey implements SetItemKey {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = setId.hashCode();
+        int res = id.hashCode();
 
         res = 31 * res + item.hashCode();
 
@@ -75,13 +75,13 @@ public class CollocatedSetItemKey implements SetItemKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CollocatedSetItemKey that = (CollocatedSetItemKey)o;
+        CollocatedMapItemKey that = (CollocatedMapItemKey)o;
 
-        return setId.equals(that.setId) && item.equals(that.item);
+        return id.equals(that.id) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CollocatedSetItemKey.class, this);
+        return S.toString(CollocatedMapItemKey.class, this);
     }
 }

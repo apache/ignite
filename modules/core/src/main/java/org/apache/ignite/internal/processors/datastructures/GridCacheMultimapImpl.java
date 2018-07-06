@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,15 +33,11 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMultimap;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -57,46 +49,19 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /** Cache multimap implementation */
-public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
-    /** Value returned by closure updating multimap header indicating that multimap was removed. */
-    protected static final long MULTIMAP_REMOVED_IDX = Long.MIN_VALUE;
-
-    /** Cache context. */
-    private final GridCacheContext<?, ?> cctx;
-
-    /** Cache. */
-    private final IgniteInternalCache<MultimapItemKey<K>, List<V>> cache;
-
-    /** Multimap name. */
-    private final String name;
-
-    /** Multimap header key. */
-    private final GridCacheMultimapHeaderKey hdrKey;
-
-    /** Multimap unique ID. */
-    private final GridCacheMultimapHeader hdr;
-
+public class GridCacheMultimapImpl<K, V> extends GridCacheAbstractMapImpl<List<V>> implements IgniteMultimap<K, V> {
     /** Removed flag. */
     private volatile boolean rmvd;
-
-    /** Access to affinityRun() and affinityCall() functions. */
-    private final IgniteCompute compute;
 
     /**
      * @param name Multimap name.
      * @param hdr Multimap hdr.
      * @param cctx Cache context.
      */
-    public GridCacheMultimapImpl(String name, GridCacheMultimapHeader hdr, GridCacheContext<?, ?> cctx) {
-        this.cctx = cctx;
-        this.name = name;
-        this.hdr = hdr;
-        hdrKey = new GridCacheMultimapHeaderKey(name);
-        cache = cctx.kernalContext().cache().internalCache(cctx.name());
-        this.compute = cctx.kernalContext().grid().compute();
+    public GridCacheMultimapImpl(String name, GridCacheMapHeader hdr, GridCacheContext<?, ?> cctx) {
+        super(cctx, name, hdr);
     }
 
     /**
@@ -175,9 +140,10 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Map<K, List<V>> getAll(Collection<K> keys) {
         try {
-            Map<K, List<V>> map = getAll0(keys);
+            Map<K, List<V>> map = (Map<K, List<V>>) getAll0(keys);
 
             for (K key : keys) {
                 if (!map.containsKey(key))
@@ -192,9 +158,10 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Map<K, V> getAll(Collection<K> keys, int index) {
         try {
-            Map<K, List<V>> map = getAll0(keys);
+            Map<K, List<V>> map = (Map<K, List<V>>) getAll0(keys);
 
             Map<K, V> res = new HashMap<>();
             for (Entry<K, List<V>> e : map.entrySet())
@@ -221,9 +188,10 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Map<K, List<V>> getAll(Collection<K> keys, Iterable<Integer> indexes) {
         try {
-            Map<K, List<V>> map = getAll0(keys);
+            Map<K, List<V>> map = (Map<K, List<V>>) getAll0(keys);
             for (Entry<K, List<V>> e : map.entrySet()) {
                 List<V> l = new ArrayList<>();
                 for (Integer idx : indexes)
@@ -241,36 +209,6 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void clear() {
-        if (!collocated()) {
-            try {
-                cache.clear();
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
-        else {
-            affinityRun((IgniteRunnable)() -> {
-                try {
-                    for (Cache.Entry entry : localEntries()) {
-                        if (MultimapItemKey.class.isAssignableFrom(entry.getKey().getClass())) {
-                            MultimapItemKey key = (MultimapItemKey)entry.getKey();
-
-                            if (key.getId().equals(id()) && key.getMultimapName().equals(name))
-                                cache.clearLocally(key);
-                        }
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
-            });
         }
     }
 
@@ -353,12 +291,13 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean put(K key, V value) {
         try {
             IgniteBiTuple<Boolean, Integer> res = cache.invoke(itemKey(key),
-                new EntryProcessor<MultimapItemKey<K>, List<V>, IgniteBiTuple<Boolean, Integer>>() {
+                new EntryProcessor<MapItemKey, List<V>, IgniteBiTuple<Boolean, Integer>>() {
                     @Override public IgniteBiTuple<Boolean, Integer> process(
-                        MutableEntry<MultimapItemKey<K>, List<V>> entry, Object... arguments) {
+                        MutableEntry<MapItemKey, List<V>> entry, Object... arguments) {
                         int size = 0;
                         List<V> list = entry.getValue();
                         if (list == null) {
@@ -382,9 +321,9 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     @Override public boolean putAll(K key, Iterable<? extends V> values) {
         try {
             IgniteBiTuple<Boolean, Integer> res = cache.invoke(itemKey(key),
-                new EntryProcessor<MultimapItemKey<K>, List<V>, IgniteBiTuple<Boolean, Integer>>() {
+                new EntryProcessor<MapItemKey, List<V>, IgniteBiTuple<Boolean, Integer>>() {
                     @Override public IgniteBiTuple<Boolean, Integer> process(
-                        MutableEntry<MultimapItemKey<K>, List<V>> entry, Object... arguments) {
+                        MutableEntry<MapItemKey, List<V>> entry, Object... arguments) {
                         int size = 0;
                         List<V> list = entry.getValue();
                         if (list == null) {
@@ -439,9 +378,9 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     @Override public List<V> remove(K key) {
         try {
             IgniteBiTuple<List<V>, Integer> res = cache.invoke(itemKey(key),
-                new EntryProcessor<MultimapItemKey<K>, List<V>, IgniteBiTuple<List<V>, Integer>>() {
+                new EntryProcessor<MapItemKey, List<V>, IgniteBiTuple<List<V>, Integer>>() {
                     @Override public IgniteBiTuple<List<V>, Integer> process(
-                        MutableEntry<MultimapItemKey<K>, List<V>> entry, Object... arguments) {
+                        MutableEntry<MapItemKey, List<V>> entry, Object... arguments) {
                         int size = 0;
                         List<V> list = entry.getValue();
 
@@ -466,9 +405,9 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V value) {
         try {
-            IgniteBiTuple<Boolean, Integer> res = cache.invoke(itemKey(key), new EntryProcessor<MultimapItemKey<K>, List<V>, IgniteBiTuple<Boolean, Integer>>() {
+            IgniteBiTuple<Boolean, Integer> res = cache.invoke(itemKey(key), new EntryProcessor<MapItemKey, List<V>, IgniteBiTuple<Boolean, Integer>>() {
                 @Override
-                public IgniteBiTuple<Boolean, Integer> process(MutableEntry<MultimapItemKey<K>, List<V>> entry,
+                public IgniteBiTuple<Boolean, Integer> process(MutableEntry<MapItemKey, List<V>> entry,
                     Object... arguments) {
                     int size = 0;
                     List<V> list = entry.getValue();
@@ -500,8 +439,8 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     /** {@inheritDoc} */
     @Override public List<V> replaceValues(K key, Iterable<? extends V> values) {
         try {
-            return cache.invoke(itemKey(key), new EntryProcessor<MultimapItemKey<K>, List<V>, List<V>>() {
-                @Override public List<V> process(MutableEntry<MultimapItemKey<K>, List<V>> entry, Object... arguments) {
+            return cache.invoke(itemKey(key), new EntryProcessor<MapItemKey, List<V>, List<V>>() {
+                @Override public List<V> process(MutableEntry<MapItemKey, List<V>> entry, Object... arguments) {
                     List<V> list = entry.getValue();
 
                     if (list == null)
@@ -528,7 +467,7 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         try {
-            return ((GridCacheMultimapHeader)cctx.kernalContext().cache()
+            return ((GridCacheMapHeader)cctx.kernalContext().cache()
                 .internalCache(cctx.name()).get(hdrKey)).size() == 0;
         }
         catch (IgniteCheckedException e) {
@@ -552,17 +491,6 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
 
         CacheWeakQueryIteratorsHolder<Entry<K, List<V>>> itHolder = ((GridCacheContext<K, List<V>>)cctx).itHolder();
         return itHolder.iterator(iter, converter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long size() {
-        try {
-            return ((GridCacheMultimapHeader)cctx.kernalContext().cache()
-                .internalCache(cctx.name()).get(hdrKey)).size();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -605,9 +533,9 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
                     @Override public void run() {
                         try {
                             for (Cache.Entry e : localEntries()) {
-                                if (MultimapItemKey.class.isAssignableFrom(e.getKey().getClass())) {
-                                    MultimapItemKey key = ((Cache.Entry<MultimapItemKey, List>)e).getKey();
-                                    if (key.getId().equals(id()) && key.getMultimapName().equals(name))
+                                if (MapItemKey.class.isAssignableFrom(e.getKey().getClass())) {
+                                    MapItemKey key = ((Cache.Entry<MapItemKey, List>)e).getKey();
+                                    if (key.id().equals(id()))
                                         cache.remove(key);
                                 }
                             }
@@ -630,24 +558,6 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     /** {@inheritDoc} */
     @Override public boolean collocated() {
         return hdr.collocated();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void affinityRun(IgniteRunnable job) {
-        if (!collocated())
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
-                ". This operation is supported only for collocated queues.");
-
-        compute.affinityRun(cache.name(), hdrKey, job);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R affinityCall(IgniteCallable<R> job) {
-        if (!collocated())
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
-                ". This operation is supported only for collocated queues.");
-
-        return compute.affinityCall(cache.name(), hdrKey, job);
     }
 
     /** {@inheritDoc} */
@@ -674,12 +584,12 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     @NotNull private IgniteCallable<Set<K>> localKeySet0() {
         return new IgniteCallable<Set<K>>() {
             @Override public Set<K> call() throws Exception {
-                Set<K> set = new HashSet<>();
+                Set set = new HashSet();
                 for (Cache.Entry e : GridCacheMultimapImpl.this.localEntries()) {
-                    if (MultimapItemKey.class.isAssignableFrom(e.getKey().getClass())) {
-                        MultimapItemKey<K> key = ((Cache.Entry<MultimapItemKey<K>, List<V>>)e).getKey();
-                        if (key.getId().equals(GridCacheMultimapImpl.this.id()) && key.getMultimapName().equals(name))
-                            set.add(key.getKey());
+                    if (MapItemKey.class.isAssignableFrom(e.getKey().getClass())) {
+                        MapItemKey key = ((Cache.Entry<MapItemKey, List<V>>)e).getKey();
+                        if (key.id().equals(GridCacheMultimapImpl.this.id()))
+                            set.add(key.item());
                     }
                 }
                 return set;
@@ -695,9 +605,9 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
         return new IgniteCallable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 for (Cache.Entry e : GridCacheMultimapImpl.this.localEntries()) {
-                    if (MultimapItemKey.class.isAssignableFrom(e.getKey().getClass())) {
-                        Cache.Entry<MultimapItemKey<K>, List<V>> ee = (Cache.Entry<MultimapItemKey<K>, List<V>>)e;
-                        if (ee.getKey().getMultimapName().equals(name) && ee.getValue().contains(value))
+                    if (MapItemKey.class.isAssignableFrom(e.getKey().getClass())) {
+                        Cache.Entry<MapItemKey, List<V>> ee = (Cache.Entry<MapItemKey, List<V>>)e;
+                        if (ee.getKey().id().equals(id()) && ee.getValue().contains(value))
                             return true;
                     }
                 }
@@ -709,33 +619,26 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     /**
      * @return Callable to fetch keys from cache
      */
-    private Map<K, List<V>> getAll0(Iterable<K> keys) throws IgniteCheckedException {
-        List<MultimapItemKey<K>> itemKeys = new ArrayList<>();
+    private Map<Object, List<V>> getAll0(Iterable<K> keys) throws IgniteCheckedException {
+        List<MapItemKey> itemKeys = new ArrayList<>();
         for (K k : keys)
             itemKeys.add(itemKey(k));
 
-        Map<K, List<V>> map = new HashMap<>();
-        for (Entry<MultimapItemKey<K>, List<V>> e : cache.getAll(itemKeys).entrySet())
-            map.put(e.getKey().getKey(), e.getValue());
+        Map<Object, List<V>> map = new HashMap<>();
+        for (Entry<MapItemKey, List<V>> e : cache.getAll(itemKeys).entrySet())
+            map.put(e.getKey().item(), e.getValue());
 
         return map;
-    }
-
-    /**
-     * @return Iterable over local entries
-     */
-    private Iterable<Cache.Entry<MultimapItemKey<K>, List<V>>> localEntries() throws IgniteCheckedException {
-        return cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL});
     }
 
     /**
      * @param key User key.
      * @return Item key.
      */
-    private MultimapItemKey<K> itemKey(K key) {
+    private MapItemKey itemKey(K key) {
         return collocated() ?
-            new CollocatedMultimapItemKey<>(id(), name, key) :
-            new GridCacheMultimapItemKey<>(id(), name, key);
+            new CollocatedMapItemKey(name, id(), key) :
+            new GridCacheMapItemKey(id(), key);
     }
 
     /**
@@ -746,20 +649,6 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     }
 
     /**
-     * Modify multimap size by <tt>size</tt>
-     *
-     * @param size the value to change the size by
-     * @throws IgniteCheckedException if any exception happens
-     */
-    private void changeSize(int size) throws IgniteCheckedException {
-        if (size != 0) {
-            GridCacheAdapter<GridCacheMultimapHeaderKey, GridCacheMultimapHeader> cache0 =
-                cctx.kernalContext().cache().internalCache(cctx.name());
-            cache0.invoke(hdrKey, new SizeProcessor(id(), size));
-        }
-    }
-
-    /**
      * Create an iterator over multimap elements
      *
      * @return multimap iterator
@@ -767,22 +656,22 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<Entry<K, List<V>>> createGridIterator() {
         try {
-            return ((GridCacheContext<MultimapItemKey<K>, List<V>>)cctx).queries()
+            return ((GridCacheContext<MapItemKey, List<V>>)cctx).queries()
                 .createScanQuery(
                     new IgniteBiPredicate() {
                         @Override public boolean apply(Object k, Object v) {
-                            if (MultimapItemKey.class.isAssignableFrom(k.getClass())) {
-                                MultimapItemKey key = (MultimapItemKey)k;
+                            if (MapItemKey.class.isAssignableFrom(k.getClass())) {
+                                MapItemKey key = (MapItemKey)k;
 
-                                return key.getId().equals(id()) && key.getMultimapName().equals(name);
+                                return key.id().equals(id()) /*&& key.getMultimapName().equals(name)*/;
                             }
                             return false;
                         }
                     },
-                    new IgniteClosure<Cache.Entry<MultimapItemKey<K>, List<V>>, Entry<K, List<V>>>() {
+                    new IgniteClosure<Cache.Entry<MapItemKey, List<V>>, Entry<K, List<V>>>() {
                         @Override
-                        public Entry<K, List<V>> apply(Cache.Entry<MultimapItemKey<K>, List<V>> e) {
-                            return new IgniteBiTuple<>(e.getKey().getKey(), e.getValue());
+                        public Entry<K, List<V>> apply(Cache.Entry<MapItemKey, List<V>> e) {
+                            return new IgniteBiTuple(e.getKey().item(), e.getValue());
                         }
                     },
                     collocated() ? cctx.affinity().partition(hdrKey) : null,
@@ -816,77 +705,6 @@ public class GridCacheMultimapImpl<K, V> implements IgniteMultimap<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheMultimapImpl.class, this);
-    }
-
-    /**
-     */
-    private static class SizeProcessor implements
-        EntryProcessor<GridCacheMultimapHeaderKey, GridCacheMultimapHeader, Long>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private IgniteUuid id;
-
-        /** */
-        private int size;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public SizeProcessor() {
-            // No-op.
-        }
-
-        /**
-         * @param id Queue unique ID.
-         * @param size Number of elements to add.
-         */
-        public SizeProcessor(IgniteUuid id, int size) {
-            this.id = id;
-            this.size = size;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Long process(MutableEntry<GridCacheMultimapHeaderKey, GridCacheMultimapHeader> e,
-            Object... args) {
-            GridCacheMultimapHeader hdr = e.getValue();
-
-            if (removed(hdr, id)) {
-                return MULTIMAP_REMOVED_IDX;
-            }
-
-            GridCacheMultimapHeader newHdr = new GridCacheMultimapHeader(hdr.id(),
-                hdr.multimapName(),
-                hdr.internalCacheName(),
-                hdr.collocated(),
-                hdr.size() + size);
-
-            e.setValue(newHdr);
-
-            return newHdr.size();
-        }
-
-        /**
-         * @param hdr Multimap header.
-         * @param id Expected multimap unique ID.
-         * @return {@code True} if multimap was removed.
-         */
-        private boolean removed(@Nullable GridCacheMultimapHeader hdr, IgniteUuid id) {
-            return hdr == null || !id.equals(hdr.id());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, id);
-            out.writeInt(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readGridUuid(in);
-            size = in.readInt();
-        }
     }
 
     /**

@@ -1713,9 +1713,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         assert name != null;
         assert cctx != null;
 
-        CIX1<GridCacheSetHeader> afterRmv = new CIX1<GridCacheSetHeader>() {
-            @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
-                hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
+        CIX1<GridCacheMapHeader> afterRmv = new CIX1<GridCacheMapHeader>() {
+            @Override public void applyx(GridCacheMapHeader hdr) throws IgniteCheckedException {
+                hdr = (GridCacheMapHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheMapHeaderKey(name));
 
                 if (hdr != null)
                     cctx.dataStructures().removeSetData(hdr.id());

@@ -27,20 +27,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Multimap header.
+ * Cache map header.
  */
-public class GridCacheMultimapHeader implements GridCacheInternal, Externalizable {
+public class GridCacheMapHeader implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private IgniteUuid id;
-
-    /** */
-    private String multimapName;
-
-    /** */
-    private String internalCacheName;
 
     /** */
     private boolean collocated;
@@ -51,57 +45,37 @@ public class GridCacheMultimapHeader implements GridCacheInternal, Externalizabl
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheMultimapHeader() {
+    public GridCacheMapHeader() {
         // No-op.
     }
 
     /**
-     * @param id Multimap unique ID.
+     * @param id Map UUID.
      * @param collocated Collocation flag.
+     * @param size Map size.
      */
-    public GridCacheMultimapHeader(IgniteUuid id, String multimapName, String internalCacheName, boolean collocated,
-        long size) {
-        assert id != null;
-        assert multimapName != null;
-        assert internalCacheName != null;
-
+    public GridCacheMapHeader(IgniteUuid id, boolean collocated, long size) {
         this.id = id;
-        this.multimapName = multimapName;
-        this.internalCacheName = internalCacheName;
         this.collocated = collocated;
         this.size = size;
     }
 
     /**
-     * @return Multimap unique ID.
+     * @return Map unique ID.
      */
     public IgniteUuid id() {
         return id;
     }
 
     /**
-     * @return Multimap name.
-     */
-    public String multimapName() {
-        return multimapName;
-    }
-
-    /**
-     * @return Internal cache name.
-     */
-    public String internalCacheName() {
-        return internalCacheName;
-    }
-
-    /**
-     * @return Multimap collocation flag.
+     * @return Collocation flag.
      */
     public boolean collocated() {
         return collocated;
     }
 
     /**
-     * @return Multimap size.
+     * @return Map size.
      */
     public long size() {
         return size;
@@ -110,8 +84,6 @@ public class GridCacheMultimapHeader implements GridCacheInternal, Externalizabl
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
-        U.writeString(out, multimapName);
-        U.writeString(out, internalCacheName);
         out.writeBoolean(collocated);
         out.writeLong(size);
     }
@@ -119,14 +91,12 @@ public class GridCacheMultimapHeader implements GridCacheInternal, Externalizabl
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readGridUuid(in);
-        multimapName = U.readString(in);
-        internalCacheName = U.readString(in);
         collocated = in.readBoolean();
         size = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheMultimapHeader.class, this);
+        return S.toString(GridCacheMapHeader.class, this);
     }
 }
