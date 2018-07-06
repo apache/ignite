@@ -97,7 +97,9 @@ def test_sql_read_as_binary(conn):
         mock_conn.pos = offset
 
         data_class, data_bytes = BinaryObject.parse(mock_conn)
+        value = BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
         assert buffer == data_bytes
+        assert len(value['fields']) == 4
 
     # cleanup
     result = sql_fields(conn, scheme_hash_code, drop_query, page_size)

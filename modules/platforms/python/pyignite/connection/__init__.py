@@ -21,6 +21,9 @@ from pyignite.exceptions import ParameterError, SocketError, SocketWriteError
 from .handshake import HandshakeRequest, read_response
 
 
+__all__ = ['Connection', 'PrefetchConnection']
+
+
 class Connection:
     """
     Socket wrapper. Detects fragmentation and network errors.

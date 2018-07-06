@@ -17,6 +17,7 @@ from collections import OrderedDict
 import ctypes
 import decimal
 from datetime import date, datetime, timedelta
+from importlib import import_module
 import uuid
 
 import attr
@@ -597,6 +598,7 @@ class BinaryObject:
                     ('hash_code', ctypes.c_int),
                     ('length', ctypes.c_int),
                     ('schema_id', ctypes.c_int),
+                    ('schema_offset', ctypes.c_int),
                 ],
             }
         )
@@ -609,38 +611,63 @@ class BinaryObject:
             return ctypes.c_short
         return ctypes.c_int
 
+    @staticmethod
+    def get_fields(conn: Connection, type_id: int) -> list:
+        from pyignite.api import get_binary_type
+
+        # get field names from outer space
+        temp_conn = conn.clone()
+        result = get_binary_type(temp_conn, type_id)
+        temp_conn.close()
+        return [
+            (x['field_name'], tc_map(bytes([x['type_id']])))
+            for x in result.value['binary_fields']
+        ]
+
     @classmethod
     def parse(cls, conn: Connection):
-        from pyignite.api import get_binary_type
+        from pyignite.datatypes.cache_config import Struct
 
         header_class = cls.build_header()
         buffer = conn.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
 
-        buffer += conn.recv(
-            header.length - ctypes.sizeof(header_class)
-        )
-
-        if header.flags & cls.HAS_RAW_DATA:
-            raw_data_offset, raw_data_offset_buffer = Int.parse(conn)
-            buffer += raw_data_offset_buffer
+        # TODO: valid only on compact schema approach
+        fields = cls.get_fields(conn, header.type_id)
+        object_fields_struct = Struct(fields)
+        object_fields, object_fields_buffer = object_fields_struct.parse(conn)
+        buffer += object_fields_buffer
+        final_class_fields = [('object_fields', object_fields)]
 
         if header.flags & cls.HAS_SCHEMA:
-            temp_conn = conn.clone()
-            result = get_binary_type(temp_conn, header.type_id)
-            temp_conn.close()
+            schema = cls.offset_c_type(header.flags) * len(fields)
+            buffer += conn.recv(ctypes.sizeof(schema))
+            final_class_fields.append(('schema', schema))
 
-            print(result.value)
-
-        return header_class, buffer
+        final_class = type(
+            cls.__name__,
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': final_class_fields,
+            }
+        )
+        return final_class, buffer
 
     @classmethod
     def to_python(cls, ctype_object):
         result = {
             'version': ctype_object.version,
             'type_id': ctype_object.type_id,
+            'hash_code': ctype_object.hash_code,
             'schema_id': ctype_object.schema_id,
+            'fields': {},
         }
-
-        # not ready
+        # hack, but robust
+        for field_name, field_c_type in ctype_object.object_fields._fields_:
+            module = import_module(field_c_type.__module__)
+            object_class = getattr(module, field_c_type.__name__)
+            result['fields'][field_name] = object_class.to_python(
+                getattr(ctype_object.object_fields, field_name)
+            )
         return result
