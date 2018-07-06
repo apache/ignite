@@ -332,7 +332,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             if (cleanupRows == null)
                 cleanupRows = new ArrayList<>();
 
-            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr, rowLink));
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_HINTS_MASK, rowLink));
         }
         else {
             // Row obsoleted by current operation, all rows created or updated with current tx.
