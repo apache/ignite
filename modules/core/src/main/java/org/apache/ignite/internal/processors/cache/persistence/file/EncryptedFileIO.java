@@ -106,6 +106,11 @@ public class EncryptedFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int readFully(ByteBuffer destBuf) throws IOException {
+        return read(destBuf);
+    }
+
+    /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf, long position) throws IOException {
         assert destBuf.capacity() == pageSize;
 
@@ -127,8 +132,18 @@ public class EncryptedFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
+        return read(destBuf, position);
+    }
+
+    /** {@inheritDoc} */
     @Override public int read(byte[] buf, int off, int len) throws IOException {
         throw new UnsupportedOperationException("Encrypted File doesn't support this operation");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readFully(byte[] buf, int off, int len) throws IOException {
+        return read(buf, off, len);
     }
 
     /** {@inheritDoc} */
@@ -137,6 +152,11 @@ public class EncryptedFileIO implements FileIO {
         assert headerSize == srcBuf.capacity();
 
         return plainFileIO.write(srcBuf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+        return write(srcBuf);
     }
 
     /** {@inheritDoc} */
@@ -152,6 +172,11 @@ public class EncryptedFileIO implements FileIO {
         return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
     }
 
+    /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
+        return write(srcBuf, position);
+    }
+
     /**
      * @return Encryption key.
      */
@@ -165,6 +190,11 @@ public class EncryptedFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public int write(byte[] buf, int off, int len) throws IOException {
         throw new UnsupportedOperationException("Encrypted File doesn't support this operation");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(byte[] buf, int off, int len) throws IOException {
+        return write(buf, off, len);
     }
 
     /** {@inheritDoc} */
