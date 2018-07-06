@@ -68,7 +68,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -85,9 +84,9 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -176,7 +175,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
 
     /** */
-    private static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
+    public static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
     public static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
@@ -317,6 +316,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Current log segment handle */
     private volatile FileWriteHandle currHnd;
 
+    /** */
+    private volatile WALDisableContext walDisableContext;
+
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
      * See {@link DataStorageConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
@@ -449,6 +451,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     new IgniteThread(decompressor).start();
                 }
             }
+
+            walDisableContext = cctx.walState().walDisableContext();
 
             if (mode != WALMode.NONE) {
                 if (log.isInfoEnabled())
@@ -729,8 +733,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWriteHandle currWrHandle = currentHandle();
 
+        WALDisableContext isDisable = walDisableContext;
+
         // Logging was not resumed yet.
-        if (currWrHandle == null)
+        if (currWrHandle == null || (isDisable != null && isDisable.check()))
             return null;
 
         // Need to calculate record size first.
@@ -996,9 +1002,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
-        CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
-
-        return ctx != null && !ctx.walEnabled();
+        return cctx.walState().isDisabled(grpId);
     }
 
     /**
@@ -1357,7 +1361,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    public void cleanupWalDirectories() throws IgniteCheckedException {
+    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
                 for (Path path : files)
