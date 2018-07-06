@@ -47,6 +47,7 @@ import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheRebalanceConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
@@ -209,6 +210,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IoomFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(AccountTransferTransactionTest.class);
+
+        suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
 
         return suite;
     }
