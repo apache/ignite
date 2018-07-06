@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <ignite/impl/thin/data_router.h>
+#include "impl/data_router.h"
 
 #include "impl/message.h"
 #include "impl/net/remote_type_updater.h"
