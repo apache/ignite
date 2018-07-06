@@ -27,6 +27,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -208,7 +211,17 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
             startFut.get(10, TimeUnit.SECONDS);
         }
         catch (IgniteFutureTimeoutCheckedException e) {
-            fail("Node can not start out of baseline till " + 10_000L + "ms");
+            GridStringBuilder sb = new SB()
+                .a("Node can not start out of baseline till ")
+                .a(10_000L)
+                .a("ms")
+                .a(U.nl());
+
+            for (Thread t: Thread.getAllStackTraces().keySet())
+                if (t.getName().startsWith("async-runnable-runner"))
+                    U.printStackTrace(t.getId(), sb);
+
+            fail(sb.toString());
         }
     }
 
