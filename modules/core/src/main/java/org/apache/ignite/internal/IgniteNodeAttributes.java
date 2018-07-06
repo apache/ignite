@@ -199,9 +199,6 @@ public final class IgniteNodeAttributes {
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
-    /** Rebalance thread pool size. */
-    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
-
     /**
      * Enforces singleton.
      */
