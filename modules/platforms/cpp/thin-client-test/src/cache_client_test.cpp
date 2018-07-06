@@ -71,7 +71,6 @@ public:
     void NumPartitionTest(int64_t num)
     {
         StartNode("node1");
-        StartNode("node2");
 
         boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -400,7 +399,6 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDouble)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
 {
     StartNode("node1");
-    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -429,7 +427,6 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsString)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
 {
     StartNode("node1");
-    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -458,7 +455,6 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsGuid)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
 {
     StartNode("node1");
-    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -503,7 +499,6 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsComplexType)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
 {
     StartNode("node1");
-    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -546,7 +541,6 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsDate)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
 {
     StartNode("node1");
-    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
@@ -583,7 +577,6 @@ BOOST_AUTO_TEST_CASE(CacheClientPartitionsTime)
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsTimestamp)
 {
     StartNode("node1");
-    StartNode("node2");
 
     boost::this_thread::sleep_for(boost::chrono::seconds(2));
 
