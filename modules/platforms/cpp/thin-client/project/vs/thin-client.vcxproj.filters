@@ -64,6 +64,9 @@
     <ClCompile Include="..\..\os\win\src\net\net_utils.cpp">
       <Filter>Code\impl\net</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_affinity_info.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -146,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_peek_mode.h">
       <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\cache\cache_affinity_info.h">
+      <Filter>Code\impl\cache</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

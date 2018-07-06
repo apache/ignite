@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(CacheClientGetCacheNonxisting)
 
     IgniteClient client = IgniteClient::Start(cfg);
 
-    client.GetCache<int32_t, std::string>("unknown");
+    BOOST_REQUIRE_THROW((client.GetCache<int32_t, std::string>("unknown")), ignite::IgniteError);
 }
 
 BOOST_AUTO_TEST_CASE(CacheClientGetOrCreateCacheExisting)

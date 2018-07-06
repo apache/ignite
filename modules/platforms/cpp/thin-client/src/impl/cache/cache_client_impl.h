@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <string>
 
-#include <ignite/impl/thin/data_router.h>
+#include "impl/data_router.h"
 
 namespace ignite
 {
@@ -154,14 +154,6 @@ namespace ignite
 
                 private:
                     /**
-                     * Get end points for the key.
-                     * Always using Rendezvous Affinity Function algorithm for now.
-                     *
-                     * @param key Key.
-                     */
-                    const std::vector<net::EndPoint>& GetEndPointsForKey(const WritableKey& key) const;
-
-                    /**
                      * Synchronously send request message and receive response.
                      *
                      * @param key Key.
@@ -183,12 +175,6 @@ namespace ignite
 
                     /** Binary flag. */
                     bool binary;
-
-                    /** Partitions assignment. */
-                    std::vector< std::vector<net::EndPoint> > assignment;
-
-                    /** Rendezvous Affinity Function mask. */
-                    int32_t mask;
                 };
 
                 typedef common::concurrent::SharedPointer<CacheClientImpl> SP_CacheClientImpl;

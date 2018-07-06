@@ -26,10 +26,11 @@
 #include "impl/utility.h"
 #include "impl/data_router.h"
 #include "impl/message.h"
+#include "impl/response_status.h"
 #include "impl/ssl/ssl_gateway.h"
 #include "impl/net/remote_type_updater.h"
 #include "impl/net/net_utils.h"
-
+#include "ignite/impl/thin/writable_key.h"
 
 namespace ignite
 {
@@ -114,6 +115,40 @@ namespace ignite
                     if (channel)
                         channel->Close();
                 }
+            }
+
+            void DataRouter::RefreshAffinityMapping(int32_t cacheId, bool binary)
+            {
+                std::vector<ConnectableNodePartitions> nodeParts;
+
+                CacheRequest<RequestType::CACHE_NODE_PARTITIONS> req(cacheId, binary);
+                ClientCacheNodePartitionsResponse rsp(nodeParts);
+
+                SyncMessageNoMetaUpdate(req, rsp);
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                    throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                cache::SP_CacheAffinityInfo newMapping(new cache::CacheAffinityInfo(nodeParts));
+
+                common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
+
+                cache::SP_CacheAffinityInfo& affinityInfo = cacheAffinityMapping[cacheId];
+                affinityInfo.Swap(newMapping);
+            }
+
+            cache::SP_CacheAffinityInfo DataRouter::GetAffinityMapping(int32_t cacheId)
+            {
+                common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
+
+                return cacheAffinityMapping[cacheId];
+            }
+
+            void DataRouter::ReleaseAffinityMapping(int32_t cacheId)
+            {
+                common::concurrent::CsLockGuard lock(cacheAffinityMappingMutex);
+
+                cacheAffinityMapping.erase(cacheId);
             }
 
             SP_DataChannel DataRouter::GetRandomChannel()

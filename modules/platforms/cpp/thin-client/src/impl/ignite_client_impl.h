@@ -21,8 +21,7 @@
 #include <ignite/thin/ignite_client.h>
 #include <ignite/thin/ignite_client_configuration.h>
 
-#include <ignite/impl/thin/data_router.h>
-
+#include "impl/data_router.h"
 #include "impl/cache/cache_client_impl.h"
 
 namespace ignite

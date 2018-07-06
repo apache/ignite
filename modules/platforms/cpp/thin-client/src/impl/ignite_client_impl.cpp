@@ -16,10 +16,11 @@
  */
 
 #include "impl/utility.h"
-#include "impl/ignite_client_impl.h"
 #include "impl/cache/cache_client_impl.h"
 #include "impl/message.h"
 #include "impl/response_status.h"
+
+#include "impl/ignite_client_impl.h"
 
 namespace ignite
 {
@@ -100,6 +101,8 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+
+                router.Get()->ReleaseAffinityMapping(cacheId);
             }
 
             void IgniteClientImpl::GetCacheNames(std::vector<std::string>& cacheNames)
@@ -119,6 +122,8 @@ namespace ignite
                 int32_t id)
             {
                 cache::SP_CacheClientImpl cache(new cache::CacheClientImpl(router, name, id));
+
+                cache.Get()->RefreshAffinityMapping();
 
                 return cache;
             }

@@ -156,6 +156,7 @@
     <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp" />
     <ClCompile Include="..\..\os\win\src\net\net_utils.cpp" />
     <ClCompile Include="..\..\src\ignite_client.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\cache_affinity_info.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
     <ClCompile Include="..\..\src\impl\data_channel.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />
     <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h" />
+    <ClInclude Include="..\..\src\impl\cache\cache_affinity_info.h" />
     <ClInclude Include="..\..\src\impl\cache\cache_client_impl.h" />
     <ClInclude Include="..\..\src\impl\connectable_node_partitions.h" />
     <ClInclude Include="..\..\src\impl\data_channel.h" />

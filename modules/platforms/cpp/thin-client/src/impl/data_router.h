@@ -34,19 +34,17 @@
 #include "impl/data_channel.h"
 #include "impl/net/end_point.h"
 #include "impl/net/tcp_range.h"
+#include "impl/cache/cache_affinity_info.h"
 
 namespace ignite
 {
     namespace impl
     {
-        namespace interop
-        {
-            // Forward declaration.
-            class InteropMemory;
-        }
-
         namespace thin
         {
+            // Forward declaration.
+            class WritableKey;
+
             /**
              * Data router.
              *
@@ -156,8 +154,47 @@ namespace ignite
                     channel.Get()->SyncMessage(req, rsp, ioTimeout);
                 }
 
+                /**
+                 * Update affinity mapping for the cache.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param binary Cache binary flag.
+                 */
+                void RefreshAffinityMapping(int32_t cacheId, bool binary);
+
+                /**
+                 * Get affinity mapping for the cache.
+                 *
+                 * @param cacheId Cache ID.
+                 * @return Mapping.
+                 */
+                cache::SP_CacheAffinityInfo GetAffinityMapping(int32_t cacheId);
+
+                /**
+                 * Clear affinity mapping for the cache.
+                 *
+                 * @param cacheId Cache ID.
+                 */
+                void ReleaseAffinityMapping(int32_t cacheId);
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
+
+                /** End point collection. */
+                typedef std::vector<net::EndPoint> EndPoints;
+
+                /** Shared pointer to end points. */
+                typedef common::concurrent::SharedPointer<EndPoints> SP_EndPoints;
+
+                /**
+                 * Get endpoints for the key.
+                 * Always using Rendezvous Affinity Function algorithm for now.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param key Key.
+                 * @return Endpoints for the key.
+                 */
+                int32_t GetPartitionForKey(int32_t cacheId, const WritableKey& key);
 
                 /**
                  * Get random data channel.
@@ -237,6 +274,12 @@ namespace ignite
 
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;
+
+                /** Cache affinity mapping. */
+                std::map<int32_t, cache::SP_CacheAffinityInfo> cacheAffinityMapping;
+
+                /** Cache affinity mapping mutex. */
+                common::concurrent::CriticalSection cacheAffinityMappingMutex;
             };
 
             /** Shared pointer type. */
