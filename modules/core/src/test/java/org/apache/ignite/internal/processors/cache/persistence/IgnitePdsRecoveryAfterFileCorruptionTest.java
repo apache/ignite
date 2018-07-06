@@ -54,14 +54,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * This test generates WAL & Page Store with N pages, then rewrites pages with zeroes and tries to acquire all pages.
  */
 public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Total pages. */
-    private static final int totalPages = 1024;
+    private static final int totalPages = 512;
 
     /** Cache name. */
     private final String cacheName = "cache";
@@ -83,7 +83,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(1024 * 1024 * 1024)
+                    .setMaxSize(1024L * 1024 * 1024)
                     .setPersistenceEnabled(true)
                     .setName(policyName))
             .setWalMode(WALMode.LOG_ONLY)
@@ -120,7 +120,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
@@ -144,13 +144,15 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
-        FullPageId[] pages = new FullPageId[totalPages];
+        int pagesCnt = getTotalPagesToTest();
+
+        FullPageId[] pages = new FullPageId[pagesCnt];
 
         // Get lock to prevent assertion. A new page should be allocated under checkpoint lock.
         psMgr.checkpointReadLock();
 
         try {
-            for (int i = 0; i < totalPages; i++) {
+            for (int i = 0; i < pagesCnt; i++) {
                 pages[i] = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
 
                 initPage(mem, pageIO, pages[i]);
@@ -174,9 +176,16 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         checkRestore(ig, pages);
+    }
+
+    /**
+     * @return count of pages to test. Note complexity of test is N^2.
+     */
+    protected int getTotalPagesToTest() {
+        return totalPages;
     }
 
     /**
@@ -225,7 +234,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         long size = fileIO.size();
 
-        fileIO.write(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
+        fileIO.writeFully(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
 
         fileIO.force();
     }
@@ -285,11 +294,9 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         WALPointer start = wal.log(cpRec);
 
-        wal.fsync(start);
+        wal.flush(start, false);
 
-        for (int i = 0; i < totalPages; i++) {
-            FullPageId fullId = pages[i];
-
+        for (FullPageId fullId : pages) {
             long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
@@ -325,9 +332,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
             long write = 0;
 
-            for (int i = 0; i < totalPages; i++) {
-                FullPageId fullId = pages[i];
-
+            for (FullPageId fullId : pages) {
                 if (pageIds.contains(fullId)) {
                     long cpStart = System.nanoTime();
 
@@ -375,7 +380,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             info("Finished checkpoint");
         }
 
-        wal.fsync(wal.log(new CheckpointRecord(null)));
+        wal.flush(wal.log(new CheckpointRecord(null)), false);
 
         for (FullPageId fullId : pages) {
             long page = mem.acquirePage(fullId.groupId(), fullId.pageId());

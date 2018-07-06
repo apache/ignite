@@ -104,6 +104,13 @@ namespace ignite
          * @return The same stream for chaining.
          */
         IGNITE_IMPORT_EXPORT StdCharOutStream& Dle(StdCharOutStream& ostr);
+
+        /**
+         * Get random seed.
+         *
+         * @return Random seed.
+         */
+        unsigned GetRandSeed();
     }
 }
 

@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
@@ -83,6 +84,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.encodeCacheFlags;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CONN_IDLE;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.FAILED;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
@@ -97,8 +99,8 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
- * This class performs request to grid over tcp protocol. Serialization is performed with marshaller
- * provided.
+ * This class performs request to grid over TCP protocol.
+ * Serialization is performed with marshaller provided.
  */
 public class GridClientNioTcpConnection extends GridClientConnection {
     /** */
@@ -210,11 +212,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             sock.setTcpNoDelay(tcpNoDelay);
             sock.setKeepAlive(true);
 
-            final long startConnTime = U.currentTimeMillis();
+            final long startConnTime = System.currentTimeMillis();
 
             sock.connect(srvAddr, connectTimeout);
 
-            final long connTimeoutRest = connectTimeout - (U.currentTimeMillis() - startConnTime);
+            final long connTimeoutRest = connectTimeout - (System.currentTimeMillis() - startConnTime);
 
             GridClientFuture<?> handshakeFut = new GridClientFutureAdapter<>();
 
@@ -431,7 +433,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert msg != null;
 
         if (msg instanceof GridClientPingPacket) {
-            long now = U.currentTimeMillis();
+            long now = System.currentTimeMillis();
 
             if (Math.min(now, lastPingRcvTime) - lastPingSndTime >= pingTimeout)
                 close(FAILED, false,
@@ -470,7 +472,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             GridNioFuture<?> sndFut = ses.send(msg);
 
-            lastMsgSndTime = U.currentTimeMillis();
+            lastMsgSndTime = System.currentTimeMillis();
 
             if (routeMode) {
                 sndFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -504,7 +506,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * Handles ping response.
      */
     void handlePingResponse() {
-        lastPingRcvTime = U.currentTimeMillis();
+        lastPingRcvTime = System.currentTimeMillis();
     }
 
     /**
@@ -515,7 +517,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     void handleResponse(GridClientMessage res) throws IOException {
-        lastMsgRcvTime = U.currentTimeMillis();
+        lastMsgRcvTime = System.currentTimeMillis();
 
         TcpClientFuture fut = pendingReqs.get(res.requestId());
 

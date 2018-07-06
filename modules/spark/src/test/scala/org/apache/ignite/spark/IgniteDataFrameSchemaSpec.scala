@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spark
 
-import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
-
-import org.apache.ignite.Ignite
 import org.apache.ignite.spark.AbstractDataFrameSpec._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
@@ -45,7 +42,7 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
                     ("IS_RESIDENT", BooleanType, true),
                     ("SALARY", DoubleType, true),
                     ("PENSION", DoubleType, true),
-                    ("ACCOUNT", DecimalType(10, 0), true),
+                    ("ACCOUNT", IgniteRDD.DECIMAL, true),
                     ("AGE", IntegerType, true),
                     ("ID", LongType, false),
                     ("CITY_ID", LongType, false))

@@ -19,13 +19,14 @@ package org.apache.ignite.lang.utils;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
@@ -75,7 +76,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
      */
     public void testDequeueThroughput() throws Exception {
 
-        final ConcurrentLinkedDeque8<Integer> buf = new ConcurrentLinkedDeque8<>();
+        final FastSizeDeque<Integer> buf = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
         final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 

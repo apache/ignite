@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -72,6 +71,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 
 /**
  * Shared context.
@@ -130,7 +130,7 @@ public class GridCacheSharedContext<K, V> {
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
-    private volatile TransactionMetricsAdapter txMetrics;
+    private final TransactionMetricsAdapter txMetrics;
 
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
@@ -209,7 +209,7 @@ public class GridCacheSharedContext<K, V> {
 
         this.storeSesLsnrs = storeSesLsnrs;
 
-        txMetrics = new TransactionMetricsAdapter();
+        txMetrics = new TransactionMetricsAdapter(kernalCtx);
 
         ctxMap = new ConcurrentHashMap<>();
 
@@ -622,7 +622,7 @@ public class GridCacheSharedContext<K, V> {
      * Resets tx metrics.
      */
     public void resetTxMetrics() {
-        txMetrics = new TransactionMetricsAdapter();
+        txMetrics.reset();
     }
 
     /**
@@ -711,7 +711,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @return Ttl cleanup manager.
-     * */
+     */
     public GridCacheSharedTtlCleanupManager ttl() {
         return ttlMgr;
     }
@@ -854,9 +854,13 @@ public class GridCacheSharedContext<K, V> {
         GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
-        f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
+
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
+        f.add(finishLocalTxsFuture);
+        f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
 
         f.markInitialized();
 
@@ -952,9 +956,14 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
-        tx.close();
+        if (clearThreadMap)
+            tx.txState().awaitLastFuture(this);
+        else
+            tx.state(MARKED_ROLLBACK);
+
+        tx.close(clearThreadMap);
     }
 
     /**
@@ -980,9 +989,14 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
-        return tx.rollbackNearTxLocalAsync();
+        if (clearThreadMap)
+            tx.txState().awaitLastFuture(this);
+        else
+            tx.state(MARKED_ROLLBACK);
+
+        return tx.rollbackNearTxLocalAsync(clearThreadMap, false);
     }
 
     /**

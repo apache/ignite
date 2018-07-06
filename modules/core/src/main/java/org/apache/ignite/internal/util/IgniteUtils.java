@@ -522,7 +522,12 @@ public abstract class IgniteUtils {
     };
 
     /** Ignite MBeans disabled flag. */
-    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+    public static boolean IGNITE_MBEANS_DISABLED =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
+    /** Ignite test features enabled flag. */
+    public static boolean IGNITE_TEST_FEATURES_ENABLED =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
 
     /** */
     private static final boolean assertionsEnabled;
@@ -4598,11 +4603,24 @@ public abstract class IgniteUtils {
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
     public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log) {
-        if (t != null)
-            try {
-                t.join();
+        return join(t, log, 0);
+    }
 
-                return true;
+    /**
+     * Waits for completion of a given thread. If thread is {@code null} then
+     * this method returns immediately returning {@code true}
+     *
+     * @param t Thread to join.
+     * @param log Logger for logging errors.
+     * @param timeout Join timeout.
+     * @return {@code true} if thread has finished, {@code false} otherwise.
+     */
+    public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log, long timeout) {
+        if (t != null) {
+            try {
+                t.join(timeout);
+
+                return !t.isAlive();
             }
             catch (InterruptedException ignore) {
                 warn(log, "Got interrupted while waiting for completion of a thread: " + t);
@@ -4611,6 +4629,7 @@ public abstract class IgniteUtils {
 
                 return false;
             }
+        }
 
         return true;
     }
@@ -5480,6 +5499,44 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets declared annotation for a class.
+     *
+     * @param <T> Type of annotation to return.
+     * @param cls Class to get annotation from.
+     * @param annCls Annotation to get.
+     * @return Instance of annotation, or {@code null} if not found.
+     */
+    @Nullable public static <T extends Annotation> T getDeclaredAnnotation(Class<?> cls, Class<T> annCls) {
+        if (cls == Object.class)
+            return null;
+
+        return cls.getDeclaredAnnotation(annCls);
+    }
+
+    /**
+     * Indicates if class has given declared annotation.
+     *
+     * @param <T> Annotation type.
+     * @param cls Class to get annotation from.
+     * @param annCls Annotation to get.
+     * @return {@code true} if class has annotation or {@code false} otherwise.
+     */
+    public static <T extends Annotation> boolean hasDeclaredAnnotation(Class<?> cls, Class<T> annCls) {
+        return getDeclaredAnnotation(cls, annCls) != null;
+    }
+
+    /**
+     * Indicates if class has given annotation.
+     *
+     * @param o Object to get annotation from.
+     * @param annCls Annotation to get.
+     * @return {@code true} if class has annotation or {@code false} otherwise.
+     */
+    public static <T extends Annotation> boolean hasDeclaredAnnotation(Object o, Class<T> annCls) {
+        return o != null && hasDeclaredAnnotation(o.getClass(), annCls);
+    }
+
+    /**
      * Indicates if class has given annotation.
      *
      * @param <T> Annotation type.
@@ -6111,6 +6168,21 @@ public abstract class IgniteUtils {
         String s = cls.getName();
 
         return s.startsWith("java.") || s.startsWith("javax.");
+    }
+
+    /**
+     * Check if given class represents a Enum.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if this is a Enum class.
+     */
+    public static boolean isEnum(Class cls) {
+        if (cls.isEnum())
+            return true;
+
+        Class sCls = cls.getSuperclass();
+
+        return sCls != null && sCls.isEnum();
     }
 
     /**
@@ -7247,35 +7319,23 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Casts this throwable as {@link IgniteCheckedException}. Creates wrapping
-     * {@link IgniteCheckedException}, if needed.
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
      *
      * @param t Throwable to cast.
-     * @return Grid exception.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
      */
     public static IgniteCheckedException cast(Throwable t) {
         assert t != null;
 
-        while (true) {
-            if (t instanceof Error)
-                throw (Error)t;
+        t = unwrap(t);
 
-            if (t instanceof GridClosureException) {
-                t = ((GridClosureException)t).unwrap();
-
-                continue;
-            }
-
-            if (t instanceof IgniteCheckedException)
-                return (IgniteCheckedException)t;
-
-            if (!(t instanceof IgniteException) || t.getCause() == null)
-                return new IgniteCheckedException(t);
-
-            assert t.getCause() != null; // ...and it is IgniteException.
-
-            t = t.getCause();
-        }
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
     }
 
     /**
@@ -7652,7 +7712,10 @@ public abstract class IgniteUtils {
      * @param t Thread.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(Thread t) throws IgniteInterruptedCheckedException {
+    public static void join(@Nullable Thread t) throws IgniteInterruptedCheckedException {
+        if (t == null)
+            return;
+
         try {
             t.join();
         }
@@ -8112,10 +8175,10 @@ public abstract class IgniteUtils {
         assert mtdName != null;
 
         try {
-            for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
+            for (cls = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
                 Method mtd = null;
 
-                for (Method declaredMtd : c.getDeclaredMethods()) {
+                for (Method declaredMtd : cls.getDeclaredMethods()) {
                     if (declaredMtd.getName().equals(mtdName)) {
                         if (mtd == null)
                             mtd = declaredMtd;
@@ -8171,11 +8234,11 @@ public abstract class IgniteUtils {
         assert mtdName != null;
 
         try {
-            for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
+            for (cls = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
                 Method mtd;
 
                 try {
-                    mtd = c.getDeclaredMethod(mtdName, paramTypes);
+                    mtd = cls.getDeclaredMethod(mtdName, paramTypes);
                 }
                 catch (NoSuchMethodException ignored) {
                     continue;

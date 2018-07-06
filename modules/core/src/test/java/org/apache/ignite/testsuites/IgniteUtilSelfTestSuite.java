@@ -43,6 +43,7 @@ import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridIntListSelfTest;
+import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridPartitionMapSelfTest;
@@ -52,6 +53,7 @@ import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
+import org.apache.ignite.util.mbeans.WorkersControlMXBeanTest;
 
 /**
  * Test suite for Ignite utility classes.
@@ -91,6 +93,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
+        suite.addTestSuite(WorkersControlMXBeanTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
@@ -116,6 +119,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         // control.sh
         suite.addTestSuite(CommandHandlerParsingTest.class);
         suite.addTestSuite(GridCommandHandlerTest.class);
+        suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
 
         return suite;
     }

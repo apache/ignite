@@ -118,6 +118,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(typeof(AttributeTest), qe.ValueType);
 
             var fields = qe.Fields.ToArray();
+            var idxField = fields.Single(x => x.Name == "IndexedField1");
 
             CollectionAssert.AreEquivalent(new[]
             {
@@ -126,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }, fields.Select(x => x.Name));
 
             Assert.IsTrue(fields.Single(x => x.Name == "SqlField").NotNull);
-            Assert.IsFalse(fields.Single(x => x.Name == "IndexedField1").NotNull);
+            Assert.IsFalse(idxField.NotNull);
 
             var idx = qe.Indexes.ToArray();
 
@@ -144,6 +145,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(-1, idx[1].InlineSize);
             Assert.AreEqual(513, idx[2].InlineSize);
             Assert.AreEqual(-1, idx[3].InlineSize);
+            
+            Assert.AreEqual(3, idxField.Precision);
+            Assert.AreEqual(4, idxField.Scale);
         }
 
         /// <summary>
@@ -161,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             using (var ignite = Ignition.Start(cfg))
             {
                 var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(new CacheConfiguration(CacheName,
-                        typeof (AttributeQueryPerson)));
+                        new QueryEntity(typeof(int), typeof(AttributeQueryPerson))));
 
                 Assert.IsNotNull(cache);
 
@@ -320,7 +324,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField(NotNull = true)]
             public double SqlField { get; set; }
 
-            [QuerySqlField(IsIndexed = true, Name = "IndexedField1", IsDescending = true, IndexInlineSize = 513)]
+            [QuerySqlField(IsIndexed = true, Name = "IndexedField1", IsDescending = true, IndexInlineSize = 513,
+                DefaultValue = 42, Precision = 3, Scale = 4)]
             public int IndexedField { get; set; }
 
             [QueryTextField]

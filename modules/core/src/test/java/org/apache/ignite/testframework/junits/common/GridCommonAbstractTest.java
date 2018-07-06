@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
@@ -61,6 +62,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
@@ -97,6 +100,9 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -138,7 +144,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(DEFAULT_CACHE_NAME);
+        return grid(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
     }
 
     /**
@@ -269,7 +275,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().cache(DEFAULT_CACHE_NAME);
+        return grid().cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
     }
 
     /**
@@ -798,10 +804,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
             new VerifyBackupPartitionsTask(), cacheNames);
 
-        if (!conflicts.isEmpty()) {
-            throw new IgniteCheckedException("Partition checksums are different for backups " +
-                "of the following partitions: " + conflicts.keySet());
-        }
+        if (!conflicts.isEmpty())
+            throw new IgniteCheckedException("Conflict partitions: " + conflicts.keySet());
     }
 
     /**
@@ -865,7 +869,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
                     .append(" topVer=")
                     .append((U.hasField(f, "topVer") ?
-                        String.valueOf(U.field(f, "topVer")) : "[unknown] may be it is finished future"))
+                        String.valueOf(U.<Object>field(f, "topVer")) : "[unknown] may be it is finished future"))
                     .append("\n");
 
                 Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
@@ -947,6 +951,61 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("dump partitions state for <" + cacheName + ">:\n" + sb.toString());
+    }
+
+    /**
+     * Use method for manual rebalaincing cache on all nodes. Note that using
+     * <pre name="code" class="java">
+     *   for (int i = 0; i < G.allGrids(); i++)
+     *     grid(i).cache(CACHE_NAME).rebalance().get();
+     * </pre>
+     * for rebalancing cache will lead to flaky test cases.
+     *
+     * @param ignite Ignite server instance for getting {@code compute} facade over all cluster nodes.
+     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
+     * @throws IgniteCheckedException If fails.
+     */
+    protected void manualCacheRebalancing(Ignite ignite,
+        final String cacheName) throws IgniteCheckedException {
+        if (ignite.configuration().isClientMode())
+            return;
+
+        IgniteFuture<Void> fut =
+            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
+                /** */
+                @LoggerResource
+                IgniteLogger log;
+
+                /** */
+                @IgniteInstanceResource
+                private Ignite ignite;
+
+                /** {@inheritDoc} */
+                @Override public void run() {
+                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+                    assertNotNull(cache);
+
+                    while (!(Boolean)cache.rebalance().get()) {
+                        try {
+                            U.sleep(100);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+
+                    if (log.isInfoEnabled())
+                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+                }
+            });
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fut.isDone();
+            }
+        }, 5_000));
     }
 
     /**
@@ -1851,5 +1910,42 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertEquals(desc.config().getName(), desc0.config().getName());
         assertEquals(desc.config().getGroupName(), desc0.config().getGroupName());
         assertEquals(desc.caches(), desc0.caches());
+    }
+
+    /**
+     * Forces checkpoint on all available nodes.
+     *
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint() throws IgniteCheckedException {
+        forceCheckpoint(G.allGrids());
+    }
+
+    /**
+     * Forces checkpoint on specified node.
+     *
+     * @param node Node to force checkpoint on it.
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint(Ignite node) throws IgniteCheckedException {
+        forceCheckpoint(Collections.singletonList(node));
+    }
+
+    /**
+     * Forces checkpoint on all specified nodes.
+     *
+     * @param nodes Nodes to force checkpoint on them.
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
+        for (Ignite ignite : nodes) {
+            if (ignite.cluster().localNode().isClient())
+                continue;
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
+                    .cache().context().database();
+
+            dbMgr.waitForCheckpoint("test");
+        }
     }
 }

@@ -91,8 +91,6 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
         }
 
         it("should successfully store data to ignite using saveValues") {
-            fail("https://issues.apache.org/jira/browse/IGNITE-7727")
-
             val sc = new SparkContext("local[*]", "test")
 
             try {
@@ -116,8 +114,6 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
         }
 
         it("should successfully store data to ignite using saveValues with inline transformation") {
-            fail("https://issues.apache.org/jira/browse/IGNITE-7727")
-
             val sc = new SparkContext("local[*]", "test")
 
             try {

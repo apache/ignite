@@ -22,6 +22,9 @@
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc/system/ui/window.h"
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
+#include "ignite/odbc/config/connection_string_parser.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/odbc_error.h"
 
 using ignite::odbc::config::Configuration;
 
@@ -89,20 +92,17 @@ bool RegisterDsn(const Configuration& config, LPCSTR driver)
         if (!SQLWriteDSNToIni(dsn, driver))
             ignite::odbc::ThrowLastSetupError();
 
-        const ArgMap& map = config.GetMap();
+        ArgMap map;
+        
+        config.ToMap(map);
 
-        std::set<std::string> ignore;
-
-        ignore.insert(Configuration::Key::dsn);
-        ignore.insert(Configuration::Key::driver);
+        map.erase(ConnectionStringParser::Key::dsn);
+        map.erase(ConnectionStringParser::Key::driver);
 
         for (ArgMap::const_iterator it = map.begin(); it != map.end(); ++it)
         {
             const std::string& key = it->first;
             const std::string& value = it->second;
-
-            if (ignore.find(key) != ignore.end())
-                continue;
 
             ignite::odbc::WriteDsnString(dsn, key.c_str(), value.c_str());
         }
@@ -154,14 +154,16 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
     LOG_MSG("Attributes: " << attributes);
 
-    config.FillFromConfigAttributes(attributes);
+    config::ConnectionStringParser parser(config);
+
+    diagnostic::DiagnosticRecordStorage diag;
+
+    parser.ParseConfigAttributes(attributes, &diag);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
         return FALSE;
 
     LOG_MSG("Driver: " << driver);
-    LOG_MSG("Attributes: " << attributes);
-
     LOG_MSG("DSN: " << config.GetDsn());
 
     switch (req)

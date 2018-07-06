@@ -74,11 +74,6 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
     /**
      * @throws Exception If failed.
      */

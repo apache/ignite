@@ -86,12 +86,18 @@ ignite_odbc_tests_SOURCES = \
     src/types_test.cpp \
     ../odbc/src/log.cpp \
     ../odbc/src/cursor.cpp \
-    ../odbc/src/config/connection_info.cpp \
-    ../odbc/src/app/application_data_buffer.cpp \
+    ../odbc/src/diagnostic/diagnostic_record.cpp \
+    ../odbc/src/diagnostic/diagnostic_record_storage.cpp \
+    ../odbc/src/config/config_tools.cpp \
     ../odbc/src/config/configuration.cpp \
+    ../odbc/src/config/connection_info.cpp \
+    ../odbc/src/config/connection_string_parser.cpp \
+    ../odbc/src/app/application_data_buffer.cpp \
+    ../odbc/src/ssl/ssl_mode.cpp \
     ../odbc/src/row.cpp \
     ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \
+    ../odbc/src/common_types.cpp \
     ../odbc/src/utility.cpp \
     ../odbc/src/result_page.cpp
 

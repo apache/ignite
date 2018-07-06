@@ -17,7 +17,7 @@
 
 import { Selector } from 'testcafe';
 import { AngularJSSelector } from 'testcafe-angular-selectors';
-import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../environment/envtools';
 import { createRegularUser } from '../roles';
 
 const regularUser = createRegularUser();
@@ -35,13 +35,16 @@ fixture('Checking admin panel')
         await dropTestDB();
     });
 
+const setNotificationsButton = Selector('button').withText('Set user notifications');
+
 test('Testing setting notifications', async(t) => {
-    await t.click(Selector('button').withAttribute('ng-click', 'ctrl.changeUserNotifications()'));
+    await t.click(setNotificationsButton);
 
     await t
         .expect(Selector('h4').withText(/.*Set user notifications.*/).exists)
         .ok()
         .click('.ace_content')
+        .pressKey('ctrl+a delete')
         .pressKey('t e s t space m e s s a g e')
         .click(AngularJSSelector.byModel('$ctrl.isShown'))
         .click('#btn-submit');
@@ -50,7 +53,7 @@ test('Testing setting notifications', async(t) => {
         .expect(Selector('.wch-notification').innerText)
         .eql('test message');
 
-    await t.click(Selector('button').withAttribute('ng-click', 'ctrl.changeUserNotifications()'));
+    await t.click(setNotificationsButton);
 
     await t
         .click('.ace_content')

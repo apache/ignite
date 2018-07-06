@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -194,6 +195,9 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** */
+        private bool? _authenticationEnabled;
+
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
@@ -219,6 +223,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
         /// </summary>
         public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
+        /// Default value for <see cref="AuthenticationEnabled"/> property.
+        /// </summary>
+        public const bool DefaultAuthenticationEnabled = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -295,6 +304,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
+            writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
@@ -407,6 +417,7 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -501,7 +512,43 @@ namespace Apache.Ignite.Core
 
             // SSL Context factory.
             SslFactorySerializer.Write(writer, SslContextFactory);
+            
+            // Failure handler.
+            if (FailureHandler == null)
+            {
+                writer.WriteBoolean(false);
+            }
+            else
+            {
+                writer.WriteBoolean(true);
+                
+                if (FailureHandler is NoOpFailureHandler)
+                {
+                    writer.WriteByte(0);
+                }
+                else if (FailureHandler is StopNodeFailureHandler)
+                {
+                    writer.WriteByte(1);
+                }
+                else 
+                {
+                    var failHnd = FailureHandler as StopNodeOrHaltFailureHandler;
 
+                    if (failHnd == null)
+                    {
+                        throw new InvalidOperationException(string.Format(
+                            "Unsupported IgniteConfiguration.FailureHandler: '{0}'. " +
+                            "Supported implementations: '{1}', '{2}', '{3}'.",
+                            FailureHandler.GetType(), typeof(NoOpFailureHandler), typeof(StopNodeFailureHandler),
+                            typeof(StopNodeOrHaltFailureHandler)));
+                    }
+
+                    writer.WriteByte(2);
+
+                    failHnd.Write(writer);
+                }
+            }
+           
             // Plugins (should be last).
             if (PluginConfigurations != null)
             {
@@ -609,6 +656,7 @@ namespace Apache.Ignite.Core
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
+            _authenticationEnabled = r.ReadBooleanNullable();
             ConsistentId = r.ReadObject<object>();
 
             // Thread pools
@@ -671,14 +719,16 @@ namespace Apache.Ignite.Core
                     DefaultTransactionConcurrency = (TransactionConcurrency) r.ReadInt(),
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
-                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
+                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
             // Event storage
             switch (r.ReadByte())
             {
-                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                case 1:
+                    EventStorageSpi = new NoopEventStorageSpi();
                     break;
 
                 case 2:
@@ -725,6 +775,37 @@ namespace Apache.Ignite.Core
 
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);
+            
+            //Failure handler.
+            if (r.ReadBoolean())
+            {
+                switch (r.ReadByte())
+                {
+                    case 0:
+                        FailureHandler = new NoOpFailureHandler();
+                        
+                        break;
+
+                    case 1:
+                        FailureHandler = new StopNodeFailureHandler();
+                        
+                        break;
+
+                    case 2:
+                        FailureHandler = StopNodeOrHaltFailureHandler.Read(r);
+                        
+                        break;
+                    
+                    default:
+                        FailureHandler = null;
+                        
+                        break;
+                }
+            }
+            else
+            {
+                FailureHandler = null;
+            }
         }
 
         /// <summary>
@@ -1425,5 +1506,28 @@ namespace Apache.Ignite.Core
         /// </summary>
         [DefaultValue(DefaultRedirectJavaConsoleOutput)]
         public bool RedirectJavaConsoleOutput { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>. 
+        /// </summary>
+        [DefaultValue(DefaultAuthenticationEnabled)]
+        public bool AuthenticationEnabled
+        {
+            get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
+            set { _authenticationEnabled = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets predefined failure handlers implementation.
+        /// A failure handler handles critical failures of Ignite instance accordingly:
+        /// <para><see cref="NoOpFailureHandler"/> -- do nothing.</para>
+        /// <para><see cref="StopNodeFailureHandler"/> -- stop node.</para>
+        /// <para><see cref="StopNodeOrHaltFailureHandler"/> -- try to stop node if tryStop value is true.
+        /// If node can't be stopped during provided timeout or tryStop value is false then JVM process will be terminated forcibly.</para>
+        /// <para/>
+        /// Only these implementations are supported: 
+        /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>, <see cref="StopNodeFailureHandler"/>.
+        /// </summary>
+        public IFailureHandler FailureHandler { get; set; }
     }
 }

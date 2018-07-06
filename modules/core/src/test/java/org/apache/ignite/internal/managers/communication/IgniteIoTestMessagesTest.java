@@ -63,13 +63,6 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
         startGrid(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -502,6 +502,21 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        guard();
+
+        try {
+            ctx.cache().setTxTimeoutOnPartitionMapExchange(timeout);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCluster withAsync() {
         return new IgniteClusterAsyncImpl(this);
     }

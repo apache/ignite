@@ -64,10 +64,9 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
                 "lastName" + Integer.toHexString((i + 16) % 256)));
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
-
-        super.afterTestsStopped();
     }
 
     /** */
@@ -286,6 +285,15 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
 
             assertTrue(list.get(0) instanceof Integer);
         }
+    }
+
+    /**
+     * Tests the repository method with a custom query which takes no parameters.
+     */
+    public void testCountAllPersons() {
+        int cnt = repo.countAllPersons();
+
+        assertEquals(CACHE_SIZE, cnt);
     }
 }
 

@@ -29,6 +29,7 @@ git-patch-prop-local.sh
 **/dotnet/libs/
 *.classname*
 *.exe
+.mvn/
 
 #Visual Studio files
 *.[Oo]bj

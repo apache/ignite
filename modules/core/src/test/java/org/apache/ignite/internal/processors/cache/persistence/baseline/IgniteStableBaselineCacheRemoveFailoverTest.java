@@ -70,9 +70,9 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
-                    .setInitialSize(512 * 1024 * 1024)
-                    .setMaxSize(512 * 1024 * 1024)
-                    .setCheckpointPageBufferSize(512 * 1024 * 1024)
+                    .setInitialSize(512L * 1024 * 1024)
+                    .setMaxSize(512L * 1024 * 1024)
+                    .setCheckpointPageBufferSize(512L * 1024 * 1024)
                 )
         );
 
@@ -94,8 +94,6 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

@@ -18,6 +18,8 @@
 'use strict';
 
 const _ = require('lodash');
+const {MongodHelper} = require('mongodb-prebuilt');
+const {MongoDBDownload} = require('mongodb-download');
 
 // Fire me up!
 
@@ -30,10 +32,9 @@ module.exports = {
 };
 
 const defineSchema = (mongoose, schemas) => {
-    const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
 
-    result.ObjectId = ObjectId;
+    result.ObjectId = mongoose.Types.ObjectId;
 
     result.errCodes = {
         DUPLICATE_KEY_ERROR: 11000,
@@ -64,9 +65,6 @@ module.exports.factory = function(settings, mongoose, schemas) {
         .then(() => defineSchema(mongoose, schemas))
         .catch((err) => {
             console.log('Failed to connect to local MongoDB, will try to download and start embedded MongoDB', err);
-
-            const {MongodHelper} = require('mongodb-prebuilt');
-            const {MongoDBDownload} = require('mongodb-download');
 
             const helper = new MongodHelper(['--port', '27017', '--dbpath', `${process.cwd()}/user_data`]);
 

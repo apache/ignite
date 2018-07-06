@@ -115,6 +115,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return cache.clusterMetrics().getCacheSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getKeySize() {
         return cache.clusterMetrics().getKeySize();
     }
@@ -365,6 +370,16 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalancedKeys() {
+        return cache.clusterMetrics().getRebalancedKeys();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingKeys() {
+        return cache.clusterMetrics().getEstimatedRebalancingKeys();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
         return cache.clusterMetrics().getRebalancingPartitionsCount();
     }
@@ -402,6 +417,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
         return cache.clusterMetrics().getRebalancingStartTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return cache.clusterMetrics().getRebalanceClearingPartitionsLeft();
     }
 
     /** {@inheritDoc} */

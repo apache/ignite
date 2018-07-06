@@ -121,6 +121,10 @@ if (!$skipJava) {
         echo "Maven detected at $mv."
     }
 
+    # Install Maven Wrapper
+    cmd /c "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    $mv = "mvnw.cmd"
+
     # Run Maven
     echo "Starting Java (Maven) build..."
     

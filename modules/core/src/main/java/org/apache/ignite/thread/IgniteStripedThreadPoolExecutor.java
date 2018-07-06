@@ -17,6 +17,7 @@
 
 package org.apache.ignite.thread;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,10 +46,11 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      * @param igniteInstanceName Node name.
      * @param threadNamePrefix Thread name prefix.
      */
-    public IgniteStripedThreadPoolExecutor(int concurrentLvl, String igniteInstanceName, String threadNamePrefix) {
+    public IgniteStripedThreadPoolExecutor(int concurrentLvl, String igniteInstanceName, String threadNamePrefix,
+        UncaughtExceptionHandler eHnd) {
         execs = new ExecutorService[concurrentLvl];
 
-        ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix);
+        ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
         for (int i = 0; i < concurrentLvl; i++)
             execs[i] = Executors.newSingleThreadExecutor(factory);

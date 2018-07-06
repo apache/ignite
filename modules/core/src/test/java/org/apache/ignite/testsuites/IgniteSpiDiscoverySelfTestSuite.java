@@ -18,8 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
+import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
@@ -34,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnRec
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySegmentationPolicyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySnapshotHistoryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiConfigSelfTest;
@@ -95,12 +98,16 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoveryRestartTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));
 
+        suite.addTest(new TestSuite(TcpDiscoverySegmentationPolicyTest.class));
+
         suite.addTest(new TestSuite(TcpDiscoveryNodeAttributesUpdateOnReconnectTest.class));
         suite.addTest(new TestSuite(AuthenticationRestartTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryWithWrongServerTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoverySpiReconnectDelayTest.class));
+
+        suite.addTest(new TestSuite(IgniteDiscoveryMassiveNodeFailTest.class));
 
         // Client connect.
         suite.addTest(new TestSuite(IgniteClientConnectTest.class));
@@ -116,6 +123,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteDiscoveryCacheReuseSelfTest.class));
 
         suite.addTest(new TestSuite(DiscoveryUnmarshalVulnerabilityTest.class));
+
+        suite.addTest(new TestSuite(FilterDataForClientNodeDiscoveryTest.class));
 
         return suite;
     }

@@ -145,6 +145,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM.
         /// </summary>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
         public static Jvm Get(bool ignoreMissing = false)
         {
             var res = _instance;

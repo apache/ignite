@@ -124,13 +124,6 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
      * @return Keys.
      */
     protected Iterable<Integer> getKeys() {

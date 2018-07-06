@@ -19,8 +19,7 @@
 #   include <windows.h>
 #endif
 
-#include <sql.h>
-#include <sqlext.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include <vector>
 #include <string>
@@ -37,6 +36,7 @@
 
 #include "test_type.h"
 #include "test_utils.h"
+#include "odbc_test_suite.h"
 
 using namespace ignite;
 using namespace ignite_test;
@@ -48,62 +48,8 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Test setup fixture.
  */
-struct SqlGetInfoTestSuiteFixture
+struct SqlGetInfoTestSuiteFixture : odbc::OdbcTestSuite
 {
-    /**
-     * Establish connection to node.
-     *
-     * @param connectStr Connection string.
-     */
-    void Connect(const std::string& connectStr)
-    {
-        // Allocate an environment handle
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-        BOOST_REQUIRE(env != NULL);
-
-        // We want ODBC 3 support
-        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-        // Allocate a connection handle
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-        BOOST_REQUIRE(dbc != NULL);
-
-        // Connect string
-        std::vector<SQLCHAR> connectStr0;
-
-        connectStr0.reserve(connectStr.size() + 1);
-        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
-
-        SQLCHAR outstr[ODBC_BUFFER_SIZE];
-        SQLSMALLINT outstrlen;
-
-        // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-
-        BOOST_REQUIRE(stmt != NULL);
-    }
-
-    void Disconnect()
-    {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
-
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
-
     void CheckStrInfo(SQLSMALLINT type, const std::string& expectedValue)
     {
         SQLCHAR val[ODBC_BUFFER_SIZE];
@@ -139,18 +85,9 @@ struct SqlGetInfoTestSuiteFixture
     /**
      * Constructor.
      */
-    SqlGetInfoTestSuiteFixture() :
-        env(NULL),
-        dbc(NULL),
-        stmt(NULL)
+    SqlGetInfoTestSuiteFixture()
     {
-#ifdef IGNITE_TESTS_32
-        const char* config = "queries-test-32.xml";
-#else
-        const char* config = "queries-test.xml";
-#endif
-
-        grid = StartNode(config, "NodeMain");
+        grid = StartTestNode("queries-test.xml", "NodeMain");
     }
 
     /**
@@ -158,22 +95,11 @@ struct SqlGetInfoTestSuiteFixture
      */
     ~SqlGetInfoTestSuiteFixture()
     {
-        Disconnect();
-
         Ignition::StopAll(true);
     }
 
     /** Node started during the test. */
     Ignite grid;
-
-    /** ODBC Environment. */
-    SQLHENV env;
-
-    /** ODBC Connect. */
-    SQLHDBC dbc;
-
-    /** ODBC Statement. */
-    SQLHSTMT stmt;
 };
 
 BOOST_FIXTURE_TEST_SUITE(SqlGetInfoTestSuite, SqlGetInfoTestSuiteFixture)

@@ -33,6 +33,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** */
         private const string RegionNoMetrics = "regNoMetrics";
 
+        /** System page size overhead, see PageMemoryNoStoreImpl.PAGE_OVERHEAD. */
+        private const int PageOverhead = 24;
+
         /// <summary>
         /// Tests the memory metrics.
         /// </summary>
@@ -57,8 +60,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
             Assert.Greater(memMetrics.PhysicalMemoryPages, 1000);
-            Assert.AreEqual(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
-            Assert.AreEqual(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
+            Assert.AreEqual(memMetrics.TotalAllocatedSize,
+                memMetrics.TotalAllocatedPages * (memMetrics.PageSize + PageOverhead));
+            Assert.AreEqual(memMetrics.PhysicalMemorySize,
+                memMetrics.PhysicalMemoryPages * (memMetrics.PageSize + PageOverhead));
 
             var sysMetrics = metrics[2];
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
@@ -77,8 +82,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
             Assert.Greater(memMetrics.PhysicalMemoryPages, 1000);
-            Assert.AreEqual(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
-            Assert.AreEqual(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
+            Assert.AreEqual(memMetrics.TotalAllocatedSize,
+                memMetrics.TotalAllocatedPages * (memMetrics.PageSize + PageOverhead));
+            Assert.AreEqual(memMetrics.PhysicalMemorySize,
+                memMetrics.PhysicalMemoryPages * (memMetrics.PageSize + PageOverhead));
 
             sysMetrics = ignite.GetDataRegionMetrics("sysMemPlc");
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);

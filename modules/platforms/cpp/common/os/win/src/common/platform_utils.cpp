@@ -106,5 +106,10 @@ namespace ignite
 
             return ostr;
         }
+
+        unsigned GetRandSeed()
+        {
+            return static_cast<unsigned>(GetTickCount() ^ GetCurrentProcessId());
+        }
     }
 }

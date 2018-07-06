@@ -240,14 +240,25 @@ public interface CacheMetrics {
      * Gets number of non-{@code null} values in the cache.
      *
      * @return Number of non-{@code null} values in the cache.
+     * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
+    @Deprecated
     public int getSize();
+
+    /**
+     * Gets number of non-{@code null} values in the cache as a long value.
+     *
+     * @return Number of non-{@code null} values in the cache.
+     */
+    public long getCacheSize();
 
     /**
      * Gets number of keys in the cache, possibly with {@code null} values.
      *
      * @return Number of keys in the cache.
+     * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
+    @Deprecated
     public int getKeySize();
 
     /**
@@ -262,6 +273,7 @@ public interface CacheMetrics {
      *
      * @return Current size of evict queue.
      */
+    @Deprecated
     public int getDhtEvictQueueCurrentSize();
 
     /**
@@ -283,6 +295,7 @@ public interface CacheMetrics {
      *
      * @return Committed transaction queue size.
      */
+    @Deprecated
     public int getTxCommitQueueSize();
 
     /**
@@ -290,6 +303,7 @@ public interface CacheMetrics {
      *
      * @return Prepared transaction queue size.
      */
+    @Deprecated
     public int getTxPrepareQueueSize();
 
     /**
@@ -297,6 +311,7 @@ public interface CacheMetrics {
      *
      * @return Start version counts map size.
      */
+    @Deprecated
     public int getTxStartVersionCountsSize();
 
     /**
@@ -332,6 +347,7 @@ public interface CacheMetrics {
      *
      * @return Committed DHT transaction queue size.
      */
+    @Deprecated
     public int getTxDhtCommitQueueSize();
 
     /**
@@ -339,6 +355,7 @@ public interface CacheMetrics {
      *
      * @return Prepared DHT transaction queue size.
      */
+    @Deprecated
     public int getTxDhtPrepareQueueSize();
 
     /**
@@ -346,6 +363,7 @@ public interface CacheMetrics {
      *
      * @return DHT start version counts map size.
      */
+    @Deprecated
     public int getTxDhtStartVersionCountsSize();
 
     /**
@@ -491,6 +509,16 @@ public interface CacheMetrics {
     public int getRebalancingPartitionsCount();
 
     /**
+     * @return Number of already rebalanced keys.
+     */
+    public long getRebalancedKeys();
+
+    /**
+     * @return Number estimated to rebalance keys.
+     */
+    public long getEstimatedRebalancingKeys();
+
+    /**
      * @return Estimated number of keys to be rebalanced on current node.
      */
     public long getKeysToRebalanceLeft();
@@ -534,6 +562,11 @@ public interface CacheMetrics {
      * @return Rebalancing start time.
      */
     public long getRebalancingStartTime();
+
+    /**
+     * @return Number of partitions need to be cleared before actual rebalance start.
+     */
+    public long getRebalanceClearingPartitionsLeft();
 
     /**
      * Checks whether statistics collection is enabled in this cache.

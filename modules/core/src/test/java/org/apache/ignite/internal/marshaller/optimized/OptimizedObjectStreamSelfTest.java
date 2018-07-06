@@ -56,6 +56,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
@@ -67,7 +68,6 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -146,13 +146,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoolean() throws Exception {
-        boolean val = true;
+        assertEquals(Boolean.TRUE, marshalUnmarshal(Boolean.TRUE));
 
-        assertEquals(new Boolean(val), marshalUnmarshal(val));
-
-        val = false;
-
-        assertEquals(new Boolean(val), marshalUnmarshal(val));
+        assertEquals(Boolean.FALSE, marshalUnmarshal(Boolean.FALSE));
     }
 
     /**
@@ -271,6 +267,49 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             if (serEx == null)
                 throw e;
+        }
+    }
+
+    /**
+     * Test informative exception message while failed object unmarshalling
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedUnmarshallingLogging() throws Exception {
+        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+        marsh.setContext(CTX);
+
+        try {
+            marsh.unmarshal(marsh.marshal(new BadDeserializableObject()), null);
+        }
+        catch (IgniteCheckedException ex) {
+            assertTrue(ex.getCause().getMessage().contains(
+                "object [typeName=org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest$BadDeserializableObject]"));
+
+            assertTrue(ex.getCause().getCause().getMessage().contains("field [name=val"));
+        }
+    }
+
+
+    /**
+     * Test informative exception message while failed object marshalling
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedMarshallingLogging() throws Exception {
+        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+        marsh.setContext(CTX);
+
+        try {
+            marsh.marshal(new BadSerializableObject());
+        }
+        catch (IgniteCheckedException ex) {
+            assertTrue(ex.getCause().getMessage().contains(
+                "object [typeName=org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest$BadSerializableObject]"));
+
+            assertTrue(ex.getCause().getCause().getMessage().contains("field [name=val"));
         }
     }
 
@@ -1028,7 +1067,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             marshalUnmarshal(new CustomWriteObjectMethodObject("test"));
         }
         catch (IOException e) {
-            assert e.getCause() instanceof NotActiveException;
+            assert e.getCause().getCause() instanceof NotActiveException;
         }
     }
 
@@ -2249,4 +2288,43 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             return res;
         }
     }
+
+    /** */
+    static class BadDeserializableObject implements Serializable {
+        /** */
+        BadDeserializableValue val = new BadDeserializableValue();
+    }
+
+    /** */
+    static class BadDeserializableValue implements Serializable {
+        /** */
+        private void writeObject(ObjectOutputStream os) throws IOException{
+            os.write(10);
+        }
+
+        /** */
+        private void readObject(ObjectInputStream os){
+            throw new RuntimeException("bad object");
+        }
+    }
+
+    /** */
+    static class BadSerializableObject implements Serializable {
+        /** */
+        BadSerializableValue val = new BadSerializableValue();
+    }
+
+    /** */
+    static class BadSerializableValue implements Serializable {
+        /** */
+        private void writeObject(ObjectOutputStream os){
+            throw new RuntimeException("bad object");
+        }
+
+        /** */
+        private void readObject(ObjectInputStream os){
+            throw new RuntimeException("bad object");
+        }
+    }
+
 }

@@ -32,20 +32,16 @@ public class MatrixAttributeTest {
     /** */
     private final List<MatrixAttributeTest.AttrCfg> attrCfgs = Arrays.asList(
         new AttrCfg("isDense", Matrix::isDense,
-            DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class, RandomMatrix.class, DiagonalMatrix.class),
+            DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class),
         new AttrCfg("isArrayBased", Matrix::isArrayBased, DenseLocalOnHeapMatrix.class),
         new AttrCfg("isDistributed", Matrix::isDistributed),
-        new AttrCfg("isRandomAccess", Matrix::isRandomAccess, DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class, RandomMatrix.class, DiagonalMatrix.class, SparseLocalOnHeapMatrix.class),
-        new AttrCfg("isSequentialAccess", Matrix::isSequentialAccess, DiagonalMatrix.class)
+        new AttrCfg("isRandomAccess", Matrix::isRandomAccess, DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class, SparseLocalOnHeapMatrix.class)
     );
 
     /** */
     private final List<MatrixAttributeTest.Specification> specFixture = Arrays.asList(
         new Specification(new DenseLocalOnHeapMatrix(1, 1)),
         new Specification(new DenseLocalOffHeapMatrix(1, 1)),
-        new Specification(new RandomMatrix(1, 1)),
-        new Specification(new DiagonalMatrix(new double[] {1.0})),
-        new Specification(new FunctionMatrix(1, 1, (x, y) -> 1.0)),
         new Specification(new SparseLocalOnHeapMatrix(1, 1))
     );
 
@@ -59,12 +55,6 @@ public class MatrixAttributeTest {
     @Test
     public void isArrayBasedTest() {
         assertAttribute("isArrayBased");
-    }
-
-    /** */
-    @Test
-    public void isSequentialAccessTest() {
-        assertAttribute("isSequentialAccess");
     }
 
     /** */

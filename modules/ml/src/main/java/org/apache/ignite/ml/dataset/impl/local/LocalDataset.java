@@ -55,8 +55,12 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
         R identity) {
         R res = identity;
 
-        for (int part = 0; part < ctx.size(); part++)
-            res = reduce.apply(res, map.apply(ctx.get(part), data.get(part), part));
+        for (int part = 0; part < ctx.size(); part++) {
+            D partData = data.get(part);
+
+            if (partData != null)
+                res = reduce.apply(res, map.apply(ctx.get(part), partData, part));
+        }
 
         return res;
     }
@@ -65,8 +69,12 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
     @Override public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         R res = identity;
 
-        for (int part = 0; part < data.size(); part++)
-            res = reduce.apply(res, map.apply(data.get(part), part));
+        for (int part = 0; part < data.size(); part++) {
+            D partData = data.get(part);
+
+            if (partData != null)
+                res = reduce.apply(res, map.apply(partData, part));
+        }
 
         return res;
     }

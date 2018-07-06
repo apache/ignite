@@ -27,6 +27,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
@@ -44,11 +46,6 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     @Override public void beforeTestsStarted() throws Exception {
         grid = IgniteSpring.start(new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -93,7 +90,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
         Ignite anotherGrid = IgniteSpring.start(anotherCfg, new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource-with-duplicate-beans.xml"));
 
-        Throwable err = assertError(new IgniteCallable<Object>() {
+        assertError(new IgniteCallable<Object>() {
             @SpringResource(resourceClass = DummyResourceBean.class)
             private transient DummyResourceBean dummyRsrcBean;
 
@@ -102,11 +99,9 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, anotherGrid, null);
-
-        assertTrue("Unexpected message: " + err.getMessage(), err.getMessage().startsWith("No qualifying bean of type " +
+        }, anotherGrid, NoUniqueBeanDefinitionException.class, "No qualifying bean of type " +
             "'org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean'" +
-            " available: expected single matching bean but found 2:"));
+            " available: expected single matching bean but found 2:");
 
         G.stop("anotherGrid", false);
     }
@@ -124,7 +119,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No bean named 'nonExistentResource' available");
+        }, grid, NoSuchBeanDefinitionException.class, "No bean named 'nonExistentResource' available");
     }
 
     /**
@@ -140,7 +135,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource." +
+        }, grid, NoSuchBeanDefinitionException.class, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource." +
             "GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
     }
 
@@ -157,7 +152,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+        }, grid, IgniteException.class, "Either bean name or its class must be specified in @SpringResource, but not both");
     }
 
     /**
@@ -173,7 +168,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+        }, grid, IgniteException.class, "Either bean name or its class must be specified in @SpringResource, but not both");
     }
 
     /**
@@ -232,7 +227,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             "/org/apache/ignite/internal/processors/resource/spring-resource-with-duplicate-beans.xml"));
 
         try {
-            Throwable err = assertError(new IgniteCallable<Object>() {
+            assertError(new IgniteCallable<Object>() {
                 private DummyResourceBean dummyRsrcBean;
 
                 @SpringResource(resourceClass = DummyResourceBean.class)
@@ -247,11 +242,9 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                     return null;
                 }
-            }, anotherGrid, null);
-
-            assertTrue("Unexpected message: " + err.getMessage(), err.getMessage().startsWith("No qualifying bean of type " +
+            }, anotherGrid, NoUniqueBeanDefinitionException.class, "No qualifying bean of type " +
                 "'org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean'" +
-                " available: expected single matching bean but found 2:"));
+                " available: expected single matching bean but found 2:");
         }
         finally {
             G.stop("anotherGrid", false);
@@ -275,7 +268,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No bean named 'nonExistentResource' available");
+        }, grid, NoSuchBeanDefinitionException.class, "No bean named 'nonExistentResource' available");
     }
 
     /**
@@ -295,7 +288,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
+        }, grid, NoSuchBeanDefinitionException.class,"No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
             ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
     }
 
@@ -312,7 +305,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+        }, grid, IgniteException.class, "Either bean name or its class must be specified in @SpringResource, but not both");
     }
 
     /**
@@ -328,32 +321,24 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+        }, grid, IgniteException.class, "Either bean name or its class must be specified in @SpringResource, but not both");
     }
 
     /**
-     * @param job {@link IgniteCallable} to be run
-     * @param grid Node.
-     * @param expEMsg Message that {@link IgniteException} thrown from <tt>job</tt> should bear
-     * @return Thrown error.
+     * @param job {@link IgniteCallable} to be run.
+     * @param grid Node to run the job on.
+     * @param expE Expected exception type.
+     * @param expEMsg Expected exception message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private Throwable assertError(final IgniteCallable<?> job, final Ignite grid, String expEMsg) {
-        return GridTestUtils.assertThrows(log, new Callable<Object>() {
+    private void assertError(final IgniteCallable<?> job, final Ignite grid, Class<? extends Throwable> expE,
+        String expEMsg) {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 grid.compute(grid.cluster().forLocal()).call(job);
                 return null;
             }
-        }, IgniteException.class, expEMsg);
-    }
-
-    /**
-     * @param job {@link IgniteCallable} to be run
-     * @param expEMsg Message that {@link IgniteException} thrown from <tt>job</tt> should bear
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void assertError(final IgniteCallable<?> job, String expEMsg) {
-        assertError(job, grid, expEMsg);
+        }, expE, expEMsg);
     }
 
     /**

@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
@@ -104,7 +104,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -139,9 +138,6 @@ public class GridFunc {
     private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
 
     /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
-
-    /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
 
     /** */
@@ -169,11 +165,12 @@ public class GridFunc {
     private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
 
     /** */
-    private static final IgniteClosure<ClusterNode, Object> NODE2CONSISTENTID = new IgniteClosure<ClusterNode, Object>() {
-        @Override public Object apply(ClusterNode node) {
-            return node.consistentId();
-        }
-    };
+    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
+        new IgniteClosure<BaselineNode, Object>() {
+            @Override public Object apply(BaselineNode node) {
+                return node.consistentId();
+            }
+        };
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -340,7 +337,7 @@ public class GridFunc {
      * @param nodes Collection of grid nodes.
      * @return Collection of node consistent IDs for given collection of grid nodes.
      */
-    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends ClusterNode> nodes) {
+    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 
@@ -1273,19 +1270,6 @@ public class GridFunc {
         catch (IOException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
     }
 
     /**

@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.isolve.LinSysPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,10 +64,9 @@ public class LSQROnHeapTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
-            new LinSysPartitionDataBuilderOnHeap<>(
+            new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> Arrays.copyOf(v, v.length - 1),
-                (k, v) -> v[3],
-                3
+                (k, v) -> new double[]{v[3]}
             )
         );
 
@@ -88,10 +87,9 @@ public class LSQROnHeapTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
-            new LinSysPartitionDataBuilderOnHeap<>(
+            new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> Arrays.copyOf(v, v.length - 1),
-                (k, v) -> v[3],
-                3
+                (k, v) -> new double[]{v[3]}
             )
         );
 
@@ -120,10 +118,9 @@ public class LSQROnHeapTest {
 
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
-            new LinSysPartitionDataBuilderOnHeap<>(
+            new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> Arrays.copyOf(v, v.length - 1),
-                (k, v) -> v[4],
-                4
+                (k, v) -> new double[]{v[4]}
             )
         )) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);

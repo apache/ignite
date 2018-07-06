@@ -347,7 +347,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = affinityNode(affNodes);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(topVer));
@@ -709,25 +709,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
             "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
-    }
-
-    /**
-     * Affinity node to send get request to.
-     *
-     * @param affNodes All affinity nodes.
-     * @return Affinity node to get key from.
-     */
-    @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return affNodes.get(0);
     }
 
     /** {@inheritDoc} */

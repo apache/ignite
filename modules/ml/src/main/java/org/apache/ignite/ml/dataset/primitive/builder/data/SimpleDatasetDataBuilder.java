@@ -39,31 +39,32 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
     /** Function that extracts features from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
-    /** Number of columns (features). */
-    private final int cols;
-
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
-     * @param cols Number of columns (features).
      */
-    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor, int cols) {
+    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor) {
         this.featureExtractor = featureExtractor;
-        this.cols = cols;
     }
 
     /** {@inheritDoc} */
     @Override public SimpleDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         // Prepares the matrix of features in flat column-major format.
-        double[] features = new double[Math.toIntExact(upstreamDataSize * cols)];
+        int cols = -1;
+        double[] features = null;
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
             double[] row = featureExtractor.apply(entry.getKey(), entry.getValue());
 
-            assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
+            if (cols < 0) {
+                cols = row.length;
+                features = new double[Math.toIntExact(upstreamDataSize * cols)];
+            }
+            else
+                assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
 
             for (int i = 0; i < cols; i++)
                 features[Math.toIntExact(i * upstreamDataSize + ptr)] = row[i];
@@ -71,6 +72,6 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new SimpleDatasetData(features, Math.toIntExact(upstreamDataSize), cols);
+        return new SimpleDatasetData(features, Math.toIntExact(upstreamDataSize));
     }
 }

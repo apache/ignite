@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary> The default value for <see cref="PessimisticTransactionLogLinger"/> property. </summary>
         public static readonly TimeSpan DefaultPessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(10000);
 
+        /// <summary> The default value for <see cref="DefaultTimeoutOnPartitionMapExchange"/></summary>
+        public static readonly TimeSpan DefaultDefaultTimeoutOnPartitionMapExchange = TimeSpan.Zero;
+
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
         /// </summary>
@@ -74,6 +77,13 @@ namespace Apache.Ignite.Core.Transactions
         public TimeSpan PessimisticTransactionLogLinger { get; set; }
 
         /// <summary>
+        /// Gets or sets transaction timeout for partition map synchronization.
+        /// <see cref="TimeSpan.Zero"/> for infinite timeout.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:00")]
+        public TimeSpan DefaultTimeoutOnPartitionMapExchange { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TransactionConfiguration" /> class.
         /// </summary>
         public TransactionConfiguration()
@@ -83,6 +93,7 @@ namespace Apache.Ignite.Core.Transactions
             DefaultTimeout = DefaultDefaultTimeout;
             PessimisticTransactionLogSize = DefaultPessimisticTransactionLogSize;
             PessimisticTransactionLogLinger = DefaultPessimisticTransactionLogLinger;
+            DefaultTimeoutOnPartitionMapExchange = DefaultDefaultTimeoutOnPartitionMapExchange;
         }
     }
 }

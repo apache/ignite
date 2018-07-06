@@ -48,12 +48,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  *     <property name="dataStorageConfiguration">
  *         <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
- *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
+ *             <property name="systemCacheInitialSize" value="#{100L * 1024 * 1024}"/>
  *
  *             <property name="defaultDataRegionConfiguration">
  *                 <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                     <property name="name" value="default_data_region"/>
- *                     <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                     <property name="initialSize" value="#{5L * 1024 * 1024 * 1024}"/>
  *                 </bean>
  *             </property>
  *         </bean>
@@ -78,10 +78,10 @@ public class DataStorageConfiguration implements Serializable {
         DFLT_DATA_REGION_INITIAL_SIZE);
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40 * 1024 * 1024;
+    private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
 
     /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
+    private static final long DFLT_SYS_REG_MAX_SIZE = 100L * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
@@ -152,11 +152,11 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction enabled. */
     public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
 
-    /** Size of a memory chunk reserved for system cache initially. */
-    private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
+    /** Initial size of a memory chunk reserved for system cache. */
+    private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
-    /** Maximum size of system cache. */
-    private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
+    /** Maximum size of a memory chunk reserved for system cache. */
+    private long sysRegionMaxSize = DFLT_SYS_REG_MAX_SIZE;
 
     /** Memory page size. */
     private int pageSize;
@@ -270,14 +270,14 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets initial size of a data region reserved for system cache.
      *
-     * Default value is {@link #DFLT_SYS_CACHE_INIT_SIZE}
+     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}
      *
      * @param sysRegionInitSize Size in bytes.
      *
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
-        A.ensure(sysCacheMaxSize > 0, "System region initial size can not be less zero.");
+        A.ensure(sysRegionInitSize > 0, "System region initial size can not be less zero.");
 
         this.sysRegionInitSize = sysRegionInitSize;
 
@@ -290,21 +290,23 @@ public class DataStorageConfiguration implements Serializable {
      * @return Size in bytes.
      */
     public long getSystemRegionMaxSize() {
-        return sysCacheMaxSize;
+        return sysRegionMaxSize;
     }
 
     /**
      * Sets maximum data region size reserved for system cache. The total size should not be less than 10 MB
      * due to internal data structures overhead.
      *
-     * @param sysCacheMaxSize Maximum size in bytes for system cache data region.
+     * Default value is {@link #DFLT_SYS_REG_MAX_SIZE}.
+     *
+     * @param sysRegionMaxSize Maximum size in bytes for system cache data region.
      *
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setSystemRegionMaxSize(long sysCacheMaxSize) {
-        A.ensure(sysCacheMaxSize > 0, "System cache max size can not be less zero.");
+    public DataStorageConfiguration setSystemRegionMaxSize(long sysRegionMaxSize) {
+        A.ensure(sysRegionMaxSize > 0, "System region max size can not be less zero.");
 
-        this.sysCacheMaxSize = sysCacheMaxSize;
+        this.sysRegionMaxSize = sysRegionMaxSize;
 
         return this;
     }
@@ -528,16 +530,20 @@ public class DataStorageConfiguration implements Serializable {
      * @return WAL segment size.
      */
     public int getWalSegmentSize() {
-        return walSegmentSize <= 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
+        return walSegmentSize == 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
     }
 
     /**
      * Sets size of a WAL segment.
+     * If value is not set (or zero), {@link #DFLT_WAL_SEGMENT_SIZE} will be used.
      *
-     * @param walSegmentSize WAL segment size. 64 MB is used by default.  Maximum value is 2Gb
-     * @return {@code this} for chaining.
+     * @param walSegmentSize WAL segment size. Value must be between 512Kb and 2Gb.
+     * @return {@code This} for chaining.
      */
     public DataStorageConfiguration setWalSegmentSize(int walSegmentSize) {
+        if (walSegmentSize != 0)
+            A.ensure(walSegmentSize >= 512 * 1024, "WAL segment size must be between 512Kb and 2Gb.");
+
         this.walSegmentSize = walSegmentSize;
 
         return this;

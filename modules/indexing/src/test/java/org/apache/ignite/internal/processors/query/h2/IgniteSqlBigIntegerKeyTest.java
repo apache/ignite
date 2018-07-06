@@ -59,11 +59,6 @@ public class IgniteSqlBigIntegerKeyTest extends GridCommonAbstractTest {
 
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /** */
     private IgniteCache<Object, Object> getCache() {
         return grid("client").cache(CACHE_NAME);

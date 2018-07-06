@@ -42,6 +42,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public int serializerVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }
@@ -52,7 +57,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
 
     }
 
@@ -87,8 +92,18 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -122,7 +137,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) {
         // No-op.
     }
 
@@ -134,5 +149,10 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public int walArchiveSegments() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastArchivedSegment() {
+        return -1L;
     }
 }

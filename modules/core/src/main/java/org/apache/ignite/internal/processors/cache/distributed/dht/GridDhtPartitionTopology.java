@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -57,6 +58,10 @@ public interface GridDhtPartitionTopology {
      */
     public void readUnlock();
 
+    /**
+     * @return {@code True} if locked by current thread.
+     */
+    public boolean holdsLock();
     /**
      * Updates topology version.
      *
@@ -237,6 +242,12 @@ public interface GridDhtPartitionTopology {
     public List<ClusterNode> owners(int p);
 
     /**
+     * @return List indexed by partition number, each list element is collection of all nodes who
+     *      owns corresponding partition.
+     */
+    public List<List<ClusterNode>> allOwners();
+
+    /**
      * @param p Partition ID.
      * @param topVer Topology version.
      * @return Collection of all nodes who {@code own} this partition.
@@ -280,6 +291,7 @@ public interface GridDhtPartitionTopology {
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
+        @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
@@ -339,10 +351,22 @@ public interface GridDhtPartitionTopology {
     public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
 
     /**
+     * @return Partition cache sizes.
+     */
+    public Map<Integer, Long> partitionSizes();
+
+    /**
      * @param part Partition to own.
      * @return {@code True} if owned.
      */
     public boolean own(GridDhtLocalPartition part);
+
+    /**
+     * Owns all moving partitions for the given topology version.
+     *
+     * @param topVer Topology version.
+     */
+    public void ownMoving(AffinityTopologyVersion topVer);
 
     /**
      * @param part Evicted partition.
@@ -364,21 +388,31 @@ public interface GridDhtPartitionTopology {
     public void printMemoryStats(int threshold);
 
     /**
+     * @return Sizes of up-to-date partition versions in topology.
+     */
+    Map<Integer, Long> globalPartSizes();
+
+    /**
+     * @param partSizes Sizes of up-to-date partition versions in topology.
+     */
+    void globalPartSizes(@Nullable Map<Integer, Long> partSizes);
+
+    /**
      * @param topVer Topology version.
      * @return {@code True} if rebalance process finished.
      */
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 
     /**
-     * Make nodes from provided set owners for a given partition.
-     * State of all current owners that aren't contained in the set will be reset to MOVING.
+     * Calculates nodes and partitions which have non-actual state and must be rebalanced.
+     * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
      *
-     * @param p Partition ID.
-     * @param updateSeq If should increment sequence when updated.
-     * @param owners Set of new owners.
-     * @return Set of node IDs that should reload partitions.
+     * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
+     *                            (update counter is maximal) and should hold OWNING state for such partition).
+     * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory);
 
     /**
      * Callback on exchange done.

@@ -32,14 +32,21 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Wrapper over framework socket for Ignite thin client operations.
     /// </summary>
     internal sealed class ClientSocket : IDisposable
     {
+        /** Version 1.0.0. */
+        private static readonly ClientProtocolVersion Ver100 = new ClientProtocolVersion(1, 0, 0);
+
+        /** Version 1.1.0. */
+        private static readonly ClientProtocolVersion Ver110 = new ClientProtocolVersion(1, 1, 0);
+
         /** Current version. */
-        private static readonly ClientProtocolVersion CurrentProtocolVersion = new ClientProtocolVersion(1, 0, 0);
+        private static readonly ClientProtocolVersion CurrentProtocolVersion = Ver110;
 
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
@@ -98,7 +105,9 @@ namespace Apache.Ignite.Core.Impl.Client
             _socket = Connect(clientConfiguration);
             _stream = GetSocketStream(_socket, clientConfiguration);
 
-            Handshake(version ?? CurrentProtocolVersion);
+            Validate(clientConfiguration);
+
+            Handshake(clientConfiguration, version ?? CurrentProtocolVersion);
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
@@ -108,7 +117,32 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Continuously and asynchronously wait for data from server.
-            Task.Factory.StartNew(WaitForMessages);
+            TaskRunner.Run(WaitForMessages);
+        }
+
+        /// <summary>
+        /// Validate configuration.
+        /// </summary>
+        /// <param name="cfg">Configuration.</param>
+        private static void Validate(IgniteClientConfiguration cfg)
+        {
+            if (cfg.UserName != null)
+            {
+                if (cfg.UserName.Length == 0)
+                    throw new IgniteClientException("IgniteClientConfiguration.Username cannot be empty.");
+
+                if (cfg.Password == null)
+                    throw new IgniteClientException("IgniteClientConfiguration.Password cannot be null when Username is set.");
+            }
+
+            if (cfg.Password != null)
+            {
+                if (cfg.Password.Length == 0)
+                    throw new IgniteClientException("IgniteClientConfiguration.Password cannot be empty.");
+
+                if (cfg.UserName == null)
+                    throw new IgniteClientException("IgniteClientConfiguration.UserName cannot be null when Password is set.");
+            }
         }
 
         /// <summary>
@@ -140,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var task = SendRequestAsync(ref reqMsg);
 
             // Decode.
-            return task.ContinueWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
+            return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
         }
 
         /// <summary>
@@ -226,8 +260,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs client protocol handshake.
         /// </summary>
-        private void Handshake(ClientProtocolVersion version)
+        private void Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
         {
+            bool auth = version.CompareTo(Ver110) >= 0 && clientConfiguration.UserName != null;
+
             // Send request.
             int messageLen;
             var buf = WriteMessage(stream =>
@@ -242,10 +278,19 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 // Client type: platform.
                 stream.WriteByte(ClientType);
+
+                // Authentication data.
+                if (auth)
+                {
+                    var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+
+                    writer.WriteString(clientConfiguration.UserName);
+                    writer.WriteString(clientConfiguration.Password);
+
+                    BinaryUtils.Marshaller.FinishMarshal(writer);
+                }
             }, 12, out messageLen);
-
-            Debug.Assert(messageLen == 12);
-
+            
             _stream.Write(buf, 0, messageLen);
 
             // Decode response.
@@ -253,6 +298,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             using (var stream = new BinaryHeapStream(res))
             {
+                // Read input.
                 var success = stream.ReadBool();
 
                 if (success)
@@ -265,9 +311,32 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
 
-                throw new IgniteClientException(string.Format(
-                    "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
-                    errMsg, version, serverVersion));
+                ClientStatusCode errCode = ClientStatusCode.Fail;
+
+                if (stream.Remaining > 0)
+                {
+                    errCode = (ClientStatusCode) stream.ReadInt();
+                }
+
+                // Authentication error is handled immediately.
+                if (errCode == ClientStatusCode.AuthenticationFailed)
+                {
+                    throw new IgniteClientException(errMsg, null, ClientStatusCode.AuthenticationFailed);
+                }
+
+                // Re-try if possible.
+                bool retry = serverVersion.CompareTo(version) < 0 && serverVersion.Equals(Ver100);
+
+                if (retry)
+                {
+                    Handshake(clientConfiguration, serverVersion);
+                }
+                else
+                {
+                    throw new IgniteClientException(string.Format(
+                        "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
+                        errMsg, version, serverVersion), null, errCode);
+                }
             }
         }
 

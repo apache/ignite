@@ -85,20 +85,21 @@ public final class UpdatePlanBuilder {
      * @param loc Local query flag.
      * @param idx Indexing.
      * @param conn Connection.
-     * @param fieldsQuery Original query.
+     * @param fieldsQry Original query.
      * @return Update plan.
      */
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
-        assert !prepared.isQuery();
-
         GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, conn, fieldsQuery);
+            return planForInsert(stmt, loc, idx, conn, fieldsQry);
+        else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
+            return planForUpdate(stmt, loc, idx, conn, fieldsQry, errKeysPos);
         else
-            return planForUpdate(stmt, loc, idx, conn, fieldsQuery, errKeysPos);
+            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

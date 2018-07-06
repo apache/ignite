@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
+import org.apache.ignite.internal.util.HostAndPortRange;
 
 /**
  * Provide access and manipulations with connection JDBC properties.
@@ -30,25 +31,35 @@ public interface ConnectionProperties {
     public static final String SSL_MODE_REQUIRE = "require";
 
     /**
-     * @return Host name or host's IP to connect.
+     * @return Schema name of the connection.
      */
-    public String getHost();
+    public String getSchema();
 
     /**
-     * @param host Host name or host's IP to connect.
+     * @param schema Schema name of the connection.
      */
-    public void setHost(String host);
+    public void setSchema(String schema);
 
     /**
-     * @return Port to connect.
+     * @return The URL of the connection.
      */
-    public int getPort();
+    public String getUrl();
 
     /**
-     * @param port Port to connect.
-     * @throws SQLException On error.
+     * @param url The URL of the connection.
+     * @throws SQLException On invalid URL.
      */
-    public void setPort(int port) throws SQLException;
+    public void setUrl(String url) throws SQLException;
+
+    /**
+     * @return Ignite nodes addresses.
+     */
+    public HostAndPortRange[] getAddresses();
+
+    /**
+     * @param addrs Ignite nodes addresses.
+     */
+    public void setAddresses(HostAndPortRange[] addrs);
 
     /**
      * @return Distributed joins flag.
@@ -351,4 +362,24 @@ public interface ConnectionProperties {
      * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
      */
     public void setSslFactory(String sslFactory);
+
+    /**
+     * @param name User name to authentication.
+     */
+    public void setUsername(String name);
+
+    /**
+     * @return User name to authentication.
+     */
+    public String getUsername();
+
+    /**
+     * @param passwd User's password.
+     */
+    public void setPassword(String passwd);
+
+    /**
+     * @return User's password.
+     */
+    public String getPassword();
 }

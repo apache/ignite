@@ -21,15 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
@@ -82,6 +83,9 @@ public class GridH2QueryContext {
 
     /** */
     private GridH2CollocationModel qryCollocationMdl;
+
+    /** */
+    private MapQueryLazyWorker lazyWorker;
 
     /**
      * @param locNodeId Local node ID.
@@ -351,7 +355,7 @@ public class GridH2QueryContext {
 
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+                res |= doClear(key, false);
         }
 
         return res;
@@ -372,7 +376,10 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        x.clearContext(nodeStop);
+        if (x.lazyWorker() != null)
+            x.lazyWorker().stop(nodeStop);
+        else
+            x.clearContext(nodeStop);
 
         return true;
     }
@@ -479,6 +486,23 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext pageSize(int pageSize) {
         this.pageSize = pageSize;
+
+        return this;
+    }
+
+    /**
+     * @return Lazy worker, if any, or {@code null} if none.
+     */
+    public MapQueryLazyWorker lazyWorker() {
+        return lazyWorker;
+    }
+
+    /**
+     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
 
         return this;
     }

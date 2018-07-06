@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,11 +33,16 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -72,12 +79,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  *
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
+    /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind
+     * if there is nothing to clean yet.
+     */
+    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(
+        IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
+
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -94,22 +109,25 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
-    protected PendingEntriesTree pendingEntries;
+    private PendingEntriesTree pendingEntries;
 
     /** */
-    private volatile boolean hasPendingEntries;
+    protected volatile boolean hasPendingEntries;
+
+    /** Timestamp when next clean try will be allowed. Used for throttling on per-group basis. */
+    protected volatile long nextCleanTime;
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
 
     /** */
-    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+    protected final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** */
     private int updateValSizeThreshold;
 
     /** */
-    private GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
+    protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -141,19 +159,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+        initPendingTree(cctx);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
+        assert !cctx.group().persistenceEnabled();
+
         if (cctx.affinityNode() && cctx.ttl().eagerTtlEnabled() && pendingEntries == null) {
             String name = "PendingEntries";
 
-                long rootPage = allocateForTree();
+            long rootPage = allocateForTree();
 
-                pendingEntries = new PendingEntriesTree(
-                    grp,
-                    name,
-                    grp.dataRegion().pageMemory(),
-                    rootPage,
-                    grp.reuseList(),
-                    true);
-            }
+            pendingEntries = new PendingEntriesTree(
+                grp,
+                name,
+                grp.dataRegion().pageMemory(),
+                rootPage,
+                grp.reuseList(),
+                true);
+        }
     }
 
     /**
@@ -197,11 +225,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             if (grp.sharedGroup()) {
                 assert cacheId != CU.UNDEFINED_CACHE_ID;
-                assert ctx.database().checkpointLockIsHeldByThread();
 
                 for (CacheDataStore store : cacheDataStores())
                     store.clear(cacheId);
 
+                // Clear non-persistent pending tree if needed.
                 if (pendingEntries != null) {
                     PendingRow row = new PendingRow(cacheId);
 
@@ -234,6 +262,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
+    /**
+     * @param part Partition.
+     * @return Data store for given entry.
+     */
+    public CacheDataStore dataStore(int part) {
+        return grp.isLocal() ? locCacheDataStore : partDataStores.get(part);
+    }
+
     /** {@inheritDoc} */
     @Override public long cacheEntriesCount(int cacheId) {
         long size = 0;
@@ -245,7 +281,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public int totalPartitionEntriesCount(int p) {
+    @Override public long totalPartitionEntriesCount(int p) {
         if (grp.isLocal())
             return locCacheDataStore.fullSize();
         else {
@@ -813,51 +849,94 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
-        throws IgniteCheckedException {
-        final GridIterator<CacheDataRow> it = partitionIterator(part);
+    @Override public GridCloseableIterator<CacheDataRow> reservedIterator(int part,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        final GridDhtLocalPartition loc = grp.topology().localPartition(part, topVer, false);
 
-        return new IgniteRebalanceIterator() {
-            @Override public boolean historical() {
-                return false;
+        if (loc == null || !loc.reserve())
+            return null;
+
+        // It is necessary to check state after reservation to avoid race conditions.
+        if (loc.state() != OWNING) {
+            loc.release();
+
+            return null;
+        }
+
+        CacheDataStore data = partitionData(part);
+
+        final GridCursor<? extends CacheDataRow> cur = data.cursor();
+
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** */
+            private CacheDataRow next;
+
+            @Override protected CacheDataRow onNext() {
+                CacheDataRow res = next;
+
+                next = null;
+
+                return res;
             }
 
-            @Override public boolean hasNextX() throws IgniteCheckedException {
-                return it.hasNextX();
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (next != null)
+                    return true;
+
+                if (cur.next())
+                    next = cur.get();
+
+                return next != null;
             }
 
-            @Override public CacheDataRow nextX() throws IgniteCheckedException {
-                return it.nextX();
-            }
+            @Override protected void onClose() throws IgniteCheckedException {
+                assert loc != null && loc.state() == OWNING && loc.reservations() > 0
+                    : "Partition should be in OWNING state and has at least 1 reservation: " + loc;
 
-            @Override public void removeX() throws IgniteCheckedException {
-                it.removeX();
-            }
-
-            @Override public Iterator<CacheDataRow> iterator() {
-                return it.iterator();
-            }
-
-            @Override public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override public CacheDataRow next() {
-                return it.next();
-            }
-
-            @Override public void close() {
-
-            }
-
-            @Override public boolean isClosed() {
-                return false;
-            }
-
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
+                loc.release();
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts,
+        final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+
+        final TreeMap<Integer, GridCloseableIterator<CacheDataRow>> iterators = new TreeMap<>();
+
+        Set<Integer> missing = new HashSet<>();
+
+        for (Integer p : parts.fullSet()) {
+            GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
+
+            if (partIter == null) {
+                missing.add(p);
+
+                continue;
+            }
+
+            iterators.put(p, partIter);
+        }
+
+        IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
+
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
+
+        for (Integer p : missing)
+            iter.setPartitionMissing(p);
+
+        return iter;
+    }
+
+    /**
+     * @param partCntrs Partition counters map.
+     * @param missing Set of partitions need to populate if partition is missing or failed to reserve.
+     * @return Historical iterator.
+     */
+    @Nullable protected IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs, Set<Integer> missing)
+        throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -961,54 +1040,82 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (hasPendingEntries && pendingEntries != null) {
-            GridCacheVersion obsoleteVer = null;
+        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
+            return false;
 
-            long now = U.currentTimeMillis();
+        assert pendingEntries != null;
 
-            GridCursor<PendingRow> cur;
+        int cleared = expireInternal(cctx, c, amount);
 
-            if (grp.sharedGroup())
-                cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-            else
-                cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
+        // Throttle if there is nothing to clean anymore.
+        if (cleared < amount)
+            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
 
-            if (!cur.next())
-                return false;
+        return amount != -1 && cleared >= amount;
+    }
 
+    /**
+     * @param cctx Cache context.
+     * @param c Closure.
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return cleared entries count.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int expireInternal(
+        GridCacheContext cctx,
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+        int amount
+    ) throws IgniteCheckedException {
+        long now = U.currentTimeMillis();
+
+        GridCacheVersion obsoleteVer = null;
+
+        GridCursor<PendingRow> cur;
+
+        if (grp.sharedGroup())
+            cur = pendingEntries.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
+        else
+            cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
+
+        if (!cur.next())
+            return 0;
+
+        if (!busyLock.enterBusy())
+            return 0;
+
+        try {
             int cleared = 0;
 
-            cctx.shared().database().checkpointReadLock();
+            do {
+                if (amount != -1 && cleared > amount)
+                    return cleared;
 
-            try {
-                do {
-                    PendingRow row = cur.get();
+                PendingRow row = cur.get();
 
-                    if (amount != -1 && cleared > amount)
-                        return true;
+                if (row.key.partition() == -1)
+                    row.key.partition(cctx.affinity().partition(row.key));
 
-                    if (row.key.partition() == -1)
-                        row.key.partition(cctx.affinity().partition(row.key));
+                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                if (pendingEntries.removex(row)) {
+                    if (obsoleteVer == null)
+                        obsoleteVer = ctx.versions().next();
 
-                    if (pendingEntries.removex(row)) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = ctx.versions().next();
+                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
 
-                        c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
-                    }
-
-                    cleared++;
+                    if (entry != null)
+                        c.apply(entry, obsoleteVer);
                 }
-                while (cur.next());
-            }
-            finally {
-                cctx.shared().database().checkpointReadUnlock();
-            }
-        }
 
-        return false;
+                cleared++;
+            }
+            while (cur.next());
+
+            return cleared;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1104,14 +1211,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int cacheSize(int cacheId) {
+        @Override public long cacheSize(int cacheId) {
             if (grp.sharedGroup()) {
                 AtomicLong size = cacheSizes.get(cacheId);
 
                 return size != null ? (int)size.get() : 0;
             }
 
-            return (int)storageSize.get();
+            return storageSize.get();
         }
 
         /** {@inheritDoc} */
@@ -1128,8 +1235,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int fullSize() {
-            return (int)storageSize.get();
+        @Override public long fullSize() {
+            return storageSize.get();
         }
 
         /** {@inheritDoc} */
@@ -1345,15 +1452,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow != null) {
                 assert oldRow.link() != 0 : oldRow;
 
-                if (pendingEntries != null && oldRow.expireTime() != 0)
-                    pendingEntries.removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
+                if (pendingTree() != null && oldRow.expireTime() != 0)
+                    pendingTree().removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
 
                 if (newRow.link() != oldRow.link())
                     rowStore.removeRow(oldRow.link());
             }
 
-            if (pendingEntries != null && expireTime != 0) {
-                pendingEntries.putx(new PendingRow(cacheId, expireTime, newRow.link()));
+            if (pendingTree() != null && expireTime != 0) {
+                pendingTree().putx(new PendingRow(cacheId, expireTime, newRow.link()));
 
                 hasPendingEntries = true;
             }
@@ -1394,8 +1501,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 assert cacheId == CU.UNDEFINED_CACHE_ID || oldRow.cacheId() == cacheId :
                     "Incorrect cache ID [expected=" + cacheId + ", actual=" + oldRow.cacheId() + "].";
 
-                if (pendingEntries != null && oldRow.expireTime() != 0)
-                    pendingEntries.removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
+                if (pendingTree() != null && oldRow.expireTime() != 0)
+                    pendingTree().removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
 
                 decrementSize(cctx.cacheId());
             }
@@ -1493,7 +1600,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert cacheId != CU.UNDEFINED_CACHE_ID;
-            assert ctx.database().checkpointLockIsHeldByThread();
 
             if (cacheSize(cacheId) == 0)
                 return;
@@ -1574,6 +1680,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
         }
 
+        /** {@inheritDoc} */
+        @Override public PendingEntriesTree pendingTree() {
+            return pendingEntries;
+        }
+
         /**
          * @param cctx Cache context.
          * @param key Key.
@@ -1626,5 +1737,4 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return 0;
         }
     }
-
 }

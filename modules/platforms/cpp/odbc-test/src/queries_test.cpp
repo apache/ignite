@@ -239,46 +239,6 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
 BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestLegacyConnection)
-{
-    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
-
-    InsertTestStrings(10, false);
-    InsertTestBatch(11, 20, 9);
-}
-
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_0)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.1.0");
-
-    InsertTestStrings(10, false);
-    InsertTestBatch(11, 20, 9);
-}
-
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_5)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.1.5");
-
-    InsertTestStrings(10, false);
-    InsertTestBatch(11, 20, 9);
-}
-
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_3_0)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.3.0");
-
-    InsertTestStrings(10, false);
-    InsertTestBatch(11, 20, 9);
-}
-
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_3_2)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.3.2");
-
-    InsertTestStrings(10, false);
-    InsertTestBatch(11, 20, 9);
-}
-
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
 {
     CheckTwoRowsInt<signed char>(SQL_C_STINYINT);
@@ -1908,6 +1868,48 @@ BOOST_AUTO_TEST_CASE(TestCloseAfterEmptyUpdate)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
+BOOST_AUTO_TEST_CASE(TestLoginTimeout)
+{
+    Prepare();
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(1), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    ret = SQLDriverConnect(dbc, NULL, &connectStr[0], static_cast<SQLSMALLINT>(sizeof(connectStr)),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+}
+
+BOOST_AUTO_TEST_CASE(TestLoginTimeoutFail)
+{
+    Prepare();
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=192.168.0.1:11120;SCHEMA=cache";
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    ret = SQLDriverConnect(dbc, NULL, &connectStr[0], static_cast<SQLSMALLINT>(sizeof(connectStr)),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    if (SQL_SUCCEEDED(ret))
+        BOOST_FAIL("Should timeout");
+}
+
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
@@ -2020,6 +2022,41 @@ BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBoth)
 
     InsertTestStrings(10, false);
     InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i32Field) VALUES(?, ?)";
+
+    SQLRETURN ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 0;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int32_t data = 0;
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &data, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        key = i;
+        data = i * 10;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

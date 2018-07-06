@@ -998,7 +998,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             startGrid("1", c);
 
-            assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
+            if (tcpDiscovery())
+                assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
 
             try {
                 startGrid("2", c);

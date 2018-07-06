@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetIgnite(0).GetAffinity(CacheName());
         }
 
-        protected ITransactions Transactions
+        protected virtual ITransactions Transactions
         {
             get { return GetIgnite(0).GetTransactions(); }
         }

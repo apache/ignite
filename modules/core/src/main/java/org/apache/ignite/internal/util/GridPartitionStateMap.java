@@ -42,7 +42,19 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     private static final int BITS = Integer.SIZE -
         Integer.numberOfLeadingZeros(GridDhtPartitionState.values().length + 1);
 
-    /** */
+    /**
+     * Contains partition map.
+     * For a map containing 3 partitions state with a size of 3 bits storage will be done this way:
+     * <pre>
+     *     +-----------+-----------+-----------+
+     *     |  p0 - 100 |  p1 - 011 |  p2 - 001 |
+     *     +---+---+---+---+---+---+---+---+---+
+     *     | 0 | 0 | 1 | 1 | 1 | 0 | 1 | 0 | 0 |
+     *     +---+---+---+---+---+---+---+---+---+
+     * </pre>
+     * The first element takes the first {@link GridPartitionStateMap#BITS} bits in reverse order,
+     * the second element next {@link GridPartitionStateMap#BITS} bits in reverse order, etc.
+     */
     private final BitSet states;
 
     /** */
@@ -52,25 +64,37 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     @Override public Set<Entry<Integer, GridDhtPartitionState>> entrySet() {
         return new AbstractSet<Entry<Integer, GridDhtPartitionState>>() {
             @Override public Iterator<Entry<Integer, GridDhtPartitionState>> iterator() {
-                final int size = states.isEmpty() ? 0 : (states.length() - 1)/ BITS + 1;
-
                 return new Iterator<Entry<Integer, GridDhtPartitionState>>() {
-                    private int next;
+                    /** Current {@link GridPartitionStateMap#states} index. */
+                    private int idx;
+
+                    /** Current key value. */
                     private int cur;
 
                     @Override public boolean hasNext() {
-                        while(state(next) == null && next < size)
-                            next++;
+                        idx = states.nextSetBit(idx);
 
-                        return next < size;
+                        return idx != -1;
                     }
 
                     @Override public Entry<Integer, GridDhtPartitionState> next() {
                         if (!hasNext())
                             throw new NoSuchElementException();
 
-                        cur = next;
-                        next++;
+                        cur = idx / BITS;
+
+                        int bitN = idx % BITS;
+
+                        // Get state value from BitSet like in GridPartitionStateMap#state, but don't process known zero bits.
+                        int st = 1 << bitN;
+
+                        // Accumulating values of remaining bits
+                        for (int i = 1; i < BITS - bitN; i++)
+                            st |= (states.get(idx + i) ? 1 : 0) << i + bitN;
+
+                        final int ordinal = st - 1;
+
+                        idx += (BITS - bitN);
 
                         return new Entry<Integer, GridDhtPartitionState>() {
                             int p = cur;
@@ -80,7 +104,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
                             }
 
                             @Override public GridDhtPartitionState getValue() {
-                                return state(p);
+                                return GridDhtPartitionState.fromOrdinal(ordinal);
                             }
 
                             @Override public GridDhtPartitionState setValue(GridDhtPartitionState val) {
@@ -112,7 +136,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      * @param parts Partitions to hold.
      */
     public GridPartitionStateMap(int parts) {
-        states = new BitSet(parts);
+        states = new BitSet(parts * BITS);
     }
 
     /**

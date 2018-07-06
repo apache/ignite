@@ -129,11 +129,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(BASE_URL);
 

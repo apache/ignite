@@ -39,6 +39,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -201,6 +203,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private boolean skipFieldLookup;
 
+    /** Cache name - value typeId pairs for which type mismatch message was logged. */
+    private final Set<Long> missedCacheTypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     /**
      * @param ctx Kernal context.
      */
@@ -263,7 +268,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idx.cancelAllQueries();
 
                 return;
-            } catch (InterruptedException ignored) {
+            }
+            catch (InterruptedException ignored) {
                 U.warn(log, "Interrupted while waiting for active queries cancellation.");
 
                 Thread.currentThread().interrupt();
@@ -1482,10 +1488,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
         String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
-        assert backups >= 0;
+        assert backups == null || backups >= 0;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
@@ -1524,7 +1530,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (writeSyncMode != null)
             ccfg.setWriteSynchronizationMode(writeSyncMode);
 
-        ccfg.setBackups(backups);
+        if (backups != null)
+            ccfg.setBackups(backups);
 
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);
@@ -1687,6 +1694,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             cacheNames.remove(cacheName);
+
+            Iterator<Long> missedCacheTypeIter = missedCacheTypes.iterator();
+
+            while (missedCacheTypeIter.hasNext()) {
+                long key = missedCacheTypeIter.next();
+
+                if (missedCacheTypeKeyMatches(key, cacheName))
+                    missedCacheTypeIter.remove();
+            }
         }
     }
 
@@ -1825,9 +1841,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
+        CacheObject val = newRow.value();
 
         if (log.isDebugEnabled())
-            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + newRow.value() + "]");
+            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + val + "]");
 
         if (idx == null)
             return;
@@ -1840,7 +1857,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
+            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
 
             if (prevRowAvailable && prevRow != null) {
                 QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
@@ -1858,13 +1875,70 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            if (desc == null)
+            if (desc == null) {
+                int typeId = ctx.cacheObjects().typeId(val);
+
+                long missedCacheTypeKey = missedCacheTypeKey(cacheName, typeId);
+
+                if (!missedCacheTypes.contains(missedCacheTypeKey)) {
+                    if (missedCacheTypes.add(missedCacheTypeKey)) {
+                        LT.warn(log, "Key-value pair is not inserted into any SQL table [cacheName=" + cacheName +
+                            ", " + describeTypeMismatch(cacheName, val) + "]");
+
+                        LT.warn(log, "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
+                        LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache");
+                        LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
+                    }
+                }
+
                 return;
+            }
 
             idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Pretty-prints difference between expected and actual value types.
+     *
+     * @param cacheName Cache name.
+     * @param val Value object.
+     * @return Human readable type difference.
+     */
+    private String describeTypeMismatch(String cacheName, Object val) {
+        try {
+            QueryTypeDescriptorImpl indexedType = null;
+
+            for (QueryTypeIdKey typeKey : types.keySet()) {
+                if (typeKey.cacheName().equals(cacheName)) {
+                    if (indexedType != null) {
+                        // More than one type for table - simplified message.
+                        indexedType = null;
+                        break;
+                    }
+
+                    indexedType = types.get(typeKey);
+                }
+            }
+
+            boolean bin = ctx.cacheObjects().isBinaryObject(val);
+
+            if (indexedType != null && bin &&
+                !indexedType.valueTypeName().equals(((BinaryObject)val).type().typeName())) {
+
+                return "expValType=" + indexedType.valueTypeName()
+                    + ", actualValType=" + ((BinaryObject)val).type().typeName();
+            }
+            else if (bin)
+                return "valType=" + ((BinaryObject)val).type().typeName();
+            else
+                return "val=" + val.toString();
+        }
+        catch (Exception e) {
+            return val.getClass().getName();
         }
     }
 
@@ -1974,13 +2048,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary,
         final boolean failOnMultipleStmts) {
-        return querySqlFields(null, qry, keepBinary, failOnMultipleStmts);
-    }
-
-    @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
-        final boolean keepBinary) {
-        return querySqlFields(cctx, qry, keepBinary, true).get(0);
+        return querySqlFields(null, qry, null, keepBinary, failOnMultipleStmts);
     }
 
     /**
@@ -1991,7 +2059,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
-        return querySqlFields(null, qry, keepBinary, true).get(0);
+        return querySqlFields(null, qry, null, keepBinary, true).get(0);
     }
 
     /**
@@ -1999,14 +2067,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?,?> cctx,
-        final SqlFieldsQuery qry, final boolean keepBinary, final boolean failOnMultipleStmts) {
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry, final SqlClientContext cliCtx, final boolean keepBinary,
+        final boolean failOnMultipleStmts) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2034,7 +2104,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, keepBinary, failOnMultipleStmts, cancel);
+                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
 
                     if (cctx != null)
                         sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
@@ -2073,7 +2143,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name.
      * @param streamer Data streamer.
      * @param qry Query.
-     * @return Iterator.
+     * @return Update counter.
      */
     public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
@@ -2088,6 +2158,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
                     return idx.streamUpdateQuery(schemaName, qry, args, streamer);
+                }
+            }, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param cliCtx Client context.
+     * @param qry Query.
+     * @param args Query arguments.
+     * @return Update counters.
+     */
+    public List<Long> streamBatchedUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
+        final String qry, final List<Object[]> args) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, null, new IgniteOutClosureX<List<Long>>() {
+                @Override public List<Long> applyx() throws IgniteCheckedException {
+                    return idx.streamBatchedUpdateQuery(schemaName, qry, args, cliCtx);
                 }
             }, true);
         }
@@ -2375,7 +2472,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null, !col.isNullable(), null));
+                    false, null, !col.isNullable(), null, -1, -1));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());
@@ -2391,7 +2488,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param d Type descriptor to update.
      * @param cols Columns to remove.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void processDynamicDropColumn(QueryTypeDescriptorImpl d, List<String> cols)
         throws IgniteCheckedException {
@@ -2770,6 +2867,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * Create missed cache type key.
+     *
+     * @param cacheName Cache name.
+     * @param typeId Type ID.
+     * @return Key.
+     */
+    private static long missedCacheTypeKey(String cacheName, int typeId) {
+        return ((long)CU.cacheId(cacheName) << 32) | typeId;
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return {@code True} if matches.
+     */
+    private static boolean missedCacheTypeKeyMatches(long key, String cacheName) {
+        int cacheId = CU.cacheId(cacheName);
+
+        long cacheIdShifted = ((long)cacheId << 32);
+
+        return (key & cacheIdShifted) == cacheIdShifted;
     }
 
     /**

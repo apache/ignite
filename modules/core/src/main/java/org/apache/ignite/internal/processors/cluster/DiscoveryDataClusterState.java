@@ -201,6 +201,13 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
+     * @return {@code True} if baseline topology is set in the cluster. {@code False} otherwise.
+     */
+    public boolean hasBaselineTopology() {
+        return baselineTopology != null;
+    }
+
+    /**
      * @return Nodes participating in state change exchange.
      */
     public Set<UUID> transitionNodes() {

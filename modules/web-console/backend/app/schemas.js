@@ -92,6 +92,7 @@ module.exports.factory = function(mongoose) {
     // Define Domain model schema.
     const DomainModel = new Schema({
         space: {type: ObjectId, ref: 'Space', index: true, required: true},
+        clusters: [{type: ObjectId, ref: 'Cluster'}],
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
@@ -125,7 +126,7 @@ module.exports.factory = function(mongoose) {
         generatePojo: Boolean
     });
 
-    DomainModel.index({valueType: 1, space: 1}, {unique: true});
+    DomainModel.index({valueType: 1, space: 1, clusters: 1}, {unique: true});
 
     // Define Cache schema.
     const Cache = new Schema({
@@ -259,7 +260,7 @@ module.exports.factory = function(mongoose) {
         writeBehindFlushThreadCount: Number,
         writeBehindCoalescing: {type: Boolean, default: true},
 
-        invalidate: Boolean,
+        isInvalidate: Boolean,
         defaultLockTimeout: Number,
         atomicWriteOrderMode: {type: String, enum: ['CLOCK', 'PRIMARY']},
         writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
@@ -328,7 +329,7 @@ module.exports.factory = function(mongoose) {
         topologyValidator: String
     });
 
-    Cache.index({name: 1, space: 1}, {unique: true});
+    Cache.index({name: 1, space: 1, clusters: 1}, {unique: true});
 
     const Igfs = new Schema({
         space: {type: ObjectId, ref: 'Space', index: true, required: true},
@@ -376,7 +377,7 @@ module.exports.factory = function(mongoose) {
         updateFileLengthOnFlush: Boolean
     });
 
-    Igfs.index({name: 1, space: 1}, {unique: true});
+    Igfs.index({name: 1, space: 1, clusters: 1}, {unique: true});
 
 
     // Define Cluster schema.
@@ -426,10 +427,13 @@ module.exports.factory = function(mongoose) {
             },
             S3: {
                 bucketName: String,
+                bucketEndpoint: String,
+                SSEAlgorithm: String,
                 clientConfiguration: {
                     protocol: {type: String, enum: ['HTTP', 'HTTPS']},
                     maxConnections: Number,
-                    userAgent: String,
+                    userAgentPrefix: String,
+                    userAgentSuffix: String,
                     localAddress: String,
                     proxyHost: String,
                     proxyPort: Number,
@@ -470,7 +474,14 @@ module.exports.factory = function(mongoose) {
                     useTcpKeepAlive: Boolean,
                     dnsResolver: String,
                     responseMetadataCacheSize: Number,
-                    secureRandom: String
+                    secureRandom: String,
+                    cacheResponseMetadata: {type: Boolean, default: true},
+                    clientExecutionTimeout: Number,
+                    nonProxyHosts: String,
+                    socketSendBufferSizeHint: Number,
+                    socketReceiveBufferSizeHint: Number,
+                    useExpectContinue: {type: Boolean, default: true},
+                    useThrottleRetries: {type: Boolean, default: true}
                 }
             },
             Cloud: {
@@ -576,6 +587,7 @@ module.exports.factory = function(mongoose) {
             compactFooter: Boolean
         },
         caches: [{type: ObjectId, ref: 'Cache'}],
+        models: [{type: ObjectId, ref: 'DomainModel'}],
         clockSyncSamples: Number,
         clockSyncFrequency: Number,
         deploymentMode: {type: String, enum: ['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']},
@@ -784,10 +796,13 @@ module.exports.factory = function(mongoose) {
                     }
                 },
                 bucketNameSuffix: String,
+                bucketEndpoint: String,
+                SSEAlgorithm: String,
                 clientConfiguration: {
                     protocol: {type: String, enum: ['HTTP', 'HTTPS']},
                     maxConnections: Number,
-                    userAgent: String,
+                    userAgentPrefix: String,
+                    userAgentSuffix: String,
                     localAddress: String,
                     proxyHost: String,
                     proxyPort: Number,
@@ -825,7 +840,14 @@ module.exports.factory = function(mongoose) {
                     useTcpKeepAlive: Boolean,
                     dnsResolver: String,
                     responseMetadataCacheSize: Number,
-                    secureRandom: String
+                    secureRandom: String,
+                    cacheResponseMetadata: {type: Boolean, default: true},
+                    clientExecutionTimeout: Number,
+                    nonProxyHosts: String,
+                    socketSendBufferSizeHint: Number,
+                    socketReceiveBufferSizeHint: Number,
+                    useExpectContinue: {type: Boolean, default: true},
+                    useThrottleRetries: {type: Boolean, default: true}
                 },
                 checkpointListener: String
             },
@@ -1116,7 +1138,8 @@ module.exports.factory = function(mongoose) {
             qryType: String,
             nonCollocatedJoins: {type: Boolean, default: false},
             enforceJoinOrder: {type: Boolean, default: false},
-            lazy: {type: Boolean, default: false}
+            lazy: {type: Boolean, default: false},
+            collocated: Boolean
         }]
     });
 

@@ -155,21 +155,29 @@ final class BinaryMetadataTransport {
      * @param metadata Metadata proposed for update.
      * @return Future to wait for update result on.
      */
-    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) throws IgniteCheckedException {
+    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
         if (log.isDebugEnabled())
             log.debug("Requesting metadata update for " + metadata.typeId() + "; caller thread is blocked on future "
                 + resFut);
 
-        synchronized (this) {
-            unlabeledFutures.add(resFut);
+        try {
+            synchronized (this) {
+                unlabeledFutures.add(resFut);
 
-            if (!stopping)
-                discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
-            else
-                resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+                if (!stopping)
+                    discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
+                else
+                    resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+            }
         }
+        catch (Exception e) {
+            resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult(), e);
+        }
+
+        if (ctx.clientDisconnected())
+            onDisconnected();
 
         return resFut;
     }
@@ -236,6 +244,8 @@ final class BinaryMetadataTransport {
     private void cancelFutures(MetadataUpdateResult res) {
         for (MetadataUpdateResultFuture fut : unlabeledFutures)
             fut.onDone(res);
+
+        unlabeledFutures.clear();
 
         for (MetadataUpdateResultFuture fut : syncMap.values())
             fut.onDone(res);

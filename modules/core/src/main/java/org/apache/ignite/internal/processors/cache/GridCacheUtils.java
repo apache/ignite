@@ -46,7 +46,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicUpdateTimeoutException;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
@@ -65,6 +64,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -97,6 +97,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -117,6 +118,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME;
 
 /**
  * Cache utility methods.
@@ -815,14 +817,18 @@ public class GridCacheUtils {
         if (tx == null)
             return "null";
 
-        return tx.getClass().getSimpleName() + "[id=" + tx.xid() +
+        return tx.getClass().getSimpleName() + "[xid=" + tx.xid() +
+            ", xidVersion=" + tx.xidVersion() +
             ", concurrency=" + tx.concurrency() +
             ", isolation=" + tx.isolation() +
             ", state=" + tx.state() +
             ", invalidate=" + tx.isInvalidate() +
             ", rollbackOnly=" + tx.isRollbackOnly() +
             ", nodeId=" + tx.nodeId() +
-            ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
+            ", timeout=" + tx.timeout() +
+            ", duration=" + (U.currentTimeMillis() - tx.startTime()) +
+            (tx instanceof GridNearTxLocal ? ", label=" + ((GridNearTxLocal)tx).label() : "") +
+            ']';
     }
 
     /**
@@ -1276,18 +1282,20 @@ public class GridCacheUtils {
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
-            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
         else if (e instanceof ClusterTopologyServerNotFoundException)
             return new CacheServerNotFoundException(e.getMessage(), e);
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
 
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
+        CacheException ce = X.cause(e, CacheException.class);
+        if (ce != null)
+            return ce;
 
         if (e.getCause() instanceof NullPointerException)
             return (NullPointerException)e.getCause();
+
+        if (e.getCause() instanceof SecurityException)
+            return (SecurityException)e.getCause();
 
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
@@ -1347,8 +1355,8 @@ public class GridCacheUtils {
      * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
      */
     public static boolean clientNode(ClusterNode node) {
-        if (node instanceof TcpDiscoveryNode)
-            return ((TcpDiscoveryNode)node).isCacheClient();
+        if (node instanceof IgniteClusterNode)
+            return ((IgniteClusterNode)node).isCacheClient();
         else
             return clientNodeDirect(node);
     }
@@ -1678,18 +1686,8 @@ public class GridCacheUtils {
 
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
-        if (!F.isEmpty(entities)) {
-            Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
-
-            for (QueryEntity entity : entities) {
-                if (!F.isEmpty(entity.getNotNullFields()))
-                    QueryUtils.checkNotNullAllowed(cfg);
-
-                normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
-            }
-
-            cfg.clearQueryEntities().setQueryEntities(normalEntities);
-        }
+        if (!F.isEmpty(entities))
+            cfg.clearQueryEntities().setQueryEntities(QueryUtils.normalizeQueryEntities(entities, cfg));
     }
 
     /**
@@ -1741,7 +1739,7 @@ public class GridCacheUtils {
                             ver,
                             expiryPlc == null ? 0 : expiryPlc.forCreate(),
                             expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
-                            false,
+                            true,
                             topVer,
                             GridDrType.DR_BACKUP,
                             true);
@@ -1802,7 +1800,7 @@ public class GridCacheUtils {
             return false;
 
         // Special handling for system cache is needed.
-        if (isSystemCache(ccfg.getName())) {
+        if (isSystemCache(ccfg.getName()) || isIgfsCacheInSystemRegion(ccfg)) {
             if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
                 return true;
 
@@ -1831,6 +1829,15 @@ public class GridCacheUtils {
         return false;
     }
 
+    /**
+     * Checks whether cache configuration represents IGFS cache that will be placed in system memory region.
+     *
+     * @param ccfg Cache config.
+     */
+    private static boolean isIgfsCacheInSystemRegion(CacheConfiguration ccfg) {
+        return IgfsUtils.matchIgfsCacheName(ccfg.getName()) &&
+            (SYSTEM_DATA_REGION_NAME.equals(ccfg.getDataRegionName()) || ccfg.getDataRegionName() == null);
+    }
 
     /**
      * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
@@ -1865,6 +1872,14 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     * @param cacheName Name of cache or cache template.
+     * @return {@code true} if cache name ends with asterisk (*), and therefire is a template name.
+     */
+    public static boolean isCacheTemplateName(String cacheName) {
+        return cacheName.endsWith("*");
     }
 
     /**

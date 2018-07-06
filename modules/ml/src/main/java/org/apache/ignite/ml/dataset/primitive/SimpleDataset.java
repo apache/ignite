@@ -49,7 +49,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         ValueWithCount<double[]> res = delegate.compute((data, partIdx) -> {
             double[] features = data.getFeatures();
             int rows = data.getRows();
-            int cols = data.getCols();
+            int cols = features.length / rows;
 
             double[] y = new double[cols];
 
@@ -78,7 +78,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         ValueWithCount<double[]> res = delegate.compute(data -> {
             double[] features = data.getFeatures();
             int rows = data.getRows();
-            int cols = data.getCols();
+            int cols = features.length / rows;
 
             double[] y = new double[cols];
 
@@ -109,7 +109,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         ValueWithCount<double[][]> res = delegate.compute(data -> {
             double[] features = data.getFeatures();
             int rows = data.getRows();
-            int cols = data.getCols();
+            int cols = features.length / rows;
 
             double[][] y = new double[cols][cols];
 

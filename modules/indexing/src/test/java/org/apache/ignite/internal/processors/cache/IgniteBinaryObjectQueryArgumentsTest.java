@@ -182,13 +182,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         startGridsMultiThreaded(nodes);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -17,33 +17,41 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Thin Client connection context.
  */
-public class ClientConnectionContext implements ClientListenerConnectionContext {
+public class ClientConnectionContext extends ClientListenerAbstractConnectionContext {
     /** Version 1.0.0. */
-    private static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
+    public static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
+
+    /** Version 1.1.0. */
+    public static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
+
+    /** Supported versions. */
+    private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(VER_1_1_0, VER_1_0_0);
 
     /** Message parser. */
     private final ClientMessageParser parser;
 
     /** Request handler. */
-    private final ClientRequestHandler handler;
+    private ClientRequestHandler handler;
 
     /** Handle registry. */
     private final ClientResourceRegistry resReg = new ClientResourceRegistry();
-
-    /** Kernal context. */
-    private final GridKernalContext kernalCtx;
 
     /** Max cursors. */
     private final int maxCursors;
@@ -55,15 +63,14 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      * Ctor.
      *
      * @param ctx Kernal context.
+     * @param connId Connection ID.
      * @param maxCursors Max active cursors.
      */
-    public ClientConnectionContext(GridKernalContext ctx, int maxCursors) {
-        assert ctx != null;
-
-        kernalCtx = ctx;
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
+        super(ctx, connId);
 
         parser = new ClientMessageParser(ctx);
-        handler = new ClientRequestHandler(this);
+
         this.maxCursors = maxCursors;
     }
 
@@ -76,28 +83,41 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         return resReg;
     }
 
-    /**
-     * Gets the kernal context.
-     *
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext() {
-        return kernalCtx;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
-        return VER_1_0_0.equals(ver);
+        return SUPPORTED_VERS.contains(ver);
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion currentVersion() {
-        return VER_1_0_0;
+        return VER_1_1_0;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
-        // No-op.
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
+        boolean hasMore;
+
+        String user = null;
+        String pwd = null;
+
+        if (ver.compareTo(VER_1_1_0) >= 0) {
+            try {
+                hasMore = reader.available() > 0;
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+            }
+
+            if (hasMore) {
+                user = reader.readString();
+                pwd = reader.readString();
+            }
+        }
+
+        AuthorizationContext authCtx = authenticate(user, pwd);
+
+        handler = new ClientRequestHandler(this, authCtx);
     }
 
     /** {@inheritDoc} */

@@ -44,6 +44,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Topic name for PUB-SUB. */
     private final byte[] TOPIC = "0mq".getBytes();
 
+    /** If pub-sub envelopes are used. */
+    private static boolean multipart_pubsub;
+
     /** Constructor. */
     public IgniteZeroMqStreamerTest() {
         super(true);
@@ -59,11 +62,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         grid().getOrCreateCache(defaultCacheConfiguration());
     }
 
-    /** {@inheritDoc} */
-    @Override public void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception Test exception.
      */
@@ -72,6 +70,19 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
                 dataStreamer, 1, ZeroMqTypeSocket.PAIR, ADDR, null);) {
                 executeStreamer(streamer, ZMQ.PAIR, null);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    public void testZeroMqSubSocketMultipart() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(
+                dataStreamer, 3, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
+                multipart_pubsub = true;
+                executeStreamer(streamer, ZMQ.PUB, TOPIC);
             }
         }
     }
@@ -135,7 +146,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         String cachedValue = cache.get(testId);
 
         // ZeroMQ message successfully put to cache.
-        assertTrue(cachedValue != null && cachedValue.equals(String.valueOf(testId)));
+        assertTrue(cachedValue != null && cachedValue.endsWith(String.valueOf(testId)));
 
         assertTrue(cache.size() == CACHE_ENTRY_COUNT);
 
@@ -178,7 +189,11 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
                 if (ZMQ.PUB == clientSocket)
                     socket.sendMore(topic);
-                socket.send(String.valueOf(i).getBytes("UTF-8"));
+
+                if (ZMQ.PUB == clientSocket && multipart_pubsub)
+                    socket.send((topic + " " + String.valueOf(i)).getBytes("UTF-8"));
+                else
+                    socket.send(String.valueOf(i).getBytes("UTF-8"));
             }
         }
     }

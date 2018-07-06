@@ -312,6 +312,14 @@ public class DiscoCache {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @return {@code True} if node is in alives list.
+     */
+    public boolean alive(UUID nodeId) {
+        return alives.contains(nodeId);
+    }
+
+    /**
      * Gets all nodes that have cache with given name.
      *
      * @param cacheName Cache name.

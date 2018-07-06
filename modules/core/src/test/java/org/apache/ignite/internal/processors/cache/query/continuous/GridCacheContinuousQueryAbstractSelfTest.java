@@ -156,11 +156,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -432,6 +427,30 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 }, 5000L);
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBackupCleanerTaskFinalize() throws Exception {
+        final String CACHE_NAME = "LOCAL_CACHE";
+
+        CacheConfiguration<Integer, Integer> cCfg = new CacheConfiguration<>();
+
+        cCfg.setName(CACHE_NAME);
+
+        cCfg.setCacheMode(cacheMode());
+
+        IgniteCache<Integer, Integer> cache = grid(0).getOrCreateCache(cCfg);
+
+        CacheContinuousQueryManager qm = grid(0).context().cache().
+            internalCache(CACHE_NAME).context().continuousQueries();
+
+        assertNotNull(qm.getCancelableTask());
+
+        cache.destroy();
+
+        assertNull(qm.getCancelableTask());
     }
 
     /**

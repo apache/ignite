@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -28,6 +32,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,11 +42,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -104,6 +106,19 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
             for (String cacheName : cacheNames)
                 destroyCache(node0, cacheName);
         }
+
+        awaitPartitionMapExchange();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Ignite node0 : Ignition.allGrids()) {
+                    if (!node0.cacheNames().isEmpty())
+                        return false;
+                }
+
+                return true;
+            }
+        }, 2000));
     }
 
     /**
@@ -113,8 +128,10 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @param ccfg Cache configuration.
      */
     @SuppressWarnings("unchecked")
-    protected void createCache(Ignite node, CacheConfiguration ccfg) {
-        node.createCache(ccfg);
+    protected void createCache(Ignite node, CacheConfiguration ccfg) throws IgniteCheckedException {
+        node.getOrCreateCache(ccfg);
+
+        alignCacheTopologyVersion(node);
     }
 
     /**
@@ -123,8 +140,30 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @param node Node.
      * @param cacheName Cache name.
      */
-    protected void destroyCache(Ignite node, String cacheName) {
+    protected void destroyCache(Ignite node, String cacheName) throws IgniteCheckedException {
         node.destroyCache(cacheName);
+
+        alignCacheTopologyVersion(node);
+    }
+
+    /**
+     * Waits for the topology version to be not less than one registered on source node.
+     *
+     * @param src Source node.
+     * @throws IgniteCheckedException If failed to wait on affinity ready future.
+     */
+    protected void alignCacheTopologyVersion(Ignite src) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer = ((IgniteEx)src).context().cache().context().exchange().readyAffinityVersion();
+
+        info("Will wait for topology version on all nodes: " + topVer);
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            IgniteInternalFuture<?> ready = ((IgniteEx)ignite).context().cache().context().exchange()
+                .affinityReadyFuture(topVer);
+
+            if (ready != null)
+                ready.get();
+        }
     }
 
     /**

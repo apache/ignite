@@ -96,11 +96,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
 

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -225,6 +226,26 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         checkCursor(tree.find(null, null), map.values().iterator());
         checkCursor(tree.find(10L, 70L), map.subMap(10L, true, 70L, true).values().iterator());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testRetries() throws IgniteCheckedException {
+        TestTree tree = createTestTree(true);
+
+        tree.numRetries = 1;
+
+        long size = CNT * CNT;
+
+        try {
+            for (long i = 1; i <= size; i++)
+                tree.put(i);
+
+            fail();
+        }
+        catch (IgniteCheckedException ignored) {
+        }
     }
 
     /**
@@ -2349,6 +2370,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** */
         private static ConcurrentMap<Object, Map<Long, Long>> writeLocks = new ConcurrentHashMap<>();
 
+        /** Number of retries. */
+        private int numRetries = super.getLockRetries();
+
         /**
          * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
@@ -2504,16 +2528,21 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             for (Map.Entry<Object,Map<Long,Long>> entry : locks.entrySet()) {
                 Object thId = entry.getKey();
 
-                b.a(" ## " + thId);
-
                 Long z = beforeLock.get(thId);
+
+                Set<Map.Entry<Long,Long>> xx = entry.getValue().entrySet();
+
+                if (z == null && xx.isEmpty())
+                    continue;
+
+                b.a(" ## " + thId);
 
                 if (z != null)
                     b.a("   --> ").appendHex(z).a("  (").appendHex(effectivePageId(z)).a(')');
 
                 b.a('\n');
 
-                for (Map.Entry<Long,Long> x : entry.getValue().entrySet())
+                for (Map.Entry<Long,Long> x : xx)
                     b.a(" -  ").appendHex(x.getValue()).a("  (").appendHex(x.getKey()).a(")\n");
 
                 b.a('\n');
@@ -2535,6 +2564,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             printLocks(b, writeLocks, beforeWriteLock);
 
             return b.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        protected int getLockRetries() {
+            return numRetries;
         }
     }
 

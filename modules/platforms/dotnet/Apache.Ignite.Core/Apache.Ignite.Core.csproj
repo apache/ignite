@@ -54,6 +54,7 @@
     <Compile Include="Binary\TimestampAttribute.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Cache\IQueryMetrics.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
@@ -72,6 +73,13 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Failure\IFailureHandler.cs" />
+    <Compile Include="Failure\NoOpFailureHandler.cs" />
+    <Compile Include="Failure\StopNodeFailureHandler.cs" />
+    <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
+    <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Common\TaskRunner.cs" />
+    <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
@@ -109,7 +117,6 @@
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\Services\DynamicServiceProxy.cs" />
-    <Compile Include="Impl\Services\ServiceMethodHelper.cs" />
     <Compile Include="Impl\Services\ServiceProxyFactory.cs" />
     <Compile Include="Impl\Services\ServiceProxyTypeGenerator.cs" />
     <Compile Include="Impl\Shell.cs" />
@@ -172,7 +179,6 @@
     <Compile Include="Cache\Affinity\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
-    <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
@@ -551,6 +557,7 @@
     <Compile Include="Services\ServiceDeploymentException.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
+    <Compile Include="Transactions\ITransactionCollection.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
     <Compile Include="Transactions\Package-Info.cs" />
@@ -581,7 +588,6 @@
     <None Include="NuGet\Install.ps1" />
     <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

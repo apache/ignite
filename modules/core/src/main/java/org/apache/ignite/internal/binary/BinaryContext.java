@@ -48,6 +48,7 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -333,6 +334,7 @@ public class BinaryContext {
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
+        registerPredefinedType(IgniteUuid.class, 63);
 
         registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
             GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
@@ -609,17 +611,22 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered)
         throws BinaryObjectException {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
+        if (desc == null) {
+            if (failIfUnregistered)
+                throw new UnregisteredClassException(cls);
+
             desc = registerClassDescriptor(cls, deserialize);
+        }
         else if (!desc.registered()) {
             if (!desc.userType()) {
                 BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
@@ -651,8 +658,12 @@ public class BinaryContext {
                     return desc0;
                 }
             }
-            else
+            else {
+                if (failIfUnregistered)
+                    throw new UnregisteredClassException(cls);
+
                 desc = registerUserClassDescriptor(desc);
+            }
         }
 
         return desc;
@@ -1163,10 +1174,20 @@ public class BinaryContext {
     }
 
     /**
+     * Register user types schemas.
+     */
+    public void registerUserTypesSchema() {
+        for (BinaryClassDescriptor desc : predefinedTypes.values()) {
+            if (desc.userType())
+                desc.registerStableSchema();
+        }
+    }
+
+    /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
-     * only when registering class names whose {@link Class} is unknown.
+     * {@link BinaryContext#descriptorForClass(Class, boolean, boolean)} already call this functionality
+     * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
@@ -1253,6 +1274,13 @@ public class BinaryContext {
      */
     @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata0(typeId) : null;
+    }
+
+    /**
+     * @return All metadata known to this node.
+     */
+    public Collection<BinaryType> metadata() throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata() : Collections.emptyList();
     }
 
     /**
