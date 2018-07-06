@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposed
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -1517,7 +1518,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             qry.keepAll(false);
 
-            if (!cache.context().affinityNode()) {
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+            if ((clusterState.baselineTopology() != null
+                && !CU.baselineNode(ctx.cluster().get().localNode(), clusterState))
+                || !cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
                     ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
