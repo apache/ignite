@@ -243,7 +243,6 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * @param node Node.
      * @throws Exception If failed.

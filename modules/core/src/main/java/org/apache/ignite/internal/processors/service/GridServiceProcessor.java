@@ -1746,7 +1746,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             AffinityTopologyVersion pendingTopVer = null;
             AffinityTopologyVersion newTopVer = currTopVer;
 
-            if (initTopVer != newTopVer)
+            if (!initTopVer.equals(newTopVer))
                 pendingTopVer = newTopVer;
             else {
                 GridDhtTopologyFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
