@@ -262,6 +262,15 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
     }
 
     /**
+     * Sets Ignite instance.
+     *
+     * @param ignite Ignite instance.
+     */
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+    }
+
+    /**
      * Gets locks count.
      *
      * @return locks count.
@@ -315,26 +324,29 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
 
     /** {@inheritDoc} */
     @Override public void onApplicationEvent(ContextRefreshedEvent event) {
-        assert ignite == null;
-
-        if (cfgPath != null && cfg != null) {
-            throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
-                "provided. Set only one of these properties if you need to start a Ignite node inside of " +
-                "SpringCacheManager. If you already have a node running, omit both of them and set" +
-                "'igniteInstanceName' property.");
-        }
-
-        try {
-            if (cfgPath != null) {
-                ignite = IgniteSpring.start(cfgPath, springCtx);
+        if (ignite == null) {
+            if (cfgPath != null && cfg != null) {
+                throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
+                    "provided. Set only one of these properties if you need to start a Ignite node inside of " +
+                    "SpringCacheManager. If you already have a node running, omit both of them and set" +
+                    "'igniteInstanceName' property.");
             }
-            else if (cfg != null)
-                ignite = IgniteSpring.start(cfg, springCtx);
-            else
-                ignite = Ignition.ignite(igniteInstanceName);
+
+            try {
+                if (cfgPath != null) {
+                    ignite = IgniteSpring.start(cfgPath, springCtx);
+                }
+                else if (cfg != null)
+                    ignite = IgniteSpring.start(cfg, springCtx);
+                else
+                    ignite = Ignition.ignite(igniteInstanceName);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        else {
+            ignite.log().debug("Ignite instance was set explicitly. Skipping Ignite initialization routine.");
         }
     }
 
