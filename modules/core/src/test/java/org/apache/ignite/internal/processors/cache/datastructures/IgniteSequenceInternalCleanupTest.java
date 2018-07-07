@@ -17,31 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.AtomicConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
 /**
  */
 public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     /** */
+    public static final int GRIDS_CNT = 5;
+
+    /** */
+    public static final int SEQ_RESERVE = 50_000;
+
+    /** */
+    public static final int CACHES_CNT = 10;
+
+    /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode("client".equals(igniteInstanceName));
 
-        cfg.setMetricsUpdateFrequency(100);
+        cfg.setMetricsUpdateFrequency(10);
+
+        cfg.setActiveOnStart(false);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -55,13 +71,17 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
 
         cfg.setAtomicConfiguration(atomicCfg);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true).
-                    setInitialSize(50L * 1024 * 1024).setMaxSize(50L * 1024 * 1024))
-            .setWalMode(WALMode.LOG_ONLY);
+        List<CacheConfiguration> cacheCfg = new ArrayList<>();
 
-        cfg.setDataStorageConfiguration(memCfg);
+        for (int i = 0; i < CACHES_CNT; i++) {
+            cacheCfg.add(new CacheConfiguration("test" + i).
+                setStatisticsEnabled(true).
+                setCacheMode(PARTITIONED).
+                setAtomicityMode(TRANSACTIONAL).
+                setAffinity(new RendezvousAffinityFunction(false, 16)));
+        }
+
+        cfg.setCacheConfiguration(cacheCfg.toArray(new CacheConfiguration[cacheCfg.size()]));
 
         return cfg;
     }
@@ -70,32 +90,45 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     protected AtomicConfiguration atomicConfiguration() {
         AtomicConfiguration cfg = new AtomicConfiguration();
 
-        cfg.setCacheMode(CacheMode.PARTITIONED);
-        cfg.setBackups(3);
-        cfg.setAtomicSequenceReserveSize(50_000);
+        cfg.setCacheMode(PARTITIONED);
+        cfg.setBackups(1);
+        cfg.setAtomicSequenceReserveSize(SEQ_RESERVE);
 
         return cfg;
     }
 
-    public void test() throws Exception {
+    /** */
+    public void testDeactivate() throws Exception {
         try {
-            Ignite ignite = startGridsMultiThreaded(4, false);
+            Ignite ignite = startGridsMultiThreaded(GRIDS_CNT);
+
+            ignite.cache("test0").put(0, 0);
+
+            int id = 0;
+
+            for (Ignite ig : G.allGrids()) {
+                IgniteAtomicSequence seq = ig.atomicSequence("testSeq", 0, true);
+
+                long id0 = seq.getAndIncrement();
+
+                assertEquals(id0, id);
+
+                id += SEQ_RESERVE;
+            }
+
+            doSleep(1000);
+
+            long puts = ignite.cache("test0").metrics().getCachePuts();
+
+            assertEquals(1, puts);
+
+            grid(GRIDS_CNT - 1).cluster().active(false);
 
             ignite.cluster().active(true);
 
-            Ignite client = startGrid("client");
+            long putsAfter = ignite.cache("test0").metrics().getCachePuts();
 
-            IgniteAtomicSequence seqCl = client.atomicSequence("test", 0, true);
-
-            long id = seqCl.getAndIncrement();
-
-            assertEquals(0, id);
-
-            IgniteAtomicSequence seqSrv = ignite.atomicSequence("test", 0, true);
-
-            long id1 = seqSrv.getAndIncrement();
-
-            assertEquals(50_000, id1);
+            assertEquals(0, putsAfter);
         }
         finally {
             stopAllGrids();
