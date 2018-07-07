@@ -1109,7 +1109,8 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return true;
 
-                U.log(log, "Cancelled rebalancing from all nodes [topology=" + topologyVersion() + ']');
+                U.log(log, "Cancelled rebalancing from all nodes [topology=" + topologyVersion() +
+                    ", grp=" + grp.cacheOrGroupName() + "]");
 
                 if (!ctx.kernalContext().isStopping()) {
                     for (UUID nodeId : remaining.keySet())
