@@ -178,13 +178,15 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Number of random pages that will be picked for eviction. */
     public static final int RANDOM_PAGES_EVICT_NUM = 5;
 
+    /** Try again tag. */
+    public static final int TRY_AGAIN_TAG = -1;
+
     /** Tracking io. */
     private static final TrackingPageIO trackingIO = TrackingPageIO.VERSIONS.latest();
 
     /** Checkpoint pool overflow error message. */
     public static final String CHECKPOINT_POOL_OVERFLOW_ERROR_MSG = "Failed to allocate temporary buffer for checkpoint " +
         "(increase checkpointPageBufferSize configuration property)";
-    public static final int TRY_AGAIN_TAG = -1;
 
     /** Page size. */
     private final int sysPageSize;
