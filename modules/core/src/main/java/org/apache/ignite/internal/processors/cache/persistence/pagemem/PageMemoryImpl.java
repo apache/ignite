@@ -381,9 +381,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
             writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
         else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false);
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false, log);
         else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY)
-            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true);
+            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true, log);
     }
 
     /** {@inheritDoc} */

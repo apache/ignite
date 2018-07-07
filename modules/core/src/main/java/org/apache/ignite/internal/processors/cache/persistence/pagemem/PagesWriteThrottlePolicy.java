@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Throttling policy, encapsulates logic of delaying write operations.
  */
 public interface PagesWriteThrottlePolicy {
     /** Max park time. */
-    public int MAX_PARK_TIME = 100_000_000;
+    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(10);
 
     /**
      * Callback to apply throttling delay.
