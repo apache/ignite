@@ -1226,6 +1226,7 @@ public class GridDhtPartitionDemander {
                             ", cacheOrGroup=" + grp.cacheOrGroupName() +
                             ", topology=" + topVer +
                             ", latestTopVer=" + topologyVersion() +
+                            ", remaining=" + remaining.keySet() +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
