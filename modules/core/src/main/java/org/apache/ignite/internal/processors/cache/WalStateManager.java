@@ -1267,6 +1267,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             metaStorage = ms;
         }
 
+        /** @return WAL is disabled or not */
         public boolean check() {
             return disableWal;
         }
