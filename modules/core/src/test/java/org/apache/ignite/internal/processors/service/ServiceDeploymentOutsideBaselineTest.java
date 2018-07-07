@@ -25,11 +25,17 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -148,6 +154,78 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testStaticDeployFromEachPersistentNodes() throws Exception {
+        checkDeployFromEachNodes(true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployFromEachNodes() throws Exception {
+        checkDeployFromEachNodes(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStaticDeployFromEachNodes() throws Exception {
+        checkDeployFromEachNodes(false, true);
+    }
+
+    /**
+     * @param persistence If {@code true}, then persistence will be enabled.
+     * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
+     * @throws Exception If failed.
+     */
+    private void checkDeployFromEachNodes(boolean persistence, boolean staticDeploy) throws Exception {
+        this.persistence = persistence;
+
+        CountDownLatch exeLatch = new CountDownLatch(1);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        Ignite ignite0 = deployServiceFromNewNode(staticDeploy, 0);
+
+        if (persistence)
+            ignite0.cluster().active(true);
+        else {
+            IgniteCluster cluster = ignite0.cluster();
+
+            cluster.setBaselineTopology(cluster.topologyVersion());
+        }
+
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+
+        IgniteInternalFuture startFut = GridTestUtils.runAsync(() -> {
+            try {
+                deployServiceFromNewNode(staticDeploy);
+            }
+            catch (Exception e) {
+                fail(e.getMessage());
+            }
+        });
+
+        try {
+            startFut.get(10, TimeUnit.SECONDS);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            GridStringBuilder sb = new SB()
+                .a("Node can not start out of baseline till ")
+                .a(10_000L)
+                .a("ms")
+                .a(U.nl());
+
+            for (Thread t: Thread.getAllStackTraces().keySet())
+                if (t.getName().startsWith("async-runnable-runner"))
+                    U.printStackTrace(t.getId(), sb);
+
+            fail(sb.toString());
+        }
+    }
+
+    /**
      * @param persistence If {@code true}, then persistence will be enabled.
      * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
      * @throws Exception If failed.
@@ -251,19 +329,32 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
      * @throws Exception If node failed to start.
      */
-    private void deployServiceFromNewNode(boolean staticDeploy) throws Exception {
+    private Ignite deployServiceFromNewNode(boolean staticDeploy) throws Exception {
+        return deployServiceFromNewNode(staticDeploy, 1);
+    }
+
+    /**
+     * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
+     * @param nodeNum Nouber of test node.
+     * @throws Exception If node failed to start.
+     */
+    private Ignite deployServiceFromNewNode(boolean staticDeploy, int nodeNum) throws Exception {
+        Ignite ignite;
+
         if (staticDeploy) {
             srvcCfg = getClusterSingletonServiceConfiguration();
 
-            startGrid(1);
+            ignite = startGrid(nodeNum);
         }
         else {
-            Ignite node = startGrid(1);
+            ignite = startGrid(nodeNum);
 
-            IgniteFuture<Void> depFut = node.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
+            IgniteFuture<Void> depFut = ignite.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
 
             depFut.get(10, TimeUnit.SECONDS);
         }
+
+        return ignite;
     }
 
     /**
