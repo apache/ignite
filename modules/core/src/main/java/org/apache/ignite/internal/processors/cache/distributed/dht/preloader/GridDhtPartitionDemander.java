@@ -1225,7 +1225,7 @@ public class GridDhtPartitionDemander {
                             "rebalancing [fromNode=" + nodeId +
                             ", cacheOrGroup=" + grp.cacheOrGroupName() +
                             ", topology=" + topVer +
-                            ", latestTopVer" + topologyVersion() +
+                            ", latestTopVer=" + topologyVersion() +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
