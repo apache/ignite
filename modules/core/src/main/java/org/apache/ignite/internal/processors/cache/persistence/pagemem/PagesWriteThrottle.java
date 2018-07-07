@@ -16,10 +16,11 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -111,7 +112,9 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         if (shouldThrottle) {
             int throttleLevel = cntr.getAndIncrement();
 
-            LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel)));
+            long nanos = (long) (STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel));
+
+            LockSupport.parkNanos(Math.min(nanos, MAX_PARK_TIME));
         }
         else
             cntr.set(0);

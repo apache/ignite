@@ -17,23 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -85,6 +68,24 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -183,6 +184,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Checkpoint pool overflow error message. */
     public static final String CHECKPOINT_POOL_OVERFLOW_ERROR_MSG = "Failed to allocate temporary buffer for checkpoint " +
         "(increase checkpointPageBufferSize configuration property)";
+    public static final int TRY_AGAIN_TAG = -1;
 
     /** Page size. */
     private final int sysPageSize;
@@ -1118,7 +1120,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : TRY_AGAIN_TAG;
     }
 
     /**
@@ -1128,6 +1130,8 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pageSingleAcquire Page is acquired only once. We don't pin the page second time (until page will not be
      * copied) in case checkpoint temporary buffer is used.
      * @param tracker Checkpoint statistics tracker.
+     *
+     * @return False if someone else holds lock on page.
      */
     private boolean copyPageForCheckpoint(
         long absPtr,
@@ -1139,7 +1143,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert absPtr != 0;
         assert PageHeader.isAcquired(absPtr);
 
-        rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+        boolean locked = rwLock.tryWriteLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+        if (!locked)
+            return false;
 
         try {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
@@ -2345,6 +2352,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert getReadHoldCount() > 0 || getWriteHoldCount() > 0;
 
             Integer tag = partGenerationMap.get(new GroupPartitionId(grpId, partId));
+
+            assert tag == null || tag >= 0 : "Negative tag=" + tag;
 
             return tag == null ? INIT_PART_GENERATION : tag;
         }

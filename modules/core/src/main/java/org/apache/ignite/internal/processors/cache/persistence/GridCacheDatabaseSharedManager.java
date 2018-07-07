@@ -17,45 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -161,6 +122,46 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
+
+import javax.management.ObjectName;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
@@ -2542,6 +2543,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, null);
 
+                assert tag == null || tag != PageMemoryImpl.TRY_AGAIN_TAG :
+                        "Lock is held by other thread for page " + fullId;
+
                 if (tag != null) {
                     tmpWriteBuf.rewind();
 
@@ -3790,78 +3794,103 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** {@inheritDoc} */
         @Override public void run() {
-            ByteBuffer tmpWriteBuf = threadBuf.get();
-
-            long writeAddr = GridUnsafe.bufferAddress(tmpWriteBuf);
-
             snapshotMgr.beforeCheckpointPageWritten();
 
+            Collection<FullPageId> writePageIds = this.writePageIds;
+
             try {
-                for (FullPageId fullId : writePageIds) {
-                    if (checkpointer.shutdownNow)
+                while (true) {
+                    List<FullPageId> pagesToRetry = new ArrayList<>();
+
+                    writePages(writePageIds, pagesToRetry);
+
+                    if (pagesToRetry.isEmpty())
                         break;
 
-                    tmpWriteBuf.rewind();
-
-                    snapshotMgr.beforePageWrite(fullId);
-
-                    int grpId = fullId.groupId();
-
-                    PageMemoryEx pageMem;
-
-                    if (grpId != MetaStorage.METASTORAGE_CACHE_ID) {
-                        CacheGroupContext grp = context().cache().cacheGroup(grpId);
-
-                        if (grp == null)
-                            continue;
-
-                        if (!grp.dataRegion().config().isPersistenceEnabled())
-                            continue;
-
-                        pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
-                    }
-                    else
-                        pageMem = (PageMemoryEx)metaStorage.pageMemory();
-
-
-                    Integer tag = pageMem.getForCheckpoint(
-                        fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
-
-                    if (tag != null) {
-                        assert PageIO.getType(tmpWriteBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
-                        assert PageIO.getVersion(tmpWriteBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
-
-                        tmpWriteBuf.rewind();
-
-                        if (persStoreMetrics.metricsEnabled()) {
-                            int pageType = PageIO.getType(tmpWriteBuf);
-
-                            if (PageIO.isDataPageType(pageType))
-                                tracker.onDataPageWritten();
-                        }
-
-                        if (!skipCrc) {
-                            PageIO.setCrc(writeAddr, PureJavaCrc32.calcCrc32(tmpWriteBuf, pageSize()));
-
-                            tmpWriteBuf.rewind();
-                        }
-
-                        int curWrittenPages = writtenPagesCntr.incrementAndGet();
-
-                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages, totalPagesToWrite);
-
-                        tmpWriteBuf.rewind();
-
-                        PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
-
-                        updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
-                    }
+                    writePageIds = pagesToRetry;
                 }
 
                 doneFut.onDone((Void)null);
             }
             catch (Throwable e) {
                 doneFut.onDone(e);
+            }
+        }
+
+        /**
+         * @param writePageIds Collections of pages to write.
+         * @param pagesToRetry Accumulator of pages which should be retried.
+         */
+        private void writePages(Collection<FullPageId> writePageIds, List<FullPageId> pagesToRetry) throws IgniteCheckedException {
+            ByteBuffer tmpWriteBuf = threadBuf.get();
+
+            long writeAddr = GridUnsafe.bufferAddress(tmpWriteBuf);
+
+            for (FullPageId fullId : writePageIds) {
+                if (checkpointer.shutdownNow)
+                    break;
+
+                tmpWriteBuf.rewind();
+
+                snapshotMgr.beforePageWrite(fullId);
+
+                int grpId = fullId.groupId();
+
+                PageMemoryEx pageMem;
+
+                if (grpId != MetaStorage.METASTORAGE_CACHE_ID) {
+                    CacheGroupContext grp = context().cache().cacheGroup(grpId);
+
+                    if (grp == null)
+                        continue;
+
+                    if (!grp.dataRegion().config().isPersistenceEnabled())
+                        continue;
+
+                    pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+                }
+                else
+                    pageMem = (PageMemoryEx)metaStorage.pageMemory();
+
+
+                Integer tag = pageMem.getForCheckpoint(
+                    fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
+
+                if (tag != null) {
+                    if (tag == PageMemoryImpl.TRY_AGAIN_TAG) {
+                        pagesToRetry.add(fullId);
+
+                        continue;
+                    }
+
+                    assert PageIO.getType(tmpWriteBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
+                    assert PageIO.getVersion(tmpWriteBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
+
+                    tmpWriteBuf.rewind();
+
+                    if (persStoreMetrics.metricsEnabled()) {
+                        int pageType = PageIO.getType(tmpWriteBuf);
+
+                        if (PageIO.isDataPageType(pageType))
+                            tracker.onDataPageWritten();
+                    }
+
+                    if (!skipCrc) {
+                        PageIO.setCrc(writeAddr, PureJavaCrc32.calcCrc32(tmpWriteBuf, pageSize()));
+
+                        tmpWriteBuf.rewind();
+                    }
+
+                    int curWrittenPages = writtenPagesCntr.incrementAndGet();
+
+                    snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages, totalPagesToWrite);
+
+                    tmpWriteBuf.rewind();
+
+                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
+
+                    updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
+                }
             }
         }
     }
