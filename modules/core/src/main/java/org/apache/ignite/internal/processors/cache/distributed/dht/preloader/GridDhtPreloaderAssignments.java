@@ -40,7 +40,11 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private boolean cancelled;
 
-    /** */
+    /**
+     * Assignments marked {@code True} if they are empty (nothing to rebalance), affinity assignment changed from
+     * previous rebalance version {@see GridDhtPartitionDemander#activeRebalanceTopVer} or forceReassign,
+     * forceRebalance event occurs e.g. {@code exchFut == null}.
+     */
     @GridToStringInclude
     private boolean changed = true;
 
