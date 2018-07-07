@@ -40,6 +40,8 @@ public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultin
 
     /** {@inheritDoc} */
     @Override public void testInvoke() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-809");
+        //fail("https://issues.apache.org/jira/browse/IGNITE-809");
+
+        super.testInvoke();
     }
 }
