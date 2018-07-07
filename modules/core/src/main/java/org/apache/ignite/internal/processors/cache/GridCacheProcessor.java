@@ -587,7 +587,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      * @throws IgniteCheckedException If failed.
      */
-    void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
+    private void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
         if (rsrc != null) {
             ctx.resource().injectGeneric(rsrc);
 
@@ -642,7 +642,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param rsrc Resource.
      * @param near Near flag.
      */
-    void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
+    private void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
             unregisterMbean(rsrc, cfg.getName(), near);
 

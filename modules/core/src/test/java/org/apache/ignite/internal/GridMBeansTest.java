@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -54,42 +50,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         cfg.setExecutorConfiguration(new ExecutorConfiguration(CUSTOM_EXECUTOR_0),
             new ExecutorConfiguration(CUSTOM_EXECUTOR_1));
 
-        FifoEvictionPolicyFactory<String, String> plc = new FifoEvictionPolicyFactory<>();
-        plc.setMaxSize(100);
-        plc.setBatchSize(10);
-        plc.setMaxMemorySize(20);
-
-        CacheConfiguration cache1 = defaultCacheConfiguration();
-        cache1.setName("cache1");
-        cache1.setOnheapCacheEnabled(true);
-        cache1.setEvictionPolicyFactory(plc);
-
-        NearCacheConfiguration ncf = new NearCacheConfiguration<>();
-        LruEvictionPolicy lep = new LruEvictionPolicy();
-        lep.setBatchSize(10);
-        lep.setMaxMemorySize(500);
-        lep.setMaxSize(40);
-        ncf.setNearEvictionPolicy(lep);
-        cache1.setNearConfiguration(ncf);
-
-
-
-        CacheConfiguration cache2 = defaultCacheConfiguration();
-        lep = new LruEvictionPolicy();
-        lep.setBatchSize(10);
-        lep.setMaxMemorySize(125);
-        lep.setMaxSize(30);
-
-        cache2.setEvictionPolicy(lep);
-        cache2.setOnheapCacheEnabled(true);
-        cache2.setName("cache2");
-
-
-
-
-        cfg.setCacheConfiguration(cache1,cache2);
-
-
         return cfg;
     }
 
@@ -99,22 +59,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
         checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
     }
-
-    /** Check that eviction bean is available */
-    public void testEvictionPolicyBeans() throws Exception{
-        checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxSize", 100);
-        checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "BatchSize", 10);
-        checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxMemorySize", 20L);
-
-        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
-        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
-        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
-
-        checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 30);
-        checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
-        checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 125L);
-    }
-
 
     /** Check that kernal bean is available */
     public void testExecutorBeans() throws Exception {
