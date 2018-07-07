@@ -1478,7 +1478,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
             }
 
-            if (safeToUpdatePageMemories() || checkpointLock.getReadHoldCount() > 1)
+            if (checkpointLock.getReadHoldCount() > 1 || safeToUpdatePageMemories())
                 break;
             else {
                 checkpointLock.readLock().unlock();
