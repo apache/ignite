@@ -211,12 +211,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (!actTopVer.initialized() ||
                 isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
                 !leftNodes.isEmpty()) { // Some of nodes left before rabalance compelete.
-                // Mark current rebalance as obsolete and allow assignmnent generation.
+                // Mark current rebalance as obsolete.
                 demander.topologyVersionToDemand(lastTopVer);
-            }
-            else {
-                // Assignments are the same, just update last rebalance version.
-                demander.updateRebalanceFuture(lastTopVer);
             }
         }
     }
@@ -224,8 +220,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
-
-        assert !ctx.kernalContext().clientNode() : "Assignments cannot be generated for client node.";
 
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
@@ -251,8 +245,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
-                    log.debug("Skipping assignments creation, exchange worker has pending assignments [exchId=" +
-                        exchId + ", topVer=" + topVer + "]");
+                    log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
+                        exchId);
 
                 assignments.cancelled(true);
 
@@ -349,12 +343,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty()) {
+        if (!assignments.isEmpty())
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
-
-            // Skip assignment (set changed = false) if they are not marked as preloading.
-            assignments.changed(topVer.equals(demander.topologyVersionToDemand()) || exchFut == null);
-        }
 
         return assignments;
     }
@@ -445,11 +435,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
         return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateRebalanceFuture(AffinityTopologyVersion topVer) {
-        demander.updateRebalanceFuture(topVer);
     }
 
     /**

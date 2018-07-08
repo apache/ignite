@@ -277,13 +277,6 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return Topology version to be demanded this iteration.
-     */
-    AffinityTopologyVersion topologyVersionToDemand() {
-        return topVerToDemand;
-    }
-
-    /**
      * @param topVer Target rebalance topology version to be demanded.
      */
     void topologyVersionToDemand(AffinityTopologyVersion topVer) {
@@ -341,10 +334,19 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) &&
-            assignments != null &&
-            assignments.changed()) { // Should have changes from previous rebalace.
+        if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
+
+            final AffinityTopologyVersion topVer = assignments.topologyVersion();
+
+            if (!topologyChanged(oldFut) && !assignments.isEmpty() && !force) {
+                oldFut.latestTopVer = topVer;
+
+                // Skip assigments that are not chaned from previous rebalance.
+                return null;
+            }
+
+            assert topVerToDemand.compareTo(topVer) <= 0 : "Incorrect topology version to demand";
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
 
@@ -352,7 +354,7 @@ public class GridDhtPartitionDemander {
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
                         if (future.get())
-                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
+                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
                     }
                 });
 
@@ -365,6 +367,8 @@ public class GridDhtPartitionDemander {
                 forcedRebFut.add(fut);
 
             rebalanceFut = fut;
+
+            topVerToDemand = topVer;
 
             for (final GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {

@@ -92,13 +92,6 @@ public interface GridCachePreloader {
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
 
     /**
-     * Update previously created rebalance future using provided input info.
-     *
-     * @param topVer New topology version to update.
-     */
-    public void updateRebalanceFuture(AffinityTopologyVersion topVer);
-
-    /**
      * @param p Preload predicate.
      */
     public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> p);

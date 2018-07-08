@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -39,14 +38,6 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
 
     /** */
     private boolean cancelled;
-
-    /**
-     * Assignments marked {@code True} if they are empty (nothing to rebalance), affinity assignment changed from
-     * previous rebalance version {@see GridDhtPartitionDemander#activeRebalanceTopVer} or forceReassign,
-     * forceRebalance event occurs e.g. {@code exchFut == null}.
-     */
-    @GridToStringInclude
-    private boolean changed = true;
 
     /**
      * @param exchangeId Exchange ID.
@@ -82,23 +73,9 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     }
 
     /**
-     * @return {@code True } if assignments are changed from previously rebalanced topology version.
+     * @return Topology version.
      */
-    public boolean changed() {
-        return changed;
-    }
-
-    /**
-     * @param changed Set {@code True } if assignments are changed from previously rebalanced topology version.
-     */
-    void changed(boolean changed) {
-        this.changed = changed;
-    }
-
-    /**
-     * @return Topology version of created assignments based on {@link GridDhtPartitionTopology#readyTopologyVersion}.
-     */
-    public AffinityTopologyVersion topologyVersion() {
+    AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
