@@ -1252,7 +1252,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         changeWalModeIfNeeded();
 
-        // TODO : register soft/hard timeout.
         cctx.time().schedule(this::onDistributedExchangeTimeout, cctx.gridConfig().getExchangeHardTimeout(), -1);
 
         if (crd.isLocal()) {
@@ -1265,6 +1264,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         initDone();
     }
 
+    /**
+     *
+     */
     private void onDistributedExchangeTimeout() {
         if (!isDone()) {
             synchronized (mux) {
@@ -1293,6 +1295,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
     }
 
+    /**
+     * @param topVer Topology version.
+     * @param receivedSingleMessage Received single message flag.
+     */
     public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion topVer, boolean receivedSingleMessage) {
         if (receivedSingleMessage && topVer.compareTo(exchId.topologyVersion()) < 0)
             cctx.discovery().failNode(crd.id(), null);
@@ -1300,6 +1306,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
     }
 
+    /**
+     * @param nodeId Node id.
+     */
     public boolean receivedSingleMessageFromNode(UUID nodeId) {
         return msgs.containsKey(nodeId);
     }

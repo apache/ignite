@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.PartitionsExchangeUnresponsiveNodeTimeoutTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
@@ -120,6 +121,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxOptimisticOnPartitionExchangeTest.class);
 
         suite.addTestSuite(IgniteExchangeLatchManagerCoordinatorFailTest.class);
+
+        suite.addTestSuite(PartitionsExchangeUnresponsiveNodeTimeoutTest.class);
 
         return suite;
     }

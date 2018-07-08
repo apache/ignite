@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
@@ -25,24 +24,27 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbstractTest {
-
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
-        cfg.setExchangeSoftTimeout(10_000);
         cfg.setExchangeHardTimeout(10_000);
 
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (Ignite ig : G.allGrids()) {
             ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).blockExchangeMessages = false;
-            ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).sendOutdatedCheckMessages = false;
+            ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).sndOutdatedCheckMessages = false;
         }
 
         List<Ignite> nodes = G.allGrids();
@@ -57,6 +59,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         super.afterTest();
     }
 
+    /**
+     *
+     */
     public void testNonCoordinatorUnresponsive() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -77,6 +82,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         }, 60_000));
     }
 
+    /**
+     *
+     */
     public void testCoordinatorUnresponsive() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -93,6 +101,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         }, 3 * 60_000));
     }
 
+    /**
+     *
+     */
     public void testCoordinatorUnresponsiveWithCheckMessagesBlocked() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -110,6 +121,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         }, 3 * 60_000));
     }
 
+    /**
+     *
+     */
     public void testCoordinatorUnresponsiveWithOutdatedCheckMessages() throws Exception {
         startGrids(4);
 
@@ -120,7 +134,7 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         UUID failNode = ignite(0).cluster().localNode().id();
 
         ((TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi()).blockExchangeMessages = true;
-        ((TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi()).sendOutdatedCheckMessages = true;
+        ((TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi()).sndOutdatedCheckMessages = true;
 
         GridTestUtils.runAsync(() -> startGrid(4));
 
@@ -133,29 +147,37 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
         }, 60_000));
     }
 
+    /**
+     *
+     */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
-
+        /** Block exchange messages. */
         private volatile boolean blockExchangeMessages;
 
+        /** Block check messages. */
         private volatile boolean blockCheckMessages;
 
-        private volatile boolean sendOutdatedCheckMessages;
+        /** Send outdated check messages. */
+        private volatile boolean sndOutdatedCheckMessages;
 
+        /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
             IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
 
             Message msg0 = ((GridIoMessage)msg).message();
-            if ((msg0 instanceof GridDhtPartitionsSingleMessage || msg0 instanceof GridDhtPartitionsFullMessage) && blockExchangeMessages)
+            if ((msg0 instanceof GridDhtPartitionsSingleMessage || msg0 instanceof GridDhtPartitionsFullMessage)
+                && blockExchangeMessages)
                 return;
 
-            if ((msg0 instanceof PartitionsExchangeFinishedCheckRequest || msg0 instanceof PartitionsExchangeFinishedCheckResponse) && blockCheckMessages)
+            if ((msg0 instanceof PartitionsExchangeFinishedCheckRequest ||
+                msg0 instanceof PartitionsExchangeFinishedCheckResponse)
+                && blockCheckMessages)
                 return;
 
-            if (msg0 instanceof PartitionsExchangeFinishedCheckResponse && sendOutdatedCheckMessages)
+            if (msg0 instanceof PartitionsExchangeFinishedCheckResponse && sndOutdatedCheckMessages)
                 GridTestUtils.setFieldValue(msg0, "topVer", AffinityTopologyVersion.ZERO);
 
             super.sendMessage(node, msg, ackC);
         }
     }
-
 }

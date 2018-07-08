@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
@@ -1634,7 +1633,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     }
 
-    private void processExchangeCheckRequest(UUID nodeId, PartitionsExchangeFinishedCheckRequest request) {
+    /**
+     * @param nodeId Node id.
+     * @param req Request.
+     */
+    private void processExchangeCheckRequest(UUID nodeId, PartitionsExchangeFinishedCheckRequest req) {
         GridDhtTopologyFuture lastFut = lastFinishedFut.get();
 
         try {
@@ -1651,8 +1654,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     }
 
-    private void processExchangeCheckResponse(UUID nodeId, PartitionsExchangeFinishedCheckResponse response) {
-        lastInitializedFut.onCrdLastFinishedVersionReceived(response.topVer(), response.receivedSingleMessage());
+    /**
+     * @param nodeId Node id.
+     * @param res Response.
+     */
+    private void processExchangeCheckResponse(UUID nodeId, PartitionsExchangeFinishedCheckResponse res) {
+        GridDhtPartitionsExchangeFuture lastInitializedFut0 = this.lastInitializedFut;
+
+        lastInitializedFut0.onCrdLastFinishedVersionReceived(res.topVer(), res.receivedSingleMessage());
     }
 
     /**

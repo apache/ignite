@@ -217,9 +217,6 @@ public class IgniteConfiguration {
     /** Default partition map exchange hard timeout in millis. */
     public static final long DFLT_EXCHANGE_HARD_TIMEOUT = 5 * 60 * 1000;
 
-    /** Default partition map exchange soft timeout in millis. */
-    public static final long DFLT_EXCHANGE_SOFT_TIMEOUT = 60 * 1000;
-
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -505,9 +502,6 @@ public class IgniteConfiguration {
     /** Exchange hard timeout. */
     private long exchangeHardTimeout = DFLT_EXCHANGE_HARD_TIMEOUT;
 
-    /** Exchange soft timeout. */
-    private long exchangeSoftTimeout = DFLT_EXCHANGE_SOFT_TIMEOUT;
-
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -564,7 +558,6 @@ public class IgniteConfiguration {
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         exchangeHardTimeout = cfg.getExchangeHardTimeout();
-        exchangeSoftTimeout = cfg.getExchangeSoftTimeout();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
@@ -3015,22 +3008,24 @@ public class IgniteConfiguration {
         return this;
     }
 
+    /**
+     * Returns hard timeout for partition map exchange process. If it doesn't finish until the specified amount of time
+     * passes, all nodes that potentially could block progress will be removed from cluster.
+     *
+     * @return Hard exchange timeout, in millis.
+     */
     public long getExchangeHardTimeout() {
         return exchangeHardTimeout;
     }
 
+    /**
+     * Sets hard timeout for partition map exchange process.
+     *
+     * @param timeout Hard exchange timeout, in millis.
+     * @return {@code this} for chaining.
+     */
     public IgniteConfiguration setExchangeHardTimeout(long timeout) {
         this.exchangeHardTimeout = timeout;
-
-        return this;
-    }
-
-    public long getExchangeSoftTimeout() {
-        return exchangeSoftTimeout;
-    }
-
-    public IgniteConfiguration setExchangeSoftTimeout(long timeout) {
-        this.exchangeSoftTimeout = timeout;
 
         return this;
     }
