@@ -2603,11 +2603,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         Runnable r = null;
 
-                        // List of cache groups to be rebalanced.
                         List<String> rebList = new LinkedList<>();
-
-                        // List of cache groups with empty assignments.
-                        List<String> emptyList = new ArrayList<>();
 
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
@@ -2622,9 +2618,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
-
-                                if (assigns != null && assigns.isEmpty())
-                                    emptyList.add(grp.cacheOrGroupName());
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
@@ -2651,10 +2644,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else if (r != null) {
                             Collections.reverse(rebList);
 
-                            U.log(log, "Rebalancing scheduled [order=" + rebList + ", empty=" + emptyList + "]");
-
-                            U.log(log, "Rebalancing started " +
-                                "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                            U.log(log, "Rebalancing started [order=" + rebList +
+                                ", top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + "]");
 
                             r.run(); // Starts rebalancing routine.
@@ -2662,7 +2653,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + ", empty=" + emptyList + "]");
+                                ", node=" + exchId.nodeId() + "]");
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {

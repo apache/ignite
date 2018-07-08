@@ -323,13 +323,13 @@ public class GridDhtPartitionDemander {
 
             if (!topologyChanged(oldFut) && !assignments.isEmpty() && !force) {
                 // Skip assignments as not marked by GridDhtPreloader.afterExchange().
-                if (log.isDebugEnabled()) {
-                    log.debug("Updating rebalance future [isDone=" + oldFut.isDone() + ", result=" + oldFut.result() +
-                        ", topVer=" + oldFut.topVer + ", latestTopVer=" + oldFut.topologyVersion() + ", newTopVer=" + topVer +
-                        ", grp=" + grp.cacheOrGroupName() + "]");
-                }
-
                 oldFut.latestTopVer = topVer;
+
+                U.log(log, "Rebalancing skipped (no group changes) [grp=" + grp.cacheOrGroupName() +
+                    ", mode=" + grp.config().getRebalanceMode() +
+                    ", topVer=" + oldFut.topVer +
+                    ", lastTopVer=" + oldFut.topologyVersion() +
+                    ", rebalanceId=" + oldFut.rebalanceId + "]");
 
                 return null;
             }
@@ -386,8 +386,10 @@ public class GridDhtPartitionDemander {
             fut.sendRebalanceStartedEvent();
 
             if (assignments.isEmpty()) { // Nothing to rebalance.
-                if (log.isDebugEnabled())
-                    log.debug("Rebalancing skipped due to empty assignments.");
+                U.log(log, "Rebalancing skipped (empty assignments) [grp=" + grp.cacheOrGroupName() +
+                    ", mode=" + grp.config().getRebalanceMode() +
+                    ", topVer=" + oldFut.topologyVersion() +
+                    ", rebalanceId=" + oldFut.rebalanceId + "]");
 
                 fut.onDone(true);
 
