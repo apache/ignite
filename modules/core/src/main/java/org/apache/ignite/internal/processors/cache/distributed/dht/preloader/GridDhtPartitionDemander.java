@@ -388,7 +388,7 @@ public class GridDhtPartitionDemander {
             if (assignments.isEmpty()) { // Nothing to rebalance.
                 U.log(log, "Rebalancing skipped (empty assignments) [grp=" + grp.cacheOrGroupName() +
                     ", mode=" + grp.config().getRebalanceMode() +
-                    ", topVer=" + oldFut.topologyVersion() +
+                    ", lastTopVer=" + oldFut.topologyVersion() +
                     ", rebalanceId=" + oldFut.rebalanceId + "]");
 
                 fut.onDone(true);
