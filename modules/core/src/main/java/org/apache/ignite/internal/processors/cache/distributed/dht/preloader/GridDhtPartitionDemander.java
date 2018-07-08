@@ -996,7 +996,7 @@ public class GridDhtPartitionDemander {
         /** */
         private final IgniteLogger log;
 
-        /** Nodes on which demanded message prepared for beeing sent. */
+        /** Nodes on which demanded message prepared for being sent. */
         private final Collection<UUID> requestedNodes;
 
         /** Remaining. T2: startTime, partitions */
