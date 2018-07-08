@@ -290,24 +290,6 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Update rebalance future topology version e.g. when assignments not changed from previous version.
-     *
-     * @param topVer New topology to update.
-     */
-    void updateRebalanceFuture(AffinityTopologyVersion topVer) {
-        final RebalanceFuture fut = rebalanceFut;
-
-        assert topVer.compareTo(fut.topVer) > 0 : "New topology version must be greater than initial version.";
-
-        if (log.isDebugEnabled())
-            log.debug("Updating rebalance future [isDone=" + fut.isDone() + ", result=" + fut.result() +
-                ", topVer=" + fut.topVer + ", latestTopVer=" + fut.topologyVersion() + ", newTopVer=" + topVer +
-                ", grp=" + grp.cacheOrGroupName() + "]");
-
-        fut.latestTopVer = topVer;
-    }
-
-    /**
      * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
      * future based on them. If previous rebalance future is not finished method will cancel it.
      * Also, method sends current rebalance started event. Empty and cancelled assignments processed different way.
@@ -340,9 +322,15 @@ public class GridDhtPartitionDemander {
             final AffinityTopologyVersion topVer = assignments.topologyVersion();
 
             if (!topologyChanged(oldFut) && !assignments.isEmpty() && !force) {
+                // Skip assignments as not marked by GridDhtPreloader.afterExchange().
+                if (log.isDebugEnabled()) {
+                    log.debug("Updating rebalance future [isDone=" + oldFut.isDone() + ", result=" + oldFut.result() +
+                        ", topVer=" + oldFut.topVer + ", latestTopVer=" + oldFut.topologyVersion() + ", newTopVer=" + topVer +
+                        ", grp=" + grp.cacheOrGroupName() + "]");
+                }
+
                 oldFut.latestTopVer = topVer;
 
-                // Skip assigments that are not chaned from previous rebalance.
                 return null;
             }
 
@@ -1231,7 +1219,7 @@ public class GridDhtPartitionDemander {
                             ", cacheOrGroup=" + grp.cacheOrGroupName() +
                             ", topology=" + topVer +
                             ", latestTopVer=" + topologyVersion() +
-                            ", remaining=" + remaining.keySet().size() +
+                            ", remaining=" + (remaining.keySet().size() - 1) +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
