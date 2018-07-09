@@ -2435,8 +2435,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
 
-                    boolean forcePreload = false;
-
                     boolean pendingExchange = false;
 
                     GridDhtPartitionExchangeId exchId;
@@ -2453,8 +2451,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchId = ((RebalanceReassignExchangeTask) task).exchangeId();
                         }
                         else if (task instanceof ForceRebalanceExchangeTask) {
-                            forcePreload = true;
-
                             timeout = 0; // Force refresh.
 
                             exchId = ((ForceRebalanceExchangeTask)task).exchangeId();
@@ -2567,7 +2563,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance) {
+                                if ((delay == 0 || exchFut == null) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
                                     if (assigns != null && assigns.cancelled())
@@ -2645,7 +2641,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing started [order=" + rebList +
-                                ", top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                                ", top=" + resVer + ", forced=" + (exchFut == null) +
+                                ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + "]");
 
                             r.run(); // Starts rebalancing routine.
