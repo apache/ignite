@@ -366,9 +366,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
             if (msg instanceof PartitionsExchangeFinishedCheckRequest)
                 processExchangeCheckRequest(nodeId, (PartitionsExchangeFinishedCheckRequest) msg);
-            else if (msg instanceof PartitionsExchangeFinishedCheckResponse) {
+            else if (msg instanceof PartitionsExchangeFinishedCheckResponse)
                 processExchangeCheckResponse(nodeId, (PartitionsExchangeFinishedCheckResponse) msg);
-            }
         });
 
         if (!cctx.kernalContext().clientNode()) {

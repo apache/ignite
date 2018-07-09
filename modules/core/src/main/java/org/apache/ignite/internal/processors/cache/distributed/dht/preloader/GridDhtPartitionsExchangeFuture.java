@@ -1282,7 +1282,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else {
                     try {
                         log.warning("Exchange timeout reached on non-coordinator node, " +
-                            "sending check request to coodtinator");
+                            "sending check request to coordinator");
 
                         cctx.kernalContext().io().sendToGridTopic(
                             crd, GridTopic.TOPIC_EXCHANGE, new PartitionsExchangeFinishedCheckRequest(), SYSTEM_POOL);
