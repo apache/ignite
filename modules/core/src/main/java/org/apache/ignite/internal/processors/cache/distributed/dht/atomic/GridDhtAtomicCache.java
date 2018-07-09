@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -1791,6 +1792,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
 
                         ((CacheObjectBinaryProcessorImpl)cacheObjProc).binaryContext().descriptorForClass(ex.cls(), false, false);
+                    }
+                    catch (UnregisteredBinaryTypeException ex) {
+                        IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
+
+                        assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
+
+                        ((CacheObjectBinaryProcessorImpl)cacheObjProc).binaryContext().updateMetadata(ex.typeId(), ex.binaryMetadata(), false);
                     }
                 }
             }

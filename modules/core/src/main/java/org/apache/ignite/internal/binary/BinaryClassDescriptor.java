@@ -773,7 +773,7 @@ public class BinaryClassDescriptor {
                                     BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
                                         affKeyFieldName, Collections.singleton(newSchema), false, null);
 
-                                    ctx.updateMetadata(typeId, meta);
+                                    ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
 
                                     schemaReg.addSchema(newSchema.schemaId(), newSchema);
                                 }
@@ -794,7 +794,7 @@ public class BinaryClassDescriptor {
                         BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
                             affKeyFieldName, Collections.singleton(stableSchema), false, null);
 
-                        ctx.updateMetadata(typeId, meta);
+                        ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
 
                         schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
 
