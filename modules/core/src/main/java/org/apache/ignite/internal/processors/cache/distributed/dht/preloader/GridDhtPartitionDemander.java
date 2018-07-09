@@ -296,7 +296,8 @@ public class GridDhtPartitionDemander {
      * In case of delayed rebalance method schedules new with configured delay.
      *
      * @param assignments New assignments to be processed.
-     * @param force {@code True} if dummy reassign {@see GridCachePartitionExchangeManager#forceReassign()}.
+     * @param force {@code True} if dummy reassign {@link RebalanceReassignExchangeTask} or force
+     * preload {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id generated from exchange thread.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.
@@ -311,8 +312,6 @@ public class GridDhtPartitionDemander {
     ) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assignments);
-
-        assert force == (forcedRebFut != null);
 
         long delay = grp.config().getRebalanceDelay();
 

@@ -236,6 +236,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             ", grp=" + grp.name() +
             ", topVer=" + top.readyTopologyVersion() + ']';
 
+        // If generation assignments have been forced e.g. RebalanceReassignExchangeTask, ForceRebalanceExchangeTask.
+        if (exchFut == null)
+            demander.topologyVersionToDemand(topVer);
+
         GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);

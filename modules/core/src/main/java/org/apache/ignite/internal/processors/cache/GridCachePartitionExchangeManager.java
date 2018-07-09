@@ -2620,7 +2620,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
-                                    forcePreload,
+                                    exchFut == null,
                                     cnt,
                                     r,
                                     forcedRebFut);
