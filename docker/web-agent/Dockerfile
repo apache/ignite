@@ -35,11 +35,12 @@ ENV AGENT_HOME /opt/ignite/ignite-web-agent
 WORKDIR ${AGENT_HOME} 
 
 # Add missing software
-RUN apk --update --no-cache add bash
+RUN apk --no-cache \
+        add bash
 
 # Copy main binary archive
 COPY ignite-web-agent*/* ./
 
 # Entrypoint
-CMD ${AGENT_HOME}/ignite-web-agent.sh -d ${DRIVER_FOLDER} -n ${NODE_URI} -s ${SERVER_URI} -t ${TOKENS}
+CMD ignite-web-agent.sh -d ${DRIVER_FOLDER} -n ${NODE_URI} -s ${SERVER_URI} -t ${TOKENS}
 
