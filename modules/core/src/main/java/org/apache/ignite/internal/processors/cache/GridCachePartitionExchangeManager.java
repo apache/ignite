@@ -1564,9 +1564,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     log.debug("Notifying exchange future about single message: " + exchFut);
 
                 if (msg.client() && !exchFut.isDone()) {
-                    if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
+                    AffinityTopologyVersion initVer = exchFut.initialVersion();
+                    AffinityTopologyVersion readyVer = readyAffinityVersion();
+
+                    DiscoveryEvent firstEvt = exchFut.firstEvent();
+
+                    if (initVer.compareTo(readyVer) <= 0
+                        && (firstEvt != null && firstEvt.type() != EVT_NODE_LEFT && firstEvt.eventNode().isClient())) {
                         U.warn(log, "Client node tries to connect but its exchange " +
-                            "info is cleaned up from exchange history." +
+                            "info is cleaned up from exchange history " +
+                            "(initVer=[" + initVer + "], " +
+                            "readyVer=[" + readyVer + "])." +
                             " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
                             "or start clients in  smaller batches."
                         );
