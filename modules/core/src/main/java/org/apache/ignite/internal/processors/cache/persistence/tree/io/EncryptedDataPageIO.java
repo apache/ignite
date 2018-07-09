@@ -36,12 +36,14 @@ public class EncryptedDataPageIO extends DataPageIO {
         super(T_ENCRYPTED_DATA, ver);
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param pageSize Page size.
-     */
+    /** {@inheritDoc} */
     @Override protected void setEmptyPage(long pageAddr, int pageSize) {
         setEmptyPage0(pageAddr, pageSize, pageSize - shouldByReserved(pageSize));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int actualFreeSpace(long pageAddr, int pageSize) {
+        return super.actualFreeSpace(pageAddr, pageSize) - shouldByReserved(pageSize);
     }
 
     /**
@@ -56,9 +58,5 @@ public class EncryptedDataPageIO extends DataPageIO {
      */
     private int shouldByReserved(int pageSize) {
         return EncryptionSpiImpl.encryptedSize0(pageSize) - pageSize;
-    }
-
-    @Override protected int actualFreeSpace(long pageAddr, int pageSize) {
-        return super.actualFreeSpace(pageAddr, pageSize) - shouldByReserved(pageSize);
     }
 }
