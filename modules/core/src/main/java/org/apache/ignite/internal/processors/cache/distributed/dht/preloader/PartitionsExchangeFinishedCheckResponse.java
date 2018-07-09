@@ -31,7 +31,10 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private AffinityTopologyVersion topVer;
+    private AffinityTopologyVersion lastFinishedTopVer;
+
+    /** */
+    private AffinityTopologyVersion pendingTopVer;
 
     /** */
     private boolean receivedSingleMsg;
@@ -43,19 +46,29 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
     }
 
     /**
-     * @param topVer Last finished exchange version.
+     * @param lastFinishedTopVer Last finished exchange version.
+     * @param pendingTopVer Pending exchange version.
      * @param receivedSingleMsg Received single message flag.
      */
-    public PartitionsExchangeFinishedCheckResponse(AffinityTopologyVersion topVer, boolean receivedSingleMsg) {
-        this.topVer = topVer;
+    public PartitionsExchangeFinishedCheckResponse(
+        AffinityTopologyVersion lastFinishedTopVer, AffinityTopologyVersion pendingTopVer, boolean receivedSingleMsg) {
+        this.lastFinishedTopVer = lastFinishedTopVer;
+        this.pendingTopVer = pendingTopVer;
         this.receivedSingleMsg = receivedSingleMsg;
     }
 
     /**
      * @return Last finished exchange version.
      */
-    public AffinityTopologyVersion topVer() {
-        return topVer;
+    public AffinityTopologyVersion lastFinishedTopVer() {
+        return lastFinishedTopVer;
+    }
+
+    /**
+     * @return Last finished exchange version.
+     */
+    public AffinityTopologyVersion pendingTopVer() {
+        return pendingTopVer;
     }
 
     /**
@@ -78,13 +91,19 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("receivedSingleMsg", receivedSingleMsg))
+                if (!writer.writeMessage("lastFinishedTopVer", lastFinishedTopVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeMessage("pendingTopVer", pendingTopVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeBoolean("receivedSingleMsg", receivedSingleMsg))
                     return false;
 
                 writer.incrementState();
@@ -103,7 +122,7 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                receivedSingleMsg = reader.readBoolean("receivedSingleMsg");
+                lastFinishedTopVer = reader.readMessage("lastFinishedTopVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -111,7 +130,15 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                topVer = reader.readMessage("topVer");
+                pendingTopVer = reader.readMessage("pendingTopVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                receivedSingleMsg = reader.readBoolean("receivedSingleMsg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -130,7 +157,7 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */

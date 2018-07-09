@@ -1638,14 +1638,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param req Request.
      */
     private void processExchangeCheckRequest(UUID nodeId, PartitionsExchangeFinishedCheckRequest req) {
-        GridDhtTopologyFuture lastFut = lastFinishedFut.get();
+        GridDhtPartitionsExchangeFuture lastInitFut = lastInitializedFut;
+
+        boolean rcvdSingleMsg = lastInitFut != null && lastInitFut.receivedSingleMessageFromNode(nodeId);
+
+        GridDhtTopologyFuture lastFinishedFut = this.lastFinishedFut.get();
 
         try {
             cctx.kernalContext().io().sendToGridTopic(nodeId, GridTopic.TOPIC_EXCHANGE,
                 new PartitionsExchangeFinishedCheckResponse(
-                    lastFut != null ? lastFut.topologyVersion() : AffinityTopologyVersion.NONE,
-                    (lastFut != null && lastFut instanceof GridDhtPartitionsExchangeFuture) &&
-                        ((GridDhtPartitionsExchangeFuture)lastFut).receivedSingleMessageFromNode(nodeId)
+                    lastFinishedFut != null ? lastFinishedFut.topologyVersion() : AffinityTopologyVersion.NONE,
+                    lastInitFut != null ? lastInitFut.topologyVersion() : AffinityTopologyVersion.NONE,
+                    rcvdSingleMsg
                 ),
                 SYSTEM_POOL);
         }
@@ -1661,7 +1665,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private void processExchangeCheckResponse(UUID nodeId, PartitionsExchangeFinishedCheckResponse res) {
         GridDhtPartitionsExchangeFuture lastInitializedFut0 = this.lastInitializedFut;
 
-        lastInitializedFut0.onCrdLastFinishedVersionReceived(res.topVer(), res.receivedSingleMessage());
+        lastInitializedFut0.onCrdLastFinishedVersionReceived(
+            res.lastFinishedTopVer(), res.pendingTopVer(), res.receivedSingleMessage());
     }
 
     /**

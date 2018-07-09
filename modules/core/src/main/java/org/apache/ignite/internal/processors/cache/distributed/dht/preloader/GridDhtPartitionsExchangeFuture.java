@@ -1297,15 +1297,28 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param topVer Topology version.
+     * @param lastFinishedVer Last finished topology version.
+     * @param pendingVer Pending topology version.
      * @param receivedSingleMsg Received single message flag.
      */
-    public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion topVer, boolean receivedSingleMsg) {
-        if (!receivedSingleMsg && topVer.compareTo(exchId.topologyVersion()) < 0)
-            cctx.discovery().failNode(crd.id(), null);
+    public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion lastFinishedVer,
+        AffinityTopologyVersion pendingVer, boolean receivedSingleMsg) {
+        boolean failLocal;
+
+        if (lastFinishedVer.compareTo(exchId.topologyVersion()) >= 0)
+            failLocal = true;
+        else if (pendingVer.equals(exchId.topologyVersion()) && !receivedSingleMsg)
+            failLocal = true;
+        else if (pendingVer.equals(exchId.topologyVersion()) && receivedSingleMsg)
+            return; // Do nothing, this case should be resolved by coordinator.
         else
+            failLocal = false;
+
+        if (failLocal)
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(
                 "Coordinator topology version is greater than local.")));
+        else
+            cctx.discovery().failNode(crd.id(), null);
     }
 
     /**
