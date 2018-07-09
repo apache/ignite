@@ -34,7 +34,7 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
     private AffinityTopologyVersion topVer;
 
     /** */
-    private boolean receivedSingleMessage;
+    private boolean receivedSingleMsg;
 
     /**
      *
@@ -44,11 +44,11 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
     /**
      * @param topVer Last finished exchange version.
-     * @param receivedSingleMessage Received single message flag.
+     * @param receivedSingleMsg Received single message flag.
      */
-    public PartitionsExchangeFinishedCheckResponse(AffinityTopologyVersion topVer, boolean receivedSingleMessage) {
+    public PartitionsExchangeFinishedCheckResponse(AffinityTopologyVersion topVer, boolean receivedSingleMsg) {
         this.topVer = topVer;
-        this.receivedSingleMessage = receivedSingleMessage;
+        this.receivedSingleMsg = receivedSingleMsg;
     }
 
     /**
@@ -62,7 +62,7 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
      * @return {@code True} if during processing last finished exchange single message from requester was received.
      */
     public boolean receivedSingleMessage() {
-        return receivedSingleMessage;
+        return receivedSingleMsg;
     }
 
     /** {@inheritDoc} */
@@ -78,10 +78,17 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
         switch (writer.state()) {
             case 0:
+                if (!writer.writeBoolean("receivedSingleMsg", receivedSingleMsg))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -96,12 +103,21 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
         switch (reader.state()) {
             case 0:
+                receivedSingleMsg = reader.readBoolean("receivedSingleMsg");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(PartitionsExchangeFinishedCheckResponse.class);
@@ -114,7 +130,7 @@ public class PartitionsExchangeFinishedCheckResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */

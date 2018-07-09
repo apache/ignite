@@ -1298,10 +1298,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param topVer Topology version.
-     * @param receivedSingleMessage Received single message flag.
+     * @param receivedSingleMsg Received single message flag.
      */
-    public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion topVer, boolean receivedSingleMessage) {
-        if (receivedSingleMessage && topVer.compareTo(exchId.topologyVersion()) < 0)
+    public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion topVer, boolean receivedSingleMsg) {
+        if (!receivedSingleMsg && topVer.compareTo(exchId.topologyVersion()) < 0)
             cctx.discovery().failNode(crd.id(), null);
         else
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(
