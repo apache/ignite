@@ -321,7 +321,7 @@ public class GridDhtPartitionDemander {
 
             final AffinityTopologyVersion topVer = assignments.topologyVersion();
 
-            if (!topologyChanged(oldFut) && !assignments.isEmpty() && !force) {
+            if (!force && !assignments.isEmpty() && !topologyChanged(oldFut)) {
                 // Skip assignments as not marked by GridDhtPreloader.afterExchange().
                 oldFut.latestTopVer = topVer;
 
