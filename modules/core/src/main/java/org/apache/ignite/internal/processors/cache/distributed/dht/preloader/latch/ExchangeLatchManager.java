@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -241,13 +242,12 @@ public class ExchangeLatchManager {
         if (topVer == AffinityTopologyVersion.NONE)
             return discovery.aliveServerNodes();
         else {
-            DiscoCache discoCache = discovery.discoCache(topVer);
+            Collection<ClusterNode> histNodes = discovery.topology(topVer.topologyVersion());
 
-            if (discoCache != null)
-                return discoCache.aliveServerNodes();
+            if (histNodes != null)
+                return histNodes.stream().filter(n -> !CU.clientNode(n) && discovery.alive(n)).collect(Collectors.toSet());
             else
-                throw new IgniteException("DiscoCache not found for topology "
-                    + topVer
+                throw new IgniteException("Topology " +topVer + " not found in discovery history "
                     + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
                     + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
         }

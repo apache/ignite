@@ -202,6 +202,9 @@ public final class IgniteNodeAttributes {
     /** Encryption master key digest. */
     public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
 
+    /** Rebalance thread pool size. */
+    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
+
     /**
      * Enforces singleton.
      */
