@@ -242,15 +242,15 @@ public class ExchangeLatchManager {
         if (topVer == AffinityTopologyVersion.NONE)
             return discovery.aliveServerNodes();
         else {
-            Collection<ClusterNode> histNodes = discovery.topology(topVer.topologyVersion());
+            DiscoCache discoCache = discovery.discoCache(topVer);
 
-            if (histNodes != null)
-                return histNodes.stream().filter(n -> !CU.clientNode(n) && !n.isDaemon() && discovery.alive(n))
-                        .collect(Collectors.toSet());
+            if (discoCache != null)
+                return discoCache.aliveServerNodes();
             else
-                throw new IgniteException("Topology " +topVer + " not found in discovery history "
-                    + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
-                    + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
+                throw new IgniteException("DiscoCache not found for topology "
+                        + topVer
+                        + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
+                        + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
         }
     }
 

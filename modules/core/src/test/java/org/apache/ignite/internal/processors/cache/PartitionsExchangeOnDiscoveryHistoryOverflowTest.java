@@ -122,6 +122,8 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
      * @throws Exception In case of error.
      */
     public void testDynamicCacheCreation() throws Exception {
+        fail("should fail if ignite-8869 reverts");
+
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
 
