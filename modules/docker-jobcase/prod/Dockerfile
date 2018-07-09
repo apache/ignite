@@ -90,6 +90,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         wget \
         ca-certificates \
+        vim \
+        procps \
+        net-tools \
+        netcat-openbsd \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p ${JOBCASE_LOGS}
 
