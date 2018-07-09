@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import java.util.Map;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
 /**
- *
  * A savepoint is a special mark inside a transaction that allows all commands
  * that are executed after it was established to be rolled back,
  * restoring the transaction state to what it was at the time of the savepoint.
@@ -36,17 +34,17 @@ import org.jetbrains.annotations.NotNull;
  * IgniteCache<Integer, Integer> c = ....;
  *
  * try (Transaction tx = ignite.transactions().txStart()) {
- *     c.put(1, 1);
+ * c.put(1, 1);
  *
- *     tx.savepoint("mysavepoint");
+ * tx.savepoint("mysavepoint");
  *
- *     c.put(2, 2);
+ * c.put(2, 2);
  *
- *     tx.rollbackToSavepoint("mysavepoint");
+ * tx.rollbackToSavepoint("mysavepoint");
  *
- *     c.put(3, 3);
+ * c.put(3, 3);
  *
- *     tx.commit();
+ * tx.commit();
  * }
  * </pre>
  *
@@ -114,12 +112,15 @@ class TxSavepoint {
      *
      * @param o Another savepoint.
      * @return True if savepoints have equal names.
-     * */
+     */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
 
-        TxSavepoint savepoint = (TxSavepoint) o;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        TxSavepoint savepoint = (TxSavepoint)o;
 
         return name.equals(savepoint.name);
     }
