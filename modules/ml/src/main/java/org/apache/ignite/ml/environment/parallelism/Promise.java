@@ -20,11 +20,17 @@ package org.apache.ignite.ml.environment.parallelism;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.jetbrains.annotations.NotNull;
 
+/**
+ * Future interface extension for lambda-friendly interface.
+ *
+ * @param <T> Type of result.
+ */
 public interface Promise<T> extends Future<T> {
+    /**
+     * Await result of Future and return it.
+     * Wrap exceptions from Future to RuntimeException.
+     */
     public default T unsafeGet() {
         try {
             return get();
@@ -33,71 +39,15 @@ public interface Promise<T> extends Future<T> {
         }
     }
 
+    /**
+     * Wrap result of Future to Optional-object.
+     * If Future throws an exception then it returns Optional.empty.
+     */
     public default Optional<T> getOpt() {
         try {
             return Optional.of(get());
         } catch (InterruptedException | ExecutionException e) {
             return Optional.empty();
-        }
-    }
-
-    public class FutureWrapper<T> implements Promise<T> {
-        private final Future<T> fut;
-
-        public FutureWrapper(Future<T> fut) {
-            this.fut = fut;
-        }
-
-        @Override public boolean cancel(boolean mayInterruptIfRunning) {
-            return fut.cancel(mayInterruptIfRunning);
-        }
-
-        @Override public boolean isCancelled() {
-            return fut.isCancelled();
-        }
-
-        @Override public boolean isDone() {
-            return fut.isDone();
-        }
-
-        @Override public T get() throws InterruptedException, ExecutionException {
-            return fut.get();
-        }
-
-        @Override public T get(long timeout,
-            @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-
-            return fut.get(timeout, unit);
-        }
-    }
-
-    public class Stub<T> implements Promise<T> {
-        private T result;
-
-        public Stub(T result) {
-            this.result = result;
-        }
-
-        @Override public boolean cancel(boolean mayInterruptIfRunning) {
-            return false;
-        }
-
-        @Override public boolean isCancelled() {
-            return false;
-        }
-
-        @Override public boolean isDone() {
-            return true;
-        }
-
-        @Override public T get() throws InterruptedException, ExecutionException {
-            return result;
-        }
-
-        @Override public T get(long timeout,
-            @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-
-            return result;
         }
     }
 }

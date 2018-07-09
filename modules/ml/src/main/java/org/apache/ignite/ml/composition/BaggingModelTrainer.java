@@ -90,25 +90,25 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        MLLogger logger = environment.logger(getClass());
-        logger.log(MLLogger.VerboseLevel.MIN, "Start learning");
+        MLLogger log = environment.logger(getClass());
+        log.log(MLLogger.VerboseLevel.MIN, "Start learning");
 
         Long startTs = System.currentTimeMillis();
         List<Promise<ModelOnFeaturesSubspace>> learnedModelsF = new ArrayList<>();
         for (int i = 0; i < ensembleSize; i++) {
-            learnedModelsF.add(environment.parallelismStgy().submit(() ->
+            learnedModelsF.add(environment.parallelismStrategy().submit(() ->
                 learnModel(datasetBuilder, featureExtractor, lbExtractor)
             ));
         }
 
         List<Model<Vector, Double>> models = learnedModelsF.stream()
             .map(Promise::unsafeGet)
-            .map(model -> logger.log(MLLogger.VerboseLevel.MAX, model))
+            .peek(model -> log.log(MLLogger.VerboseLevel.MAX, model))
             .collect(Collectors.toList());
 
         double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-        logger.log(MLLogger.VerboseLevel.MID, "The training time was %.2fs", learningTime);
-        logger.log(MLLogger.VerboseLevel.MIN, "Learning finished");
+        log.log(MLLogger.VerboseLevel.MID, "The training time was %.2fs", learningTime);
+        log.log(MLLogger.VerboseLevel.MIN, "Learning finished");
         return new ModelsComposition(models, predictionsAggregator);
     }
 

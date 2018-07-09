@@ -19,20 +19,54 @@ package org.apache.ignite.ml.environment.logging;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.environment.logging.formatter.ModelFormatter;
 import org.apache.ignite.ml.math.Vector;
 
+/**
+ * Helper for ML-specific objects logging.
+ */
 public interface MLLogger extends Serializable {
+    /**
+     * Logging verbose level.
+     */
     enum VerboseLevel {
         OFF, MIN, MID, MAX
     }
 
+    /**
+     * Log vector.
+     *
+     * @param verboseLevel Verbose level.
+     * @param vector Vector.
+     */
     public Vector log(VerboseLevel verboseLevel, Vector vector);
 
+    /**
+     * Log model according to {@link ModelFormatter}.
+     *
+     * @param verboseLevel Verbose level.
+     * @param mdl Model.
+     */
     public <K, V> Model<K,V> log(VerboseLevel verboseLevel, Model<K, V> mdl);
 
+    /**
+     * Log line with formatting.
+     *
+     * @param verboseLevel Verbose level.
+     * @param fmtStr Format string.
+     * @param params Params.
+     */
     public void log(VerboseLevel verboseLevel, String fmtStr, Object... params);
 
+    /**
+     * MLLogger factory interface.
+     */
     public static interface Factory {
-        public <T> MLLogger create(Class<T> forClass);
+        /**
+         * Creates an instance of MLLogger for target class.
+         *
+         * @param targetCls For class.
+         */
+        public <T> MLLogger create(Class<T> targetCls);
     }
 }

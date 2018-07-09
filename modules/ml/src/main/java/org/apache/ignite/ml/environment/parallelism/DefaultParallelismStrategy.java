@@ -17,14 +17,72 @@
 
 package org.apache.ignite.ml.environment.parallelism;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.jetbrains.annotations.NotNull;
 
+/**
+ * All task should be processed by default thread pool.
+ */
 public class DefaultParallelismStrategy implements ParallelismStrategy {
+    /** Instance. */
+    public static final ParallelismStrategy INSTANCE = new DefaultParallelismStrategy();
+
+    /** Common Thread Pool. */
     private final static ExecutorService pool = Executors.newWorkStealingPool(4);
 
+    /** {@inheritDoc} */
     @Override public <T> Promise<T> submit(IgniteSupplier<T> task) {
-        return new Promise.FutureWrapper<>(pool.submit(task::get));
+        return new FutureWrapper<>(pool.submit(task::get));
+    }
+
+    /**
+     * Wrapper for future class.
+     *
+     * @param <T>
+     */
+    public static class FutureWrapper<T> implements Promise<T> {
+        private final Future<T> fut;
+
+        /**
+         * Create an instance of FutureWrapper.
+         *
+         * @param fut Future.
+         */
+        public FutureWrapper(Future<T> fut) {
+            this.fut = fut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            return fut.cancel(mayInterruptIfRunning);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return fut.isCancelled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDone() {
+            return fut.isDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public T get() throws InterruptedException, ExecutionException {
+            return fut.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public T get(long timeout,
+            @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+
+            return fut.get(timeout, unit);
+        }
     }
 }

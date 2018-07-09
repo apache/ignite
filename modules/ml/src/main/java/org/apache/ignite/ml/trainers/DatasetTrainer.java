@@ -35,15 +35,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <L> Type of a label.
  */
 public abstract class DatasetTrainer<M extends Model, L> {
-    protected LearningEnvironment environment;
-
-    public DatasetTrainer() {
-        environment = LearningEnvironment.DEFAULT;
-    }
-
-    public DatasetTrainer(LearningEnvironment environment) {
-        this.environment = environment;
-    }
+    /** Learning Environment. */
+    protected LearningEnvironment environment = LearningEnvironment.DEFAULT;
 
     /**
      * Trains model based on the specified data.
@@ -141,6 +134,10 @@ public abstract class DatasetTrainer<M extends Model, L> {
         );
     }
 
+    /**
+     * Sets learning Environment
+     * @param environment Environment.
+     */
     public void setEnvironment(LearningEnvironment environment) {
         this.environment = environment;
     }

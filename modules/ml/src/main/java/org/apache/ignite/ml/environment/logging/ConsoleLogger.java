@@ -18,50 +18,85 @@
 package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.environment.logging.formatter.Formatters;
+import org.apache.ignite.ml.environment.logging.formatter.MLFormatters;
 import org.apache.ignite.ml.math.Vector;
 
+/**
+ * Simple logger printing to STD-out.
+ */
 public class ConsoleLogger implements MLLogger {
-    private final VerboseLevel verboseLevel;
+    /** Maximum Verbose level. */
+    private final VerboseLevel maxVerboseLevel;
+    /** Class name. */
     private final String className;
 
-    private ConsoleLogger(VerboseLevel verboseLevel, String className) {
-        this.className = className;
-        this.verboseLevel = verboseLevel;
+    /**
+     * Creates an instance of ConsoleLogger.
+     *
+     * @param maxVerboseLevel Max verbose level.
+     * @param clsName Class name.
+     */
+    private ConsoleLogger(VerboseLevel maxVerboseLevel, String clsName) {
+        this.className = clsName;
+        this.maxVerboseLevel = maxVerboseLevel;
     }
 
-    public static Factory factory(VerboseLevel verboseLevel) {
-        return new Factory(verboseLevel);
+    /**
+     * Returns an instance of ConsoleLogger factory.
+     *
+     * @param maxVerboseLevel Max verbose level.
+     */
+    public static Factory factory(VerboseLevel maxVerboseLevel) {
+        return new Factory(maxVerboseLevel);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
-        print(verboseLevel, Formatters.getInstance().format(vector));
+        print(verboseLevel, MLFormatters.getInstance().format(vector));
         return vector;
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
-        print(verboseLevel, Formatters.getInstance().format(mdl));
+        print(verboseLevel, MLFormatters.getInstance().format(mdl));
         return mdl;
     }
 
+    /** {@inheritDoc} */
     @Override public void log(VerboseLevel verboseLevel, String fmtStr, Object... params) {
         print(verboseLevel, String.format(fmtStr, params));
     }
 
+    /**
+     * Prints log line to STD-out.
+     *
+     * @param verboseLevel Verbose level.
+     * @param line Line.
+     */
     private void print(VerboseLevel verboseLevel, String line) {
-        if (this.verboseLevel.compareTo(verboseLevel) >= 0)
+        if (this.maxVerboseLevel.compareTo(verboseLevel) >= 0)
             System.out.println(String.format("%s [%s] %s", className, verboseLevel.name(), line));
     }
 
+    /**
+     * ConsoleLogger factory.
+     */
     private static class Factory implements MLLogger.Factory {
-        private final VerboseLevel verboseLevel;
+        /** Max Verbose level. */
+        private final VerboseLevel maxVerboseLevel;
 
-        private Factory(VerboseLevel verboseLevel) {
-            this.verboseLevel = verboseLevel;
+        /**
+         * Creates an instance of ConsoleLogger factory.
+         *
+         * @param maxVerboseLevel Max verbose level.
+         */
+        private Factory(VerboseLevel maxVerboseLevel) {
+            this.maxVerboseLevel = maxVerboseLevel;
         }
 
-        @Override public <T> MLLogger create(Class<T> forClass) {
-            return new ConsoleLogger(verboseLevel, forClass.getName());
+        /** {@inheritDoc} */
+        @Override public <T> MLLogger create(Class<T> targetCls) {
+            return new ConsoleLogger(maxVerboseLevel, targetCls.getName());
         }
     }
 }

@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.environment.logging.formatter.Formatters;
+import org.apache.ignite.ml.environment.logging.formatter.MLFormatters;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 
@@ -75,8 +75,8 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
     }
 
     static {
-        Formatters.getInstance().registerFormatter(ModelOnFeaturesSubspace.class, mdl -> {
-            return Formatters.getInstance().format(mdl.getMdl());
+        MLFormatters.getInstance().registerFormatter(ModelOnFeaturesSubspace.class, mdl -> {
+            return MLFormatters.getInstance().format(mdl.getMdl());
         });
     }
 }

@@ -20,29 +20,44 @@ package org.apache.ignite.ml.environment.logging;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
+/**
+ * MLLogger implementation skipping all logs.
+ */
 public class NoOpLogger implements MLLogger {
+    /** Factory. */
     private static final Factory FACTORY = new Factory();
 
+    /**
+     * Returns NoOpLogger factory.
+     */
     public static Factory factory() {
         return FACTORY;
     }
 
+    /** {@inheritDoc} */
     @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
         return vector;
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
         return mdl;
     }
 
+    /** {@inheritDoc} */
     @Override public void log(VerboseLevel verboseLevel, String fmtStr, Object... params) {
 
     }
 
+    /**
+     * NoOpLogger factory.
+     */
     private static class Factory implements MLLogger.Factory {
+        /** NoOpLogger instance. */
         private final static NoOpLogger NO_OP_LOGGER = new NoOpLogger();
 
-        @Override public <T> MLLogger create(Class<T> forClass) {
+        /** {@inheritDoc} */
+        @Override public <T> MLLogger create(Class<T> targetCls) {
             return NO_OP_LOGGER;
         }
     }

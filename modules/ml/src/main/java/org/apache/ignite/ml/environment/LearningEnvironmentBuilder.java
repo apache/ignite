@@ -22,56 +22,82 @@ import org.apache.ignite.ml.environment.logging.NoOpLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
+/**
+ * Builder for LearningEnvironment.
+ */
 public class LearningEnvironmentBuilder {
+    /** Parallelism strategy. */
     private ParallelismStrategy parallelismStgy;
+    /** Logging factory. */
     private MLLogger.Factory loggingFactory;
 
+    /**
+     * Creates an instance of LearningEnvironmentBuilder.
+     */
     LearningEnvironmentBuilder() {
         parallelismStgy = new DefaultParallelismStrategy();
         loggingFactory = NoOpLogger.factory();
     }
 
+    /**
+     * Specifies Parallelism Strategy for LearningEnvironment.
+     *
+     * @param stgy Parallelism Strategy.
+     */
     public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
         this.parallelismStgy = stgy;
         return this;
     }
 
+    /**
+     * Specifies Logging factory for LearningEnvironment.
+     *
+     * @param loggingFactory Logging Factory.
+     */
     public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
         this.loggingFactory = loggingFactory;
         return this;
     }
 
-    public LearningEnvironmentBuilder withParallelismStrategy(Class<? extends ParallelismStrategy> clazz) {
-        try {
-            this.parallelismStgy = clazz.newInstance();
-            return this;
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+    /**
+     * Create an instance of LearningEnvironment.
+     */
     public LearningEnvironment build() {
         return new LearningEnvironmentImpl(parallelismStgy, loggingFactory);
     }
 
+    /**
+     * Default LearningEnvironment implementation.
+     */
     private class LearningEnvironmentImpl implements LearningEnvironment {
-        private final ParallelismStrategy parallelismStrategy;
+        /** Parallelism strategy. */
+        private final ParallelismStrategy parallelismStgy;
+        /** Logging factory. */
         private final MLLogger.Factory loggingFactory;
 
-        private LearningEnvironmentImpl(ParallelismStrategy parallelismStrategy,
+        /**
+         * Creates an instance of LearningEnvironmentImpl.
+         *
+         * @param parallelismStgy Parallelism strategy.
+         * @param loggingFactory Logging factory.
+         */
+        private LearningEnvironmentImpl(ParallelismStrategy parallelismStgy,
             MLLogger.Factory loggingFactory) {
-            this.parallelismStrategy = parallelismStrategy;
+            this.parallelismStgy = parallelismStgy;
             this.loggingFactory = loggingFactory;
         }
 
-        @Override public ParallelismStrategy parallelismStgy() {
-            return parallelismStrategy;
+        /** {@inheritDoc} */
+        @Override public ParallelismStrategy parallelismStrategy() {
+            return parallelismStgy;
         }
 
+        /** {@inheritDoc} */
         @Override public MLLogger logger() {
             return loggingFactory.create(getClass());
         }
 
+        /** {@inheritDoc} */
         @Override public <T> MLLogger logger(Class<T> clazz) {
             return loggingFactory.create(clazz);
         }

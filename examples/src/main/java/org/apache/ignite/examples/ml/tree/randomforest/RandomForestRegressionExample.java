@@ -67,8 +67,8 @@ public class RandomForestRegressionExample {
 //                    .withParallelismStrategy(DefaultParallelismStrategy.class)
 //                    .withParallelismStrategy(new NoParallelismStrategy())
 //                    .withLoggingFactory(NoOpLogger.factory())
-//                    .withLoggingFactory(OnIgniteLogger.factory(new Log4JLogger("path/to/log4j/config")))
-                    .withParallelismStrategy(NoParallelismStrategy.class)
+//                    .withLoggingFactory(OnIgniteMLLogger.factory(new Log4JLogger("path/to/log4j/config")))
+                    .withParallelismStrategy(NoParallelismStrategy.INSTANCE)
                     .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.OFF))
                     .build()
                 );

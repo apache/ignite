@@ -21,15 +21,34 @@ import java.io.Serializable;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
+/**
+ * Specifies a set of utility-objects helpful at runtime but optional for learning algorithm
+ * (like thread pool for parallel learning in bagging model or logger).
+ */
 public interface LearningEnvironment extends Serializable {
-    public static final LearningEnvironment DEFAULT = new LearningEnvironmentBuilder().build();
+    /** Default environment */
+    public static final LearningEnvironment DEFAULT = builder().build();
 
-    public ParallelismStrategy parallelismStgy();
+    /**
+     * Returns Parallelism Strategy instance.
+     */
+    public ParallelismStrategy parallelismStrategy();
 
+    /**
+     * Returns an instance of logger.
+     */
     public MLLogger logger();
 
-    public <T> MLLogger logger(Class<T> clazz);
+    /**
+     * Returns an instance of logger for specific class.
+     *
+     * @param forClass Logging class context.
+     */
+    public <T> MLLogger logger(Class<T> forClass);
 
+    /**
+     * Creates an instance of LearningEnvironmentBuilder.
+     */
     public static LearningEnvironmentBuilder builder() {
         return new LearningEnvironmentBuilder();
     }

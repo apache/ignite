@@ -19,6 +19,16 @@ package org.apache.ignite.ml.environment.logging.formatter;
 
 import org.apache.ignite.ml.Model;
 
+/**
+ * Model formatter.
+ *
+ * @param <M> Model type.
+ */
 public interface ModelFormatter<M extends Model> {
+    /**
+     * Map model object to string representation.
+     *
+     * @param model Model.
+     */
     public String format(M model);
 }
