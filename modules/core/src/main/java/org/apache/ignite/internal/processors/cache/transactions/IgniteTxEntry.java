@@ -375,6 +375,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @return Copy of this entry.
+     */
+    public IgniteTxEntry copy() {
+        IgniteTxEntry e = cleanCopy(ctx);
+
+        e.cached(entry);
+
+        if (locked)
+            e.markLocked();
+
+        return e;
+    }
+
+    /**
      * @return Node ID.
      */
     public UUID nodeId() {

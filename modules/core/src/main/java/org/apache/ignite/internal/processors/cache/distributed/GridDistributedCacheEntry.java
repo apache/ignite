@@ -363,6 +363,17 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
     /** {@inheritDoc} */
     @Override public boolean removeLock(GridCacheVersion ver) throws GridCacheEntryRemovedException {
+        return removeLock(ver, true);
+    }
+
+    /**
+     *
+     * @param ver Removes lock.
+     * @param rememberRemoved Remember that lock was removed.
+     * @return {@code True} If lock has been removed.
+     * @throws GridCacheEntryRemovedException If this entry has been removed from cache.
+     */
+    public boolean removeLock(GridCacheVersion ver, boolean rememberRemoved) throws GridCacheEntryRemovedException {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
@@ -377,7 +388,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
             doomed = mvcc == null ? null : mvcc.candidate(ver);
 
-            if (doomed == null)
+            if (doomed == null && rememberRemoved)
                 addRemoved(ver);
 
             GridCacheVersion obsoleteVer = obsoleteVersionExtras();

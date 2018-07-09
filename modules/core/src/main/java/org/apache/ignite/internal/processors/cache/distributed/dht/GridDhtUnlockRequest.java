@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -37,6 +38,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Showing that request is made during savepoint operation. */
+    private static final int FOR_SAVEPOINT_FLAG_MASK = 0x1;
+
+    /** Flags for request. */
+    @GridToStringExclude
+    private byte flags;
 
     /** Near keys. */
     @GridDirectCollection(KeyCacheObject.class)
@@ -114,6 +122,12 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (writer.state()) {
             case 8:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
@@ -136,6 +150,14 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (reader.state()) {
             case 8:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -155,6 +177,18 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
+    }
+
+    /**
+     * @return {@code True} if request is sent by savepoint operation. {@code False} - otherwise.
+     */
+    public boolean isForSavepoint() {
+        return (flags & FOR_SAVEPOINT_FLAG_MASK) != 0;
+    }
+
+    /** Mark request for savepoint operations.*/
+    public void forSavepoint() {
+        flags = (byte)(flags | FOR_SAVEPOINT_FLAG_MASK);
     }
 }

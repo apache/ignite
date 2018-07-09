@@ -138,7 +138,6 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -3434,6 +3433,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKey(key);
 
         unlockAll(Collections.singletonList(key));
+    }
+
+    /**
+     * Unlock keys during rollback to savepoint.
+     *
+     * @param ver Version.
+     * @param keys Keys to unlock.
+     */
+    public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

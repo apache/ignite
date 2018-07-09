@@ -88,6 +88,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -943,6 +944,21 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     @Override public boolean onePhaseCommit() {
         return onePhaseCommit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(@NotNull String name, boolean overwrite) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(@NotNull String name) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(@NotNull String name) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -2103,6 +2119,21 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         /** {@inheritDoc} */
         @Override public void commitError(Throwable e) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void savepoint(String name, boolean overwrite) throws IgniteCheckedException {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rollbackToSavepoint(String name) throws IgniteCheckedException {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void releaseSavepoint(String name) throws IgniteCheckedException {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

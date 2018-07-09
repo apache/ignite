@@ -109,6 +109,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.transactions.GridRollbackToSavepointRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridRollbackToSavepointResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -924,6 +926,17 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 135:
                 msg = new LatchAckMessage();
+
+                break;
+
+            //TODO fix numbers here and inside classes during merge
+            case 2048:
+                msg = new GridRollbackToSavepointRequest();
+
+                break;
+
+            case 2049:
+                msg = new GridRollbackToSavepointResponse();
 
                 break;
 

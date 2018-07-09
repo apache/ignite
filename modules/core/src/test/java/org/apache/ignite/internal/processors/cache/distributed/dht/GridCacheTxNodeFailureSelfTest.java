@@ -394,27 +394,4 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
                 return key;
         }
     }
-
-    /**
-     *
-     */
-    private static class BanningCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        private volatile Collection<Class> bannedClasses = Collections.emptyList();
-
-        /**
-         * @param bannedClasses Banned classes.
-         */
-        void bannedClasses(Collection<Class> bannedClasses) {
-            this.bannedClasses = bannedClasses;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
-            GridIoMessage ioMsg = (GridIoMessage)msg;
-
-            if (!bannedClasses.contains(ioMsg.message().getClass()))
-                super.sendMessage(node, msg, ackC);
-        }
-    }
 }

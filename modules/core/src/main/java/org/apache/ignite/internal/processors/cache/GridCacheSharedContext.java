@@ -1097,4 +1097,50 @@ public class GridCacheSharedContext<K, V> {
     private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
         return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
+
+    /**
+     * Creates savepoint for given transaction.
+     *
+     * @param tx Transaction.
+     * @param name Savepoint ID.
+     * @param overwrite If {@code true} - already created savepoint with the same name will be replaced.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void savepoint(GridNearTxLocal tx, String name, boolean overwrite) throws IgniteCheckedException {
+        assert name != null;
+
+        tx.txState().awaitLastFuture(this);
+
+        tx.savepoint(name, overwrite);
+    }
+
+    /**
+     * Rollback to savepoint for given transaction. Also deletes all afterward savepoints.
+     *
+     * @param tx Transaction.
+     * @param name Savepoint ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rollbackToSavepoint(GridNearTxLocal tx, String name) throws IgniteCheckedException {
+        assert name != null;
+
+        tx.txState().awaitLastFuture(this);
+
+        tx.rollbackToSavepoint(name);
+    }
+
+    /**
+     * Delete savepoint if it exists and any afterward savepoints. Do nothing if there is no savepoint with such name.
+     *
+     * @param tx Transaction.
+     * @param name Savepoint ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void releaseSavepoint(GridNearTxLocal tx, String name) throws IgniteCheckedException {
+        assert name != null;
+
+        tx.txState().awaitLastFuture(this);
+
+        tx.releaseSavepoint(name);
+    }
 }

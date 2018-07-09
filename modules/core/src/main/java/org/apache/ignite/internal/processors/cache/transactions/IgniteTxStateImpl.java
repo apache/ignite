@@ -22,19 +22,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -72,6 +78,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     @GridToStringInclude
     protected Boolean recovery;
+
+    /** List of savepoints for this transaction, which is used to retrieve previous states. */
+    protected LinkedList<TxSavepoint> savepoints;
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -371,13 +380,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (txMap == null) {
             txMap = U.newLinkedHashMap(txSize > 0 ? txSize : 16);
 
-            readView = new IgniteTxMap(txMap, CU.reads());
-            writeView = new IgniteTxMap(txMap, CU.writes());
+            refreshReadWriteViews();
 
             return true;
         }
 
         return false;
+    }
+
+    /** */
+    public void refreshReadWriteViews() {
+        readView = new IgniteTxMap(txMap, CU.reads());
+        writeView = new IgniteTxMap(txMap, CU.writes());
     }
 
     /** {@inheritDoc} */
@@ -464,5 +478,306 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
+    }
+
+    /**
+     * Creates savepoint.
+     *
+     * @param name Savepoint ID.
+     * @param overwrite If {@code true} - already created savepoint with the same name will be replaced.
+     */
+    public void savepoint(String name, boolean overwrite) {
+        assert name != null;
+
+        ListIterator<TxSavepoint> spIter = findSP(name);
+
+        if (spIter != null) {
+            if (overwrite)
+                releaseSP(spIter);
+            else {
+                throw new IllegalArgumentException("Savepoint \"" + name + "\" already exists. " +
+                    "Savepoints with the same name aren't available. " +
+                    "If you want to rewrite savepoints - use savepoint(name, true) method.");
+            }
+        }
+
+        createSavepoint(name);
+    }
+
+    /**
+     * Rollback this transaction to previous state. Also deletes all afterward savepoints.
+     *
+     * @param name Savepoint ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rollbackToSavepoint(String name, GridNearTxLocal tx) throws IgniteCheckedException {
+        assert name != null;
+        assert tx != null;
+
+        ListIterator<TxSavepoint> spIter = findSP(name);
+
+        if (spIter == null)
+            throw new IllegalArgumentException("No such savepoint. [name=" + name + ']');
+
+        rollbackToSavepoint(spIter.next(), tx);
+
+        releaseNextSPs(spIter);
+    }
+
+    /**
+     * Delete savepoint if it exist. Do nothing if there is no savepoint with such name.
+     *
+     * @param name Savepoint ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void releaseSavepoint(String name) throws IgniteCheckedException {
+        assert name != null;
+
+        ListIterator<TxSavepoint> spIter = findSP(name);
+
+        if (spIter == null)
+            return;
+
+        releaseSP(spIter);
+    }
+
+    /**
+     * Creates savepoint containing changes from last created savepoint.
+     *
+     * @param name Savepoint ID.
+     */
+    private void createSavepoint(String name) {
+        Map<IgniteTxKey, IgniteTxEntry> txMapSnapshotPiece = new LinkedHashMap<>();
+
+        if (savepoints == null)
+            savepoints = new LinkedList<>();
+
+        for (IgniteTxEntry entry : allEntries()) {
+            if (!isKeyAlreadySaved(entry))
+                txMapSnapshotPiece.put(entry.txKey(), entry.copy());
+        }
+
+        savepoints.add(new TxSavepoint(name, txMapSnapshotPiece));
+    }
+
+    /**
+     * Checks that entry is already saved in any existing savepoint.
+     *
+     * @param entry Entry.
+     * @return {code True} if entry is saved, otherwise - {code false}.
+     */
+    private boolean isKeyAlreadySaved(IgniteTxEntry entry) {
+        for (TxSavepoint sp : savepoints) {
+            IgniteTxEntry savedEntry = sp.getTxMapSnapshotPiece().get(entry.txKey());
+
+            if (savedEntry != null && savedEntry.equals(entry))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Find savepoint with given name and returns ListIterator with cursor on this savepoint.
+     *
+     * @param name Savepoint ID.
+     * @return ListIterator with cursor position on the named savepoint or null if there is no such savepoint.
+     */
+    private ListIterator<TxSavepoint> findSP(String name) {
+        if (savepoints == null)
+            return null;
+
+        ListIterator<TxSavepoint> iter = savepoints.listIterator(savepoints.size());
+
+        while (iter.hasPrevious()) {
+            TxSavepoint sp = iter.previous();
+
+            if (sp.getName().equals(name))
+                return iter;
+        }
+
+        return null;
+    }
+
+    /**
+     * Release current savepoint in given list iterator.
+     *
+     * @param iter ListIterator for savepoints.
+     */
+    private void releaseSP(ListIterator<TxSavepoint> iter) {
+        iter.remove();
+
+        releaseNextSPs(iter);
+    }
+
+    /**
+     * Release subsequent savepoints in given list iterator.
+     *
+     * @param iter ListIterator for savepoints.
+     */
+    private void releaseNextSPs(ListIterator<TxSavepoint> iter) {
+        while (iter.hasNext()) {
+            iter.next();
+            iter.remove();
+        }
+    }
+
+    /**
+     * Replace current state to the state, saved in savepoint.
+     *
+     * @param savepoint Savepoint.
+     * @param tx Transaction where this state exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rollbackToSavepoint(TxSavepoint savepoint, GridNearTxLocal tx) throws IgniteCheckedException {
+        assert savepoint != null;
+        assert tx != null;
+
+        if (txMap == null) {
+            tx.log().info("Nothing to rollback. " +
+                "Savepoints are available only for transactional caches on the same node as transaction. " +
+                "Atomic caches and caches from other nodes have nothing to save and rollback " +
+                "because they have non transactional behaviour.");
+
+            return;
+        }
+
+        Map<IgniteTxKey, IgniteTxEntry> replacedTxMap = replaceTxMap(savepoint);
+
+        refreshReadWriteViews();
+
+        if (tx.optimistic())
+            return;
+
+        Collection<IgniteTxKey> keysToUnlock = unlockLocalKeys(tx, replacedTxMap);
+
+        if (keysToUnlock.isEmpty())
+            return;
+
+        Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping = mapKeysToCaches(
+            keysToUnlock, replacedTxMap);
+
+        tx.sendRollbackToSavepointMessages(tx, mapping);
+
+        tx.removeMappings(keysToUnlock);
+    }
+
+    /**
+     * @param savepoint Savepoint to rollback.
+     * @return Copy of replaced txMap.
+     */
+    private Map<IgniteTxKey, IgniteTxEntry> replaceTxMap(TxSavepoint savepoint) {
+        Map<IgniteTxKey, IgniteTxEntry> cp = new HashMap<>(txMap);
+
+        txMap.clear();
+
+        txMap.putAll(extractValues(savepoint));
+
+        return cp;
+    }
+
+    /**
+     * @param keysToUnlock Keys to map.
+     * @param replacedTxMap Tx state before rollback.
+     * @return Map with caches and their keys.
+     */
+    private Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapKeysToCaches(
+        Collection<IgniteTxKey> keysToUnlock,
+        Map<IgniteTxKey, IgniteTxEntry> replacedTxMap
+    ) {
+        Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> caches = new HashMap<>();
+
+        for (IgniteTxKey key : keysToUnlock) {
+            GridCacheAdapter cache = replacedTxMap.get(key).cached().context().cache();
+
+            ClusterNode node = cache.affinity().mapPartitionToNode(key.key().partition());
+
+            Map<GridCacheAdapter, List<KeyCacheObject>> cache2Keys = caches.computeIfAbsent(node, c -> new HashMap<>());
+
+            List<KeyCacheObject> keys = cache2Keys.computeIfAbsent(cache, k -> new ArrayList<>());
+
+            keys.add(key.key());
+        }
+
+        return caches;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param replacedTxMap Tx state before rollback.
+     * @return Keys which primary node isn't local.
+     */
+    private Collection<IgniteTxKey> unlockLocalKeys(GridNearTxLocal tx, Map<IgniteTxKey, IgniteTxEntry> replacedTxMap) {
+        Collection<IgniteTxKey> keysToUnlock = new ArrayList<>(replacedTxMap.size());
+
+        for (Map.Entry<IgniteTxKey, IgniteTxEntry> entry : replacedTxMap.entrySet()) {
+            if (txMap.containsKey(entry.getKey()))
+                continue;
+
+            IgniteTxEntry txEntry = entry.getValue();
+
+            if (txEntry.cached().isLocal())
+                unlockLocalEntry(tx, txEntry);
+            else
+                keysToUnlock.add(entry.getKey());
+        }
+
+        return keysToUnlock;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param txEntry Local TxEntry to unlock.
+     */
+    private void unlockLocalEntry(GridNearTxLocal tx, IgniteTxEntry txEntry) {
+        while (true) {
+            try {
+                txEntry.cached().txUnlock(tx);
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                if (tx.log().isDebugEnabled()) {
+                    tx.log().debug("Got removed entry in rollbackToSavepoint(..) method (will retry): "
+                        + txEntry);
+                }
+
+                // Renew cache entry.
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
+            }
+        }
+    }
+
+    /**
+     * @return Copy of values from txMap snapshot.
+     */
+    private Map<IgniteTxKey, IgniteTxEntry> extractValues(TxSavepoint savepoint) {
+        Map<IgniteTxKey, IgniteTxEntry> map = new LinkedHashMap<>();
+
+        for (TxSavepoint sp : savepoints) {
+            for (IgniteTxEntry entry : sp.getTxMapSnapshotPiece().values())
+                map.put(entry.txKey(), entry.copy());
+
+            if (sp == savepoint)
+                break;
+        }
+
+        return map;
+    }
+
+    /**
+     * Removes entries with specified cacheId from txMap.
+     *
+     * @param caches Caches with keys to remove from txState.
+     */
+    public void clearDhtEntries(Map<Integer, List<KeyCacheObject>> caches) {
+        txMap.keySet().removeIf(key -> {
+            for (Map.Entry<Integer, List<KeyCacheObject>> e : caches.entrySet()) {
+                if (key.cacheId() == e.getKey() && e.getValue().contains(key.key()))
+                    return true;
+            }
+
+            return false;
+        });
     }
 }

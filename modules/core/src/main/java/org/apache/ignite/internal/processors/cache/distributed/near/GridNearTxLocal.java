@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -60,10 +62,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.SavepointUnlockFuture;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.transactions.GridRollbackToSavepointRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateImpl;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyRollbackOnlyImpl;
@@ -97,9 +102,12 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.internal.GridTopic.TOPIC_TX_ROLLBACK_TO_SAVEPOINT;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -108,6 +116,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
@@ -2921,6 +2930,33 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * @param keys Undo mapping.
+     */
+    public void removeMappings(Collection<IgniteTxKey> keys) {
+        ArrayList<UUID> clearedMappings = new ArrayList<>();
+
+        for (IgniteTxKey key : keys) {
+            ClusterNode node = cctx.cacheContext(key.cacheId()).cache().affinity()
+                .mapPartitionToNode(key.key().partition());
+
+            GridDistributedTxMapping m = mappings.get(node.id());
+
+            if (m != null) {
+                m.evictReaders(Collections.singletonList(key));
+
+                clearedMappings.add(node.id());
+            }
+        }
+
+        for (UUID id : clearedMappings) {
+            GridDistributedTxMapping mapping = mappings.get(id);
+
+            if (mapping == null || mapping.empty())
+                mappings.remove(id);
+        }
+    }
+
+    /**
      * Adds key mapping to dht mapping.
      *
      * @param key Key to add.
@@ -4345,5 +4381,189 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             "thread", IgniteUtils.threadName(threadId),
             "mappings", mappings,
             "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(@NotNull String name, boolean overwrite) throws IgniteCheckedException {
+        synchronized (this) {
+            checkValid();
+
+            init();
+
+            if (state() != ACTIVE) {
+                throw new IllegalStateException("Trying to create savepoint not in " + ACTIVE + " transaction." +
+                    " Savepoint will not be created.");
+            }
+
+            ((IgniteTxStateImpl)txState).savepoint(name, overwrite);
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Saving point created [savepoint=" + name + ", tx=" + this + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(@NotNull String name) throws IgniteCheckedException {
+        synchronized (this) {
+            checkValid();
+
+            if (state() != ACTIVE) {
+                throw new IllegalStateException("Trying to rollback to savepoint not in " + ACTIVE + " transaction." +
+                    " Nothing will be rolled back.");
+            }
+
+            ((IgniteTxStateImpl)txState).rollbackToSavepoint(name, this);
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Rolled back to savepoint [savepoint=" + name + ", tx=" + this + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(@NotNull String name) throws IgniteCheckedException {
+        synchronized (this) {
+            checkValid();
+
+            if (state() != ACTIVE) {
+                throw new IllegalStateException("Trying to release savepoint not in " + ACTIVE + " transaction." +
+                    " Savepoint will not be released.");
+            }
+
+            ((IgniteTxStateImpl)txState).releaseSavepoint(name);
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Savepoint released [savepoint=" + name + ", tx=" + this + ']');
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param mapping Mapping for requests.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void sendRollbackToSavepointMessages(GridNearTxLocal tx,
+        Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping) throws IgniteCheckedException {
+        SavepointUnlockFuture fut = new SavepointUnlockFuture(tx);
+        Map<GridRollbackToSavepointRequest, Integer> unlockFuts = new HashMap<>();
+
+        Map<ClusterNode, GridRollbackToSavepointRequest> reqs = createUnlockRequests(mapping, fut, unlockFuts);
+
+        Map<GridCacheAdapter, List<KeyCacheObject>> locMap = mapping.get(cctx.localNode());
+
+        if (locMap != null)
+            locMap.forEach((cache, keys) -> cache.unlockAllForSavepoint(xidVer, keys));
+
+        cctx.mvcc().addFuture(fut, fut.futureId());
+
+        for (Map.Entry<ClusterNode, GridRollbackToSavepointRequest> e : reqs.entrySet())
+            sendRollbackToSavepointRequest(e.getKey(), e.getValue(), fut);
+
+        awaitSavepointUnlockFuture(tx, fut, unlockFuts);
+    }
+
+    /**
+     * @param mapping Nodes with their cache keys maps.
+     * @param fut Savepoint unlock future.
+     * @param unlockFuts Requests with linked mini future ids.
+     * @return Nodes with requests to them.
+     */
+    private Map<ClusterNode, GridRollbackToSavepointRequest> createUnlockRequests(
+        Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping,
+        SavepointUnlockFuture fut,
+        Map<GridRollbackToSavepointRequest, Integer> unlockFuts
+    ) throws IgniteCheckedException {
+        Map<ClusterNode, GridRollbackToSavepointRequest> res = new HashMap<>();
+
+        for (Map.Entry<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> entry : mapping.entrySet()) {
+            ClusterNode node = entry.getKey();
+
+            if (node.id() == cctx.localNodeId())
+                continue;
+
+            LinkedHashMap<Integer, List<KeyCacheObject>> caches = new LinkedHashMap<>();
+
+            entry.getValue().forEach((cache, keys) -> caches.put(cache.context().cacheId(), keys));
+
+            int miniId = fut.newMiniFutureId(node, caches);
+
+            GridRollbackToSavepointRequest req = new GridRollbackToSavepointRequest(
+                xidVer,
+                caches,
+                fut.futureId(),
+                miniId
+            );
+
+            unlockFuts.put(req, miniId);
+
+            res.put(node, req);
+        }
+
+        return res;
+    }
+
+    /**
+     * @param node Receiver.
+     * @param req Request.
+     * @param fut Savepoint unlock future.
+     */
+    private void sendRollbackToSavepointRequest(
+        ClusterNode node,
+        GridRollbackToSavepointRequest req,
+        SavepointUnlockFuture fut
+    ) {
+        try {
+            req.prepareMarshal(cctx);
+
+            cctx.gridIO().sendToGridTopic(node, TOPIC_TX_ROLLBACK_TO_SAVEPOINT, req, SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            log.error("Failed to send unlock request during rollback to savepoint (node has left the grid) " +
+                "[receiver=" + node + ", req=" + req + ", e=" + e + ']');
+
+            fut.onNodeLeft(node.id());
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to send unlock request during rollback to savepoint [receiver=" + node +
+                ", req=" + req + ", err=" + e + ']');
+
+            fut.onDone(e);
+        }
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param fut Savepoint unlock future.
+     * @param unlockFuts Map for savepoint mini future ids.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void awaitSavepointUnlockFuture(
+        GridNearTxLocal tx,
+        SavepointUnlockFuture fut,
+        Map<GridRollbackToSavepointRequest, Integer> unlockFuts
+    ) throws IgniteCheckedException {
+        try {
+            if (unlockFuts.isEmpty())
+                return;
+
+            long t = tx.remainingTime();
+
+            if (t > 0)
+                fut.get(t);
+            else {
+                if (tx.timedOut()) {
+                    throw new IgniteTxTimeoutCheckedException("Transaction is timed out. " +
+                        "Cache will not wait for savepoint unlock future.");
+                }
+
+                fut.get();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, e.getMessage());
+
+            throw new IgniteCheckedException("Failed unlock for keys [miniFuts=" + fut.futures() + ']', e);
+        } finally {
+            cctx.mvcc().removeFuture(fut.futureId());
+        }
     }
 }

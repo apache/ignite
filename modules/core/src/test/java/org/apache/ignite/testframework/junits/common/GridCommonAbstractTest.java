@@ -64,6 +64,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -93,6 +94,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -105,10 +107,13 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1901,5 +1906,55 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             VisorIdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
+    }
+
+    /**
+     * Will not send banned messages.
+     */
+    public static class BanningCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        protected volatile Collection<Class> bannedClasses = Collections.emptyList();
+
+        /**
+         * @param bannedClasses Banned classes.
+         */
+        public void bannedClasses(Collection<Class> bannedClasses) {
+            this.bannedClasses = bannedClasses;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            GridIoMessage ioMsg = (GridIoMessage)msg;
+
+            if (!bannedClasses.contains(ioMsg.message().getClass()))
+                super.sendMessage(node, msg, ackC);
+        }
+    }
+
+    /**
+     * Closure with 2 parameters that can throw any exception.
+     *
+     * @param <E1> Type of first closure parameter.
+     * @param <E2> Type of second closure parameter.
+     */
+    public static abstract class CI2Exc<E1, E2> implements CI2<E1, E2> {
+        /**
+         * Closure body.
+         *
+         * @param e1 First closure argument.
+         * @param e2 Second closure argument.
+         * @throws Exception If failed.
+         */
+        public abstract void applyx(E1 e1, E2 e2) throws Exception;
+
+        /** {@inheritDoc} */
+        @Override public void apply(E1 e1, E2 e2) {
+            try {
+                applyx(e1, e2);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

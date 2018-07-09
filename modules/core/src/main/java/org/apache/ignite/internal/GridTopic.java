@@ -127,7 +127,10 @@ public enum GridTopic {
     TOPIC_AUTH,
 
     /** */
-    TOPIC_EXCHANGE;
+    TOPIC_EXCHANGE,
+
+    /** */
+    TOPIC_TX_ROLLBACK_TO_SAVEPOINT;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

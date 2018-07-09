@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -37,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -634,4 +636,29 @@ public interface IgniteInternalTx {
      * @param e Commit error.
      */
     public void commitError(Throwable e);
+
+    /**
+     * Creates savepoint.
+     *
+     * @param name Savepoint ID.
+     * @param overwrite If {@code true} - already created savepoint with the same name will be replaced.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void savepoint(@NotNull String name, boolean overwrite) throws IgniteCheckedException;
+
+    /**
+     * Rollback this transaction to previous state. Also deletes all afterward savepoints.
+     *
+     * @param name Savepoint ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rollbackToSavepoint(@NotNull String name) throws IgniteCheckedException;
+
+    /**
+     * Delete savepoint if it exist. Do nothing if there is no savepoint with such name.
+     *
+     * @param name Savepoint ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void releaseSavepoint(@NotNull String name) throws IgniteCheckedException;
 }

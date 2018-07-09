@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
@@ -64,11 +67,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.SavepointUnlockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridRollbackToSavepointResponse;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -103,6 +108,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
+import static org.apache.ignite.internal.GridTopic.TOPIC_TX_ROLLBACK_TO_SAVEPOINT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -283,6 +289,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         this.txDeadlockDetection = new TxDeadlockDetection(cctx);
 
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
+        cctx.gridIO().addMessageListener(TOPIC_TX_ROLLBACK_TO_SAVEPOINT, new RollbackToSavepointListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
     }
@@ -2034,6 +2041,63 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Clear txState of transaction and delete tx, if it became empty.
+     *
+     * @param ver Cache version.
+     * @param keys Keys to remove.
+     */
+    private void clearTx(GridCacheVersion ver, Map<Integer, List<KeyCacheObject>> keys) {
+        GridCacheVersion dhtVer = mappedVersion(ver);
+
+        GridDhtTxLocal tx = tx(dhtVer);
+
+        if (tx == null) {
+            throw new IgniteIllegalStateException("Remote transaction wasn't found during rollback to savepoint " +
+                "[cacheVer=" + ver + ']');
+        }
+
+        tx.clearTxState(keys);
+
+        deleteEmptyDhtTx(tx, ver, dhtVer);
+    }
+
+    /**
+     * Deletes empty dht transaction to prevent unfinished transactions while using savepoints.
+     *
+     * @param tx Transaction to delete.
+     * @param ver Version of near tx.
+     * @param dhtVer Version of dht tx.
+     */
+    private void deleteEmptyDhtTx(GridDhtTxLocal tx, GridCacheVersion ver, GridCacheVersion dhtVer) {
+        if (tx.txState().allEntries().isEmpty()) {
+            mappedVers.remove(ver);
+            idMap.remove(dhtVer);
+        }
+    }
+
+    /**
+     * @param nodeId Recipient node ID.
+     * @param req Request for creating response.
+     * @param err Thrown exception.
+     */
+    private void sendRollbackToSavepointResponse(UUID nodeId, GridRollbackToSavepointRequest req, Exception err) {
+        GridRollbackToSavepointResponse res = new GridRollbackToSavepointResponse(req.futureId(), req.miniId(), err);
+
+        try {
+            res.prepareMarshal(cctx);
+
+            cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX_ROLLBACK_TO_SAVEPOINT, res, SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            log.error("Failed to send unlock response (node has left the grid) [response=" + res +
+                ", node=" + nodeId + ", e=" + e + ']');
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to send unlock response [response=" + res + ", node=" + nodeId + ", err=" + e + ']');
+        }
+    }
+
+    /**
      * Commits transaction in case when node started transaction failed, but all related
      * transactions were prepared (invalidates transaction if it is not fully prepared).
      *
@@ -2734,6 +2798,69 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 else
                     throw e;
             }
+        }
+    }
+
+    /**
+     * Transactions rollback to savepoint process message listener.
+     */
+    private class RollbackToSavepointListener implements GridMessageListener {
+        /** {@inheritDoc} */
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+            if (msg instanceof GridRollbackToSavepointRequest)
+                processRequest(nodeId, (GridRollbackToSavepointRequest)msg);
+            else if (msg instanceof GridRollbackToSavepointResponse)
+                processResponse(nodeId, (GridRollbackToSavepointResponse)msg);
+        }
+
+        /**
+         * @param nodeId Node id.
+         * @param req Rollback to savepoint request.
+         */
+        private void processRequest(UUID nodeId, GridRollbackToSavepointRequest req) {
+            Exception err = null;
+
+            try {
+                req.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+
+                for (Map.Entry<Integer, List<KeyCacheObject>> e : req.caches().entrySet()) {
+                    GridCacheAdapter cache = cctx.cacheContext(e.getKey()).cache();
+                    List<KeyCacheObject> keys = e.getValue();
+
+                    cache.unlockAllForSavepoint(req.version(), keys);
+                }
+
+                clearTx(req.version(), req.caches());
+            }
+            catch (Exception e) {
+                err = e;
+            }
+
+            sendRollbackToSavepointResponse(nodeId, req, err);
+        }
+
+        /**
+         * @param nodeId Node id.
+         * @param res Response for rollback to savepoint.
+         */
+        private void processResponse(UUID nodeId, GridRollbackToSavepointResponse res) {
+            try {
+                res.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+            }
+            catch (IgniteCheckedException e) {
+                res.error(e);
+            }
+
+            SavepointUnlockFuture fut = (SavepointUnlockFuture) cctx.mvcc().future(res.futureId());
+
+            if (fut == null) {
+                log.warning("Recieved unlock response for not existing savepoint unlock future [nodeid=" + nodeId +
+                    ", futId=" + res.futureId() + ", response=" + res +']');
+
+                return;
+            }
+
+            fut.onResult(nodeId, res);
         }
     }
 }

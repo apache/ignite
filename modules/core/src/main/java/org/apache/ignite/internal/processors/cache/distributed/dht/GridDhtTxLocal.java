@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -647,5 +649,16 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocal.class, this, "super", super.toString());
+    }
+
+    /**
+     * @param caches Keys to remove.
+     */
+    public void clearTxState(Map<Integer, List<KeyCacheObject>> caches) {
+        assert txState instanceof IgniteTxStateImpl;
+
+        ((IgniteTxStateImpl)txState).clearDhtEntries(caches);
+
+        ((IgniteTxStateImpl)txState).refreshReadWriteViews();
     }
 }

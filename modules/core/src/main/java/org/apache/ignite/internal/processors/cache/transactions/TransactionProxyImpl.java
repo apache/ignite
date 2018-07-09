@@ -430,4 +430,72 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     @Override public String toString() {
         return S.toString(TransactionProxyImpl.class, this);
     }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name) throws IllegalArgumentException {
+        savepoint(name, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name, boolean overwrite) throws IllegalArgumentException {
+        if (implicit())
+            throw new IllegalStateException("Savepoints can be used only inside explicit transactions.");
+
+        if (name == null)
+            throw new IllegalArgumentException("Savepoint name can't be null.");
+
+        enter();
+
+        try {
+            cctx.savepoint(tx, name, overwrite);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(String name) {
+        if (implicit())
+            throw new IllegalStateException("Savepoints must be used inside explicit transactions.");
+
+        if (name == null)
+            throw new IllegalArgumentException("Savepoint name can't be null.");
+
+        enter();
+
+        try {
+            cctx.rollbackToSavepoint(tx, name);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(String name) {
+        if (implicit())
+            throw new IllegalStateException("Savepoints must be used inside explicit transactions.");
+
+        if (name == null)
+            throw new IllegalArgumentException("Savepoint name can't be null.");
+
+        enter();
+
+        try {
+            cctx.releaseSavepoint(tx, name);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
 }

@@ -55,6 +55,18 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestor
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsSelfTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalCacheFailoverTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalLocalCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalLocalCacheWithClientsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalLocalCacheWithNearCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalPartitionedCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalPartitionedCacheWithClientsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalPartitionedCacheWithNearCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalReplicatedCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalReplicatedCacheWithClientsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalReplicatedCacheWithNearCacheTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
@@ -215,6 +227,19 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(AtomicOperationsInTxTest.class);
 
         suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
+
+        suite.addTestSuite(TxSavepointsSelfTest.class);
+        suite.addTestSuite(TxSavepointsAtomicCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalCacheFailoverTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalLocalCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalPartitionedCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalReplicatedCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalLocalCacheWithClientsTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalPartitionedCacheWithClientsTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalReplicatedCacheWithClientsTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalLocalCacheWithNearCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalPartitionedCacheWithNearCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalReplicatedCacheWithNearCacheTest.class);
 
         return suite;
     }

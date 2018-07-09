@@ -214,7 +214,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
@@ -242,7 +241,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             // Note that we don't reorder completed versions here,
                             // as there is no point to reorder relative to the version
                             // we are about to remove.
-                            if (entry.removeLock(req.version())) {
+                            if (entry.removeLock(req.version(), !req.isForSavepoint())) {
                                 if (log.isDebugEnabled())
                                     log.debug("Removed lock [lockId=" + req.version() + ", key=" + key + ']');
 
@@ -625,6 +624,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) {
+        dht.removeLocks(ctx.nodeId(), ver, keys, true, true);
     }
 
     /**
