@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Vector;
 
-/**
- * Interface for trainers that trains on dataset with singe label per object.
- *
- * @param <M> Type of a produced model.
- */
-public abstract class SingleLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, Double> {
+public class NoOpLogger implements MLLogger {
+    @Override public Vector log(VerboseLevel level, Vector vector) {
+        return vector;
+    }
+
+    @Override public <K, V> Model<K, V> log(VerboseLevel level, Model<K, V> mdl) {
+        return mdl;
+    }
+
+    @Override public void log(VerboseLevel level, String fmtStr, Object... params) {
+
+    }
 }

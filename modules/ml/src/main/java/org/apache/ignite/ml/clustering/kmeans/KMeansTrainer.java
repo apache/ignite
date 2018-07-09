@@ -43,7 +43,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * The trainer for KMeans algorithm.
  */
-public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
+public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** Amount of clusters. */
     private int k = 2;
 

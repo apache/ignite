@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.regressions.logistic.binomial;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -32,13 +34,10 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
-import java.io.Serializable;
-import java.util.Arrays;
-
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
  */
-public class LogisticRegressionSGDTrainer<P extends Serializable> implements SingleLabelDatasetTrainer<LogisticRegressionModel> {
+public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 

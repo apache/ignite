@@ -56,7 +56,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Double> {
+abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
     private final double gradientStep;
     /** Count of iterations. */

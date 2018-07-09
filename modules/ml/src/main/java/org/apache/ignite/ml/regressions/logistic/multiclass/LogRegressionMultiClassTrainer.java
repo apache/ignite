@@ -41,7 +41,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * All common parameters are shared with bunch of binary classification trainers.
  */
 public class LogRegressionMultiClassTrainer<P extends Serializable>
-    implements SingleLabelDatasetTrainer<LogRegressionMultiClassModel> {
+    extends SingleLabelDatasetTrainer<LogRegressionMultiClassModel> {
     /** Update strategy. */
     private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 

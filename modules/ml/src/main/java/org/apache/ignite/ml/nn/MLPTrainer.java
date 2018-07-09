@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -35,17 +39,12 @@ import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalcul
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 /**
  * Multilayer perceptron trainer based on partition based {@link Dataset}.
  *
  * @param <P> Type of model update used in this trainer.
  */
-public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrainer<MultilayerPerceptron> {
+public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer<MultilayerPerceptron> {
     /** Multilayer perceptron architecture supplier that defines layers and activators. */
     private final IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier;
 

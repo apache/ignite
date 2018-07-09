@@ -22,10 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -35,11 +38,10 @@ import org.apache.ignite.ml.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract trainer implementing bagging logic.
- * In each learning iteration the algorithm trains one model on subset of learning sample and
- * subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
+ * Abstract trainer implementing bagging logic. In each learning iteration the algorithm trains one model on subset of
+ * learning sample and subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
  */
-public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsComposition, Double> {
+public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsComposition, Double> {
     /**
      * Predictions aggregator.
      */
@@ -88,11 +90,25 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
-        for (int i = 0; i < ensembleSize; i++)
-            learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
+        environment.logger().log(MLLogger.VerboseLevel.MIN, "Start learning");
+        Long startTs = System.currentTimeMillis();
+        List<Promise<ModelOnFeaturesSubspace>> learnedModelsF = new ArrayList<>();
+        for (int i = 0; i < ensembleSize; i++) {
+            learnedModelsF.add(environment.parallelismStgy().submit(() ->
+                learnModel(datasetBuilder, featureExtractor, lbExtractor))
+            );
+        }
 
-        return new ModelsComposition(learnedModels, predictionsAggregator);
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        environment.logger().log(MLLogger.VerboseLevel.MID, "The training time was %.2fs", learningTime);
+
+        List<Model<Vector, Double>> models = learnedModelsF.stream()
+            .map(Promise::unsafeGet)
+            .map(model -> environment.logger().log(MLLogger.VerboseLevel.MAX, model))
+            .collect(Collectors.toList());
+
+        environment.logger().log(MLLogger.VerboseLevel.MIN, "Learning finished");
+        return new ModelsComposition(models, predictionsAggregator);
     }
 
     /**

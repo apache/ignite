@@ -25,7 +25,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * kNN algorithm trainer to solve multi-class classification task.
  */
-public class KNNClassificationTrainer implements SingleLabelDatasetTrainer<KNNClassificationModel> {
+public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClassificationModel> {
     /**
      * Trains model based on the specified data.
      *

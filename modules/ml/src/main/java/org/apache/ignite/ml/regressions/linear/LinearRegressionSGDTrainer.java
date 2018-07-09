@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -27,18 +29,15 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-
-import java.io.Serializable;
-import java.util.Arrays;
 
 /**
  * Trainer of the linear regression model based on stochastic gradient descent algorithm.
  */
-public class LinearRegressionSGDTrainer<P extends Serializable> implements SingleLabelDatasetTrainer<LinearRegressionModel> {
+public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 

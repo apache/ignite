@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.environment;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
-/**
- * Interface for trainers that trains on dataset with singe label per object.
- *
- * @param <M> Type of a produced model.
- */
-public abstract class SingleLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, Double> {
+public interface LearningEnvironment {
+    public ParallelismStrategy parallelismStgy();
+
+    public MLLogger logger();
+
+    public static LearningEnvironmentBuilder create() {
+        return new LearningEnvironmentBuilder();
+    }
 }

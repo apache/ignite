@@ -25,7 +25,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * kNN algorithm trainer to solve regression task.
  */
-public class KNNRegressionTrainer implements SingleLabelDatasetTrainer<KNNRegressionModel> {
+public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
     /**
      * Trains model based on the specified data.
      *

@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.environment.parallelism;
 
-import org.apache.ignite.ml.Model;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
-/**
- * Interface for trainers that trains on dataset with singe label per object.
- *
- * @param <M> Type of a produced model.
- */
-public abstract class SingleLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, Double> {
+public class DefaultParallelismStrategy implements ParallelismStrategy {
+    private ExecutorService pool = Executors.newWorkStealingPool(4);
+
+    @Override public <T> Promise<T> submit(IgniteSupplier<T> task) {
+        return new Promise.FutureWrapper<>(pool.submit(task::get));
+    }
 }
