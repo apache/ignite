@@ -245,7 +245,8 @@ public class ExchangeLatchManager {
             Collection<ClusterNode> histNodes = discovery.topology(topVer.topologyVersion());
 
             if (histNodes != null)
-                return histNodes.stream().filter(n -> !CU.clientNode(n) && discovery.alive(n)).collect(Collectors.toSet());
+                return histNodes.stream().filter(n -> !CU.clientNode(n) && !n.isDaemon() && discovery.alive(n))
+                        .collect(Collectors.toSet());
             else
                 throw new IgniteException("Topology " +topVer + " not found in discovery history "
                     + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
