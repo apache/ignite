@@ -116,6 +116,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @return Fail if unregistered flag value.
+     */
+    public boolean failIfUnregistered() {
+        return failIfUnregistered;
+    }
+
+    /**
      * @param failIfUnregistered Fail if unregistered.
      */
     public void failIfUnregistered(boolean failIfUnregistered) {
