@@ -117,9 +117,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
 
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
-    // TODO Set current snapshot version before merge.
     private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE =
-        IgniteProductVersion.fromString("2.6.0");
+        IgniteProductVersion.fromString("2.7.0");
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
