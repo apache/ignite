@@ -40,6 +40,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -823,6 +824,9 @@ public class BinaryClassDescriptor {
             }
         }
         catch (Exception e) {
+            if (e instanceof UnregisteredBinaryTypeException)
+                throw e;
+
             String msg;
 
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
