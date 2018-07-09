@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.BindException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -388,10 +389,24 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         try {
+            int portIdx = 0;
+
             for (int i = 0; i < getSpiCount(); i++) {
                 DiscoverySpi spi = getSpi(i);
 
-                IgniteTestResources rsrcMgr = new IgniteTestResources(getMBeanServer(i));
+                IgniteTestResources rsrcMgr = null;
+
+                do {
+                    try {
+                        rsrcMgr = new IgniteTestResources(getMBeanServer(portIdx++));
+
+                        break;
+                    }
+                    catch (BindException e) {
+                        log.warning("Retry other MBean server port: idx=" + portIdx);
+                    }
+                }
+                while (portIdx - i < 10);
 
                 rsrcMgr.inject(spi);
 
