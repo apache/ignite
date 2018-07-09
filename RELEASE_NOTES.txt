@@ -1,7 +1,7 @@
 Apache Ignite Release Notes
 ===========================
 
-Apache Ignite In-Memory Data Fabric 2.5
+Apache Ignite In-Memory Data Fabric 2.6
 ---------------------------------------
 Ignite:
 * Fixed incorrect calculation of client affinity assignment with baseline.
