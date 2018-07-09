@@ -311,7 +311,6 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         }
     }
 
-
     /**
      * Executes command using {@code shell} channel.
      *
@@ -353,31 +352,38 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (regexp != null) {
                 Pattern ptrn = Pattern.compile(regexp);
 
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(ch.getInputStream()));
+                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(ch.getInputStream()))) {
+                    String line;
 
-                to = new GridTimeoutObjectAdapter(2000) {
-                    /**  */
-                    private final Thread thread = Thread.currentThread();
+                    boolean first = true;
 
-                    @Override public void onTimeout() {
-                        thread.interrupt();
+                    while ((line = bufferedReader.readLine()) != null) {
+                        if (first) {
+                            to = new GridTimeoutObjectAdapter(2000) {
+                                private final Thread thread = Thread.currentThread();
+
+                                @Override public void onTimeout() {
+                                    thread.interrupt();
+                                }
+
+                                @Override public String toString() {
+                                    return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+                                }
+                            };
+
+                            assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
+
+                            first = false;
+                        }
+                        else if (ptrn.matcher(line).find()) {
+                            U.sleep(50);
+
+                            break;
+                        }
                     }
-
-                    @Override public String toString() {
-                        return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
-                    }
-                };
-
-                assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
-
-                String line;
-
-                while ((line = bufferedReader.readLine()) != null) {
-                    if (ptrn.matcher(line).find()) {
-                        U.sleep(10);
-
-                        break;
-                    }
+                }
+                catch (InterruptedIOException ignore) {
+                    // No-op.
                 }
             }
             else
