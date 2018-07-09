@@ -2933,26 +2933,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param keys Undo mapping.
      */
     public void removeMappings(Collection<IgniteTxKey> keys) {
-        ArrayList<UUID> clearedMappings = new ArrayList<>();
-
         for (IgniteTxKey key : keys) {
             ClusterNode node = cctx.cacheContext(key.cacheId()).cache().affinity()
                 .mapPartitionToNode(key.key().partition());
 
-            GridDistributedTxMapping m = mappings.get(node.id());
+            GridDistributedTxMapping mapping = mappings.get(node.id());
 
-            if (m != null) {
-                m.evictReaders(Collections.singletonList(key));
+            if (mapping != null) {
+                mapping.evictReaders(Collections.singletonList(key));
 
-                clearedMappings.add(node.id());
+                if (mapping.empty())
+                    mappings.remove(node.id());
             }
-        }
-
-        for (UUID id : clearedMappings) {
-            GridDistributedTxMapping mapping = mappings.get(id);
-
-            if (mapping == null || mapping.empty())
-                mappings.remove(id);
         }
     }
 
