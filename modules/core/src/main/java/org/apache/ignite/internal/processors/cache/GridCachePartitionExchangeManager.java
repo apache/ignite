@@ -1638,6 +1638,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param req Request.
      */
     private void processExchangeCheckRequest(UUID nodeId, PartitionsExchangeFinishedCheckRequest req) {
+        log.warning("Received check request from node: " + nodeId);
+
         GridDhtPartitionsExchangeFuture lastInitFut = lastInitializedFut;
 
         boolean rcvdSingleMsg = lastInitFut != null && lastInitFut.receivedSingleMessageFromNode(nodeId);

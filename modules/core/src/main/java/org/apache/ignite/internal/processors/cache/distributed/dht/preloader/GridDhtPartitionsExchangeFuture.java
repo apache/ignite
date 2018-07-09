@@ -1271,11 +1271,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!isDone()) {
             synchronized (mux) {
                 if (crd.isLocal()) {
-                    for (UUID remainingUuid : remaining)
+                    Set<UUID> remaining0 = new HashSet<>(this.remaining);
+
+                    log.warning("Exchange timeout reached on coordinator node, kicking pending nodes: " +
+                        S.arrayToString(UUID.class, remaining0.toArray()));
+
+                    for (UUID remainingUuid : remaining0)
                         cctx.discovery().failNode(remainingUuid, null);
                 }
                 else {
                     try {
+                        log.warning("Exchange timeout reached on non-coordinator node, " +
+                            "sending check request to coodtinator");
+
                         cctx.kernalContext().io().sendToGridTopic(
                             crd, GridTopic.TOPIC_EXCHANGE, new PartitionsExchangeFinishedCheckRequest(), SYSTEM_POOL);
 
@@ -1303,6 +1311,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void onCrdLastFinishedVersionReceived(AffinityTopologyVersion lastFinishedVer,
         AffinityTopologyVersion pendingVer, boolean receivedSingleMsg) {
+        log.warning("Received check response from coordinator: " +
+            "[lastFinishedVer=" + lastFinishedVer + ", pendingVer=" + pendingVer +
+            ", receivedSingleMsg=" + receivedSingleMsg + ", localExchId=" + exchId + "]");
+
         boolean failLocal;
 
         if (lastFinishedVer.compareTo(exchId.topologyVersion()) >= 0)
