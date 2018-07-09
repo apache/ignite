@@ -521,18 +521,31 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             if (!F.isEmpty(backups)) {
                 assert backups.size() == 1 : backups;
 
-                UUID backupId = F.first(backups);
+                // Result of singleMapping() call can contain non-backup node when data rebalancing is in progress
+                // for a cache with 0 backups configured.
 
-                ClusterNode backup = cctx.discovery().node(backupId);
+                GridCacheContext<?, ?> cacheCtx = tx.txState().singleCacheContext(cctx);
 
-                // Nothing to do if backup has left the grid.
-                if (backup == null) {
-                    // No-op.
+                assert cacheCtx != null;
+
+                int backupsConfigured = cacheCtx.config().getBackups();
+
+                assert backupsConfigured <= 1;
+
+                if (backupsConfigured == 1) {
+                    UUID backupId = F.first(backups);
+
+                    ClusterNode backup = cctx.discovery().node(backupId);
+
+                    // Nothing to do if backup has left the grid.
+                    if (backup == null) {
+                        // No-op.
+                    }
+                    else if (backup.isLocal())
+                        cctx.tm().removeTxReturn(tx.xidVersion());
+                    else
+                        cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
                 }
-                else if (backup.isLocal())
-                    cctx.tm().removeTxReturn(tx.xidVersion());
-                else
-                    cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
             }
         }
     }
