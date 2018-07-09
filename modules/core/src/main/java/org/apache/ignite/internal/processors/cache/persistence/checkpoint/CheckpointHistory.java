@@ -202,8 +202,9 @@ public class CheckpointHistory {
 
         final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
 
-        if (histMap.size() == 0) {
+        if (histMap.isEmpty()) {
             chp.walSegmentsCovered(walSegmentsCovered);
+
             return removed;
         }
 
@@ -218,7 +219,6 @@ public class CheckpointHistory {
         long lastIdx = 0;
 
         long prevIdx = 0;
-
 
         if (lastWALPointer instanceof FileWALPointer) {
             lastIdx = ((FileWALPointer)lastWALPointer).index();
