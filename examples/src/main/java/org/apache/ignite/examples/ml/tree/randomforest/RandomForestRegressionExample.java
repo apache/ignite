@@ -64,8 +64,12 @@ public class RandomForestRegressionExample {
 
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
                 trainer.setEnvironment(LearningEnvironment.builder()
+//                    .withParallelismStrategy(DefaultParallelismStrategy.class)
+//                    .withParallelismStrategy(new NoParallelismStrategy())
+//                    .withLoggingFactory(NoOpLogger.factory())
+//                    .withLoggingFactory(OnIgniteLogger.factory(new Log4JLogger("path/to/log4j/config")))
                     .withParallelismStrategy(NoParallelismStrategy.class)
-                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.MAX))
+                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.OFF))
                     .build()
                 );
 

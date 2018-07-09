@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 public class DefaultParallelismStrategy implements ParallelismStrategy {
-    private ExecutorService pool = Executors.newWorkStealingPool(4);
+    private final static ExecutorService pool = Executors.newWorkStealingPool(4);
 
     @Override public <T> Promise<T> submit(IgniteSupplier<T> task) {
         return new Promise.FutureWrapper<>(pool.submit(task::get));

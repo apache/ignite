@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.environment.logging;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
-public interface MLLogger {
+public interface MLLogger extends Serializable {
     enum VerboseLevel {
         OFF, MIN, MID, MAX
     }

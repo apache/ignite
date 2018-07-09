@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.environment.parallelism;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
-public interface ParallelismStrategy {
+public interface ParallelismStrategy extends Serializable {
     public <T> Promise<T> submit(IgniteSupplier<T> task);
 }

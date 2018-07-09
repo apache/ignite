@@ -28,7 +28,7 @@ public class LearningEnvironmentBuilder {
 
     LearningEnvironmentBuilder() {
         parallelismStgy = new DefaultParallelismStrategy();
-        loggingFactory = NoOpLogger.FACTORY;
+        loggingFactory = NoOpLogger.factory();
     }
 
     public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {

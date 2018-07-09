@@ -21,7 +21,11 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
 public class NoOpLogger implements MLLogger {
-    public static final Factory FACTORY = new Factory();
+    private static final Factory FACTORY = new Factory();
+
+    public static Factory factory() {
+        return FACTORY;
+    }
 
     @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
         return vector;

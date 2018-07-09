@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
-public interface LearningEnvironment {
+public interface LearningEnvironment extends Serializable {
     public static final LearningEnvironment DEFAULT = new LearningEnvironmentBuilder().build();
 
     public ParallelismStrategy parallelismStgy();
