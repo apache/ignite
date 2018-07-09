@@ -1282,7 +1282,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.time().schedule(() -> {
                             if (!isDone())
                                 cctx.kernalContext().failure().process(
-                                    new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
+                                    new FailureContext(FailureType.CRITICAL_ERROR,
+                                        new TimeoutException("Last exchange check response wasn't received.")));
                         }, cctx.gridConfig().getExchangeHardTimeout(), -1);
                     }
                     catch (IgniteCheckedException ex) {
@@ -1303,7 +1304,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (receivedSingleMessage && topVer.compareTo(exchId.topologyVersion()) < 0)
             cctx.discovery().failNode(crd.id(), null);
         else
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new TimeoutException()));
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(
+                "Coordinator topology version is greater than local.")));
     }
 
     /**

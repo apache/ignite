@@ -77,7 +77,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
     }
 
     /**
+     * Tests situation when non-coordinator node becomes unresponsive. This node should be kicked from cluster.
      *
+     * @throws Exception if failed.
      */
     public void testNonCoordinatorUnresponsive() throws Exception {
         final Ignite ig = startGrids(4);
@@ -100,7 +102,9 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
     }
 
     /**
+     * Tests situation when coordinator node becomes unresponsive to exchange messages. Other nodes should leave cluster.
      *
+     * @throws Exception if failed.
      */
     public void testCoordinatorUnresponsive() throws Exception {
         final Ignite ig = startGrids(4);
@@ -119,7 +123,10 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
     }
 
     /**
+     * Tests situation when coordinator node becomes unresponsive to exchange and version check messages.
+     * Other nodes should leave cluster.
      *
+     * @throws Exception if failed.
      */
     public void testCoordinatorUnresponsiveWithCheckMessagesBlocked() throws Exception {
         final Ignite ig = startGrids(4);
@@ -139,7 +146,10 @@ public class PartitionsExchangeUnresponsiveNodeTimeoutTest extends GridCommonAbs
     }
 
     /**
+     * Tests situation when coordinator node becomes unresponsive to exchange messages, but continues to reply to
+     * version check messages with outdated version. Coordinator should be kicked from cluster.
      *
+     * @throws Exception if failed.
      */
     public void testCoordinatorUnresponsiveWithOutdatedCheckMessages() throws Exception {
         startGrids(4);
