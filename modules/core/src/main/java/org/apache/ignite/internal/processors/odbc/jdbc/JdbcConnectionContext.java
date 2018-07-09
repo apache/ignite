@@ -31,6 +31,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * JDBC Connection Context.
@@ -51,8 +54,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.5.0: adds precision and scale for columns feature. */
     static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
+    /** Version 2.6.0: adds schema. */
+    static final ClientListenerProtocolVersion VER_2_6_0 = ClientListenerProtocolVersion.create(2, 6, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_6_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -77,6 +83,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_6_0);
         SUPPORTED_VERS.add(VER_2_5_0);
         SUPPORTED_VERS.add(VER_2_4_0);
         SUPPORTED_VERS.add(VER_2_3_0);
@@ -133,6 +140,18 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
+
+        String schemaName = DFLT_SCHEMA;
+
+        if (ver.compareTo(VER_2_6_0) >= 0)
+            schemaName = reader.readString();
+
+        if (F.isEmpty(schemaName))
+            throw new IgniteCheckedException("Schema cannot be empty.");
+
+        if (!ctx.query().hasUserSchema(schemaName))
+            throw new IgniteCheckedException("Schema with name " + schemaName + " not found.");
+
 
         String user = null;
         String passwd = null;

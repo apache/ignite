@@ -30,6 +30,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -121,6 +123,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 
 /**
  * Indexing processor.
@@ -2095,7 +2099,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         curCache.set(cctx);
 
         final String schemaName = qry.getSchema() != null ? qry.getSchema()
-            : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+            : (cctx != null ? idx.schema(cctx.name()) : DFLT_SCHEMA);
 
         try {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
@@ -2853,6 +2857,78 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         desc.validateKeyAndValue(key, val);
+    }
+
+    /**
+     *  Whither or not schema with specified {@code schemaName} exists in the cluster and it is accessible for user.
+     *  Schema exist if either it is default schema ("PUBLIC") or there are tables with that schema.
+     *
+     * @param schemaName - name of the schema to look up.
+     * @return {@code true} if schema found, {@code false} - otherwise.
+     * @see #getUserSchemasBy(String)
+     */
+    public boolean hasUserSchema(String schemaName) {
+        assert !F.isEmpty(schemaName) : "Schema cannot be empty or null.";
+
+        // Schema "PUBLIC" is special and always exists.
+        if (DFLT_SCHEMA.equals(schemaName))
+            return true;
+
+        Map<String, DynamicCacheDescriptor> descriptors = ctx.cache().cacheDescriptors();
+
+        for (Map.Entry<String, DynamicCacheDescriptor> entry : descriptors.entrySet()) {
+            String cacheName = entry.getKey();
+            DynamicCacheDescriptor cacheDesc = entry.getValue();
+
+            if (!cacheDesc.cacheType().userCache())
+                continue;
+
+            if (cacheDesc.cacheConfiguration().getQueryEntities().isEmpty())
+                continue;
+
+            String candidateSchema = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
+
+            if (schemaName.equals(candidateSchema))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Finds user accessible schemas that matches specified sql pattern.
+     * Returned set is sorted using {@link String#compareTo(String)}.
+     *
+     * @param schemaSqlPtrn pattern to match by schema name in sql pattern format.
+     * @return schemas that meet described requirements.
+     * @see #hasUserSchema(String)
+     */
+    public SortedSet<String> getUserSchemasBy(String schemaSqlPtrn) {
+        SortedSet<String> schemas = new TreeSet<>();
+
+        // Schema "PUBLIC" is special and always exists.
+        if (matches(DFLT_SCHEMA, schemaSqlPtrn))
+            schemas.add(DFLT_SCHEMA);
+
+        Map<String, DynamicCacheDescriptor> descriptors = ctx.cache().cacheDescriptors();
+
+        for (Map.Entry<String, DynamicCacheDescriptor> entry : descriptors.entrySet()) {
+            String cacheName = entry.getKey();
+            DynamicCacheDescriptor cacheDesc = entry.getValue();
+
+            if (!cacheDesc.cacheType().userCache())
+                continue;
+
+            if (cacheDesc.cacheConfiguration().getQueryEntities().isEmpty())
+                continue;
+
+            String candidateSchema = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
+
+            if (matches(candidateSchema, schemaSqlPtrn))
+                schemas.add(candidateSchema);
+        }
+
+        return schemas;
     }
 
     /**

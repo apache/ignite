@@ -85,6 +85,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
@@ -1959,5 +1961,22 @@ public final class GridTestUtils {
     public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
+    }
+
+    /**
+     * Finds port of given Ignite instance.
+     *
+     * @param node node instance.
+     * @return localhost port to connect with jdbc driver.
+     */
+    public static int jdbcPortOf(Ignite node) {
+        Collection<GridPortRecord> recs = ((IgniteEx) node).context().ports().records();
+
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class)
+                return rec.port();
+        }
+
+        throw new RuntimeException("Could not find port to connect to node " + node);
     }
 }

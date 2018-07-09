@@ -106,6 +106,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         cfg.setName(name);
 
+        // Create table with name of the cache.
+        cfg.setIndexedTypes(Long.class, String.class);
+
         return cfg;
     }
 
@@ -469,10 +472,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/\"" + DEFAULT_CACHE_NAME + '"')) {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
-            assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
-        }
     }
 
     /**
@@ -489,6 +488,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 
+        // fixme: delete this testcase?
+        // todo: should we also test schemas with property syntax?
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;schema=_not_exist_schema_")) {
             assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
