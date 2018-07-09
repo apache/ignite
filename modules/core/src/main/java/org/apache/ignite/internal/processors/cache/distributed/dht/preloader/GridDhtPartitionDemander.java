@@ -242,10 +242,11 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
-     * @return {@code True} if topology changed.
+     * @return {@code True} if demanded topology version changed or new dummy exchage occurs.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
-        return topVerToDemand.compareTo(fut.topVer) > 0 || fut != rebalanceFut;
+        return topVerToDemand.compareTo(fut.topVer) > 0 ||
+            fut != rebalanceFut; // RebalanceReassignExchangeTask occurs on the same topology version (dummy exchange).
     }
 
     /**
@@ -258,8 +259,8 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return {@code AffinityTopologyVersion.ZERO} if rebalance have never been started or cancelled or
-     * demanded messages haven't been sent yet. Otherwise the last requested rebalance topology version returned.
+     * @return {@code AffinityTopologyVersion.ZERO} if rebalance have never been started or cancelled or demanded
+     *          messages haven't been sent yet. Otherwise the last requested rebalance topology version returned.
      */
     AffinityTopologyVersion activeRebalanceTopVer() {
         final RebalanceFuture fut = rebalanceFut;
@@ -292,12 +293,12 @@ public class GridDhtPartitionDemander {
     /**
      * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
      * future based on them. If previous rebalance future is not finished method will cancel it.
-     * Also, method sends current rebalance started event. Empty and cancelled assignments processed different way.
-     * In case of delayed rebalance method schedules new with configured delay.
+     * Also, method sends current rebalance started event.
+     * In case of delayed rebalance method schedules new with configured delay base on {@code lastExchangeFut}.
      *
      * @param assignments New assignments to be processed.
-     * @param force {@code True} if dummy reassign {@link RebalanceReassignExchangeTask} or force
-     * preload {@link ForceRebalanceExchangeTask}.
+     * @param force {@code True} if force preload request by {@link ForceRebalanceExchangeTask}
+     *              or by {@link RebalanceReassignExchangeTask}.
      * @param rebalanceId Rebalance id generated from exchange thread.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.

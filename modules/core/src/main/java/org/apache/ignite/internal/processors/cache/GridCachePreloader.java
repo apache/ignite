@@ -80,10 +80,10 @@ public interface GridCachePreloader {
      * Adds assignments to preloader.
      *
      * @param assignments Assignments to add.
-     * @param forcePreload Force preload flag.
+     * @param forcePreload {@code True} if force preload request by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id created by exchange thread.
      * @param next Runnable responsible for cache rebalancing chain.
-     * @param forcedRebFut Always {@code null} except future is not part of {@link ForceRebalanceExchangeTask}.
+     * @param forcedRebFut Always {@code null} except is not part of {@link ForceRebalanceExchangeTask}.
      * @return Rebalancing runnable.
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
