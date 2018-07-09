@@ -22,13 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
@@ -38,6 +36,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Abstract trainer implementing bagging logic.
+ * In each learning iteration the algorithm trains one model on subset of learning sample and
+ * subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
  */
 public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsComposition, Double> {
     /**
@@ -60,10 +60,6 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * Feature vector size.
      */
     private final int featureVectorSize;
-    /**
-     * Learning thread pool.
-     */
-    private final ExecutorService threadPool;
 
     /**
      * Constructs new instance of BaggingModelTrainer.
@@ -80,33 +76,11 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         int ensembleSize,
         double samplePartSizePerMdl) {
 
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize,
-            samplePartSizePerMdl, null);
-    }
-
-    /**
-     * Constructs new instance of BaggingModelTrainer.
-     *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param threadPool Learning thread pool.
-     */
-    public BaggingModelTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        ExecutorService threadPool) {
-
         this.predictionsAggregator = predictionsAggregator;
         this.maximumFeaturesCntPerMdl = maximumFeaturesCntPerMdl;
         this.ensembleSize = ensembleSize;
         this.samplePartSizePerMdl = samplePartSizePerMdl;
         this.featureVectorSize = featureVectorSize;
-        this.threadPool = threadPool;
     }
 
     /** {@inheritDoc} */
@@ -114,31 +88,9 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        List<ModelsComposition.ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
-        List<Future<ModelsComposition.ModelOnFeaturesSubspace>> futures = new ArrayList<>();
-
-        for (int i = 0; i < ensembleSize; i++) {
-            if (threadPool == null)
-                learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
-            else {
-                Future<ModelsComposition.ModelOnFeaturesSubspace> fut = threadPool.submit(() -> {
-                    return learnModel(datasetBuilder, featureExtractor, lbExtractor);
-                });
-
-                futures.add(fut);
-            }
-        }
-
-        if (threadPool != null) {
-            for (Future<ModelsComposition.ModelOnFeaturesSubspace> future : futures) {
-                try {
-                    learnedModels.add(future.get());
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
+        for (int i = 0; i < ensembleSize; i++)
+            learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
 
         return new ModelsComposition(learnedModels, predictionsAggregator);
     }
@@ -150,7 +102,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    @NotNull private <K, V> ModelsComposition.ModelOnFeaturesSubspace learnModel(
+    @NotNull private <K, V> ModelOnFeaturesSubspace learnModel(
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -161,12 +113,12 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
-        Model<double[], Double> mdl = buildDatasetTrainerForModel().fit(
+        Model<Vector, Double> mdl = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
 
-        return new ModelsComposition.ModelOnFeaturesSubspace(featuresMapping, mdl);
+        return new ModelOnFeaturesSubspace(featuresMapping, mdl);
     }
 
     /**
@@ -188,7 +140,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
     /**
      * Creates trainer specific to ensemble.
      */
-    protected abstract DatasetTrainer<? extends Model<double[], Double>, Double> buildDatasetTrainerForModel();
+    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildDatasetTrainerForModel();
 
     /**
      * Wraps the original feature extractor with features subspace mapping applying.

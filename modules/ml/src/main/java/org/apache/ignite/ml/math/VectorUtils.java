@@ -17,10 +17,14 @@
 
 package org.apache.ignite.ml.math;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
+import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 
 /**
  * Some utils for {@link Vector}.
@@ -153,5 +157,39 @@ public class VectorUtils {
             res.setX(i, v.getX(off + i));
 
         return res;
+    }
+
+    /**
+     * Creates dense local on heap vector based on array of doubles.
+     *
+     * @param values Values.
+     */
+    public static Vector of(double ... values) {
+        A.notNull(values, "values");
+
+        return new DenseLocalOnHeapVector(values);
+    }
+
+    /**
+     * Creates vector based on array of Doubles. If array contains null-elements then
+     * method returns sparse local on head vector. In other case method returns
+     * dense local on heap vector.
+     *
+     * @param values Values.
+     */
+    public static Vector of(Double[] values) {
+        A.notNull(values, "values");
+
+        Vector answer = null;
+        if (Arrays.stream(values).anyMatch(Objects::isNull))
+            answer = new SparseLocalVector(values.length, StorageConstants.RANDOM_ACCESS_MODE);
+        else
+            answer = new DenseLocalOnHeapVector(values.length);
+
+        for (int i = 0; i < values.length; i++)
+            if (values[i] != null)
+                answer.set(i, values[i]);
+
+        return answer;
     }
 }

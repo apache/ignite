@@ -1076,7 +1076,13 @@ public class CommandHandler {
 
                 ClusterNode key = entry.getKey();
 
-                log(key.toString());
+                log(key.getClass().getSimpleName() + " [id=" + key.id() +
+                    ", addrs=" + key.addresses() +
+                    ", order=" + key.order() +
+                    ", ver=" + key.version() +
+                    ", isClient=" + key.isClient() +
+                    ", consistentId=" + key.consistentId() +
+                    "]");
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
                     log("    Tx: [xid=" + info.getXid() +

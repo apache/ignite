@@ -1,6 +1,6 @@
 Requirements
 -------------------------------------
-1. JDK 7 bit for your platform, or newer.
+1. JDK 8 bit for your platform, or newer.
 2. Supported browsers: Chrome, Firefox, Safari, Edge.
 3. Ignite cluster should be started with `ignite-rest-http` module in classpath. For this copy `ignite-rest-http` folder from `libs\optional` to `libs` folder.
 
@@ -8,16 +8,17 @@ Requirements
 How to run
 -------------------------------------
 1. Unpack ignite-web-console-x.x.x.zip to some folder.
-2. Start ignite-web-console-xxx executable for you platform:
+2. Change work directory to folder where Web Console was unpacked.
+3. Start ignite-web-console-xxx executable for you platform:
 	For Linux: ignite-web-console-linux
 	For MacOS: ignite-web-console-macos
 	For Windows: ignite-web-console-win.exe
 
 Note: on Linux and Mac OS X `root` permission is required to bind to 80 port, but you may always start Web Console on another port if you don't have such permission.
 
-3. Open URL `localhost` in browser.
-4. Login with user `admin@admin` and password `admin`.
-5. Start web agent from folder `web agent`. For Web Agent settings see `web-agent\README.txt`.
+4. Open URL `localhost` in browser.
+5. Login with user `admin@admin` and password `admin`.
+6. Start web agent from folder `web agent`. For Web Agent settings see `web-agent\README.txt`.
 Cluster URL should be specified in `web-agent\default.properties` in `node-uri` parameter.
 
 Technical details
