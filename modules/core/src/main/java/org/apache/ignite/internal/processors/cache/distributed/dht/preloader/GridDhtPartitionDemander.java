@@ -328,7 +328,7 @@ public class GridDhtPartitionDemander {
                     ", mode=" + grp.config().getRebalanceMode() +
                     ", topVer=" + oldFut.topVer +
                     ", lastTopVer=" + oldFut.topologyVersion() +
-                    ", rebalanceId=" + oldFut.rebalanceId + "]");
+                    ", rebalanceId=" + oldFut.rebalanceId + ']');
 
                 return null;
             }
@@ -388,7 +388,7 @@ public class GridDhtPartitionDemander {
                 U.log(log, "Rebalancing skipped (empty assignments) [grp=" + grp.cacheOrGroupName() +
                     ", mode=" + grp.config().getRebalanceMode() + ", forced=" + force +
                     ", lastTopVer=" + oldFut.topologyVersion() +
-                    ", rebalanceId=" + oldFut.rebalanceId + "]");
+                    ", rebalanceId=" + oldFut.rebalanceId + ']');
 
                 fut.onDone(true);
 

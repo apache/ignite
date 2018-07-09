@@ -2635,7 +2635,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (pendingExchange || hasPendingExchange()) {
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + "]");
+                                ", node=" + exchId.nodeId() + ']');
                         }
                         else if (r != null) {
                             Collections.reverse(rebList);
@@ -2643,14 +2643,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             U.log(log, "Rebalancing started [order=" + rebList +
                                 ", top=" + resVer + ", forced=" + (exchFut == null) +
                                 ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + "]");
+                                ", node=" + exchId.nodeId() + ']');
 
                             r.run(); // Starts rebalancing routine.
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + "]");
+                                ", node=" + exchId.nodeId() + ']');
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
