@@ -21,11 +21,15 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
 public interface LearningEnvironment {
+    public static final LearningEnvironment DEFAULT = new LearningEnvironmentBuilder().build();
+
     public ParallelismStrategy parallelismStgy();
 
     public MLLogger logger();
 
-    public static LearningEnvironmentBuilder create() {
+    public <T> MLLogger logger(Class<T> clazz);
+
+    public static LearningEnvironmentBuilder builder() {
         return new LearningEnvironmentBuilder();
     }
 }

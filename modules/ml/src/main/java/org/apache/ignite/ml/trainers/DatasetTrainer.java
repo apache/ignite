@@ -38,7 +38,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
     protected LearningEnvironment environment;
 
     public DatasetTrainer() {
-        environment = LearningEnvironment.create().build();
+        environment = LearningEnvironment.DEFAULT;
     }
 
     public DatasetTrainer(LearningEnvironment environment) {

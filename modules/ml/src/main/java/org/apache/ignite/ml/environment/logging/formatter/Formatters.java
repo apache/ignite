@@ -17,9 +17,11 @@
 
 package org.apache.ignite.ml.environment.logging.formatter;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -46,14 +48,19 @@ public class Formatters {
     public String format(Vector vector) {
         IgniteFunction<Vector, java.lang.String> formatter = vectorFormatter.get();
         if(formatter == null)
-            return vector.toString();
+            return defaultFormatting(vector);
         else
             return formatter.apply(vector);
     }
 
-
     public static Formatters getInstance() {
         return INSTANCE;
+    }
+
+    private static String defaultFormatting(Vector vector) {
+        return Arrays.stream(vector.getStorage().data())
+            .mapToObj(String::valueOf)
+            .collect(Collectors.joining(","));
     }
 
     private static class ModelFormatterStub implements ModelFormatter<Model> {

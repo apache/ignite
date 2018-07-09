@@ -25,9 +25,13 @@ public interface MLLogger {
         OFF, MIN, MID, MAX
     }
 
-    public Vector log(VerboseLevel level, Vector vector);
+    public Vector log(VerboseLevel verboseLevel, Vector vector);
 
-    public <K, V> Model<K,V> log(VerboseLevel level, Model<K, V> mdl);
+    public <K, V> Model<K,V> log(VerboseLevel verboseLevel, Model<K, V> mdl);
 
-    public void log(VerboseLevel level, String fmtStr, Object... params);
+    public void log(VerboseLevel verboseLevel, String fmtStr, Object... params);
+
+    public static interface Factory {
+        public <T> MLLogger create(Class<T> forClass);
+    }
 }

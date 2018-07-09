@@ -18,28 +18,50 @@
 package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.environment.logging.formatter.Formatters;
 import org.apache.ignite.ml.math.Vector;
 
-public class NoOpLogger implements MLLogger {
-    public static final Factory FACTORY = new Factory();
+public class ConsoleLogger implements MLLogger {
+    private final VerboseLevel verboseLevel;
+    private final String className;
+
+    private ConsoleLogger(VerboseLevel verboseLevel, String className) {
+        this.className = className;
+        this.verboseLevel = verboseLevel;
+    }
+
+    public static Factory factory(VerboseLevel verboseLevel) {
+        return new Factory(verboseLevel);
+    }
 
     @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
+        print(verboseLevel, Formatters.getInstance().format(vector));
         return vector;
     }
 
     @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
+        print(verboseLevel, Formatters.getInstance().format(mdl));
         return mdl;
     }
 
     @Override public void log(VerboseLevel verboseLevel, String fmtStr, Object... params) {
+        print(verboseLevel, String.format(fmtStr, params));
+    }
 
+    private void print(VerboseLevel verboseLevel, String line) {
+        if (this.verboseLevel.compareTo(verboseLevel) >= 0)
+            System.out.println(String.format("%s [%s] %s", className, verboseLevel.name(), line));
     }
 
     private static class Factory implements MLLogger.Factory {
-        private final static NoOpLogger NO_OP_LOGGER = new NoOpLogger();
+        private final VerboseLevel verboseLevel;
+
+        private Factory(VerboseLevel verboseLevel) {
+            this.verboseLevel = verboseLevel;
+        }
 
         @Override public <T> MLLogger create(Class<T> forClass) {
-            return NO_OP_LOGGER;
+            return new ConsoleLogger(verboseLevel, forClass.getName());
         }
     }
 }

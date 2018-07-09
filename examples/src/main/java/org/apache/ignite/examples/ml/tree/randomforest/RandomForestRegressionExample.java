@@ -22,23 +22,20 @@ import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
 import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.environment.logging.OnIgniteLogger;
 import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on RandomForest
@@ -65,9 +62,12 @@ public class RandomForestRegressionExample {
                 RandomForestRegressionExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                LearningEnvironment environment = prepareEnvironment();
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
-                trainer.setEnvironment(environment);
+                trainer.setEnvironment(LearningEnvironment.builder()
+                    .withParallelismStrategy(NoParallelismStrategy.class)
+                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.MAX))
+                    .build()
+                );
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                     (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
@@ -103,25 +103,6 @@ public class RandomForestRegressionExample {
             igniteThread.start();
             igniteThread.join();
         }
-    }
-
-    private static LearningEnvironment prepareEnvironment() {
-        return LearningEnvironment.create()
-            .withParallelismStrategy(NoParallelismStrategy.class)
-            .withLogger(getLogger(MLLogger.VerboseLevel.MID))
-            .build();
-    }
-
-    @NotNull private static MLLogger getLogger(MLLogger.VerboseLevel level) {
-        try {
-            return new OnIgniteLogger(
-                new Log4JLogger("examples/src/main/resources/config/ml-logger.xml"),
-                level, OnIgniteLogger.IgniteLoggingLevel.ERROR
-            );
-        } catch (IgniteCheckedException e) {
-            System.exit(-1);
-        }
-        return null;
     }
 
     /**

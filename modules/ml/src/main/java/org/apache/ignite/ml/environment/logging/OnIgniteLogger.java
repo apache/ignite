@@ -23,63 +23,53 @@ import org.apache.ignite.ml.environment.logging.formatter.Formatters;
 import org.apache.ignite.ml.math.Vector;
 
 public class OnIgniteLogger implements MLLogger {
-    private final VerboseLevel currentVerboseLevel;
     private final IgniteLogger logger;
-    private final IgniteLoggingLevel loggingLevel;
 
-    public OnIgniteLogger(IgniteLogger logger,
-        VerboseLevel currentVerboseLevel,
-        IgniteLoggingLevel loggingLevel) {
-
+    private OnIgniteLogger(IgniteLogger logger) {
         this.logger = logger;
-        this.currentVerboseLevel = currentVerboseLevel;
-        this.loggingLevel = loggingLevel;
     }
 
-    @Override public Vector log(VerboseLevel level, Vector vector) {
-        if (needLog(level))
-            log(Formatters.getInstance().format(vector));
+    public static Factory factory(IgniteLogger rootLogger) {
+        return new Factory(rootLogger);
+    }
 
+    @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
+        log(verboseLevel, Formatters.getInstance().format(vector));
         return vector;
     }
 
-    @Override public <K, V> Model<K, V> log(VerboseLevel level, Model<K, V> mdl) {
-        if (needLog(level))
-            log(Formatters.getInstance().format(mdl));
-
+    @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
+        log(verboseLevel, Formatters.getInstance().format(mdl));
         return mdl;
     }
 
-    @Override public void log(VerboseLevel level, String fmtStr, Object... params) {
-        if (needLog(level))
-            log(String.format(fmtStr, params));
+    @Override public void log(VerboseLevel verboseLevel, String fmtStr, Object... params) {
+        log(verboseLevel, String.format(fmtStr, params));
     }
 
-    private boolean needLog(VerboseLevel lvl) {
-        return currentVerboseLevel.compareTo(lvl) >= 0;
-    }
-
-    private void log(String line) {
-        switch (loggingLevel) {
-            case INFO:
+    private void log(VerboseLevel verboseLevel, String line) {
+        switch (verboseLevel) {
+            case MIN:
                 logger.info(line);
                 break;
-            case TRACE:
-                logger.trace(line);
-                break;
-            case DEBUG:
+            case MID:
                 logger.debug(line);
                 break;
-            case WARNING:
-                logger.warning(line);
-                break;
-            case ERROR:
-                logger.error(line);
+            case MAX:
+                logger.trace(line);
                 break;
         }
     }
 
-    public static enum IgniteLoggingLevel {
-        TRACE, INFO, DEBUG, WARNING, ERROR
+    private static class Factory implements MLLogger.Factory {
+        private IgniteLogger rootLogger;
+
+        public Factory(IgniteLogger rootLogger) {
+            this.rootLogger = rootLogger;
+        }
+
+        @Override public <T> MLLogger create(Class<T> forClass) {
+            return new OnIgniteLogger(rootLogger.getLogger(forClass));
+        }
     }
 }

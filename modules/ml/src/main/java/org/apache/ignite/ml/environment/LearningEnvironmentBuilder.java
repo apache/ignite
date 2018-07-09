@@ -23,60 +23,45 @@ import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
 public class LearningEnvironmentBuilder {
-    private final ParallelismStrategy parallelismStrategy;
-    private final MLLogger logger;
+    private ParallelismStrategy parallelismStgy;
+    private MLLogger.Factory loggingFactory;
 
-    public LearningEnvironmentBuilder() {
-        parallelismStrategy = new DefaultParallelismStrategy();
-        logger = new NoOpLogger();
+    LearningEnvironmentBuilder() {
+        parallelismStgy = new DefaultParallelismStrategy();
+        loggingFactory = NoOpLogger.FACTORY;
     }
 
-    private LearningEnvironmentBuilder(LearningEnvironmentBuilder builder, ParallelismStrategy parallelismStrategy) {
-        this.logger = builder.logger;
-        this.parallelismStrategy = parallelismStrategy;
+    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
+        this.parallelismStgy = stgy;
+        return this;
     }
 
-    private LearningEnvironmentBuilder(LearningEnvironmentBuilder builder, MLLogger logger) {
-        this.parallelismStrategy = builder.parallelismStrategy;
-        this.logger = logger;
-    }
-
-    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy strategy) {
-        return new LearningEnvironmentBuilder(this, strategy);
-    }
-
-    public LearningEnvironmentBuilder withLogger(MLLogger logger) {
-        return new LearningEnvironmentBuilder(this, logger);
+    public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
+        this.loggingFactory = loggingFactory;
+        return this;
     }
 
     public LearningEnvironmentBuilder withParallelismStrategy(Class<? extends ParallelismStrategy> clazz) {
         try {
-            return new LearningEnvironmentBuilder(this, clazz.newInstance());
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public LearningEnvironmentBuilder withLogger(Class<? extends MLLogger> clazz) {
-        try {
-            return new LearningEnvironmentBuilder(this, clazz.newInstance());
+            this.parallelismStgy = clazz.newInstance();
+            return this;
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     public LearningEnvironment build() {
-        return new LearningEnvironmentImpl(parallelismStrategy, logger);
+        return new LearningEnvironmentImpl(parallelismStgy, loggingFactory);
     }
 
     private class LearningEnvironmentImpl implements LearningEnvironment {
         private final ParallelismStrategy parallelismStrategy;
-        private final MLLogger logger;
+        private final MLLogger.Factory loggingFactory;
 
         private LearningEnvironmentImpl(ParallelismStrategy parallelismStrategy,
-            MLLogger logger) {
+            MLLogger.Factory loggingFactory) {
             this.parallelismStrategy = parallelismStrategy;
-            this.logger = logger;
+            this.loggingFactory = loggingFactory;
         }
 
         @Override public ParallelismStrategy parallelismStgy() {
@@ -84,7 +69,11 @@ public class LearningEnvironmentBuilder {
         }
 
         @Override public MLLogger logger() {
-            return logger;
+            return loggingFactory.create(getClass());
+        }
+
+        @Override public <T> MLLogger logger(Class<T> clazz) {
+            return loggingFactory.create(clazz);
         }
     }
 }
