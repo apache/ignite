@@ -200,6 +200,13 @@ public class CheckpointHistory {
     public List<CheckpointEntry> onCheckpointFinished(GridCacheDatabaseSharedManager.Checkpoint chp, boolean truncateWal) {
         List<CheckpointEntry> removed = new ArrayList<>();
 
+        final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
+
+        if (histMap.size() == 0) {
+            chp.walSegmentsCovered(walSegmentsCovered);
+            return removed;
+        }
+
         final Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
 
         assert lastEntry != null;
@@ -212,7 +219,6 @@ public class CheckpointHistory {
 
         long prevIdx = 0;
 
-        final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
 
         if (lastWALPointer instanceof FileWALPointer) {
             lastIdx = ((FileWALPointer)lastWALPointer).index();
