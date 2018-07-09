@@ -1588,7 +1588,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         clo.apply(summary);
 
-        ClusterNode currCrd = discoCache.oldestAliveServerNode();
+        ClusterNode currCrd = discoCache.oldestServerNode();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
                 currCrd != null && currCrd.order() > evtNode.order())
