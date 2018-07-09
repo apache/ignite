@@ -4,6 +4,16 @@ Apache Ignite Release Notes
 Apache Ignite In-Memory Data Fabric 2.5
 ---------------------------------------
 Ignite:
+* Fixed incorrect calculation of client affinity assignment with baseline.
+* Fixed incorrect calculation of switch segment record in WAL.
+* Fixed JVM crush during in-progress eviction and cache group stop.
+
+REST:
+* Fixed serialization of BinaryObjects to JSON.
+
+Apache Ignite In-Memory Data Fabric 2.5
+---------------------------------------
+Ignite:
 * Implemented Zookeeper discovery SPI.
 * Added Java thin client.
 * Added continuous queries with transformers.
