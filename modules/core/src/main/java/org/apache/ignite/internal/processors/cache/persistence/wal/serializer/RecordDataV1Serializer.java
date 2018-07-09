@@ -294,7 +294,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         assert key != null;
 
-        dst.put(encryptionSpi.encrypt(clData.array(), key));
+        dst.put(encryptionSpi.encrypt(clData.array(), key, 0, clData.capacity()));
     }
 
     /**

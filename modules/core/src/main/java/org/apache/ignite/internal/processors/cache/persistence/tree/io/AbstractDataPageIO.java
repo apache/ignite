@@ -99,11 +99,21 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @param pageSize Page size.
      */
-    private void setEmptyPage(long pageAddr, int pageSize) {
+    protected void setEmptyPage(long pageAddr, int pageSize) {
+        setEmptyPage0(pageAddr, pageSize, pageSize);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param pageSize Page size.
+     * @param realPageSize Real page size.
+     * @see EncryptedDataPageIO#setEmptyPage(long, int)
+     */
+    void setEmptyPage0(long pageAddr, int pageSize, int realPageSize) {
         setDirectCount(pageAddr, 0);
         setIndirectCount(pageAddr, 0);
-        setFirstEntryOffset(pageAddr, pageSize, pageSize);
-        setRealFreeSpace(pageAddr, pageSize - ITEMS_OFF, pageSize);
+        setFirstEntryOffset(pageAddr, realPageSize, pageSize);
+        setRealFreeSpace(pageAddr, realPageSize - ITEMS_OFF, pageSize);
     }
 
     /**
@@ -166,7 +176,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param dataOff Entry data offset.
      * @param pageSize Page size.
      */
-    private void setFirstEntryOffset(long pageAddr, int dataOff, int pageSize) {
+    void setFirstEntryOffset(long pageAddr, int dataOff, int pageSize) {
         assert dataOff >= ITEMS_OFF + ITEM_SIZE && dataOff <= pageSize : dataOff;
 
         PageUtils.putShort(pageAddr, FIRST_ENTRY_OFF, (short)dataOff);
@@ -185,7 +195,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param freeSpace Free space.
      * @param pageSize Page size.
      */
-    private void setRealFreeSpace(long pageAddr, int freeSpace, int pageSize) {
+    void setRealFreeSpace(long pageAddr, int freeSpace, int pageSize) {
         assert freeSpace == actualFreeSpace(pageAddr, pageSize) : freeSpace + " != " + actualFreeSpace(pageAddr, pageSize);
 
         PageUtils.putShort(pageAddr, FREE_SPACE_OFF, (short)freeSpace);
@@ -227,7 +237,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @return Free space.
      */
-    private int getRealFreeSpace(long pageAddr) {
+    protected int getRealFreeSpace(long pageAddr) {
         return PageUtils.getShort(pageAddr, FREE_SPACE_OFF);
     }
 
@@ -235,7 +245,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @param cnt Direct count.
      */
-    private void setDirectCount(long pageAddr, int cnt) {
+    void setDirectCount(long pageAddr, int cnt) {
         assert checkCount(cnt) : cnt;
 
         PageUtils.putByte(pageAddr, DIRECT_CNT_OFF, (byte)cnt);
@@ -276,7 +286,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @param cnt Indirect count.
      */
-    private void setIndirectCount(long pageAddr, int cnt) {
+    void setIndirectCount(long pageAddr, int cnt) {
         assert checkCount(cnt) : cnt;
 
         PageUtils.putByte(pageAddr, INDIRECT_CNT_OFF, (byte)cnt);
@@ -310,7 +320,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @return Number of free entry slots.
      */
-    private int getFreeItemSlots(long pageAddr) {
+    protected int getFreeItemSlots(long pageAddr) {
         return 0xFF - getDirectCount(pageAddr);
     }
 
@@ -1106,6 +1116,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         int prevOff = pageSize;
 
         final int start = directCnt - 1;
+
         int curOff = offs[start] >>> 8;
         int curEntrySize = getPageEntrySize(pageAddr, curOff, SHOW_PAYLOAD_LEN | SHOW_LINK);
 
@@ -1167,7 +1178,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageSize Page size.
      * @return Actual free space in the buffer.
      */
-    private int actualFreeSpace(long pageAddr, int pageSize) {
+    int actualFreeSpace(long pageAddr, int pageSize) {
         int directCnt = getDirectCount(pageAddr);
 
         int entriesSize = 0;

@@ -46,11 +46,6 @@ public class EncryptedFileIO implements FileIO {
     private int pageSize;
 
     /**
-     * Size of page on the disk.
-     */
-    private int pageSizeOnDisk;
-
-    /**
      * Size of file header in bytes.
      */
     private int headerSize;
@@ -71,21 +66,27 @@ public class EncryptedFileIO implements FileIO {
     private EncryptionKey key;
 
     /**
+     * Extra bytes added by encryption.
+     */
+    private int encryptionOverhead;
+
+    /**
      * @param plainFileIO Underlying file.
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
      * @param headerSize Size of file header in bytes.
      * @param encMgr Encryption manager.
      */
-    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int pageSizeOnDisk, int headerSize,
+    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize,
         GridEncryptionManager encMgr, EncryptionSpi encSpi) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;
-        this.pageSizeOnDisk = pageSizeOnDisk;
         this.headerSize = headerSize;
         this.encMgr = encMgr;
         this.encSpi = encSpi;
+
+        this.encryptionOverhead = encSpi.encryptedSize(pageSize) - pageSize;
     }
 
     /** {@inheritDoc} */
@@ -114,15 +115,15 @@ public class EncryptedFileIO implements FileIO {
     @Override public int read(ByteBuffer destBuf, long position) throws IOException {
         assert destBuf.capacity() == pageSize;
 
-        ByteBuffer encrypted = ByteBuffer.allocate(pageSizeOnDisk);
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
         int res = plainFileIO.read(encrypted, position);
 
         if (res < 0)
             return res;
 
-        if (res != pageSizeOnDisk) {
-            throw new IllegalStateException("Expecting to read whole page[" + pageSizeOnDisk + " bytes], " +
+        if (res != pageSize) {
+            throw new IllegalStateException("Expecting to read whole page[" + pageSize + " bytes], " +
                 "but read only " + res + " bytes");
         }
 
@@ -167,7 +168,8 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.get(srcArr, 0, pageSize);
 
-        byte[] encrypted = encSpi.encrypt(srcArr, key());
+        //Expecting that tail of {@code srcArr} will be empty.
+        byte[] encrypted = encSpi.encrypt(srcArr, key(), 0, srcArr.length - encryptionOverhead);
 
         return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
     }

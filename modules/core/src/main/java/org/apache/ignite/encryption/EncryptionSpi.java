@@ -46,9 +46,11 @@ public interface EncryptionSpi extends IgniteSpi {
      * 
      * @param data Data to encrypt.
      * @param key Encryption key.
+     * @param start Offset in {@code data} to start encrypt from.
+     * @param length Length of {@code data} to encrypt.
      * @return Encrypted data.
      */
-    byte[] encrypt(byte[] data, EncryptionKey key);
+    byte[] encrypt(byte[] data, EncryptionKey key, int start, int length);
 
     /**
      * Decrypts data.

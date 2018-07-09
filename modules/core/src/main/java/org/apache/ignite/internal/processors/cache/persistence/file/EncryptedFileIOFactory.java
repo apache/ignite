@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
  * Factory to produce {@code EncryptedFileIO}.
@@ -81,14 +79,14 @@ public class EncryptedFileIOFactory implements FileIOFactory {
     @Override public FileIO create(File file) throws IOException {
         FileIO io = plainIOFactory.create(file);
 
-        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr, encSpi);
+        return new EncryptedFileIO(io, groupId, pageSize, headerSize, encMgr, encSpi);
     }
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         FileIO io = plainIOFactory.create(file, modes);
 
-        return new EncryptedFileIO(io, groupId, pageSize, dataSizeOnDisk(pageSize), headerSize, encMgr, encSpi);
+        return new EncryptedFileIO(io, groupId, pageSize, headerSize, encMgr, encSpi);
     }
 
     /**
@@ -98,10 +96,5 @@ public class EncryptedFileIOFactory implements FileIOFactory {
      */
     void headerSize(int headerSize) {
         this.headerSize = headerSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int dataSizeOnDisk(int dataSize) {
-        return encSpi.encryptedSize(pageSize);
     }
 }

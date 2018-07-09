@@ -60,6 +60,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
@@ -67,6 +68,8 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.EncryptedDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -2063,7 +2066,12 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (cleaner == null)
                     return;
 
-                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+                CacheGroupContext grpCtx = ctx.cache().cacheGroup(fullPageId.groupId());
+
+                IOVersions<DataPageIO> ioVersions = grpCtx != null && grpCtx.encrypted() ?
+                    EncryptedDataPageIO.VERSIONS : DataPageIO.VERSIONS;
+
+                DataPageIO io = ioVersions.forPage(pageAddr);
 
                 io.forAllItems(pageAddr, new DataPageIO.CC<Void>() {
                     @Override public Void apply(long link) {

@@ -200,6 +200,9 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
 
+    /** */
+    public static final short T_ENCRYPTED_DATA = 24;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
 
@@ -499,6 +502,9 @@ public abstract class PageIO {
 
             case T_DATA_METASTORAGE:
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
+
+            case T_ENCRYPTED_DATA:
+                return (Q)EncryptedDataPageIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

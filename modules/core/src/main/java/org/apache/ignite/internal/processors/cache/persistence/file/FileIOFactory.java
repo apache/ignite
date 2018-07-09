@@ -44,15 +44,4 @@ public interface FileIOFactory extends Serializable {
      * @throws IOException If I/O interface creation was failed.
      */
     public FileIO create(File file, OpenOption... modes) throws IOException;
-
-    /**
-     * Calculates size of the data in bytes that written to the disk for data.
-     *
-     * @param dataSize Size of page in bytes.
-     * @return Size of the data that will be written for the page.
-     * @see EncryptedFileIO
-     */
-    default int dataSizeOnDisk(int dataSize) {
-        return dataSize;
-    }
 }

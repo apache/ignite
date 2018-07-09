@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.EncryptedDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -145,7 +147,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 assert pageAddr != 0L : nextLink;
 
                 try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+                    IOVersions<DataPageIO> ioVersions =
+                        grp != null && grp.encrypted() ? EncryptedDataPageIO.VERSIONS : DataPageIO.VERSIONS;
+
+                    DataPageIO io = ioVersions.forPage(pageAddr);
 
                     DataPagePayload data = io.readPayload(pageAddr,
                         itemId(nextLink),

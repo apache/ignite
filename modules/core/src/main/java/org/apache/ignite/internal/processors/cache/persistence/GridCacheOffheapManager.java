@@ -1220,7 +1220,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
-                        reuseRoot.isAllocated()) {
+                        reuseRoot.isAllocated(),
+                        grp.encrypted()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();

@@ -91,6 +91,11 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     private static final String DIGEST_ALGO = "SHA-512";
 
     /**
+     * Count of bytes added to each encrypted data block.
+     */
+    public static final int ENCRYPTION_OVERHEAD = 32;
+
+    /**
      * Path to master key store.
      */
     private String keyStorePath;
@@ -169,8 +174,9 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encrypt(byte[] data, EncryptionKey key) {
+    @Override public byte[] encrypt(byte[] data, EncryptionKey key, int start, int length) {
         assert key instanceof EncryptionKeyImpl;
+        assert start >= 0 && length + start <= data.length;
 
         ensureStarted();
 
@@ -181,13 +187,13 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
             byte[] iv = initVector(cipher);
 
-            byte[] res = new byte[encryptedSize(data.length)];
+            byte[] res = new byte[encryptedSize(length)];
 
             System.arraycopy(iv, 0, res, 0, iv.length);
 
             cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(res, 0, iv.length));
 
-            cipher.doFinal(data, 0, data.length, res, iv.length);
+            cipher.doFinal(data, start, length, res, iv.length);
 
             return res;
         }
@@ -228,7 +234,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
         byte[] serKey = U.toBytes(key);
 
-        return encrypt(serKey, masterKey);
+        return encrypt(serKey, masterKey, 0, serKey.length);
     }
 
     /** {@inheritDoc} */
@@ -249,6 +255,14 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
+        return EncryptionSpiImpl.encryptedSize0(dataSize);
+    }
+
+    /**
+     * @param dataSize Size of data in bytes.
+     * @return Size of encrypted data in bytes.
+     */
+    public static int encryptedSize0(int dataSize) {
         return (dataSize/16 + 2)*16;
     }
 

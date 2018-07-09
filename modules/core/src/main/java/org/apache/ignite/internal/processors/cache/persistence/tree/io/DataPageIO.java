@@ -42,6 +42,14 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         super(T_DATA, ver);
     }
 
+    /**
+     * @param type IO type.
+     * @param ver Page format version.
+     */
+    public DataPageIO(int type, int ver) {
+        super(type, ver);
+    }
+
     /** {@inheritDoc} */
     @Override
     protected void writeFragmentData(

@@ -71,7 +71,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
 
         byte[] plainText = "Just a test string to encrypt!".getBytes("UTF-8");
 
-        byte[] cipherText = encSpi.encrypt(plainText, k);
+        byte[] cipherText = encSpi.encrypt(plainText, k, 0, plainText.length);
 
         assertNotNull(cipherText);
         assertEquals(encSpi.encryptedSize(plainText.length), cipherText.length);
