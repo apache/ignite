@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import javax.cache.CacheException;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -73,6 +74,9 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
 
     /** */
     private void clusterRestart(boolean withAnotherClient, boolean allowOverwrite) throws Exception {
+        CountDownLatch disconnect = new CountDownLatch(1);
+        CountDownLatch reconnect = new CountDownLatch(1);
+
         try {
             startGrid(0);
 
@@ -81,6 +85,7 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
             Ignite client = startGrid(1);
 
             if (withAnotherClient) {
+                // Force increase of topVer
                 startGrid(2);
 
                 stopGrid(2);
@@ -94,33 +99,38 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
                 streamer.addData("k1", "v1");
             }
 
+            // Restart the cluster so that client reconnects to a new one
+            client.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event event) {
+                    reconnect.countDown();
+
+                    return false;
+                }
+            }, EventType.EVT_CLIENT_NODE_RECONNECTED);
+
+            client.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event event) {
+                    disconnect.countDown();
+
+                    return false;
+                }
+            }, EventType.EVT_CLIENT_NODE_DISCONNECTED);
+
             stopGrid(0);
 
-            U.sleep(2_000);
+            disconnect.await();
 
             startGrid(0);
 
-            U.sleep(1_000);
+            reconnect.await();
 
-            for (int i = 0; i < 3; i++) {
-                try (IgniteDataStreamer<String, String> streamer = client.dataStreamer("test")) {
-                    streamer.allowOverwrite(allowOverwrite);
+            try (IgniteDataStreamer<String, String> streamer = client.dataStreamer("test")) {
+                streamer.allowOverwrite(allowOverwrite);
 
-                    streamer.addData("k2", "v2");
+                streamer.addData("k2", "v2");
 
-                    return;
-                }
-                catch (CacheException ce) {
-                    assert ce.getCause() instanceof IgniteClientDisconnectedException;
-
-                    ((IgniteClientDisconnectedException)ce.getCause()).reconnectFuture().get();
-                }
-                catch (IgniteClientDisconnectedException icde) {
-                    icde.reconnectFuture().get();
-                }
+                return;
             }
-
-            assert false : "Failed to wayt for reconnect!";
         }
         finally {
             stopAllGrids();
