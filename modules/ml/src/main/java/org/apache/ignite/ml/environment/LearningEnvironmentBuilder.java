@@ -20,6 +20,7 @@ package org.apache.ignite.ml.environment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.logging.NoOpLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
+import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
 /**
@@ -35,7 +36,7 @@ public class LearningEnvironmentBuilder {
      * Creates an instance of LearningEnvironmentBuilder.
      */
     LearningEnvironmentBuilder() {
-        parallelismStgy = new DefaultParallelismStrategy();
+        parallelismStgy = NoParallelismStrategy.INSTANCE;
         loggingFactory = NoOpLogger.factory();
     }
 
@@ -44,10 +45,27 @@ public class LearningEnvironmentBuilder {
      *
      * @param stgy Parallelism Strategy.
      */
-    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
+    public <T> LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
         this.parallelismStgy = stgy;
+
         return this;
     }
+
+    /**
+     * Specifies Parallelism Strategy for LearningEnvironment.
+     *
+     * @param stgyType Parallelism Strategy Type.
+     */
+    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy.Type stgyType) {
+        switch (stgyType) {
+            case NO_PARALLELISM:
+                this.parallelismStgy = NoParallelismStrategy.INSTANCE;
+            case ON_DEFAULT_POOL:
+                this.parallelismStgy = new DefaultParallelismStrategy();
+        }
+        return this;
+    }
+
 
     /**
      * Specifies Logging factory for LearningEnvironment.

@@ -25,6 +25,11 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
  * bagging, learning submodels for One-vs-All model, Cross-Validation etc.
  */
 public interface ParallelismStrategy extends Serializable {
+    public enum Type {
+        NO_PARALLELISM,
+        ON_DEFAULT_POOL
+    }
+
     /**
      * Submit task.
      *

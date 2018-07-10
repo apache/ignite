@@ -31,7 +31,7 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.ConsoleLogger;
 import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
@@ -64,12 +64,8 @@ public class RandomForestRegressionExample {
 
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
                 trainer.setEnvironment(LearningEnvironment.builder()
-//                    .withParallelismStrategy(DefaultParallelismStrategy.class)
-//                    .withParallelismStrategy(new NoParallelismStrategy())
-//                    .withLoggingFactory(NoOpLogger.factory())
-//                    .withLoggingFactory(OnIgniteMLLogger.factory(new Log4JLogger("path/to/log4j/config")))
-                    .withParallelismStrategy(NoParallelismStrategy.INSTANCE)
-                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.OFF))
+                    .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
+                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.MID))
                     .build()
                 );
 

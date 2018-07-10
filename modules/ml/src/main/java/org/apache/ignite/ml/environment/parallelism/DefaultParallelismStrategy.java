@@ -30,11 +30,8 @@ import org.jetbrains.annotations.NotNull;
  * All task should be processed by default thread pool.
  */
 public class DefaultParallelismStrategy implements ParallelismStrategy {
-    /** Instance. */
-    public static final ParallelismStrategy INSTANCE = new DefaultParallelismStrategy();
-
-    /** Common Thread Pool. */
-    private final static ExecutorService pool = Executors.newWorkStealingPool(4);
+    /** Strategy Pool. */
+    private ExecutorService pool = Executors.newWorkStealingPool(4);
 
     /** {@inheritDoc} */
     @Override public <T> Promise<T> submit(IgniteSupplier<T> task) {
