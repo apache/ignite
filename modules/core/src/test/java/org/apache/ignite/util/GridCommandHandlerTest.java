@@ -937,12 +937,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setName(DEFAULT_CACHE_NAME));
 
+        ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "other"));
+
         injectTestSystemOut();
 
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
 
         assertTrue(testOut.toString().contains("found " + parts + " partitions"));
     }

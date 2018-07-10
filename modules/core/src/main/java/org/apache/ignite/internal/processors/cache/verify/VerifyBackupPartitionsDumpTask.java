@@ -18,9 +18,10 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -55,7 +56,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /** {@inheritDoc} */
     @Nullable @Override public IdleVerifyDumpResult reduce(List<ComputeJobResult> results)
         throws IgniteException {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
         for (ComputeJobResult res : results) {
             Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
@@ -67,19 +68,23 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             }
         }
 
-        Comparator<PartitionHashRecordV2> recordV2Comparator = getRecordComparator().reversed();
+        Comparator<PartitionHashRecordV2> recordV2Comparator = buildRecordComparator().reversed();
 
-        for (List<PartitionHashRecordV2> list : clusterHashes.values()) {
-            list.sort(recordV2Comparator);
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions = new LinkedHashMap<>();
+
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
+            entry.getValue().sort(recordV2Comparator);
+
+            partitions.put(entry.getKey(), entry.getValue());
         }
 
-        return new IdleVerifyDumpResult(clusterHashes);
+        return new IdleVerifyDumpResult(partitions);
     }
 
     /**
      * @return Comparator for {@link PartitionHashRecordV2}.
      */
-    @NotNull private Comparator<PartitionHashRecordV2> getRecordComparator() {
+    @NotNull private Comparator<PartitionHashRecordV2> buildRecordComparator() {
         return (o1, o2) -> {
             int compare = Boolean.compare(o1.isPrimary(), o2.isPrimary());
 
@@ -87,6 +92,20 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
                 return compare;
 
             return o1.consistentId().toString().compareTo(o2.consistentId().toString());
+        };
+    }
+
+    /**
+     * @return Comparator for {@link PartitionKeyV2}.
+     */
+    @NotNull private Comparator<PartitionKeyV2> buildPartitionKeyComparator() {
+        return (o1, o2) -> {
+            int compare = Integer.compare(o1.groupId(), o2.groupId());
+
+            if (compare != 0)
+                return compare;
+
+            return Integer.compare(o1.partitionId(), o2.partitionId());
         };
     }
 }

@@ -56,7 +56,7 @@ public class IdleVerifyDumpResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
-        clusterHashes = U.readMap(in);
+        clusterHashes = U.readLinkedMap(in);
     }
 
     /**
