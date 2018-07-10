@@ -34,7 +34,7 @@ class PrimitiveArray:
     Base class for array of primitives. Payload-only.
     """
     primitive_type = None
-    c_type = None
+    type_code = None
 
     @classmethod
     def build_header_class(cls):
@@ -82,7 +82,7 @@ class PrimitiveArray:
         header = header_class()
         if hasattr(header, 'type_code'):
             header.type_code = int.from_bytes(
-                cls.c_type,
+                cls.type_code,
                 byteorder=PROTOCOL_BYTE_ORDER
             )
         length = len(value)
@@ -96,42 +96,42 @@ class PrimitiveArray:
 
 class ByteArray(PrimitiveArray):
     primitive_type = Byte
-    c_type = TC_BYTE_ARRAY
+    type_code = TC_BYTE_ARRAY
 
 
 class ShortArray(PrimitiveArray):
     primitive_type = Short
-    c_type = TC_SHORT_ARRAY
+    type_code = TC_SHORT_ARRAY
 
 
 class IntArray(PrimitiveArray):
     primitive_type = Int
-    c_type = TC_INT_ARRAY
+    type_code = TC_INT_ARRAY
 
 
 class LongArray(PrimitiveArray):
     primitive_type = Long
-    c_type = TC_LONG_ARRAY
+    type_code = TC_LONG_ARRAY
 
 
 class FloatArray(PrimitiveArray):
     primitive_type = Float
-    c_type = TC_FLOAT_ARRAY
+    type_code = TC_FLOAT_ARRAY
 
 
 class DoubleArray(PrimitiveArray):
     primitive_type = Double
-    c_type = TC_DOUBLE_ARRAY
+    type_code = TC_DOUBLE_ARRAY
 
 
 class CharArray(PrimitiveArray):
     primitive_type = Char
-    c_type = TC_CHAR_ARRAY
+    type_code = TC_CHAR_ARRAY
 
 
 class BoolArray(PrimitiveArray):
     primitive_type = Bool
-    c_type = TC_BOOL_ARRAY
+    type_code = TC_BOOL_ARRAY
 
 
 class PrimitiveArrayObject(PrimitiveArray):
@@ -156,37 +156,37 @@ class PrimitiveArrayObject(PrimitiveArray):
 
 class ByteArrayObject(PrimitiveArrayObject):
     primitive_type = Byte
-    c_type = TC_BYTE_ARRAY
+    type_code = TC_BYTE_ARRAY
 
 
 class ShortArrayObject(PrimitiveArrayObject):
     primitive_type = Short
-    c_type = TC_SHORT_ARRAY
+    type_code = TC_SHORT_ARRAY
 
 
 class IntArrayObject(PrimitiveArrayObject):
     primitive_type = Int
-    c_type = TC_INT_ARRAY
+    type_code = TC_INT_ARRAY
 
 
 class LongArrayObject(PrimitiveArrayObject):
     primitive_type = Long
-    c_type = TC_LONG_ARRAY
+    type_code = TC_LONG_ARRAY
 
 
 class FloatArrayObject(PrimitiveArrayObject):
     primitive_type = Float
-    c_type = TC_FLOAT_ARRAY
+    type_code = TC_FLOAT_ARRAY
 
 
 class DoubleArrayObject(PrimitiveArrayObject):
     primitive_type = Double
-    c_type = TC_DOUBLE_ARRAY
+    type_code = TC_DOUBLE_ARRAY
 
 
 class CharArrayObject(PrimitiveArrayObject):
     primitive_type = Char
-    c_type = TC_CHAR_ARRAY
+    type_code = TC_CHAR_ARRAY
 
     @classmethod
     def to_python(cls, ctype_object):
@@ -203,4 +203,4 @@ class CharArrayObject(PrimitiveArrayObject):
 
 class BoolArrayObject(PrimitiveArrayObject):
     primitive_type = Bool
-    c_type = TC_BOOL_ARRAY
+    type_code = TC_BOOL_ARRAY

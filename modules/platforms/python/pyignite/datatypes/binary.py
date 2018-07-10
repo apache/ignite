@@ -13,32 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module contains some constants, used internally throughout the API.
-"""
-
-import ssl
+from pyignite.datatypes.cache_config import Struct, StructArray
+from pyignite.datatypes.primitive import Int, Bool
+from pyignite.datatypes.standard import String
 
 
-__all__ = [
-    'PROTOCOL_VERSION_MAJOR', 'PROTOCOL_VERSION_MINOR',
-    'PROTOCOL_VERSION_PATCH', 'MAX_LONG', 'MIN_LONG', 'MAX_INT', 'MIN_INT',
-    'PROTOCOL_BYTE_ORDER', 'PROTOCOL_STRING_ENCODING',
-    'PROTOCOL_CHAR_ENCODING', 'SSL_DEFAULT_VERSION', 'SSL_DEFAULT_CIPHERS',
-]
+binary_fields_struct = StructArray([
+    ('field_name', String),
+    ('type_id', Int),
+    ('field_id', Int),
+])
 
-PROTOCOL_VERSION_MAJOR = 1
-PROTOCOL_VERSION_MINOR = 1
-PROTOCOL_VERSION_PATCH = 0
+body_struct = Struct([
+    ('type_id', Int),
+    ('type_name', String),
+    ('affinity_key_field', String),
+    ('binary_fields', binary_fields_struct),
+    ('is_enum', Bool),
+])
 
-MAX_LONG = 9223372036854775807
-MIN_LONG = -9223372036854775808
-MAX_INT = 2147483647
-MIN_INT = -2147483648
+enum_struct = StructArray([
+    ('literal', String),
+    ('type_id', Int),
+])
 
-PROTOCOL_BYTE_ORDER = 'little'
-PROTOCOL_STRING_ENCODING = 'utf-8'
-PROTOCOL_CHAR_ENCODING = 'utf-16le'
+schema_fields_struct = StructArray([
+    ('schema_field_id', Int),
+])
 
-SSL_DEFAULT_VERSION = ssl.PROTOCOL_TLSv1_1
-SSL_DEFAULT_CIPHERS = ssl._DEFAULT_CIPHERS
+schema_struct = StructArray([
+    ('schema_id', Int),
+    ('schema_fields', schema_fields_struct),
+])

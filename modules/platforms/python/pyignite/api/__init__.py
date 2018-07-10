@@ -78,5 +78,6 @@ from .sql import (
 )
 from .binary import (
     get_binary_type,
+    put_binary_type,
 )
 from .result import APIResult, hashcode

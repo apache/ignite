@@ -37,6 +37,7 @@ from .type_codes import *
 __all__ = [
     'AnyDataObject', 'AnyDataArray', 'Map',
     'ObjectArrayObject', 'CollectionObject', 'MapObject',
+    'WrappedDataObject', 'BinaryObject',
 ]
 
 
@@ -285,7 +286,7 @@ class ObjectArrayObject(AnyDataObject):
     Array of objects of any type. Its Python representation is
     tuple(type_id, iterable of any type).
     """
-    tc_type = TC_OBJECT_ARRAY
+    type_code = TC_OBJECT_ARRAY
     type_or_id_name = 'type_id'
 
     @classmethod
@@ -342,7 +343,7 @@ class ObjectArrayObject(AnyDataObject):
         header_class = cls.build_header()
         header = header_class()
         header.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         try:
@@ -368,7 +369,7 @@ class WrappedDataObject:
     Python representation: tuple(payload: bytes, offset: integer). Offset
     points to the root object of the array.
     """
-    tc_type = TC_ARRAY_WRAPPED_OBJECTS
+    type_code = TC_ARRAY_WRAPPED_OBJECTS
 
     @classmethod
     def build_header(cls):
@@ -416,7 +417,7 @@ class WrappedDataObject:
         header_class = cls.build_header()
         header = header_class()
         header.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         length = len(value)
@@ -432,7 +433,7 @@ class CollectionObject(ObjectArrayObject):
 
     Also represented as tuple(type_id, iterable of any type) in Python.
     """
-    tc_type = TC_COLLECTION
+    type_code = TC_COLLECTION
     type_or_id_name = 'type'
 
     @classmethod
@@ -519,7 +520,7 @@ class Map:
         header.length = length
         if hasattr(header, 'type_code'):
             header.type_code = int.from_bytes(
-                cls.tc_type,
+                cls.type_code,
                 byteorder=PROTOCOL_BYTE_ORDER
             )
         if hasattr(header, 'type'):
@@ -546,7 +547,7 @@ class MapObject(Map):
     Keys and values in map are independent data objects, but `count`
     counts pairs. Very annoying.
     """
-    tc_type = TC_MAP
+    type_code = TC_MAP
 
     @classmethod
     def build_header(cls):
@@ -574,7 +575,7 @@ class MapObject(Map):
 
 
 class BinaryObject:
-    tc_type = TC_COMPLEX_OBJECT
+    type_code = TC_COMPLEX_OBJECT
 
     USER_TYPE = 0x0001
     HAS_SCHEMA = 0x0002
@@ -671,3 +672,57 @@ class BinaryObject:
                 getattr(ctype_object.object_fields, field_name)
             )
         return result
+
+    @classmethod
+    def from_python(cls, value: dict):
+        from pyignite.datatypes.cache_config import Struct
+
+        # prepare header
+        header_class = cls.build_header()
+        header = header_class()
+        header.type_code = int.from_bytes(
+            cls.type_code,
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
+        # TODO: compact footer & no raw data is the only supported variant
+        header.flags = cls.USER_TYPE | cls.HAS_SCHEMA | cls.COMPACT_FOOTER
+        header.version = value['version']
+        header.type_id = value['type_id']
+        header.hash_code = value['hash_code']
+        header.schema_id = value['schema_id']
+        # create fields
+        field_data = {}
+        field_types = []
+        offsets = []
+        for field_name, field_value_or_pair in value['fields'].items():
+            field_name = field_name.upper()
+
+            if is_hinted(field_value_or_pair):
+                field_value, field_type = field_value_or_pair
+            else:
+                field_value = field_value_or_pair
+                field_type = AnyDataObject
+
+            field_data[field_name] = field_value
+            field_types.append((field_name, field_type))
+
+        field_struct = Struct(field_types)
+        field_buffer, field_data_class = field_struct.from_python(field_data)
+        # calculate offsets & create footer
+        for _, field_c_type in field_data_class._fields_:
+            offsets.append(
+                max(offsets, default=0) + ctypes.sizeof(field_c_type)
+            )
+        if max(offsets, default=0) < 255:
+            header.flags |= cls.OFFSET_ONE_BYTE
+        elif max(offsets) < 65535:
+            header.flags |= cls.OFFSET_TWO_BYTES
+        schema_class = cls.offset_c_type(header.flags) * len(offsets)
+        schema = schema_class()
+        for i, offset in enumerate(offsets):
+            schema[i] = offset
+        # calculate size
+        header.schema_offset = ctypes.sizeof(header_class) + len(field_buffer)
+        header.length = header.schema_offset + ctypes.sizeof(schema_class)
+
+        return bytes(header) + field_buffer + bytes(schema)

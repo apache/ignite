@@ -40,7 +40,7 @@ __all__ = [
 
 
 class StandardObject:
-    tc_type = None
+    type_code = None
 
     @classmethod
     def build_c_type(cls):
@@ -63,7 +63,7 @@ class String:
     Pascal-style string: `c_int` counter, followed by count*bytes.
     UTF-8-encoded, so that one character may take 1 to 4 bytes.
     """
-    tc_type = TC_STRING
+    type_code = TC_STRING
 
     @classmethod
     def build_c_type(cls, length: int):
@@ -116,7 +116,7 @@ class String:
         data_type = cls.build_c_type(length)
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.length = length
@@ -125,7 +125,7 @@ class String:
 
 
 class DecimalObject:
-    tc_type = TC_DECIMAL
+    type_code = TC_DECIMAL
 
     @classmethod
     def build_c_header(cls):
@@ -214,7 +214,7 @@ class DecimalObject:
         )
         data_object = data_class()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.length = length
@@ -228,7 +228,7 @@ class UUIDObject(StandardObject):
     Universally unique identifier (UUID), aka Globally unique identifier
     (GUID). Payload takes up 16 bytes.
     """
-    tc_type = TC_UUID
+    type_code = TC_UUID
 
     @classmethod
     def build_c_type(cls):
@@ -249,7 +249,7 @@ class UUIDObject(StandardObject):
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         for i, byte in enumerate(bytearray(value.bytes)):
@@ -277,7 +277,7 @@ class TimestampObject(StandardObject):
     `epoch` and `fraction` stored separately and represented as
     tuple(datetime.datetime, integer).
     """
-    tc_type = TC_TIMESTAMP
+    type_code = TC_TIMESTAMP
 
     @classmethod
     def build_c_type(cls):
@@ -301,7 +301,7 @@ class TimestampObject(StandardObject):
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.epoch = int(value[0].timestamp() * 1000)
@@ -328,7 +328,7 @@ class DateObject(StandardObject):
 
     Represented as a naive datetime.datetime in Python.
     """
-    tc_type = TC_DATE
+    type_code = TC_DATE
 
     @classmethod
     def build_c_type(cls):
@@ -351,7 +351,7 @@ class DateObject(StandardObject):
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.epoch = int(value.timestamp() * 1000)
@@ -373,7 +373,7 @@ class TimeObject(StandardObject):
 
     Represented as a datetime.timedelta in Python.
     """
-    tc_type = TC_TIME
+    type_code = TC_TIME
 
     @classmethod
     def build_c_type(cls):
@@ -396,7 +396,7 @@ class TimeObject(StandardObject):
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.value = int(value.total_seconds() * 1000)
@@ -420,7 +420,7 @@ class EnumObject(StandardObject):
     (using language-specific type serialization is a good way to kill the
     interoperability though), so it represented by tuple(int, int) in Python.
     """
-    tc_type = TC_ENUM
+    type_code = TC_ENUM
 
     @classmethod
     def build_c_type(cls):
@@ -445,7 +445,7 @@ class EnumObject(StandardObject):
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(
-            cls.tc_type,
+            cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
         if value is None:
@@ -467,7 +467,7 @@ class BinaryEnumObject(EnumObject):
     """
     Another way of representing the enum type. Same, but different.
     """
-    tc_type = TC_BINARY_ENUM
+    type_code = TC_BINARY_ENUM
 
 
 class StandardArray:
@@ -475,7 +475,7 @@ class StandardArray:
     Base class for array of primitives. Payload-only.
     """
     standard_type = None
-    tc_type = None
+    type_code = None
 
     @classmethod
     def build_header_class(cls):
@@ -528,7 +528,7 @@ class StandardArray:
         header = header_class()
         if hasattr(header, 'type_code'):
             header.type_code = int.from_bytes(
-                cls.tc_type,
+                cls.type_code,
                 byteorder=PROTOCOL_BYTE_ORDER
             )
         length = len(value)
@@ -594,19 +594,19 @@ class StandardArrayObject(StandardArray):
 class StringArrayObject(StandardArrayObject):
     """ List of strings. """
     standard_type = String
-    tc_type = TC_STRING_ARRAY
+    type_code = TC_STRING_ARRAY
 
 
 class DecimalArrayObject(StandardArrayObject):
     """ List of decimal.Decimal objects. """
     standard_type = DecimalObject
-    tc_type = TC_DECIMAL_ARRAY
+    type_code = TC_DECIMAL_ARRAY
 
 
 class UUIDArrayObject(StandardArrayObject):
     """ Translated into Python as a list(uuid.UUID)"""
     standard_type = UUIDObject
-    tc_type = TC_UUID_ARRAY
+    type_code = TC_UUID_ARRAY
 
 
 class TimestampArrayObject(StandardArrayObject):
@@ -614,19 +614,19 @@ class TimestampArrayObject(StandardArrayObject):
     Translated into Python as a list of (datetime.datetime, integer) tuples.
     """
     standard_type = TimestampObject
-    tc_type = TC_TIMESTAMP_ARRAY
+    type_code = TC_TIMESTAMP_ARRAY
 
 
 class DateArrayObject(StandardArrayObject):
     """ List of datetime.datetime type values. """
     standard_type = DateObject
-    tc_type = TC_DATE_ARRAY
+    type_code = TC_DATE_ARRAY
 
 
 class TimeArrayObject(StandardArrayObject):
     """ List of datetime.timedelta type values. """
     standard_type = TimeObject
-    tc_type = TC_TIME_ARRAY
+    type_code = TC_TIME_ARRAY
 
 
 class EnumArrayObject(StandardArrayObject):
@@ -635,7 +635,7 @@ class EnumArrayObject(StandardArrayObject):
     The only `type_id` value of -1 (user type) works from Python perspective.
     """
     standard_type = EnumObject
-    tc_type = TC_ENUM_ARRAY
+    type_code = TC_ENUM_ARRAY
 
     @classmethod
     def build_header_class(cls):
@@ -659,7 +659,7 @@ class EnumArrayObject(StandardArrayObject):
         header = header_class()
         if hasattr(header, 'type_code'):
             header.type_code = int.from_bytes(
-                cls.tc_type,
+                cls.type_code,
                 byteorder=PROTOCOL_BYTE_ORDER
             )
         length = len(value)

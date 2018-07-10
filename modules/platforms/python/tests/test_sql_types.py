@@ -16,10 +16,13 @@
 from decimal import Decimal
 
 from pyignite.api import (
-    hashcode, sql_fields, cache_create, scan, get_binary_type,
+    hashcode, sql_fields, cache_create, scan, cache_create_with_config,
+    cache_get_configuration, put_binary_type, get_binary_type,
 )
 from pyignite.datatypes.complex import BinaryObject
-from pyignite.connection import BufferedConnection
+from pyignite.datatypes.primitive_objects import BoolObject, IntObject
+from pyignite.datatypes.standard import DecimalObject, String
+from pyignite.datatypes.prop_codes import *
 
 
 page_size = 100
@@ -101,6 +104,110 @@ def test_sql_read_as_binary(conn):
         assert buffer == data_bytes
         assert len(value['fields']) == 4
 
+    result = cache_get_configuration(conn, table_hash_code)
+    assert result.status == 0, result.message
+
     # cleanup
     result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
+    assert result.status == 0, result.message
+
+
+def test_sql_write_as_binary(conn):
+    cache_create(conn, scheme_name)
+
+    # configure cache as an SQL table
+
+    type_name = 'ALLDATATYPE_CONTAINER'
+
+    result = cache_create_with_config(conn, {
+        PROP_NAME: table_cache_name,
+        PROP_SQL_SCHEMA: scheme_name,
+        PROP_QUERY_ENTITIES: [
+            {
+                'table_name': table_sql_name.upper(),
+                'key_field_name': 'TEST_PK',
+                'key_type_name': 'java.lang.Integer',
+                'field_name_aliases': [
+                    {
+                        'alias': 'TEST_PK',
+                        'field_name': 'TEST_PK',
+                    },
+                    {
+                        'alias': 'TEST_STR',
+                        'field_name': 'TEST_STR',
+                    },
+                    {
+                        'alias': 'TEST_BOOL',
+                        'field_name': 'TEST_BOOL',
+                    },
+                    {
+                        'alias': 'TEST_INT',
+                        'field_name': 'TEST_INT',
+                    },
+                    {
+                        'alias': 'TEST_DECIMAL',
+                        'field_name': 'TEST_DECIMAL',
+                    },
+                ],
+                'query_fields': [
+                    {
+                        'name': 'TEST_PK',
+                        'type_name': 'java.lang.Integer',
+                        'is_key_field': True,
+                        'is_notnull_constraint_field': True,
+                        'default_value': None,
+                    },
+                    {
+                        'name': 'TEST_BOOL',
+                        'type_name': 'java.lang.Boolean',
+                        'is_key_field': False,
+                        'is_notnull_constraint_field': False,
+                        'default_value': True,
+                    },
+                    {
+                        'name': 'TEST_INT',
+                        'type_name': 'java.lang.Integer',
+                        'is_key_field': False,
+                        'is_notnull_constraint_field': False,
+                        'default_value': None,
+                    },
+                    {
+                        'name': 'TEST_DECIMAL',
+                        'type_name': 'java.math.BigDecimal',
+                        'is_key_field': False,
+                        'is_notnull_constraint_field': False,
+                        'default_value': None,
+                    },
+                    {
+                        'name': 'TEST_STR',
+                        'type_name': 'java.lang.String',
+                        'is_key_field': False,
+                        'is_notnull_constraint_field': True,
+                        'default_value': '',
+                    },
+                ],
+                'query_indexes': [],
+                'value_type_name': type_name,
+                'value_field_name': None,
+            },
+        ],
+    })
+    assert result.status == 0, result.message
+
+    result = cache_get_configuration(conn, table_hash_code)
+    assert result.status == 0, result.message
+
+    # register binary type
+
+    result = put_binary_type(conn, type_name, schema_id=42, schema={
+        'test_bool': BoolObject,
+        'test_int': IntObject,
+        'test_decimal': DecimalObject,
+        'test_str': String,
+    })
+    assert result.status == 0, result.message
+
+    sql_type_id = result.value['type_id']
+
+    result = get_binary_type(conn, sql_type_id)
     assert result.status == 0, result.message
