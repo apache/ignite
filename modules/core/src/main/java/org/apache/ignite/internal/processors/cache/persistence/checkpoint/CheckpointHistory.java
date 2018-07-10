@@ -200,37 +200,7 @@ public class CheckpointHistory {
     public List<CheckpointEntry> onCheckpointFinished(GridCacheDatabaseSharedManager.Checkpoint chp, boolean truncateWal) {
         List<CheckpointEntry> removed = new ArrayList<>();
 
-        final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
-
-        if (histMap.isEmpty()) {
-            chp.walSegmentsCovered(walSegmentsCovered);
-
-            return removed;
-        }
-
-        final Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
-
-        assert lastEntry != null;
-
-        final Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
-
-        final WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
-
-        long lastIdx = 0;
-
-        long prevIdx = 0;
-
-        if (lastWALPointer instanceof FileWALPointer) {
-            lastIdx = ((FileWALPointer)lastWALPointer).index();
-
-            if (previousEntry != null)
-                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
-        }
-
-        for (long walCovered = prevIdx; walCovered < lastIdx; walCovered++)
-            walSegmentsCovered.add(walCovered);
-
-        chp.walSegmentsCovered(walSegmentsCovered);
+        chp.walSegmentsCovered(calculateWalSegmentsCovered());
 
         int deleted = 0;
 
@@ -257,6 +227,40 @@ public class CheckpointHistory {
         chp.walFilesDeleted(deleted);
 
         return removed;
+    }
+
+    /**
+     * Calculates indexes of WAL segments covered by last checkpoint.
+     *
+     * @return list of indexes or empty list if there are no checkpoints.
+     */
+    private List<Long> calculateWalSegmentsCovered() {
+        List<Long> res = new ArrayList<>();
+
+        Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
+
+        if (lastEntry == null)
+            return res;
+
+        Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
+
+        WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
+
+        long lastIdx = 0;
+
+        long prevIdx = 0;
+
+        if (lastWALPointer instanceof FileWALPointer) {
+            lastIdx = ((FileWALPointer)lastWALPointer).index();
+
+            if (previousEntry != null)
+                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
+        }
+
+        for (long walCovered = prevIdx; walCovered < lastIdx; walCovered++)
+            res.add(walCovered);
+
+        return res;
     }
 
     /**
