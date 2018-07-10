@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -74,10 +73,6 @@ public class ExchangeLatchManager {
     /** IO manager. */
     @GridToStringExclude
     private final GridIoManager io;
-
-    /** Current coordinator. */
-    @GridToStringExclude
-    private volatile ClusterNode crd;
 
     /** Pending acks collection. */
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, Set<UUID>> pendingAcks = new ConcurrentHashMap<>();
@@ -110,12 +105,6 @@ public class ExchangeLatchManager {
                     processAck(nodeId, (LatchAckMessage) msg);
             });
 
-            // First coordinator initialization.
-            ctx.discovery().localJoinFuture().listen(f -> {
-                if (f.error() == null)
-                    this.crd = getLatchCoordinator(AffinityTopologyVersion.NONE);
-            });
-
             ctx.event().addDiscoveryEventListener((e, cache) -> {
                 assert e != null;
                 assert e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED : this;
@@ -132,16 +121,23 @@ public class ExchangeLatchManager {
      *
      * @param id Latch id.
      * @param topVer Latch topology version.
-     * @param participants Participant nodes.
      * @return Server latch instance.
      */
-    private Latch createServerLatch(String id, AffinityTopologyVersion topVer, Collection<ClusterNode> participants) {
+    private Latch createServerLatch(String id, AffinityTopologyVersion topVer) {
         final T2<String, AffinityTopologyVersion> latchId = new T2<>(id, topVer);
 
         if (serverLatches.containsKey(latchId))
             return serverLatches.get(latchId);
 
+        Collection<ClusterNode> participants = getLatchParticipants(topVer);
+
         ServerLatch latch = new ServerLatch(id, topVer, participants);
+
+        if (participants.isEmpty()) {
+            latch.complete();
+
+            return latch;
+        }
 
         serverLatches.put(latchId, latch);
 
@@ -171,14 +167,15 @@ public class ExchangeLatchManager {
      * @param id Latch id.
      * @param topVer Latch topology version.
      * @param coordinator Coordinator node.
-     * @param participants Participant nodes.
      * @return Client latch instance.
      */
-    private Latch createClientLatch(String id, AffinityTopologyVersion topVer, ClusterNode coordinator, Collection<ClusterNode> participants) {
+    private Latch createClientLatch(String id, AffinityTopologyVersion topVer, ClusterNode coordinator) {
         final T2<String, AffinityTopologyVersion> latchId = new T2<>(id, topVer);
 
         if (clientLatches.containsKey(latchId))
             return clientLatches.get(latchId);
+
+        Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
         ClientLatch latch = new ClientLatch(id, topVer, coordinator, participants);
 
@@ -221,11 +218,9 @@ public class ExchangeLatchManager {
                 return latch;
             }
 
-            Collection<ClusterNode> participants = getLatchParticipants(topVer);
-
             return coordinator.isLocal()
-                ? createServerLatch(id, topVer, participants)
-                : createClientLatch(id, topVer, coordinator, participants);
+                ? createServerLatch(id, topVer)
+                : createClientLatch(id, topVer, coordinator);
         }
         finally {
             lock.unlock();
@@ -342,25 +337,14 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Changes coordinator to current local node.
-     * Restores all server latches from pending acks and own client latches.
+     * Restores all server latches from pending acks and own client latches if it needed.
      */
-    private void becomeNewCoordinator() {
-        if (log.isInfoEnabled())
-            log.info("Become new coordinator " + crd.id());
-
+    private void restoreServerLatchesIfNeeded() {
         List<T2<String, AffinityTopologyVersion>> latchesToRestore = new ArrayList<>();
         latchesToRestore.addAll(pendingAcks.keySet());
         latchesToRestore.addAll(clientLatches.keySet());
 
-        for (T2<String, AffinityTopologyVersion> latchId : latchesToRestore) {
-            String id = latchId.get1();
-            AffinityTopologyVersion topVer = latchId.get2();
-            Collection<ClusterNode> participants = getLatchParticipants(topVer);
-
-            if (!participants.isEmpty())
-                createServerLatch(id, topVer, participants);
-        }
+        latchesToRestore.forEach(latchId -> createServerLatch(latchId.get1(), latchId.get2()));
     }
 
     /**
@@ -375,8 +359,6 @@ public class ExchangeLatchManager {
      * @param left Left node.
      */
     private void processNodeLeft(ClusterNode left) {
-        assert this.crd != null : "Coordinator is not initialized";
-
         lock.lock();
 
         try {
@@ -387,6 +369,12 @@ public class ExchangeLatchManager {
 
             if (coordinator == null)
                 return;
+
+            log.info("Current latch coordinator : id=" + coordinator.id());
+
+            // Coordinator is changed.
+            if (coordinator.isLocal())
+                restoreServerLatchesIfNeeded();
 
             // Clear pending acks.
             for (Map.Entry<T2<String, AffinityTopologyVersion>, Set<UUID>> ackEntry : pendingAcks.entrySet())
@@ -427,13 +415,6 @@ public class ExchangeLatchManager {
                     if (latch.isCompleted())
                         serverLatches.remove(latchEntry.getKey());
                 }
-            }
-
-            // Coordinator is changed.
-            if (coordinator.isLocal() && this.crd.id() != coordinator.id()) {
-                this.crd = coordinator;
-
-                becomeNewCoordinator();
             }
         }
         finally {
