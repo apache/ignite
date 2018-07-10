@@ -1474,6 +1474,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            delegate.clearStatistics();
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
     /**
      * Safely get CacheGateway.
      *

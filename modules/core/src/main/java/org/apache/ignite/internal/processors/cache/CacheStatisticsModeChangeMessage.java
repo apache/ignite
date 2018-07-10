@@ -18,55 +18,20 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
+public class CacheStatisticsModeChangeMessage extends CacheStatisticsManageMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Initial message flag mask. */
-    private static final byte INITIAL_MSG_MASK = 0x01;
-
     /** Statistics enabled flag mask. */
     private static final byte ENABLED_MASK = 0x02;
-
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** Request id. */
-    private final UUID reqId;
-
-    /** Cache names. */
-    private final Collection<String> caches;
-
-    /** Flags. */
-    private final byte flags;
-
-    /**
-     * Constructor for response.
-     *
-     * @param req Request message.
-     */
-    private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
-        reqId = req.reqId;
-        caches = null;
-
-        if (req.enabled())
-            flags = ENABLED_MASK;
-        else
-            flags = 0;
-    }
 
     /**
      * Constructor for request.
@@ -74,20 +39,16 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param caches Collection of cache names.
      */
     public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
-        this.reqId = reqId;
-        this.caches = Collections.unmodifiableCollection(caches);
-
-        byte flags = INITIAL_MSG_MASK;
-
-        if (enabled)
-            flags |= ENABLED_MASK;
-
-        this.flags = flags;
+        super(reqId, caches, calculateFlag((byte)0, enabled, ENABLED_MASK));
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    /**
+     * Constructor for response.
+     *
+     * @param msg Request message.
+     */
+    private CacheStatisticsModeChangeMessage(CacheStatisticsManageMessage msg) {
+        super(msg);
     }
 
     /** {@inheritDoc} */
@@ -95,48 +56,11 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
         return initial() ? new CacheStatisticsModeChangeMessage(this) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @return Cache names.
-     */
-    public Collection<String> caches() {
-        return Collections.unmodifiableCollection(caches);
-    }
-
-    /**
-     * Initial message flag.
-     */
-    public boolean initial() {
-        return (flags & INITIAL_MSG_MASK) != 0;
-    }
-
     /**
      * @return Statistic enabled.
      */
     public boolean enabled() {
-        return (flags & ENABLED_MASK) != 0;
-    }
-
-    /**
-     * @return Request id.
-     */
-    public UUID requestId() {
-        return reqId;
+        return isFlag(ENABLED_MASK);
     }
 
     /** {@inheritDoc} */
