@@ -17,23 +17,22 @@
 
 package org.apache.ignite.ml.nn.performance;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
@@ -76,7 +75,7 @@ public class MLPTrainerMnistTest {
         MultilayerPerceptron mdl = trainer.fit(
             trainingSet,
             1,
-            (k, v) -> v.getPixels(),
+            (k, v) -> VectorUtils.of(v.getPixels()),
             (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");

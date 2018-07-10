@@ -24,6 +24,7 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
@@ -59,7 +60,7 @@ public class KMeansTrainerTest {
 
         KMeansModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 

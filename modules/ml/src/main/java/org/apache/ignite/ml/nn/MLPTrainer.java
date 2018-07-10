@@ -110,7 +110,7 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
 
     /** {@inheritDoc} */
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),

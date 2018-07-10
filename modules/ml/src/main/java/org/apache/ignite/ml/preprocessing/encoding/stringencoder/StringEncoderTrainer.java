@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[], double[]> {
+public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[], Vector> {
     /** Indices of features which should be encoded. */
     private Set<Integer> handledIndices = new HashSet<>();
 
