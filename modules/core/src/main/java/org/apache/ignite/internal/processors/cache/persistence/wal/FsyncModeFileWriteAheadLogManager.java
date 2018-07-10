@@ -1647,8 +1647,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             File dstFile = new File(walArchiveDir, name);
 
-            if (log.isInfoEnabled())
-                log.info("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
+            if (log.isDebugEnabled())
+                log.debug("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
                     ", origFile=" + origFile.getAbsolutePath() + ", dstFile=" + dstFile.getAbsolutePath() + ']');
 
             try {
@@ -1670,8 +1670,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
             }
 
-            if (log.isInfoEnabled())
-                log.info("Copied file [src=" + origFile.getAbsolutePath() +
+            if (log.isDebugEnabled())
+                log.debug("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
 
             return new SegmentArchiveResult(absIdx, origFile, dstFile);
