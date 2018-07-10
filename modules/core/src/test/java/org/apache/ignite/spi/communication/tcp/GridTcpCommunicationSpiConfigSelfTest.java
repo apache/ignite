@@ -26,6 +26,20 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfigTest<TcpCommunicationSpi> {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -54,18 +68,13 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
      * @throws Exception If failed.
      */
     public void testLocalPortRange() throws Exception {
-        try {
-            IgniteConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
-            TcpCommunicationSpi spi = new TcpCommunicationSpi();
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-            spi.setLocalPortRange(0);
-            cfg.setCommunicationSpi(spi);
+        spi.setLocalPortRange(0);
+        cfg.setCommunicationSpi(spi);
 
-            startGrid(cfg.getIgniteInstanceName(), cfg);
-        }
-        finally {
-            stopAllGrids();
-        }
+        startGrid(cfg.getIgniteInstanceName(), cfg);
     }
 }
