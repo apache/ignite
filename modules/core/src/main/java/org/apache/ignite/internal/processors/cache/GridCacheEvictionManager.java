@@ -74,7 +74,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         plcEnabled = plc != null;
         if (plcEnabled)
-            prepare(cfg,plc,cctx.isNear());
+            prepare(cfg, plc, cctx.isNear());
 
         filter = cfg.getEvictionFilter();
         if (log.isDebugEnabled())
@@ -322,7 +322,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      * @throws IgniteCheckedException If failed.
      */
     private void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
-
         cctx.kernalContext().resource().injectGeneric(rsrc);
 
         cctx.kernalContext().resource().injectCacheName(rsrc, cfg.getName());

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import javax.management.ObjectName;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -29,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests for the eviction policy JMX beans registered by the kernal.
  */
 public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
-
     /** Create test and auto-start the grid */
     public GridEvictionPolicyMBeansTest() {
         super(true);
@@ -38,7 +38,7 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      *
-     * This implementation registers adds custom executors to the configuration.
+     * This implementation  adds eviction policies.
      */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -54,25 +54,28 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         cache1.setEvictionPolicyFactory(plc);
 
         NearCacheConfiguration ncf = new NearCacheConfiguration<>();
+        ncf.setNearEvictionPolicyFactory(new LruEvictionPolicyFactory<>(40, 10, 500));
+        cache1.setNearConfiguration(ncf);
+
+        CacheConfiguration cache2 = defaultCacheConfiguration();
+        cache2.setName("cache2");
+        cache2.setOnheapCacheEnabled(true);
+
         LruEvictionPolicy lep = new LruEvictionPolicy();
+        lep.setBatchSize(10);
+        lep.setMaxMemorySize(125);
+        lep.setMaxSize(30);
+        cache2.setEvictionPolicy(lep);
+
+        ncf = new NearCacheConfiguration<>();
+        lep = new LruEvictionPolicy();
         lep.setBatchSize(10);
         lep.setMaxMemorySize(500);
         lep.setMaxSize(40);
         ncf.setNearEvictionPolicy(lep);
-        cache1.setNearConfiguration(ncf);
+        cache2.setNearConfiguration(ncf);
 
-        CacheConfiguration cache2 = defaultCacheConfiguration();
-        lep = new LruEvictionPolicy();
-        lep.setBatchSize(10);
-        lep.setMaxMemorySize(125);
-        lep.setMaxSize(30);
-
-        cache2.setEvictionPolicy(lep);
-        cache2.setOnheapCacheEnabled(true);
-        cache2.setName("cache2");
-
-        cfg.setCacheConfiguration(cache1,cache2);
-
+        cfg.setCacheConfiguration(cache1, cache2);
         return cfg;
     }
 
@@ -89,6 +92,10 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 30);
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 125L);
+
+        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
+        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
+        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
     }
 
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
