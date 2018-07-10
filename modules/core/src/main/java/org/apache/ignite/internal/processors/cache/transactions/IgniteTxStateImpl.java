@@ -657,7 +657,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping = mapKeysToCaches(
             keysToUnlock, replacedTxMap);
 
-        tx.sendRollbackToSavepointMessages(tx, mapping);
+        tx.sendRollbackToSavepointMessages(mapping);
 
         tx.removeMappings(keysToUnlock);
     }

@@ -4429,13 +4429,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * @param tx Transaction.
      * @param mapping Mapping for requests.
      * @throws IgniteCheckedException If failed.
      */
-    public void sendRollbackToSavepointMessages(GridNearTxLocal tx,
-        Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping) throws IgniteCheckedException {
-        SavepointUnlockFuture fut = new SavepointUnlockFuture(tx);
+    public void sendRollbackToSavepointMessages(Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping)
+        throws IgniteCheckedException {
+        SavepointUnlockFuture fut = new SavepointUnlockFuture(this);
         Map<GridRollbackToSavepointRequest, Integer> unlockFuts = new HashMap<>();
 
         Map<ClusterNode, GridRollbackToSavepointRequest> reqs = createUnlockRequests(mapping, fut, unlockFuts);
@@ -4450,7 +4449,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         for (Map.Entry<ClusterNode, GridRollbackToSavepointRequest> e : reqs.entrySet())
             sendRollbackToSavepointRequest(e.getKey(), e.getValue(), fut);
 
-        awaitSavepointUnlockFuture(tx, fut, unlockFuts);
+        awaitSavepointUnlockFuture(fut, unlockFuts);
     }
 
     /**
@@ -4523,13 +4522,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * @param tx Transaction.
      * @param fut Savepoint unlock future.
      * @param unlockFuts Map for savepoint mini future ids.
      * @throws IgniteCheckedException If failed.
      */
     private void awaitSavepointUnlockFuture(
-        GridNearTxLocal tx,
         SavepointUnlockFuture fut,
         Map<GridRollbackToSavepointRequest, Integer> unlockFuts
     ) throws IgniteCheckedException {
@@ -4537,12 +4534,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (unlockFuts.isEmpty())
                 return;
 
-            long t = tx.remainingTime();
+            long t = remainingTime();
 
             if (t > 0)
                 fut.get(t);
             else {
-                if (tx.timedOut()) {
+                if (timedOut()) {
                     throw new IgniteTxTimeoutCheckedException("Transaction is timed out. " +
                         "Cache will not wait for savepoint unlock future.");
                 }
