@@ -242,11 +242,12 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
-     * @return {@code True} if demanded topology version changed or new dummy exchage occurs.
+     * @return {@code True} if demanded topology version changed or dummy exchage occurs
+     *         see {@link RebalanceReassignExchangeTask}.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
         return topVerToDemand.compareTo(fut.topVer) > 0 ||
-            fut != rebalanceFut; // RebalanceReassignExchangeTask occurs on the same topology version (dummy exchange).
+            fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
