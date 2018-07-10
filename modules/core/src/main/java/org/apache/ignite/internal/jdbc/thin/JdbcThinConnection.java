@@ -78,9 +78,6 @@ public class JdbcThinConnection implements Connection {
     /** Statements modification mutex. */
     final private Object stmtsMux = new Object();
 
-    /** Schema name. */
-    private String schema;
-
     /** Closed flag. */
     private boolean closed;
 
@@ -130,7 +127,9 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        schema = normalizeSchema(connProps.getSchema());
+        String normSchema = normalizeSchema(connProps.getSchema());
+
+        this.connProps.setSchema(normSchema);
 
         cliIo = new JdbcThinTcpIo(connProps);
 
@@ -197,7 +196,7 @@ public class JdbcThinConnection implements Connection {
                 }
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, sql, null));
+                    getSchema(), 1, 1, sql, null));
 
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
             }
@@ -236,7 +235,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, getSchema());
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -269,7 +268,7 @@ public class JdbcThinConnection implements Connection {
         if (sql == null)
             throw new SQLException("SQL string cannot be null.");
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, getSchema());
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -674,14 +673,14 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        this.schema = normalizeSchema(schema);
+        connProps.setSchema(normalizeSchema(schema));
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
         ensureNotClosed();
 
-        return schema;
+        return connProps.getSchema();
     }
 
     /** {@inheritDoc} */
@@ -824,14 +823,18 @@ public class JdbcThinConnection implements Connection {
      * @param schemaName Schema name.
      * @return Normalized schema name.
      */
-    private static String normalizeSchema(String schemaName) {
+    private static String normalizeSchema(String schemaName) throws SQLException{
         if (F.isEmpty(schemaName))
             return QueryUtils.DFLT_SCHEMA;
 
         String res;
 
-        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
+        if (schemaName.startsWith("\"") && schemaName.endsWith("\"")) {
             res = schemaName.substring(1, schemaName.length() - 1);
+
+            if (res.isEmpty())
+                throw new SQLException("Schema cannot be empty sql identifier (\"\")");
+        }
         else
             res = schemaName.toUpperCase();
 
@@ -927,7 +930,7 @@ public class JdbcThinConnection implements Connection {
                 respSem.acquire();
 
                 sendRequestNotWaitResponse(
-                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order));
+                    new JdbcOrderedBatchExecuteRequest(getSchema(), streamBatch, lastBatch, order));
 
                 streamBatch = null;
 
