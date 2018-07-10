@@ -19,7 +19,6 @@ package org.apache.ignite.ml.environment.logging;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.environment.logging.formatter.ModelFormatter;
 import org.apache.ignite.ml.math.Vector;
 
 /**
@@ -41,7 +40,7 @@ public interface MLLogger extends Serializable {
     public Vector log(Vector vector);
 
     /**
-     * Log model according to {@link ModelFormatter}.
+     * Log model according to toString method.
      *
      * @param verboseLevel Verbose level.
      * @param mdl Model.

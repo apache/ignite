@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.environment.logging.formatter.MLFormatters;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 
@@ -59,7 +58,7 @@ public class ConsoleLogger implements MLLogger {
 
     /** {@inheritDoc} */
     @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
-        print(verboseLevel, MLFormatters.getInstance().format(mdl));
+        print(verboseLevel, mdl.toString());
         return mdl;
     }
 
