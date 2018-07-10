@@ -27,8 +27,12 @@ def hashcode(string: str) -> int:
     """
     result = 0
     for char in string:
+        try:
+            char = ord(char)
+        except TypeError:
+            pass
         result = int(
-            (((31 * result + ord(char)) ^ 0x80000000) & 0xFFFFFFFF)
+            (((31 * result + char) ^ 0x80000000) & 0xFFFFFFFF)
             - 0x80000000
         )
     return result

@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
 from decimal import Decimal
 
 from pyignite.api import (
     hashcode, sql_fields, cache_create, scan, cache_create_with_config,
     cache_get_configuration, put_binary_type, get_binary_type,
+    cache_put, cache_destroy,
 )
 from pyignite.datatypes.complex import BinaryObject
 from pyignite.datatypes.primitive_objects import BoolObject, IntObject
@@ -51,6 +53,10 @@ insert_query = '''
 INSERT INTO {} (
   test_pk, test_decimal, test_int, test_str
 ) VALUES (?, ?, ?, ?)'''.format(table_sql_name)
+
+select_query = '''
+SELECT (test_pk, test_int) FROM {}
+'''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
 
@@ -113,10 +119,8 @@ def test_sql_read_as_binary(conn):
 
 
 def test_sql_write_as_binary(conn):
-    cache_create(conn, scheme_name)
 
     # configure cache as an SQL table
-
     type_name = 'ALLDATATYPE_CONTAINER'
 
     result = cache_create_with_config(conn, {
@@ -125,61 +129,61 @@ def test_sql_write_as_binary(conn):
         PROP_QUERY_ENTITIES: [
             {
                 'table_name': table_sql_name.upper(),
-                'key_field_name': 'TEST_PK',
+                'key_field_name': 'test_pk',
                 'key_type_name': 'java.lang.Integer',
                 'field_name_aliases': [
                     {
-                        'alias': 'TEST_PK',
-                        'field_name': 'TEST_PK',
+                        'alias': 'test_pk',
+                        'field_name': 'test_pk',
                     },
                     {
-                        'alias': 'TEST_STR',
-                        'field_name': 'TEST_STR',
+                        'alias': 'test_str',
+                        'field_name': 'test_str',
                     },
                     {
-                        'alias': 'TEST_BOOL',
-                        'field_name': 'TEST_BOOL',
+                        'alias': 'test_bool',
+                        'field_name': 'test_bool',
                     },
                     {
-                        'alias': 'TEST_INT',
-                        'field_name': 'TEST_INT',
+                        'alias': 'test_int',
+                        'field_name': 'test_int',
                     },
                     {
-                        'alias': 'TEST_DECIMAL',
-                        'field_name': 'TEST_DECIMAL',
+                        'alias': 'test_decimal',
+                        'field_name': 'test_decimal',
                     },
                 ],
                 'query_fields': [
                     {
-                        'name': 'TEST_PK',
+                        'name': 'test_pk',
                         'type_name': 'java.lang.Integer',
                         'is_key_field': True,
                         'is_notnull_constraint_field': True,
                         'default_value': None,
                     },
                     {
-                        'name': 'TEST_BOOL',
+                        'name': 'test_bool',
                         'type_name': 'java.lang.Boolean',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': True,
                     },
                     {
-                        'name': 'TEST_INT',
+                        'name': 'test_int',
                         'type_name': 'java.lang.Integer',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
                     },
                     {
-                        'name': 'TEST_DECIMAL',
+                        'name': 'test_decimal',
                         'type_name': 'java.math.BigDecimal',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
                     },
                     {
-                        'name': 'TEST_STR',
+                        'name': 'test_str',
                         'type_name': 'java.lang.String',
                         'is_key_field': False,
                         'is_notnull_constraint_field': True,
@@ -198,16 +202,48 @@ def test_sql_write_as_binary(conn):
     assert result.status == 0, result.message
 
     # register binary type
-
-    result = put_binary_type(conn, type_name, schema_id=42, schema={
-        'test_bool': BoolObject,
-        'test_int': IntObject,
-        'test_decimal': DecimalObject,
-        'test_str': String,
-    })
+    result = put_binary_type(
+        conn, type_name, schema_id=42,
+        schema=OrderedDict([
+            ('test_bool', BoolObject),
+            ('test_int', IntObject),
+            ('test_decimal', DecimalObject),
+            ('test_str', String),
+        ])
+    )
     assert result.status == 0, result.message
 
     sql_type_id = result.value['type_id']
 
+    # recheck
     result = get_binary_type(conn, sql_type_id)
+    assert result.status == 0, result.message
+
+    # insert row as k-v
+    result = cache_put(
+        conn,
+        table_hash_code,
+        key=1,
+        key_hint=IntObject,
+        value={
+            'version': 1,
+            'type_id': sql_type_id,
+            'schema_id': 42,
+            'fields': OrderedDict([
+                ('test_bool', False),
+                ('test_int', (89, IntObject)),
+                ('test_decimal', Decimal('5.67')),
+                ('test_str', 'This is a test string'),
+            ]),
+        },
+        value_hint=BinaryObject,
+    )
+    assert result.status == 0, result.message
+
+    # read row as SQL
+    result = sql_fields(conn, table_hash_code, select_query, 100, include_field_names=True)
+    assert result.status == 0, result.message
+
+    # cleanup
+    result = cache_destroy(conn, table_hash_code)
     assert result.status == 0, result.message

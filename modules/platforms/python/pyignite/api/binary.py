@@ -130,7 +130,7 @@ def put_binary_type(
         schema_id = randint(MIN_INT, MAX_INT)
     type_id = hashcode(type_name)
     data = {
-        'type_name': type_name.upper(),
+        'type_name': type_name,
         'type_id': type_id,
         'affinity_key_field': affinity_key_field,
         'binary_fields': [],
@@ -149,7 +149,7 @@ def put_binary_type(
         for field_name, data_type in schema.items():
             # TODO: check for allowed data types
             data['binary_fields'].append({
-                'field_name': field_name.upper(),
+                'field_name': field_name,
                 'type_id': int.from_bytes(
                     data_type.type_code,
                     byteorder=PROTOCOL_BYTE_ORDER
@@ -172,7 +172,7 @@ def put_binary_type(
             ('is_enum', Bool),
             ('enums', enum_struct),
             ('schema', schema_struct),
-        ])
+        ], query_id=query_id)
     else:
         query_struct = PutBinaryTypeQuery([
             ('type_id', Int),
@@ -181,7 +181,7 @@ def put_binary_type(
             ('binary_fields', binary_fields_struct),
             ('is_enum', Bool),
             ('schema', schema_struct),
-        ])
+        ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python(data)
 

@@ -148,7 +148,7 @@ class AnyDataObject:
         return data_class.to_python(ctype_object)
 
     @classmethod
-    def from_python(cls, value):
+    def map_python_type(cls, value):
         python_map = {
             int: LongObject,
             float: DoubleObject,
@@ -180,7 +180,7 @@ class AnyDataObject:
         if is_iterable(value) and value_type is not str:
             value_subtype = cls.get_subtype(value)
             if value_subtype in python_array_map:
-                return python_array_map[value_subtype].from_python(value)
+                return python_array_map[value_subtype]
 
             # a little heuristics (order may be important)
             if all([
@@ -189,7 +189,7 @@ class AnyDataObject:
                 isinstance(value[0], int),
                 isinstance(value[1], dict),
             ]):
-                return MapObject.from_python(value)
+                return MapObject
 
             if all([
                 value_subtype is None,
@@ -197,17 +197,21 @@ class AnyDataObject:
                 isinstance(value[0], int),
                 is_iterable(value[1]),
             ]):
-                return ObjectArrayObject.from_python(value)
+                return ObjectArrayObject
 
             raise TypeError(
                 'Type `array of {}` is invalid'.format(value_subtype)
             )
 
         if value_type in python_map:
-            return python_map[value_type].from_python(value)
+            return python_map[value_type]
         raise TypeError(
             'Type `{}` is invalid.'.format(value_type)
         )
+
+    @classmethod
+    def from_python(cls, value):
+        return cls.map_python_type(value).from_python(value)
 
 
 @attr.s
@@ -413,16 +417,7 @@ class WrappedDataObject:
 
     @classmethod
     def from_python(cls, value):
-        payload, offset = value
-        header_class = cls.build_header()
-        header = header_class()
-        header.type_code = int.from_bytes(
-            cls.type_code,
-            byteorder=PROTOCOL_BYTE_ORDER
-        )
-        length = len(value)
-        header.length = length
-        return bytes(header) + payload + Int.from_python(offset)
+        raise ParseError('Send unwrapped data.')
 
 
 class CollectionObject(ObjectArrayObject):
@@ -675,7 +670,7 @@ class BinaryObject:
 
     @classmethod
     def from_python(cls, value: dict):
-        from pyignite.datatypes.cache_config import Struct
+        from pyignite.api import hashcode
 
         # prepare header
         header_class = cls.build_header()
@@ -688,31 +683,34 @@ class BinaryObject:
         header.flags = cls.USER_TYPE | cls.HAS_SCHEMA | cls.COMPACT_FOOTER
         header.version = value['version']
         header.type_id = value['type_id']
-        header.hash_code = value['hash_code']
         header.schema_id = value['schema_id']
         # create fields
         field_data = {}
         field_types = []
-        offsets = []
         for field_name, field_value_or_pair in value['fields'].items():
-            field_name = field_name.upper()
+            # field_name = field_name.upper()
 
             if is_hinted(field_value_or_pair):
                 field_value, field_type = field_value_or_pair
             else:
                 field_value = field_value_or_pair
-                field_type = AnyDataObject
+                field_type = AnyDataObject.map_python_type(field_value)
 
             field_data[field_name] = field_value
             field_types.append((field_name, field_type))
 
-        field_struct = Struct(field_types)
-        field_buffer, field_data_class = field_struct.from_python(field_data)
-        # calculate offsets & create footer
-        for _, field_c_type in field_data_class._fields_:
-            offsets.append(
-                max(offsets, default=0) + ctypes.sizeof(field_c_type)
-            )
+        # create fields and calculate offsets
+        field_buffer = b''
+        offsets = [ctypes.sizeof(header_class)]
+        for field_name, field_type in field_types:
+            partial_buffer = field_type.from_python(field_data[field_name])
+            offsets.append(max(offsets) + len(partial_buffer))
+            field_buffer += partial_buffer
+
+        offsets = offsets[:-1]
+
+        # create footer
+
         if max(offsets, default=0) < 255:
             header.flags |= cls.OFFSET_ONE_BYTE
         elif max(offsets) < 65535:
@@ -721,8 +719,9 @@ class BinaryObject:
         schema = schema_class()
         for i, offset in enumerate(offsets):
             schema[i] = offset
-        # calculate size
+        # calculate size and hash code
         header.schema_offset = ctypes.sizeof(header_class) + len(field_buffer)
         header.length = header.schema_offset + ctypes.sizeof(schema_class)
+        header.hash_code = hashcode(field_buffer + bytes(schema))
 
         return bytes(header) + field_buffer + bytes(schema)
