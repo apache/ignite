@@ -314,9 +314,11 @@ public class GridDhtPartitionDemander {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assignments);
 
+        boolean forceReb = force && forcedRebFut != null;
+
         long delay = grp.config().getRebalanceDelay();
 
-        if ((delay == 0 || force) && assignments != null) {
+        if ((delay == 0 || forceReb) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
             final AffinityTopologyVersion topVer = assignments.topologyVersion();
@@ -387,7 +389,7 @@ public class GridDhtPartitionDemander {
 
             if (assignments.isEmpty()) { // Nothing to rebalance.
                 U.log(log, "Rebalancing skipped (empty assignments) [grp=" + grp.cacheOrGroupName() +
-                    ", mode=" + grp.config().getRebalanceMode() + ", forced=" + force +
+                    ", mode=" + grp.config().getRebalanceMode() + ", force=" + force +
                     ", lastTopVer=" + oldFut.topologyVersion() +
                     ", rebalanceId=" + oldFut.rebalanceId + ']');
 

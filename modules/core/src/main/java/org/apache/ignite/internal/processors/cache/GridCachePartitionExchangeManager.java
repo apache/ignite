@@ -2437,6 +2437,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     boolean pendingExchange = false;
 
+                    boolean forceRebalance = false;
+
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
@@ -2451,6 +2453,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchId = ((RebalanceReassignExchangeTask) task).exchangeId();
                         }
                         else if (task instanceof ForceRebalanceExchangeTask) {
+                            forceRebalance = true;
+
                             timeout = 0; // Force refresh.
 
                             exchId = ((ForceRebalanceExchangeTask)task).exchangeId();
@@ -2563,7 +2567,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || exchFut == null) && !disableRebalance) {
+                                if ((delay == 0 || forceRebalance) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
                                     if (assigns != null && assigns.cancelled())
@@ -2641,7 +2645,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing started [order=" + rebList +
-                                ", top=" + resVer + ", forced=" + (exchFut == null) +
+                                ", top=" + resVer + ", forceRebalance=" + forceRebalance +
                                 ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
 
