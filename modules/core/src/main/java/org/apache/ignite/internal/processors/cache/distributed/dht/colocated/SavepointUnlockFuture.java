@@ -334,8 +334,7 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
     }
 
     /**
-     * Mini-future for get operations. Mini-futures are only waiting on a single
-     * node as opposed to multiple nodes.
+     * Mini-futures are only waiting on a single node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
