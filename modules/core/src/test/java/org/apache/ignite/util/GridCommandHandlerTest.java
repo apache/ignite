@@ -921,6 +921,66 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that idle verify print partitions info.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDump() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        injectTestSystemOut();
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+
+        assertTrue(testOut.toString().contains("found " + parts + " partitions"));
+    }
+
+    /**
+     * Tests that idle verify print partitions info.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDumpForCorruptedData() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        injectTestSystemOut();
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
+
+        corruptDataEntry(cacheCtx, 1, true, false);
+
+        corruptDataEntry(cacheCtx, 1 + parts / 2, false, true);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+
+        assertTrue(testOut.toString().contains("found " + parts + " partitions"));
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testCacheIdleVerifyMovingParts() throws Exception {

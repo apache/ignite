@@ -55,6 +55,9 @@ public class CacheArguments {
     /** Cache view command. */
     private @Nullable VisorViewCacheCmd cacheCmd;
 
+    /** Calculate partition hash and print into standard output. */
+    private boolean dump;
+
     /**
      * @return Command.
      */
@@ -193,5 +196,19 @@ public class CacheArguments {
      */
     public void checkThrough(int checkThrough) {
         this.checkThrough = checkThrough;
+    }
+
+    /**
+     * @return Calculate partition hash and print into standard output.
+     */
+    public boolean dump() {
+        return dump;
+    }
+
+    /**
+     * @param dump Calculate partition hash and print into standard output.
+     */
+    public void dump(boolean dump) {
+        this.dump = dump;
     }
 }
