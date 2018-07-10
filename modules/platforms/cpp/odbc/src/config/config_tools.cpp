@@ -17,10 +17,13 @@
 
 #include <cctype>
 #include <algorithm>
+#include <sstream>
 
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/config/config_tools.h"
-#include "ignite/odbc/config/configuration.h"
+#include <ignite/common/utils.h>
+
+#include <ignite/odbc/utility.h>
+#include <ignite/odbc/config/config_tools.h>
+#include <ignite/odbc/config/configuration.h>
 
 namespace ignite
 {
@@ -69,7 +72,7 @@ namespace ignite
                     const char* addrBegin = parsedAddr.data() + addrBeginPos;
                     const char* addrEnd = parsedAddr.data() + parsedAddr.size();
 
-                    std::string addr = utility::RemoveSurroundingSpaces(addrBegin, addrEnd);
+                    std::string addr = common::StripSurroundingWhitespaces(addrBegin, addrEnd);
 
                     if (!addr.empty())
                     {
@@ -198,7 +201,7 @@ namespace ignite
 
             uint16_t ParsePort(const std::string& value, diagnostic::DiagnosticRecordStorage* diag)
             {
-                std::string port = utility::RemoveSurroundingSpaces(value.begin(), value.end());
+                std::string port = common::StripSurroundingWhitespaces(value.begin(), value.end());
 
                 if (!common::AllOf(port.begin(), port.end(), &isdigit))
                 {
