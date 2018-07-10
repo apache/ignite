@@ -33,12 +33,15 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
@@ -112,9 +115,28 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests applying updates from compacted WAL archive.
+     *
      * @throws Exception If failed.
      */
-    public void testApplyingUpdatesFromCompactedWal() throws Exception {
+    public void testApplyinUpdatesFromCompactedWal() throws Exception {
+        testApplyingUpdatesFromCompactedWal(false);
+    }
+
+    /**
+     * Tests applying updates from compacted WAL archive when compressor is disabled.
+     *
+     * @throws Exception If failed.
+     */
+    public void testApplyinUpdatesFromCompactedWalWhenCompressorDisabled() throws Exception {
+        testApplyingUpdatesFromCompactedWal(true);
+    }
+
+    /**
+     * @param switchOffCompressor Switch off compressor after restart.
+     * @throws Exception If failed.
+     */
+    private void testApplyingUpdatesFromCompactedWal(boolean switchOffCompressor) throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
@@ -171,6 +193,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         for (File f : lfsFiles)
             f.delete();
+
+        compactionEnabled = !switchOffCompressor;
 
         ig = (IgniteEx)startGrids(3);
 

@@ -3025,7 +3025,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             @NotNull AbstractFileDescriptor desc,
             @Nullable FileWALPointer start
         ) throws IgniteCheckedException, FileNotFoundException {
-            if (decompressor != null && !desc.file().exists()) {
+            AbstractFileDescriptor currDesc = desc;
+
+            if (!desc.file().exists()) {
                 FileDescriptor zipFile = new FileDescriptor(
                     new File(walArchiveDir, FileDescriptor.fileName(desc.idx()) + ".zip"));
 
@@ -3034,10 +3036,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "[segmentIdx=" + desc.idx() + "]");
                 }
 
-                decompressor.decompressFile(desc.idx()).get();
+                if (decompressor != null)
+                    decompressor.decompressFile(desc.idx()).get();
+                else
+                    currDesc = zipFile;
             }
 
-            return (ReadFileHandle) super.initReadHandle(desc, start);
+            return (ReadFileHandle) super.initReadHandle(currDesc, start);
         }
 
         /** {@inheritDoc} */
