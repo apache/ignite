@@ -54,7 +54,7 @@ public class GDBTrainerTest {
         DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0);
         Model<Vector, Double> model = trainer.fit(
             learningSample, 1,
-            (k, v) -> new double[] {v[0]},
+            (k, v) -> VectorUtils.of(v[0]),
             (k, v) -> v[1]
         );
 
@@ -95,7 +95,7 @@ public class GDBTrainerTest {
         DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0);
         Model<Vector, Double> model = trainer.fit(
             learningSample, 1,
-            (k, v) -> new double[] {v[0]},
+            (k, v) -> VectorUtils.of(v[0]),
             (k, v) -> v[1]
         );
 
