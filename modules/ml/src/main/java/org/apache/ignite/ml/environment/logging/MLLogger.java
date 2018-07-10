@@ -36,10 +36,9 @@ public interface MLLogger extends Serializable {
     /**
      * Log vector.
      *
-     * @param verboseLevel Verbose level.
      * @param vector Vector.
      */
-    public Vector log(VerboseLevel verboseLevel, Vector vector);
+    public Vector log(Vector vector);
 
     /**
      * Log model according to {@link ModelFormatter}.

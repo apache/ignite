@@ -20,6 +20,7 @@ package org.apache.ignite.ml.environment.logging;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.environment.logging.formatter.MLFormatters;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 
 /**
@@ -48,8 +49,8 @@ public class OnIgniteMLLogger implements MLLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
-        log(verboseLevel, MLFormatters.getInstance().format(vector));
+    @Override public Vector log(Vector vector) {
+        Tracer.showAscii(vector, logger);
         return vector;
     }
 

@@ -17,14 +17,9 @@
 
 package org.apache.ignite.ml.environment.logging.formatter;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * Encapsulates collection of Vector and Model MLFormatters.
@@ -37,17 +32,6 @@ public class MLFormatters {
     private Map<Class, ModelFormatter> formatters = new ConcurrentHashMap<>();
     /** Model Formatter Stub. */
     private ModelFormatter stub = new ModelFormatterStub();
-    /** Vector formatter. */
-    private AtomicReference<IgniteFunction<Vector, String>> vectorFormatter = new AtomicReference<>();
-
-    /**
-     * Register vector formatter.
-     *
-     * @param vectorFormatter Vector formatter.
-     */
-    public void registerFormatter(IgniteFunction<Vector, String> vectorFormatter) {
-        this.vectorFormatter.set(vectorFormatter);
-    }
 
     /**
      * Register model formatter.
@@ -69,34 +53,10 @@ public class MLFormatters {
     }
 
     /**
-     * Format vector to string.
-     *
-     * @param vector Vector.
-     */
-    public String format(Vector vector) {
-        IgniteFunction<Vector, java.lang.String> formatter = vectorFormatter.get();
-        if(formatter == null)
-            return defaultFormatting(vector);
-        else
-            return formatter.apply(vector);
-    }
-
-    /**
      * Returns an instance of MLFormatters.
      */
     public static MLFormatters getInstance() {
         return INSTANCE;
-    }
-
-    /**
-     * Default vector formatting.
-     *
-     * @param vector Vector.
-     */
-    private static String defaultFormatting(Vector vector) {
-        return Arrays.stream(vector.getStorage().data())
-            .mapToObj(String::valueOf)
-            .collect(Collectors.joining(","));
     }
 
     /**

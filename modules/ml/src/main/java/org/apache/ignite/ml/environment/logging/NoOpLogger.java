@@ -35,7 +35,7 @@ public class NoOpLogger implements MLLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector log(VerboseLevel verboseLevel, Vector vector) {
+    @Override public Vector log(Vector vector) {
         return vector;
     }
 
