@@ -66,12 +66,10 @@ public interface ResultSetEnlistFuture extends DhtLockFuture<Long> {
         MvccSnapshot mvccSnapshot, long threadId, IgniteUuid nearFutId, int nearMiniId, @Nullable int[] parts,
         GridDhtTxLocalAdapter tx, long timeout, GridCacheContext<?, ?> cctx, ResultSet rs) {
 
-        if (cctx.isReplicated()) {
+        if (tx.near())
             return new NearResultSetEnlistFuture(nearNodeId, nearLockVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
-        }
-        else {
+        else
             return new DhtResultSetEnlistFuture(nearNodeId, nearLockVer, mvccSnapshot, threadId, nearFutId, nearMiniId, parts, tx, timeout, cctx, rs);
-        }
     }
 
     /**
