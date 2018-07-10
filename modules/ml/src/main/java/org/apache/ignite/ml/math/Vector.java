@@ -505,4 +505,13 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param f Function used for replacing.
      **/
     public void compute(int i, IgniteIntDoubleToDoubleBiFunction f);
+
+
+    /**
+     * Returns array of doubles corresponds to vector components.
+     * @return Array of doubles.
+     */
+    public default double[] asArray() {
+        return getStorage().data();
+    }
 }
