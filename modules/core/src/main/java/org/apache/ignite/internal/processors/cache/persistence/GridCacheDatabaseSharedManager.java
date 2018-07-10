@@ -3106,7 +3106,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     chp.cpPages.innerCollection(i),
                                     updStores,
                                     doneWriteFut,
-                                    totalPagesToWriteCnt
+                                    totalPagesToWriteCnt,
+                                    asyncRunner
                                 );
 
                                 try {
@@ -3120,11 +3121,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         else {
                             // Single-threaded checkpoint.
-                            Runnable write = new WriteCheckpointPages(tracker,
+                            Runnable write = new WriteCheckpointPages(
+                                tracker,
                                 chp.cpPages,
                                 updStores,
                                 doneWriteFut,
-                                totalPagesToWriteCnt);
+                                totalPagesToWriteCnt,
+                                null);
 
                             write.run();
                         }
@@ -3734,14 +3737,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int cpThreads = persistenceCfg.getCheckpointThreads();
 
-        Collection[] pagesSubListArr = new Collection[cpThreads];
+        int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
+        // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
 
-        for (int i = 0; i < cpThreads; i++) {
+        Collection[] pagesSubListArr = new Collection[pagesSubLists];
+
+        for (int i = 0; i < pagesSubLists; i++) {
             int totalSize = cpPagesList.size();
 
-            int from = totalSize * i / (cpThreads);
+            int from = totalSize * i / (pagesSubLists);
 
-            int to = totalSize * (i + 1) / (cpThreads);
+            int to = totalSize * (i + 1) / (pagesSubLists);
 
             pagesSubListArr[i] = cpPagesList.subList(from, to);
         }
@@ -3752,40 +3758,45 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Pages write task */
     private class WriteCheckpointPages implements Runnable {
         /** */
-        private CheckpointMetricsTracker tracker;
+        private final CheckpointMetricsTracker tracker;
 
         /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection */
-        private Collection<FullPageId> writePageIds;
+        private final Collection<FullPageId> writePageIds;
 
         /** */
-        private ConcurrentLinkedHashMap<PageStore, LongAdder> updStores;
+        private final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores;
 
         /** */
-        private CountDownFuture doneFut;
+        private final CountDownFuture doneFut;
 
         /** Total pages to write, counter may be greater than {@link #writePageIds} size */
         private final int totalPagesToWrite;
 
+        /** If any pages were skipped, new task with remaining pages will be submitted here. */
+        private final ExecutorService retryWriteExecutor;
+
         /**
-         * Creates task for write pages
-         *
-         * @param tracker
-         * @param writePageIds Collection of page IDs to write.
-         * @param updStores
-         * @param doneFut
-         * @param totalPagesToWrite total pages to be written under this checkpoint
+         * @param tracker Tracker.
+         * @param writePageIds Write page ids.
+         * @param updStores Upd stores.
+         * @param doneFut Done future.
+         * @param totalPagesToWrite Total pages to write.
+         * @param retryWriteExecutor Retry write executor.
          */
         private WriteCheckpointPages(
             final CheckpointMetricsTracker tracker,
             final Collection<FullPageId> writePageIds,
             final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
             final CountDownFuture doneFut,
-            final int totalPagesToWrite) {
+            final int totalPagesToWrite,
+            final ExecutorService retryWriteExecutor
+        ) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
             this.totalPagesToWrite = totalPagesToWrite;
+            this.retryWriteExecutor = retryWriteExecutor;
         }
 
         /** {@inheritDoc} */
@@ -3795,18 +3806,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Collection<FullPageId> writePageIds = this.writePageIds;
 
             try {
-                while (true) {
-                    List<FullPageId> pagesToRetry = new ArrayList<>();
+                List<FullPageId> pagesToRetry = writePages(writePageIds);
 
-                    writePages(writePageIds, pagesToRetry);
+                if (pagesToRetry.isEmpty())
+                    doneFut.onDone((Void)null);
+                else {
+                    if (retryWriteExecutor == null) {
+                        while (!pagesToRetry.isEmpty())
+                            pagesToRetry = writePages(pagesToRetry);
 
-                    if (pagesToRetry.isEmpty())
-                        break;
+                        doneFut.onDone((Void)null);
+                    }
+                    else {
+                        // Submit current retry pages to the end of the queue to avoid starvation.
+                        WriteCheckpointPages retryWritesTask = new WriteCheckpointPages(
+                            tracker, pagesToRetry, updStores, doneFut, totalPagesToWrite, retryWriteExecutor);
 
-                    writePageIds = pagesToRetry;
+                        retryWriteExecutor.submit(retryWritesTask);
+                    }
                 }
-
-                doneFut.onDone((Void)null);
             }
             catch (Throwable e) {
                 doneFut.onDone(e);
@@ -3815,12 +3833,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /**
          * @param writePageIds Collections of pages to write.
-         * @param pagesToRetry Accumulator of pages which should be retried.
+         * @return pagesToRetry Pages which should be retried.
          */
-        private void writePages(Collection<FullPageId> writePageIds, List<FullPageId> pagesToRetry) throws IgniteCheckedException {
+        private List<FullPageId> writePages(Collection<FullPageId> writePageIds) throws IgniteCheckedException {
             ByteBuffer tmpWriteBuf = threadBuf.get();
 
             long writeAddr = GridUnsafe.bufferAddress(tmpWriteBuf);
+
+            List<FullPageId> pagesToRetry = new ArrayList<>();
 
             for (FullPageId fullId : writePageIds) {
                 if (checkpointer.shutdownNow)
@@ -3888,6 +3908,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
                 }
             }
+
+            return pagesToRetry;
         }
     }
 

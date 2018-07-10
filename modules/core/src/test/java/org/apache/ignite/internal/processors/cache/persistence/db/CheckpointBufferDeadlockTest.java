@@ -89,6 +89,9 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /** Slop load flag. */
     private static final AtomicBoolean stop = new AtomicBoolean(false);
 
+    /** Checkpoint threads. */
+    private int checkpointThreads;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -98,6 +101,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setFileIOFactory(new SlowCheckpointFileIOFactory())
+                .setCheckpointThreads(checkpointThreads)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
@@ -136,7 +140,25 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void test() throws Exception {
+    public void testFourCheckpointThreads() throws Exception {
+        checkpointThreads = 4;
+
+        runDeadlockScenario();
+    }
+
+    /**
+     *
+     */
+    public void testOneCheckpointThread() throws Exception {
+        checkpointThreads = 1;
+
+        runDeadlockScenario();
+    }
+
+    /**
+     *
+     */
+    private void runDeadlockScenario() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
@@ -201,7 +223,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                         List<FullPageId> pickedPages = new ArrayList<>(pickedPagesSet);
 
-                        assert pickedPages.size() == PAGES_TOUCHED_UNDER_CP_LOCK;
+                        assertEquals(PAGES_TOUCHED_UNDER_CP_LOCK, pickedPages.size());
 
                         // Sort to avoid deadlocks on pages rw-locks.
                         pickedPages.sort(new Comparator<FullPageId>() {
@@ -225,7 +247,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                             long abs = pageMem.readLock(fpid.groupId(), fpid.pageId(), page);
 
-                            assert abs != 0 : fpid;
+                            assertFalse(fpid.toString(), abs == 0);
 
                             readLockedPages.add(page);
                         }
@@ -238,7 +260,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                             long abs = pageMem.writeLock(fpid.groupId(), fpid.pageId(), page);
 
-                            assert abs != 0 : fpid;
+                            assertFalse(fpid.toString(), abs == 0);
 
                             pageMem.writeUnlock(fpid.groupId(), fpid.pageId(), page, null, true);
 
@@ -299,24 +321,29 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
             return new FileIODecorator(delegate) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
+                    parkIfNeeded();
 
                     return delegate.write(srcBuf);
                 }
 
                 @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
+                    parkIfNeeded();
 
                     return delegate.write(srcBuf, position);
                 }
 
                 @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
+                    parkIfNeeded();
 
                     return delegate.write(buf, off, len);
+                }
+
+                /**
+                 * Parks current checkpoint thread if slow mode is enabled.
+                 */
+                private void parkIfNeeded() {
+                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
                 }
 
                 /** {@inheritDoc} */
