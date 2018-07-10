@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheRebalancingWithConcurrentProcessingTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
@@ -82,6 +83,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
         suite.addTestSuite(CacheManualRebalancingTest.class);
+        suite.addTestSuite(CacheRebalancingWithConcurrentProcessingTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
