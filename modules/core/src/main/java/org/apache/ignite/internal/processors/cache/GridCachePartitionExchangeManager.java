@@ -1579,8 +1579,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             "Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
                             "or start clients in  smaller batches. " +
                             "InitVer=[" + initVer + "], " +
-                            "readyVer=[" + readyVer + "]." +
-                            " "
+                            "readyVer=[" + readyVer + "]."
                         );
 
                         exchFut.forceClientReconnect(node, msg);
