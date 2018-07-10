@@ -19,7 +19,6 @@ package org.apache.ignite.examples.stockengine.approach1;
 
 import org.apache.ignite.examples.stockengine.QuoteProvider;
 import org.apache.ignite.examples.stockengine.domain.Instrument;
-import org.apache.ignite.examples.stockengine.domain.OptionType;
 import org.apache.ignite.examples.stockengine.domain.Order;
 import org.apache.ignite.examples.stockengine.domain.Quote;
 
@@ -39,25 +38,6 @@ public abstract class NaiveEngine {
         }
     });
 
-    protected ConcurrentSkipListSet<Order> buyTouchOptionExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
-        @Override
-        public int compare(Order o1, Order o2) {
-            double d = o1.getPrice() - o2.getPrice();
-
-            return d > 0 ? 1 : d == 0 ? 0 : -1;
-        }
-    });
-
-    /** Sell one touch expiration. */
-    protected ConcurrentSkipListSet<Order> sellTouchOptionsExpiration = new ConcurrentSkipListSet<Order>(new Comparator<Order>() {
-        @Override
-        public int compare(Order o1, Order o2) {
-            double d = o2.getPrice() - o1.getPrice();
-
-            return d > 0 ? 1 : d == 0 ? 0 : -1;
-        }
-    });
-
     /** Quotes queue. */
     protected final BlockingQueue<Quote> quotes = new ArrayBlockingQueue<>(10000);
 
@@ -71,21 +51,7 @@ public abstract class NaiveEngine {
      * @param order Order.
      */
     public void addOrder(Order order) {
-        assert order != null && order.getType() != null : order;
-
-        if (order.getType() == OptionType.ONE_TOUCH || order.getType() == OptionType.NO_TOUCH) {
-            switch (order.getSide()) {
-                case SELL:
-                    sellTouchOptionsExpiration.add(order);
-
-                    break;
-
-                case BUY:
-                    buyTouchOptionExpiration.add(order);
-
-                    break;
-            }
-        }
+        assert order != null;
 
         timeBasedExpirationOptions.add(order);
     }
@@ -116,9 +82,6 @@ public abstract class NaiveEngine {
                     while (!stopped.get()) {
                         Quote poll = quotes.poll(200, TimeUnit.MILLISECONDS);
 
-                        if (poll != null)
-                            while (handleSellOrders(poll) | handleBuyOrders(poll));
-
                         if (poll == null)
                             poll = lastQuote; //get historical quote
 
@@ -127,7 +90,7 @@ public abstract class NaiveEngine {
 
                         lastQuote = poll;
 
-                        while (handleAnyOrder(poll));
+                        while (handleTimeBasedOrder(poll));
                     }
                 } catch (InterruptedException e) {
                     // Some exception hangling.
@@ -148,94 +111,26 @@ public abstract class NaiveEngine {
     /**
      * @param quote New quote to process.
      */
-    private boolean handleAnyOrder(Quote quote) {
+    private boolean handleTimeBasedOrder(Quote quote) {
         if (timeBasedExpirationOptions.isEmpty())
             return false;
 
         Order first = timeBasedExpirationOptions.first();
 
         if (quote.getQuoteTime() >= first.getExpirationDate()) {
-            switch (first.getType()) {
-                case NO_TOUCH:
-                    executeOrder(first, true);
+            double orderPrice = first.getPrice();
+
+            switch (first.getSide()) {
+                case BUY:
+                    executeOrder(first, orderPrice > quote.getAsk());
 
                     break;
 
-                case ONE_TOUCH:
-                    executeOrder(first, false);
-
-                    break;
-
-                case SIMPLE:
-                    double orderPrice = first.getPrice();
-
-                    switch (first.getSide()) {
-                        case BUY:
-                            executeOrder(first, orderPrice > quote.getAsk());
-
-                            break;
-
-                        case SELL:
-                            executeOrder(first, orderPrice < quote.getBid());
-
-                            break;
-                    }
+                case SELL:
+                    executeOrder(first, orderPrice < quote.getBid());
 
                     break;
             }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean handleBuyOrders(Quote poll) {
-        if (buyTouchOptionExpiration.isEmpty())
-            return false;
-
-        Order first = buyTouchOptionExpiration.first();
-
-        double orderPrice = first.getPrice();
-
-        double offerPrice = poll.getAsk();
-
-        if (first.getType() == OptionType.ONE_TOUCH) {
-            if (orderPrice >= offerPrice) {
-                executeOrder(first, true);
-
-                return true;
-            }
-
-        } //NO_TOUCH
-        else if (orderPrice <= offerPrice) {
-            executeOrder(first, false);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean handleSellOrders(Quote poll) {
-        if (sellTouchOptionsExpiration.isEmpty())
-            return false;
-
-        Order first = sellTouchOptionsExpiration.first();
-
-        double orderPrice = first.getPrice();
-
-        double offerPrice = poll.getBid();
-
-        if (first.getType() == OptionType.ONE_TOUCH) {
-            if (orderPrice <= offerPrice) { //execute order
-                executeOrder(first, true);
-
-                return true;
-            }
-        } //NO_TOUCH
-        else if (orderPrice >= offerPrice) {
-            executeOrder(first, false);
 
             return true;
         }

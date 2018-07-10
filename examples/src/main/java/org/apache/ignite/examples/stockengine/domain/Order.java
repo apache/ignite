@@ -22,7 +22,6 @@ import java.util.Objects;
 public class Order {
     private final long id;
     private final int userId;
-    private final OptionType type;
     private final Side side;
     private final Instrument instrument;
     private final long expirationDate;
@@ -33,7 +32,6 @@ public class Order {
     public Order(
             long id,
             int userId,
-            OptionType type,
             Side side,
             Instrument instrument,
             long expirationDate,
@@ -42,7 +40,6 @@ public class Order {
     ) {
         this.id = id;
         this.userId = userId;
-        this.type = type;
         this.side = side;
         this.instrument = instrument;
         this.expirationDate = expirationDate;
@@ -53,10 +50,6 @@ public class Order {
 
     public int getUserId() {
         return userId;
-    }
-
-    public OptionType getType() {
-        return type;
     }
 
     public Side getSide() {
@@ -109,7 +102,6 @@ public class Order {
         return "Order{" +
                 "id=" + id +
                 ", userId=" + userId +
-                ", type=" + type +
                 ", side=" + side +
                 ", instrument=" + instrument +
                 ", expirationDate=" + expirationDate +

@@ -17,19 +17,17 @@
 
 package org.apache.ignite.examples.stockengine.approach2;
 
-import org.apache.ignite.examples.stockengine.domain.Instrument;
-import org.apache.ignite.examples.stockengine.domain.OptionType;
-import org.apache.ignite.examples.stockengine.domain.Order;
-import org.apache.ignite.examples.stockengine.domain.Side;
-import org.apache.ignite.examples.stockengine.domain.State;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.stockengine.domain.Instrument;
+import org.apache.ignite.examples.stockengine.domain.Order;
+import org.apache.ignite.examples.stockengine.domain.Side;
+import org.apache.ignite.examples.stockengine.domain.State;
 import org.apache.ignite.examples.stockengine.domain.User;
 import org.apache.ignite.internal.IgniteEx;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -71,7 +69,6 @@ public class RunClient2 {
                         new OrderKey(i, 0),
                         new Order(i,
                                 0,
-                                OptionType.SIMPLE,
                                 Side.BUY,
                                 Instrument.EUR_USD,
                         System.currentTimeMillis() + 10_000,

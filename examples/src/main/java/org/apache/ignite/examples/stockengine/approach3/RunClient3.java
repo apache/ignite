@@ -23,11 +23,9 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.examples.stockengine.approach2.DurableEngine;
 import org.apache.ignite.examples.stockengine.approach2.Engine;
 import org.apache.ignite.examples.stockengine.approach2.OrderKey;
 import org.apache.ignite.examples.stockengine.domain.Instrument;
-import org.apache.ignite.examples.stockengine.domain.OptionType;
 import org.apache.ignite.examples.stockengine.domain.Order;
 import org.apache.ignite.examples.stockengine.domain.Side;
 import org.apache.ignite.examples.stockengine.domain.State;
@@ -99,7 +97,6 @@ public class RunClient3 {
                 new OrderKey(orderId, userId),
                 new Order(orderId,
                         userId,
-                        OptionType.SIMPLE,
                         buy,
                         Instrument.EUR_USD,
                         System.currentTimeMillis() + 10_000,

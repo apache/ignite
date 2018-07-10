@@ -56,7 +56,7 @@ public class DurableEngine extends NaiveEngine implements Service, Engine {
     /** {@inheritDoc} */
     protected void executeOrder(Order order, boolean success) {
         //Remove from all sets.
-        removeOrder(order);
+        timeBasedExpirationOptions.remove(order);
 
         try (Transaction t = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE)) {
             IgniteCache<OrderKey, Order> orders = ignite.cache("orders");
@@ -145,14 +145,5 @@ public class DurableEngine extends NaiveEngine implements Service, Engine {
                 (aLong, order) -> order.getState() == State.ACTIVE));
 
         return qry;
-    }
-
-    /**
-     * @param order Order.
-     */
-    private void removeOrder(Order order) {
-        timeBasedExpirationOptions.remove(order);
-        buyTouchOptionExpiration.remove(order);
-        sellTouchOptionsExpiration.remove(order);
     }
 }
