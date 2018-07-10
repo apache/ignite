@@ -1570,13 +1570,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     DiscoveryEvent firstEvt = exchFut.firstEvent();
 
                     if (initVer.compareTo(readyVer) <= 0
-                        && (firstEvt != null && firstEvt.type() != EVT_NODE_LEFT && firstEvt.eventNode().isClient())) {
+                        &&
+                        (firstEvt == null /* possible when original exchFut was preempted from queue and recreated */
+                            || (firstEvt.type() != EVT_NODE_FAILED && firstEvt.type() != EVT_NODE_LEFT)
+                        )) {
                         U.warn(log, "Client node tries to connect but its exchange " +
-                            "info is cleaned up from exchange history " +
-                            "(initVer=[" + initVer + "], " +
-                            "readyVer=[" + readyVer + "])." +
-                            " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
-                            "or start clients in  smaller batches."
+                            "info is cleaned up from exchange history. " +
+                            "Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
+                            "or start clients in  smaller batches. " +
+                            "InitVer=[" + initVer + "], " +
+                            "readyVer=[" + readyVer + "]." +
+                            " "
                         );
 
                         exchFut.forceClientReconnect(node, msg);
