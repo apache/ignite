@@ -528,11 +528,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                 assert cacheCtx != null;
 
-                int backupsConfigured = cacheCtx.config().getBackups();
-
-                assert backupsConfigured <= 1;
-
-                if (backupsConfigured == 1) {
+                if (cacheCtx.config().getBackups() == 1) {
                     UUID backupId = F.first(backups);
 
                     ClusterNode backup = cctx.discovery().node(backupId);
