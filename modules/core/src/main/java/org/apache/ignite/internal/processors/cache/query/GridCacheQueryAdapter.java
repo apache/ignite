@@ -45,7 +45,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
-import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -558,7 +558,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        TrackableMvccQueryTracker mvccTracker = null;
+        MvccQueryTracker mvccTracker = null;
 
         if (cctx.mvccEnabled() && mvccSnapshot == null)
             mvccSnapshot = (mvccTracker = MvccUtils.mvccTracker(cctx, false)).snapshot();
@@ -911,7 +911,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private final GridCloseableIterator it;
 
         /** Query MVCC tracker. */
-        private final TrackableMvccQueryTracker mvccTracker;
+        private final MvccQueryTracker mvccTracker;
 
         /**
          * Constructor.
@@ -919,7 +919,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          * @param it Underlying iterator.
          * @param mvccTracker Query MVCC tracker.
          */
-        MvccTrackingIterator(GridCloseableIterator it, TrackableMvccQueryTracker mvccTracker) {
+        MvccTrackingIterator(GridCloseableIterator it, MvccQueryTracker mvccTracker) {
             assert it != null && mvccTracker != null;
 
             this.it = it;

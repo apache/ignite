@@ -390,15 +390,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return mvccSnapshot;
     }
 
-    /**
-     * @return Mvcc version for update operation, should be always initialized if mvcc is enabled.
-     */
-    @Nullable protected final MvccSnapshot mvccSnapshotForUpdate() {
-        assert !txState().mvccEnabled(cctx) || mvccSnapshot != null : "Mvcc is not initialized: " + this;
-
-        return mvccSnapshot;
-    }
-
     /** {@inheritDoc} */
     @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
         this.mvccSnapshot = mvccSnapshot;

@@ -631,9 +631,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             boolean mvccCrdChange = mvccCrd != null &&
                 (initialVersion().equals(mvccCrd.topologyVersion()) || activateCluster());
 
+            // Mvcc coordinator should has been initialized before exchange context is created.
             cctx.kernalContext().coordinators().currentCoordinator(mvccCrd);
 
             exchCtx = new ExchangeContext(crdNode, mvccCrdChange, this);
+
+            cctx.kernalContext().coordinators().onExchangeStart(mvccCrd, exchCtx, crd);
 
             assert state == null : state;
 
@@ -926,8 +929,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 -1,
                 cacheGroupStopping(top.groupId()));
         }
-
-        cctx.kernalContext().coordinators().onExchangeStart(mvccCrd, exchCtx, exchCrd);
     }
 
     /**
@@ -1721,9 +1722,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (err == null) {
-            cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
-                exchCtx.activeQueries());
-
             if (centralizedAff || forceAffReassignment) {
                 assert !exchCtx.mergeExchanges();
 
@@ -1771,6 +1769,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (!cctx.localNode().isClient())
             tryToPerformLocalSnapshotOperation();
+
+        if (err == null)
+            cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
+                exchCtx.activeQueries());
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 

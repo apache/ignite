@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.TxTopologyVe
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
@@ -1587,7 +1586,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         PreparedStatement stmt = preparedStatementWithParams(conn, sql, params, true);
 
-        TrackableMvccQueryTracker mvccTracker = mvccTracker(stmt, false);
+        MvccQueryTracker mvccTracker = mvccTracker(stmt, false);
 
         if (mvccTracker != null)
             qctx.mvccSnapshot(mvccTracker.snapshot());
@@ -1620,7 +1619,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param startTx Start transaction flag.
      * @return MVCC query tracker or {@code null} if MVCC is disabled for involved caches.
      */
-    private TrackableMvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
+    private MvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p.isQuery() : p;
@@ -1633,7 +1632,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private TrackableMvccQueryTracker mvccTracker(GridSqlQueryParser parser, boolean startTx) throws IgniteCheckedException {
+    private MvccQueryTracker mvccTracker(GridSqlQueryParser parser, boolean startTx) throws IgniteCheckedException {
         assert parser != null;
 
         boolean mvccEnabled = false;

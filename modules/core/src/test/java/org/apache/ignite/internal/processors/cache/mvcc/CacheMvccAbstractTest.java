@@ -1458,7 +1458,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             crd.stopVacuum(); // to prevent new futures creation.
 
             Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
-            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotFuts");
+            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotLsnrs");
             Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
             Map activeTrackers = GridTestUtils.getFieldValue(crd, "activeTrackers");
 

@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.CIX1;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker.MVCC_TRACKER_ID_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /** */
 public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteInternalTx>> {
@@ -45,7 +45,7 @@ public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteIn
     @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
         assert fut.isDone();
 
-        TrackableMvccQueryTracker qryTracker = tx.mvccQueryTracker();
+        MvccQueryTracker qryTracker = tx.mvccQueryTracker();
         MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
         assert qryTracker != null || mvccSnapshot != null;

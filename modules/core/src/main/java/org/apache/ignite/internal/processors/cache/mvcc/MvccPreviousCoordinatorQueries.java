@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker.MVCC_TRACKER_ID_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  *
@@ -38,7 +38,7 @@ class MvccPreviousCoordinatorQueries {
     /** */
     private volatile boolean prevQueriesDone;
 
-    /** Map of nodes to active {@link TrackableMvccQueryTracker} IDs list. */
+    /** Map of nodes to active {@link TrackableStaticMvccQueryTracker} IDs list. */
     private final ConcurrentHashMap<UUID, GridLongList> activeQueries = new ConcurrentHashMap<>();
 
     /** */

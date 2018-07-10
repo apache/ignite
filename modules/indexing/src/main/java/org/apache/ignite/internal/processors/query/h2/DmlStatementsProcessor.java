@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -543,7 +544,7 @@ public class DmlStatementsProcessor {
                             .setPageSize(fieldsQry.getPageSize())
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
-                        MvccQueryTracker mvccQryTracker = new MvccQueryTracker(mvccSnapshot, cctx);
+                        MvccQueryTracker mvccQryTracker = new StaticMvccQueryTracker(mvccSnapshot, cctx);
 
                         QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName,
                             newFieldsQry, null, true, true, mvccQryTracker, cancel).get(0);
@@ -1159,12 +1160,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new MvccQueryTracker(mvccSnapshot, cctx), cancel).get(0);
+                new StaticMvccQueryTracker(mvccSnapshot, cctx), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new MvccQueryTracker(mvccSnapshot, cctx));
+                new StaticMvccQueryTracker(mvccSnapshot, cctx));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

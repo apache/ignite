@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -515,8 +515,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                         ", loc=" + ((MiniFuture)f).primary().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccFuture) {
-                    MvccFuture crdFut = (MvccFuture)f;
+                else if (f instanceof MvccCoordinatorAware) {
+                    MvccCoordinatorAware crdFut = (MvccCoordinatorAware)f;
 
                     return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
                         ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +

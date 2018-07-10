@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker.MVCC_TRACKER_ID_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  *
@@ -64,7 +64,7 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
 
                     IgniteInternalFuture<Void> ackFut = null;
 
-                    TrackableMvccQueryTracker qryTracker = tx.mvccQueryTracker();
+                    MvccQueryTracker qryTracker = tx.mvccQueryTracker();
 
                     MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 

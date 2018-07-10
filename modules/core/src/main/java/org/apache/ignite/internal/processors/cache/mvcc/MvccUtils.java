@@ -707,7 +707,7 @@ public class MvccUtils {
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static TrackableMvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(cctx.kernalContext());
@@ -716,18 +716,18 @@ public class MvccUtils {
             tx = txStart(cctx, 0);
 
         if (tx != null)
-            return new TrackableMvccQueryTracker(cctx, requestMvccVersion(cctx, tx));
+            return new TrackableStaticMvccQueryTracker(cctx, requestMvccVersion(cctx, tx));
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-        TrackableMvccQueryTracker tracker = new TrackableMvccQueryTracker(cctx, true);
-
-        tracker.requestVersion(cctx.shared().exchange().readyAffinityVersion(),
+        TrackableStaticMvccQueryTracker tracker = new ActiveMvccQueryTracker(cctx, true,
             new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
                 @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
                     fut.onDone(null, e);
                 }
             });
+
+        tracker.requestVersion(cctx.shared().exchange().readyAffinityVersion());
 
         fut.get();
 
@@ -747,9 +747,6 @@ public class MvccUtils {
 
         if (mvccSnapshot == null) {
             MvccProcessor mvccProc = cctx.shared().coordinators();
-            MvccCoordinator crd = mvccProc.currentCoordinator();
-
-            assert crd != null : tx.topologyVersion();
 
             MvccSnapshot snapshot = mvccProc.tryRequestSnapshotLocal(tx);
 

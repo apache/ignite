@@ -43,7 +43,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.TrackableMvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.ActiveMvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -82,7 +83,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     protected final MvccSnapshot mvccSnapshot;
 
     /** */
-    private TrackableMvccQueryTracker mvccTracker;
+    private MvccQueryTracker mvccTracker;
 
     /**
      * @param cctx Context.
@@ -171,13 +172,13 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         if (cctx.mvccEnabled() && mvccSnapshot == null) {
-            mvccTracker = new TrackableMvccQueryTracker(cctx, canRemap);
+            mvccTracker = new ActiveMvccQueryTracker(cctx, canRemap, this);
 
             trackable = true;
 
             cctx.mvcc().addFuture(this, futId);
 
-            mvccTracker.requestVersion(topVer, this);
+            mvccTracker.requestVersion(topVer);
 
             return;
         }

@@ -43,7 +43,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -477,13 +478,18 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 if (waitTxs != null) {
                     MvccSnapshot snapshot = tx.mvccSnapshot();
 
+                    MvccCoordinator crd = cctx.coordinators().currentCoordinator();
+
                     assert snapshot != null;
 
-                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(cctx.coordinators().currentCoordinatorId(),
-                        waitTxs);
+                    if (snapshot.coordinatorVersion() == crd.coordinatorVersion()) {
+                        IgniteInternalFuture fut = cctx.coordinators()
+                            .waitTxsFuture(cctx.coordinators().currentCoordinatorId(), waitTxs);
 
-                    add(fut);
+                        add(fut);
+                    }
                 }
+
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
@@ -898,8 +904,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                     return "CheckRemoteTxMiniFuture[nodes=" + fut.nodes() + ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccFuture) {
-                    MvccFuture fut = (MvccFuture)f;
+                else if (f instanceof MvccCoordinatorAware) {
+                    MvccCoordinatorAware fut = (MvccCoordinatorAware)f;
 
                     return "WaitPreviousTxsFut[mvccCrd=" + fut.coordinatorNodeId() + ", done=" + f.isDone() + "]";
                 }

@@ -17,72 +17,68 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Simple MVCC tracker used only as an Mvcc snapshot holder.
+ * Mvcc tracker.
  */
-public class MvccQueryTracker {
-    /** */
-    protected volatile MvccSnapshot mvccSnapshot;
-
-    /** */
-    @GridToStringExclude
-    protected final GridCacheContext cctx;
-
-    /**
-     *
-     */
-    private MvccQueryTracker() {
-        cctx = null;
-    }
-
-    /**
-     * @param mvccSnapshot Mvcc snapshot.
-     * @param cctx Cache context.
-     */
-    public MvccQueryTracker(MvccSnapshot mvccSnapshot, GridCacheContext cctx) {
-        this.mvccSnapshot = mvccSnapshot;
-        this.cctx = cctx;
-    }
+public interface MvccQueryTracker {
 
     /**
      * @return Requested MVCC snapshot.
      */
-    public MvccSnapshot snapshot() {
-        assert mvccSnapshot != null : this;
-
-        return mvccSnapshot;
-    }
+    public MvccSnapshot snapshot();
 
     /**
-     *
      * @return Cache context.
      */
-    public GridCacheContext context() {
-        return cctx;
-    }
+    public GridCacheContext context();
 
     /**
-     * Marks tracker done.
+     * Requests version on coordinator.
+     *
+     * @param topVer Topology version.
+     */
+    public void requestVersion(AffinityTopologyVersion topVer);
+
+    /**
+     * Marks tracker as done.
      *
      * @return Acknowledge future.
      */
-    @Nullable public IgniteInternalFuture<Void> onDone() {
-        // No-op.
-        return null;
-    }
+    @Nullable public IgniteInternalFuture<Void> onDone();
 
     /**
-     * Marks tracker done.
+     * Marks tracker as done.
      *
+     * @param tx Transaction.
+     * @param commit Commit.
      * @return Acknowledge future.
      */
-    @Nullable public IgniteInternalFuture<Void> onDone(GridNearTxLocal tx, boolean commit) {
-        throw new UnsupportedOperationException("Operation not supported.");
-    }
+    @Nullable public IgniteInternalFuture<Void> onDone(GridNearTxLocal tx, boolean commit);
+
+    /**
+     * Marks tracker as done by error.
+     *
+     * @param e Exception.
+     */
+    public void onDone(IgniteCheckedException e);
+
+    /**
+     * Mvcc coordinator change callback.
+     *
+     * @param newCrd New mvcc coordinator.
+     * @return Tracker id.
+     */
+    public long onMvccCoordinatorChange(MvccCoordinator newCrd);
+
+    /**
+     * @return Tracker id.
+     */
+    public long id();
 }

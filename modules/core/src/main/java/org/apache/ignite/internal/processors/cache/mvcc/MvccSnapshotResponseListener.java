@@ -18,13 +18,24 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * MVCC future.
+ *
  */
-public interface MvccFuture {
+public interface MvccSnapshotResponseListener extends MvccCoordinatorAware {
     /**
-     * @return Coordinator node ID.
+     * @param res Version.
      */
-    public UUID coordinatorNodeId();
+    public void onResponse(MvccSnapshot res);
+
+    /**
+     * @param e Error.
+     */
+    public void onError(IgniteCheckedException e);
+
+    /**
+     * @param nodeId Mvcc coordinator node id.
+     */
+    public void onRequest(UUID nodeId);
 }
