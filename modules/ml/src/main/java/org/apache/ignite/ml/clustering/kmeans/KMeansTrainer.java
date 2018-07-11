@@ -68,7 +68,7 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
      * @return Model.
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
