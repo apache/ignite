@@ -393,6 +393,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                                     }
                                 }
 
+                                ctor.setAccessible(true);
                                 jobArgs = ctor.newInstance(initArgs);
 
                                 break;

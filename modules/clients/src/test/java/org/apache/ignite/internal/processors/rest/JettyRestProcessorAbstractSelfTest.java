@@ -2818,7 +2818,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @return This helper for chaining method calls.
          */
         public VisorGatewayArgument forNode(ClusterNode node) {
-            put("p1", node.id().toString());
+            put("p1", node != null ? node.id().toString() :  null);
 
             return this;
         }
