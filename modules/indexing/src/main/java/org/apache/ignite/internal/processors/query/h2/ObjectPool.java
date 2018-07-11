@@ -38,5 +38,4 @@ public final class ObjectPool<E extends AutoCloseable> {
         Reusable<E> pooled = bag.poll();
         return pooled != null ? pooled : new Reusable<>(this, connectionFactory.get());
     }
-
 }

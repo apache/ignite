@@ -313,12 +313,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
         @Override
         protected ObjectPool<H2ConnectionWrapper> initialValue() {
-            ObjectPool<H2ConnectionWrapper> pool = new ObjectPool<>(IgniteH2Indexing.this::createConnection, 5);
-            pools.put(Thread.currentThread(), pool);
-            return pool;
+            return new ObjectPool<>(IgniteH2Indexing.this::createConnection, 5);
         }
     };
-    private final ConcurrentHashMap<Thread, ObjectPool<H2ConnectionWrapper>> pools = new ConcurrentHashMap<>();
 
     private H2ConnectionWrapper createConnection() {
         try {
