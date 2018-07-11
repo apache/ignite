@@ -172,9 +172,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @param oldTopVer Previous topology version.
      * @param newTopVer New topology version to check result.
-     * @return {@code True} if affinity assignments changed between this two versions
-     * for {@link GridCacheSharedContext#localNode()} or there is no affinity assignments information
-     * about old topology version.
+     * @return {@code True} if affinity assignments changed between this two versions for
+     *         {@link GridCacheSharedContext#localNode()} or there is no affinity assignments information
+     *         about old topology version.
      */
     private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
         AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
@@ -184,7 +184,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         AffinityAssignment prevAff = !oldTopVer.initialized() || !grp.affinity().cachedVersions().contains(oldTopVer) ?
             aff : grp.affinity().cachedAffinity(oldTopVer);
 
-        // No affinity information about old topology version. Should return true value.
         boolean assignsChanged = aff == prevAff;
 
         int parts = grp.affinity().partitions();
@@ -228,8 +227,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (!actTopVer.initialized() ||
                 isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
                 !leftNodes.isEmpty() || // Some of nodes left before rabalance compelete.
-                isOwnersChanged(lastTopVer) ) { // Owners not changed due to exchange.
-                // Mark current rebalance as obsolete.
+                isOwnersChanged(lastTopVer) ) { // Owners changed. Obsolete updSeq due to exchange on coordinator.
+                // Mark current rebalance as obsolete and prepare new one.
+                // Stop supply-demand messages for current.
                 demander.topologyVersionToDemand(lastTopVer);
             }
         }
