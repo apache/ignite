@@ -92,11 +92,12 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         // Initial custom message will travel across the ring and will be discarded.
         sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
 
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            log.info("Waiting for messages delivery");
+        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
+            GridTestUtils.waitForCondition(() -> {
+                log.info("Waiting for messages delivery");
 
-            return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
-        }, 10000));
+                return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
+            }, 10000));
 
         blockMsgs.set(true);
 
@@ -111,11 +112,12 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         mediator.close();
         victim.close();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            log.info("Waiting for messages delivery");
+        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
+            GridTestUtils.waitForCondition(() -> {
+                log.info("Waiting for messages delivery");
 
-            return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
-        }, 10000));
+                return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
+            }, 10000));
     }
 
     /**
@@ -158,11 +160,12 @@ public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
         mediator.close();
         victim.close();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            log.info("Waiting for messages delivery");
+        assertTrue("Sent: " + sentEnsuredMsgs + "; received: " + receivedEnsuredMsgs,
+            GridTestUtils.waitForCondition(() -> {
+                log.info("Waiting for messages delivery");
 
-            return sentEnsuredMsgs.equals(receivedEnsuredMsgs);
-        }, 10000));
+                return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
+            }, 10000));
     }
 
     /**
