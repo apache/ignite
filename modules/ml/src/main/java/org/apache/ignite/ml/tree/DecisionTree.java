@@ -253,12 +253,26 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         }
     }
 
+    /**
+     * Represents DecisionTree as String.
+     *
+     * @param node Decision tree.
+     * @param pretty Use pretty mode.
+     */
     public static String printTree(DecisionTreeNode node, boolean pretty) {
         StringBuilder builder = new StringBuilder();
         printTree(node, 0, builder, pretty);
         return builder.toString();
     }
 
+    /**
+     * Recursive realisation of DectisionTree to String converting.
+     *
+     * @param node Decision tree.
+     * @param depth Current depth.
+     * @param builder String builder.
+     * @param pretty Use pretty mode.
+     */
     private static void printTree(DecisionTreeNode node, int depth, StringBuilder builder, boolean pretty) {
         builder.append(pretty ? String.join("", Collections.nCopies(depth, "\t")) : "");
         if (node instanceof DecisionTreeLeafNode) {

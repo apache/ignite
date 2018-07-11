@@ -562,10 +562,12 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         return diff;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return toString(false);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         StringBuilder builder = new StringBuilder("MultilayerPerceptron [\n");
         if(below != null)

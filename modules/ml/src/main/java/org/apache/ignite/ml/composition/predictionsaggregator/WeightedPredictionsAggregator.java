@@ -61,10 +61,12 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return toString(false);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         String clsName = getClass().getSimpleName();
         if(!pretty)

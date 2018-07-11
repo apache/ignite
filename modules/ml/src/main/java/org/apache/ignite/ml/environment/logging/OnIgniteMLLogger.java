@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 
 /**
- * MLLogger implementation based on IgniteLogger
+ * MLLogger implementation based on IgniteLogger.
  */
 public class OnIgniteMLLogger implements MLLogger {
     /** Ignite logger instance. */

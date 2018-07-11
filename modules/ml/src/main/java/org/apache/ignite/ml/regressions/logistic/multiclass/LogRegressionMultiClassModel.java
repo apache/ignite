@@ -84,6 +84,7 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
         return wholeStr.toString();
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
     }

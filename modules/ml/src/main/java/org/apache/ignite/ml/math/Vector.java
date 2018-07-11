@@ -509,6 +509,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Returns array of doubles corresponds to vector components.
+     *
      * @return Array of doubles.
      */
     public default double[] asArray() {

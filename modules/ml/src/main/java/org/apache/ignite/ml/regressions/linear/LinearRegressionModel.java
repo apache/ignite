@@ -105,6 +105,7 @@ public class LinearRegressionModel implements Model<Vector, Double>, Exportable<
             ']';
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
     }

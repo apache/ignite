@@ -87,10 +87,12 @@ public class KNNRegressionModel extends KNNClassificationModel {
         return sum / (double)k;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return toString(false);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return new StringBuilder("KNNRegressionModel [")
             .append("k = ").append(k).append(", ")

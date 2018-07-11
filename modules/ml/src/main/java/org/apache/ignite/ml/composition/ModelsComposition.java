@@ -77,10 +77,12 @@ public class ModelsComposition implements Model<Vector, Double> {
         return models;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return toString(false);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return new StringBuilder("ModelsComposition [").append(pretty ? "\n\t" : "")
             .append("aggregator = ").append(predictionsAggregator.toString(pretty)).append(pretty ? "\n\t" : ", ")

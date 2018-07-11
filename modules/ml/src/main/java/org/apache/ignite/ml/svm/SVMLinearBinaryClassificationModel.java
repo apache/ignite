@@ -187,6 +187,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
             ']';
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
     }

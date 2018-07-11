@@ -198,6 +198,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
             ']';
     }
 
+    /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
     }
