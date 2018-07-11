@@ -712,7 +712,7 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 
     lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
     lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
 
     lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
 }
@@ -762,7 +762,7 @@ BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
 
     lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
     lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
 
     lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
 }
