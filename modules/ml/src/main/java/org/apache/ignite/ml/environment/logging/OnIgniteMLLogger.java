@@ -55,7 +55,7 @@ public class OnIgniteMLLogger implements MLLogger {
 
     /** {@inheritDoc} */
     @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
-        log(verboseLevel, mdl.toString());
+        log(verboseLevel, mdl.toString(true));
         return mdl;
     }
 

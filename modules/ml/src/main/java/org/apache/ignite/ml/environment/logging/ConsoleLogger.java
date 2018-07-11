@@ -58,7 +58,7 @@ public class ConsoleLogger implements MLLogger {
 
     /** {@inheritDoc} */
     @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
-        print(verboseLevel, mdl.toString());
+        print(verboseLevel, mdl.toString(true));
         return mdl;
     }
 
