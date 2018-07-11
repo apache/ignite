@@ -94,6 +94,7 @@ packages
 /modules/platforms/cpp/missing
 /modules/platforms/cpp/odbc-test/ignite-odbc-tests
 /modules/platforms/cpp/stamp-h1
+/modules/platforms/cpp/thin-client-test/ignite-thin-client-tests
 
 #Files related to ML manual-runnable tests
 /modules/ml/src/test/resources/manualrun/trees/columntrees.manualrun.properties

@@ -75,6 +75,6 @@ public class StringEncoderTrainerTest {
             (k, v) -> v
         );
 
-        assertArrayEquals(new double[] {0.0, 2.0}, preprocessor.apply(7, new String[] {"Monday", "September"}), 1e-8);
+        assertArrayEquals(new double[] {0.0, 2.0}, preprocessor.apply(7, new String[] {"Monday", "September"}).asArray(), 1e-8);
     }
 }

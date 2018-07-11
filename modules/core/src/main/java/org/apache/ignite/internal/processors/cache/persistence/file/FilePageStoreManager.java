@@ -65,6 +65,9 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.newDirectoryStream;
+
 /**
  * File page store manager.
  */
@@ -92,6 +95,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     public static final String DFLT_STORE_DIR = "db";
+
+    /** */
+    public static final String META_STORAGE_NAME = "metastorage";
 
     /** Marshaller. */
     private static final Marshaller marshaller = new JdkMarshaller();
@@ -167,21 +173,41 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
+    @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
         try {
             File cacheWorkDir = cacheWorkDir(cacheConfiguration);
 
             if(!cacheWorkDir.exists())
                 return;
 
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(cacheWorkDir.toPath(),
+            try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
                 new DirectoryStream.Filter<Path>() {
                     @Override public boolean accept(Path entry) throws IOException {
                         return entry.toFile().getName().endsWith(FILE_SUFFIX);
                     }
                 })) {
                 for (Path path : files)
-                    Files.delete(path);
+                    delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = newDirectoryStream(
+                storeWorkDir.toPath(), entry -> {
+                    String name = entry.toFile().getName();
+
+                    return !name.equals(META_STORAGE_NAME) &&
+                        (name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX));
+                }
+            )) {
+                for (Path path : files)
+                    U.delete(path);
             }
         }
         catch (IOException e) {
@@ -268,8 +294,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         if (!idxCacheStores.containsKey(grpId)) {
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir,
-                    "metastorage"),
+                new File(storeWorkDir, META_STORAGE_NAME),
                 grpId,
                 1,
                 delta -> {/* No-op */} );
@@ -835,7 +860,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             };
 
-            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(cacheGrpDir.toPath(), cacheCfgFileFilter)) {
+            try (DirectoryStream<Path> dirStream = newDirectoryStream(cacheGrpDir.toPath(), cacheCfgFileFilter)) {
                 for(Path path: dirStream)
                     Files.deleteIfExists(path);
             }
