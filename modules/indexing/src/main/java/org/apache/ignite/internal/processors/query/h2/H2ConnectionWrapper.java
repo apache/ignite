@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
@@ -25,9 +26,9 @@ import java.sql.Connection;
 /**
  * Wrapper to store connection and flag is schema set or not.
  */
-public class H2ConnectionWrapper {
+public class H2ConnectionWrapper implements AutoCloseable {
     /** */
-    private Connection conn;
+    private final Connection conn;
 
     /** */
     private volatile String schema;
@@ -63,5 +64,10 @@ public class H2ConnectionWrapper {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2ConnectionWrapper.class, this);
+    }
+
+    @Override
+    public void close() {
+        U.closeQuiet(conn);
     }
 }

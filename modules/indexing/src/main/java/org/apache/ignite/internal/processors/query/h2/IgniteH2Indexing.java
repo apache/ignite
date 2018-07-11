@@ -313,45 +313,51 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
 
+    private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool =
+            ThreadLocal.withInitial(() -> new ObjectPool<>(this::createConnection, 5));
+
+    private H2ConnectionWrapper createConnection() {
+        try {
+            return new H2ConnectionWrapper(DriverManager.getConnection(dbUrl));
+        } catch (SQLException e) {
+            throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
+        }
+    }
+
     /** */
-    private final ThreadLocal<H2ConnectionWrapper> connCache = new ThreadLocal<H2ConnectionWrapper>() {
-        @Nullable @Override public H2ConnectionWrapper get() {
-            H2ConnectionWrapper c = super.get();
+    private final ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>>() {
+        @Nullable @Override public ObjectPool.Reusable<H2ConnectionWrapper> get() {
+            ObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
 
             boolean reconnect = true;
 
             try {
-                reconnect = c == null || c.connection().isClosed();
+                reconnect = reusable == null || reusable.object().connection().isClosed();
             }
             catch (SQLException e) {
                 U.warn(log, "Failed to check connection status.", e);
             }
 
             if (reconnect) {
-                c = initialValue();
+                reusable = initialValue();
 
-                set(c);
+                set(reusable);
 
                 // Reset statement cache when new connection is created.
                 stmtCache.remove(Thread.currentThread());
             }
 
-            return c;
+            return reusable;
         }
 
-        @Nullable @Override protected H2ConnectionWrapper initialValue() {
-            Connection c;
+        @Nullable @Override protected ObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
+            ObjectPool<H2ConnectionWrapper> pool = connectionPool.get();
 
-            try {
-                c = DriverManager.getConnection(dbUrl);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
-            }
+            ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
-            conns.put(Thread.currentThread(), c);
+            conns.put(Thread.currentThread(), reusableConnection.object().connection());
 
-            return new H2ConnectionWrapper(c);
+            return reusableConnection;
         }
     };
 
@@ -563,7 +569,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException In case of error.
      */
     private Connection connectionForThread(@Nullable String schema) throws IgniteCheckedException {
-        H2ConnectionWrapper c = connCache.get();
+        H2ConnectionWrapper c = connCache.get().object();
 
         if (c == null)
             throw new IgniteCheckedException("Failed to get DB connection for thread (check log for details).");
@@ -697,7 +703,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Handles SQL exception.
      */
     private void onSqlException() {
-        Connection conn = connCache.get().connection();
+        Connection conn = connCache.get().object().connection();
 
         connCache.set(null);
 
@@ -2916,10 +2922,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Removes from cache and returns associated with current thread connection.
      * @return Connection associated with current thread.
      */
-    public Connection detach() {
+    public ObjectPool.Reusable<H2ConnectionWrapper> detach() {
         Thread key = Thread.currentThread();
 
-        H2ConnectionWrapper connWrapper = connCache.get();
+        ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
 
         Connection connection = conns.remove(key);
 
@@ -2927,9 +2933,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         stmtCache.remove(key);
 
-        assert connWrapper.connection() == connection;
+        assert reusableConnection.object().connection() == connection;
 
-        return connection;
+        return reusableConnection;
     }
 
     /**
