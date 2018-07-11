@@ -18,21 +18,28 @@
 # Start from Java 8 based on Alpine Linux image (~5Mb)
 FROM openjdk:8-jre-alpine
 
+# Provide default arguments
+ARG DEFAULT_DRIVER_FOLDER="/opt/ignite/drivers"
+ARG DEFAULT_NODE_URI="http://localhost:8080"
+ARG DEFAULT_SERVER_URI="http://localhost"
+ARG DEFAULT_TOKENS="NO_TOKENS"
+
+ENV DRIVER_FOLDER=$DEFAULT_DRIVER_FOLDER
+ENV NODE_URI=$DEFAULT_NODE_URI
+ENV SERVER_URI=$DEFAULT_SERVER_URI
+ENV TOKENS=$DEFAULT_TOKENS
+
 # Settings
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric
-WORKDIR /opt/ignite
+USER root
+ENV AGENT_HOME /opt/ignite/ignite-web-agent
+WORKDIR ${AGENT_HOME} 
 
 # Add missing software
-RUN apk --update --no-cache add bash
+RUN apk --no-cache \
+    add bash
 
 # Copy main binary archive
-COPY apache-ignite-fabric* apache-ignite-fabric
+COPY ignite-web-agent*/* ./
 
-# Copy sh files and set permission
-COPY run.sh $IGNITE_HOME/
-
-# Entry point
-CMD $IGNITE_HOME/run.sh
-
-# Container port exposure
-EXPOSE 11211 47100 47500 49112
+# Entrypoint
+CMD ignite-web-agent.sh -d ${DRIVER_FOLDER} -n ${NODE_URI} -s ${SERVER_URI} -t ${TOKENS}
