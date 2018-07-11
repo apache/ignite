@@ -366,7 +366,7 @@ void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
     lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20));
 }
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
