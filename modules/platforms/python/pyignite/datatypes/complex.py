@@ -680,7 +680,7 @@ class BinaryObject:
             byteorder=PROTOCOL_BYTE_ORDER
         )
         # TODO: compact footer & no raw data is the only supported variant
-        header.flags = cls.USER_TYPE | cls.HAS_SCHEMA | cls.COMPACT_FOOTER
+        header.flags = cls.USER_TYPE | cls.COMPACT_FOOTER
         header.version = value['version']
         header.type_id = value['type_id']
         header.schema_id = value['schema_id']
@@ -710,7 +710,6 @@ class BinaryObject:
         offsets = offsets[:-1]
 
         # create footer
-
         if max(offsets, default=0) < 255:
             header.flags |= cls.OFFSET_ONE_BYTE
         elif max(offsets) < 65535:

@@ -30,7 +30,7 @@ from pyignite.datatypes.prop_codes import *
 page_size = 100
 
 scheme_name = 'PUBLIC'
-scheme_hash_code = hashcode('PUBLIC')
+scheme_hash_code = hashcode(scheme_name)
 
 table_sql_name = 'AllDataType'
 table_cache_name = 'SQL_{}_{}'.format(
@@ -41,21 +41,21 @@ table_hash_code = hashcode(table_cache_name)
 
 create_query = '''
 CREATE TABLE {} (
-  test_pk INTEGER(11) PRIMARY KEY,
-  test_bool BOOLEAN DEFAULT TRUE,
-  test_int INTEGER(11),
-  test_decimal DECIMAL(11, 5),
-  test_str VARCHAR(24) DEFAULT '' NOT NULL,
+  TEST_PK INTEGER(11) PRIMARY KEY,
+  TEST_BOOL BOOLEAN DEFAULT TRUE,
+  TEST_INT INTEGER(11),
+  TEST_DECIMAL DECIMAL(11, 5),
+  TEST_STR VARCHAR(24) DEFAULT '' NOT NULL,
 )
 '''.format(table_sql_name)
 
 insert_query = '''
 INSERT INTO {} (
-  test_pk, test_decimal, test_int, test_str
+  TEST_PK, TEST_DECIMAL, TEST_INT, TEST_STR
 ) VALUES (?, ?, ?, ?)'''.format(table_sql_name)
 
 select_query = '''
-SELECT (test_pk, test_int) FROM {}
+SELECT (TEST_PK, TEST_INT) FROM {}
 '''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
@@ -121,69 +121,71 @@ def test_sql_read_as_binary(conn):
 def test_sql_write_as_binary(conn):
 
     # configure cache as an SQL table
-    type_name = 'ALLDATATYPE_CONTAINER'
+    type_name = '{}_CONTAINER'.format(table_cache_name)
 
     result = cache_create_with_config(conn, {
         PROP_NAME: table_cache_name,
         PROP_SQL_SCHEMA: scheme_name,
+        PROP_SQL_ESCAPE_ALL: True,
+        PROP_WRITE_SYNCHRONIZATION_MODE: 0,
         PROP_QUERY_ENTITIES: [
             {
                 'table_name': table_sql_name.upper(),
-                'key_field_name': 'test_pk',
+                'key_field_name': 'TEST_PK',
                 'key_type_name': 'java.lang.Integer',
                 'field_name_aliases': [
                     {
-                        'alias': 'test_pk',
-                        'field_name': 'test_pk',
+                        'alias': 'TEST_PK',
+                        'field_name': 'TEST_PK',
                     },
                     {
-                        'alias': 'test_str',
-                        'field_name': 'test_str',
+                        'alias': 'TEST_STR',
+                        'field_name': 'TEST_STR',
                     },
                     {
-                        'alias': 'test_bool',
-                        'field_name': 'test_bool',
+                        'alias': 'TEST_BOOL',
+                        'field_name': 'TEST_BOOL',
                     },
                     {
-                        'alias': 'test_int',
-                        'field_name': 'test_int',
+                        'alias': 'TEST_INT',
+                        'field_name': 'TEST_INT',
                     },
                     {
-                        'alias': 'test_decimal',
-                        'field_name': 'test_decimal',
+                        'alias': 'TEST_DECIMAL',
+                        'field_name': 'TEST_DECIMAL',
                     },
                 ],
                 'query_fields': [
                     {
-                        'name': 'test_pk',
+                        'name': 'TEST_PK',
                         'type_name': 'java.lang.Integer',
                         'is_key_field': True,
                         'is_notnull_constraint_field': True,
                         'default_value': None,
                     },
                     {
-                        'name': 'test_bool',
+                        'name': 'TEST_BOOL',
                         'type_name': 'java.lang.Boolean',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': True,
                     },
                     {
-                        'name': 'test_int',
+                        'name': 'TEST_INT',
                         'type_name': 'java.lang.Integer',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
                     },
                     {
-                        'name': 'test_decimal',
+                        'name': 'TEST_DECIMAL',
                         'type_name': 'java.math.BigDecimal',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
                     },
                     {
-                        'name': 'test_str',
+                        'name': 'TEST_STR',
                         'type_name': 'java.lang.String',
                         'is_key_field': False,
                         'is_notnull_constraint_field': True,
@@ -205,10 +207,10 @@ def test_sql_write_as_binary(conn):
     result = put_binary_type(
         conn, type_name, schema_id=42,
         schema=OrderedDict([
-            ('test_bool', BoolObject),
-            ('test_int', IntObject),
-            ('test_decimal', DecimalObject),
-            ('test_str', String),
+            ('TEST_BOOL', BoolObject),
+            ('TEST_INT', IntObject),
+            ('TEST_DECIMAL', DecimalObject),
+            ('TEST_STR', String),
         ])
     )
     assert result.status == 0, result.message
@@ -230,18 +232,27 @@ def test_sql_write_as_binary(conn):
             'type_id': sql_type_id,
             'schema_id': 42,
             'fields': OrderedDict([
-                ('test_bool', False),
-                ('test_int', (89, IntObject)),
-                ('test_decimal', Decimal('5.67')),
-                ('test_str', 'This is a test string'),
+                ('TEST_BOOL', False),
+                ('TEST_INT', (89, IntObject)),
+                ('TEST_DECIMAL', Decimal('5.67')),
+                ('TEST_STR', 'This is a test string'),
             ]),
         },
         value_hint=BinaryObject,
     )
     assert result.status == 0, result.message
 
+    result = scan(conn, table_hash_code, 100)
+    assert result.status == 0, result.message
+
     # read row as SQL
-    result = sql_fields(conn, table_hash_code, select_query, 100, include_field_names=True)
+    result = sql_fields(
+        conn,
+        scheme_hash_code,
+        select_query,
+        100,
+        include_field_names=True
+    )
     assert result.status == 0, result.message
 
     # cleanup
