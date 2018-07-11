@@ -3139,19 +3139,24 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             @NotNull AbstractFileDescriptor desc,
             @Nullable FileWALPointer start
         ) throws IgniteCheckedException, FileNotFoundException {
-            if (decompressor != null && !desc.file().exists()) {
-                FileDescriptor zipFile = new FileDescriptor(
-                    new File(walArchiveDir, FileDescriptor.fileName(desc.idx()) + ".zip"));
+            AbstractFileDescriptor currDesc = desc;
+
+            if (!desc.file().exists()) {
+                FileWriteAheadLogManager.FileDescriptor zipFile = new FileWriteAheadLogManager.FileDescriptor(
+                        new File(walArchiveDir, FileDescriptor.fileName(desc.idx()) + ".zip"));
 
                 if (!zipFile.file.exists()) {
                     throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +
-                        "[segmentIdx=" + desc.idx() + "]");
+                            "[segmentIdx=" + desc.idx() + "]");
                 }
 
-                decompressor.decompressFile(desc.idx()).get();
+                if (decompressor != null)
+                    decompressor.decompressFile(desc.idx()).get();
+                else
+                    currDesc = zipFile;
             }
 
-            return (ReadFileHandle) super.initReadHandle(desc, start);
+            return (ReadFileHandle) super.initReadHandle(currDesc, start);
         }
 
         /** {@inheritDoc} */
