@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.environment;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
@@ -25,7 +24,7 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
  * Specifies a set of utility-objects helpful at runtime but optional for learning algorithm
  * (like thread pool for parallel learning in bagging model or logger).
  */
-public interface LearningEnvironment extends Serializable {
+public interface LearningEnvironment {
     /** Default environment */
     public static final LearningEnvironment DEFAULT = builder().build();
 

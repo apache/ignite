@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.environment.logging;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
 /**
  * Helper for ML-specific objects logging.
  */
-public interface MLLogger extends Serializable {
+public interface MLLogger {
     /**
      * Logging verbose level.
      */

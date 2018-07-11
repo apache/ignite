@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.environment.parallelism;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
  * Specifies the behaviour of processes in ML-algorithms that can may be parallelized such as parallel learning in
  * bagging, learning submodels for One-vs-All model, Cross-Validation etc.
  */
-public interface ParallelismStrategy extends Serializable {
+public interface ParallelismStrategy {
     public enum Type {
         NO_PARALLELISM,
         ON_DEFAULT_POOL
