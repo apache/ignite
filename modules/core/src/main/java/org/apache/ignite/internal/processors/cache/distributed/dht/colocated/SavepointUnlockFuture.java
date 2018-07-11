@@ -341,7 +341,6 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
         private final int futId;
 
         /** Node. */
-        @GridToStringExclude
         private final ClusterNode node;
 
         /** Keys. */

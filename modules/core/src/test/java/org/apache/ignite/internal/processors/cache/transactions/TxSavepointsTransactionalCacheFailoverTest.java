@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -28,10 +29,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -85,6 +89,15 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        startGrids(gridCount());
+
+        awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -113,10 +126,6 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void checkSavepoint(boolean failOnPrimary) throws Exception {
-        startGrids(gridCount());
-
-        awaitPartitionMapExchange();
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -186,6 +195,35 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
         cache.removeAsync(key1).get(1_000);
 
         cache.removeAsync(key2).get(1_000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeStopInRollbackToSavepoint() throws Exception {
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        int key1 = generateKey(grid(0), 0);
+        int key2 = generateKey(grid(0), key1 + 1);
+
+        GridTestUtils.assertThrowsAnyCause(log, (Callable<Void>)() -> {
+                try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(key1, key1);
+
+                    tx.savepoint("sp");
+
+                    cache.put(key2, key2);
+
+                    G.stop(grid(1).name(), false);
+
+                    tx.rollbackToSavepoint("sp");
+                }
+
+                return null;
+            },
+            ClusterTopologyCheckedException.class,
+            "Failed to unlock keys for savepoint (primary node left grid, retry transaction if possible) [node="
+        );
     }
 
     /**

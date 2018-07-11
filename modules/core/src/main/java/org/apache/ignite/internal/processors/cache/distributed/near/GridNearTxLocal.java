@@ -4508,7 +4508,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             cctx.gridIO().sendToGridTopic(node, TOPIC_TX_ROLLBACK_TO_SAVEPOINT, req, SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
-            log.error("Failed to send unlock request during rollback to savepoint (node has left the grid) " +
+            log.error("Failed to send unlock request during rollback to savepoint (primary node left grid) " +
                 "[receiver=" + node + ", req=" + req + ", e=" + e + ']');
 
             fut.onNodeLeft(node.id());
@@ -4534,6 +4534,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (unlockFuts.isEmpty())
                 return;
 
+            if (fut.error() != null)
+                throw new IgniteCheckedException("Failed unlock for keys [future=" + fut + ']', fut.error());
+
             long t = remainingTime();
 
             if (t > 0)
@@ -4550,7 +4553,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         catch (IgniteCheckedException e) {
             U.error(log, e.getMessage());
 
-            throw new IgniteCheckedException("Failed unlock for keys [miniFuts=" + fut.futures() + ']', e);
+            throw new IgniteCheckedException("Failed unlock for keys [future=" + fut + ']', e);
         } finally {
             cctx.mvcc().removeFuture(fut.futureId());
         }
