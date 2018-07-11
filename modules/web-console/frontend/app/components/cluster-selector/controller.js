@@ -35,21 +35,25 @@ export default class {
     }
 
     $onInit() {
+        if (this.isDemo)
+            return;
+
         this.inProgress$ = this._inProgressSubject.asObservable();
 
         this.clusters$ = this.agentMgr.connectionSbj
             .combineLatest(this.inProgress$)
             .do(([sbj, inProgress]) => this.inProgress = inProgress)
             .filter(([sbj, inProgress]) => !inProgress)
-            .do(([{ cluster, clusters }]) => {
-                this.cluster = cluster ? { ...cluster } : null;
+            .do(([{cluster, clusters}]) => {
+                this.cluster = cluster ? {...cluster} : null;
                 this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
             .subscribe(() => {});
     }
 
     $onDestroy() {
-        this.clusters$.unsubscribe();
+        if (!this.isDemo)
+            this.clusters$.unsubscribe();
     }
 
     change() {
