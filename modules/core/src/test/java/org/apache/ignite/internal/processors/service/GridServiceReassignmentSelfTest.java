@@ -29,11 +29,15 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests service reassignment.
  */
 public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstractSelfTest {
+    /** */
+    private static final String SERVICE_NAME = "testService";
+
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
@@ -71,7 +75,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
      * @throws Exception If failed.
      */
     private CounterService proxy(Ignite g) throws Exception {
-        return g.services().serviceProxy("testService", CounterService.class, false);
+        return g.services().serviceProxy(SERVICE_NAME, CounterService.class, false);
     }
 
     /**
@@ -82,9 +86,9 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     private void checkReassigns(int total, int maxPerNode) throws Exception {
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
-        DummyService.exeLatch("testService", latch);
+        DummyService.exeLatch(SERVICE_NAME, latch);
 
-        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
+        grid(0).services().deployMultiple(SERVICE_NAME, new CounterServiceImpl(), total, maxPerNode);
 
         for (int i = 0; i < 10; i++)
             proxy(randomGrid()).increment();
@@ -104,11 +108,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
                 if (grow) {
                     assert startedGrids.size() < maxTopSize;
 
-                    int gridIdx = nextAvailableIdx(startedGrids, maxTopSize, rnd);
-
-                    startGrid(gridIdx);
-
-                    startedGrids.add(gridIdx);
+                    startRandomNodesMultithreaded(maxTopSize, rnd, startedGrids);
 
                     if (startedGrids.size() == maxTopSize)
                         grow = false;
@@ -135,7 +135,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
             }
         }
         finally {
-            grid(F.first(startedGrids)).services().cancel("testService");
+            grid(F.first(startedGrids)).services().cancel(SERVICE_NAME);
 
             stopAllGrids();
 
@@ -158,7 +158,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         IgniteInternalCache<GridServiceAssignmentsKey, GridServiceAssignments> cache = grid.utilityCache();
 
-        GridServiceAssignments assignments = cache.get(new GridServiceAssignmentsKey("testService"));
+        GridServiceAssignments assignments = cache.get(new GridServiceAssignmentsKey(SERVICE_NAME));
 
         Collection<UUID> nodes = F.viewReadOnly(grid.cluster().nodes(), F.node2id());
 
@@ -186,6 +186,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         if (total > 0)
             assertTrue("Total number of services limit exceeded [sum=" + sum +
                 ", assigns=" + assignments.assigns() + ']', sum <= total);
+        else
+            assertEquals("Reassign per node failed.", nodes.size(), assignments.assigns().size());
 
         if (!lastTry && proxy(grid).get() != 10)
             return false;
@@ -193,6 +195,29 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         assertEquals(10, proxy(grid).get());
 
         return true;
+    }
+
+    /**
+     * Start 1, 2 or 3 random nodes simultaneously.
+     *
+     * @param limit Cluster size limit.
+     * @param rnd Randmo generator.
+     * @param grids Collection with indexes of running nodes.
+     * @throws Exception If failed.
+     */
+    private void startRandomNodesMultithreaded(int limit, Random rnd, Collection<Integer> grids) throws Exception {
+        int cnt = rnd.nextInt(Math.min(limit - grids.size(), 3)) + 1;
+
+        for (int i = 1; i <= cnt; i++) {
+            int gridIdx = nextAvailableIdx(grids, limit, rnd);
+
+            if (i == cnt)
+                startGrid(gridIdx);
+            else
+                GridTestUtils.runAsync(() -> startGrid(gridIdx));
+
+            grids.add(gridIdx);
+        }
     }
 
     /**
