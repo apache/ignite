@@ -164,10 +164,8 @@ public class DiscoCache {
         this.consIdxToNodeId = consIdxToNodeId;
 
         aliveBaselineNodePred = new P1<BaselineNode>() {
-            @Override
-            public boolean apply(BaselineNode node) {
+            @Override public boolean apply(BaselineNode node) {
                 return node instanceof ClusterNode && alives.contains(((ClusterNode)node).id());
-
             }
         };
 
