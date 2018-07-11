@@ -106,8 +106,8 @@ public class JdbcThinTcpIo {
     /** Input stream. */
     private BufferedInputStream in;
 
-    /** Closed flag. */
-    private boolean closed;
+    /** Connected flag. */
+    private boolean connected;
 
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
@@ -160,14 +160,14 @@ public class JdbcThinTcpIo {
             ownThread = Thread.currentThread();
         }
 
+        assert !connected;
+
         try {
             List<String> inaccessibleAddrs = null;
 
             List<Exception> exceptions = null;
 
             HostAndPortRange[] srvs = connProps.getAddresses();
-
-            boolean connected = false;
 
             for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
                 HostAndPortRange srv = srvs[srvIdx];
@@ -178,8 +178,6 @@ public class JdbcThinTcpIo {
                     for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
                         try {
                             connect(new InetSocketAddress(addr, port), timeout);
-
-                            connected = true;
 
                             break;
                         }
@@ -238,43 +236,53 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private void connect(InetSocketAddress addr, int timeout) throws IOException, SQLException {
-        Socket sock;
-
-        if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
-            sock = JdbcThinSSLUtil.createSSLSocket(addr, connProps);
-        else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
-            sock = new Socket();
-
-            try {
-                sock.connect(addr, timeout);
-            }
-            catch (IOException e) {
-                throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
-                    ", port=" + addr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-        }
-        else {
-            throw new SQLException("Unknown sslMode. [sslMode=" + connProps.getSslMode() + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-
-        if (connProps.getSocketSendBuffer() != 0)
-            sock.setSendBufferSize(connProps.getSocketSendBuffer());
-
-        if (connProps.getSocketReceiveBuffer() != 0)
-            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
-
-        sock.setTcpNoDelay(connProps.isTcpNoDelay());
+        Socket sock = null;
 
         try {
-            endpoint = new IpcClientTcpEndpoint(sock);
+            if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
+                sock = JdbcThinSSLUtil.createSSLSocket(addr, connProps);
+            else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
+                sock = new Socket();
 
-            out = new BufferedOutputStream(endpoint.outputStream());
-            in = new BufferedInputStream(endpoint.inputStream());
+                try {
+                    sock.connect(addr, timeout);
+                }
+                catch (IOException e) {
+                    throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
+                        ", port=" + addr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                }
+            }
+            else {
+                throw new SQLException("Unknown sslMode. [sslMode=" + connProps.getSslMode() + ']',
+                    SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
+
+            if (connProps.getSocketSendBuffer() != 0)
+                sock.setSendBufferSize(connProps.getSocketSendBuffer());
+
+            if (connProps.getSocketReceiveBuffer() != 0)
+                sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
+
+            sock.setTcpNoDelay(connProps.isTcpNoDelay());
+
+            try {
+                endpoint = new IpcClientTcpEndpoint(sock);
+
+                out = new BufferedOutputStream(endpoint.outputStream());
+                in = new BufferedInputStream(endpoint.inputStream());
+
+                connected = true;
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        catch (Exception e) {
+            if (sock != null && !sock.isClosed())
+                U.closeQuiet(sock);
+
+            throw e;
         }
     }
 
@@ -601,7 +609,7 @@ public class JdbcThinTcpIo {
      * Close the client IO.
      */
     public void close() {
-        if (closed)
+        if (!connected)
             return;
 
         // Clean up resources.
@@ -611,7 +619,7 @@ public class JdbcThinTcpIo {
         if (endpoint != null)
             endpoint.close();
 
-        closed = true;
+        connected = false;
     }
 
     /**
