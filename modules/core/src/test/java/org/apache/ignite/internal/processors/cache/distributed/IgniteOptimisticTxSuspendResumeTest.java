@@ -102,6 +102,21 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             @Override public void applyx(Transaction tx) throws Exception {
                 tx.setRollbackOnly();
             }
+        },
+        new CI1Exc<Transaction>() {
+            @Override public void applyx(Transaction tx) throws Exception {
+                tx.savepoint("sp");
+            }
+        },
+        new CI1Exc<Transaction>() {
+            @Override public void applyx(Transaction tx) throws Exception {
+                tx.rollbackToSavepoint("sp");
+            }
+        },
+        new CI1Exc<Transaction>() {
+            @Override public void applyx(Transaction tx) throws Exception {
+                tx.releaseSavepoint("sp");
+            }
         }
     );
 
