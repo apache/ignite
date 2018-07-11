@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Wrapper to store connection and flag is schema set or not.
@@ -33,11 +34,15 @@ public class H2ConnectionWrapper implements AutoCloseable {
     /** */
     private volatile String schema;
 
+    /** */
+    private volatile H2StatementCache statementCache;
+
     /**
      * @param conn Connection to use.
      */
     H2ConnectionWrapper(Connection conn) {
         this.conn = conn;
+        clearStatementCache();
     }
 
     /**
@@ -59,6 +64,14 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     public Connection connection() {
         return conn;
+    }
+
+    public H2StatementCache statementCache() {
+        return statementCache;
+    }
+
+    public void clearStatementCache() {
+        statementCache = new H2StatementCache(256);
     }
 
     /** {@inheritDoc} */

@@ -249,18 +249,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
 
     /** */
-    private static final int PREPARED_STMT_CACHE_SIZE = 256;
-
-    /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
 
-    /** The period of clean up the {@link #stmtCache}. */
+    /** The period of clean up the statement cache. */
     private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
     /** The period of clean up the {@link #conns}. */
     private final Long CLEANUP_CONNECTIONS_PERIOD = 2000L;
 
-    /** The timeout to remove entry from the {@link #stmtCache} if the thread doesn't perform any queries. */
+    /** The timeout to remove entry from the statement cache if the thread doesn't perform any queries. */
     private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
         Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
 
@@ -287,7 +284,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String dbUrl = "jdbc:h2:mem:";
 
     /** */
-    private final ConcurrentMap<Thread, Connection> conns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, H2ConnectionWrapper> conns = new ConcurrentHashMap<>();
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -313,8 +310,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
 
-    private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool =
-            ThreadLocal.withInitial(() -> new ObjectPool<>(this::createConnection, 5));
+    private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
+        @Override
+        protected ObjectPool<H2ConnectionWrapper> initialValue() {
+            ObjectPool<H2ConnectionWrapper> pool = new ObjectPool<>(IgniteH2Indexing.this::createConnection, 5);
+            pools.put(Thread.currentThread(), pool);
+            return pool;
+        }
+    };
+    private final ConcurrentHashMap<Thread, ObjectPool<H2ConnectionWrapper>> pools = new ConcurrentHashMap<>();
 
     private H2ConnectionWrapper createConnection() {
         try {
@@ -342,9 +346,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 reusable = initialValue();
 
                 set(reusable);
-
-                // Reset statement cache when new connection is created.
-                stmtCache.remove(Thread.currentThread());
             }
 
             return reusable;
@@ -355,7 +356,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
-            conns.put(Thread.currentThread(), reusableConnection.object().connection());
+            conns.put(Thread.currentThread(), reusableConnection.object());
 
             return reusableConnection;
         }
@@ -375,9 +376,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
-
-    /** Statement cache. */
-    private final ConcurrentHashMap<Thread, H2StatementCache> stmtCache = new ConcurrentHashMap<>();
 
     /** */
     private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -536,22 +534,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@link H2StatementCache} associated with current thread.
      */
     @NotNull private H2StatementCache getStatementsCacheForCurrentThread() {
-        Thread curThread = Thread.currentThread();
+        H2StatementCache statementCache = connCache.get().object().statementCache();
 
-        H2StatementCache cache = stmtCache.get(curThread);
+        statementCache.updateLastUsage();
 
-        if (cache == null) {
-            H2StatementCache cache0 = new H2StatementCache(PREPARED_STMT_CACHE_SIZE);
-
-            cache = stmtCache.putIfAbsent(curThread, cache0);
-
-            if (cache == null)
-                cache = cache0;
-        }
-
-        cache.updateLastUsage();
-
-        return cache;
+        return statementCache;
     }
 
     /** {@inheritDoc} */
@@ -2885,28 +2872,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}.
+     * Called periodically by {@link GridTimeoutProcessor} to clean up the statement cache.
      */
     private void cleanupStatementCache() {
-        long cur = U.currentTimeMillis();
+        long now = U.currentTimeMillis();
 
-        for (Iterator<Map.Entry<Thread, H2StatementCache>> it = stmtCache.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2StatementCache> entry = it.next();
+        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
 
             Thread t = entry.getKey();
 
-            if (t.getState() == Thread.State.TERMINATED
-                || cur - entry.getValue().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
+            if (t.getState() == Thread.State.TERMINATED) {
+                U.close(entry.getValue(), log);
+
                 it.remove();
+            }
+            else if (now - entry.getValue().statementCache().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
+                entry.getValue().clearStatementCache();
         }
     }
 
     /**
-     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}.
+     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #conns}.
      */
     private void cleanupConnections() {
-        for (Iterator<Map.Entry<Thread, Connection>> it = conns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, Connection> entry = it.next();
+        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
 
             Thread t = entry.getKey();
 
@@ -2927,13 +2918,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
 
-        Connection connection = conns.remove(key);
+        H2ConnectionWrapper connection = conns.remove(key);
 
         connCache.remove();
 
-        stmtCache.remove(key);
-
-        assert reusableConnection.object().connection() == connection;
+        assert reusableConnection.object().connection() == connection.connection();
 
         return reusableConnection;
     }
@@ -3243,7 +3232,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        for (Connection c : conns.values())
+        for (H2ConnectionWrapper c : conns.values())
             U.close(c, log);
 
         conns.clear();
@@ -3376,7 +3365,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            stmtCache.clear();
+            conns.values().forEach(H2ConnectionWrapper::clearStatementCache);
 
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
@@ -3536,14 +3525,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void cancelAllQueries() {
         mapQryExec.cancelLazyWorkers();
 
-        for (Connection c : conns.values())
+        for (H2ConnectionWrapper c : conns.values())
             U.close(c, log);
     }
 
     /**
      * @return Per-thread connections.
      */
-    public Map<Thread, Connection> perThreadConnections() {
+    public Map<Thread, ?> perThreadConnections() {
         return conns;
     }
 
