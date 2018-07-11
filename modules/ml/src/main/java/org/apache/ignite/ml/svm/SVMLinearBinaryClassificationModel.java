@@ -181,9 +181,13 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
             return builder.toString();
         }
 
-        return "SVMModel{" +
+        return "SVMModel [" +
             "weights=" + weights +
             ", intercept=" + intercept +
-            '}';
+            ']';
+    }
+
+    @Override public String toString(boolean pretty) {
+        return toString();
     }
 }

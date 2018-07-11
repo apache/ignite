@@ -19,6 +19,7 @@ package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -59,7 +60,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param compressor Impurity function compressor.
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor, DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
+        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
@@ -248,5 +250,33 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             this.col = col;
             this.threshold = threshold;
         }
+    }
+
+    public static String printTree(DecisionTreeNode node, boolean pretty) {
+        StringBuilder builder = new StringBuilder();
+        printTree(node, 0, builder, pretty);
+        return builder.toString();
+    }
+
+    private static void printTree(DecisionTreeNode node, int depth, StringBuilder builder, boolean pretty) {
+        builder.append(pretty ? String.join("", Collections.nCopies(depth, "\t")) : "");
+        if (node instanceof DecisionTreeLeafNode) {
+            DecisionTreeLeafNode leaf = (DecisionTreeLeafNode)node;
+            builder.append(pretty ? "" : " ").append("leaf [").append(String.format("%.4f", leaf.getVal())).append("]");
+        }
+        else if (node instanceof DecisionTreeConditionalNode) {
+            DecisionTreeConditionalNode condition = (DecisionTreeConditionalNode)node;
+            builder.append(pretty ? "" : " (").append("cond [x")
+                .append(condition.getCol())
+                .append(" > ")
+                .append(String.format("%.4f", condition.getThreshold()))
+                .append(pretty ? "]\n" : "]");
+            printTree(condition.getThenNode(), depth + 1, builder, pretty);
+            builder.append(pretty ? "\n" : ", ");
+            printTree(condition.getElseNode(), depth + 1, builder, pretty);
+            builder.append(pretty ? "" : ")");
+        }
+        else
+            throw new IllegalArgumentException();
     }
 }

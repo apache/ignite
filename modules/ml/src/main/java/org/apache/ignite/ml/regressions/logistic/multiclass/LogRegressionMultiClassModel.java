@@ -84,6 +84,10 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
         return wholeStr.toString();
     }
 
+    @Override public String toString(boolean pretty) {
+        return toString();
+    }
+
     /**
      * Adds a specific Log Regression binary classifier to the bunch of same classifiers.
      *

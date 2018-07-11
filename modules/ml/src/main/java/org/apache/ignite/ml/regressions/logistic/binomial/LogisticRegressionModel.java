@@ -192,9 +192,13 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
             return builder.toString();
         }
 
-        return "LogisticRegressionModel{" +
+        return "LogisticRegressionModel [" +
             "weights=" + weights +
             ", intercept=" + intercept +
-            '}';
+            ']';
+    }
+
+    @Override public String toString(boolean pretty) {
+        return toString();
     }
 }

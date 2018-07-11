@@ -23,4 +23,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * Predictions aggregator interface.
  */
 public interface PredictionsAggregator extends IgniteFunction<double[], Double> {
+    public default String toString(boolean pretty) {
+        return getClass().getSimpleName();
+    }
 }

@@ -270,4 +270,16 @@ public class KNNClassificationModel implements Model<Vector, Double>, Exportable
 
         return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
     }
+
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    @Override public String toString(boolean pretty) {
+        return new StringBuilder("KNNClassificationModel [")
+            .append("k = ").append(k).append(", ")
+            .append("measure = ").append(distanceMeasure.getClass().getSimpleName()).append(", ")
+            .append("strategy = ").append(stgy).append("]")
+            .toString();
+    }
 }

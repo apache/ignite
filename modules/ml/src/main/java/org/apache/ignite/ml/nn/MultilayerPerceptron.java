@@ -25,6 +25,7 @@ import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -559,5 +560,27 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         diff.map(nonlinearity::differential);
 
         return diff;
+    }
+
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    @Override public String toString(boolean pretty) {
+        StringBuilder builder = new StringBuilder("MultilayerPerceptron [\n");
+        if(below != null)
+            builder.append("below = \n").append(below.toString(pretty)).append("\n\n");
+        builder.append("layers = [").append(pretty ? "\n" : "");
+        for(int i = 0; i < layers.size(); i++) {
+            MLPLayer layer = layers.get(i);
+            builder.append("\tlayer").append(i).append(" = [\n");
+            if(layer.biases != null)
+                builder.append("\t\tbias = ").append(Tracer.asAscii(layer.biases, "%.4f", false)).append("\n");
+            String matrix = Tracer.asAscii(layer.weights, "%.4f").replaceAll("\n", "\n\t\t\t");
+            builder.append("\t\tweights = [\n\t\t\t").append(matrix).append("\n\t\t]");
+            builder.append("\n\t]\n");
+        }
+        builder.append("]");
+        return builder.toString();
     }
 }

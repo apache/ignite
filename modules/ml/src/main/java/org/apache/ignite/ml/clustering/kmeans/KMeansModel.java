@@ -20,6 +20,7 @@ package org.apache.ignite.ml.clustering.kmeans;
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
@@ -109,4 +110,42 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         return distanceMeasure.equals(that.distanceMeasure) && Arrays.deepEquals(centers, that.centers);
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        String measureName = distanceMeasure.getClass().getSimpleName();
+        final String ENDING = pretty ? "\n" : "";
+        final String PREFIX = pretty ? "\t" : "";
+
+        StringBuilder builder = new StringBuilder("KMeansModel [").append(ENDING)
+            .append(PREFIX).append("distance measure = ").append(measureName).append(pretty ? "\n" : ", ")
+            .append(PREFIX).append("centroids = [").append(ENDING);
+
+        for (int i = 0; i < centers.length; i++) {
+            Vector v = centers[i];
+            boolean isLast = i == centers.length - 1;
+
+            final String DOUBLE_PREFIX = pretty ? "\t\t" : "";
+            final String DELIM = isLast ? "" : ", ";
+            if (centers.length <= 20) {
+                builder.append(DOUBLE_PREFIX)
+                    .append(Tracer.asAscii(v, "%.4f", false))
+                    .append(DELIM)
+                    .append(ENDING);
+            }
+            else {
+                builder.append(DOUBLE_PREFIX)
+                    .append(v.getClass().getSimpleName())
+                    .append(DELIM)
+                    .append(ENDING);
+            }
+        }
+
+        builder.append(PREFIX).append("]").append(ENDING).append("]");
+        return builder.toString();
+    }
 }

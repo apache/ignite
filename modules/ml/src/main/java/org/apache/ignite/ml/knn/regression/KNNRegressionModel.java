@@ -86,4 +86,16 @@ public class KNNRegressionModel extends KNNClassificationModel {
             sum += neighbor.label();
         return sum / (double)k;
     }
+
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    @Override public String toString(boolean pretty) {
+        return new StringBuilder("KNNRegressionModel [")
+            .append("k = ").append(k).append(", ")
+            .append("measure = ").append(distanceMeasure.getClass().getSimpleName()).append(", ")
+            .append("strategy = ").append(stgy).append("]")
+            .toString();
+    }
 }

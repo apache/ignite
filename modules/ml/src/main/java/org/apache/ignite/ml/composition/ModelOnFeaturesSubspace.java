@@ -19,6 +19,7 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
@@ -71,5 +72,28 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
      */
     public Model<Vector, Double> getMdl() {
         return mdl;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        StringBuilder builder = new StringBuilder();
+
+        final String POSTFIX = pretty ? "\n" : "";
+        builder.append("ModelOnFeatureSubspace [").append(POSTFIX)
+            .append(pretty ? "\t" : "").append("model = ").append(mdl.toString(false)).append(POSTFIX)
+            .append(pretty ? "\t" : ", ").append("features mapping = ");
+
+        String mappingStr = featuresMapping.entrySet().stream()
+            .map(e -> String.format("%d -> %d", e.getKey(), e.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+
+        builder.append(mappingStr).append(POSTFIX).append("]");
+        return builder.toString();
     }
 }
