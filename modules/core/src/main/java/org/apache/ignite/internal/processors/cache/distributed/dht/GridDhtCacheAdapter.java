@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -688,11 +689,26 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 log.debug("Will node load entry into cache (partition is invalid): " + part);
         }
         catch (GridDhtInvalidPartitionException e) {
+            GridDhtTopologyFuture topFut = ctx.topologyVersionFuture();
+
+            AffinityTopologyVersion curTopFut = topFut.isDone() ? topFut.topologyVersion() :
+                topFut.initialVersion();
+
             if (log.isDebugEnabled())
                 log.debug(S.toString("Ignoring entry for partition that does not belong",
                     "key", key, true,
                     "val", val, true,
                     "err", e, false));
+
+            if (curTopFut.compareTo(topVer) > 0) {
+                ClusterTopologyCheckedException topChangedE = new ClusterTopologyCheckedException(
+                    "CacheStore loading should be retried  at stable topology [topVer=" + topVer +
+                    ", curTopFut=" + curTopFut + ']');
+
+                topChangedE.retryReadyFuture(ctx.affinity().affinityReadyFuture(curTopFut));
+
+                throw new CacheLoaderException(topChangedE.getMessage(), topChangedE);
+            }
         }
     }
 

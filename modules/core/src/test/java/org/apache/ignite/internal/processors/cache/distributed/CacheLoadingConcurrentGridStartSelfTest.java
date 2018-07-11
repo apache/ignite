@@ -22,11 +22,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheLoaderException;
@@ -43,6 +38,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -59,7 +55,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
-import static org.apache.ignite.internal.processors.cache.store.GridCacheStoreManagerAdapter.*;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -466,18 +461,23 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         while (true) {
             try {
                 f.apply(g0);
-
-                break;
             }
-            catch (RebalanceException e) {
-                IgniteInternalFuture<?> readyFuture = e.retryReadyFuture();
+            catch (CacheLoaderException e) {
+                assertTrue(e.getCause() instanceof ClusterTopologyCheckedException);
 
-                if (readyFuture != null)
-                    readyFuture.get();
+                IgniteInternalFuture<?> retryFut = ((ClusterTopologyCheckedException)e.getCause()).retryReadyFuture();
+
+                assertNotNull(retryFut);
+
+                retryFut.get(getTestTimeout());
+
+                continue;
+            } catch (Exception r){
+                r.printStackTrace();
             }
+
+            break;
         }
-
-        fut.get();
 
         assertCacheSize();
     }
