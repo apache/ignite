@@ -45,7 +45,7 @@ public class Evaluator {
      */
     public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache,
         Model<Vector, L> mdl,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor,
         Accuracy<L> metric) {
         double metricRes;
@@ -81,7 +81,7 @@ public class Evaluator {
      */
     public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache,  IgniteBiPredicate<K, V> filter,
         Model<Vector, L> mdl,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor,
         Accuracy<L> metric) {
         double metricRes;
