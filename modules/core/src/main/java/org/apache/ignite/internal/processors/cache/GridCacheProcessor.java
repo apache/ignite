@@ -2597,7 +2597,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    public void onCacheStatisticsManage(CacheStatisticsManageMessage msg) {
+    public void onCacheStatisticsModeChange(CacheStatisticsModeChangeMessage msg) {
         assert msg != null;
 
         if (msg.initial()) {
@@ -2611,39 +2611,60 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             for (String cacheName : msg.caches()) {
-                if (msg instanceof CacheStatisticsModeChangeMessage) {
-                    CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
+                DynamicCacheDescriptor desc = cachesInfo.registeredCaches().get(cacheName);
 
-                    DynamicCacheDescriptor desc = cachesInfo.registeredCaches().get(cacheName);
+                if (desc != null) {
+                    if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
+                        desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
 
-                    if (desc != null) {
-                        if (desc.cacheConfiguration().isStatisticsEnabled() != msg0.enabled()) {
-                            desc.cacheConfiguration().setStatisticsEnabled(msg0.enabled());
-
-                            try {
-                                ctx.cache().saveCacheConfiguration(desc);
-                            }
-                            catch (IgniteCheckedException e) {
-                                log.error("Error while saving cache configuration to disk, cfg = "
-                                    + desc.cacheConfiguration(), e);
-                            }
+                        try {
+                            ctx.cache().saveCacheConfiguration(desc);
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Error while saving cache configuration to disk, cfg = "
+                                + desc.cacheConfiguration(), e);
                         }
                     }
-                    else
-                        log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
-                            + cacheName + ']');
-                }
-                else if (msg instanceof CacheStatisticsClearMessage) {
-                    IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheName);
-
-                    if(cache != null)
-                        cache.localMxBean().clear();
-                    else
-                        log.warning("Failed to clear cache, cache not found [cacheName="
-                            + cacheName + ']');
                 }
                 else
-                    throw new IllegalArgumentException("Unknown statistics manage message [" + msg + ']');
+                    log.warning("Failed to change cache descriptor configuration, cache not found [cacheName="
+                        + cacheName + ']');
+            }
+        }
+        else {
+            EnableStatisticsFuture fut = manageStatisticsFuts.get(msg.requestId());
+
+            if (fut != null)
+                fut.onDone();
+        }
+    }
+
+    /**
+     * Cache statistics clear message received.
+     *
+     * @param msg Message.
+     */
+    private void onCacheStatisticsClear(CacheStatisticsClearMessage msg) {
+        assert msg != null;
+
+        if (msg.initial()) {
+            EnableStatisticsFuture fut = manageStatisticsFuts.get(msg.requestId());
+
+            if (fut != null && !cacheNames().containsAll(msg.caches())) {
+                fut.onDone(new IgniteCheckedException("One or more cache descriptors not found [caches="
+                    + caches + ']'));
+
+                return;
+            }
+
+            for (String cacheName : msg.caches()) {
+                IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheName);
+
+                if (cache != null)
+                    cache.localMxBean().clear();
+                else
+                    log.warning("Failed to clear cache statistics, cache not found [cacheName="
+                        + cacheName + ']');
             }
         }
         else {
@@ -3517,8 +3538,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
 
-        if (msg instanceof CacheStatisticsManageMessage)
-            onCacheStatisticsManage((CacheStatisticsManageMessage)msg);
+        if (msg instanceof CacheStatisticsModeChangeMessage)
+            onCacheStatisticsModeChange((CacheStatisticsModeChangeMessage)msg);
+
+        if (msg instanceof CacheStatisticsClearMessage)
+            onCacheStatisticsClear((CacheStatisticsClearMessage)msg);
 
         if (msg instanceof TxTimeoutOnPartitionMapExchangeChangeMessage)
             onTxTimeoutOnPartitionMapExchangeChange((TxTimeoutOnPartitionMapExchangeChangeMessage)msg);
@@ -4512,7 +4536,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (globalCaches.isEmpty())
             return;
 
-        sendManageCacheStatisticsMessage(new CacheStatisticsModeChangeMessage(UUID.randomUUID(), globalCaches, enabled));
+        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(UUID.randomUUID(), globalCaches, enabled);
+
+        EnableStatisticsFuture fut = new EnableStatisticsFuture(msg.requestId());
+
+        manageStatisticsFuts.put(msg.requestId(), fut);
+
+        ctx.grid().context().discovery().sendCustomEvent(msg);
+
+        fut.get();
     }
 
     /**
@@ -4533,13 +4565,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (globalCaches.isEmpty())
             return;
 
-        sendManageCacheStatisticsMessage(new CacheStatisticsClearMessage(UUID.randomUUID(), globalCaches));
-    }
+        CacheStatisticsClearMessage msg = new CacheStatisticsClearMessage(UUID.randomUUID(), globalCaches);
 
-    /**
-     *
-     */
-    private void sendManageCacheStatisticsMessage(CacheStatisticsManageMessage msg) throws IgniteCheckedException {
         EnableStatisticsFuture fut = new EnableStatisticsFuture(msg.requestId());
 
         manageStatisticsFuts.put(msg.requestId(), fut);
