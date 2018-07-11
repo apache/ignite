@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -194,6 +195,22 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return assignsChanged;
     }
 
+    /**
+     * Assignments can be the same, but {@link GridDhtPartitionTopologyImpl#resetOwners(java.util.Map, java.util.Set)}
+     * can move partition state from OWNING to MOVING due to obsolete partition update counter.
+     *
+     * @param lastTopVer Topology version to check states.
+     * @return {@code True} if partitions of current topology have their OWNING states other than affinity
+     *         assingments require.
+     */
+    private boolean isOwnersChanged(AffinityTopologyVersion lastTopVer) {
+        List<List<ClusterNode>> allOw = grp.topology().allOwners();
+
+        List<List<ClusterNode>> affOw = grp.affinity().readyAffinity(lastTopVer).assignment();
+
+        return !affOw.containsAll(allOw);
+    }
+
     /** {@inheritDoc} */
     @Override public void afterExchange(GridDhtPartitionsExchangeFuture exchFut) {
         if (!ctx.kernalContext().clientNode()) {
@@ -210,7 +227,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             if (!actTopVer.initialized() ||
                 isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
-                !leftNodes.isEmpty()) { // Some of nodes left before rabalance compelete.
+                !leftNodes.isEmpty() || // Some of nodes left before rabalance compelete.
+                isOwnersChanged(lastTopVer) ) { // Owners not changed due to exchange.
                 // Mark current rebalance as obsolete.
                 demander.topologyVersionToDemand(lastTopVer);
             }
@@ -235,10 +253,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             "Topology version mismatch [exchId=" + exchId +
             ", grp=" + grp.name() +
             ", topVer=" + top.readyTopologyVersion() + ']';
-
-        // If generation assignments have been forced e.g. RebalanceReassignExchangeTask, ForceRebalanceExchangeTask.
-        if (exchFut == null)
-            demander.topologyVersionToDemand(topVer);
 
         GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
 
@@ -349,6 +363,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         if (!assignments.isEmpty())
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+
+        // If generation assignments have been forced by RebalanceReassignExchangeTask or ForceRebalanceExchangeTask.
+        if (exchFut == null)
+            demander.topologyVersionToDemand(topVer);
 
         return assignments;
     }
