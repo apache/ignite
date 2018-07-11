@@ -47,7 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class HistoricalRebalanceReservationsTest extends GridCommonAbstractTest {
+public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
