@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageE
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsUnusedWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
@@ -141,6 +142,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
+
+        suite.addTestSuite(SlowHistoricalRebalanceSmallHistoryTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 
