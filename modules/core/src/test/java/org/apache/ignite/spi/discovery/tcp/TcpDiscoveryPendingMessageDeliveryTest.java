@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -47,14 +46,14 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private AtomicBoolean blockMsgs;
+    private volatile boolean blockMsgs;
 
     /** */
     private Set<TcpDiscoveryAbstractMessage> receivedEnsuredMsgs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        blockMsgs = new AtomicBoolean(false);
+        blockMsgs = false;
         receivedEnsuredMsgs = new ConcurrentHashSet<>();
     }
 
@@ -116,7 +115,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
                 return receivedEnsuredMsgs.equals(sentEnsuredMsgs);
             }, 10000));
 
-        blockMsgs.set(true);
+        blockMsgs = true;
 
         log.info("Sending dummy custom messages");
 
@@ -164,7 +163,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
-        blockMsgs.set(true);
+        blockMsgs = true;
 
         log.info("Sending dummy custom messages");
 
@@ -200,28 +199,28 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
-            if (!blockMsgs.get())
+            if (!blockMsgs)
                 super.writeToSocket(sock, msg, data, timeout);
         }
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (!blockMsgs.get())
+            if (!blockMsgs)
                 super.writeToSocket(sock, msg, timeout);
         }
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (!blockMsgs.get())
+            if (!blockMsgs)
                 super.writeToSocket(sock, out, msg, timeout);
         }
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
             long timeout) throws IOException {
-            if (!blockMsgs.get())
+            if (!blockMsgs)
                 super.writeToSocket(msg, sock, res, timeout);
         }
     }
