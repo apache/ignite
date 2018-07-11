@@ -71,6 +71,15 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        stopTcpThreads();
+
+        stopAllGrids();
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopTcpThreads();
 
