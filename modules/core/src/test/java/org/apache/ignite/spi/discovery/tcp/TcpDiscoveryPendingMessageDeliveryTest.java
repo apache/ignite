@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class PendingMessageDeliveryTest extends GridCommonAbstractTest {
+public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
