@@ -36,6 +36,9 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
     /** */
     private long qryCntr;
 
+    /** */
+    private long qryTrackerId;
+
     /**
      * Required by {@link GridIoMessageFactory}.
      */
@@ -51,10 +54,11 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
      * @param qryTrackerId Query tracker id.
      */
     public MvccAckRequestTxAndQueryEx(long futId, long txCntr, long qryCrdVer, long qryCntr, long qryTrackerId) {
-        super(futId, txCntr, qryTrackerId);
+        super(futId, txCntr);
 
         this.qryCrdVer = qryCrdVer;
         this.qryCntr = qryCntr;
+        this.qryTrackerId = qryTrackerId;
     }
 
     /** {@inheritDoc} */
@@ -65,6 +69,11 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
     /** {@inheritDoc} */
     @Override public long queryCounter() {
         return qryCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long queryTrackerId() {
+        return qryTrackerId;
     }
 
     /** {@inheritDoc} */
@@ -82,14 +91,20 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
         }
 
         switch (writer.state()) {
-            case 4:
+            case 3:
                 if (!writer.writeLong("qryCntr", qryCntr))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeLong("qryCrdVer", qryCrdVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeLong("qryTrackerId", qryTrackerId))
                     return false;
 
                 writer.incrementState();
@@ -110,7 +125,7 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 3:
                 qryCntr = reader.readLong("qryCntr");
 
                 if (!reader.isLastRead())
@@ -118,8 +133,16 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 qryCrdVer = reader.readLong("qryCrdVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                qryTrackerId = reader.readLong("qryTrackerId");
 
                 if (!reader.isLastRead())
                     return false;

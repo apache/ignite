@@ -44,10 +44,9 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
      * @param futId Future ID.
      * @param txCntr Counter assigned to transaction update.
      * @param qryCntr Counter assigned for transaction reads.
-     * @param qryTrackerId Query tracker id.
      */
-    public MvccAckRequestTxAndQuery(long futId, long txCntr, long qryCntr, long qryTrackerId) {
-        super(futId, txCntr, qryTrackerId);
+    public MvccAckRequestTxAndQuery(long futId, long txCntr, long qryCntr) {
+        super(futId, txCntr);
 
         this.qryCntr = qryCntr;
     }
@@ -72,7 +71,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
         }
 
         switch (writer.state()) {
-            case 4:
+            case 3:
                 if (!writer.writeLong("qryCntr", qryCntr))
                     return false;
 
@@ -94,7 +93,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 3:
                 qryCntr = reader.readLong("qryCntr");
 
                 if (!reader.isLastRead())
@@ -114,7 +113,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     /** {@inheritDoc} */

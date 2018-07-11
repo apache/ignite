@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,15 +35,16 @@ import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMv
 /**
  *
  */
+@SuppressWarnings({"TypeMayBeWeakened", "Java8MapApi"})
 class MvccPreviousCoordinatorQueries {
     /** */
     private volatile boolean prevQueriesDone;
 
     /** Map of nodes to active {@link TrackableStaticMvccQueryTracker} IDs list. */
-    private final ConcurrentHashMap<UUID, GridLongList> activeQueries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Set<Long>> activeQueries = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentHashMap<UUID, GridLongList> rcvdAcks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Set<Long>> rcvdAcks = new ConcurrentHashMap<>();
 
     /** */
     private Set<UUID> rcvd;
@@ -101,36 +103,23 @@ class MvccPreviousCoordinatorQueries {
         if (nodeTrackers == null || nodeTrackers.isEmpty() || prevQueriesDone)
             return;
 
-        GridLongList currTrackers = activeQueries.get(nodeId);
+        Set<Long> currTrackers = activeQueries.get(nodeId);
 
         if (currTrackers == null)
-            activeQueries.put(nodeId, currTrackers = nodeTrackers);
+            activeQueries.put(nodeId, currTrackers = addAll(nodeTrackers, null));
         else
-            currTrackers.addAll(nodeTrackers);
-
-        assert currTrackers == null || currTrackers.distinct();
+            addAll(nodeTrackers, currTrackers);
 
         // Check if there were any acks had been arrived before.
-        GridLongList currAcks = rcvdAcks.get(nodeId);
+        Set<Long> currAcks = rcvdAcks.get(nodeId);
 
-        if (currTrackers != null && currAcks != null && !currAcks.isEmpty()) {
-            GridLongList foundAcks = new GridLongList();
+        if (currTrackers != null && !currTrackers.isEmpty() && currAcks != null && !currAcks.isEmpty()) {
+            Collection<Long> intersection =  new HashSet<>(currAcks);
 
-            // Find those acks if any.
-            for (int i = 0; i < currAcks.size(); i++) {
-                long trackerId = currAcks.get(i);
+            intersection.retainAll(currTrackers);
 
-                if (currTrackers.contains(trackerId))
-                    foundAcks.add(trackerId);
-            }
-
-            // Remove those acks from current trackers.
-            for (int i = 0; i < foundAcks.size(); i++) {
-                long trackerId = foundAcks.get(i);
-
-                currTrackers.removeValue(0, trackerId);
-                currAcks.removeValue(0, trackerId);
-            }
+            currAcks.removeAll(intersection);
+            currTrackers.removeAll(intersection);
 
             if (currTrackers.isEmpty())
                 activeQueries.remove(nodeId);
@@ -196,13 +185,13 @@ class MvccPreviousCoordinatorQueries {
             return;
 
         synchronized (this) {
-            GridLongList nodeTrackers = activeQueries.get(nodeId);
+            Set<Long> nodeTrackers = activeQueries.get(nodeId);
 
-            if (nodeTrackers == null || (nodeTrackers.removeValue(0, qryTrackerId) == -1)) {
-                GridLongList nodeAcks = rcvdAcks.get(nodeId);
+            if (nodeTrackers == null || !nodeTrackers.remove(qryTrackerId)) {
+                Set<Long> nodeAcks = rcvdAcks.get(nodeId);
 
                 if (nodeAcks == null)
-                    rcvdAcks.put(nodeId, nodeAcks = new GridLongList());
+                    rcvdAcks.put(nodeId, nodeAcks = new HashSet<>());
 
                 // We received qry done ack before the active qry message. Need to save it.
                 nodeAcks.add(qryTrackerId);
@@ -214,5 +203,21 @@ class MvccPreviousCoordinatorQueries {
             if (initDone && !prevQueriesDone)
                 prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();
         }
+    }
+
+    /**
+     * @param from Long list.
+     * @param to Set.
+     */
+    private Set<Long> addAll(GridLongList from, Set<Long> to) {
+        assert from != null;
+
+        if (to == null)
+            to = new HashSet<>(from.size());
+
+        for (int i = 0; i < from.size(); i++)
+            to.add(from.get(i));
+
+        return to;
     }
 }

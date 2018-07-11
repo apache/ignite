@@ -689,8 +689,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
             if (readVer.coordinatorVersion() == updateVer.coordinatorVersion()) {
                 msg = new MvccAckRequestTxAndQuery(futId,
                     updateVer.counter(),
-                    trackCntr,
-                    qryTrackerId);
+                    trackCntr);
             }
             else {
                 msg = new MvccAckRequestTxAndQueryEx(futId,
@@ -701,7 +700,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
             }
         }
         else
-            msg = new MvccAckRequestTx(futId, updateVer.counter(), qryTrackerId);
+            msg = new MvccAckRequestTx(futId, updateVer.counter());
 
         return msg;
     }
@@ -834,8 +833,11 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         if (msg.queryCounter() != MVCC_COUNTER_NA) {
             if (msg.queryCoordinatorVersion() == MVCC_CRD_COUNTER_NA)
                 onQueryDone(nodeId, msg.queryCounter());
-            else
+            else {
+                assert msg.queryTrackerId() != MVCC_TRACKER_ID_NA;
+
                 prevCrdQueries.onQueryDone(nodeId, msg.queryTrackerId());
+            }
         }
 
         if (!msg.skipResponse()) {
@@ -953,7 +955,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * @return Active query trackers.
      */
     public Map<Long, TrackableStaticMvccQueryTracker> activeTrackers() {
-        return Collections.unmodifiableMap(activeTrackers);
+        return activeTrackers;
     }
 
     /**

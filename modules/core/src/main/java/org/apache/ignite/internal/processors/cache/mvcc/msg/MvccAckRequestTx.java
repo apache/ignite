@@ -25,6 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  *
@@ -43,9 +44,6 @@ public class MvccAckRequestTx implements MvccMessage {
     private long txCntr;
 
     /** */
-    private long qryTrackerId;
-
-    /** */
     private byte flags;
 
     /**
@@ -58,12 +56,10 @@ public class MvccAckRequestTx implements MvccMessage {
     /**
      * @param futId Future ID.
      * @param txCntr Counter assigned to transaction.
-     * @param qryTrackerId Query tracker id.
      */
-    public MvccAckRequestTx(long futId, long txCntr, long qryTrackerId) {
+    public MvccAckRequestTx(long futId, long txCntr) {
         this.futId = futId;
         this.txCntr = txCntr;
-        this.qryTrackerId = qryTrackerId;
     }
 
     /**
@@ -84,7 +80,7 @@ public class MvccAckRequestTx implements MvccMessage {
      * @return Query tracker id.
      */
     public long queryTrackerId() {
-        return qryTrackerId;
+        return MVCC_TRACKER_ID_NA;
     }
 
     /** {@inheritDoc} */
@@ -153,12 +149,6 @@ public class MvccAckRequestTx implements MvccMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("qryTrackerId", qryTrackerId))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
                 if (!writer.writeLong("txCntr", txCntr))
                     return false;
 
@@ -194,14 +184,6 @@ public class MvccAckRequestTx implements MvccMessage {
                 reader.incrementState();
 
             case 2:
-                qryTrackerId = reader.readLong("qryTrackerId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
                 txCntr = reader.readLong("txCntr");
 
                 if (!reader.isLastRead())
@@ -221,7 +203,7 @@ public class MvccAckRequestTx implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 3;
     }
 
     /** {@inheritDoc} */
