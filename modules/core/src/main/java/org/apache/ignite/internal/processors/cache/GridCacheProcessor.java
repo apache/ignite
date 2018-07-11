@@ -4494,20 +4494,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Enable/disable statistics globally for the caches
      *
-     * @param caches Collection of cache names.
+     * @param cacheNames Collection of cache names.
      * @param enabled Statistics enabled flag.
      */
-    public void enableStatistics(Collection<String> caches, boolean enabled) throws IgniteCheckedException {
-        Collection<String> globalCaches = manageStatisticsCaches(
-            caches,
-            new IgnitePredicate<IgniteInternalCache>() {
-                @Override public boolean apply(IgniteInternalCache cache) {
-                    return !cache.context().isLocal();
-                }
-            }
-        );
+    public void enableStatistics(Collection<String> cacheNames, boolean enabled) throws IgniteCheckedException {
+        Collection<IgniteInternalCache> caches = manageStatisticsCaches(cacheNames);
 
-        if(globalCaches.isEmpty())
+        Collection<String> globalCaches = new HashSet<>(caches.size());
+
+        for (IgniteInternalCache cache : caches) {
+            cache.context().statisticsEnabled(enabled);
+
+            if(!cache.context().isLocal())
+                globalCaches.add(cache.name());
+        }
+
+        if (globalCaches.isEmpty())
             return;
 
         sendManageCacheStatisticsMessage(new CacheStatisticsModeChangeMessage(UUID.randomUUID(), globalCaches, enabled));
@@ -4516,19 +4518,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Clear statistics globally for the caches
      *
-     * @param caches Collection of cache names.
+     * @param cacheNames Collection of cache names.
      */
-    public void clearStatistics(Collection<String> caches) throws IgniteCheckedException {
-        Collection<String> globalCaches = manageStatisticsCaches(
-            caches,
-            new IgnitePredicate<IgniteInternalCache>() {
-                @Override public boolean apply(IgniteInternalCache cache) {
-                    return !cache.context().isLocal() && cache.clusterMxBean().isStatisticsEnabled();
-                }
-            }
-        );
+    public void clearStatistics(Collection<String> cacheNames) throws IgniteCheckedException {
+        Collection<IgniteInternalCache> caches = manageStatisticsCaches(cacheNames);
 
-        if(globalCaches.isEmpty())
+        Collection<String> globalCaches = new HashSet<>(caches.size());
+
+        for (IgniteInternalCache cache : caches) {
+            if(!cache.context().isLocal() && cache.clusterMxBean().isStatisticsEnabled())
+                globalCaches.add(cache.name());
+        }
+
+        if (globalCaches.isEmpty())
             return;
 
         sendManageCacheStatisticsMessage(new CacheStatisticsClearMessage(UUID.randomUUID(), globalCaches));
@@ -4550,11 +4552,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private Collection<String> manageStatisticsCaches(Collection<String> caches,
-        IgnitePredicate<IgniteInternalCache> pred) throws IgniteCheckedException {
+    private Collection<IgniteInternalCache> manageStatisticsCaches(Collection<String> caches)
+        throws IgniteCheckedException {
         assert caches != null;
 
-        Collection<String> res = new ArrayList<>(caches.size());
+        Collection<IgniteInternalCache> res = new ArrayList<>(caches.size());
 
         if (!cacheNames().containsAll(caches))
             throw new IgniteCheckedException("One or more cache descriptors not found [caches=" + caches + ']');
@@ -4565,8 +4567,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cache == null)
                 throw new IgniteCheckedException("Cache not found [cacheName=" + cacheName + ']');
 
-            if (pred.apply(cache))
-                res.add(cacheName);
+            res.add(cache);
         }
 
         return res;
