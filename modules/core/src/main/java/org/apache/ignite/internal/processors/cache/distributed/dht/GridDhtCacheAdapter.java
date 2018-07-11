@@ -604,8 +604,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (p != null)
             ctx.kernalContext().resource().injectGeneric(p);
 
-        GridFutureAdapter cacheLdrFut = ctx.mvcc().addCacheLoaderFuture(topVer);
-
         try {
             ctx.store().loadCache(new CI3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver) {
@@ -619,8 +617,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         finally {
             if (p instanceof PlatformCacheEntryFilter)
                 ((PlatformCacheEntryFilter)p).onClose();
-
-            cacheLdrFut.onDone();
         }
     }
 

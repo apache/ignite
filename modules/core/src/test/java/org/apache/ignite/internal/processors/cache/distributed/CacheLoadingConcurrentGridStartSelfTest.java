@@ -22,6 +22,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheLoaderException;
@@ -54,6 +59,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.processors.cache.store.GridCacheStoreManagerAdapter.*;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -457,12 +463,21 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             }
         });
 
-        try {
-            f.apply(g0);
+        while (true) {
+            try {
+                f.apply(g0);
+
+                break;
+            }
+            catch (RebalanceException e) {
+                IgniteInternalFuture<?> readyFuture = e.retryReadyFuture();
+
+                if (readyFuture != null)
+                    readyFuture.get();
+            }
         }
-        finally {
-            fut.get();
-        }
+
+        fut.get();
 
         assertCacheSize();
     }

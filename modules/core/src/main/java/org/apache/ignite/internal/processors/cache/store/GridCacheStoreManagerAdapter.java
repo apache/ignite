@@ -39,6 +39,8 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheStoreBalancingWrapper;
@@ -506,6 +508,53 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
     }
 
+    /**
+     * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
+     */
+    public static class RebalanceException extends CacheLoaderException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Next topology version to wait. */
+        private transient IgniteInternalFuture<?> readyFut;
+
+        /**
+         * Creates new topology exception with given error message.
+         *
+         * @param msg Error message.
+         */
+        public RebalanceException(String msg) {
+            super(msg);
+        }
+
+        /**
+         * Creates new topology exception with given error message and optional
+         * nested exception.
+         *
+         * @param msg Error message.
+         * @param cause Optional nested exception (can be {@code null}).
+         */
+        public RebalanceException(String msg, @Nullable Throwable cause) {
+            super(msg, cause);
+        }
+
+        /**
+         * @return Retry ready future.
+         */
+        public IgniteInternalFuture<?> retryReadyFuture() {
+            return readyFut;
+        }
+
+        /**
+         * @param readyFut Retry ready future.
+         */
+        public RebalanceException retryReadyFuture(IgniteInternalFuture<?> readyFut) {
+            this.readyFut = readyFut;
+
+            return this;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public final boolean loadCache(final GridInClosure3 vis, Object[] args) throws IgniteCheckedException {
         if (store != null) {
@@ -532,6 +581,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                             v = o;
 
                         KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
+
+                        IgniteInternalFuture<Boolean> rebalanceFut = cctx.group().preloader().rebalanceFuture();
+
+                        if (!rebalanceFut.isDone())
+                            throw new RebalanceException("").retryReadyFuture(rebalanceFut);
 
                         vis.apply(cacheKey, v, ver);
                     }
