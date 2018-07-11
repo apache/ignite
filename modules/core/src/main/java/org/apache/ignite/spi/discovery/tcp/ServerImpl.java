@@ -5442,8 +5442,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);
-                        else
+                        else {
+                            registerPendingMessage(msg);
+
                             processCustomMessage(msg);
+                        }
                     }
 
                     msg.message(null, msg.messageBytes());
