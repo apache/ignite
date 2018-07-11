@@ -196,7 +196,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /**
      * Assignments can be the same, but {@link GridDhtPartitionTopologyImpl#resetOwners(java.util.Map, java.util.Set)}
-     * can move partition state from OWNING to MOVING due to obsolete partition update counter.
+     * can move partition state from OWNING to MOVING due to obsolete partition update counter due to delayed
+     * partition recieving on rebalance happend.
      *
      * @param lastTopVer Topology version to check states.
      * @return {@code True} if partitions of current topology have their OWNING states other than affinity
