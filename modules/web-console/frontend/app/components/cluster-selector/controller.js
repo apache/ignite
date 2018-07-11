@@ -17,20 +17,32 @@
 
 import _ from 'lodash';
 
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+
 export default class {
-    static $inject = ['$scope', 'AgentManager', 'IgniteConfirm'];
+    static $inject = ['AgentManager', 'IgniteConfirm'];
 
-    constructor($scope, agentMgr, Confirm) {
-        Object.assign(this, { $scope, agentMgr, Confirm });
-
+    /**
+     * @param agentMgr Agent manager.
+     * @param Confirm  Confirmation service.
+     */
+    constructor(agentMgr, Confirm) {
+        this.agentMgr = agentMgr;
+        this.Confirm = Confirm;
         this.clusters = [];
         this.isDemo = agentMgr.isDemoMode();
+        this._inProgressSubject = new BehaviorSubject(false);
     }
 
     $onInit() {
+        this.inProgress$ = this._inProgressSubject.asObservable();
+
         this.clusters$ = this.agentMgr.connectionSbj
-            .do(({ cluster, clusters }) => {
-                this.cluster = cluster;
+            .combineLatest(this.inProgress$)
+            .do(([sbj, inProgress]) => this.inProgress = inProgress)
+            .filter(([sbj, inProgress]) => !inProgress)
+            .do(([{ cluster, clusters }]) => {
+                this.cluster = cluster ? { ...cluster } : null;
                 this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
             .subscribe(() => {});
@@ -48,10 +60,12 @@ export default class {
         $event.preventDefault();
 
         const toggleClusterState = () => {
-            this.inProgress = true;
+            this._inProgressSubject.next(true);
 
+            // IGNITE-8744 For some reason .finally() not working in Firefox, needed to be investigated later.
             return this.agentMgr.toggleClusterState()
-                .finally(() => this.inProgress = false);
+                .then(() => this._inProgressSubject.next(false))
+                .catch(() => this._inProgressSubject.next(false));
         };
 
         if (this.cluster.active) {
