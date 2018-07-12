@@ -2,7 +2,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -36,14 +36,16 @@ public final class ObjectPool<E extends AutoCloseable> {
          * Returns an object to a pool or closes it if the pool is already full.
          */
         public void recycle() {
-            if (!pool.bag.offer(this))
+            if (pool.bag.size() < pool.poolSize)
+                pool.bag.add(this);
+            else
                 U.closeQuiet(object);
         }
     }
 
     private final Supplier<E> objectFactory;
-    // TODO consider making it thread unsafe
-    private final ArrayBlockingQueue<Reusable<E>> bag;
+    private final Queue<Reusable<E>> bag;
+    private final int poolSize;
 
     /**
      * @param objectFactory factory used for new objects creation
@@ -51,7 +53,8 @@ public final class ObjectPool<E extends AutoCloseable> {
      */
     public ObjectPool(Supplier<E> objectFactory, int poolSize) {
         this.objectFactory = objectFactory;
-        this.bag = new ArrayBlockingQueue<>(poolSize);
+        this.bag = new LinkedList<>();
+        this.poolSize = poolSize;
     }
 
     /**
