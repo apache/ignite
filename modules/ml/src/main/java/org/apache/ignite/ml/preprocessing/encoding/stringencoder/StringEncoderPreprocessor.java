@@ -19,6 +19,8 @@ package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownStringValue;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
@@ -28,7 +30,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
     private static final long serialVersionUID = 6237812226382623469L;
     /** */
@@ -63,7 +65,7 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public double[] apply(K k, V v) {
+    @Override public Vector apply(K k, V v) {
         Object[] tmp = basePreprocessor.apply(k, v);
         double[] res = new double[tmp.length];
 
@@ -79,6 +81,6 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
             } else
                 res[i] = (double)tmpObj;
         }
-        return res;
+        return VectorUtils.of(res);
     }
 }

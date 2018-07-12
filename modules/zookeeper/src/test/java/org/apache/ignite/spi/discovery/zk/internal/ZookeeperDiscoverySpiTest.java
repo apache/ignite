@@ -49,6 +49,9 @@ import java.util.stream.Collectors;
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
@@ -429,6 +432,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
+
+            waitForZkClusterReady(zkCluster);
         }
 
         reset();
@@ -454,6 +459,22 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             reset();
 
             stopAllGrids();
+        }
+    }
+
+
+    /**
+     * Wait for Zookeeper testing cluster ready for communications.
+     *
+     * @param zkCluster Zk cluster.
+     */
+    private static void waitForZkClusterReady(TestingCluster zkCluster) throws InterruptedException {
+        try (CuratorFramework curator = CuratorFrameworkFactory
+            .newClient(zkCluster.getConnectString(), new RetryNTimes(10, 1_000))) {
+            curator.start();
+
+            assertTrue("Failed to wait for Zookeeper testing cluster ready.",
+                curator.blockUntilConnected(30, SECONDS));
         }
     }
 
@@ -1922,13 +1943,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
-
         try {
             topologyChangeWithRestarts(true, false);
         }
         finally {
-            zkCluster.stop();
+            zkCluster.close();
 
             zkCluster = null;
         }
@@ -1938,13 +1957,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
-
         try {
             topologyChangeWithRestarts(true, true);
         }
         finally {
-            zkCluster.stop();
+            zkCluster.close();
 
             zkCluster = null;
         }
@@ -2137,8 +2154,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomTopologyChanges_CloseClients() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8182");
-
         randomTopologyChanges(false, true);
     }
 
@@ -4353,7 +4368,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(2500) + 2500);
+                    U.sleep(rnd.nextLong(2500));
 
                     int idx = rnd.nextInt(ZK_SRVS);
 
@@ -4361,6 +4376,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                     zkCluster.getServers().get(idx).restart();
 
+                    waitForZkClusterReady(zkCluster);
                 }
 
                 return null;

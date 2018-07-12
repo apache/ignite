@@ -34,7 +34,7 @@ ul.bs-select-menu(
             type='button'
             role='menuitem'
             tabindex='-1'
-            ng-click='$select($index, $event)'
+            ng-click='$select($index, $event); $event.stopPropagation();'
             ng-class=`{ 'bssm-item-button__active': $isActive($index) }`
             data-placement='right auto'
             title='{{ ::match.label }}'
