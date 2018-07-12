@@ -49,7 +49,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
 
     /** It's safe to omit 'volatile' due to memory effects of lastChecker. */
-    private long lastCheckStartTs = U.currentTimeMillis();
+    private long lastCheckTs = U.currentTimeMillis();
 
     /** Last thread that performed the check. Null reference denotes "checking is in progress". */
     private final AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
@@ -139,12 +139,12 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
         Thread prevCheckerThread = lastChecker.get();
 
         if (prevCheckerThread == null ||
-            U.currentTimeMillis() - lastCheckStartTs <= CHECK_INTERVAL ||
+            U.currentTimeMillis() - lastCheckTs <= CHECK_INTERVAL ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
 
         try {
-            lastCheckStartTs = U.currentTimeMillis();
+            lastCheckTs = U.currentTimeMillis();
 
             long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / HEARTBEAT_TIMEOUT;
 
