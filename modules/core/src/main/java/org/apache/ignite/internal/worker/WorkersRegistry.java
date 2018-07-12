@@ -20,6 +20,7 @@ package org.apache.ignite.internal.worker;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,15 +59,15 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     private final IgniteInClosure<GridWorker> workerDiedHnd;
 
     /** */
-    private final IgniteInClosure<GridWorker> workerIsHangingHnd;
+    private final IgniteInClosure<GridWorker> workerIsBlockedHnd;
 
     /** */
     public WorkersRegistry(
         @NotNull IgniteInClosure<GridWorker> workerDiedHnd,
-        @NotNull IgniteInClosure<GridWorker> workerIsHangingHnd
+        @NotNull IgniteInClosure<GridWorker> workerIsBlockedHnd
     ) {
         this.workerDiedHnd = workerDiedHnd;
-        this.workerIsHangingHnd = workerIsHangingHnd;
+        this.workerIsBlockedHnd = workerIsBlockedHnd;
     }
 
     /**
@@ -112,13 +113,13 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     }
 
     /** */
-    public boolean getPeerCheckEnabled() {
+    boolean getPeerCheckEnabled() {
         return isPeerCheckEnabled;
     }
 
     /** */
-    public void setPeerCheckEnabled(boolean value) {
-        isPeerCheckEnabled = value;
+    void setPeerCheckEnabled(boolean val) {
+        isPeerCheckEnabled = val;
     }
 
     /** {@inheritDoc} */
@@ -149,16 +150,16 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
             long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / HEARTBEAT_TIMEOUT;
 
             for (long i = 0; i < workersToCheck; i++) {
-                Iterator<Map.Entry<String, GridWorker>> checkIter0 = checkIter;
+                if (!checkIter.hasNext())
+                    checkIter = registeredWorkers.entrySet().iterator();
 
-                if (!checkIter0.hasNext()) {
-                    checkIter0 = checkIter = registeredWorkers.entrySet().iterator();
-
-                    if (!checkIter0.hasNext())
-                        return;
+                GridWorker worker;
+                try {
+                    worker = checkIter.next().getValue();
                 }
-
-                GridWorker worker = checkIter0.next().getValue();
+                catch (NoSuchElementException e) {
+                    return;
+                }
 
                 Thread runner = worker.runner();
 
@@ -169,23 +170,20 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         // That is, if worker is dead, but still resides in registeredWorkers
                         // then something went wrong, the only extra thing is to test
                         // whether the iterator refers to actual state of registeredWorkers.
-                        GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
+                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
-                        if (workerAgain != null && workerAgain == worker)
+                        if (worker0 != null && worker0 == worker)
                             workerDiedHnd.apply(worker);
-
-                        // Worker is dead, but it's still accessible via iterator => iterator is outdated, resetting.
-                        checkIter = registeredWorkers.entrySet().iterator();
                     }
 
                     if (U.currentTimeMillis() - worker.heartbeatTimeMillis() > HEARTBEAT_TIMEOUT) {
-                        GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
+                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
-                        if (workerAgain != null && workerAgain == worker)
-                            workerIsHangingHnd.apply(worker);
+                        if (worker0 != null && worker0 == worker)
+                            workerIsBlockedHnd.apply(worker);
 
                         // Iterator should not be reset:
-                        // otherwise we'll never iterate beyond the hanging worker,
+                        // otherwise we'll never iterate beyond the blocked worker,
                         // that may stay in the map for indefinite time.
                     }
                 }
