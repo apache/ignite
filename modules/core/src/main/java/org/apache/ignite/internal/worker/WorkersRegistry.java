@@ -48,11 +48,11 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     /** Points to the next worker to check. */
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
 
-    /** */
-    private volatile long lastCheckStartTimestamp = U.currentTimeMillis();
+    /** It's safe to omit 'volatile' due to memory effects of lastChecker. */
+    private long lastCheckStartTs = U.currentTimeMillis();
 
     /** Last thread that performed the check. Null reference denotes "checking is in progress". */
-    private AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
+    private final AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
 
     /** */
     private final IgniteInClosure<GridWorker> workerDiedHnd;
@@ -139,24 +139,26 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
         Thread prevCheckerThread = lastChecker.get();
 
         if (prevCheckerThread == null ||
-            U.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL ||
+            U.currentTimeMillis() - lastCheckStartTs <= CHECK_INTERVAL ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
 
         try {
-            lastCheckStartTimestamp = U.currentTimeMillis();
+            lastCheckStartTs = U.currentTimeMillis();
 
             long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / HEARTBEAT_TIMEOUT;
 
             for (long i = 0; i < workersToCheck; i++) {
-                if (!checkIter.hasNext()) {
-                    checkIter = registeredWorkers.entrySet().iterator();
+                Iterator<Map.Entry<String, GridWorker>> checkIter0 = checkIter;
 
-                    if (!checkIter.hasNext())
+                if (!checkIter0.hasNext()) {
+                    checkIter0 = checkIter = registeredWorkers.entrySet().iterator();
+
+                    if (!checkIter0.hasNext())
                         return;
                 }
 
-                GridWorker worker = checkIter.next().getValue();
+                GridWorker worker = checkIter0.next().getValue();
 
                 Thread runner = worker.runner();
 
