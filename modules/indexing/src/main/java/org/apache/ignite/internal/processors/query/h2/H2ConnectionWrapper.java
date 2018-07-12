@@ -25,7 +25,7 @@ import java.sql.Connection;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Wrapper to store connection and flag is schema set or not.
+ * Wrapper to store connection with currently used schema and statement cache.
  */
 public class H2ConnectionWrapper implements AutoCloseable {
     /** */
@@ -66,10 +66,16 @@ public class H2ConnectionWrapper implements AutoCloseable {
         return conn;
     }
 
+    /**
+     * @return Statement cache corresponding to connection.
+     */
     public H2StatementCache statementCache() {
         return statementCache;
     }
 
+    /**
+     * Clears statement cache.
+     */
     public void clearStatementCache() {
         statementCache = new H2StatementCache(256);
     }
@@ -79,6 +85,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
         return S.toString(H2ConnectionWrapper.class, this);
     }
 
+    /** Closes wrapped connection */
     @Override
     public void close() {
         U.closeQuiet(conn);
