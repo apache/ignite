@@ -19,6 +19,9 @@ package org.apache.ignite.util;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -67,7 +70,9 @@ import org.jetbrains.annotations.Nullable;
 public class AttributeNodeFilter implements IgnitePredicate<ClusterNode> {
     /** */
     private static final long serialVersionUID = 0L;
-
+    
+    private static final Logger log = Logger.getLogger(AttributeNodeFilter.class.getName());
+    
     /** Attributes. */
     private final Map<String, Object> attrs;
 
@@ -96,9 +101,15 @@ public class AttributeNodeFilter implements IgnitePredicate<ClusterNode> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node) {
+    	log.log(Level.INFO, "{0}", node.consistentId());
+    	
         Map<String, Object> nodeAttrs = node.attributes();
+        
+        log.log(Level.INFO, "{0} {1}", new Object[] { nodeAttrs.keySet(), nodeAttrs.values() });
 
         for (Map.Entry<String, Object> attr : attrs.entrySet()) {
+        	log.log(Level.INFO, "{0} {1}", new Object[] { attr.getKey(), attr.getValue() });
+        	
             if (!F.eq(nodeAttrs.get(attr.getKey()), attr.getValue()))
                 return false;
         }
