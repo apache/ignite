@@ -21,7 +21,7 @@ public class ObjectPoolTest {
     private ObjectPool<Obj> pool = new ObjectPool<>(Obj::new, 1);
 
     @Test
-    public void connectionIsReusedAfterRecycling() {
+    public void objectIsReusedAfterRecycling() {
         Reusable<Obj> o1 = pool.borrow();
         o1.recycle();
         Reusable<Obj> o2 = pool.borrow();
@@ -31,7 +31,7 @@ public class ObjectPoolTest {
     }
 
     @Test
-    public void borrowedConnectionIsNotReturnedTwice() {
+    public void borrowedObjectIsNotReturnedTwice() {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
 
