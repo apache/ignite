@@ -30,6 +30,8 @@ import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
+
 /**
  * Workers registry.
  */
@@ -175,7 +177,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         checkIter = registeredWorkers.entrySet().iterator();
                     }
 
-                    if (U.currentTimeMillis() - worker.heartbeatTimeMillis() > worker.criticalHeartbeatTimeoutMs()) {
+                    if (U.currentTimeMillis() - worker.heartbeatTimeMillis() > HEARTBEAT_TIMEOUT) {
                         GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
 
                         if (workerAgain != null && workerAgain == worker)

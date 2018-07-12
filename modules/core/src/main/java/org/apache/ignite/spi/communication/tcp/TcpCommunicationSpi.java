@@ -4249,8 +4249,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
          * @param log Logger.
          */
         private CommunicationWorker(String igniteInstanceName, IgniteLogger log) {
-            super(igniteInstanceName, "tcp-comm-worker", log, getWorkersRegistry(ignite), getWorkersRegistry(ignite),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(igniteInstanceName, "tcp-comm-worker", log, getWorkersRegistry(ignite), getWorkersRegistry(ignite));
         }
 
         /** */
@@ -4274,7 +4273,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         updateHeartbeat();
 
-                        if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                        if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                             onIdle();
 
                             lastOnIdleTs = U.currentTimeMillis();

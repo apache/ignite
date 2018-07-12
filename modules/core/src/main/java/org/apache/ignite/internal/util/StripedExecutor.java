@@ -477,8 +477,7 @@ public class StripedExecutor implements ExecutorService {
             GridWorkerListener gridWorkerLsnr,
             GridWorkerIdlenessHandler idleHnd
         ) {
-            super(igniteInstanceName, poolName + "-stripe-" + idx, log, gridWorkerLsnr, idleHnd,
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(igniteInstanceName, poolName + "-stripe-" + idx, log, gridWorkerLsnr, idleHnd);
 
             this.igniteInstanceName = igniteInstanceName;
             this.idx = idx;

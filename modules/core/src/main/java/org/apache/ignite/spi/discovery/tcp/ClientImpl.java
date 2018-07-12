@@ -1620,8 +1620,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private MessageWorker(IgniteLogger log) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry(), getWorkersRegistry(),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry(), getWorkersRegistry());
         }
 
         /** {@inheritDoc} */

@@ -1363,8 +1363,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          */
         private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
-                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry(),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
         }

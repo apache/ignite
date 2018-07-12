@@ -1562,8 +1562,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
-                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry(),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
         }
@@ -3272,8 +3271,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         WALWriter(IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-write-worker%" + cctx.igniteInstanceName(), log,
-                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry(),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */

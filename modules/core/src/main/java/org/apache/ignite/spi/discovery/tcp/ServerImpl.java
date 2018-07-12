@@ -2635,7 +2635,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
 
-                if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                     onIdle();
 
                     lastOnIdleTs = U.currentTimeMillis();
@@ -5680,8 +5680,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi), getWorkerRegistry(spi),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi), getWorkerRegistry(spi));
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -6938,7 +6937,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             @Nullable GridWorkerListener lsnr,
             @Nullable GridWorkerIdlenessHandler idleHnd
         ) {
-            super(spi.ignite().name(), name, log, lsnr, idleHnd, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(spi.ignite().name(), name, log, lsnr, idleHnd);
 
             this.pollingTimeout = pollingTimeout;
         }

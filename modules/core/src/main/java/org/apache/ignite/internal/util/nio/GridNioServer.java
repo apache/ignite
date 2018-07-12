@@ -1780,7 +1780,7 @@ public class GridNioServer<T> {
             @Nullable GridWorkerListener workerLsnr,
             @Nullable GridWorkerIdlenessHandler idleHnd
         ) throws IgniteCheckedException {
-            super(igniteInstanceName, name, log, workerLsnr, idleHnd, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(igniteInstanceName, name, log, workerLsnr, idleHnd);
 
             createSelector();
 
@@ -1805,7 +1805,7 @@ public class GridNioServer<T> {
 
                         bodyInternal();
 
-                        if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                        if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                             onIdle();
 
                             lastOnIdleTs = U.currentTimeMillis();
@@ -2872,7 +2872,7 @@ public class GridNioServer<T> {
             @Nullable GridWorkerListener workerLsnr,
             @Nullable GridWorkerIdlenessHandler idleHnd
         ) {
-            super(igniteInstanceName, name, log, workerLsnr, idleHnd, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+            super(igniteInstanceName, name, log, workerLsnr, idleHnd);
 
             this.selector = selector;
         }
@@ -2947,7 +2947,7 @@ public class GridNioServer<T> {
                     if (balancer != null)
                         balancer.run();
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

@@ -2666,7 +2666,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         private DiscoveryWorker() {
             super(ctx.igniteInstanceName(), "disco-event-worker", GridDiscoveryManager.this.log,
-                ctx.workersRegistry(), ctx.workersRegistry(), DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+                ctx.workersRegistry(), ctx.workersRegistry());
         }
 
         /**

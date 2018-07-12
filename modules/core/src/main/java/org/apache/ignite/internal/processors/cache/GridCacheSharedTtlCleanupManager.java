@@ -122,8 +122,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
          */
         CleanupWorker() {
             super(cctx.igniteInstanceName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class),
-                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry(),
-                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
+                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -151,7 +150,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
