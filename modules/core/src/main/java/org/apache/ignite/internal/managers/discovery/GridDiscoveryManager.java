@@ -861,14 +861,32 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert dataBag != null;
                 assert dataBag.joiningNodeId() != null;
 
+                long start = U.currentTimeMillis();
+
+                log.info("Starting collecting discovery data bag");
+
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
-                    for (GridComponent c : ctx.components())
+                    for (GridComponent c : ctx.components()) {
+                        long joinDataStart = U.currentTimeMillis();
+
                         c.collectJoiningNodeData(dataBag);
+
+                        log.info("Component " + c.getClass().getSimpleName() + " collected joining node data bag in " +
+                                (U.currentTimeMillis() - joinDataStart) + "ms");
+                    }
                 }
                 else {
-                    for (GridComponent c : ctx.components())
+                    for (GridComponent c : ctx.components()) {
+                        long gridDataStart = U.currentTimeMillis();
+
                         c.collectGridNodeData(dataBag);
+
+                        log.info("Component " + c.getClass().getSimpleName() + " collected grid data bag in " +
+                                (U.currentTimeMillis() - gridDataStart) + "ms");
+                    }
                 }
+
+                log.info("Total time of collecting discovery data bag: " + (U.currentTimeMillis() - start) + "ms");
 
                 return dataBag;
             }
@@ -876,6 +894,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override public void onExchange(DiscoveryDataBag dataBag) {
                 assert dataBag != null;
                 assert dataBag.joiningNodeId() != null;
+
+                long start = U.currentTimeMillis();
+
+                log.info("Starting processing discovery data bag");
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
                     // NodeAdded msg reached joining node after round-trip over the ring.
@@ -885,8 +907,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         stateProc.discoveryDataType().ordinal()));
 
                     for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null && c != stateProc)
+                        if (c.discoveryDataType() != null && c != stateProc) {
+                            long onDataRec = U.currentTimeMillis();
+
                             c.onGridDataReceived(dataBag.gridDiscoveryData(c.discoveryDataType().ordinal()));
+
+                            log.info("Component " + c.getClass().getSimpleName() + " processed received grid data bag in " +
+                                    (U.currentTimeMillis() - onDataRec) + "ms");
+                        }
                     }
                 }
                 else {
@@ -898,18 +926,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     assert data0 != null;
 
+                    long onJoinData = U.currentTimeMillis();
+
                     stateProc.onJoiningNodeDataReceived(data0);
+
+                    log.info("Cluster state processor processed received joining node data bag in " + (U.currentTimeMillis() - onJoinData) + "ms");
 
                     for (GridComponent c : ctx.components()) {
                         if (c.discoveryDataType() != null && c != stateProc) {
                             JoiningNodeDiscoveryData data = dataBag.newJoinerDiscoveryData(
                                 c.discoveryDataType().ordinal());
 
-                            if (data != null)
+                            if (data != null) {
+                                onJoinData = U.currentTimeMillis();
+
                                 c.onJoiningNodeDataReceived(data);
+
+                                log.info("Component " + c.getClass().getSimpleName() +
+                                        " processed joining node data bag in " + (U.currentTimeMillis() - onJoinData) + "ms");
+                            }
                         }
                     }
                 }
+
+                log.info("Total time of processing discovery data bag: " + (U.currentTimeMillis() - start) + "ms");
             }
         });
 

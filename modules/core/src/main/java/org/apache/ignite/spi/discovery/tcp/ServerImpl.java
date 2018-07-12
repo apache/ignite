@@ -83,6 +83,8 @@ import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.io.CountingInputStream;
+import org.apache.ignite.internal.util.io.FileUtils;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -6061,7 +6063,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         SecurityUtils.serializeVersion(1);
 
-                        TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
+                        CountingInputStream cis = new CountingInputStream(in);
+
+                        TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), cis,
                             U.resolveClassLoader(spi.ignite().configuration()));
 
                         msg.senderNodeId(nodeId);
@@ -6083,6 +6087,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
+
+                            log.info("Receiving join request msg=" + msg + " size=" + FileUtils.byteCountToDisplaySize(cis.getCount()));
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
@@ -6257,8 +6263,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isInfoEnabled())
                                 log.info("Latency check message has been read: " + msg.id());
 
-                            ((TcpDiscoveryRingLatencyCheckMessage)msg).onRead();
+                            ((TcpDiscoveryRingLatencyCheckMessage) msg).onRead();
                         }
+                        else if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                            log.info("Receiving node added msg=" + msg + " size=" + FileUtils.byteCountToDisplaySize(cis.getCount()));
+                        else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+                            log.info("Receiving node addFinished msg=" + msg + " size=" + FileUtils.byteCountToDisplaySize(cis.getCount()));
 
                         TcpDiscoveryClientMetricsUpdateMessage metricsUpdateMsg = null;
 
