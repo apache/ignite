@@ -921,6 +921,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                             "[grp=" + grp.cacheOrGroupName() + ", part=" + p + ", topVer=" + topVer +
                             ", this.topVer=" + this.readyTopVer + ']');
+
                     locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
                     this.updateSeq.incrementAndGet();

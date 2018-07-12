@@ -68,7 +68,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.util.deque.FastSizeDeque;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
@@ -118,9 +117,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /** Pending data streamer futures. */
     private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
-
-    /** Pending cache store loader futures. */
-    private final GridConcurrentHashSet<CacheStoreLoaderFuture> cacheStoreLoaderFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap<>();
@@ -501,13 +497,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return Collection of pending cache store loader futures.
-     */
-    public Collection<CacheStoreLoaderFuture> cacheStoreLoaderFutures() {
-        return cacheStoreLoaderFuts;
-    }
-
-    /**
      * Gets future by given future ID.
      *
      * @param futId Future ID.
@@ -546,20 +535,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         final DataStreamerFuture fut = new DataStreamerFuture(topVer);
 
         boolean add = dataStreamerFuts.add(fut);
-
-        assert add;
-
-        return fut;
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @return Future.
-     */
-    public GridFutureAdapter addCacheLoaderFuture(AffinityTopologyVersion topVer) {
-        final CacheStoreLoaderFuture fut = new CacheStoreLoaderFuture(topVer);
-
-        boolean add = cacheStoreLoaderFuts.add(fut);
 
         assert add;
 
@@ -1167,24 +1142,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
-     * @return Finish update future.
-     */
-    @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> finishCacheStoreLoadUpdates(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<Void, Object> res = new CacheObjectsReleaseFuture<>("CacheStoreLoader", topVer);
-
-        for (CacheStoreLoaderFuture fut : cacheStoreLoaderFuts) {
-            if (fut.topVer.compareTo(topVer) < 0)
-                res.add(fut);
-        }
-
-        res.markInitialized();
-
-        return res;
-    }
-
-    /**
      * @param keys Key for which locks should be released.
      * @param cacheId Cache ID.
      * @param topVer Topology version.
@@ -1475,39 +1432,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DataStreamerFuture.class, this, super.toString());
-        }
-    }
-
-    /**
-     *
-     */
-    private class CacheStoreLoaderFuture extends GridFutureAdapter<Void> {
-        /** Topology version. Instance field for toString method only. */
-        @NotNull
-        @GridToStringInclude
-        private final AffinityTopologyVersion topVer;
-
-        /**
-         * @param topVer Topology version.
-         */
-        CacheStoreLoaderFuture(@NotNull AffinityTopologyVersion topVer) {
-            this.topVer = topVer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
-                cacheStoreLoaderFuts.remove(this);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(CacheStoreLoaderFuture.class, this, super.toString());
         }
     }
 
