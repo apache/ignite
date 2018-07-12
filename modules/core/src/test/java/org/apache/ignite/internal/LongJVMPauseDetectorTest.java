@@ -55,4 +55,20 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
 
         assertTrue(strLog.toString().contains("LongJVMPauseDetector was successfully started"));
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStopWorkerThread() throws Exception {
+        this.strLog = new GridStringLogger(true);
+
+        strLog.logLength(300000);
+
+        startGrid(0);
+
+        stopGrid(0);
+
+        assertFalse(strLog.toString().contains("jvm-pause-detector-worker has been interrupted."));
+        assertTrue(strLog.toString().contains("jvm-pause-detector-worker has been stopped."));
+    }
 }
