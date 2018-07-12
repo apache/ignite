@@ -36,11 +36,8 @@ import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOU
  * Workers registry.
  */
 public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHandler {
-    /** */
-    private static final int NO_OF_WORKERS_TO_CHECK_AT_ONCE = 5;
-
-    /** */
-    private static final long CHECK_INTERVAL_MS = 3_000;
+    /** Time in milliseconds between successive workers checks. */
+    private static final long CHECK_INTERVAL = 3_000;
 
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
@@ -136,20 +133,22 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
     /** {@inheritDoc} */
     @Override public void onIdle(GridWorker w) {
-            if (!isPeerCheckEnabled)
-                return;
+        if (!isPeerCheckEnabled)
+            return;
 
         Thread prevCheckerThread = lastChecker.get();
 
         if (prevCheckerThread == null ||
-            U.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS ||
+            U.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
 
         try {
             lastCheckStartTimestamp = U.currentTimeMillis();
 
-            for (int i = 0; i < NO_OF_WORKERS_TO_CHECK_AT_ONCE; i++) {
+            long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / HEARTBEAT_TIMEOUT;
+
+            for (long i = 0; i < workersToCheck; i++) {
                 if (!checkIter.hasNext()) {
                     checkIter = registeredWorkers.entrySet().iterator();
 
