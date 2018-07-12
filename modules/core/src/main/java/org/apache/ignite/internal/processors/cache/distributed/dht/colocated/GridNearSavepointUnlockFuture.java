@@ -45,7 +45,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Used in process of unlocking keys during rollback to savepoint to wait responses from nodes.
  */
-public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture<Boolean> {
+public final class GridNearSavepointUnlockFuture extends GridCacheCompoundIdentityFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -77,7 +77,7 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
     /**
      * @param tx Transaction.
      */
-    public SavepointUnlockFuture(GridNearTxLocal tx) {
+    public GridNearSavepointUnlockFuture(GridNearTxLocal tx) {
         super(CU.boolReducer());
 
         this.tx = tx;
@@ -88,7 +88,7 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
 
         if (log == null) {
             msgLog = tx.context().txLockMessageLogger();
-            log = U.logger(tx.context().kernalContext(), logRef, SavepointUnlockFuture.class);
+            log = U.logger(tx.context().kernalContext(), logRef, GridNearSavepointUnlockFuture.class);
         }
     }
 
@@ -154,13 +154,13 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
                 return;
             }
 
-            U.warn(msgLog, "Collocated savepoint unlock fut, failed to find mini future [txId=" + lockVer +
+            U.warn(msgLog, "Savepoint unlock fut, failed to find mini future [txId=" + lockVer +
                 ", node=" + nodeId +
                 ", res=" + res +
                 ", fut=" + this + ']');
         }
         else if (msgLog.isDebugEnabled()) {
-            msgLog.debug("Collocated savepoint unlock fut, response for finished future [txId=" + lockVer +
+            msgLog.debug("Savepoint unlock fut, response for finished future [txId=" + lockVer +
                 ", node=" + nodeId + ']');
         }
     }
@@ -289,7 +289,7 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
             }
         });
 
-        return S.toString(SavepointUnlockFuture.class, this,
+        return S.toString(GridNearSavepointUnlockFuture.class, this,
             "innerFuts", futs,
             "super", super.toString());
     }
@@ -386,7 +386,7 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
          */
         void onResult(ClusterTopologyCheckedException e) {
             if (msgLog.isDebugEnabled()) {
-                msgLog.debug("Collocated lock fut, mini future node left [txId=" + lockVer +
+                msgLog.debug("Savepoint unlock fut, mini future node left [txId=" + lockVer +
                     ", nodeId=" + node.id() + ']');
             }
 
@@ -403,9 +403,7 @@ public final class SavepointUnlockFuture extends GridCacheCompoundIdentityFuture
             if (tx != null)
                 tx.removeMapping(node.id());
 
-            SavepointUnlockFuture.this.onDone(false, e);
-
-            onDone(true);
+            onDone(false, e);
         }
 
         /**

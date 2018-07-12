@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.SavepointUnlockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridNearSavepointUnlockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
@@ -2851,7 +2851,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 res.error(e);
             }
 
-            SavepointUnlockFuture fut = (SavepointUnlockFuture) cctx.mvcc().future(res.futureId());
+            GridNearSavepointUnlockFuture fut = (GridNearSavepointUnlockFuture) cctx.mvcc().future(res.futureId());
 
             if (fut == null) {
                 log.warning("Received unlock response for not existing savepoint unlock future [nodeid=" + nodeId +

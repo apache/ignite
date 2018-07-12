@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.SavepointUnlockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridNearSavepointUnlockFuture;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.GridRollbackToSavepointRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -4434,7 +4434,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     public void sendRollbackToSavepointMessages(Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping)
         throws IgniteCheckedException {
-        SavepointUnlockFuture fut = new SavepointUnlockFuture(this);
+        GridNearSavepointUnlockFuture fut = new GridNearSavepointUnlockFuture(this);
         Map<GridRollbackToSavepointRequest, Integer> unlockFuts = new HashMap<>();
 
         Map<ClusterNode, GridRollbackToSavepointRequest> reqs = createUnlockRequests(mapping, fut, unlockFuts);
@@ -4460,9 +4460,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     private Map<ClusterNode, GridRollbackToSavepointRequest> createUnlockRequests(
         Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping,
-        SavepointUnlockFuture fut,
+        GridNearSavepointUnlockFuture fut,
         Map<GridRollbackToSavepointRequest, Integer> unlockFuts
-    ) throws IgniteCheckedException {
+    ) {
         Map<ClusterNode, GridRollbackToSavepointRequest> res = new HashMap<>();
 
         for (Map.Entry<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> entry : mapping.entrySet()) {
@@ -4500,7 +4500,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private void sendRollbackToSavepointRequest(
         ClusterNode node,
         GridRollbackToSavepointRequest req,
-        SavepointUnlockFuture fut
+        GridNearSavepointUnlockFuture fut
     ) {
         try {
             req.prepareMarshal(cctx);
@@ -4527,7 +4527,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If failed.
      */
     private void awaitSavepointUnlockFuture(
-        SavepointUnlockFuture fut,
+        GridNearSavepointUnlockFuture fut,
         Map<GridRollbackToSavepointRequest, Integer> unlockFuts
     ) throws IgniteCheckedException {
         try {
