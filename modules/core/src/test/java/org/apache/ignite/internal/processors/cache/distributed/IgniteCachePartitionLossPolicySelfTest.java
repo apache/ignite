@@ -92,7 +92,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
 
             @Override protected int delayMillis() {
-                return 500;
+                return 250;
             }
         });
 
@@ -168,6 +168,17 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         checkLostPartition(true, true, new TopologyChanger(false, Arrays.asList(3, 2), Arrays.asList(0, 1, 4)));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testReadWriteSafeWithBackupsAfterKillThreeNodes() throws Exception {
+        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+
+        backups = 1;
+
+        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2, 1), Arrays.asList(0, 4)));
     }
 
     /**
