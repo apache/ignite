@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -458,7 +460,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (mergedMeta == oldMeta)
                 return;
 
-            if (failIfUnregistered)
+            boolean topLocked = false;
+
+            for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
+                if (grp.isTopologyLocked()) {
+                    topLocked = true;
+
+                    break;
+                }
+            }
+
+            if (failIfUnregistered || topLocked)
                 throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
 
             MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
