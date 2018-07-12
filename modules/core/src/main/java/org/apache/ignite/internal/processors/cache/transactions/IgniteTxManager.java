@@ -2854,7 +2854,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             SavepointUnlockFuture fut = (SavepointUnlockFuture) cctx.mvcc().future(res.futureId());
 
             if (fut == null) {
-                log.warning("Recieved unlock response for not existing savepoint unlock future [nodeid=" + nodeId +
+                log.warning("Received unlock response for not existing savepoint unlock future [nodeid=" + nodeId +
                     ", futId=" + res.futureId() + ", response=" + res +']');
 
                 return;
