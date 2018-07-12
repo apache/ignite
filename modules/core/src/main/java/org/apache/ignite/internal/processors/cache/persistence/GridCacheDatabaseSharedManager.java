@@ -3202,19 +3202,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                     if (printCheckpointStats) {
-                        if (log.isInfoEnabled())
+                        if (log.isInfoEnabled()) {
+
+
                             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                                    "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
+                                    "walSegmentsCleared=%d, walSegmentsCovered=[%s - %s], markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
                                 chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                                 chp.pagesSize,
                                 chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
                                 chp.walFilesDeleted,
-                                chp.walSegmentsCovered,
+                                chp.walSegsCoveredRange.get1(),
+                                chp.walSegsCoveredRange.get2(),
                                 tracker.markDuration(),
                                 tracker.pagesWriteDuration(),
                                 tracker.fsyncDuration(),
                                 tracker.totalDuration()));
+                        }
                     }
 
                     persStoreMetrics.onCheckpoint(
@@ -3883,7 +3887,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private int walFilesDeleted;
 
         /** WAL segments fully covered by this checkpoint. */
-        private List<Long> walSegmentsCovered;
+        private IgniteBiTuple<Long, Long> walSegsCoveredRange;
 
         /** */
         private final int pagesSize;
@@ -3920,10 +3924,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param walSegmentsCovered WAL segments fully covered by this checkpoint.
+         * @param walSegsCoveredRange WAL segments fully covered by this checkpoint.
          */
-        public void walSegmentsCovered(final List<Long> walSegmentsCovered) {
-            this.walSegmentsCovered = walSegmentsCovered;
+        public void walSegsCoveredRange(final IgniteBiTuple<Long, Long> walSegsCoveredRange) {
+            this.walSegsCoveredRange = walSegsCoveredRange;
         }
     }
 

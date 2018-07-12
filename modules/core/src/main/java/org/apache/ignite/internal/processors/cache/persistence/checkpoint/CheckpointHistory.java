@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
@@ -198,9 +199,9 @@ public class CheckpointHistory {
      * @return List of checkpoints removed from history.
      */
     public List<CheckpointEntry> onCheckpointFinished(GridCacheDatabaseSharedManager.Checkpoint chp, boolean truncateWal) {
-        List<CheckpointEntry> removed = new ArrayList<>();
+        List<CheckpointEntry> rmv = new ArrayList<>();
 
-        chp.walSegmentsCovered(calculateWalSegmentsCovered());
+        chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
         int deleted = 0;
 
@@ -221,12 +222,12 @@ public class CheckpointHistory {
 
             histMap.remove(entry.getKey());
 
-            removed.add(cpEntry);
+            rmv.add(cpEntry);
         }
 
         chp.walFilesDeleted(deleted);
 
-        return removed;
+        return rmv;
     }
 
     /**
@@ -234,13 +235,13 @@ public class CheckpointHistory {
      *
      * @return list of indexes or empty list if there are no checkpoints.
      */
-    private List<Long> calculateWalSegmentsCovered() {
-        List<Long> res = new ArrayList<>();
+    private IgniteBiTuple<Long, Long> calculateWalSegmentsCovered() {
+        IgniteBiTuple<Long, Long> tup = new IgniteBiTuple<>(0L, 0L);
 
         Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
 
         if (lastEntry == null)
-            return res;
+            return tup;
 
         Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
 
@@ -257,10 +258,10 @@ public class CheckpointHistory {
                 prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
         }
 
-        for (long walCovered = prevIdx; walCovered < lastIdx; walCovered++)
-            res.add(walCovered);
+        tup.set1(prevIdx);
+        tup.set2(lastIdx > 0 ? lastIdx - 1 : 0);
 
-        return res;
+        return tup;
     }
 
     /**
