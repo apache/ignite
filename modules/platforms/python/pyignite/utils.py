@@ -32,3 +32,10 @@ def is_hinted(value):
         and len(value) == 2
         and isinstance(value[1], object)
     )
+
+
+def int_overflow(value: int) -> int:
+    """
+    Simulates 32bit integer overflow.
+    """
+    return ((value ^ 0x80000000) & 0xffffffff) - 0x80000000

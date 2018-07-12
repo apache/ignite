@@ -15,6 +15,7 @@
 
 from pyignite.datatypes.standard import String
 from pyignite.queries import Response
+from pyignite.utils import int_overflow
 
 
 def hashcode(string: str) -> int:
@@ -31,10 +32,7 @@ def hashcode(string: str) -> int:
             char = ord(char)
         except TypeError:
             pass
-        result = int(
-            (((31 * result + char) ^ 0x80000000) & 0xFFFFFFFF)
-            - 0x80000000
-        )
+        result = int_overflow(31 * result + char)
     return result
 
 

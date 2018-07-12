@@ -117,8 +117,13 @@ def test_sql_read_as_binary(conn):
     result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
     assert result.status == 0, result.message
 
+    result = cache_destroy(conn, scheme_hash_code)
+    assert result.status == 0, result.message
+
 
 def test_sql_write_as_binary(conn):
+
+    cache_create(conn, scheme_name)
 
     # configure cache as an SQL table
     type_name = '{}_CONTAINER'.format(table_cache_name)
@@ -205,7 +210,8 @@ def test_sql_write_as_binary(conn):
 
     # register binary type
     result = put_binary_type(
-        conn, type_name, schema_id=42,
+        conn,
+        type_name,
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
             ('TEST_INT', IntObject),
@@ -216,10 +222,14 @@ def test_sql_write_as_binary(conn):
     assert result.status == 0, result.message
 
     sql_type_id = result.value['type_id']
+    schema_id = result.value['schema_id']
 
     # recheck
     result = get_binary_type(conn, sql_type_id)
     assert result.status == 0, result.message
+    assert schema_id == result.value['schema'][0]['schema_id'], (
+        'Client-side schema ID calculation is incorrect'
+    )
 
     # insert row as k-v
     result = cache_put(
@@ -230,7 +240,7 @@ def test_sql_write_as_binary(conn):
         value={
             'version': 1,
             'type_id': sql_type_id,
-            'schema_id': 42,
+            'schema_id': schema_id,
             'fields': OrderedDict([
                 ('TEST_BOOL', False),
                 ('TEST_INT', (89, IntObject)),
@@ -257,4 +267,7 @@ def test_sql_write_as_binary(conn):
 
     # cleanup
     result = cache_destroy(conn, table_hash_code)
+    assert result.status == 0, result.message
+
+    result = cache_destroy(conn, scheme_hash_code)
     assert result.status == 0, result.message
