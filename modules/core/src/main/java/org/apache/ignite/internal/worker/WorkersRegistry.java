@@ -146,7 +146,9 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
 
             long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / HEARTBEAT_TIMEOUT;
 
-            for (long i = 0; i < workersToCheck; i++) {
+            int workersChecked = 0;
+
+            while (workersChecked < workersToCheck) {
                 if (!checkIter.hasNext())
                     checkIter = registeredWorkers.entrySet().iterator();
 
@@ -160,7 +162,7 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
 
                 Thread runner = worker.runner();
 
-                if (runner != null && runner != Thread.currentThread()) {
+                if (runner != null && runner != Thread.currentThread() && !worker.isCancelled()) {
                     if (!runner.isAlive()) {
                         // In normal operation GridWorker implementation guarantees:
                         // worker termination happens before its removal from registeredWorkers.
@@ -184,6 +186,9 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
                         // that may stay in the map for indefinite time.
                     }
                 }
+
+                if (runner != Thread.currentThread())
+                    workersChecked++;
             }
         }
         finally {
