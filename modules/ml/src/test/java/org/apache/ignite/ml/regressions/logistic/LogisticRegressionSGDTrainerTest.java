@@ -17,7 +17,12 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
@@ -27,11 +32,6 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDT
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Tests for {@LogisticRegressionSGDTrainer}.
@@ -93,7 +93,7 @@ public class LogisticRegressionSGDTrainerTest {
         LogisticRegressionModel mdl = trainer.fit(
             data,
             10,
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 

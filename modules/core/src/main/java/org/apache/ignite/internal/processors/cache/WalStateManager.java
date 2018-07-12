@@ -131,7 +131,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (kernalCtx != null) {
             IgniteConfiguration cfg = kernalCtx.config();
 
-            srv = !cfg.isClientMode() && !cfg.isDaemon();
+            boolean client = cfg.isClientMode() != null && cfg.isClientMode();
+
+            srv = !client && !cfg.isDaemon();
 
             log = kernalCtx.log(WalStateManager.class);
         }
@@ -378,6 +380,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             boolean hasOwning = false;
 
+            int parts = 0;
+
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == OWNING) {
                     hasOwning = true;
@@ -391,11 +395,16 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         break;
                     }
                 }
+
+                parts++;
             }
 
-            if (hasOwning && !grp.localWalEnabled()) {
+            log.info("Prepare change WAL state, grp=" + grp.cacheOrGroupName() +
+                ", grpId=" + grp.groupId() + ", hasOwning=" + hasOwning +
+                ", WALState=" + grp.walEnabled() + ", parts=" + parts);
+
+            if (hasOwning && !grp.localWalEnabled())
                 grpsToEnableWal.add(grp.groupId());
-            }
             else if (!hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
 
