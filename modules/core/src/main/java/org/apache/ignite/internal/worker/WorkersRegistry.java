@@ -24,17 +24,21 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
 
 /**
- * Workers registry.
+ * Workers registry. Maintains a set of workers currently running.
+ * Can perform periodic health checks for these workers on behalf of any of them.
  */
 public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHandler {
     /** Time in milliseconds between successive workers checks. */
@@ -43,8 +47,8 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
 
-    /** Whether workers should check peers' health or not. */
-    private volatile boolean isPeerCheckEnabled = true;
+    /** Whether workers should check each other's health or not. */
+    private volatile boolean healthMonitoringEnabled = true;
 
     /** Points to the next worker to check. */
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
@@ -56,18 +60,11 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     private final AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
 
     /** */
-    private final IgniteInClosure<GridWorker> workerDiedHnd;
+    private final IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd;
 
     /** */
-    private final IgniteInClosure<GridWorker> workerIsBlockedHnd;
-
-    /** */
-    public WorkersRegistry(
-        @NotNull IgniteInClosure<GridWorker> workerDiedHnd,
-        @NotNull IgniteInClosure<GridWorker> workerIsBlockedHnd
-    ) {
-        this.workerDiedHnd = workerDiedHnd;
-        this.workerIsBlockedHnd = workerIsBlockedHnd;
+    public WorkersRegistry(@NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd) {
+        this.workerFailedHnd = workerFailedHnd;
     }
 
     /**
@@ -113,13 +110,13 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     }
 
     /** */
-    boolean getPeerCheckEnabled() {
-        return isPeerCheckEnabled;
+    boolean getHealthMonitoringEnabled() {
+        return healthMonitoringEnabled;
     }
 
     /** */
-    void setPeerCheckEnabled(boolean val) {
-        isPeerCheckEnabled = val;
+    void setHealthMonitoringEnabled(boolean val) {
+        healthMonitoringEnabled = val;
     }
 
     /** {@inheritDoc} */
@@ -134,7 +131,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
     /** {@inheritDoc} */
     @Override public void onIdle(GridWorker w) {
-        if (!isPeerCheckEnabled)
+        if (!healthMonitoringEnabled)
             return;
 
         Thread prevCheckerThread = lastChecker.get();
@@ -173,14 +170,14 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker)
-                            workerDiedHnd.apply(worker);
+                            workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
                     }
 
                     if (U.currentTimeMillis() - worker.heartbeatTimeMillis() > HEARTBEAT_TIMEOUT) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker)
-                            workerIsBlockedHnd.apply(worker);
+                            workerFailedHnd.apply(worker, CRITICAL_ERROR);
 
                         // Iterator should not be reset:
                         // otherwise we'll never iterate beyond the blocked worker,

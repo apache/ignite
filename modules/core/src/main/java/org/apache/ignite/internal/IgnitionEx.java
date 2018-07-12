@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
@@ -143,7 +144,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -1821,20 +1821,12 @@ public class IgnitionEx {
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
             WorkersRegistry workerRegistry = new WorkersRegistry(
-                new IgniteInClosure<GridWorker>() {
-                    @Override public void apply(GridWorker deadWorker) {
+                new IgniteBiInClosure<GridWorker, FailureType>() {
+                    @Override public void apply(GridWorker deadWorker, FailureType failureType) {
                         if (grid != null)
                             grid.context().failure().process(new FailureContext(
-                                SYSTEM_WORKER_TERMINATION,
+                                failureType,
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
-                    }
-                },
-                new IgniteInClosure<GridWorker>() {
-                    @Override public void apply(GridWorker hangingWorker) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                CRITICAL_ERROR,
-                                new IgniteException(S.toString(GridWorker.class, hangingWorker))));
                     }
                 }
             );

@@ -62,13 +62,13 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getPeerCheckEnabled() {
-        return workerRegistry.getPeerCheckEnabled();
+    @Override public boolean getHealthMonitoringEnabled() {
+        return workerRegistry.getHealthMonitoringEnabled();
     }
 
     /** {@inheritDoc} */
-    @Override public void setPeerCheckEnabled(boolean value) {
-        workerRegistry.setPeerCheckEnabled(value);
+    @Override public void setHealthMonitoringEnabled(boolean val) {
+        workerRegistry.setHealthMonitoringEnabled(val);
     }
 
     /** {@inheritDoc} */

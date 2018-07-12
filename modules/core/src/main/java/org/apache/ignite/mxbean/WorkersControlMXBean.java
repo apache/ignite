@@ -49,10 +49,10 @@ public interface WorkersControlMXBean {
 
     /** */
     @MXBeanDescription("Whether workers check each other's health.")
-    public boolean getPeerCheckEnabled();
+    public boolean getHealthMonitoringEnabled();
 
     /** */
-    public void setPeerCheckEnabled(boolean value);
+    public void setHealthMonitoringEnabled(boolean val);
 
     /**
      * Stops thread by {@code name}, if exists and unique.
