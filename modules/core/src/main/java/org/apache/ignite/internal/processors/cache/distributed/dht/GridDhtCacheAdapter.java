@@ -689,23 +689,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 log.debug("Will node load entry into cache (partition is invalid): " + part);
         }
         catch (GridDhtInvalidPartitionException e) {
-            GridDhtTopologyFuture topFut = ctx.topologyVersionFuture();
-
-            AffinityTopologyVersion curTopFut = topFut.isDone() ? topFut.topologyVersion() :
-                topFut.initialVersion();
-
             if (log.isDebugEnabled())
                 log.debug(S.toString("Ignoring entry for partition that does not belong",
                     "key", key, true,
                     "val", val, true,
                     "err", e, false));
 
-            if (curTopFut.compareTo(topVer) > 0) {
-                ClusterTopologyCheckedException topChangedE = new ClusterTopologyCheckedException(
-                    "CacheStore loading should be retried  at stable topology [topVer=" + topVer +
-                    ", curTopFut=" + curTopFut + ']', e);
+            GridDhtTopologyFuture topFut = ctx.topologyVersionFuture();
 
-                topChangedE.retryReadyFuture(ctx.affinity().affinityReadyFuture(curTopFut));
+            AffinityTopologyVersion curTopVer = topFut.isDone() ? topFut.topologyVersion() :
+                topFut.initialVersion();
+
+            if (curTopVer.compareTo(topVer) > 0) {
+                ClusterTopologyCheckedException topChangedE = new ClusterTopologyCheckedException(
+                    "Cache store loading should be retried at stable topology [topVer=" + topVer +
+                        ", curTopVer=" + curTopVer + ']', e);
 
                 throw new CacheLoaderException(topChangedE.getMessage(), topChangedE);
             }
