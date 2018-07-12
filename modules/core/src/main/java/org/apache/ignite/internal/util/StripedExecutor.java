@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
@@ -87,7 +86,7 @@ public class StripedExecutor implements ExecutorService {
         final IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
         GridWorkerListener gridWorkerLsnr,
-        GridWorkerIdlenessHandler idleHnd
+        IgniteInClosure<GridWorker> idleHnd
     ) {
         this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr, idleHnd);
     }
@@ -110,7 +109,7 @@ public class StripedExecutor implements ExecutorService {
         IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
-        GridWorkerIdlenessHandler idleHnd
+        IgniteInClosure<GridWorker> idleHnd
     ) {
         A.ensure(cnt > 0, "cnt > 0");
 
@@ -475,7 +474,7 @@ public class StripedExecutor implements ExecutorService {
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
-            GridWorkerIdlenessHandler idleHnd
+            IgniteInClosure<GridWorker> idleHnd
         ) {
             super(igniteInstanceName, poolName + "-stripe-" + idx, log, gridWorkerLsnr, idleHnd);
 
@@ -615,7 +614,7 @@ public class StripedExecutor implements ExecutorService {
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
-            GridWorkerIdlenessHandler idleHnd
+            IgniteInClosure<GridWorker> idleHnd
         ) {
             this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr, idleHnd);
         }
@@ -637,7 +636,7 @@ public class StripedExecutor implements ExecutorService {
             Stripe[] others,
             IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
-            GridWorkerIdlenessHandler idleHnd
+            IgniteInClosure<GridWorker> idleHnd
         ) {
             super(
                 igniteInstanceName,
@@ -758,7 +757,7 @@ public class StripedExecutor implements ExecutorService {
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
-            GridWorkerIdlenessHandler idleHnd
+            IgniteInClosure<GridWorker> idleHnd
         ) {
             super(igniteInstanceName,
                 poolName,
@@ -833,7 +832,7 @@ public class StripedExecutor implements ExecutorService {
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr,
-            GridWorkerIdlenessHandler idleHnd
+            IgniteInClosure<GridWorker> idleHnd
         ) {
             super(igniteInstanceName,
                 poolName,

@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOU
  * Workers registry. Maintains a set of workers currently running.
  * Can perform periodic health checks for these workers on behalf of any of them.
  */
-public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHandler {
+public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<GridWorker> {
     /** Time in milliseconds between successive workers checks. */
     private static final long CHECK_INTERVAL = 3_000;
 
@@ -130,7 +130,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     }
 
     /** {@inheritDoc} */
-    @Override public void onIdle(GridWorker w) {
+    @Override public void apply(GridWorker w) {
         if (!healthMonitoringEnabled)
             return;
 

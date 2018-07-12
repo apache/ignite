@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -6935,7 +6934,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             IgniteLogger log,
             long pollingTimeout,
             @Nullable GridWorkerListener lsnr,
-            @Nullable GridWorkerIdlenessHandler idleHnd
+            @Nullable IgniteInClosure<GridWorker> idleHnd
         ) {
             super(spi.ignite().name(), name, log, lsnr, idleHnd);
 

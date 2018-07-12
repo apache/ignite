@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.CRITICAL_WORKER_HEARTBEAT_TIMEOUT;
@@ -52,7 +53,7 @@ public abstract class GridWorker implements Runnable {
     private final GridWorkerListener lsnr;
 
     /** */
-    private final GridWorkerIdlenessHandler idleHnd;
+    private final IgniteInClosure<GridWorker> idleHnd;
 
     /** */
     private volatile boolean finished;
@@ -85,7 +86,7 @@ public abstract class GridWorker implements Runnable {
         String name,
         IgniteLogger log,
         @Nullable GridWorkerListener lsnr,
-        @Nullable GridWorkerIdlenessHandler idleHnd
+        @Nullable IgniteInClosure<GridWorker> idleHnd
     ) {
         assert name != null;
         assert log != null;
@@ -320,6 +321,6 @@ public abstract class GridWorker implements Runnable {
     /** */
     public void onIdle() {
         if (idleHnd != null)
-            idleHnd.onIdle(this);
+            idleHnd.apply(this);
     }
 }

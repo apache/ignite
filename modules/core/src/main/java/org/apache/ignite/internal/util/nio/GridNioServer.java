@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -297,7 +296,7 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
-        @Nullable GridWorkerIdlenessHandler idleHnd,
+        @Nullable IgniteInClosure<GridWorker> idleHnd,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -1069,7 +1068,7 @@ public class GridNioServer<T> {
             String name,
             IgniteLogger log,
             @Nullable GridWorkerListener workerLsnr,
-            @Nullable GridWorkerIdlenessHandler idleHnd
+            @Nullable IgniteInClosure<GridWorker> idleHnd
         ) throws IgniteCheckedException {
             super(idx, igniteInstanceName, name, log, workerLsnr, idleHnd);
 
@@ -1247,7 +1246,7 @@ public class GridNioServer<T> {
             String name,
             IgniteLogger log,
             @Nullable GridWorkerListener workerLsnr,
-            @Nullable GridWorkerIdlenessHandler idleHnd
+            @Nullable IgniteInClosure<GridWorker> idleHnd
         ) throws IgniteCheckedException {
             super(idx, igniteInstanceName, name, log, workerLsnr, idleHnd);
         }
@@ -1778,7 +1777,7 @@ public class GridNioServer<T> {
             String name,
             IgniteLogger log,
             @Nullable GridWorkerListener workerLsnr,
-            @Nullable GridWorkerIdlenessHandler idleHnd
+            @Nullable IgniteInClosure<GridWorker> idleHnd
         ) throws IgniteCheckedException {
             super(igniteInstanceName, name, log, workerLsnr, idleHnd);
 
@@ -2870,7 +2869,7 @@ public class GridNioServer<T> {
             IgniteLogger log,
             Selector selector,
             @Nullable GridWorkerListener workerLsnr,
-            @Nullable GridWorkerIdlenessHandler idleHnd
+            @Nullable IgniteInClosure<GridWorker> idleHnd
         ) {
             super(igniteInstanceName, name, log, workerLsnr, idleHnd);
 
@@ -3679,7 +3678,7 @@ public class GridNioServer<T> {
         private GridWorkerListener workerLsnr;
 
         /** */
-        private GridWorkerIdlenessHandler idleHnd;
+        private IgniteInClosure<GridWorker> idleHnd;
 
         /**
          * Finishes building the instance.
@@ -3981,7 +3980,7 @@ public class GridNioServer<T> {
          * @param idleHnd Idleness handler.
          * @return This for chaining.
          */
-        public Builder<T> idlenessHandler(GridWorkerIdlenessHandler idleHnd) {
+        public Builder<T> idlenessHandler(IgniteInClosure<GridWorker> idleHnd) {
             this.idleHnd = idleHnd;
 
             return this;
