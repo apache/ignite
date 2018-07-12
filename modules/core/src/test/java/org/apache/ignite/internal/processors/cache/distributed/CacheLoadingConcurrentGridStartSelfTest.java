@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -168,25 +169,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         configured = true;
 
         try {
-            loadCache(new IgniteInClosure<Ignite>() {
-                @Override public void apply(Ignite grid) {
-                    grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
-                }
-            });
-        }
-        finally {
-            configured = false;
-        }
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheFromStoreClient() throws Exception {
-        configured = true;
-        client = true;
-
-        try {
             startGrid(1);
 
             Ignite g0 = startGrid(0);
@@ -197,17 +179,48 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 }
             });
 
-            try {
-                g0.cache(DEFAULT_CACHE_NAME).loadCache(null);
-            }
-            finally {
-                fut.get(getTestTimeout());
+            while (true) {
+                try {
+                    g0.cache(DEFAULT_CACHE_NAME).loadCache(null);
+                }
+                catch (CacheLoaderException e) {
+                    ClusterTopologyCheckedException cause = (ClusterTopologyCheckedException)e.getCause();
+
+                    assertTrue(cause.getCause() instanceof GridDhtInvalidPartitionException);
+
+                    IgniteInternalFuture<?> retryFut;
+
+                    if ((retryFut = cause.retryReadyFuture()) != null)
+                        retryFut.get(getTestTimeout());
+                    else
+                        U.sleep(500);
+
+                    continue;
+                }
+                catch (Exception r) {
+                    r.printStackTrace();
+                }
+
+                break;
             }
 
             assertCacheSize();
         }
         finally {
             configured = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheFromStoreClient() throws Exception {
+        client = true;
+
+        try {
+            testLoadCacheFromStore();
+        }
+        finally {
             client = false;
         }
     }
@@ -458,25 +471,11 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             }
         });
 
-        while (true) {
-            try {
-                f.apply(g0);
-            }
-            catch (CacheLoaderException e) {
-                assertTrue(e.getCause() instanceof ClusterTopologyCheckedException);
-
-                IgniteInternalFuture<?> retryFut = ((ClusterTopologyCheckedException)e.getCause()).retryReadyFuture();
-
-                assertNotNull(retryFut);
-
-                retryFut.get(getTestTimeout());
-
-                continue;
-            } catch (Exception r){
-                r.printStackTrace();
-            }
-
-            break;
+        try {
+            f.apply(g0);
+        }
+        finally {
+            fut.get();
         }
 
         assertCacheSize();

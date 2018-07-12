@@ -703,7 +703,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (curTopFut.compareTo(topVer) > 0) {
                 ClusterTopologyCheckedException topChangedE = new ClusterTopologyCheckedException(
                     "CacheStore loading should be retried  at stable topology [topVer=" + topVer +
-                    ", curTopFut=" + curTopFut + ']');
+                    ", curTopFut=" + curTopFut + ']', e);
 
                 topChangedE.retryReadyFuture(ctx.affinity().affinityReadyFuture(curTopFut));
 
