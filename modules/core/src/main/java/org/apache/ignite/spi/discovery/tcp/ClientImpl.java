@@ -46,7 +46,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -124,7 +123,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.CONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.DISCONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.SEGMENTED;
@@ -511,6 +509,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      *      and {@code null} otherwise.
      * @param timeout Timeout.
      * @param beforeEachSleep code to be run before each sleep span.
+     * @param afterEachSleep code to be run before each sleep span.
      * @return Opened socket or {@code null} if timeout.
      * @throws InterruptedException If interrupted.
      * @throws IgniteSpiException If failed.
@@ -520,7 +519,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     @Nullable private T2<SocketStream, Boolean> joinTopology(
         InetSocketAddress prevAddr,
         long timeout,
-        @Nullable Runnable beforeEachSleep
+        @Nullable Runnable beforeEachSleep,
+        @Nullable Runnable afterEachSleep
     ) throws IgniteSpiException, InterruptedException {
         List<InetSocketAddress> addrs = null;
 
@@ -548,7 +548,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "Will retry every " + spi.getReconnectDelay() + " ms. " +
                             "Change 'reconnectDelay' to configure the frequency of retries.", true);
 
-                    sleepShallowly(spi.getReconnectDelay(), beforeEachSleep);
+                    sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
                 }
             }
 
@@ -614,30 +614,30 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Will wait before retry join.");
 
-                sleepShallowly(spi.getReconnectDelay(), beforeEachSleep);
+                sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
             }
             else if (addrs.isEmpty()) {
                 LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "every " + spi.getReconnectDelay() + " ms; change 'reconnectDelay' to configure the frequency " +
                     "of retries): " + toOrderedList(addrs0), true);
 
-                sleepShallowly(spi.getReconnectDelay(), beforeEachSleep);
+                sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
             }
         }
     }
 
     /** */
-    private void sleepShallowly(long millis, Runnable beforeEachSleep) throws InterruptedException {
-        do {
-            if (beforeEachSleep != null)
-                beforeEachSleep.run();
+    private static void sleepEx(long millis, Runnable before, Runnable after) throws InterruptedException {
+        if (before != null)
+            before.run();
 
-            long span = Math.min(millis, HEARTBEAT_TIMEOUT / 2);
-
-            Thread.sleep(span);
-
-            millis -= span;
-        } while (millis > 0);
+        try {
+            Thread.sleep(millis);
+        }
+        finally {
+            if (after!= null)
+                after.run();
+        }
     }
 
     /**
@@ -1475,7 +1475,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 while (true) {
-                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout, null);
+                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout, null, null);
 
                     if (joinRes == null) {
                         if (join) {
@@ -1614,9 +1614,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         private boolean nodeAdded;
 
         /** */
-        private final long pollTimeoutMs = HEARTBEAT_TIMEOUT / 2;
-
-        /** */
         private long lastOnIdleTs = U.currentTimeMillis();
 
         /**
@@ -1641,21 +1638,20 @@ class ClientImpl extends TcpDiscoveryImpl {
                 while (true) {
                     Object msg;
 
-                    do {
+                    setHeartbeat(Long.MAX_VALUE);
+
+                    try {
+                        msg = queue.take();
+                    }
+                    finally {
                         updateHeartbeat();
+                    }
 
-                        msg = queue.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                        onIdle();
 
-                        if (msg == null)
-                            updateHeartbeat();
-
-                        if (msg == null || U.currentTimeMillis() - lastOnIdleTs > pollTimeoutMs) {
-                            onIdle();
-
-                            lastOnIdleTs = U.currentTimeMillis();
-                        }
-                    } while (msg == null);
-
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
 
                     if (msg == JOIN_TIMEOUT) {
                         if (state == STARTING) {
@@ -1944,11 +1940,17 @@ class ClientImpl extends TcpDiscoveryImpl {
             T2<SocketStream, Boolean> joinRes;
 
             try {
-                joinRes = joinTopology(null, spi.joinTimeout, new Runnable() {
-                    @Override public void run() {
-                        updateHeartbeat();
-                    }
-                });
+                joinRes = joinTopology(null, spi.joinTimeout,
+                    new Runnable() {
+                        @Override public void run() {
+                            setHeartbeat(Long.MAX_VALUE);
+                        }
+                    },
+                    new Runnable() {
+                        @Override public void run() {
+                            updateHeartbeat();
+                        }
+                    });
             }
             catch (IgniteSpiException e) {
                 joinError(e);

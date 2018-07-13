@@ -42,14 +42,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
@@ -2652,6 +2650,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          *
          */
@@ -2761,15 +2762,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
                 DiscoveryCustomMessage> evt;
-            do {
-                if (isCancelled())
-                    return;
 
-                if ((evt = evts.poll(HEARTBEAT_TIMEOUT / 2, TimeUnit.MILLISECONDS)) == null)
-                    onIdle();
+            setHeartbeat(Long.MAX_VALUE);
 
+            try {
+                evt = evts.take();
+            }
+            finally {
                 updateHeartbeat();
-            } while (evt == null);
+            }
+
+            if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                onIdle();
+
+                lastOnIdleTs = U.currentTimeMillis();
+            }
 
             int type = evt.get1();
 

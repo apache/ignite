@@ -1618,16 +1618,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 return;
             }
 
-            long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
-
             Throwable err = null;
 
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped) {
-                        updateHeartbeat();
+                        setHeartbeat(Long.MAX_VALUE);
 
-                        wait(waitTimeoutMs);
+                        try {
+                            wait();
+                        }
+                        finally {
+                            updateHeartbeat();
+                        }
                     }
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
@@ -1645,17 +1648,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             ", current=" + curAbsWalIdx;
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            updateHeartbeat();
+                            setHeartbeat(Long.MAX_VALUE);
 
-                            wait(waitTimeoutMs);
+                            try {
+                                wait();
+                            }
+                            finally {
+                                updateHeartbeat();
+                            }
                         }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutMs) {
-                        updateHeartbeat();
-
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
@@ -1670,7 +1676,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         while (locked.containsKey(toArchive) && !stopped) {
                             updateHeartbeat();
 
-                            wait(waitTimeoutMs);
+                            wait();
                         }
 
                         // Then increase counter to allow rollover on clean working file
@@ -3256,8 +3262,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            long waitTimeoutNs = 1000 * HEARTBEAT_TIMEOUT / 2;
-
             Throwable err = null;
 
             long lastOnIdleTs = U.currentTimeMillis();
@@ -3266,9 +3270,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 while (!isCancelled()) {
                     while (waiters.isEmpty()) {
                         if (!isCancelled()) {
-                            updateHeartbeat();
+                            setHeartbeat(Long.MAX_VALUE);
 
-                            LockSupport.parkNanos(waitTimeoutNs);
+                            try {
+                                LockSupport.park();
+                            }
+                            finally {
+                                updateHeartbeat();
+                            }
                         }
                         else {
                             unparkWaiters(Long.MAX_VALUE);
@@ -3277,7 +3286,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutNs / 1000) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

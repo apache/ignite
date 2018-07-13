@@ -1454,16 +1454,19 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 return;
             }
 
-            long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
-
             Throwable err = null;
 
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped) {
-                        updateHeartbeat();
+                        setHeartbeat(Long.MAX_VALUE);
 
-                        wait(waitTimeoutMs);
+                        try {
+                            wait();
+                        }
+                        finally {
+                            updateHeartbeat();
+                        }
                     }
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
@@ -1483,17 +1486,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             ", current=" + curAbsWalIdx;
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            updateHeartbeat();
+                            setHeartbeat(Long.MAX_VALUE);
 
-                            wait(waitTimeoutMs);
+                            try {
+                                wait();
+                            }
+                            finally {
+                                updateHeartbeat();
+                            }
                         }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutMs) {
-                        updateHeartbeat();
-
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
@@ -1506,9 +1512,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                     synchronized (this) {
                         while (locked.containsKey(toArchive) && !stopped) {
-                            updateHeartbeat();
+                            setHeartbeat(Long.MAX_VALUE);
 
-                            wait(waitTimeoutMs);
+                            try {
+                                wait();
+                            }
+                            finally {
+                                updateHeartbeat();
+                            }
                         }
 
                         changeLastArchivedIndexAndWakeupCompressor(toArchive);

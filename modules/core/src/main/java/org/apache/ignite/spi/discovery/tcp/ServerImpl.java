@@ -5819,28 +5819,17 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
-                int acceptTimeoutMs = (int)HEARTBEAT_TIMEOUT / 2;
-
-                srvrSock.setSoTimeout(acceptTimeoutMs);
-
-                Socket sock;
-
                 long lastOnIdleTs = U.currentTimeMillis();
 
                 while (!isCancelled()) {
-                    updateHeartbeat();
+                    setHeartbeat(Long.MAX_VALUE);
 
+                    Socket sock;
                     try {
                         sock = srvrSock.accept();
                     }
-                    catch (SocketTimeoutException ignored) {
+                    finally {
                         updateHeartbeat();
-
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-
-                        continue;
                     }
 
                     long tstamp = U.currentTimeMillis();
@@ -5863,7 +5852,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > acceptTimeoutMs) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

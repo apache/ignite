@@ -155,7 +155,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             long lastOnIdleTs = U.currentTimeMillis();
 
-            long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
+            long waitTimeout = HEARTBEAT_TIMEOUT / 2;
 
             try {
                 while (!isCancelled()) {
@@ -163,7 +163,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
                     long now = U.currentTimeMillis();
 
-                    if (now - lastOnIdleTs > waitTimeoutMs) {
+                    if (now - lastOnIdleTs > waitTimeout) {
                         onIdle();
 
                         lastOnIdleTs = now;
@@ -216,13 +216,21 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
-                                if (waitTime > 0)
-                                    mux.wait(Math.min(waitTime, waitTimeoutMs));
+                                if (waitTime > 0) {
+                                    setHeartbeat(Long.MAX_VALUE);
+
+                                    try {
+                                        mux.wait(waitTime);
+                                    }
+                                    finally {
+                                        updateHeartbeat();
+                                    }
+                                }
                                 else
                                     break;
                             }
                             else
-                                mux.wait(waitTimeoutMs);
+                                mux.wait(waitTimeout);
                         }
                     }
                 }

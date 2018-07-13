@@ -3404,15 +3404,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     long remaining;
 
                     while ((remaining = scheduledCp.nextCpTs - now) > 0 && !isCancelled()) {
-                        updateHeartbeat();
+                        setHeartbeat(Long.MAX_VALUE);
 
-                        wait(Math.min(remaining, waitTimeoutMs));
+                        try {
+                            wait(remaining);
+                        }
+                        finally {
+                            updateHeartbeat();
+                        }
 
                         now = U.currentTimeMillis();
 
                         if (now - lastOnIdleTs > waitTimeoutMs) {
-                            updateHeartbeat();
-
                             onIdle();
 
                             lastOnIdleTs = now;

@@ -48,15 +48,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
-
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
-    /** */
-    private static final long WAIT_TIMEOUT_NS = 1000 * HEARTBEAT_TIMEOUT / 2;
-
     /** Stripes. */
     private final Stripe[] stripes;
 
@@ -497,8 +492,6 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @SuppressWarnings("NonAtomicOperationOnVolatileField")
         @Override public void body() {
-            final long onIdleTimeout = WAIT_TIMEOUT_NS / 1000;
-
             while (!isCancelled()) {
                 Runnable cmd;
 
@@ -507,7 +500,7 @@ public class StripedExecutor implements ExecutorService {
 
                     cmd = take();
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > onIdleTimeout) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
@@ -686,9 +679,14 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
 
-                    updateHeartbeat();
+                    setHeartbeat(Long.MAX_VALUE);
 
-                    LockSupport.parkNanos(WAIT_TIMEOUT_NS);
+                    try {
+                        LockSupport.park();
+                    }
+                    finally {
+                        updateHeartbeat();
+                    }
 
                     if (Thread.interrupted())
                         throw new InterruptedException();
@@ -766,8 +764,6 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override Runnable take() {
-            long waitTimeout = WAIT_TIMEOUT_NS / 1000;
-
             long startTs = U.currentTimeMillis();
 
             for (;;) {
@@ -776,7 +772,7 @@ public class StripedExecutor implements ExecutorService {
                 if (r != null)
                     return r;
 
-                if (U.currentTimeMillis() - startTs > waitTimeout) {
+                if (U.currentTimeMillis() - startTs > HEARTBEAT_TIMEOUT / 2) {
                     updateHeartbeat();
 
                     startTs = U.currentTimeMillis();
@@ -841,14 +837,14 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
-            Runnable r;
+            setHeartbeat(Long.MAX_VALUE);
 
-            do {
+            try {
+                return queue.take();
+            }
+            finally {
                 updateHeartbeat();
             }
-            while ((r = queue.poll(WAIT_TIMEOUT_NS, TimeUnit.NANOSECONDS)) == null);
-
-            return r;
         }
 
         /** {@inheritDoc} */

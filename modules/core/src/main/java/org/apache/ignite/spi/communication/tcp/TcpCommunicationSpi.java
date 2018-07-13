@@ -4258,23 +4258,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isCancelled()) {
-                    updateHeartbeat();
+                    setHeartbeat(Long.MAX_VALUE);
 
-                    DisconnectedSessionInfo disconnectData = null;
-
-                    long millisToWait;
-                    long start = U.currentTimeMillis();
-
-                    while ((millisToWait = idleConnTimeout - (U.currentTimeMillis() - start)) > 0 &&
-                        (disconnectData = q.poll(Math.min(millisToWait, HEARTBEAT_TIMEOUT / 2), TimeUnit.MILLISECONDS)) == null) {
-
+                    DisconnectedSessionInfo disconnectData;
+                    try {
+                        disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+                    }
+                    finally {
                         updateHeartbeat();
+                    }
 
-                        if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
-                            onIdle();
+                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                        onIdle();
 
-                            lastOnIdleTs = U.currentTimeMillis();
-                        }
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
 
                     if (disconnectData != null)
