@@ -143,6 +143,9 @@ public class BinaryContext {
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
     private static final Set<String> BINARYLIZABLE_SYS_CLSS;
 
+    /** Prefix trie that stores binary type configurations provided by {@link BinaryConfiguration}*/
+    private final BinaryTypeConfigurationTrie typeCfgsTrie = new BinaryTypeConfigurationTrie();
+
     /* Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
@@ -1627,5 +1630,119 @@ public class BinaryContext {
         public boolean registered() {
             return registered;
         }
+    }
+
+    /**
+     * Prefix trie that stores binary type configurations. It allows to properly handle wildcards.
+     */
+    private static class BinaryTypeConfigurationTrie {
+        /** Wildcard symbol. */
+        private final static String WILDCARD = "*";
+
+        /** Root. */
+        private final Node root = new Node();
+
+        /**
+         * Registers binary type configuration for the given class name.
+         *
+         * @param clsName Class name.
+         * @param cfg Binary type configuration.
+         */
+        void register(String clsName, BinaryTypeConfiguration cfg) {
+            assert cfg != null: "Binary type configuration is required for the class: " + clsName;
+
+            String[] tokens = clsName.split("\\.");
+
+            Node cur = root;
+
+            for (int i = 0; i < tokens.length; i++) {
+                String token = tokens[i];
+
+                if (token.equals(WILDCARD) && (i != tokens.length - 1)) {
+                    throw new IllegalArgumentException("Incorrect class name format: " + clsName);
+                }
+
+                if (cur.children == null)
+                    cur.children = new HashMap<>();
+
+                Node n = cur.children.get(token);
+
+                if (n == null) {
+                    n = new Node();
+
+                    cur.children.put(token, n);
+                }
+
+                cur = n;
+            }
+
+            cur.cfg = cfg;
+        }
+
+        /**
+         * Returns binary type configuration for the specified class.
+         *
+         * @param clsName Class name.
+         * @return Binary type configuration. Returns {@code null} in case of the given class is not registered.
+         */
+        public BinaryTypeConfiguration resolve(String clsName) {
+            String[] tokens = clsName.split("\\.");
+
+            Node cur = root;
+            Node lastSuccessfulWildcard = cur;
+
+            for (int i = 0; i < tokens.length; i++) {
+                if (cur.children == null) {
+                    return null;
+                }
+
+                Node n = cur.children.get(tokens[i]);
+                Node wildcard = cur.children.get(WILDCARD);
+
+                if (n == null)
+                    return (wildcard != null)? wildcard.cfg : lastSuccessfulWildcard.cfg;
+
+                if (wildcard != null)
+                    lastSuccessfulWildcard = wildcard;
+
+                cur = n;
+            }
+
+            return cur.cfg;
+        }
+
+        /** Trie's node. */
+        private static class Node {
+            /** Binary type configuration that is corresponded to the node. */
+            private BinaryTypeConfiguration cfg;
+
+            /** Children. */
+            private Map<String, Node> children;
+
+            /** */
+            Node() {
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        BinaryTypeConfigurationTrie c = new BinaryTypeConfigurationTrie();
+
+        c.register("com.base.*", new BinaryTypeConfiguration("com.base.*"));
+        c.register("com.base.impl.*", new BinaryTypeConfiguration("com.base.impl.*"));
+        c.register("com.base.test.a", new BinaryTypeConfiguration("com.base.test.a"));
+
+        Object val;
+        val = c.resolve("com.a");
+        val = c.resolve("com.base.a");
+        val = c.resolve("com.base.impl.a");
+        val = c.resolve("com.base.test.a");
+        val = c.resolve("com.base.test.b");
+        val = c.resolve("ru.a");
+        val = c.resolve("ru.*");
+        val = c.resolve("com.base.*");
+
+        int i = 0;
+        ++i;
     }
 }
