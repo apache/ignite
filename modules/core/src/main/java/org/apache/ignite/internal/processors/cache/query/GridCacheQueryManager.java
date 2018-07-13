@@ -3128,6 +3128,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private static class InternalScanFilter<K, V> implements IgniteBiPredicate<K, V> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final IgniteBiPredicate<K, V> scanFilter;
 
         /**
