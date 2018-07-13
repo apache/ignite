@@ -1333,7 +1333,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 onPageReady(loc, qryInfo, null, true, e);
 
                 if (e instanceof Error)
-                    throw (Error)e;
+                    throw new IgniteException(e);
             }
             finally {
                 if (loc) {

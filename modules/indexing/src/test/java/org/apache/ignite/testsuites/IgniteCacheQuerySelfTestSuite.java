@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMet
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheScanQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
@@ -384,6 +385,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Other.
         suite.addTestSuite(CacheIteratorScanQueryTest.class);
+        suite.addTestSuite(CacheScanQueryTest.class);
         suite.addTestSuite(CacheQueryNewClientSelfTest.class);
         suite.addTestSuite(CacheOffheapBatchIndexingSingleTypeTest.class);
         suite.addTestSuite(CacheSqlQueryValueCopySelfTest.class);
