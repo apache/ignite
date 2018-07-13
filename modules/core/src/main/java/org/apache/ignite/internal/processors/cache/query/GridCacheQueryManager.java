@@ -804,6 +804,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         boolean locNode)
         throws IgniteCheckedException {
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
+        final InternalScanFilter<K,V> intFilter = new InternalScanFilter<>(keyValFilter);
 
         try {
             injectResources(keyValFilter);
@@ -813,7 +814,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
                 return new GridEmptyCloseableIterator() {
                     @Override public void close() throws IgniteCheckedException {
-                        closeScanFilter(keyValFilter);
+                        intFilter.close();
                         super.close();
                     }
                 };
@@ -852,20 +853,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode, cctx, log);
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            closeScanFilter(keyValFilter);
+            intFilter.close();
 
             throw e;
         }
-    }
-
-    /**
-     * Closes a filter if it is closeable.
-     *
-     * @param f Filter.
-     */
-    private static void closeScanFilter(Object f) {
-        if (f instanceof PlatformCacheEntryFilter)
-            ((PlatformCacheEntryFilter)f).onClose();
     }
 
     /**
@@ -1378,7 +1369,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         final String namex = cctx.name();
 
-        final IgniteBiPredicate<K, V> scanFilter = qry.scanFilter();
+        final InternalScanFilter<K, V> intFilter = new InternalScanFilter<>(qry.scanFilter());
 
         try {
             assert qry.type() == SCAN;
@@ -1399,7 +1390,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     namex,
                     null,
                     null,
-                    scanFilter,
+                    intFilter.scanFilter(),
                     null,
                     null,
                     subjId,
@@ -1417,7 +1408,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return it;
         }
         catch (Exception e) {
-            closeScanFilter(scanFilter);
+            intFilter.close();
 
             if (updateStatistics)
                 cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
@@ -2850,7 +2841,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final GridDhtLocalPartition locPart;
 
         /** */
-        private final IgniteBiPredicate<K, V> scanFilter;
+        private final InternalScanFilter<K, V> scanFilter;
 
         /** */
         private final boolean statsEnabled;
@@ -2930,7 +2921,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             this.it = it;
             this.topVer = topVer;
             this.locPart = locPart;
-            this.scanFilter = scanFilter;
+            this.scanFilter = new InternalScanFilter(scanFilter);
             this.cctx = cctx;
             this.log = log;
             this.locNode = locNode;
@@ -2998,7 +2989,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (locPart != null)
                 locPart.release();
 
-            closeScanFilter(scanFilter);
+            scanFilter.close();
         }
 
         /**
@@ -3086,7 +3077,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         metrics.addGetTimeNanos(System.nanoTime() - start);
                     }
 
-                    if (scanFilter == null || scanFilter.apply(key0, val0)) {
+                    if (scanFilter.apply(key0, val0)) {
                         if (readEvt) {
                             cctx.gridEvents().record(new CacheQueryReadEvent<>(
                                 cctx.localNode(),
@@ -3096,7 +3087,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 cacheName,
                                 null,
                                 null,
-                                scanFilter,
+                                scanFilter.scanFilter(),
                                 null,
                                 null,
                                 subjId,
@@ -3107,8 +3098,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 null));
                         }
 
-                        if (transform != null)
-                            next0 = transform.apply(new CacheQueryEntry<>(key0, val0));
+                        if (transform != null) {
+                            try {
+                                next0 = transform.apply(new CacheQueryEntry<>(key0, val0));
+                            }
+                            catch (Throwable e) {
+                                throw new IgniteException(e);
+                            }
+                        }
                         else
                             next0 = !locNode ? new GridCacheQueryResponseEntry<>(key0, val0):
                                 new CacheQueryEntry<>(key0, val0);
@@ -3123,6 +3120,44 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 expiryPlc = null;
             }
+        }
+    }
+
+    /**
+     * Wrap scan filter in order to catch unhandled errors.
+     */
+    private static class InternalScanFilter<K, V> implements IgniteBiPredicate<K, V> {
+        /** */
+        private final IgniteBiPredicate<K, V> scanFilter;
+
+        /**
+         * @param scanFilter
+         */
+        InternalScanFilter(IgniteBiPredicate<K, V> scanFilter) {
+            this.scanFilter = scanFilter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(K k, V v){
+            try {
+                return scanFilter == null || scanFilter.apply(k, v);
+            }
+            catch (Throwable e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** */
+        void close() {
+            if (scanFilter instanceof PlatformCacheEntryFilter)
+                ((PlatformCacheEntryFilter)scanFilter).onClose();
+        }
+
+        /**
+         * @return Wrapped scan filter.
+         */
+        IgniteBiPredicate<K, V> scanFilter() {
+            return scanFilter;
         }
     }
 }
