@@ -57,7 +57,7 @@ if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
 
 if %MAJOR_JAVA_VER% LSS 8 (
     echo %0, ERROR:
-    echo The version of JAVA installed in %JAVA_HOME% is incorrect.
+    echo The %MAJOR_JAVA_VER% version of JAVA installed in %JAVA_HOME% is incorrect.
     echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 	goto error_finish
@@ -65,7 +65,7 @@ if %MAJOR_JAVA_VER% LSS 8 (
 
 if %MAJOR_JAVA_VER% GTR 9 (
 	echo %0, WARNING:
-    echo The version of JAVA installed in %JAVA_HOME% was not tested with Apache Ignite.
+    echo The %MAJOR_JAVA_VER% version of JAVA installed in %JAVA_HOME% was not tested with Apache Ignite.
     echo Run it on your own risk or point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 )

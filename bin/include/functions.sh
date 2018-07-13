@@ -80,13 +80,13 @@ checkJava() {
 
     if [ $version -lt 8 ]; then
         echo "$0, ERROR:"
-        echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
+        echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
         echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
         echo "You can also download latest JDK at http://java.com/download"
         exit 1
     elif [ $version -gt 9 ]; then
         echo "$0, WARNING:"
-        echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME was not tested with Apache Ignite."
+        echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME was not tested with Apache Ignite."
         echo "Run it on your own risk or point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
         echo "You can also download JDK at http://java.com/download"
     fi
