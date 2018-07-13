@@ -925,13 +925,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
-     * Maximum wait step duration for WAL manager workers, milliseconds.
-     *
-     * Default is {@code 10_000}.
-     */
-    public static final String IGNITE_WAL_WORKERS_WAIT_TIMEOUT = "IGNITE_WAL_WORKERS_WAIT_TIMEOUT";
-
-    /**
      * Heartbeat timeout in milliseconds, when exceeded, {@link GridWorker} is considered as blocked.
      *
      * Default is {@code 30_000}.
