@@ -558,7 +558,6 @@ public abstract class IgniteUtils {
             "Not enough space", // Solaris
     };
 
-
     /*
      * Initializes enterprise check.
      */
@@ -7327,7 +7326,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks if IOException if disk full error.
+     * Checks if IOException is disk full error.
      *
      * @param ex IOException.
      * @return {@code True} if disk full error.
