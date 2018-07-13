@@ -602,10 +602,10 @@ class BinaryObject:
     @classmethod
     def offset_c_type(cls, flags: int):
         if flags & cls.OFFSET_ONE_BYTE:
-            return ctypes.c_byte
+            return ctypes.c_ubyte
         if flags & cls.OFFSET_TWO_BYTES:
-            return ctypes.c_short
-        return ctypes.c_int
+            return ctypes.c_uint16
+        return ctypes.c_uint
 
     @staticmethod
     def get_fields(conn: Connection, type_id: int) -> list:
@@ -680,7 +680,7 @@ class BinaryObject:
             byteorder=PROTOCOL_BYTE_ORDER
         )
         # TODO: compact footer & no raw data is the only supported variant
-        header.flags = cls.USER_TYPE | cls.COMPACT_FOOTER
+        header.flags = cls.USER_TYPE | cls.HAS_SCHEMA | cls.COMPACT_FOOTER
         header.version = value['version']
         header.type_id = value['type_id']
         header.schema_id = value['schema_id']
@@ -688,8 +688,6 @@ class BinaryObject:
         field_data = {}
         field_types = []
         for field_name, field_value_or_pair in value['fields'].items():
-            # field_name = field_name.upper()
-
             if is_hinted(field_value_or_pair):
                 field_value, field_type = field_value_or_pair
             else:

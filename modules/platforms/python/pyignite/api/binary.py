@@ -123,7 +123,7 @@ def put_binary_type(
     # prepare data
     if schema is None:
         schema = {}
-    type_id = hashcode(type_name)
+    type_id = hashcode(type_name.lower())
     data = {
         'type_name': type_name,
         'type_id': type_id,
@@ -145,7 +145,7 @@ def put_binary_type(
         schema_id = FNV1_OFFSET_BASIS if schema else 0
         for field_name, data_type in schema.items():
             # TODO: check for allowed data types
-            field_id = hashcode(field_name)
+            field_id = hashcode(field_name.lower())
             data['binary_fields'].append({
                 'field_name': field_name,
                 'type_id': int.from_bytes(
@@ -165,7 +165,9 @@ def put_binary_type(
 
     data['schema'].append({
         'schema_id': schema_id,
-        'schema_fields': [{'schema_field_id': hashcode(x)} for x in schema],
+        'schema_fields': [
+            {'schema_field_id': hashcode(x.lower())} for x in schema
+        ],
     })
 
     # do query

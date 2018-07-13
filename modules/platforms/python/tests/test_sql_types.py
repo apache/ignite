@@ -27,6 +27,12 @@ from pyignite.datatypes.standard import DecimalObject, String
 from pyignite.datatypes.prop_codes import *
 
 
+insert_data = [
+    [1, True, (42, IntObject), Decimal('2.4'), 'asdf'],
+    [2, False, (43, IntObject), Decimal('2.5'), 'zxcvb'],
+    [3, True, (44, IntObject), Decimal('2.6'), 'qwerty'],
+]
+
 page_size = 100
 
 scheme_name = 'PUBLIC'
@@ -42,20 +48,20 @@ table_hash_code = hashcode(table_cache_name)
 create_query = '''
 CREATE TABLE {} (
   TEST_PK INTEGER(11) PRIMARY KEY,
-  TEST_BOOL BOOLEAN DEFAULT TRUE,
+  TEST_BOOL BOOLEAN,
   TEST_INT INTEGER(11),
   TEST_DECIMAL DECIMAL(11, 5),
-  TEST_STR VARCHAR(24) DEFAULT '' NOT NULL,
+  TEST_STR VARCHAR(24),
 )
 '''.format(table_sql_name)
 
 insert_query = '''
 INSERT INTO {} (
-  TEST_PK, TEST_DECIMAL, TEST_INT, TEST_STR
-) VALUES (?, ?, ?, ?)'''.format(table_sql_name)
+  TEST_PK, TEST_BOOL, TEST_INT, TEST_DECIMAL, TEST_STR
+) VALUES (?, ?, ?, ?, ?)'''.format(table_sql_name)
 
 select_query = '''
-SELECT (TEST_PK, TEST_INT) FROM {}
+SELECT (TEST_PK, TEST_BOOL, TEST_INT, TEST_DECIMAL, TEST_STR) FROM {}
 '''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
@@ -75,12 +81,6 @@ def test_sql_read_as_binary(conn):
     assert result.status == 0, result.message
 
     # insert some rows
-    insert_data = [
-        [1, Decimal('2.4'), 42, 'asdf'],
-        [2, Decimal('2.5'), 43, 'zxcvb'],
-        [3, Decimal('2.6'), 44, 'qwerty'],
-    ]
-
     for line in insert_data:
         result = sql_fields(
             conn,
@@ -126,7 +126,7 @@ def test_sql_write_as_binary(conn):
     cache_create(conn, scheme_name)
 
     # configure cache as an SQL table
-    type_name = '{}_CONTAINER'.format(table_cache_name)
+    type_name = table_cache_name
 
     result = cache_create_with_config(conn, {
         PROP_NAME: table_cache_name,
@@ -144,12 +144,12 @@ def test_sql_write_as_binary(conn):
                         'field_name': 'TEST_PK',
                     },
                     {
-                        'alias': 'TEST_STR',
-                        'field_name': 'TEST_STR',
-                    },
-                    {
                         'alias': 'TEST_BOOL',
                         'field_name': 'TEST_BOOL',
+                    },
+                    {
+                        'alias': 'TEST_STR',
+                        'field_name': 'TEST_STR',
                     },
                     {
                         'alias': 'TEST_INT',
@@ -173,7 +173,14 @@ def test_sql_write_as_binary(conn):
                         'type_name': 'java.lang.Boolean',
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
-                        'default_value': True,
+                        'default_value': None,
+                    },
+                    {
+                        'name': 'TEST_STR',
+                        'type_name': 'java.lang.String',
+                        'is_key_field': False,
+                        'is_notnull_constraint_field': False,
+                        'default_value': None,
                     },
                     {
                         'name': 'TEST_INT',
@@ -188,13 +195,6 @@ def test_sql_write_as_binary(conn):
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
-                    },
-                    {
-                        'name': 'TEST_STR',
-                        'type_name': 'java.lang.String',
-                        'is_key_field': False,
-                        'is_notnull_constraint_field': True,
-                        'default_value': '',
                     },
                 ],
                 'query_indexes': [],
@@ -214,9 +214,9 @@ def test_sql_write_as_binary(conn):
         type_name,
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
+            ('TEST_STR', String),
             ('TEST_INT', IntObject),
             ('TEST_DECIMAL', DecimalObject),
-            ('TEST_STR', String),
         ])
     )
     assert result.status == 0, result.message
@@ -231,39 +231,41 @@ def test_sql_write_as_binary(conn):
         'Client-side schema ID calculation is incorrect'
     )
 
-    # insert row as k-v
-    result = cache_put(
-        conn,
-        table_hash_code,
-        key=1,
-        key_hint=IntObject,
-        value={
-            'version': 1,
-            'type_id': sql_type_id,
-            'schema_id': schema_id,
-            'fields': OrderedDict([
-                ('TEST_BOOL', False),
-                ('TEST_INT', (89, IntObject)),
-                ('TEST_DECIMAL', Decimal('5.67')),
-                ('TEST_STR', 'This is a test string'),
-            ]),
-        },
-        value_hint=BinaryObject,
-    )
-    assert result.status == 0, result.message
+    # insert rows as k-v
+    for row in insert_data:
+        result = cache_put(
+            conn,
+            table_hash_code,
+            key=row[0],
+            key_hint=IntObject,
+            value={
+                'version': 1,
+                'type_id': sql_type_id,
+                'schema_id': schema_id,
+                'fields': OrderedDict([
+                    ('TEST_BOOL', row[1]),
+                    ('TEST_STR', row[4]),
+                    ('TEST_INT', row[2]),
+                    ('TEST_DECIMAL', row[3]),
+                ]),
+            },
+            value_hint=BinaryObject,
+        )
+        assert result.status == 0, result.message
 
     result = scan(conn, table_hash_code, 100)
     assert result.status == 0, result.message
 
-    # read row as SQL
+    # read rows as SQL
     result = sql_fields(
         conn,
         scheme_hash_code,
         select_query,
         100,
-        include_field_names=True
+        include_field_names=True,
     )
     assert result.status == 0, result.message
+    assert len(result.value['data']) == len(insert_data)
 
     # cleanup
     result = cache_destroy(conn, table_hash_code)
