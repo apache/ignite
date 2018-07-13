@@ -551,6 +551,14 @@ public abstract class IgniteUtils {
     private static boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
+    /** List of OS specific system messages for disk full error. */
+    private static final String[] ERR_DISK_FULL = {
+            "No space left on device", // Linux
+            "There is not enough space on the disk", // Windows
+            "Not enough space", // Solaris
+    };
+
+
     /*
      * Initializes enterprise check.
      */
@@ -7316,6 +7324,19 @@ public abstract class IgniteUtils {
 
             return (Exception)t;
         }
+    }
+
+    /**
+     * Checks if IOException if disk full error.
+     *
+     * @param ex IOException.
+     * @return {@code True} if disk full error.
+     */
+    public static boolean isDiskFullException (IOException ex) {
+        if (ex == null || ex.getMessage() == null)
+            return false;
+
+        return Arrays.stream(ERR_DISK_FULL).anyMatch(e -> ex.getMessage().contains(e));
     }
 
     /**
