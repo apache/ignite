@@ -41,6 +41,8 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
+
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
@@ -591,7 +593,7 @@ export class NotebookCtrl {
                         showControls: true,
                         legend: {
                             vers: 'furious',
-                            margin: {right: -25}
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -657,9 +659,7 @@ export class NotebookCtrl {
                             donutRatio: 0.35,
                             legend: {
                                 vers: 'furious',
-                                margin: {
-                                    right: -25
-                                }
+                                margin: {right: -15}
                             }
                         },
                         title: {
@@ -699,9 +699,7 @@ export class NotebookCtrl {
                         useInteractiveGuideline: true,
                         legend: {
                             vers: 'furious',
-                            margin: {
-                                right: -25
-                            }
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -743,7 +741,7 @@ export class NotebookCtrl {
                         style,
                         legend: {
                             vers: 'furious',
-                            margin: {right: -25}
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -1406,7 +1404,7 @@ export class NotebookCtrl {
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy))
+                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy, args.collocated))
                 .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
@@ -1435,6 +1433,15 @@ export class NotebookCtrl {
 
             if (cache)
                 return !!_.find(cache.nodes, (node) => Version.since(node.version, NON_COLLOCATED_JOINS_SINCE));
+
+            return false;
+        };
+
+        $scope.collocatedJoinsAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...COLLOCATED_QUERY_SINCE));
 
             return false;
         };
@@ -1474,6 +1481,7 @@ export class NotebookCtrl {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
+            const collocated = !!paragraph.collocated;
 
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
@@ -1499,14 +1507,15 @@ export class NotebookCtrl {
                                 nonCollocatedJoins,
                                 enforceJoinOrder,
                                 localNid: local ? nid : null,
-                                lazy
+                                lazy,
+                                collocated
                             };
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
+                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy, collocated);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1559,7 +1568,7 @@ export class NotebookCtrl {
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false, args.collocated);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1753,7 +1762,7 @@ export class NotebookCtrl {
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
+                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy, !!args.collocated))
                 .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => {

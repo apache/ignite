@@ -17,38 +17,38 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link NormalizationPreprocessor}.
+ * Tests for {@link BinarizationPreprocessor}.
  */
 public class NormalizationPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
         double[][] data = new double[][]{
-            {2., 4., 1.},
-            {1., 8., 22.},
-            {4., 10., 100.},
-            {0., 22., 300.}
+            {1, 2, 1},
+            {1, 1, 1},
+            {1, 0, 0},
         };
 
-        NormalizationPreprocessor<Integer, double[]> preprocessor = new NormalizationPreprocessor<>(
-            new double[] {0, 4, 1},
-            new double[] {4, 22, 300},
+        NormalizationPreprocessor<Integer, Vector> preprocessor = new NormalizationPreprocessor<>(
+            1,
             (k, v) -> v
         );
 
-        double[][] standardData = new double[][]{
-            {2. / 4, (4. - 4.) / 18.,  0.},
-            {1. / 4, (8. - 4.) / 18.,  (22. - 1.) / 299.},
-            {1.,     (10. - 4.) / 18., (100. - 1.) / 299.},
-            {0.,     (22. - 4.) / 18., (300. - 1.) / 299.}
+        double[][] postProcessedData = new double[][]{
+            {0.25, 0.5, 0.25},
+            {0.33, 0.33, 0.33},
+            {1, 0, 0}
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]), 1e-8);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-2);
     }
 }

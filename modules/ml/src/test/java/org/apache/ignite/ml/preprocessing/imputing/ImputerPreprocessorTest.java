@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
-import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessor;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerPreprocessor;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -36,8 +36,8 @@ public class ImputerPreprocessorTest {
             {Double.NaN, Double.NaN, Double.NaN},
         };
 
-        ImputerPreprocessor<Integer, double[]> preprocessor = new ImputerPreprocessor<>(
-            new double[]{1.1, 10.1, 100.1},
+        ImputerPreprocessor<Integer, Vector> preprocessor = new ImputerPreprocessor<>(
+            VectorUtils.of(1.1, 10.1, 100.1),
             (k, v) -> v
         );
 
@@ -48,6 +48,6 @@ public class ImputerPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]), 1e-8);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
 }

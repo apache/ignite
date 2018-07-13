@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-import {Selector, Role} from 'testcafe';
-import {dropTestDB, insertTestUser, resolveUrl} from '../../envtools';
+import {dropTestDB, insertTestUser, resolveUrl} from '../../environment/envtools';
 import {createRegularUser} from '../../roles';
 import {PageConfigurationBasic} from '../../page-models/PageConfigurationBasic';
 import {successNotification} from '../../components/notifications';
@@ -24,7 +23,7 @@ import {successNotification} from '../../components/notifications';
 const regularUser = createRegularUser();
 
 fixture('Basic configuration')
-    .before(async(t) => {
+    .before(async() => {
         await dropTestDB();
         await insertTestUser();
     })
@@ -62,7 +61,6 @@ test('Basic editing', async(t) => {
 
     await t
         .expect(page.buttonPreviewProject.visible).notOk('Preview project button is hidden for new cluster configs')
-        .expect(page.buttonDownloadProject.visible).notOk('Download project button is hidden for new cluster configs')
         .typeText(page.clusterNameInput.control, clusterName, {replace: true});
     await page.cachesList.addItem();
     await page.cachesList.addItem();

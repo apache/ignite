@@ -572,19 +572,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to inject.
      */
     private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
-        prepare(cfg, cfg.getEvictionPolicyFactory(), false);
-        prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
-
-        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
-
-        if (nearCfg != null) {
-            prepare(cfg, nearCfg.getNearEvictionPolicyFactory(), true);
-            prepare(cfg, nearCfg.getNearEvictionPolicy(), true);
-        }
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
@@ -612,8 +603,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void cleanup(GridCacheContext cctx) {
         CacheConfiguration cfg = cctx.config();
 
-        cleanup(cfg, cfg.getEvictionPolicyFactory(), false);
-        cleanup(cfg, cfg.getEvictionPolicy(), false);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cfg.getEvictionFilter(), false);
@@ -623,13 +612,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
             unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
             unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
-        }
-
-        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
-
-        if (nearCfg != null) {
-            cleanup(cfg, nearCfg.getNearEvictionPolicyFactory(), true);
-            cleanup(cfg, nearCfg.getNearEvictionPolicy(), true);
         }
 
         cctx.cleanup();
@@ -924,6 +906,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (ClusterNode n : ctx.discovery().remoteNodes()) {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                 continue;
+
+            checkRebalanceConfiguration(n);
 
             checkTransactionConfiguration(n);
 
@@ -2021,9 +2005,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getDataRegionName();
 
-        DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
+        DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
+
+        boolean persistenceEnabled = sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
+            dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
@@ -2031,11 +2018,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheType,
             cfg,
             affNode,
-            memPlc,
+            dataRegion,
             cacheObjCtx,
             freeList,
             reuseList,
             exchTopVer,
+            persistenceEnabled,
             desc.walEnabled()
         );
 
@@ -2425,12 +2413,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
-            pageStoreMgr = new FilePageStoreManager(ctx);
+            pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
-            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
-                walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
-            else
-                walMgr = new FileWriteAheadLogManager(ctx);
+            if (pageStoreMgr == null)
+                pageStoreMgr = new FilePageStoreManager(ctx);
+
+            walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
+
+            if (walMgr == null) {
+                if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC &&
+                    !walFsyncWithDedicatedWorker)
+                    walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
+                else
+                    walMgr = new FileWriteAheadLogManager(ctx);
+            }
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
@@ -3658,6 +3654,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param rmt Remote node to check.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkRebalanceConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+            return;
+
+        Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
+
+        if (rebalanceThreadPoolSize != null && rebalanceThreadPoolSize != ctx.config().getRebalanceThreadPoolSize()) {
+            throw new IgniteCheckedException("Rebalance configuration mismatch (fix configuration or set -D" +
+                IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)." +
+                " Different values of such parameter may lead to rebalance process instability and hanging. " +
+                " [rmtNodeId=" + rmt.id() +
+                ", locRebalanceThreadPoolSize = " + ctx.config().getRebalanceThreadPoolSize() +
+                ", rmtRebalanceThreadPoolSize = " + rebalanceThreadPoolSize + "]");
+        }
+    }
+
+    /**
      * @param cfg Cache configuration.
      * @return Query manager.
      */
@@ -3983,6 +4001,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert name != null;
 
         IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>) jCacheProxies.get(name);
+
+        if (cache == null) {
+            GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
+
+            if (cacheAdapter != null)
+                cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
+        }
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);

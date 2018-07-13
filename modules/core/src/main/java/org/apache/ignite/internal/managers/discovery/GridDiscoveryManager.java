@@ -1085,6 +1085,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
                 try {
+                    /** Caches should not be accessed while state transition is in progress. */
+                    if (ctx.state().clusterState().transition())
+                        return Collections.emptyMap();
+
                     Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
                     if (!F.isEmpty(caches)) {
@@ -1093,10 +1097,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         for (GridCacheAdapter<?, ?> cache : caches) {
                             if (cache.context().statisticsEnabled() &&
                                 cache.context().started() &&
-                                cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
-
+                                cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0)
                                 metrics.put(cache.context().cacheId(), cache.localMetrics());
-                            }
                         }
 
                         return metrics;
@@ -3299,7 +3301,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (CU.affinityNode(node, grpAff.cacheFilter)) {
                     if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
                         continue;
-                    
+
                     List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
 
                     if (nodes == null)

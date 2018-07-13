@@ -17,14 +17,6 @@
 
 package org.apache.ignite.console.agent.rest;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
@@ -33,6 +25,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -105,7 +105,7 @@ public class RestExecutor implements AutoCloseable {
     /**
      * Stop HTTP client.
      */
-    public void close() {
+    @Override public void close() {
         if (httpClient != null) {
             httpClient.dispatcher().executorService().shutdown();
 
@@ -183,7 +183,7 @@ public class RestExecutor implements AutoCloseable {
             try {
                 RestResult res = sendRequest(nodeUrl, params, headers);
 
-                log.info("Connected to cluster [url=" + nodeUrl + "]");
+                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
                 startIdxs.put(nodeURIs, currIdx);
 

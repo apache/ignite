@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -50,6 +49,9 @@ import java.util.stream.Collectors;
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
@@ -74,6 +76,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -91,6 +94,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -127,6 +131,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
@@ -310,10 +315,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                         assertNull(old);
 
-                        synchronized (nodeEvts) {
-                            DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
+                        // If the current node has failed, the local join will never happened.
+                        if (evt.type() != EVT_NODE_FAILED ||
+                            discoveryEvt.eventNode().consistentId().equals(ignite.configuration().getConsistentId())) {
+                            synchronized (nodeEvts) {
+                                DiscoveryLocalJoinData locJoin = ((IgniteEx)ignite).context().discovery().localJoin();
 
-                            nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                                nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                            }
                         }
                     }
 
@@ -423,6 +432,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
+
+            waitForZkClusterReady(zkCluster);
         }
 
         reset();
@@ -451,6 +462,22 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
     }
 
+
+    /**
+     * Wait for Zookeeper testing cluster ready for communications.
+     *
+     * @param zkCluster Zk cluster.
+     */
+    private static void waitForZkClusterReady(TestingCluster zkCluster) throws InterruptedException {
+        try (CuratorFramework curator = CuratorFrameworkFactory
+            .newClient(zkCluster.getConnectString(), new RetryNTimes(10, 1_000))) {
+            curator.start();
+
+            assertTrue("Failed to wait for Zookeeper testing cluster ready.",
+                curator.blockUntilConnected(30, SECONDS));
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -465,6 +492,38 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             }, 30_000);
 
             assertNull(res.get());
+        }
+    }
+
+    /**
+     * Verifies that node attributes returned through public API are presented in standard form.
+     *
+     * It means there is no exotic classes that may unnecessary capture other classes from the context.
+     *
+     * For more information about the problem refer to
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-8857">IGNITE-8857</a>.
+     */
+    public void testNodeAttributesNotReferencingZookeeperClusterNode() throws Exception {
+        userAttrs = new HashMap<>();
+        userAttrs.put("testAttr", "testAttr");
+
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            Map<String, Object> attrs = ignite.cluster().localNode().attributes();
+
+            assertTrue(attrs instanceof PredicateMapView);
+
+            IgnitePredicate[] preds = GridTestUtils.getFieldValue(attrs, "preds");
+
+            assertNotNull(preds);
+
+            assertTrue(preds.length == 1);
+
+            assertTrue(preds[0] instanceof SecurityCredentialsAttrFilterPredicate);
+        }
+        finally {
+            userAttrs = null;
         }
     }
 
@@ -1086,8 +1145,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentation3() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8183");
-
         sesTimeout = 5000;
 
         Ignite node0 = startGrid(0);
@@ -1110,7 +1167,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            assertTrue(l.await(20, TimeUnit.SECONDS));
+            QuorumPeer qp = srvs.get(2).getQuorumPeer();
+
+            // Zookeeper's socket timeout [tickTime * initLimit] + 5 additional seconds for other logic
+            assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
         }
         finally {
             zkCluster.close();
@@ -1883,13 +1943,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
-
         try {
             topologyChangeWithRestarts(true, false);
         }
         finally {
-            zkCluster.stop();
+            zkCluster.close();
 
             zkCluster = null;
         }
@@ -1899,13 +1957,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
-
         try {
             topologyChangeWithRestarts(true, true);
         }
         finally {
-            zkCluster.stop();
+            zkCluster.close();
 
             zkCluster = null;
         }
@@ -2098,8 +2154,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomTopologyChanges_CloseClients() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8182");
-
         randomTopologyChanges(false, true);
     }
 
@@ -4314,7 +4368,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(2500) + 2500);
+                    U.sleep(rnd.nextLong(2500));
 
                     int idx = rnd.nextInt(ZK_SRVS);
 
@@ -4322,6 +4376,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                     zkCluster.getServers().get(idx).restart();
 
+                    waitForZkClusterReady(zkCluster);
                 }
 
                 return null;

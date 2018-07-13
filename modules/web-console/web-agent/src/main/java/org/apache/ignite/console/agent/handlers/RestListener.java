@@ -51,7 +51,7 @@ public class RestListener extends AbstractListener {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(Map<String, Object> args) throws Exception {
+    @Override public Object execute(Map<String, Object> args) {
         if (log.isDebugEnabled())
             log.debug("Start parse REST command args: " + args);
 
@@ -73,20 +73,15 @@ public class RestListener extends AbstractListener {
         try {
             if (demo) {
                 if (AgentClusterDemo.getDemoUrl() == null) {
-                    try {
-                        AgentClusterDemo.tryStart().await();
+                    AgentClusterDemo.tryStart().await();
 
-                        if (AgentClusterDemo.getDemoUrl() == null)
-                            throw new InterruptedException();
-                    }
-                    catch (InterruptedException ignore) {
+                    if (AgentClusterDemo.getDemoUrl() == null)
                         return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
-                    }
                 }
 
                 return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
             }
-            
+
             return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {

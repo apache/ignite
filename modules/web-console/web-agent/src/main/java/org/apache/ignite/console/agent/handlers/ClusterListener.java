@@ -17,10 +17,7 @@
 
 package org.apache.ignite.console.agent.handlers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.ArrayList;
@@ -34,6 +31,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
@@ -53,6 +54,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.sortAddresses;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.splitAddresses;
 
@@ -95,9 +97,6 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private final WatchTask watchTask = new WatchTask();
-
-    /** */
-    private final BroadcastTask broadcastTask = new BroadcastTask();
 
     /** */
     private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
@@ -177,21 +176,8 @@ public class ClusterListener implements AutoCloseable {
         refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, DFLT_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Start broadcast topology to server-side.
-     */
-    public Emitter.Listener start() {
-        return args -> {
-            safeStopRefresh();
-
-            final long timeout = args.length > 1 && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
-
-            refreshTask = pool.scheduleWithFixedDelay(broadcastTask, 0L, timeout, TimeUnit.MILLISECONDS);
-        };
-    }
-
     /** {@inheritDoc} */
-    public void close() {
+    @Override public void close() {
         refreshTask.cancel(true);
 
         pool.shutdownNow();
@@ -223,6 +209,9 @@ public class ClusterListener implements AutoCloseable {
         /** */
         private boolean active;
 
+        /** */
+        private boolean secured;
+
         /**
          * Helper method to get attribute.
          *
@@ -244,6 +233,7 @@ public class ClusterListener implements AutoCloseable {
             addrs = U.newHashMap(sz);
             clients = U.newHashMap(sz);
             active = false;
+            secured = false;
 
             for (GridClientNodeBean node : nodes) {
                 UUID nid = node.getNodeId();
@@ -317,6 +307,20 @@ public class ClusterListener implements AutoCloseable {
         }
 
         /**
+         * @return {@code true} If cluster has configured security.
+         */
+        public boolean isSecured() {
+            return secured;
+        }
+
+        /**
+         * @param secured Configured security flag.
+         */
+        public void setSecured(boolean secured) {
+            this.secured = secured;
+        }
+
+        /**
          * @return Cluster nodes IDs.
          */
         public Collection<UUID> getNids() {
@@ -360,68 +364,112 @@ public class ClusterListener implements AutoCloseable {
         }
     }
 
-    /**
-     * Collect topology.
-     *
-     * @param full Full.
-     */
-    private RestResult topology(boolean full) throws IOException {
-        Map<String, Object> params = U.newHashMap(3);
+    /** */
+    private class WatchTask implements Runnable {
+        /** */
+        private static final String EXPIRED_SES_ERROR_MSG = "Failed to handle request - unknown session token (maybe expired session)";
 
-        params.put("cmd", "top");
-        params.put("attr", true);
-        params.put("mtr", full);
+        /** */
+        private String sesTok;
 
-        return restExecutor.sendRequest(this.cfg.nodeURIs(), params, null);
-    }
+        /**
+         * Execute REST command under agent user.
+         *
+         * @param params Command params.
+         * @return Command result.
+         * @throws IOException If failed to execute.
+         */
+        private RestResult restCommand(Map<String, Object> params) throws IOException {
+            if (!F.isEmpty(sesTok))
+                params.put("sessionToken", sesTok);
+            else if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
+                params.put("user", cfg.nodeLogin());
+                params.put("password", cfg.nodePassword());
+            }
 
-    /**
-     * @param ver Cluster version.
-     * @param nid Node ID.
-     * @return Cluster active state.
-     * @throws IOException If failed to collect cluster active state.
-     */
-    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
-        Map<String, Object> params = U.newHashMap(10);
+            RestResult res = restExecutor.sendRequest(cfg.nodeURIs(), params, null);
 
-        boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
+            switch (res.getStatus()) {
+                case STATUS_SUCCESS:
+                    sesTok = res.getSessionToken();
 
-        if (v23)
-            params.put("cmd", "currentState");
-        else {
-            params.put("cmd", "exe");
-            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
-            params.put("p1", nid);
-            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
-            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
-            params.put("p4", false);
-            params.put("p5", EVT_LAST_ORDER_KEY);
-            params.put("p6", EVT_THROTTLE_CNTR_KEY);
+                    return res;
 
-            if (ver.compareTo(IGNITE_2_1) >= 0)
-                params.put("p7", false);
-            else {
-                params.put("p7", 10);
-                params.put("p8", false);
+                case STATUS_FAILED:
+                    if (res.getError().startsWith(EXPIRED_SES_ERROR_MSG)) {
+                        sesTok = null;
+
+                        params.remove("sessionToken");
+
+                        return restCommand(params);
+                    }
+
+                default:
+                    return res;
             }
         }
 
-        RestResult res = restExecutor.sendRequest(this.cfg.nodeURIs(), params, null);
+        /**
+         * Collect topology.
+         *
+         * @param full Full.
+         */
+        private RestResult topology(boolean full) throws IOException {
+            Map<String, Object> params = U.newHashMap(3);
 
-        switch (res.getStatus()) {
-            case STATUS_SUCCESS:
-                if (v23)
-                    return Boolean.valueOf(res.getData());
+            params.put("cmd", "top");
+            params.put("attr", true);
+            params.put("mtr", full);
 
-                return res.getData().contains("\"active\":true");
-
-            default:
-                throw new IOException(res.getError());
+            return restCommand(params);
         }
-    }
 
-    /** */
-    private class WatchTask implements Runnable {
+        /**
+         * @param ver Cluster version.
+         * @param nid Node ID.
+         * @return Cluster active state.
+         * @throws IOException If failed to collect cluster active state.
+         */
+        public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+            Map<String, Object> params = U.newHashMap(10);
+
+            boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
+
+            if (v23)
+                params.put("cmd", "currentState");
+            else {
+                params.put("cmd", "exe");
+                params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
+                params.put("p1", nid);
+                params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
+                params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
+                params.put("p4", false);
+                params.put("p5", EVT_LAST_ORDER_KEY);
+                params.put("p6", EVT_THROTTLE_CNTR_KEY);
+
+                if (ver.compareTo(IGNITE_2_1) >= 0)
+                    params.put("p7", false);
+                else {
+                    params.put("p7", 10);
+                    params.put("p8", false);
+                }
+            }
+
+            RestResult res = restCommand(params);
+
+            switch (res.getStatus()) {
+                case STATUS_SUCCESS:
+                    if (v23)
+                        return Boolean.valueOf(res.getData());
+
+                    return res.getData().contains("\"active\":true");
+
+                default:
+                    throw new IOException(res.getError());
+            }
+        }
+
+
         /** {@inheritDoc} */
         @Override public void run() {
             try {
@@ -440,6 +488,7 @@ public class ClusterListener implements AutoCloseable {
                         boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 
                         newTop.setActive(active);
+                        newTop.setSecured(!F.isEmpty(res.getSessionToken()));
 
                         top = newTop;
 
@@ -460,50 +509,6 @@ public class ClusterListener implements AutoCloseable {
                 log.error("WatchTask failed", e);
 
                 clusterDisconnect();
-            }
-        }
-    }
-
-    /** */
-    private class BroadcastTask implements Runnable {
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                RestResult res = topology(true);
-
-                switch (res.getStatus()) {
-                    case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
-                            new TypeReference<List<GridClientNodeBean>>() {});
-
-                        TopologySnapshot newTop = new TopologySnapshot(nodes);
-
-                        if (top.differentCluster(newTop)) {
-                            clusterDisconnect();
-
-                            log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
-
-                            watch();
-                        }
-
-                        top = newTop;
-
-                        client.emit(EVENT_CLUSTER_TOPOLOGY, res.getData());
-
-                        break;
-
-                    default:
-                        LT.warn(log, res.getError());
-
-                        clusterDisconnect();
-                }
-            }
-            catch (Exception e) {
-                log.error("BroadcastTask failed", e);
-
-                clusterDisconnect();
-
-                watch();
             }
         }
     }

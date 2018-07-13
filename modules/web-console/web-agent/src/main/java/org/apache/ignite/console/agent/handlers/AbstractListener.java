@@ -71,34 +71,32 @@ abstract class AbstractListener implements Emitter.Listener {
             if (pool == null)
                 pool = newThreadPool();
 
-            pool.submit(new Runnable() {
-                @Override public void run() {
-                    try {
-                        Object res = execute(params);
+            pool.submit(() -> {
+                try {
+                    Object res = execute(params);
 
-                        // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
-                        // See: https://github.com/socketio/socket.io-client-java/issues/312
-                        // We can GZip manually for now.
-                        if (res instanceof RestResult) {
-                            RestResult restRes = (RestResult) res;
+                    // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
+                    // See: https://github.com/socketio/socket.io-client-java/issues/312
+                    // We can GZip manually for now.
+                    if (res instanceof RestResult) {
+                        RestResult restRes = (RestResult) res;
 
-                            if (restRes.getData() != null) {
-                                ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
-                                Base64OutputStream b64os = new Base64OutputStream(baos, true, 0, null);
-                                GZIPOutputStream gzip = new GZIPOutputStream(b64os);
+                        if (restRes.getData() != null) {
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
+                            Base64OutputStream b64os = new Base64OutputStream(baos, true, 0, null);
+                            GZIPOutputStream gzip = new GZIPOutputStream(b64os);
 
-                                gzip.write(restRes.getData().getBytes(UTF8));
+                            gzip.write(restRes.getData().getBytes(UTF8));
 
-                                gzip.close();
+                            gzip.close();
 
-                                restRes.zipData(baos.toString());
-                            }
+                            restRes.zipData(baos.toString());
                         }
-
-                        cb.call(null, toJSON(res));
-                    } catch (Exception e) {
-                        cb.call(e, null);
                     }
+
+                    cb.call(null, toJSON(res));
+                } catch (Exception e) {
+                    cb.call(e, null);
                 }
             });
         }

@@ -290,7 +290,7 @@ body > .wrapper > ui-view {
     display: flex;
 
     input[type="checkbox"] {
-        width: 20px;
+        flex: 1 0 auto;
     }
 }
 
@@ -1205,12 +1205,12 @@ label {
 }
 
 .fa-chevron-circle-down {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
 .fa-chevron-circle-right {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
@@ -1642,7 +1642,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }

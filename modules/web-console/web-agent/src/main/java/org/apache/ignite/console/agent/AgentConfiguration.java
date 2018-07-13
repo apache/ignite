@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -65,12 +66,12 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-nl", "--node-login"},
-        description = "Login used for connect to Ignite node REST server")
+        description = "User name that will be used to connect to secured cluster")
     private String nodeLogin;
 
     /** */
     @Parameter(names = {"-np", "--node-password"},
-        description = "Password used for connect to Ignite node REST server")
+        description = "Password that will be used to connect to secured cluster")
     private String nodePwd;
 
     /** URI for connect to Ignite demo node REST server */
@@ -141,28 +142,28 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return Node login.
+     * @return User name for agent to authenticate on node.
      */
     public String nodeLogin() {
         return nodeLogin;
     }
 
     /**
-     * @param nodeLogin New node login.
+     * @param nodeLogin User name for agent to authenticate on node.
      */
     public void nodeLogin(String nodeLogin) {
         this.nodeLogin = nodeLogin;
     }
 
     /**
-     * @return Node password.
+     * @return Agent password to authenticate on node.
      */
     public String nodePassword() {
         return nodePwd;
     }
 
     /**
-     * @param nodePwd New node password.
+     * @param nodePwd Agent password to authenticate on node.
      */
     public void nodePassword(String nodePwd) {
         this.nodePwd = nodePwd;
@@ -237,7 +238,7 @@ public class AgentConfiguration {
         String val = (String)props.remove("tokens");
 
         if (val != null)
-            tokens(Arrays.asList(val.split(",")));
+            tokens(new ArrayList<>(Arrays.asList(val.split(","))));
 
         val = (String)props.remove("server-uri");
 
@@ -247,7 +248,7 @@ public class AgentConfiguration {
         val = (String)props.remove("node-uri");
 
         if (val != null)
-            nodeURIs(Arrays.asList(val.split(",")));
+            nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
 
         val = (String)props.remove("node-login");
 
@@ -266,35 +267,35 @@ public class AgentConfiguration {
     }
 
     /**
-     * @param cmd Command.
+     * @param cfg Config to merge with.
      */
-    public void merge(AgentConfiguration cmd) {
+    public void merge(AgentConfiguration cfg) {
         if (tokens == null)
-            tokens(cmd.tokens());
+            tokens(cfg.tokens());
 
         if (srvUri == null)
-            serverUri(cmd.serverUri());
+            serverUri(cfg.serverUri());
 
         if (srvUri == null)
             serverUri(DFLT_SERVER_URI);
 
         if (nodeURIs == null)
-            nodeURIs(cmd.nodeURIs());
+            nodeURIs(cfg.nodeURIs());
 
         if (nodeURIs == null)
             nodeURIs(Collections.singletonList(DFLT_NODE_URI));
 
         if (nodeLogin == null)
-            nodeLogin(cmd.nodeLogin());
+            nodeLogin(cfg.nodeLogin());
 
         if (nodePwd == null)
-            nodePassword(cmd.nodePassword());
+            nodePassword(cfg.nodePassword());
 
         if (driversFolder == null)
-            driversFolder(cmd.driversFolder());
+            driversFolder(cfg.driversFolder());
 
         if (disableDemo == null)
-            disableDemo(cmd.disableDemo());
+            disableDemo(cfg.disableDemo());
     }
 
     /** {@inheritDoc} */
@@ -324,9 +325,12 @@ public class AgentConfiguration {
             sb.append('\n');
         }
 
-        sb.append("URI to Ignite node REST server  : ").append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
+        sb.append("URI to Ignite node REST server  : ")
+            .append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
+
         if (nodeLogin != null)
             sb.append("Login to Ignite node REST server: ").append(nodeLogin).append('\n');
+
         sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
         sb.append("Path to agent property file     : ").append(configPath()).append('\n');
 

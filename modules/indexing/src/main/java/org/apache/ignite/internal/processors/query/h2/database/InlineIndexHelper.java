@@ -413,6 +413,9 @@ public class InlineIndexHelper {
 
                 break;
 
+            case Value.UUID:
+                return compareAsUUID(pageAddr, off, v, type);
+
             case Value.BYTES:
                 return compareAsBytes(pageAddr, off, v);
         }
@@ -425,7 +428,37 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param type Highest value type.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation.
+     */
+    private int compareAsUUID(long pageAddr, int off, Value v, int type) {
+        // only compatible types are supported now.
+        if(PageUtils.getByte(pageAddr, off) == type) {
+            assert type == Value.UUID;
+
+            ValueUuid uuid = (ValueUuid)v.convertTo(Value.UUID);
+            long long1 = PageUtils.getLong(pageAddr, off + 1);
+
+            int c = Long.compare(long1, uuid.getHigh());
+
+            if(c != 0)
+                return fixSort(c, sortType());
+
+            long1 = PageUtils.getLong(pageAddr, off + 9);
+
+            c = Long.compare(long1, uuid.getLow());
+
+            return fixSort(c, sortType());
+        }
+
+        return Integer.MIN_VALUE;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param v Value to compare.
+     * @param type Highest value type.
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation.
      */
     private int compareAsDateTime(long pageAddr, int off, Value v, int type) {
         // only compatible types are supported now.
@@ -470,7 +503,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param type Highest value type.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation.
      */
     private int compareAsPrimitive(long pageAddr, int off, Value v, int type) {
         // only compatible types are supported now.

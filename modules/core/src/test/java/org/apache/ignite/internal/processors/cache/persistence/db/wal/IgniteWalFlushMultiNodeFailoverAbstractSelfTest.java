@@ -26,6 +26,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -61,7 +63,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     private static final String TEST_CACHE = "testCache";
 
     /** */
-    private static final int ITRS = 1000;
+    private static final int ITRS = 2000;
 
     /** */
     private AtomicBoolean canFail = new AtomicBoolean();
@@ -95,7 +97,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60_000;
+        return 120_000;
     }
 
     /**
@@ -114,9 +116,13 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setConsistentId(gridName);
+
         CacheConfiguration cacheCfg = new CacheConfiguration(TEST_CACHE)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setBackups(1);
+                .setBackups(1)
+                .setRebalanceMode(CacheRebalanceMode.SYNC)
+                .setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -155,7 +161,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     /**
      * @throws Exception if failed.
      */
-    public void failWhilePut(boolean failWhileStart) throws Exception {
+    private void failWhilePut(boolean failWhileStart) throws Exception {
         final Ignite grid = startGridsMultiThreaded(gridCount());
 
         grid.cluster().active(true);
@@ -163,7 +169,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
 
         for (int i = 0; i < ITRS; i++) {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try (Transaction tx = grid.transactions().txStart(
                         TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
                     cache.put(i, "testValue" + i);
@@ -171,7 +177,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                     tx.commit();
 
                     break;
-                } catch (Exception expected) {
+                }
+                catch (Exception expected) {
                     // Expected exception.
                 }
             }
@@ -188,7 +195,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                     grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
 
                     waitForRebalancing();
-                } catch (Exception expected) {
+                }
+                catch (Throwable expected) {
                     // There can be any exception. Do nothing.
                 }
             }
@@ -258,11 +266,9 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
             final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
-                int writeAttempts = 2;
-
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (--writeAttempts <= 0 && fail != null && fail.get())
+                    if (fail != null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
@@ -270,6 +276,9 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 /** {@inheritDoc} */
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    if (fail != null && fail.get())
+                        throw new IOException("No space left on deive");
+
                     return delegate.map(sizeBytes);
                 }
             };

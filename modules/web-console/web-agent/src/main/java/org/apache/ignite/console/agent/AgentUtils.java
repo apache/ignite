@@ -191,18 +191,18 @@ public class AgentUtils {
     public static X509TrustManager trustManager() {
         return new X509TrustManager() {
             /** {@inheritDoc} */
-            @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+            @Override public X509Certificate[] getAcceptedIssuers() {
                 return new X509Certificate[0];
             }
 
             /** {@inheritDoc} */
-            @Override public void checkClientTrusted(
-                java.security.cert.X509Certificate[] certs, String authType) {
+            @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                // No-op.
             }
 
             /** {@inheritDoc} */
-            @Override public void checkServerTrusted(
-                java.security.cert.X509Certificate[] certs, String authType) {
+            @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                // No-op.
             }
         };
     }

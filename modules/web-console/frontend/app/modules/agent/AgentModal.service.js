@@ -21,6 +21,7 @@ export default class AgentModal {
     static $inject = ['$rootScope', '$state', '$modal', 'IgniteMessages'];
 
     constructor($root, $state, $modal, Messages) {
+        this.$root = $root;
         this.$state = $state;
         this.Messages = Messages;
 
@@ -79,5 +80,9 @@ export default class AgentModal {
         this.status = 'nodeMissing';
 
         this.modal.$promise.then(this.modal.show);
+    }
+
+    get securityToken() {
+        return this.$root.user.becameToken || this.$root.user.token;
     }
 }
