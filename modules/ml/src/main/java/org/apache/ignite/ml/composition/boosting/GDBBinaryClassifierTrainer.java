@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
@@ -70,7 +71,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, double[]> featureExtractor,
+    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
         List<Double> uniqLabels = new ArrayList<Double>(
