@@ -299,8 +299,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                                     for (final GridCacheQueueProxy queue : queuesMap.values()) {
                                         if (queue.name().equals(key.queueName())) {
-                                            if (hdr == null || e.getEventType() == EventType.REMOVED
-                                                || e.getEventType() == EventType.EXPIRED  /* Need investigation. */) {
+                                            if (hdr == null || e.getEventType() == EventType.REMOVED) {
                                                 GridCacheQueueHeader oldHdr = (GridCacheQueueHeader)e.getOldValue();
 
                                                 assert oldHdr != null;
