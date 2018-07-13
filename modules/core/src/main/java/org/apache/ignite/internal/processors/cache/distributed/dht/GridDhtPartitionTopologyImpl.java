@@ -725,35 +725,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (grp.rebalanceEnabled()) {
                                 Collection<ClusterNode> owners = owners(p);
 
-                                // If there are no other owners, then become an owner.
-                                if (F.isEmpty(owners)) {
-                                    boolean owned = locPart.own();
+                                // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
 
-                                    assert owned : "Failed to own partition [grp=" + grp.cacheOrGroupName() +
-                                        ", locPart=" + locPart + ']';
-
-                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
-
-                                    changed = true;
-
-                                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                                        DiscoveryEvent discoEvt = exchFut.events().lastEvent();
-
-                                        grp.addRebalanceEvent(p,
-                                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                                            discoEvt.eventNode(),
-                                            discoEvt.type(),
-                                            discoEvt.timestamp());
-                                    }
-
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Owned partition [grp=" + grp.cacheOrGroupName() +
-                                            ", part=" + locPart + ']');
-                                    }
+                                if (!F.isEmpty(owners)) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Will not own partition (there are owners to rebalance from) [grp=" + grp.cacheOrGroupName() +
+                                            ", locPart=" + locPart + ", owners = " + owners + ']');
                                 }
-                                else if (log.isDebugEnabled())
-                                    log.debug("Will not own partition (there are owners to rebalance from) [grp=" + grp.cacheOrGroupName() +
-                                        ", locPart=" + locPart + ", owners = " + owners + ']');
                             }
                             else
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
