@@ -229,8 +229,16 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 else
                                     break;
                             }
-                            else
-                                mux.wait(waitTimeout);
+                            else {
+                                setHeartbeat(Long.MAX_VALUE);
+
+                                try {
+                                    mux.wait(waitTimeout);
+                                }
+                                finally {
+                                    updateHeartbeat();
+                                }
+                            }
                         }
                     }
                 }

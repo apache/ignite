@@ -635,7 +635,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             Thread.sleep(millis);
         }
         finally {
-            if (after!= null)
+            if (after != null)
                 after.run();
         }
     }

@@ -1674,9 +1674,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     synchronized (this) {
                         while (locked.containsKey(toArchive) && !stopped) {
-                            updateHeartbeat();
+                            setHeartbeat(Long.MAX_VALUE);
 
-                            wait();
+                            try {
+                                wait();
+                            }
+                            finally {
+                                updateHeartbeat();
+                            }
                         }
 
                         // Then increase counter to allow rollover on clean working file

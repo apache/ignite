@@ -496,9 +496,14 @@ public class StripedExecutor implements ExecutorService {
                 Runnable cmd;
 
                 try {
-                    updateHeartbeat();
+                    setHeartbeat(Long.MAX_VALUE);
 
-                    cmd = take();
+                    try {
+                        cmd = take();
+                    }
+                    finally {
+                        updateHeartbeat();
+                    }
 
                     if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
                         onIdle();
@@ -679,14 +684,7 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
 
-                    setHeartbeat(Long.MAX_VALUE);
-
-                    try {
-                        LockSupport.park();
-                    }
-                    finally {
-                        updateHeartbeat();
-                    }
+                    LockSupport.park();
 
                     if (Thread.interrupted())
                         throw new InterruptedException();
@@ -764,19 +762,11 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override Runnable take() {
-            long startTs = U.currentTimeMillis();
-
             for (;;) {
                 Runnable r = queue.poll();
 
                 if (r != null)
                     return r;
-
-                if (U.currentTimeMillis() - startTs > HEARTBEAT_TIMEOUT / 2) {
-                    updateHeartbeat();
-
-                    startTs = U.currentTimeMillis();
-                }
             }
         }
 
@@ -837,14 +827,7 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
-            setHeartbeat(Long.MAX_VALUE);
-
-            try {
-                return queue.take();
-            }
-            finally {
-                updateHeartbeat();
-            }
+            return queue.take();
         }
 
         /** {@inheritDoc} */
