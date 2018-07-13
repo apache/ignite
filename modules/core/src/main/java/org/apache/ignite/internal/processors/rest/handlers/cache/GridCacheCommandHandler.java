@@ -571,7 +571,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                     // HashSet wrapping for correct serialization
                     Set<Object> cacheNames = map == null ?
-                        new HashSet<Object>(ctx.cache().publicCacheNames()) : new HashSet<>(map.keySet());
+                        new HashSet<Object>(ctx.cache().publicCacheNames(true)) : new HashSet<>(map.keySet());
 
                     GridCompoundFuture compFut = new GridCompoundFuture();
 

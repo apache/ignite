@@ -1739,9 +1739,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of currently started public cache names
      */
     public Collection<String> publicCacheNames() {
+        return publicCacheNames(false);
+    }
+
+    /**
+     * Gets a collection of public cache names.
+     *
+     * @param startMissing If {@code true}, not started public caches will be started, otherwise they are not returned
+     * @return Collection of public cache names
+     */
+    public Collection<String> publicCacheNames(boolean startMissing) {
         return F.viewReadOnly(cacheDescriptors().values(),
             new IgniteClosure<DynamicCacheDescriptor, String>() {
                 @Override public String apply(DynamicCacheDescriptor desc) {
+                    if (startMissing && isMissingQueryCache(desc)) {
+                        try {
+                            dynamicStartCache(null, desc.cacheConfiguration().getName(),
+                                null, false, true, true).get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
+                    }
+
                     return desc.cacheConfiguration().getName();
                 }
             },

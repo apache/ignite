@@ -426,7 +426,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 tablePattern = req.tablePattern();
             }
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), schemaPattern) ||
                         !matches(table.tableName(), tablePattern))
@@ -468,7 +468,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             String schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), schemaPattern) ||
                         !matches(table.tableName(), req.table()) ||
