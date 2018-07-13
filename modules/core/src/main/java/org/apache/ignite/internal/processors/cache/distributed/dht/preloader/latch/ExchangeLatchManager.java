@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.la
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +47,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -187,8 +187,10 @@ public class ExchangeLatchManager {
                     + ", crd=" + coordinator
                     + ", participantsSize=" + participants.size() + "]");
 
+        Set<UUID> nodeIds = pendingAcks.get(latchId);
+
         // There is final ack for created latch.
-        if (pendingAcks.containsKey(latchId)) {
+        if (nodeIds != null && nodeIds.contains(coordinator)) {
             latch.complete();
             pendingAcks.remove(latchId);
         }
@@ -275,10 +277,11 @@ public class ExchangeLatchManager {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         return aliveNodes
-                .stream()
-                .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
-                .findFirst()
-                .orElse(null);
+            .stream()
+            .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
+            .sorted(Comparator.comparing(ClusterNode::order))
+            .findFirst()
+            .orElse(null);
     }
 
     /**
