@@ -471,7 +471,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             }
 
             if (failIfUnregistered || topLocked)
-                throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
+                throw new UnregisteredBinaryTypeException(
+                    "Attempted to update binary metadata inside a critical synchronization block (will be automatically " +
+                        "retried). This exception must not be wrapped to any other exception class. If you encounter " +
+                        "this exception outside of EntryProcessor, please report to Apache Ignite dev-list.",
+                    typeId, mergedMeta);
 
             MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
 
