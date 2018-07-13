@@ -117,7 +117,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_WORKERS_WAIT_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
@@ -126,9 +125,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * File WAL manager.
  */
 public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
-    /** */
-    public static final int DFLT_WAIT_TIMEOUT = 10_000;
-
     /** */
     public static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
@@ -1458,7 +1454,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 return;
             }
 
-            long waitTimeoutMs = IgniteSystemProperties.getLong(IGNITE_WAL_WORKERS_WAIT_TIMEOUT, DFLT_WAIT_TIMEOUT);
+            long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
 
             Throwable err = null;
 

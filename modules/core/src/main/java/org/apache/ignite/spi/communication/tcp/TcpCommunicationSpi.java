@@ -4236,9 +4236,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private class CommunicationWorker extends GridWorker {
         /** */
-        private static final long POLL_TIMEOUT_MS = 5000;
-
-        /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
         /** */
@@ -4269,7 +4266,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     long start = U.currentTimeMillis();
 
                     while ((millisToWait = idleConnTimeout - (U.currentTimeMillis() - start)) > 0 &&
-                        (disconnectData = q.poll(Math.min(millisToWait, POLL_TIMEOUT_MS), TimeUnit.MILLISECONDS)) == null) {
+                        (disconnectData = q.poll(Math.min(millisToWait, HEARTBEAT_TIMEOUT / 2), TimeUnit.MILLISECONDS)) == null) {
 
                         updateHeartbeat();
 

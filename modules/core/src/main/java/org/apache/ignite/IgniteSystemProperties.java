@@ -925,39 +925,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
-     * Maximum wait step duration for checkpointer worker, milliseconds.
-     *
-     * Default is {@code 10_000}.
-     */
-    public static final String IGNITE_CHECKPOINTER_WAIT_TIMEOUT = "IGNITE_CHECKPOINTER_WAIT_TIMEOUT";
-
-    /**
      * Maximum wait step duration for WAL manager workers, milliseconds.
      *
      * Default is {@code 10_000}.
      */
     public static final String IGNITE_WAL_WORKERS_WAIT_TIMEOUT = "IGNITE_WAL_WORKERS_WAIT_TIMEOUT";
-
-    /**
-     *  Single queue poll timeout for striped executor workers, milliseconds.
-     *
-     * Default is {@code 10_000}.
-     */
-    public static final String IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT = "IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT";
-
-    /**
-     * Maximum wait step duration for timeout processor, milliseconds.
-     *
-     * Default is {@code 5_000}.
-     */
-    public static final String IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT = "IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT";
-
-    /**
-     * Accept timeout socket option for generic TCP servers, milliseconds.
-     *
-     * Default is {@code 10_000}.
-     */
-    public static final String IGNITE_TCP_ACCEPT_SO_TIMEOUT = "IGNITE_TCP_ACCEPT_SO_TIMEOUT";
 
     /**
      * Heartbeat timeout in milliseconds, when exceeded, {@link GridWorker} is considered as blocked.

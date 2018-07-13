@@ -311,7 +311,7 @@ public abstract class GridWorker implements Runnable {
     /**
      * Sets heartbeat timestamp to absolute value.
      *
-     * @param ts timestamp in terms of {@code U.currentTimeMillis()}.
+     * @param ts Timestamp in terms of {@code U.currentTimeMillis()}.
      */
     public void setHeartbeat(long ts) {
         heartbeatTimeMillis = ts;

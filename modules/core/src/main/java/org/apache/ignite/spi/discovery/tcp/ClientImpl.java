@@ -114,7 +114,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -125,6 +124,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.CONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.DISCONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.SEGMENTED;
@@ -146,9 +146,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** */
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
-
-    /** */
-    private static final long MAX_JOIN_SLEEP_DURATION_MS = 2000;
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
@@ -635,7 +632,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (beforeEachSleep != null)
                 beforeEachSleep.run();
 
-            long span = Math.min(millis, MAX_JOIN_SLEEP_DURATION_MS);
+            long span = Math.min(millis, HEARTBEAT_TIMEOUT / 2);
 
             Thread.sleep(span);
 
@@ -1604,9 +1601,6 @@ class ClientImpl extends TcpDiscoveryImpl {
      * Message worker.
      */
     protected class MessageWorker extends GridWorker {
-        /** */
-        private static final int DFLT_POLL_TIMEOUT = 10_000;
-
         /** Message queue. */
         private final BlockingDeque<Object> queue = new LinkedBlockingDeque<>();
 
@@ -1620,8 +1614,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         private boolean nodeAdded;
 
         /** */
-        private final long pollTimeoutMs = IgniteSystemProperties.getLong(IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT,
-            DFLT_POLL_TIMEOUT);
+        private final long pollTimeoutMs = HEARTBEAT_TIMEOUT / 2;
 
         /** */
         private long lastOnIdleTs = U.currentTimeMillis();

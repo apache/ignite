@@ -163,7 +163,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINTER_WAIT_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -2918,9 +2917,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
-        /** */
-        private static final int DFLT_WAIT_TIMEOUT = 10_000;
-
         /** Temporary write buffer. */
         private final ByteBuffer tmpWriteBuf;
 
@@ -3402,8 +3398,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 long now = U.currentTimeMillis();
 
-                long waitTimeoutMs = IgniteSystemProperties.getLong(IGNITE_CHECKPOINTER_WAIT_TIMEOUT,
-                    DFLT_WAIT_TIMEOUT);
+                long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
 
                 synchronized (this) {
                     long remaining;

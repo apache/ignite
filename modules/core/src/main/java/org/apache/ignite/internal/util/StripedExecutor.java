@@ -48,18 +48,14 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT;
+import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
 
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
     /** */
-    public static final int DFLT_WAIT_TIMEOUT_MS = 10_000;
-
-    /** */
-    private static final long WAIT_TIMEOUT_NS =
-        IgniteSystemProperties.getLong(IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT, DFLT_WAIT_TIMEOUT_MS) * 1000;
+    private static final long WAIT_TIMEOUT_NS = 1000 * HEARTBEAT_TIMEOUT / 2;
 
     /** Stripes. */
     private final Stripe[] stripes;
@@ -772,7 +768,7 @@ public class StripedExecutor implements ExecutorService {
         @Override Runnable take() {
             long waitTimeout = WAIT_TIMEOUT_NS / 1000;
 
-            long startedAt = U.currentTimeMillis();
+            long startTs = U.currentTimeMillis();
 
             for (;;) {
                 Runnable r = queue.poll();
@@ -780,10 +776,10 @@ public class StripedExecutor implements ExecutorService {
                 if (r != null)
                     return r;
 
-                if (U.currentTimeMillis() - startedAt > waitTimeout) {
+                if (U.currentTimeMillis() - startTs > waitTimeout) {
                     updateHeartbeat();
 
-                    startedAt = U.currentTimeMillis();
+                    startTs = U.currentTimeMillis();
                 }
             }
         }

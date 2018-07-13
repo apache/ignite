@@ -64,7 +64,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -151,7 +150,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_ACCEPT_SO_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -5763,9 +5761,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      * From that moment server is no more responsible for the socket.
      */
     private class TcpServer extends GridWorker {
-        /** */
-        private static final int DFLT_ACCEPT_TIMEOUT = 10_000;
-
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
@@ -5824,8 +5819,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
-                int acceptTimeoutMs = IgniteSystemProperties.getInteger(IGNITE_TCP_ACCEPT_SO_TIMEOUT,
-                    DFLT_ACCEPT_TIMEOUT);
+                int acceptTimeoutMs = (int)HEARTBEAT_TIMEOUT / 2;
 
                 srvrSock.setSoTimeout(acceptTimeoutMs);
 

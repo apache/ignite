@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.util.Comparator;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
@@ -143,9 +141,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      * Handles job timeouts.
      */
     private class TimeoutWorker extends GridWorker {
-        /** */
-        private static final long DFLT_WAIT_TIME = 5000;
-
         /**
          *
          */
@@ -160,7 +155,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             long lastOnIdleTs = U.currentTimeMillis();
 
-            long waitTimeoutMs = IgniteSystemProperties.getLong(IGNITE_TIMEOUT_PROCESSOR_WAIT_TIMEOUT, DFLT_WAIT_TIME);
+            long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
 
             try {
                 while (!isCancelled()) {
