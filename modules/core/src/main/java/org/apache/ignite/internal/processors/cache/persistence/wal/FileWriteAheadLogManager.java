@@ -1406,8 +1406,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC || mmap) {
-                while ((left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left))) > 0)
-                    ;
+                while (left > 0) {
+                    int toWrite = Math.min(FILL_BUF.length, left);
+
+                    if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite) {
+                        final StorageException ex = new StorageException("Failed to extend WAL segment file: " +
+                            file.getName() + ". Probably disk is too busy, please check your device.");
+
+                        if (failureProcessor != null)
+                            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+                        throw ex;
+                    }
+
+                    left -= toWrite;
+                }
 
                 fileIO.force();
             }
@@ -1415,12 +1428,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 fileIO.clear();
         }
         catch (IOException e) {
-            StorageException ex = new StorageException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
-
-            if (failureProcessor != null)
-                failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-            
-            throw ex;
+            throw new StorageException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
         }
     }
 

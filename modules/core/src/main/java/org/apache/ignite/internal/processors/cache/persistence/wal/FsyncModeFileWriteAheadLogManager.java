@@ -1228,8 +1228,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC) {
-                while ((left -= fileIO.writeFully(FILL_BUF, 0, Math.min(FILL_BUF.length, left))) > 0)
-                    ;
+                while (left > 0) {
+                    int toWrite = Math.min(FILL_BUF.length, left);
+
+                    fileIO.write(FILL_BUF, 0, toWrite);
+
+                    left -= toWrite;
+                }
 
                 fileIO.force();
             }
