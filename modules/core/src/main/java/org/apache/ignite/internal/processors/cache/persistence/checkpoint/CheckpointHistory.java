@@ -236,7 +236,7 @@ public class CheckpointHistory {
      * @return list of indexes or empty list if there are no checkpoints.
      */
     private IgniteBiTuple<Long, Long> calculateWalSegmentsCovered() {
-        IgniteBiTuple<Long, Long> tup = new IgniteBiTuple<>(0L, 0L);
+        IgniteBiTuple<Long, Long> tup = new IgniteBiTuple<>(-1L, -1L);
 
         Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
 
@@ -259,7 +259,7 @@ public class CheckpointHistory {
         }
 
         tup.set1(prevIdx);
-        tup.set2(lastIdx > 0 ? lastIdx - 1 : 0);
+        tup.set2(lastIdx - 1);
 
         return tup;
     }
