@@ -310,6 +310,16 @@ public class DiscoCache {
     }
 
     /**
+     * @return Oldest server node.
+     */
+    @Nullable public ClusterNode oldestServerNode(){
+        if (srvNodes.size() > 0)
+            return srvNodes.get(0);
+
+        return null;
+    }
+
+    /**
      * @param nodeId Node ID.
      * @return {@code True} if node is in alives list.
      */
