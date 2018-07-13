@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
@@ -134,7 +135,7 @@ public class CacheScanQueryTest extends GridCommonAbstractTest {
 
         final IgniteBiPredicate<Integer, BinaryObject> predicate = new IgniteBiPredicate<Integer, BinaryObject>() {
             @Override public boolean apply(Integer key, BinaryObject value) {
-                throw new AssertionError(); // Error.
+                return value.field(null) != null;
             }
         };
 
@@ -152,7 +153,7 @@ public class CacheScanQueryTest extends GridCommonAbstractTest {
                 fail();
             }
             catch (Throwable e) {
-                assertTrue(e instanceof Exception);
+                assertTrue(e instanceof CacheException);
             }
 
             assertEquals(0, actualN);

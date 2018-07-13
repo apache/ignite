@@ -2079,6 +2079,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Offset.
      */
     public boolean findFieldByName(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("Field name is null");
+
         if (raw)
             throw new BinaryObjectException("Failed to read named field because reader is in raw mode.");
 
