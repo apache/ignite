@@ -41,7 +41,8 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "clusters": ["000000000000000000000001"]
   },
   {
     "_id" : "000000000000000000000002",
@@ -85,10 +86,11 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "clusters": ["000000000000000000000001"]
   },
   {
-    "_id" : "000000000000000000000003",
+    "_id" : "000000000000000000000023",
     "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Employee",
@@ -224,10 +226,11 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "clusters": ["000000000000000000000002"]
   },
   {
-    "_id" : "000000000000000000000004",
+    "_id" : "000000000000000000000024",
     "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Country",
@@ -268,10 +271,11 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "clusters": ["000000000000000000000002"]
   },
   {
-    "_id" : "000000000000000000000005",
+    "_id" : "000000000000000000000025",
     "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Car",
@@ -312,6 +316,7 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "clusters": ["000000000000000000000002"]
   }
 ]

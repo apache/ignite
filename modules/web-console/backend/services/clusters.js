@@ -94,8 +94,11 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
     const removeAllBySpaces = (spaceIds) => {
-        return mongo.Cache.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec()
-            .then(() => mongo.Igfs.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec())
+        return Promise.all([
+            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
+            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
+            mongo.Igfs.remove({space: {$in: spaceIds}}).exec()
+        ])
             .then(() => mongo.Cluster.remove({space: {$in: spaceIds}}).exec());
     };
 
@@ -245,14 +248,18 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
             return Promise.all(_.map(ids, (id) => {
                 return mongo.Cluster.findByIdAndRemove(id).exec()
                     .then((cluster) => {
+                        if (_.isNil(cluster))
+                            return 0;
+
                         return Promise.all([
                             mongo.DomainModel.remove({_id: {$in: cluster.models}}).exec(),
                             mongo.Cache.remove({_id: {$in: cluster.caches}}).exec(),
                             mongo.Igfs.remove({_id: {$in: cluster.igfss}}).exec()
-                        ]);
+                        ])
+                            .then(() => 1);
                     });
             }))
-                .then(() => ({rowsAffected: ids.length}));
+                .then((res) => ({rowsAffected: _.sum(res)}));
         }
 
         /**

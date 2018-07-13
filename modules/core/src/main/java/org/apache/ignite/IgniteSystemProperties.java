@@ -967,6 +967,13 @@ public final class IgniteSystemProperties {
     public static final String CRITICAL_WORKER_HEARTBEAT_TIMEOUT = "CRITICAL_WORKER_HEARTBEAT_TIMEOUT";
 
     /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
+     *
+     * Default is 500 ms.
+     */
+    public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

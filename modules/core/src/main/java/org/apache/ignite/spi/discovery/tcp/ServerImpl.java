@@ -112,6 +112,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
@@ -253,6 +254,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Discovery state. */
     protected TcpDiscoverySpiState spiState = DISCONNECTED;
 
+    /** Last time received message from ring. */
+    private volatile long lastRingMsgReceivedTime;
+
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
@@ -315,10 +319,17 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public long connectionCheckInterval() {
+        return msgWorker.connCheckFreq;
+    }
+
+    /** {@inheritDoc} */
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         synchronized (mux) {
             spiState = DISCONNECTED;
         }
+
+        lastRingMsgReceivedTime = 0;
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -343,7 +354,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         msgWorker = new RingMessageWorker(log);
 
-        new MessageWorkerThread(msgWorker, log).start();
+        new MessageWorkerDiscoveryThread(msgWorker, log).start();
 
         if (tcpSrvr == null)
             tcpSrvr = new TcpServer(log);
@@ -2746,8 +2757,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert connCheckFreq > 0;
 
-            if (log.isDebugEnabled())
-                log.debug("Connection check frequency is calculated: " + connCheckFreq);
+            if (log.isInfoEnabled())
+                log.info("Connection check frequency is calculated: " + connCheckFreq);
         }
 
         /**
@@ -2925,7 +2936,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMessageToClients(msg);
 
-            Collection<TcpDiscoveryNode> failedNodes;
+            List<TcpDiscoveryNode> failedNodes;
 
             TcpDiscoverySpiState state;
 
@@ -2941,9 +2952,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean newNextNode = false;
 
+            // Used only if spi.getEffectiveConnectionRecoveryTimeout > 0
+            CrossRingMessageSendState sndState = null;
+
             UUID locNodeId = getLocalNodeId();
 
-            while (true) {
+            ringLoop: while (true) {
                 TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
 
                 if (newNext == null) {
@@ -2967,6 +2981,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         log.debug("New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
+                    else if (log.isInfoEnabled())
+                        log.info("New next node [newNext=" + newNext + ']');
 
                     if (debugMode)
                         debugLog(msg, "New next node [newNext=" + newNext + ", formerNext=" + next +
@@ -3023,11 +3039,51 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 openSock = true;
 
                                 // Handshake.
-                                spi.writeToSocket(sock, out, new TcpDiscoveryHandshakeRequest(locNodeId),
+                                TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
+
+                                // Topology treated as changes if next node is not available.
+                                hndMsg.changeTopology(sndState != null && !sndState.isStartingPoint());
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
+
+                                spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Handshake response: " + res);
+
+                                if (res.previousNodeAlive() && sndState != null) {
+                                    // Remote node checked connection to it's previous and got success.
+                                    boolean previousNode = sndState.markLastFailedNodeAlive();
+
+                                    if (previousNode)
+                                        failedNodes.remove(failedNodes.size() - 1);
+                                    else {
+                                        newNextNode = false;
+
+                                        next = ring.nextNode(failedNodes);
+                                    }
+
+                                    U.closeQuiet(sock);
+
+                                    sock = null;
+
+                                    if (sndState.isFailed()) {
+                                        segmentLocalNodeOnSendFail();
+
+                                        return; // Nothing to do here.
+                                    }
+
+                                    if (previousNode)
+                                        U.warn(log, "New next node has connection to it's previous, trying previous " +
+                                            "again. [next=" + next + ']');
+
+                                    continue ringLoop;
+                                }
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
@@ -3318,7 +3374,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (!failedNodes.contains(next)) {
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                        sndState = new CrossRingMessageSendState();
+
+                    boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
+
+                    if (failedNextNode && !failedNodes.contains(next)) {
                         failedNodes.add(next);
 
                         if (state == CONNECTED) {
@@ -3332,6 +3393,26 @@ class ServerImpl extends TcpDiscoveryImpl {
                             U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
                                 ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                         }
+                    }
+                    else if (!failedNextNode && sndState != null && sndState.isBackward()) {
+                        boolean prev = sndState.markLastFailedNodeAlive();
+
+                        U.warn(log, "Failed to send message to next node, try previous [msg=" + msg +
+                            ", next=" + next + ']');
+
+                        if (prev)
+                            failedNodes.remove(failedNodes.size() - 1);
+                        else {
+                            newNextNode = false;
+
+                            next = ring.nextNode(failedNodes);
+                        }
+                    }
+
+                    if (sndState != null && sndState.isFailed()) {
+                        segmentLocalNodeOnSendFail();
+
+                        return; // Nothing to do here.
                     }
 
                     next = null;
@@ -3401,6 +3482,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
                         " for 'TcpDiscoverySpi'");
             }
+        }
+
+        /**
+         * Segment local node on failed message send.
+         */
+        private void segmentLocalNodeOnSendFail() {
+            U.warn(log, "Unable to connect to next nodes in a ring, " +
+                "it seems local node is experiencing connectivity issues. Segmenting local node " +
+                "to avoid case when one node fails a big part of cluster. To disable" +
+                " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+                "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+                + spi.getEffectiveConnectionRecoveryTimeout() + ']');
+
+            // Remove any queued messages to avoid new connect tries.
+            queue.clear();
+
+            notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
 
         /**
@@ -5973,6 +6071,60 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (req.client())
                         res.clientAck(true);
+                    else if (req.changeTopology()) {
+                        // Node cannot connect to it's next (for local node it's previous).
+                        // Need to check connectivity to it.
+                        long rcvdTime = lastRingMsgReceivedTime;
+                        long now = U.currentTimeMillis();
+
+                        // We got message from previous in less than double connection check interval.
+                        boolean ok = rcvdTime + msgWorker.connCheckFreq * 2 >= now;
+
+                        if (ok) {
+                            // Check case when previous node suddenly died. This will speed up
+                            // node failing.
+                            Set<TcpDiscoveryNode> failed;
+
+                            synchronized (mux) {
+                                failed = failedNodes.keySet();
+                            }
+
+                            TcpDiscoveryNode previous = ring.previousNode(failed);
+
+                            InetSocketAddress liveAddr = null;
+
+                            if (previous != null && !previous.id().equals(nodeId)) {
+                                Collection<InetSocketAddress> nodeAddrs =
+                                    spi.getNodeAddresses(previous, false);
+
+                                for (InetSocketAddress addr : nodeAddrs) {
+                                    // Connection refused may be got if node doesn't listen
+                                    // (or blocked by firewall, but anyway assume it is dead).
+                                    if (!isConnectionRefused(addr)) {
+                                        liveAddr = addr;
+
+                                        break;
+                                    }
+                                }
+
+                                if (log.isInfoEnabled())
+                                    log.info("Connection check done: [liveAddr=" + liveAddr
+                                        + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
+                                        + ", connectingNodeId=" + nodeId + ']');
+                            }
+
+                            // If local node was able to connect to previous, confirm that it's alive.
+                            ok = liveAddr != null && (!liveAddr.getAddress().isLoopbackAddress()
+                                || !locNode.socketAddresses().contains(liveAddr));
+                        }
+
+                        res.previousNodeAlive(ok);
+
+                        if (log.isInfoEnabled()) {
+                            log.info("Previous node alive: [alive=" + ok + ", lastMessageReceivedTime="
+                                + rcvdTime + ", now=" + now + ", connCheckFreq=" + msgWorker.connCheckFreq + ']');
+                        }
+                    }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
 
@@ -6112,6 +6264,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             debugLog(msg, "Message has been received: " + msg);
 
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
+                            ringMessageReceived();
+
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
                             continue;
@@ -6289,6 +6443,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
                         else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
+                            ringMessageReceived();
+
                             if (log.isInfoEnabled())
                                 log.info("Latency check message has been read: " + msg.id());
 
@@ -6299,8 +6455,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
                             metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
-                        else
+                        else {
+                            ringMessageReceived();
+
                             msgWorker.addMessage(msg);
+                        }
 
                         // Send receipt back.
                         if (clientMsgWrk != null) {
@@ -6386,6 +6545,31 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
                         ", rmtPort=" + sock.getPort());
             }
+        }
+
+        /**
+         * Update last ring message received timestamp.
+         */
+        private void ringMessageReceived() {
+            lastRingMsgReceivedTime = U.currentTimeMillis();
+        }
+
+        /**
+         * @param addr Address to check.
+         * @return {@code True} if got connection refused on connect try.
+         */
+        private boolean isConnectionRefused(SocketAddress addr) {
+            try (Socket sock = new Socket()) {
+                sock.connect(addr, 100);
+            }
+            catch (ConnectException e) {
+                return true;
+            }
+            catch (IOException e) {
+                return false;
+            }
+
+            return false;
         }
 
         /**
@@ -6868,6 +7052,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** */
+    private class MessageWorkerDiscoveryThread extends MessageWorkerThread implements IgniteDiscoveryThread {
+        /** {@inheritDoc} */
+        private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
+            super(worker, log);
+        }
+    }
+
     /**
      * Slightly modified {@link IgniteSpiThread} intended to use with message workers.
      */
@@ -7018,6 +7210,133 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         public void sock(Socket sock) {
             this.sock = sock;
+        }
+    }
+
+    /**
+     *
+     */
+    private enum RingMessageSendState {
+        /** */
+        STARTING_POINT,
+
+        /** */
+        FORWARD_PASS,
+
+        /** */
+        BACKWARD_PASS,
+
+        /** */
+        FAILED
+    }
+
+    /**
+     * Initial state is {@link RingMessageSendState#STARTING_POINT}.<br>
+     * States could be switched:<br>
+     * {@link RingMessageSendState#STARTING_POINT} => {@link RingMessageSendState#FORWARD_PASS} when next node failed.<br>
+     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#FORWARD_PASS} when new next node failed.<br>
+     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when new next node has
+     * connection to it's previous node and forces local node to try it again.<br>
+     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when previously tried node
+     * has connection to it's previous and forces local node to try it again.<br>
+     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#STARTING_POINT} when local node came back
+     * to initial next node and no topology changes should be performed.<br>
+     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#FAILED} when recovery timeout is over and
+     * all new next nodes have connections to their previous nodes. That means local node has connectivity
+     * issue and should be stopped.<br>
+     */
+    private class CrossRingMessageSendState {
+        /** */
+        private RingMessageSendState state = RingMessageSendState.STARTING_POINT;
+
+        /** */
+        private int failedNodes;
+
+        /** */
+        private final long failTime;
+
+        /**
+         *
+         */
+        CrossRingMessageSendState() {
+            failTime = spi.getEffectiveConnectionRecoveryTimeout() + U.currentTimeMillis();
+        }
+
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#STARTING_POINT}.
+         */
+        boolean isStartingPoint() {
+            return state == RingMessageSendState.STARTING_POINT;
+        }
+
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#BACKWARD_PASS}.
+         */
+        boolean isBackward() {
+            return state == RingMessageSendState.BACKWARD_PASS;
+        }
+
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#FAILED}.
+         */
+        boolean isFailed() {
+            return state == RingMessageSendState.FAILED;
+        }
+
+        /**
+         * Marks next node as failed.
+         *
+         * @return {@code True} node marked as failed.
+         */
+        boolean markNextNodeFailed() {
+            if (state == RingMessageSendState.STARTING_POINT || state == RingMessageSendState.FORWARD_PASS) {
+                state = RingMessageSendState.FORWARD_PASS;
+
+                failedNodes++;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Marks last failed node as alive.
+         *
+         * @return {@code False} if all failed nodes marked as alive or incorrect state.
+         */
+        boolean markLastFailedNodeAlive() {
+            if (state == RingMessageSendState.FORWARD_PASS || state == RingMessageSendState.BACKWARD_PASS) {
+                state = RingMessageSendState.BACKWARD_PASS;
+
+                if (--failedNodes <= 0) {
+                    failedNodes = 0;
+
+                    if (U.currentTimeMillis() >= failTime) {
+                        state = RingMessageSendState.FAILED;
+
+                        return false;
+                    }
+
+                    state = RingMessageSendState.STARTING_POINT;
+
+                    try {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CrossRingMessageSendState.class, this);
         }
     }
 }
