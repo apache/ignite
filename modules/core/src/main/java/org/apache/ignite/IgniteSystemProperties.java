@@ -925,13 +925,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
-     *  Single queue poll timeout for discovery worker, milliseconds.
-     *
-     *  Default is {@code 10_000}.
-     */
-    public static final String IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT = "IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT";
-
-    /**
      * Maximum wait step duration for checkpointer worker, milliseconds.
      *
      * Default is {@code 10_000}.
