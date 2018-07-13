@@ -1567,7 +1567,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     AffinityTopologyVersion initVer = exchFut.initialVersion();
                     AffinityTopologyVersion readyVer = readyAffinityVersion();
 
-                    if (initVer.compareTo(readyVer) <= 0 && !exchFut.exchangeDone()) {
+                    if (initVer.compareTo(readyVer) < 0 && !exchFut.isDone()) {
                         U.warn(log, "Client node tries to connect but its exchange " +
                             "info is cleaned up from exchange history. " +
                             "Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
