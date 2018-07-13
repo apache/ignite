@@ -331,7 +331,7 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', ($wi
         const em = (e) => (m) => {
             if (!e) return;
             const walk = (m) => {
-                if (!m.$error[e]) return;
+                if (!m || !m.$error[e]) return;
                 if (m.$error[e] === true) return m;
                 return walk(m.$error[e][0]);
             };
