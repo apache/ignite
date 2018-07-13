@@ -368,7 +368,7 @@ public class DdlStatementsProcessor {
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-                if (tbl == null && cmd.ifExists()) {
+                if (tbl == null) {
                     ctx.cache().createMissingQueryCaches();
 
                     tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
@@ -387,7 +387,7 @@ public class DdlStatementsProcessor {
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-                if (tbl == null && cmd.ifTableExists()) {
+                if (tbl == null) {
                     ctx.cache().createMissingQueryCaches();
 
                     tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
@@ -446,7 +446,7 @@ public class DdlStatementsProcessor {
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-                if (tbl == null && cmd.ifTableExists()) {
+                if (tbl == null) {
                     ctx.cache().createMissingQueryCaches();
 
                     tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());

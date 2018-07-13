@@ -92,6 +92,29 @@ public class JdbcThinClientCacheMetaAvailableTest extends JdbcThinAbstractSelfTe
     /**
      * @throws Exception If failed.
      */
+    public void testClientDropsAfterRestart() throws Exception {
+        startGrid("server");
+        IgniteEx client = (IgniteEx)startGrid("client");
+
+        try (Connection conn = connect(client, "");
+             PreparedStatement st = conn.prepareStatement(
+                 "CREATE TABLE City (id LONG PRIMARY KEY, name VARCHAR)WITH \"template=replicated\";")) {
+            st.execute();
+        }
+
+        stopGrid("client");
+
+        client = (IgniteEx)startGrid("client");
+
+        try (Connection conn = connect(client, "");
+             PreparedStatement st = conn.prepareStatement("DROP TABLE City;")) {
+            st.execute();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testServerCreatesClientUses() throws Exception {
         IgniteEx server = (IgniteEx)startGrid("server");
         IgniteEx client = (IgniteEx)startGrid("client");
@@ -106,6 +129,24 @@ public class JdbcThinClientCacheMetaAvailableTest extends JdbcThinAbstractSelfTe
              ResultSet meta = conn.getMetaData().getTables(null, "PUBLIC", null, null)) {
             assertTrue(meta.next());
             assertEquals("CITY", meta.getString("TABLE_NAME"));
+        }
+    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerCreatesClientDrops() throws Exception {
+        IgniteEx server = (IgniteEx)startGrid("server");
+        IgniteEx client = (IgniteEx)startGrid("client");
+
+        try (Connection conn = connect(server, "");
+             PreparedStatement st = conn.prepareStatement(
+                 "CREATE TABLE City (id LONG PRIMARY KEY, name VARCHAR)WITH \"template=replicated\";")) {
+            st.execute();
+        }
+
+        try (Connection conn = connect(client, "");
+             PreparedStatement st = conn.prepareStatement("DROP TABLE City;")) {
+            st.execute();
         }
     }
 
