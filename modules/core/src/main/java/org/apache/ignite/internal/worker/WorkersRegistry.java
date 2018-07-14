@@ -41,6 +41,9 @@ import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOU
  * Can perform periodic health checks for these workers on behalf of any of them.
  */
 public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<GridWorker> {
+    /** */
+    private static final long serialVersionUID = 2243111922271300810L;
+
     /** Time in milliseconds between successive workers checks. */
     private static final long CHECK_INTERVAL = 3_000;
 
