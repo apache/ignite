@@ -75,14 +75,21 @@ ENV IGNITE_DISCOVERY_S3_BUCKETNAME staging-mlstore-ignite-discovery-01
 # It includes the Apache Ignite startup script and binaries. 
 ENV IGNITE_HOME ${JOBCASE_HOME}/apache-ignite-fabric
 
+# Default deployment mode is CONTINUOUS
+ENV IGNITE_DEPLOYMENT_MODE CONTINUOUS
+
 # Initial and maximum JVM Heap size
 ENV JVM_HEAP_SIZE 1g
 
 # JVM maximum amount of native memory that can be allocated for class metadata 
 ENV JVM_METASPACE_SIZE 1g
 
+# Define additional JVM options for debug purpose
+# As default, it enables remote debug on port 1044.
+ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044"
+
 # Ignite JVM settings
-ENV JVM_OPTS="-ea -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE} -server -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE} -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
+ENV JVM_OPTS="-ea -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE} -server -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE} -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -Xloggc:${JOBCASE_LOGS}/jvm-gc.log ${JVM_DEBUG_OPTS}"
 
 # Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
 RUN apt-get update && apt-get install -y --no-install-recommends \

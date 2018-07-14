@@ -42,6 +42,12 @@
         <!-- Set to true to enable distributed class loading, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
         
+        <!-- Set deployment mode.
+             In CONTINUOUS mode, the classes do not get un-deployed when master nodes leave the grid. 
+             Un-deployment only happens when a class user version changes.         
+         --> 
+        <property name="deploymentMode" value="#{systemEnvironment['IGNITE_DEPLOYMENT_MODE']}"/>        
+                
         <!--  Sets failure detection timeout to use in discoverySpi and communicationSpi. -->
         <property name="failureDetectionTimeout" value="10000"/>
         
