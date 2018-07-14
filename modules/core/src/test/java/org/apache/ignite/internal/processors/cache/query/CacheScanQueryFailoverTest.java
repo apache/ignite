@@ -89,7 +89,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         Ignite srv = startGrids(4);
         Ignite client = startGrid("client");
 
-        CacheConfiguration cfg= new CacheConfiguration(DEFAULT_CACHE_NAME).setCacheMode(PARTITIONED);
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME).setCacheMode(PARTITIONED);
 
         // Test query from client node.
         queryCachesWithFailedPredicates(client, cfg);
