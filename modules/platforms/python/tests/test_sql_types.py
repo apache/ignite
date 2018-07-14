@@ -47,21 +47,21 @@ table_hash_code = hashcode(table_cache_name)
 
 create_query = '''
 CREATE TABLE {} (
-  TEST_PK INTEGER(11) PRIMARY KEY,
-  TEST_BOOL BOOLEAN,
-  TEST_INT INTEGER(11),
-  TEST_DECIMAL DECIMAL(11, 5),
-  TEST_STR VARCHAR(24),
+  test_pk INTEGER(11) PRIMARY KEY,
+  test_bool BOOLEAN,
+  test_int INTEGER(11),
+  test_decimal DECIMAL(11, 5),
+  test_str VARCHAR(24),
 )
 '''.format(table_sql_name)
 
 insert_query = '''
 INSERT INTO {} (
-  TEST_PK, TEST_BOOL, TEST_INT, TEST_DECIMAL, TEST_STR
+  test_pk, test_bool, test_int, test_decimal, test_str
 ) VALUES (?, ?, ?, ?, ?)'''.format(table_sql_name)
 
 select_query = '''
-SELECT (TEST_PK, TEST_BOOL, TEST_INT, TEST_DECIMAL, TEST_STR) FROM {}
+SELECT (test_pk, test_bool, test_int, test_decimal, test_str) FROM {}
 '''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
@@ -131,35 +131,12 @@ def test_sql_write_as_binary(conn):
     result = cache_create_with_config(conn, {
         PROP_NAME: table_cache_name,
         PROP_SQL_SCHEMA: scheme_name,
-        PROP_SQL_ESCAPE_ALL: True,
-        PROP_WRITE_SYNCHRONIZATION_MODE: 0,
         PROP_QUERY_ENTITIES: [
             {
                 'table_name': table_sql_name.upper(),
                 'key_field_name': 'TEST_PK',
                 'key_type_name': 'java.lang.Integer',
-                'field_name_aliases': [
-                    {
-                        'alias': 'TEST_PK',
-                        'field_name': 'TEST_PK',
-                    },
-                    {
-                        'alias': 'TEST_BOOL',
-                        'field_name': 'TEST_BOOL',
-                    },
-                    {
-                        'alias': 'TEST_STR',
-                        'field_name': 'TEST_STR',
-                    },
-                    {
-                        'alias': 'TEST_INT',
-                        'field_name': 'TEST_INT',
-                    },
-                    {
-                        'alias': 'TEST_DECIMAL',
-                        'field_name': 'TEST_DECIMAL',
-                    },
-                ],
+                'field_name_aliases': [],
                 'query_fields': [
                     {
                         'name': 'TEST_PK',
