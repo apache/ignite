@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from pyignite.api import *
-from pyignite.datatypes.primitive_objects import IntObject
+from pyignite.datatypes import IntObject
 
 
 def test_put_get(conn, hash_code):

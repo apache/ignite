@@ -9,6 +9,14 @@ pyignite.api package
 Submodules
 ----------
 
+pyignite.api.binary module
+--------------------------
+
+.. automodule:: pyignite.api.binary
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyignite.api.cache\_config module
 ---------------------------------
 

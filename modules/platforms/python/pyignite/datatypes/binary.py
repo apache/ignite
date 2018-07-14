@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.datatypes.cache_config import Struct, StructArray
-from pyignite.datatypes.primitive import Int, Bool
-from pyignite.datatypes.standard import String
+from pyignite.datatypes import Int, Bool, String, Struct, StructArray
 
 
 binary_fields_struct = StructArray([

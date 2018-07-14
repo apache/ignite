@@ -21,9 +21,9 @@ from pyignite.api import (
     cache_get_configuration, put_binary_type, get_binary_type,
     cache_put, cache_destroy,
 )
-from pyignite.datatypes.complex import BinaryObject
-from pyignite.datatypes.primitive_objects import BoolObject, IntObject
-from pyignite.datatypes.standard import DecimalObject, String
+from pyignite.datatypes import (
+    BinaryObject, BoolObject, IntObject, DecimalObject, String,
+)
 from pyignite.datatypes.prop_codes import *
 
 

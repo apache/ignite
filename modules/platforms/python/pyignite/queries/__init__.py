@@ -27,7 +27,7 @@ import attr
 
 from pyignite.connection import Connection
 from pyignite.constants import *
-from pyignite.datatypes.standard import String
+from pyignite.datatypes import String
 from .op_codes import *
 
 

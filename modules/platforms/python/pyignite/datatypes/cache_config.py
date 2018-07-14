@@ -13,130 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
-import ctypes
-
-import attr
-
-from pyignite.connection import Connection
-from pyignite.constants import *
 from .standard import String
-from .complex import AnyDataObject
+from .internal import AnyDataObject, Struct, StructArray
 from .primitive import *
 
 
 __all__ = [
-    'Struct', 'StructArray', 'cache_config_struct', 'CacheMode',
-    'PartitionLossPolicy', 'RebalanceMode', 'WriteSynchronizationMode',
-    'IndexType',
+    'cache_config_struct', 'CacheMode', 'PartitionLossPolicy',
+    'RebalanceMode', 'WriteSynchronizationMode', 'IndexType',
 ]
-
-
-@attr.s
-class StructArray:
-    """ `counter_type` counter, followed by count*following structure. """
-    following = attr.ib(type=list, factory=list)
-    counter_type = attr.ib(default=ctypes.c_int)
-
-    def build_header_class(self):
-        return type(
-            self.__class__.__name__+'Header',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', self.counter_type),
-                ],
-            },
-        )
-
-    def parse(self, conn: Connection):
-        buffer = conn.recv(ctypes.sizeof(self.counter_type))
-        length = int.from_bytes(buffer, byteorder=PROTOCOL_BYTE_ORDER)
-        fields = []
-
-        for i in range(length):
-            c_type, buffer_fragment = Struct(self.following).parse(conn)
-            buffer += buffer_fragment
-            fields.append(('element_{}'.format(i), c_type))
-
-        data_class = type(
-            'StructArray',
-            (self.build_header_class(),),
-            {
-                '_pack_': 1,
-                '_fields_': fields,
-            },
-        )
-
-        return data_class, buffer
-
-    def to_python(self, ctype_object):
-        result = []
-        length = getattr(ctype_object, 'length', 0)
-        for i in range(length):
-            result.append(
-                Struct(self.following, dict_type=dict).to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
-                )
-            )
-        return result
-
-    def from_python(self, value):
-        length = len(value)
-        header_class = self.build_header_class()
-        header = header_class()
-        header.length = length
-        buffer = bytes(header)
-
-        for i, v in enumerate(value):
-            for element in self.following:
-                name, el_class = element
-                buffer += el_class.from_python(v[name])
-
-        return buffer
-
-
-@attr.s
-class Struct:
-    """ Sequence of fields, including variable-sized and nested. """
-    fields = attr.ib(type=list)
-    dict_type = attr.ib(default=OrderedDict)
-
-    def parse(self, conn: Connection):
-        buffer = b''
-        fields = []
-
-        for name, c_type in self.fields:
-            c_type, buffer_fragment = c_type.parse(conn)
-            buffer += buffer_fragment
-
-            fields.append((name, c_type))
-
-        data_class = type(
-            'Struct',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': fields,
-            },
-        )
-
-        return data_class, buffer
-
-    def to_python(self, ctype_object):
-        result = self.dict_type()
-        for name, c_type in self.fields:
-            result[name] = c_type.to_python(getattr(ctype_object, name))
-        return result
-
-    def from_python(self, value):
-        buffer = b''
-
-        for name, el_class in self.fields:
-            buffer += el_class.from_python(value[name])
-
-        return buffer
 
 
 class CacheMode(Int):

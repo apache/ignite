@@ -19,10 +19,7 @@ import pytest
 import uuid
 
 from pyignite.api.key_value import cache_get, cache_put
-from pyignite.datatypes.complex import *
-from pyignite.datatypes.primitive_objects import *
-from pyignite.datatypes.primitive_arrays import *
-from pyignite.datatypes.standard import *
+from pyignite.datatypes import *
 
 
 @pytest.mark.parametrize(

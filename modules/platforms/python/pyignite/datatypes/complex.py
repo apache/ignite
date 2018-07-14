@@ -15,277 +15,23 @@
 
 from collections import OrderedDict
 import ctypes
-import decimal
-from datetime import date, datetime, timedelta
 from importlib import import_module
-import uuid
 
-import attr
-
-from pyignite.connection import Connection, PrefetchConnection
+from pyignite.connection import Connection
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import is_hinted, is_iterable
-from .primitive import Int
-from .primitive_arrays import *
-from .primitive_objects import *
-from .standard import *
-from .null_object import *
+from pyignite.utils import is_hinted
+from .internal import AnyDataObject
 from .type_codes import *
 
 
 __all__ = [
-    'AnyDataObject', 'AnyDataArray', 'Map',
-    'ObjectArrayObject', 'CollectionObject', 'MapObject',
+    'Map', 'ObjectArrayObject', 'CollectionObject', 'MapObject',
     'WrappedDataObject', 'BinaryObject',
 ]
 
 
-def tc_map(key: bytes):
-    return {
-        TC_NULL: Null,
-
-        TC_BYTE: ByteObject,
-        TC_SHORT: ShortObject,
-        TC_INT: IntObject,
-        TC_LONG: LongObject,
-        TC_FLOAT: FloatObject,
-        TC_DOUBLE: DoubleObject,
-        TC_CHAR: CharObject,
-        TC_BOOL: BoolObject,
-
-        TC_UUID: UUIDObject,
-        TC_DATE: DateObject,
-        TC_TIMESTAMP: TimestampObject,
-        TC_TIME: TimeObject,
-        TC_ENUM: EnumObject,
-        TC_BINARY_ENUM: BinaryEnumObject,
-
-        TC_BYTE_ARRAY: ByteArrayObject,
-        TC_SHORT_ARRAY: ShortArrayObject,
-        TC_INT_ARRAY: IntArrayObject,
-        TC_LONG_ARRAY: LongArrayObject,
-        TC_FLOAT_ARRAY: FloatArrayObject,
-        TC_DOUBLE_ARRAY: DoubleArrayObject,
-        TC_CHAR_ARRAY: CharArrayObject,
-        TC_BOOL_ARRAY: BoolArrayObject,
-
-        TC_UUID_ARRAY: UUIDArrayObject,
-        TC_DATE_ARRAY: DateArrayObject,
-        TC_TIMESTAMP_ARRAY: TimestampArrayObject,
-        TC_TIME_ARRAY: TimeArrayObject,
-        TC_ENUM_ARRAY: EnumArrayObject,
-
-        TC_STRING: String,
-        TC_STRING_ARRAY: StringArrayObject,
-        TC_DECIMAL: DecimalObject,
-        TC_DECIMAL_ARRAY: DecimalArrayObject,
-
-        TC_OBJECT_ARRAY: ObjectArrayObject,
-        TC_COLLECTION: CollectionObject,
-        TC_MAP: MapObject,
-
-        TC_COMPLEX_OBJECT: BinaryObject,
-        TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
-    }[key]
-
-
-class AnyDataObject:
-    """
-    Not an actual Ignite type, but contains a guesswork
-    on serializing Python data or parsing an unknown Ignite data object.
-    """
-
-    @staticmethod
-    def get_subtype(iterable, allow_none=False):
-        # arrays of these types can contain Null objects
-        object_array_python_types = [
-            str,
-            datetime,
-            timedelta,
-            decimal.Decimal,
-            uuid.UUID,
-        ]
-
-        iterator = iter(iterable)
-        type_first = type(None)
-        try:
-            while isinstance(None, type_first):
-                type_first = type(next(iterator))
-        except StopIteration:
-            raise TypeError(
-                'Can not represent an empty iterable '
-                'or an iterable of `NoneType` in Ignite type.'
-            )
-
-        if type_first in object_array_python_types:
-            allow_none = True
-
-        # if an iterable contains items of more than one non-nullable type,
-        # return None
-        if all([
-            isinstance(x, type_first)
-            or ((x is None) and allow_none) for x in iterator
-        ]):
-            return type_first
-
-    @classmethod
-    def parse(cls, conn: Connection):
-        type_code = conn.recv(ctypes.sizeof(ctypes.c_byte))
-        try:
-            data_class = tc_map(type_code)
-        except KeyError:
-            raise ParseError('Unknown type code: `{}`'.format(type_code))
-        return data_class.parse(PrefetchConnection(conn, prefetch=type_code))
-
-    @classmethod
-    def to_python(cls, ctype_object):
-        type_code = ctype_object.type_code.to_bytes(
-            ctypes.sizeof(ctypes.c_byte),
-            byteorder=PROTOCOL_BYTE_ORDER
-        )
-        data_class = tc_map(type_code)
-        return data_class.to_python(ctype_object)
-
-    @classmethod
-    def map_python_type(cls, value):
-        python_map = {
-            int: LongObject,
-            float: DoubleObject,
-            str: String,
-            bytes: String,
-            bool: BoolObject,
-            type(None): Null,
-            uuid.UUID: UUIDObject,
-            datetime: DateObject,
-            date: DateObject,
-            timedelta: TimeObject,
-            decimal.Decimal: DecimalObject,
-        }
-
-        python_array_map = {
-            int: LongArrayObject,
-            float: DoubleArrayObject,
-            str: StringArrayObject,
-            bytes: StringArrayObject,
-            bool: BoolArrayObject,
-            uuid.UUID: UUIDArrayObject,
-            datetime: DateArrayObject,
-            date: DateArrayObject,
-            timedelta: TimeArrayObject,
-            decimal.Decimal: DecimalArrayObject,
-        }
-
-        value_type = type(value)
-        if is_iterable(value) and value_type is not str:
-            value_subtype = cls.get_subtype(value)
-            if value_subtype in python_array_map:
-                return python_array_map[value_subtype]
-
-            # a little heuristics (order may be important)
-            if all([
-                value_subtype is None,
-                len(value) == 2,
-                isinstance(value[0], int),
-                isinstance(value[1], dict),
-            ]):
-                return MapObject
-
-            if all([
-                value_subtype is None,
-                len(value) == 2,
-                isinstance(value[0], int),
-                is_iterable(value[1]),
-            ]):
-                return ObjectArrayObject
-
-            raise TypeError(
-                'Type `array of {}` is invalid'.format(value_subtype)
-            )
-
-        if value_type in python_map:
-            return python_map[value_type]
-        raise TypeError(
-            'Type `{}` is invalid.'.format(value_type)
-        )
-
-    @classmethod
-    def from_python(cls, value):
-        return cls.map_python_type(value).from_python(value)
-
-
-@attr.s
-class AnyDataArray(AnyDataObject):
-    """
-    Sequence of AnyDataObjects, payload-only.
-    """
-    counter_type = attr.ib(default=ctypes.c_int)
-
-    def build_header(self):
-        return type(
-            self.__class__.__name__+'Header',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', self.counter_type),
-                ],
-            }
-        )
-
-    def parse(self, conn: Connection):
-        header_class = self.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
-        header = header_class.from_buffer_copy(buffer)
-        fields = []
-
-        for i in range(header.length):
-            c_type, buffer_fragment = super().parse(conn)
-            buffer += buffer_fragment
-            fields.append(('element_{}'.format(i), c_type))
-
-        final_class = type(
-            self.__class__.__name__,
-            (header_class,),
-            {
-                '_pack_': 1,
-                '_fields_': fields,
-            }
-        )
-        return final_class, buffer
-
-    @classmethod
-    def to_python(cls, ctype_object):
-        result = []
-        for i in range(ctype_object.length):
-            result.append(
-                super().to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
-                )
-            )
-        return result
-
-    def from_python(self, value):
-        header_class = self.build_header()
-        header = header_class()
-
-        try:
-            length = len(value)
-        except TypeError:
-            value = [value]
-            length = 1
-        header.length = length
-        buffer = bytes(header)
-
-        for x in value:
-            if is_hinted(x):
-                buffer += x[1].from_python(x[0])
-            else:
-                buffer += super().from_python(x)
-        return buffer
-
-
-class ObjectArrayObject(AnyDataObject):
+class ObjectArrayObject:
     """
     Array of objects of any type. Its Python representation is
     tuple(type_id, iterable of any type).
@@ -316,7 +62,7 @@ class ObjectArrayObject(AnyDataObject):
         fields = []
 
         for i in range(header.length):
-            c_type, buffer_fragment = super().parse(conn)
+            c_type, buffer_fragment = AnyDataObject.parse(conn)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 
@@ -335,7 +81,7 @@ class ObjectArrayObject(AnyDataObject):
         result = []
         for i in range(ctype_object.length):
             result.append(
-                super().to_python(
+                AnyDataObject.to_python(
                     getattr(ctype_object, 'element_{}'.format(i))
                 )
             )
@@ -360,7 +106,7 @@ class ObjectArrayObject(AnyDataObject):
         buffer = bytes(header)
 
         for x in value:
-            buffer += super().from_python(x)
+            buffer += AnyDataObject.from_python(x)
         return buffer
 
 
@@ -472,6 +218,8 @@ class Map:
 
     @classmethod
     def parse(cls, conn: Connection):
+        from .internal import AnyDataObject
+
         header_class = cls.build_header()
         buffer = conn.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
@@ -494,6 +242,8 @@ class Map:
 
     @classmethod
     def to_python(cls, ctype_object):
+        from .internal import AnyDataObject
+
         map_type = getattr(ctype_object, 'type', cls.HASH_MAP)
         result = OrderedDict() if map_type == cls.LINKED_HASH_MAP else {}
 
@@ -509,6 +259,8 @@ class Map:
 
     @classmethod
     def from_python(cls, value, type_id=None):
+        from .internal import AnyDataObject
+
         header_class = cls.build_header()
         header = header_class()
         length = len(value)
@@ -610,6 +362,7 @@ class BinaryObject:
     @staticmethod
     def get_fields(conn: Connection, type_id: int) -> list:
         from pyignite.api import get_binary_type
+        from pyignite.datatypes.internal import tc_map
 
         # get field names from outer space
         temp_conn = conn.clone()
@@ -622,7 +375,7 @@ class BinaryObject:
 
     @classmethod
     def parse(cls, conn: Connection):
-        from pyignite.datatypes.cache_config import Struct
+        from pyignite.datatypes import Struct
 
         header_class = cls.build_header()
         buffer = conn.recv(ctypes.sizeof(header_class))

@@ -18,8 +18,7 @@ from pyignite.constants import *
 from pyignite.datatypes.binary import (
     body_struct, enum_struct, schema_struct, binary_fields_struct,
 )
-from pyignite.datatypes.complex import String
-from pyignite.datatypes.primitive import Int, Bool
+from pyignite.datatypes import String, Int, Bool
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
 from pyignite.utils import int_overflow

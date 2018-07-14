@@ -19,7 +19,10 @@ in a broad sense of the word), used internally for parsing and creating binary
 data streams.
 """
 
-from .primitive import *
-from .primitive_objects import *
+from .complex import *
+from .internal import *
 from .null_object import *
+from .primitive import *
+from .primitive_arrays import *
+from .primitive_objects import *
 from .standard import *

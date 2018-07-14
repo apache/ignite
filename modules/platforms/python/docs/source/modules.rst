@@ -1,5 +1,5 @@
-python
-======
+pyignite
+========
 
 .. toctree::
    :maxdepth: 4

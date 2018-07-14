@@ -19,12 +19,10 @@ in progress.
 """
 
 from pyignite.connection import Connection
-from pyignite.datatypes.cache_config import StructArray
-from pyignite.datatypes.complex import AnyDataArray, AnyDataObject, Map
-from pyignite.datatypes.null_object import Null
-from pyignite.datatypes.primitive import Bool, Byte, Int, Long
+from pyignite.datatypes import (
+    Map, AnyDataArray, Null, Bool, Byte, Int, Long, String, StringArray,
+)
 from pyignite.datatypes.sql import StatementType
-from pyignite.datatypes.standard import String, StringArray
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
 from .result import APIResult

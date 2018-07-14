@@ -26,8 +26,7 @@ only non-persistent storage tier.)
 from pyignite.connection import Connection
 from pyignite.datatypes.cache_config import cache_config_struct
 from pyignite.datatypes.cache_properties import prop_map
-from pyignite.datatypes.primitive import Int, Byte, Short
-from pyignite.datatypes.standard import String, StringArray
+from pyignite.datatypes import Int, Byte, Short, String, StringArray
 from pyignite.queries import Query, ConfigQuery, Response
 from pyignite.queries.op_codes import *
 from .result import APIResult

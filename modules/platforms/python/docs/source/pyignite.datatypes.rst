@@ -9,6 +9,14 @@ pyignite.datatypes package
 Submodules
 ----------
 
+pyignite.datatypes.binary module
+--------------------------------
+
+.. automodule:: pyignite.datatypes.binary
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyignite.datatypes.cache\_config module
 ---------------------------------------
 
@@ -29,6 +37,14 @@ pyignite.datatypes.complex module
 ---------------------------------
 
 .. automodule:: pyignite.datatypes.complex
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+pyignite.datatypes.internal module
+----------------------------------
+
+.. automodule:: pyignite.datatypes.internal
     :members:
     :undoc-members:
     :show-inheritance:

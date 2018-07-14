@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.datatypes.standard import String
+from pyignite.datatypes import String
 from pyignite.queries import Response
 from pyignite.utils import int_overflow
 

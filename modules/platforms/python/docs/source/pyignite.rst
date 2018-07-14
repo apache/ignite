@@ -27,6 +27,14 @@ pyignite.constants module
     :undoc-members:
     :show-inheritance:
 
+pyignite.exceptions module
+--------------------------
+
+.. automodule:: pyignite.exceptions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyignite.utils module
 ---------------------
 

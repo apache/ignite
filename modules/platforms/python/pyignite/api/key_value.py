@@ -15,9 +15,10 @@
 
 from pyignite.connection import Connection
 from pyignite.queries.op_codes import *
-from pyignite.datatypes.complex import AnyDataArray, AnyDataObject, Map
+from pyignite.datatypes import (
+    Map, Bool, Byte, Int, Long, AnyDataArray, AnyDataObject,
+)
 from pyignite.datatypes.key_value import PeekModes
-from pyignite.datatypes.primitive import Bool, Byte, Int, Long
 from pyignite.queries import Query, Response
 from .result import APIResult
 
