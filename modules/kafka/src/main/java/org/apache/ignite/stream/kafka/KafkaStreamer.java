@@ -99,7 +99,7 @@ public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
      * @param timeout Timeout.
      */
     public void setTimeout(long timeout) {
-        A.ensure(timeout > 0, "retryTimeout > 0");
+        A.ensure(timeout > 0, "timeout > 0");
 
         this.timeout = timeout;
     }
