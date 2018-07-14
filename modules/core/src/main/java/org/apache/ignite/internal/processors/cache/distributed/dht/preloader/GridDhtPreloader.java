@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -186,29 +185,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         boolean assignsChanged = aff == prevAff;
 
-        int parts = grp.affinity().partitions();
-
-        for (int p = 0; p < parts; p++)
+        for (int p = 0; p < grp.affinity().partitions() && !assignsChanged; p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
 
         return assignsChanged;
-    }
-
-    /**
-     * Assignments can be the same, but {@link GridDhtPartitionTopologyImpl#resetOwners(java.util.Map, java.util.Set)}
-     * can move partition state from OWNING to MOVING due to obsolete partition update counter due to delayed
-     * partition recieving on rebalance happend.
-     *
-     * @param lastTopVer Topology version to check states.
-     * @return {@code True} if partitions of current topology have their OWNING states other than affinity
-     *         assingments require.
-     */
-    private boolean isOwnersChanged(AffinityTopologyVersion lastTopVer) {
-        List<List<ClusterNode>> allOw = grp.topology().allOwners();
-
-        List<List<ClusterNode>> affOw = grp.affinity().readyAffinity(lastTopVer).assignment();
-
-        return !affOw.containsAll(allOw);
     }
 
     /** {@inheritDoc} */
@@ -223,14 +203,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 .map(e -> e.eventNode().id())
                 .collect(Collectors.toSet());
 
-            leftNodes.retainAll(demander.requestedNodes());
+            leftNodes.retainAll(demander.remainingRequestedNodes());
 
             if (!actTopVer.initialized() ||
                 isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
-                !leftNodes.isEmpty() || // Some of nodes left before rabalance compelete.
-                isOwnersChanged(lastTopVer) ) { // Owners changed. Obsolete updSeq due to exchange on coordinator.
+                !leftNodes.isEmpty()) {// Some of nodes left before rabalance compelete.
                 // Mark current rebalance as obsolete and prepare new one.
-                // Stop supply-demand messages for current.
                 demander.topologyVersionToDemand(lastTopVer);
             }
         }
@@ -260,6 +238,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
+
+        // Owners can changed due to obsolete updSeq for exchange on coordinator, refer
+        // to {@link GridDhtPartitionTopologyImpl#resetOwners(java.util.Map, java.util.Set)} for details.
+        boolean changed = false;
+
+        final Set<Integer> partsInProgress = demander.remainingPreloadPartitions();
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -301,6 +285,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
+
+                if (!partsInProgress.contains(p))
+                    changed = true;
 
                 ClusterNode histSupplier = null;
 
@@ -366,7 +353,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
         // If generation assignments have been forced by RebalanceReassignExchangeTask or ForceRebalanceExchangeTask.
-        if (exchFut == null)
+        if (changed || exchFut == null)
             demander.topologyVersionToDemand(topVer);
 
         return assignments;

@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -272,10 +271,10 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return Collection of nodes from which partitions was previously demanded.
+     * @return Collection of nodes from which partitions was demanded.
      */
-    Collection<UUID> requestedNodes() {
-        return rebalanceFut.requestedNodes();
+    Collection<UUID> remainingRequestedNodes() {
+        return rebalanceFut.remainingRequestedNodes();
     }
 
     /**
@@ -289,6 +288,13 @@ public class GridDhtPartitionDemander {
 
             topVerToDemand = topVer;
         }
+    }
+
+    /**
+     * @return Set of partitions remaining to be preloaded for current cache group.
+     */
+    Set<Integer> remainingPreloadPartitions() {
+        return rebalanceFut.remainingPreloadPartitions();
     }
 
     /**
@@ -325,7 +331,8 @@ public class GridDhtPartitionDemander {
             final AffinityTopologyVersion topVer = assignments.topologyVersion();
 
             if (!force && !assignments.isEmpty() && !topologyChanged(oldFut)) {
-                // Skip assignments as not marked by GridDhtPreloader.afterExchange().
+                // Skip assignments as not marked by GridDhtPreloader#afterExchange()
+                // or by GridDhtPreloader#generateAssignments() .
                 oldFut.latestTopVer = topVer;
 
                 U.log(log, "Rebalancing skipped (no group changes) [grp=" + grp.cacheOrGroupName() +
@@ -1010,9 +1017,6 @@ public class GridDhtPartitionDemander {
         /** */
         private final IgniteLogger log;
 
-        /** Nodes on which demanded message prepared for being sent. */
-        private final Collection<UUID> requestedNodes;
-
         /** Remaining. T2: startTime, partitions */
         private final Map<UUID, T2<Long, IgniteDhtDemandedPartitionsMap>> remaining = new HashMap<>();
 
@@ -1054,7 +1058,6 @@ public class GridDhtPartitionDemander {
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
             latestTopVer = topVer;
-            requestedNodes = assignments.keySet().stream().map(ClusterNode::id).collect(Collectors.toList());
             this.grp = grp;
             this.log = log;
             this.rebalanceId = rebalanceId;
@@ -1069,7 +1072,6 @@ public class GridDhtPartitionDemander {
             this.exchId = null;
             topVer = AffinityTopologyVersion.ZERO;
             latestTopVer = null;
-            requestedNodes = new ArrayList<>();
             this.ctx = null;
             this.grp = null;
             this.log = null;
@@ -1096,13 +1098,6 @@ public class GridDhtPartitionDemander {
          */
         private boolean isInitial() {
             return !topVer.initialized();
-        }
-
-        /**
-         * @return Collection on wich demanded request partition has been sent.
-         */
-        private Collection<UUID> requestedNodes() {
-            return requestedNodes;
         }
 
         /**
@@ -1303,6 +1298,30 @@ public class GridDhtPartitionDemander {
 
                 onDone(!cancelled);
             }
+        }
+
+        /**
+         * @return Collection of nodes remainign to be requested for demanded partitions.
+         */
+        private synchronized Collection<UUID> remainingRequestedNodes() {
+            return remaining.keySet();
+        }
+
+        /**
+         * @return Set of partitions remaining to be preloaded for current cache group.
+         */
+        private synchronized Set<Integer> remainingPreloadPartitions() {
+            Set<Integer> parts = new HashSet<>();
+
+            for (Map.Entry<UUID, T2<Long, IgniteDhtDemandedPartitionsMap>> e : remaining.entrySet()) {
+                IgniteDhtDemandedPartitionsMap partMap = e.getValue().get2();
+
+                parts.addAll(partMap.fullSet());
+
+                parts.addAll(CachePartitionPartialCountersMap.toCountersMap(partMap.historicalMap()).keySet());
+            }
+
+            return parts;
         }
 
         /**
