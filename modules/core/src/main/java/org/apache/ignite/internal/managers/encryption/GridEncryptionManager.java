@@ -156,6 +156,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (res != null)
             return res;
 
+        if (node.isClient())
+            return null;
+
         res = validateNode(node);
 
         if (res != null)
@@ -202,6 +205,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         if (res != null)
             return res;
+
+        if (node.isClient())
+            return null;
 
         byte[] lclMkDig = getSpi().masterKeyDigest();
 

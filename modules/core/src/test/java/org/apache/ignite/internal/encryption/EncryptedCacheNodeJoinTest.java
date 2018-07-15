@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -38,6 +37,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
     /** */
     private static final String GRID_4 = "grid-4";
+
+    public static final String CLIENT = "client";
 
     /** */
     private static final String KEYSTORE_PATH_2 =
@@ -74,6 +75,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         }
         else
             cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+        cfg.setClientMode(grid.equals(CLIENT));
 
         return cfg;
     }
@@ -113,6 +116,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         startGrid(GRID_3).cluster().active(true);
     }
 
+    /** */
     public void testNodeCantJoinWithDifferentCacheKeys() throws Exception {
         IgniteEx grid0 = startGrid(GRID_0);
         startGrid(GRID_3);
@@ -157,5 +161,20 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         awaitPartitionMapExchange();
 
         checkEncCaches(grid0, grid4);
+    }
+
+    /** */
+    public void testClientNodeJoin() throws Exception {
+        IgniteEx grid0 = startGrid(GRID_0);
+
+        IgniteEx grid3 = startGrid(GRID_3);
+
+        grid3.cluster().active(true);
+
+        IgniteEx client = startGrid(CLIENT);
+
+        createEncCache(client, grid0, cacheName(), null);
+
+        checkEncCaches(grid0, client);
     }
 }

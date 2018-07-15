@@ -554,7 +554,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
 
-        if (cc.isEncrypted()) {
+        if (cc.isEncrypted() && !c.isClientMode()) {
             if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
                 throw new IgniteCheckedException("Using encryption is not allowed" +
                     " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +

@@ -35,19 +35,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
-import org.apache.ignite.spi.encryption.EncryptionSpiImplSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.CIPHER_ALGO;
 import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.MASTER_KEY_NAME;
 
@@ -87,7 +84,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                     .setMaxSize(10L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setPageSize(4 * 1024)
-            .setWalMode(LOG_ONLY);
+            .setWalMode(FSYNC);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -145,6 +142,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup,
         boolean putData) throws IgniteInterruptedCheckedException {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>(cacheName)
+            .setWriteSynchronizationMode(FULL_SYNC)
             .setGroupName(cacheGroup)
             .setEncrypted(true);
 
