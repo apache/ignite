@@ -213,6 +213,10 @@ for query in [
 ]:
     sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
 
+# create indices
+for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
+    sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
+
 # load data
 for row in COUNTRY_DATA:
     sql_fields(
@@ -255,6 +259,13 @@ print('Most 10 populated cities:')
 for row in result.value['data']:
     print(row)
 
+# Most 10 populated cities:
+# ['Mumbai (Bombay)', 10500000]
+# ['Shanghai', 9696300]
+# ['New York', 8008278]
+# ['Peking', 7472000]
+# ['Delhi', 7206704]
+
 cursor = result.value['cursor']
 field_count = result.value['field_count']
 while result.value['more']:
@@ -263,6 +274,12 @@ while result.value['more']:
     for row in result.value['data']:
         print(row)
 
+# ... continue on next page...
+# ['Chongqing', 6351600]
+# ['Tianjin', 5286800]
+# ['Calcutta [Kolkata]', 4399819]
+# ['Wuhan', 4344600]
+# ['Harbin', 4289800]
 
 # 10 most populated cities in 3 countries (with pagination and header row)
 MOST_POPULATED_IN_3_COUNTRIES_QUERY = '''
@@ -293,6 +310,21 @@ while result.value['more']:
     for row in result.value['data']:
         print(row)
 
+# Most 10 populated cities in USA, India and China:
+# ['COUNTRY_NAME', 'CITY_NAME', 'MAX_POP']
+# ----------------------------------------
+# ['India', 'Mumbai (Bombay)', 10500000]
+# ['China', 'Shanghai', 9696300]
+# ['United States', 'New York', 8008278]
+# ['China', 'Peking', 7472000]
+# ['India', 'Delhi', 7206704]
+# ... continue on next page...
+# ['China', 'Chongqing', 6351600]
+# ['China', 'Tianjin', 5286800]
+# ['India', 'Calcutta [Kolkata]', 4399819]
+# ['China', 'Wuhan', 4344600]
+# ['China', 'Harbin', 4289800]
+
 # show city info
 CITY_INFO_QUERY = '''SELECT * FROM City WHERE id = ?'''
 
@@ -311,8 +343,19 @@ for field_name, field_value in zip(
 ):
     print('{}: {}'.format(field_name, field_value))
 
+# City info:
+# ID: 3802
+# NAME: Detroit
+# COUNTRYCODE: USA
+# DISTRICT: Michigan
+# POPULATION: 951270
+
 # clean up
-for table_name in [CITY_TABLE_NAME, LANGUAGE_TABLE_NAME, COUNTRY_TABLE_NAME]:
+for table_name in [
+    CITY_TABLE_NAME,
+    LANGUAGE_TABLE_NAME,
+    COUNTRY_TABLE_NAME,
+]:
     result = sql_fields(
         conn,
         hashcode(SCHEMA_NAME),
@@ -320,3 +363,7 @@ for table_name in [CITY_TABLE_NAME, LANGUAGE_TABLE_NAME, COUNTRY_TABLE_NAME]:
         PAGE_SIZE,
     )
     print('Deleting `{}`: {}'.format(table_name, result.message))
+
+# Deleting `City`: Success
+# Deleting `CountryLanguage`: Success
+# Deleting `Country`: Success
