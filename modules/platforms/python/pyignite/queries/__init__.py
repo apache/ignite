@@ -27,7 +27,9 @@ import attr
 
 from pyignite.connection import Connection
 from pyignite.constants import *
-from pyignite.datatypes import String
+from pyignite.datatypes import (
+    AnyDataObject, Bool, Int, Long, String, StringArray, Struct,
+)
 from .op_codes import *
 
 
@@ -170,3 +172,128 @@ class Response:
             result[name] = c_type.to_python(getattr(ctype_object, name))
 
         return result if result else None
+
+
+@attr.s
+class SQLResponse:
+    """
+    The response class of SQL functions is special in the way the row-column
+    data is counted in it. Basically, Ignite thin client API is following a
+    “counter right before the counted objects” rule in most of its parts.
+    SQL ops are breaking this rule.
+    """
+    include_field_names = attr.ib(type=bool, default=False)
+    has_cursor = attr.ib(type=bool, default=False)
+
+    @staticmethod
+    def build_header():
+        return type(
+            'ResponseHeader',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                    ('query_id', ctypes.c_long),
+                    ('status_code', ctypes.c_int),
+                ],
+            },
+        )
+
+    def fields_or_field_count(self):
+        if self.include_field_names:
+            return 'fields', StringArray
+        return 'field_count', Int
+
+    def parse(self, conn: Connection):
+        header_class = self.build_header()
+        buffer = conn.recv(ctypes.sizeof(header_class))
+        header = header_class.from_buffer_copy(buffer)
+        fields = []
+
+        if header.status_code == OP_SUCCESS:
+            following = [
+                self.fields_or_field_count(),
+                ('row_count', Int),
+            ]
+            if self.has_cursor:
+                following.insert(0, ('cursor', Long))
+            body_struct = Struct(following)
+            body_class, body_buffer = body_struct.parse(conn)
+            body = body_class.from_buffer_copy(body_buffer)
+
+            if self.include_field_names:
+                field_count = body.fields.length
+            else:
+                field_count = body.field_count
+
+            data_fields = []
+            data_buffer = b''
+            for i in range(body.row_count):
+                row_fields = []
+                row_buffer = b''
+                for j in range(field_count):
+                    field_class, field_buffer = AnyDataObject.parse(conn)
+                    row_fields.append(('column_{}'.format(j), field_class))
+                    row_buffer += field_buffer
+
+                row_class = type(
+                    'SQLResponseRow',
+                    (ctypes.LittleEndianStructure,),
+                    {
+                        '_pack_': 1,
+                        '_fields_': row_fields,
+                    }
+                )
+                data_fields.append(('row_{}'.format(i), row_class))
+                data_buffer += row_buffer
+
+            data_class = type(
+                'SQLResponseData',
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': data_fields,
+                }
+            )
+            fields += body_class._fields_ + [
+                ('data', data_class),
+                ('more', ctypes.c_bool),
+            ]
+            buffer += body_buffer + data_buffer
+        else:
+            c_type, buffer_fragment = String.parse(conn)
+            buffer += buffer_fragment
+            fields.append(('error_message', c_type))
+
+        final_class = type(
+            'SQLResponse',
+            (header_class,),
+            {
+                '_pack_': 1,
+                '_fields_': fields,
+            }
+        )
+        buffer += conn.recv(ctypes.sizeof(final_class) - len(buffer))
+        return final_class, buffer
+
+    def to_python(self, ctype_object):
+        if ctype_object.status_code == 0:
+            result = {
+                'more': Bool.to_python(ctype_object.more),
+                'data': [],
+            }
+            if hasattr(ctype_object, 'fields'):
+                result['fields'] = StringArray.to_python(ctype_object.fields)
+            if hasattr(ctype_object, 'cursor'):
+                result['cursor'] = Long.to_python(ctype_object.cursor)
+            for row_item in ctype_object.data._fields_:
+                row_name = row_item[0]
+                row_object = getattr(ctype_object.data, row_name)
+                row = []
+                for col_item in row_object._fields_:
+                    col_name = col_item[0]
+                    col_object = getattr(row_object, col_name)
+                    row.append(AnyDataObject.to_python(col_object))
+                result['data'].append(row)
+            return result

@@ -39,7 +39,7 @@ def test_sql(conn):
     insert_query = '''INSERT INTO Student(id, first_name, last_name, grade)
     VALUES (?, ?, ?, ?)'''
 
-    select_query = 'SELECT (id, first_name, last_name, grade) FROM Student'
+    select_query = 'SELECT id, first_name, last_name, grade FROM Student'
 
     drop_query = 'DROP TABLE Student'
 
@@ -52,7 +52,7 @@ def test_sql(conn):
         page_size,
         include_field_names=True
     )
-    assert result.status == 0
+    assert result.status == 0, result.message
 
     for i, data_line in enumerate(initial_data, start=1):
         fname, lname, grade = data_line
@@ -64,7 +64,7 @@ def test_sql(conn):
             query_args=[i, fname, lname, grade],
             include_field_names=True
         )
-        assert result.status == 0
+        assert result.status == 0, result.message
 
     result = sql_fields(
         conn,
@@ -79,7 +79,7 @@ def test_sql(conn):
 
     cursor = result.value['cursor']
 
-    result = sql_fields_cursor_get_page(conn, cursor)
+    result = sql_fields_cursor_get_page(conn, cursor, field_count=4)
     assert result.status == 0
     assert len(result.value['data']) == len(initial_data) - page_size
     assert result.value['more'] is False
