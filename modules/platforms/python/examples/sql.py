@@ -19,10 +19,9 @@ from pyignite.api import (
     hashcode, cache_get_or_create, sql_fields, sql_fields_cursor_get_page,
 )
 from pyignite.connection import Connection
-from pyignite.datatypes import IntObject, ShortObject
 
 
-PAGE_SIZE = 10
+PAGE_SIZE = 5
 
 SCHEMA_NAME = 'PUBLIC'
 
@@ -212,41 +211,37 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    result = sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
-    print(result.status, result.message, result.value)
+    sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
 
 # load data
 for row in COUNTRY_DATA:
-    result = sql_fields(
+    sql_fields(
         conn,
         hashcode(SCHEMA_NAME),
         COUNTRY_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
     )
-print(result.status, result.message, result.value)
 
 for row in CITY_DATA:
-    result = sql_fields(
+    sql_fields(
         conn,
         hashcode(SCHEMA_NAME),
         CITY_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
     )
-print(result.status, result.message, result.value)
 
 for row in LANGUAGE_DATA:
-    result = sql_fields(
+    sql_fields(
         conn,
         hashcode(SCHEMA_NAME),
         LANGUAGE_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
     )
-print(result.status, result.message, result.value)
 
-# 10 most populated cities
+# 10 most populated cities (with pagination)
 MOST_POPULATED_QUERY = '''
 SELECT name, population FROM City ORDER BY population DESC LIMIT 10'''
 
@@ -258,14 +253,23 @@ result = sql_fields(
 )
 print('Most 10 populated cities:')
 for row in result.value['data']:
-    print(row[1])
+    print(row)
 
-# 10 most populated cities in 3 countries
+cursor = result.value['cursor']
+field_count = result.value['field_count']
+while result.value['more']:
+    print('... continue on next page...')
+    result = sql_fields_cursor_get_page(conn, cursor, field_count)
+    for row in result.value['data']:
+        print(row)
+
+
+# 10 most populated cities in 3 countries (with pagination and header row)
 MOST_POPULATED_IN_3_COUNTRIES_QUERY = '''
-SELECT country.name, city.name, MAX(city.population) AS max_pop FROM country
+SELECT country.name as country_name, city.name as city_name, MAX(city.population) AS max_pop FROM country
     JOIN city ON city.countrycode = country.code
     WHERE country.code IN ('USA','IND','CHN')
-    GROUP BY country.name, city.name ORDER BY max_pop DESC LIMIT 3
+    GROUP BY country.name, city.name ORDER BY max_pop DESC LIMIT 10
 '''
 
 result = sql_fields(
@@ -273,8 +277,46 @@ result = sql_fields(
     hashcode(SCHEMA_NAME),
     MOST_POPULATED_IN_3_COUNTRIES_QUERY,
     PAGE_SIZE,
+    include_field_names=True,
 )
 print('Most 10 populated cities in USA, India and China:')
-print(result.message)
+print(result.value['fields'])
+print('----------------------------------------')
 for row in result.value['data']:
     print(row)
+
+cursor = result.value['cursor']
+field_count = len(result.value['fields'])
+while result.value['more']:
+    print('... continue on next page...')
+    result = sql_fields_cursor_get_page(conn, cursor, field_count)
+    for row in result.value['data']:
+        print(row)
+
+# show city info
+CITY_INFO_QUERY = '''SELECT * FROM City WHERE id = ?'''
+
+result = sql_fields(
+    conn,
+    hashcode(SCHEMA_NAME),
+    CITY_INFO_QUERY,
+    PAGE_SIZE,
+    query_args=[3802],
+    include_field_names=True,
+)
+print('City info:')
+for field_name, field_value in zip(
+    result.value['fields'],
+    result.value['data'][0],
+):
+    print('{}: {}'.format(field_name, field_value))
+
+# clean up
+for table_name in [CITY_TABLE_NAME, LANGUAGE_TABLE_NAME, COUNTRY_TABLE_NAME]:
+    result = sql_fields(
+        conn,
+        hashcode(SCHEMA_NAME),
+        DROP_TABLE_QUERY.format(table_name),
+        PAGE_SIZE,
+    )
+    print('Deleting `{}`: {}'.format(table_name, result.message))

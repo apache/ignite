@@ -285,6 +285,8 @@ class SQLResponse:
             }
             if hasattr(ctype_object, 'fields'):
                 result['fields'] = StringArray.to_python(ctype_object.fields)
+            else:
+                result['field_count'] = Int.to_python(ctype_object.field_count)
             if hasattr(ctype_object, 'cursor'):
                 result['cursor'] = Long.to_python(ctype_object.cursor)
             for row_item in ctype_object.data._fields_:
