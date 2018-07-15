@@ -33,6 +33,14 @@ if [ ! -z "$EXTERNAL_LIBS" ]; then
   done
 fi
 
+# form a consistent ID from the ECS host's name and the cluster name
+if [ -z "$IGNITE_CONSISTENT_ID" ]; then
+    if [ ! -z "$IGNITE_CLUSTER_NAME" ]  && [ ! -z "$IGNITE_PERSISTENT_STORE" ]  &&  [ -f "$IGNITE_PERSISTENT_STORE/hostname" ]; then
+        HOST_NAME=`cat $IGNITE_PERSISTENT_STORE/hostname`
+        export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-${HOST_NAME}
+    fi
+fi
+
 QUIET=""
 
 if [ "$IGNITE_QUIET" = "false" ]; then
