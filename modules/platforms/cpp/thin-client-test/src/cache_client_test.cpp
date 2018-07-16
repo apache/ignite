@@ -742,8 +742,6 @@ BOOST_AUTO_TEST_CASE(CacheClientClear)
 
 BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCache)
 {
-    boost::this_thread::sleep_for(boost::chrono::seconds(2));
-
     IgniteClientConfiguration cfg;
     cfg.SetEndPoints("127.0.0.1:11110..11120");
 
