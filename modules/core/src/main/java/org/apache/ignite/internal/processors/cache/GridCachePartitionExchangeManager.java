@@ -493,6 +493,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchangeFuture(msg.exchangeId(), null, null, null, null)
                         .onAffinityChangeMessage(evt.eventNode(), msg);
             }
+            else if (customMsg instanceof DynamicCacheChangeFailureMessage) {
+                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage) customMsg;
+
+                if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                    affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                    exchangeFuture(msg.exchangeId(), null, null, null, null)
+                        .onDynamicCacheChangeFail(evt.eventNode(), msg);
+            }
             else if (customMsg instanceof SnapshotDiscoveryMessage
                 && ((SnapshotDiscoveryMessage) customMsg).needExchange()) {
                 exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);

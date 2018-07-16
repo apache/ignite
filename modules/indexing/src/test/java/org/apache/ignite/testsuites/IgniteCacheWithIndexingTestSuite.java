@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQuery
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.CacheQueryAfterDynamicCacheStartFailureTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
@@ -77,6 +78,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheQueryFilterExpiredTest.class);
 
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+
+        suite.addTestSuite(CacheQueryAfterDynamicCacheStartFailureTest.class);
 
         suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
 
