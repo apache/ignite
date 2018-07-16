@@ -196,6 +196,9 @@ public final class IgniteNodeAttributes {
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
+
     /**
      * Enforces singleton.
      */
