@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import junit.framework.TestCase;
 import org.apache.ignite.internal.processors.query.h2.ObjectPool.Reusable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     private static class Obj implements AutoCloseable {

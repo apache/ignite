@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.function.Supplier;
 
 /**
