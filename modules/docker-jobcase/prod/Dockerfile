@@ -63,7 +63,7 @@ ENV IGNITE_QUIET false
 ENV CONFIG_URI ${JOBCASE_CONFIG}/multicast.discovery.node.config.xml
 
 # root directory where Ignite will persist data, indexes and so on
-ENV IGNITE_PERSISTANT_STORE ${JOBCASE_HOME}/data
+ENV IGNITE_PERSISTENT_STORE ${JOBCASE_HOME}/data
 
 # ip dicovery volume for Shared File System Based Discovery
 ENV IGNITE_DISCOVERY_FS ${JOBCASE_HOME}/discovery
@@ -90,6 +90,7 @@ ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,addres
 
 # Ignite JVM settings
 ENV JVM_OPTS="-ea -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE} -server -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE} -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
+
 
 # Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
 RUN apt-get update && apt-get install -y --no-install-recommends \

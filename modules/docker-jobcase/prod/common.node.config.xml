@@ -24,7 +24,7 @@
   It is abstract and cannot be directly used as Ignite configuration file.
   
   The file (Spring application) makes use of environment variable expansion.
-  It is using Spring EL syntax like #{systemEnvironment['IGNITE_PERSISTANT_STORE']}.
+  It is using Spring EL syntax like #{systemEnvironment['IGNITE_PERSISTENT_STORE']}.
   
   The list of referenced environment variables is defined in the Dockerfile.
   When changing environment variable names the Dockerfile and grid configuration file need to be in-sync.
@@ -37,6 +37,7 @@
        http://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/util
        http://www.springframework.org/schema/util/spring-util.xsd">
+
 
    <bean abstract="true" id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading, default is false. -->
@@ -88,17 +89,17 @@
                                 
                 <!-- Path to the root directory where the Persistent Store will persist data and indexes.                      
                   -->
-                <property name="storagePath" value="#{systemEnvironment['IGNITE_PERSISTANT_STORE']}"/>
+                <property name="storagePath" value="#{systemEnvironment['IGNITE_PERSISTENT_STORE']}"/>
                 
                 <!-- <property name="storagePath" value="/opt/jobcase/db"/>  -->
                 
                 <!-- Sets a path to the directory where WAL is stored. -->                
-                <property name="walPath" value="#{systemEnvironment['IGNITE_PERSISTANT_STORE']}/wal"/>
+                <property name="walPath" value="#{systemEnvironment['IGNITE_PERSISTENT_STORE']}/wal"/>
                 
                 <!-- Sets a path for the WAL archive directory. 
                      Every WAL segment will be fully copied to this directory 
                      before it can be reused for WAL purposes. -->                
-                <property name="walArchivePath" value="#{systemEnvironment['IGNITE_PERSISTANT_STORE']}/wal/archive"/>
+                <property name="walArchivePath" value="#{systemEnvironment['IGNITE_PERSISTENT_STORE']}/wal/archive"/>
             </bean>
        </property>
        

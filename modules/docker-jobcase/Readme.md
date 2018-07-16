@@ -231,13 +231,13 @@ ENV JOBCASE_CONFIG ${JOBCASE_HOME}/config
 ENV JOBCASE_LOGS ${JOBCASE_HOME}/logs
 
 # root directory where Ignite will persist data, indexes and so on
-ENV IGNITE_PERSISTANT_STORE ${JOBCASE_HOME}/db
+ENV IGNITE_PERSISTENT_STORE ${JOBCASE_HOME}/db
 
 # ip dicovery volume
 ENV IGNITE_DISCOVERY /opt/jobcase/discovery
 ~~~~
 
-If running the container locally on a development/test machine the log-, persistant- and discovery volumes should be mapped. E. g.
+If running the container locally on a development/test machine the log-, persistent- and discovery volumes should be mapped. E. g.
 
 ~~~~
 sudo docker run -it
