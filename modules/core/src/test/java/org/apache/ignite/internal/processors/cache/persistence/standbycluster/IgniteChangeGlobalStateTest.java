@@ -73,6 +73,8 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
      * @throws Exception if fail.
      */
     public void testStopPrimaryAndActivateFromClientNode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9004");
+
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);
@@ -486,6 +488,8 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
      * @throws Exception If failed.
      */
     public void testFailGetLock() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9004");
+
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);
