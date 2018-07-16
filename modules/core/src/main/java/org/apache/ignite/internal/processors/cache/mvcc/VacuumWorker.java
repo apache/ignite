@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,6 +75,17 @@ public class VacuumWorker extends GridWorker {
             VacuumTask task = cleanupQueue.take();
 
             try {
+                if (task.part().state() != OWNING) {
+                    task.part().group().preloader().rebalanceFuture()
+                        .listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> future) {
+                            cleanupQueue.add(task);
+                        }
+                    });
+
+                    continue;
+                }
+
                 task.onDone(processPartition(task));
             }
             catch (IgniteInterruptedCheckedException e) {

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseList
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -1923,6 +1924,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 info.version(),
                                 cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
                                 cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
+                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccTxState() : TxState.NA,
+                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccTxState() : TxState.NA,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,

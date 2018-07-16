@@ -36,10 +36,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -47,7 +50,12 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -61,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -177,6 +186,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
     /** There are keys belonging to backup partitions on near node. */
     protected boolean hasNearNodeUpdates;
+
+    /** Moving partitions. */
+    private Map<Integer, Boolean> movingParts;
 
     /**
      *  @param nearNodeId Near node ID.
@@ -381,7 +393,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         cctx.localNodeId(),
                                         topVer,
                                         null,
-                                        mvccSnapshot);
+                                        mvccSnapshot,
+                                        isMoving(key.partition()));
 
                                     break;
 
@@ -395,7 +408,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        op);
+                                        op,
+                                        isMoving(key.partition()));
 
                                     break;
 
@@ -560,7 +574,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         cnt++;
 
         if (op != READ)
-            addToBatch(entry.key(), val);
+            addToBatch(entry.key(), val, updRes.mvccHistory());
     }
 
     /**
@@ -569,17 +583,25 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      *
      * @param key Key.
      * @param val Value.
+     * @param hist History rows.
      */
-    private void addToBatch(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist)
+        throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
         if (F.isEmpty(backups))
             return;
 
+        CacheEntryInfoCollection hist0 = null;
+
+        int part = cctx.affinity().partition(key);
+
         for (ClusterNode node : backups) {
             assert !node.isLocal();
 
-            if (skipNearNodeUpdates && node.id().equals(nearNodeId)) {
+            boolean moving = isMoving(node, part);
+
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !moving) {
                 updateMappings(node);
 
                 if (newRemoteTx(node))
@@ -600,7 +622,13 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             if (batch == null)
                 batches.put(node.id(), batch = new Batch(node));
 
-            batch.add(key, val);
+            if (moving && hist0 == null) {
+                assert !F.isEmpty(hist);
+
+                hist0 = fetchHistoryInfo(key, hist);
+            }
+
+            batch.add(key, moving ? hist0 : val);
 
             if (batch.size() == BATCH_SIZE) {
                 assert batches != null;
@@ -610,6 +638,54 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 sendBatch(batch);
             }
         }
+    }
+
+    /**
+     *
+     * @param key Key.
+     * @param hist History rows.
+     * @return History entries.
+     * @throws IgniteCheckedException, if failed.
+     */
+    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
+        throws IgniteCheckedException {
+        List<GridCacheEntryInfo> res = new ArrayList<>();
+
+        for (int i = 0; i < hist.size(); i++) {
+            MvccLinkAwareSearchRow row0 = hist.get(i);
+
+            MvccDataRow row = new MvccDataRow(cctx.group(),
+                row0.hash(),
+                row0.link(),
+                key.partition(),
+                CacheDataRowAdapter.RowData.NO_KEY,
+                row0.mvccCoordinatorVersion(),
+                row0.mvccCounter(),
+                row0.mvccOperationCounter());
+
+            GridCacheMvccEntryInfo entry = new GridCacheMvccEntryInfo();
+
+            entry.version(row.version());
+            entry.mvccVersion(row);
+            entry.newMvccVersion(row);
+            entry.value(row.value());
+            entry.expireTime(row.expireTime());
+
+            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
+                entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
+                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
+            }
+
+            if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
+                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                    row.newMvccOperationCounter()));
+            }
+
+            res.add(entry);
+        }
+
+        return new CacheEntryInfoCollection(res);
     }
 
     /** */
@@ -632,7 +708,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         // Check possibility of adding to batch and sending.
         for (ClusterNode node : backupNodes(key)) {
-            if (skipNearNodeUpdates && node.id().equals(nearNodeId))
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !isMoving(node, key.partition()))
                 continue;
 
             Batch batch = batches.get(node.id());
@@ -778,6 +854,46 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         }
     }
 
+    /**
+     * @param part Partition.
+     * @return {@code true} if the given partition is rebalancing to any backup node.
+     */
+    private boolean isMoving(int part) {
+        if (movingParts == null)
+            movingParts = new HashMap<>();
+
+        Boolean res = movingParts.get(part);
+
+        if (res != null)
+            return res;
+
+        List<ClusterNode> dhtNodes = cctx.affinity().nodesByPartition(part, tx.topologyVersion());
+
+        for (int i = 1; i < dhtNodes.size(); i++) {
+            ClusterNode node = dhtNodes.get(i);
+            if (isMoving(node, part)) {
+                movingParts.put(part, Boolean.TRUE);
+
+                return true;
+            }
+        }
+
+        movingParts.put(part, Boolean.FALSE);
+
+        return false;
+    }
+
+    /**
+     * @param node Cluster node.
+     * @param part Partition.
+     * @return {@code true} if the given partition is rebalancing to the given node.
+     */
+    private boolean isMoving(ClusterNode node, int part) {
+        GridDhtPartitionState partState = cctx.topology().partitionState(node.id(), part);
+
+        return partState != GridDhtPartitionState.OWNING && partState != GridDhtPartitionState.EVICTED;
+    }
+
     /** */
     private void checkCompleted() throws IgniteCheckedException {
         if (isDone())
@@ -903,8 +1019,11 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         /** */
         private List<KeyCacheObject> keys;
 
-        /** */
-        private List<CacheObject> vals;
+        /**
+         * Values collection.
+         * Items can be either {@link CacheObject} or preload entries collection {@link CacheEntryInfoCollection}.
+         */
+        private List<Message> vals;
 
         /**
          * @param node Cluster node.
@@ -924,9 +1043,11 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          * Adds a row to batch.
          *
          * @param key Key.
-         * @param val Value.
+         * @param val Value or preload entries collection.
          */
-        public void add(KeyCacheObject key, CacheObject val) {
+        public void add(KeyCacheObject key, Message val) {
+            assert val == null || val instanceof CacheObject || val instanceof CacheEntryInfoCollection;
+
             if (keys == null)
                 keys = new ArrayList<>();
 
@@ -938,6 +1059,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
                 vals.add(val);
             }
+
+            assert (vals == null) || keys.size() == vals.size();
         }
 
         /**
@@ -948,16 +1071,16 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         }
 
         /**
-         * @return Collection of rows.
+         * @return Collection of row keys.
          */
         public List<KeyCacheObject> keys() {
             return keys;
         }
 
         /**
-         * @return Collection of rows.
+         * @return Collection of row values.
          */
-        public List<CacheObject> values() {
+        public List<Message> values() {
             return vals;
         }
     }

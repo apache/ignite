@@ -140,7 +140,6 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -3550,8 +3549,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             entry.initialValue(cacheVal,
                 ver,
-                null,
-                null,
                 ttl,
                 CU.EXPIRE_TIME_CALCULATE,
                 false,

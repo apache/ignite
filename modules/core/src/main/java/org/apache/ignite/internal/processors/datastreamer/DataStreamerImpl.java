@@ -2204,13 +2204,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                        MvccSnapshot mvccSnapshot = e.getValue() == null ?
-                            ISOLATED_STREAMER_MVCC_SNAPSHOT_RMV : ISOLATED_STREAMER_MVCC_SNAPSHOT;
-
                         entry.initialValue(e.getValue(),
                             ver,
-                            mvccSnapshot,
-                            null,
                             ttl,
                             expiryTime,
                             false,

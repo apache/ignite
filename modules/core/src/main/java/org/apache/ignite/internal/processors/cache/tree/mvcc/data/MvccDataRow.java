@@ -229,6 +229,20 @@ public class MvccDataRow extends DataRow {
         mvccTxState = TxState.NA;
     }
 
+    /**
+     * @param mvccTxState Mvcc version Tx state hint.
+     */
+    public void mvccTxState(byte mvccTxState) {
+        this.mvccTxState = mvccTxState;
+    }
+
+    /**
+     * @param newMvccTxState New Mvcc version Tx state hint.
+     */
+    public void newMvccTxState(byte newMvccTxState) {
+        this.newMvccTxState = newMvccTxState;
+    }
+
     /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
         return super.size() + MVCC_INFO_SIZE;

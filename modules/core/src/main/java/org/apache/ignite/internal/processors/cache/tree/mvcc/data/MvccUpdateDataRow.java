@@ -66,6 +66,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** */
     private static final int REMOVE_OR_LOCK = PRIMARY << 1;
     /** */
+    private static final int NEED_HISTORY = REMOVE_OR_LOCK << 1;
+    /** */
     private static final int BACKUP_FLAGS_SET = FIRST;
     /** */
     private static final int PRIMARY_FLAGS_SET = FIRST | CHECK_VERSION | PRIMARY | CAN_WRITE;
@@ -98,6 +100,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     @GridToStringExclude
     private long resCntr;
 
+    /** */
+    private List<MvccLinkAwareSearchRow> historyRows;
+
     /**
      * @param key Key.
      * @param val Value.
@@ -108,6 +113,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      * @param part Partition.
      * @param primary Primary node flag.
      * @param lockOnly Whether no actual update should be done and the only thing to do is to acquire lock.
+     * @param needHistory Whether to collect rows created or affected by the current tx.
      * @param cctx Cache context.
      */
     public MvccUpdateDataRow(
@@ -120,6 +126,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         int part,
         boolean primary,
         boolean lockOnly,
+        boolean needHistory,
         GridCacheContext cctx) {
         super(key,
             val,
@@ -139,6 +146,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         if (primary && (lockOnly || val == null))
             setFlags(REMOVE_OR_LOCK);
+
+        if (needHistory)
+            setFlags(NEED_HISTORY);
     }
 
     /** {@inheritDoc} */
@@ -323,13 +333,24 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             if (cleanupRows == null)
                 cleanupRows = new ArrayList<>();
 
-            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr, rowLink));
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_HINTS_MASK, rowLink));
         }
-        else if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
-            && !isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)
-            && (rowCrd < mvccCrd || Long.compare(cleanupVer, rowCntr) >= 0))
+        else {
+            // Row obsoleted by current operation, all rows created or updated with current tx.
+            if (isFlagsSet(NEED_HISTORY) && (row == oldRow || (rowCrd == mvccCrd && rowCntr == mvccCntr) ||
+                (rowNewCrd == mvccCrd && rowNewCntr == mvccCntr))) {
+                if (historyRows == null)
+                    historyRows = new ArrayList<>();
+
+                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_HINTS_MASK, rowLink));
+            }
+
+            if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
+                && !isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)
+                && (rowCrd < mvccCrd || Long.compare(cleanupVer, rowCntr) >= 0))
                 // all further versions are guaranteed to be less than cleanup version
                 setFlags(CAN_CLEANUP);
+        }
 
         return unsetFlags(FIRST);
     }
@@ -382,6 +403,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                 throw new IllegalStateException("Unexpected result type: " + resultType());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<MvccLinkAwareSearchRow> history() {
+        if (isFlagsSet(NEED_HISTORY) && historyRows == null)
+            historyRows = new ArrayList<>();
+
+        return historyRows;
     }
 
     /** */

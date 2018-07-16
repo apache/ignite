@@ -30,9 +30,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -52,8 +50,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -311,7 +309,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param dhtVer Dht version assigned at primary node.
      * @param dhtFutId Dht future id assigned at primary node.
      */
-    private void processBatchLocalBackupKeys(UUID primaryId, Collection<Object> rows, GridCacheVersion dhtVer,
+    private void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
         IgniteUuid dhtFutId) {
         assert dhtVer != null;
         assert dhtFutId != null;
@@ -321,74 +319,17 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         assert op != READ;
 
         final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
-        final ArrayList<CacheObject> vals = (op == DELETE) ? null :
-            new ArrayList<>(rows.size());
+        final ArrayList<Message> vals = op != DELETE ? new ArrayList<>(rows.size()) : null;
 
         for (Object row : rows) {
-            KeyCacheObject key;
-
             if (op == DELETE)
-                key = cctx.toCacheKeyObject(row);
-            else
-                key = cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey());
-
-            keys.add(key);
-
-            if (vals != null)
+                keys.add(cctx.toCacheKeyObject(row));
+            else {
+                keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
                 vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
-        }
-
-        IgniteInternalFuture<Object> keyFut = F.isEmpty(keys) ? null :
-            cctx.group().preloader().request(cctx, keys, topVer);
-
-        if (keyFut == null || keyFut.isDone()) {
-            if (keyFut != null) {
-                try {
-                    keyFut.get();
-                }
-                catch (NodeStoppingException ignored) {
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-
-                    return;
-                }
             }
-
-            processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
         }
-        else {
-            keyFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> fut) {
-                    try {
-                        fut.get();
-                    }
-                    catch (NodeStoppingException ignored) {
-                        return;
-                    }
-                    catch (IgniteCheckedException e) {
-                        onDone(e);
 
-                        return;
-                    }
-
-                    processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
-                }
-            });
-        }
-    }
-
-    /**
-     *
-     * @param primaryId Primary node id.
-     * @param keys Keys.
-     * @param vals Values.
-     * @param dhtVer Dht version.
-     * @param dhtFutId Dht future id.
-     */
-    private void processBatchLocalBackupKeys0(UUID primaryId, List<KeyCacheObject> keys, List<CacheObject> vals,
-        GridCacheVersion dhtVer, IgniteUuid dhtFutId) {
         try {
             GridDhtTxRemote dhtTx = cctx.tm().tx(dhtVer);
 
@@ -564,7 +505,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
             Batch batch = batches.get(nodeId);
 
-            if (batch != null && !F.isEmpty(batch.localBackupRows()))
+            if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
                 processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
             else
                 sendNextBatches(nodeId);
@@ -705,7 +646,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         /**
          * @return Collection of local backup rows.
          */
-        public Collection<Object> localBackupRows() {
+        public List<Object> localBackupRows() {
             return locBkpRows;
         }
 

@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -29,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -85,6 +85,8 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
      * @param nearXidVer Near xid version.
      * @param op Operation.
      * @param batchId Batch id.
+     * @param keys Keys.
+     * @param vals Values.
      */
     GridDhtTxQueryFirstEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
@@ -99,7 +101,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         GridCacheOperation op,
         int batchId,
         List<KeyCacheObject> keys,
-        List<CacheObject> vals) {
+        List<Message> vals) {
         super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
         this.cacheId = cacheId;
         this.subjId = subjId;

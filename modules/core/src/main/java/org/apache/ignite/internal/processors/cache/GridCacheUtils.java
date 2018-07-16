@@ -1806,8 +1806,6 @@ public class GridCacheUtils {
                         entry.initialValue(
                             val,
                             ver,
-                            null,
-                            null,
                             expiryPlc == null ? 0 : expiryPlc.forCreate(),
                             expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
                             true,

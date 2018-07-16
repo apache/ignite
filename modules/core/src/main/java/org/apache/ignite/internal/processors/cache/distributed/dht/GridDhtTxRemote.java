@@ -29,13 +29,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -388,7 +389,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
-        List<CacheObject> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+        List<Message> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
 
         WALPointer ptr = null;
 
@@ -409,8 +410,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             try {
                 CacheObject val = null;
 
-                if (op != DELETE)
-                    val = vals.get(i);
+                Message val0 = vals != null ? vals.get(i) : null;
+
+                CacheEntryInfoCollection entries =
+                    val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
+
+                if (entries == null && op != DELETE)
+                    val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
 
                 GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
 
@@ -420,34 +426,47 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                     ctx.shared().database().checkpointReadLock();
 
                     try {
-                        switch (op) {
-                            case DELETE:
-                                updRes = entry.mvccRemove(this,
-                                    ctx.localNodeId(),
-                                    topologyVersion(),
-                                    null,
-                                    snapshot);
+                        if (entries == null) {
+                            switch (op) {
+                                case DELETE:
+                                    updRes = entry.mvccRemove(this,
+                                        ctx.localNodeId(),
+                                        topologyVersion(),
+                                        null,
+                                        snapshot,
+                                        false);
 
-                                break;
+                                    break;
 
-                            case CREATE:
-                            case UPDATE:
-                                updRes = entry.mvccSet(this,
-                                    ctx.localNodeId(),
-                                    val,
-                                    0,
-                                    topologyVersion(),
-                                    null,
-                                    snapshot,
-                                    op);
+                                case CREATE:
+                                case UPDATE:
+                                    updRes = entry.mvccSet(this,
+                                        ctx.localNodeId(),
+                                        val,
+                                        0,
+                                        topologyVersion(),
+                                        null,
+                                        snapshot,
+                                        op,
+                                        false);
 
-                                break;
+                                    break;
 
-                            default:
-                                throw new IgniteSQLException("Cannot acquire lock for operation [op= "
-                                    + op + "]" + "Operation is unsupported at the moment ",
-                                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                                default:
+                                    throw new IgniteSQLException("Cannot acquire lock for operation [op= "
+                                        + op + "]" + "Operation is unsupported at the moment ",
+                                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                             }
+                        }
+                        else {
+                            updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
+                                ctx.localNodeId(),
+                                topologyVersion(),
+                                null,
+                                entries.infos(),
+                                op,
+                                snapshot);
+                        }
 
                         break;
                     }
