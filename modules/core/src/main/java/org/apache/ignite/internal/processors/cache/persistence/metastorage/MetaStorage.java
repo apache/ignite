@@ -321,7 +321,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 long pageAddr = pageMem.readLock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
 
                 try {
-                    if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                    int type = PageIO.getType(pageAddr);
+                    log.info("Read only PageMemType : " + type + ", pageAddress = " + pageAddr);
+                    if (type != PageIO.T_PART_META) {
                         empty = true;
 
                         return;
@@ -350,7 +352,10 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 try {
                     long treeRoot, reuseListRoot;
 
-                    if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                    int type = PageIO.getType(pageAddr);
+                    log.info("PageMemType : " + type + ", pageAddress = " + pageAddr);
+                    if (type != PageIO.T_PART_META) {
+                        log.info("T PART mETA != : " + type);
                         // Initialize new page.
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
