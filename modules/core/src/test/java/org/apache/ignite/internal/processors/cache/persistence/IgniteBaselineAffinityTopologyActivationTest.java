@@ -397,6 +397,10 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
     /**
      *
+     * Test verifies that restart node from baseline when PME and BLT change processes
+     * are taking place in the cluster simultaneously doesn't lead to shut down of alive cluster nodes.
+     *
+     * @throws Exception If failed.
      */
     public void testNodeJoinsDuringPartitionMapExchange() throws Exception {
         startGridWithConsistentId("A");
@@ -467,6 +471,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         checkBaselineTopologyOnNode(grid("D"), 1, 1, 1, expActivationHash);
     }
 
+    /**
+     * @param ig Ignite.
+     * @param expBltId Expected BaselineTopology ID.
+     * @param expBltHistSize Expected Baseline history size.
+     * @param expBranchingHistSize Expected branching history size.
+     * @param expActivationHash Expected activation hash.
+     */
     private void checkBaselineTopologyOnNode(
         Ignite ig,
         int expBltId,
@@ -484,6 +495,59 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         assertEquals(expBranchingHistSize, histItem.branchingHistory().size());
         assertEquals(expActivationHash, (long)histItem.branchingHistory().get(0));
+    }
+
+    /**
+     * Test verifies that node with set up BaselineTopology is not allowed to join the cluster
+     * in the process of on-going first activation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNodeWithBltIsNotAllowedToJoinClusterDuringFirstActivation() throws Exception {
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.cluster().active(true);
+
+        stopGrid("C", false);
+
+        Ignite nodeA = startGridWithConsistentId("A");
+        Ignite nodeB = startGridWithConsistentId("B");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        SingleMessageInterceptorCommunicationSpi commSpi = (SingleMessageInterceptorCommunicationSpi) nodeB
+            .configuration().getCommunicationSpi();
+
+        commSpi.blockMsgsWithLatch(latch);
+
+        GridTestUtils.runAsync(
+            () -> {
+                try {
+                    nodeA.cluster().active(true);
+                }
+                catch (Exception e) {
+                    log.warning("Exception during activation", e);
+                }
+            });
+
+        try {
+            startGridWithConsistentId("C");
+        }
+        catch (Exception e) {
+            Throwable cause = e.getCause();
+
+            while (!(cause instanceof IgniteSpiException))
+                cause = cause.getCause();
+
+            assertNotNull(cause);
+
+            String msg = cause.getMessage();
+            assertNotNull(msg);
+            assertTrue(msg.startsWith("Node with set up BaselineTopology is not allowed " +
+                "to join cluster in the process of first activation:"));
+        }
+
+        latch.countDown();
     }
 
     /**
