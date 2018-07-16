@@ -377,7 +377,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 final String coveredMatcherGrp = coveredMatcher.group(1);
 
                 final long[] covered = coveredMatcherGrp.length() > 0 ?
-                    Arrays.stream(coveredMatcherGrp.split(",")).mapToLong(e -> Integer.valueOf(e.trim())).toArray() :
+                    Arrays.stream(coveredMatcherGrp.split(" - ")).mapToLong(e -> Integer.valueOf(e.trim())).toArray() :
                     new long[0];
 
                 assertEquals(nextCovered, covered[0]);

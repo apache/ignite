@@ -3211,7 +3211,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                     if (printCheckpointStats) {
-                        if (log.isInfoEnabled())
+                        if (log.isInfoEnabled()) {
+                            String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
+
                             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
                                     "walSegmentsCleared=%d, walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
@@ -3219,11 +3221,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 chp.pagesSize,
                                 chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
                                 chp.walFilesDeleted,
-                                chp.walSegmentsCovered,
+                                walSegsCoveredMsg,
                                 tracker.markDuration(),
                                 tracker.pagesWriteDuration(),
                                 tracker.fsyncDuration(),
                                 tracker.totalDuration()));
+                        }
                     }
 
                     persStoreMetrics.onCheckpoint(
@@ -3252,6 +3255,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // TODO-ignite-db how to handle exception?
                 U.error(log, "Failed to create checkpoint.", e);
             }
+        }
+
+        /** */
+        private String prepareWalSegsCoveredMsg(IgniteBiTuple<Long, Long> walRange) {
+            String res;
+
+            long startIdx = walRange.get1();
+            long endIdx = walRange.get2();
+
+            if (endIdx < 0 || endIdx < startIdx)
+                res = "[]";
+            else if (endIdx == startIdx)
+                res = "[" + endIdx + "]";
+            else
+                res = "[" + startIdx + " - " + endIdx + "]";
+
+            return res;
         }
 
         /**
@@ -3933,7 +3953,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private int walFilesDeleted;
 
         /** WAL segments fully covered by this checkpoint. */
-        private List<Long> walSegmentsCovered;
+        private IgniteBiTuple<Long, Long> walSegsCoveredRange;
 
         /** */
         private final int pagesSize;
@@ -3970,10 +3990,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param walSegmentsCovered WAL segments fully covered by this checkpoint.
+         * @param walSegsCoveredRange WAL segments fully covered by this checkpoint.
          */
-        public void walSegmentsCovered(final List<Long> walSegmentsCovered) {
-            this.walSegmentsCovered = walSegmentsCovered;
+        public void walSegsCoveredRange(final IgniteBiTuple<Long, Long> walSegsCoveredRange) {
+            this.walSegsCoveredRange = walSegsCoveredRange;
         }
     }
 
