@@ -32,9 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * baseline topology.
  * <p>
  * This object also captures a transitional cluster state, when one or more fields are changing. In this case,
- * a {@code transitionReqId} field is set to a non-null value and {@code prevState} captures previous cluster state.
+ * a {@code transitionReqId} field is set to a non-null value and {@code previousBaselineTopology} captures previous cluster state.
  * A joining node catching the cluster in an intermediate state will observe {@code transitionReqId} field to be
- * non-null, however the {@code prevState} will not be sent to the joining node.
+ * non-null, however the {@code previousBaselineTopology} will not be sent to the joining node.
  *
  * TODO https://issues.apache.org/jira/browse/IGNITE-7640 This class must be immutable, transitionRes must be set by calling finish().
  */
@@ -198,6 +198,13 @@ public class DiscoveryDataClusterState implements Serializable {
      */
     @Nullable public BaselineTopology baselineTopology() {
         return baselineTopology;
+    }
+
+    /**
+     * @return Previous Baseline topology.
+     */
+    @Nullable public BaselineTopology previousBaselineTopology() {
+        return prevState != null ? prevState.baselineTopology() : null;
     }
 
     /**
