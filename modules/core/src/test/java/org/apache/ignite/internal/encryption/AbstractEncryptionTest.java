@@ -118,12 +118,17 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             assertNotNull(encKey0);
             assertNotNull(encKey0.key());
 
-            EncryptionKey encKey1 = grid1.context().encryption().groupKey(grpId);
+            if (!grid1.configuration().isClientMode()) {
 
-            assertNotNull(encKey1);
-            assertNotNull(encKey1.key());
+                EncryptionKey encKey1 = grid1.context().encryption().groupKey(grpId);
 
-            assertEquals(encKey0.key(), encKey1.key());
+                assertNotNull(encKey1);
+                assertNotNull(encKey1.key());
+
+                assertEquals(encKey0.key(), encKey1.key());
+            }
+            else
+                assertNull(grid1.context().encryption().groupKey(grpId));
         }
 
         IgniteCache<Long, String> cache = grid0.cache(cacheName());

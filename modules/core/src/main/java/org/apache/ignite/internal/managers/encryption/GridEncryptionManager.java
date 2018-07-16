@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,10 +33,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.GenerateEncryptionKeyRequest;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -78,10 +81,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  *     </li>
  * </ul>
  *
- * @see DynamicCacheChangeRequest
- * @see DynamicCacheChangeRequest#encryptionKey()
+ * @see GridCacheProcessor#genEncKeysAndStartCacheAfter(Collection, GridPlainClosure)
+ * @see GridCacheProcessor#onGenerateEncryptionKeyRequest(GenerateEncryptionKeyRequest)
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
+
     /** Synchronization mutex. */
     private final Object mux = new Object();
 
@@ -128,7 +132,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         ctx.discovery().localJoinFuture().listen(f -> {
-            if (!isLocalNodeCoordinator())
+            if (notCoordinator())
                 return;
 
             HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
@@ -271,7 +275,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!isLocalNodeCoordinator() || dataBag.isJoiningNodeClient())
+        if (notCoordinator() || dataBag.isJoiningNodeClient())
             return;
 
         if (dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
@@ -414,7 +418,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
             }
         }
-
     }
 
     /** {@inheritDoc} */
@@ -485,10 +488,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @return {@code true} if local node is coordinator.
      */
-    private boolean isLocalNodeCoordinator() {
+    private boolean notCoordinator() {
         ClusterNode oldest = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
-        return F.eq(ctx.localNodeId(), oldest.id());
+        return oldest == null || !F.eq(ctx.localNodeId(), oldest.id());
     }
 
     /** */
