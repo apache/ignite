@@ -18,10 +18,6 @@
 import path from 'path';
 import webpack from 'webpack';
 
-import transformRuntime from 'babel-plugin-transform-runtime';
-import presetEs2015 from 'babel-preset-es2015';
-import presetStage1 from 'babel-preset-stage-1';
-
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ProgressBarPlugin from 'progress-bar-webpack-plugin';
@@ -107,19 +103,7 @@ const config = {
             {
                 test: /\.js$/,
                 exclude: [node_modules],
-                use: [{
-                    loader: 'babel-loader',
-                    options: {
-                        cacheDirectory: true,
-                        plugins: [
-                            transformRuntime
-                        ],
-                        presets: [
-                            presetEs2015,
-                            presetStage1
-                        ]
-                    }
-                }]
+                use: ['babel-loader']
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
