@@ -51,6 +51,19 @@ public class SBLimitedLength extends GridStringBuilder {
     }
 
     /**
+     * Resets buffer.
+     */
+    public void reset() {
+        super.setLength(0);
+
+        lenLimit.reset();
+
+        if (tail != null)
+            tail.reset();
+    }
+
+
+    /**
      * @return tail string builder.
      */
     public CircularStringBuilder getTail() {
@@ -291,5 +304,12 @@ public class SBLimitedLength extends GridStringBuilder {
 
             return res.toString();
         }
+    }
+
+    /**
+     * @return {@code True} - if buffer limit is reached.
+     */
+    public boolean isOverflowed() {
+        return lenLimit.overflowed(this);
     }
 }
