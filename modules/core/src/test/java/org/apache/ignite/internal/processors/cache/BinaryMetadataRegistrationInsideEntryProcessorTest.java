@@ -25,7 +25,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Reproducer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -54,15 +53,15 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
     public void test() throws Exception {
         Ignite ignite = startGrid();
 
-        IgniteCache<String, Map<Integer, Reproducer.CustomObj>> cache = ignite.createCache(CACHE_NAME);
+        IgniteCache<String, Map<Integer, CustomObj>> cache = ignite.createCache(CACHE_NAME);
 
         try {
-            cache.invoke("1", new org.apache.ignite.Reproducer.CustomProcessor(), null);
+            cache.invoke("1", new CustomProcessor(), null);
         }
         catch (Exception e) {
-            Map<Integer, org.apache.ignite.Reproducer.CustomObj> value = cache.get("1");
+            Map<Integer, CustomObj> value = cache.get("1");
 
-            if ((value != null) && (value.get(1) != null) && (value.get(1).getObj() == org.apache.ignite.Reproducer.CustomEnum.ONE))
+            if ((value != null) && (value.get(1) != null) && (value.get(1).getObj() == CustomEnum.ONE))
                 System.out.println("Data was saved.");
             else
                 System.out.println("Data wasn't saved.");
@@ -75,14 +74,14 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      *
      */
     private static class CustomProcessor implements EntryProcessor<String,
-        Map<Integer, org.apache.ignite.Reproducer.CustomObj>, Object> {
+        Map<Integer, CustomObj>, Object> {
         /** {@inheritDoc} */
         @Override public Object process(
-            MutableEntry<String, Map<Integer, org.apache.ignite.Reproducer.CustomObj>> entry,
+            MutableEntry<String, Map<Integer, CustomObj>> entry,
             Object... objects) throws EntryProcessorException {
-            Map<Integer, org.apache.ignite.Reproducer.CustomObj> map = new HashMap<>();
+            Map<Integer, CustomObj> map = new HashMap<>();
 
-            map.put(1, new org.apache.ignite.Reproducer.CustomObj(org.apache.ignite.Reproducer.CustomEnum.ONE));
+            map.put(1, new CustomObj(CustomEnum.ONE));
 
             entry.setValue(map);
 
@@ -107,8 +106,8 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
         /**
          * @param val Value.
          */
-        public static org.apache.ignite.Reproducer.CustomObj valueOf(int val) {
-            return new org.apache.ignite.Reproducer.CustomObj(val);
+        public static CustomObj valueOf(int val) {
+            return new CustomObj(val);
         }
 
         /**
