@@ -33,15 +33,14 @@ import org.jetbrains.annotations.Nullable;
  */
 abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
-
     /** Bucket endpoint */
-    protected @Nullable String bucketEndpoint;
+    @Nullable protected String bucketEndpoint;
 
     /** Server-side encryption algorithm for Amazon S3-managed encryption keys. */
-    protected @Nullable String SSEAlgorithm;
+    @Nullable protected String SSEAlgorithm;
 
     /** Key prefix of the address. */
-    protected @Nullable String keyPrefix;
+    @Nullable protected String keyPrefix;
 
     /**
      * Constructor.

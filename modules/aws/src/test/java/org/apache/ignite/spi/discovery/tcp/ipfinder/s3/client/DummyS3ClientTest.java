@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Class to test {@link DummyS3Client}.
  */
 public class DummyS3ClientTest extends GridCommonAbstractTest {
-
     /** Instance of {@link DummyS3Client} to be used for tests. */
     private DummyS3Client s3;
 
@@ -45,10 +44,11 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
         fakeKeyPrefixSet.add("/test/val/test/path");
         fakeKeyPrefixSet.add("/test/test/path/val");
 
-        Map<String, Set<String>> fakeObjectMap = new HashMap<>();
-        fakeObjectMap.put("testBucket", fakeKeyPrefixSet);
+        Map<String, Set<String>> fakeObjMap = new HashMap<>();
 
-        s3 = new DummyS3Client(fakeObjectMap);
+        fakeObjMap.put("testBucket", fakeKeyPrefixSet);
+
+        s3 = new DummyS3Client(fakeObjMap);
     }
 
     /**
@@ -64,19 +64,25 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
      */
     public void testListObjects() {
         ObjectListing listing = s3.listObjects("testBucket");
+
         List<S3ObjectSummary> summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' contains keys", summaries.isEmpty());
         assertTrue("'testBucket' contains more keys to fetch", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         listing = s3.listNextBatchOfObjects(listing);
+
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' contains keys", summaries.isEmpty());
         assertTrue("'testBucket' contains more keys to fetch", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         listing = s3.listNextBatchOfObjects(listing);
+
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' contains keys", summaries.isEmpty());
         assertFalse("'testBucket' does not contain anymore keys", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
@@ -94,31 +100,41 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
      */
     public void testListObjectsWithAPrefix() {
         ObjectListing listing = s3.listObjects("testBucket", "/test");
+
         List<S3ObjectSummary> summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' must contain key with prefix '/test'", summaries.isEmpty());
         assertTrue("'testBucket' contains more keys with prefix '/test'", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         listing = s3.listNextBatchOfObjects(listing);
+
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' must contain key with prefix '/test'", summaries.isEmpty());
         assertTrue("'testBucket' contains more keys with prefix '/test'", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         listing = s3.listNextBatchOfObjects(listing);
+
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' must contain key with prefix '/test'", summaries.isEmpty());
         assertFalse("'testBucket' does not contain anymore keys with prefix '/test'", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         listing = s3.listObjects("testBucket", "/test/path");
+
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' must contain key with prefix '/test'", summaries.isEmpty());
         assertFalse("'testBucket' does not contain anymore keys with prefix '/test/path'", listing.isTruncated());
         assertEquals("/test/path/val", summaries.get(0).getKey());
 
         listing = s3.listObjects("testBucket", "/non/existent/test/path");
+
         summaries = listing.getObjectSummaries();
+
         assertTrue("'testBucket' must not contain key with prefix '/non/existent/test/path'", summaries.isEmpty());
         assertFalse("'testBucket' does not contain anymore keys with prefix '/non/existent/test/path'", listing.isTruncated());
 
@@ -135,6 +151,7 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
      */
     public void testCreateBucket() {
         s3.createBucket("testBucket1");
+
         assertTrue("The bucket 'testBucket1' should exist", s3.doesBucketExist("testBucket1"));
 
         try {

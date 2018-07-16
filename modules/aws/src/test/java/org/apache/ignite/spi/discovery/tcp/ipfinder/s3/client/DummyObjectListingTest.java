@@ -28,34 +28,40 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Class to test {@link DummyObjectListing}.
  */
 public class DummyObjectListingTest extends GridCommonAbstractTest {
-
     /**
      * Test cases for various object listing functions for S3 bucket.
      */
     public void testDummyObjectListing() {
         Set<String> fakeKeyPrefixSet = new HashSet<>();
+
         fakeKeyPrefixSet.add("/test/path/val");
         fakeKeyPrefixSet.add("/test/val/test/path");
         fakeKeyPrefixSet.add("/test/test/path/val");
 
         ObjectListing listing = DummyObjectListing.of("bucket", fakeKeyPrefixSet);
+
         List<S3ObjectSummary> summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' contains keys", summaries.isEmpty());
         assertTrue("'testBucket' contains more keys to fetch", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' contains keys", summaries.isEmpty());
         assertTrue("'testBucket' contains more keys to fetch", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         summaries = listing.getObjectSummaries();
+
         assertFalse("'testBucket' contains keys", summaries.isEmpty());
         assertFalse("'testBucket' does not contain anymore keys", listing.isTruncated());
         assertTrue(fakeKeyPrefixSet.contains(summaries.get(0).getKey()));
 
         listing = DummyObjectListing.of("bucket", new HashSet<>());
+
         summaries = listing.getObjectSummaries();
+
         assertTrue("'testBucket' does not contains keys", summaries.isEmpty());
         assertFalse("'testBucket' does not contain anymore keys", listing.isTruncated());
     }

@@ -98,14 +98,14 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Bucket name. */
     private String bucketName;
 
-    /** Bucket endpoint */
-    private @Nullable String bucketEndpoint;
+    /** Bucket endpoint. */
+    @Nullable private String bucketEndpoint;
 
-    /** Server side encryption algorithm */
-    private @Nullable String sseAlg;
+    /** Server side encryption algorithm. */
+    @Nullable private String sseAlg;
 
     /** Sub-folder name to write node addresses. */
-    private @Nullable String keyPrefix;
+    @Nullable private String keyPrefix;
 
     /** Init guard. */
     @GridToStringExclude
@@ -142,21 +142,18 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
         try {
             ObjectListing list;
 
-            if (keyPrefix == null) {
+            if (keyPrefix == null)
                 list = s3.listObjects(bucketName);
-            }
-            else {
+            else
                 list = s3.listObjects(bucketName, keyPrefix);
-            }
 
             while (true) {
                 for (S3ObjectSummary sum : list.getObjectSummaries()) {
                     String key = sum.getKey();
                     String addr = key;
 
-                    if (keyPrefix != null) {
+                    if (keyPrefix != null)
                         addr = key.replaceFirst(Pattern.quote(keyPrefix), "");
-                    }
 
                     StringTokenizer st = new StringTokenizer(addr, DELIM);
 
@@ -249,9 +246,8 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
         String addrStr = addr.getAddress().getHostAddress();
 
-        if (keyPrefix != null) {
+        if (keyPrefix != null)
             sb.a(keyPrefix);
-        }
 
         sb.a(addrStr)
             .a(DELIM)
