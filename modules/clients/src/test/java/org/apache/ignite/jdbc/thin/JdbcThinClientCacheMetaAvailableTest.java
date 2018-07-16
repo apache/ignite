@@ -20,6 +20,9 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -204,6 +207,24 @@ public class JdbcThinClientCacheMetaAvailableTest extends JdbcThinAbstractSelfTe
             ResultSet meta = conn.getMetaData().getTables(null, "PUBLIC", null, null)) {
             assertTrue(meta.next());
             assertEquals("CITY", meta.getString("TABLE_NAME"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSchema() throws Exception {
+        IgniteEx server = (IgniteEx)startGrid("server");
+        IgniteEx client = (IgniteEx)startGrid("client");
+
+        server.createCache(new CacheConfiguration<>().setName("SchemaCache").setQueryEntities(Collections.singleton(
+                new QueryEntity().setKeyType("java.lang.Integer").setValueType("java.lang.String").setTableName("City")))
+            .setSqlSchema("\"Schema\""));
+
+        try (Connection conn = connect(client, "");
+             ResultSet meta = conn.getMetaData().getSchemas()) {
+            assertTrue(meta.next());
+            assertEquals("Schema", meta.getString("TABLE_SCHEM"));
         }
     }
 }
