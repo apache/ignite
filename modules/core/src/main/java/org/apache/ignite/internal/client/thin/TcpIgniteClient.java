@@ -246,7 +246,7 @@ public class TcpIgniteClient implements IgniteClient {
                 }
             }
 
-            cache.addMeta(typeId, meta, false); // merge
+            cache.addMeta(typeId, meta, failIfUnregistered); // merge
         }
 
         /** {@inheritDoc} */
