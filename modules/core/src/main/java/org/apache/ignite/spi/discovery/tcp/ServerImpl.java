@@ -6063,7 +6063,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             // If local node was able to connect to previous, confirm that it's alive.
-                            ok = liveAddr != null && (!liveAddr.getAddress().isLoopbackAddress()
+                            ok = liveAddr != null && (!U.isLocalAddress(liveAddr.getAddress())
                                 || !locNode.socketAddresses().contains(liveAddr));
                         }
 
