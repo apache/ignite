@@ -45,13 +45,9 @@ public class TcpDiscoveryS3IpFinderKeyPrefixSelfTest extends TcpDiscoveryS3IpFin
     }
 
     /** {@inheritDoc} */
-    @Override protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
-        finder.setBucketName(getBucketName());
-    }
-
-    /** {@inheritDoc} */
     @Override protected TcpDiscoveryS3IpFinder ipFinder() throws Exception {
         TcpDiscoveryS3IpFinder ipFinder = Mockito.spy(new TcpDiscoveryS3IpFinder());
+
         Mockito.doReturn(new DummyS3Client()).when(ipFinder).createAmazonS3Client();
 
         setAwsCredentials(ipFinder);

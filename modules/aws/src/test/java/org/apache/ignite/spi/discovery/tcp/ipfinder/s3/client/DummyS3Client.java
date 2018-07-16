@@ -162,22 +162,21 @@ import java.util.stream.Collectors;
  * Class to simulate the functionality of {@link AmazonS3Client}.
  */
 public final class DummyS3Client extends AmazonS3Client {
-
     /** Map of Bucket names as keys and the keys as set of values. */
-    private final Map<String, Set<String>> objectMap;
+    private final Map<String, Set<String>> objMap;
 
     /**
      * Constructor.
      */
     public DummyS3Client() {
-        this.objectMap = new HashMap<>();
+        this.objMap = new HashMap<>();
     }
 
     /**
      * Constructor to add an object map with fake data.
      */
-    public DummyS3Client(Map<String, Set<String>> objectMap) {
-        this.objectMap = Objects.requireNonNull(objectMap, "Object map cannot be null");
+    public DummyS3Client(Map<String, Set<String>> objMap) {
+        this.objMap = Objects.requireNonNull(objMap, "Object map cannot be null");
     }
 
     /** Empty Method. */
@@ -195,33 +194,35 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public void changeObjectStorageClass(String bucketName, String key,
-        StorageClass newStorageClass) throws SdkClientException {
+    @Override public void changeObjectStorageClass(String bucketName, String key, StorageClass newStorageCls)
+        throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setObjectRedirectLocation(String bucketName, String key,
-        String newRedirectLocation) throws SdkClientException {
+    @Override public void setObjectRedirectLocation(String bucketName, String key, String newRedirectLocation)
+        throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** {@inheritDoc} */
     @Override public ObjectListing listObjects(String bucketName) throws SdkClientException {
         checkBucketExists(bucketName);
-        return DummyObjectListing.of(bucketName, objectMap.get(bucketName));
+        return DummyObjectListing.of(bucketName, objMap.get(bucketName));
     }
 
     /** {@inheritDoc} */
     @Override public ObjectListing listObjects(String bucketName, String prefix) throws SdkClientException {
         checkBucketExists(bucketName);
-        Set<String> keys = objectMap.get(bucketName).stream()
+
+        Set<String> keys = objMap.get(bucketName).stream()
             .filter(key -> key.startsWith(prefix)).collect(Collectors.toSet());
+
         return DummyObjectListing.of(bucketName, keys);
     }
 
     /** Unsupported Operation. */
-    @Override public ObjectListing listObjects(ListObjectsRequest listObjectsRequest) throws SdkClientException {
+    @Override public ObjectListing listObjects(ListObjectsRequest listObjectsReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -237,51 +238,45 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public ListObjectsV2Result listObjectsV2(
-        ListObjectsV2Request listObjectsV2Request) throws SdkClientException {
+    @Override public ListObjectsV2Result listObjectsV2(ListObjectsV2Request listObjectsV2Req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** {@inheritDoc} */
-    @Override public ObjectListing listNextBatchOfObjects(
-        ObjectListing previousObjectListing) throws SdkClientException {
-        return previousObjectListing;
+    @Override public ObjectListing listNextBatchOfObjects(ObjectListing previousObjListing) throws SdkClientException {
+        return previousObjListing;
     }
 
     /** Unsupported Operation. */
-    @Override public ObjectListing listNextBatchOfObjects(
-        ListNextBatchOfObjectsRequest listNextBatchOfObjectsRequest) throws SdkClientException {
+    @Override public ObjectListing listNextBatchOfObjects(ListNextBatchOfObjectsRequest listNextBatchOfObjectsReq)
+        throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public VersionListing listVersions(String bucketName,
-        String prefix) throws SdkClientException {
+    @Override public VersionListing listVersions(String bucketName, String prefix) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public VersionListing listNextBatchOfVersions(
-        VersionListing previousVersionListing) throws SdkClientException {
+    @Override public VersionListing listNextBatchOfVersions(VersionListing previousVerListing) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public VersionListing listNextBatchOfVersions(
-        ListNextBatchOfVersionsRequest listNextBatchOfVersionsRequest) throws SdkClientException {
+    @Override public VersionListing listNextBatchOfVersions(ListNextBatchOfVersionsRequest listNextBatchOfVersionsReq)
+        throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public VersionListing listVersions(String bucketName, String prefix, String keyMarker,
-        String versionIdMarker,
-        String delimiter, Integer maxResults) throws SdkClientException {
+    @Override public VersionListing listVersions(String bucketName, String prefix, String keyMarker, String verIdMarker,
+        String delim, Integer maxResults) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public VersionListing listVersions(
-        ListVersionsRequest listVersionsRequest) throws SdkClientException {
+    @Override public VersionListing listVersions(ListVersionsRequest listVersionsReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -291,19 +286,17 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public Owner getS3AccountOwner(
-        GetS3AccountOwnerRequest getS3AccountOwnerRequest) throws SdkClientException {
+    @Override public Owner getS3AccountOwner(GetS3AccountOwnerRequest getS3AccountOwnerReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** {@inheritDoc} */
     @Override public boolean doesBucketExist(String bucketName) throws SdkClientException {
-        return objectMap.containsKey(bucketName);
+        return objMap.containsKey(bucketName);
     }
 
     /** Unsupported Operation. */
-    @Override public HeadBucketResult headBucket(
-        HeadBucketRequest headBucketRequest) throws SdkClientException {
+    @Override public HeadBucketResult headBucket(HeadBucketRequest headBucketReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -313,8 +306,7 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public List<Bucket> listBuckets(
-        ListBucketsRequest listBucketsRequest) throws SdkClientException {
+    @Override public List<Bucket> listBuckets(ListBucketsRequest listBucketsReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -324,24 +316,22 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public String getBucketLocation(
-        GetBucketLocationRequest getBucketLocationRequest) throws SdkClientException {
+    @Override public String getBucketLocation(GetBucketLocationRequest getBucketLocationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public Bucket createBucket(
-        CreateBucketRequest createBucketRequest) throws SdkClientException {
+    @Override public Bucket createBucket(CreateBucketRequest createBucketReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** {@inheritDoc} */
     @Override public Bucket createBucket(String bucketName) throws SdkClientException {
-        if (doesBucketExist(bucketName)) {
+        if (doesBucketExist(bucketName))
             throw new AmazonS3Exception("The specified bucket already exist");
-        }
         else {
-            objectMap.put(bucketName, new HashSet<>());
+            objMap.put(bucketName, new HashSet<>());
+
             return new Bucket();
         }
     }
@@ -365,19 +355,17 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public AccessControlList getObjectAcl(String bucketName, String key,
-        String versionId) throws SdkClientException {
+        String verId) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public AccessControlList getObjectAcl(
-        GetObjectAclRequest getObjectAclRequest) throws SdkClientException {
+    @Override public AccessControlList getObjectAcl(GetObjectAclRequest getObjAclReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setObjectAcl(String bucketName, String key,
-        AccessControlList acl) throws SdkClientException {
+    @Override public void setObjectAcl(String bucketName, String key, AccessControlList acl) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -388,20 +376,19 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public void setObjectAcl(String bucketName, String key, String versionId,
+    @Override public void setObjectAcl(String bucketName, String key, String verId,
         AccessControlList acl) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setObjectAcl(String bucketName, String key, String versionId,
+    @Override public void setObjectAcl(String bucketName, String key, String verId,
         CannedAccessControlList acl) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setObjectAcl(
-        SetObjectAclRequest setObjectAclRequest) throws SdkClientException {
+    @Override public void setObjectAcl(SetObjectAclRequest setObjAclReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -411,38 +398,33 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public void setBucketAcl(
-        SetBucketAclRequest setBucketAclRequest) throws SdkClientException {
+    @Override public void setBucketAcl(SetBucketAclRequest setBucketAclReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public AccessControlList getBucketAcl(
-        GetBucketAclRequest getBucketAclRequest) throws SdkClientException {
+    @Override public AccessControlList getBucketAcl(GetBucketAclRequest getBucketAclReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setBucketAcl(String bucketName,
-        AccessControlList acl) throws SdkClientException {
+    @Override public void setBucketAcl(String bucketName, AccessControlList acl) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setBucketAcl(String bucketName,
-        CannedAccessControlList acl) throws SdkClientException {
+    @Override public void setBucketAcl(String bucketName, CannedAccessControlList acl) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public ObjectMetadata getObjectMetadata(String bucketName,
-        String key) throws SdkClientException {
+    @Override public ObjectMetadata getObjectMetadata(String bucketName, String key) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public ObjectMetadata getObjectMetadata(
-        GetObjectMetadataRequest getObjectMetadataRequest) throws SdkClientException {
+        GetObjectMetadataRequest getObjMetadataReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -452,13 +434,12 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public S3Object getObject(GetObjectRequest getObjectRequest) throws SdkClientException {
+    @Override public S3Object getObject(GetObjectRequest getObjReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public ObjectMetadata getObject(GetObjectRequest getObjectRequest,
-        File destinationFile) throws SdkClientException {
+    @Override public ObjectMetadata getObject(GetObjectRequest getObjReq, File destFile) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -468,24 +449,22 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public GetObjectTaggingResult getObjectTagging(GetObjectTaggingRequest getObjectTaggingRequest) {
+    @Override public GetObjectTaggingResult getObjectTagging(GetObjectTaggingRequest getObjTaggingReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public SetObjectTaggingResult setObjectTagging(SetObjectTaggingRequest setObjectTaggingRequest) {
+    @Override public SetObjectTaggingResult setObjectTagging(SetObjectTaggingRequest setObjTaggingReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public DeleteObjectTaggingResult deleteObjectTagging(
-        DeleteObjectTaggingRequest deleteObjectTaggingRequest) {
+    @Override public DeleteObjectTaggingResult deleteObjectTagging(DeleteObjectTaggingRequest delObjTaggingReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void deleteBucket(
-        DeleteBucketRequest deleteBucketRequest) throws SdkClientException {
+    @Override public void deleteBucket(DeleteBucketRequest delBucketReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -495,8 +474,7 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public PutObjectResult putObject(
-        PutObjectRequest putObjectRequest) throws SdkClientException {
+    @Override public PutObjectResult putObject(PutObjectRequest putObjReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -510,8 +488,11 @@ public final class DummyS3Client extends AmazonS3Client {
     @Override public PutObjectResult putObject(String bucketName, String key, InputStream input,
         ObjectMetadata metadata) throws SdkClientException {
         checkBucketExists(bucketName);
-        Set<String> keys = objectMap.get(bucketName);
+
+        Set<String> keys = objMap.get(bucketName);
+
         keys.add(key);
+
         return new PutObjectResult();
     }
 
@@ -522,52 +503,51 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public CopyObjectResult copyObject(String sourceBucketName, String sourceKey,
-        String destinationBucketName,
-        String destinationKey) throws SdkClientException {
+    @Override public CopyObjectResult copyObject(String srcBucketName, String srcKey, String destBucketName,
+        String destKey) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public CopyObjectResult copyObject(
-        CopyObjectRequest copyObjectRequest) throws SdkClientException {
+    @Override public CopyObjectResult copyObject(CopyObjectRequest cpObjReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public CopyPartResult copyPart(CopyPartRequest copyPartRequest) throws SdkClientException {
+    @Override public CopyPartResult copyPart(CopyPartRequest cpPartReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** {@inheritDoc} */
     @Override public void deleteObject(String bucketName, String key) throws SdkClientException {
         checkBucketExists(bucketName);
-        Set<String> keys = objectMap.get(bucketName);
-        Set<String> keysToDelete = keys.stream().filter(k -> k.contains(key)).collect(Collectors.toSet());
-        keys.removeAll(keysToDelete);
-        objectMap.put(bucketName, keys);
+        Set<String> keys = objMap.get(bucketName);
+
+        Set<String> keysToDel = keys.stream().filter(k -> k.contains(key)).collect(Collectors.toSet());
+
+        keys.removeAll(keysToDel);
+
+        objMap.put(bucketName, keys);
     }
 
     /** Unsupported Operation. */
-    @Override public void deleteObject(DeleteObjectRequest deleteObjectRequest) throws SdkClientException {
+    @Override public void deleteObject(DeleteObjectRequest delObjReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public DeleteObjectsResult deleteObjects(DeleteObjectsRequest deleteObjectsRequest)
+    @Override public DeleteObjectsResult deleteObjects(DeleteObjectsRequest delObjectsReq)
         throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void deleteVersion(String bucketName, String key,
-        String versionId) throws SdkClientException {
+    @Override public void deleteVersion(String bucketName, String key, String verId) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void deleteVersion(
-        DeleteVersionRequest deleteVersionRequest) throws SdkClientException {
+    @Override public void deleteVersion(DeleteVersionRequest delVerReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -579,13 +559,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketLoggingConfiguration getBucketLoggingConfiguration(
-        GetBucketLoggingConfigurationRequest getBucketLoggingConfigurationRequest) throws SdkClientException {
+        GetBucketLoggingConfigurationRequest getBucketLoggingConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public void setBucketLoggingConfiguration(
-        SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationRequest) throws SdkClientException {
+        SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -597,13 +577,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketVersioningConfiguration getBucketVersioningConfiguration(
-        GetBucketVersioningConfigurationRequest getBucketVersioningConfigurationRequest) throws SdkClientException {
+        GetBucketVersioningConfigurationRequest getBucketVersioningConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public void setBucketVersioningConfiguration(
-        SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest) throws SdkClientException {
+        SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -614,7 +594,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketLifecycleConfiguration getBucketLifecycleConfiguration(
-        GetBucketLifecycleConfigurationRequest getBucketLifecycleConfigurationRequest) {
+        GetBucketLifecycleConfigurationRequest getBucketLifecycleConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -626,7 +606,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void setBucketLifecycleConfiguration(
-        SetBucketLifecycleConfigurationRequest setBucketLifecycleConfigurationRequest) {
+        SetBucketLifecycleConfigurationRequest setBucketLifecycleConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -637,7 +617,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void deleteBucketLifecycleConfiguration(
-        DeleteBucketLifecycleConfigurationRequest deleteBucketLifecycleConfigurationRequest) {
+        DeleteBucketLifecycleConfigurationRequest delBucketLifecycleConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -648,7 +628,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketCrossOriginConfiguration getBucketCrossOriginConfiguration(
-        GetBucketCrossOriginConfigurationRequest getBucketCrossOriginConfigurationRequest) {
+        GetBucketCrossOriginConfigurationRequest getBucketCrossOriginConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -660,7 +640,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void setBucketCrossOriginConfiguration(
-        SetBucketCrossOriginConfigurationRequest setBucketCrossOriginConfigurationRequest) {
+        SetBucketCrossOriginConfigurationRequest setBucketCrossOriginConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -671,7 +651,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void deleteBucketCrossOriginConfiguration(
-        DeleteBucketCrossOriginConfigurationRequest deleteBucketCrossOriginConfigurationRequest) {
+        DeleteBucketCrossOriginConfigurationRequest delBucketCrossOriginConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -682,7 +662,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketTaggingConfiguration getBucketTaggingConfiguration(
-        GetBucketTaggingConfigurationRequest getBucketTaggingConfigurationRequest) {
+        GetBucketTaggingConfigurationRequest getBucketTaggingConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -694,7 +674,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void setBucketTaggingConfiguration(
-        SetBucketTaggingConfigurationRequest setBucketTaggingConfigurationRequest) {
+        SetBucketTaggingConfigurationRequest setBucketTaggingConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -705,7 +685,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void deleteBucketTaggingConfiguration(
-        DeleteBucketTaggingConfigurationRequest deleteBucketTaggingConfigurationRequest) {
+        DeleteBucketTaggingConfigurationRequest delBucketTaggingConfigurationReq) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -717,13 +697,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketNotificationConfiguration getBucketNotificationConfiguration(
-        GetBucketNotificationConfigurationRequest getBucketNotificationConfigurationRequest) throws SdkClientException {
+        GetBucketNotificationConfigurationRequest getBucketNotificationConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public void setBucketNotificationConfiguration(
-        SetBucketNotificationConfigurationRequest setBucketNotificationConfigurationRequest) throws SdkClientException {
+        SetBucketNotificationConfigurationRequest setBucketNotificationConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -741,7 +721,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketWebsiteConfiguration getBucketWebsiteConfiguration(
-        GetBucketWebsiteConfigurationRequest getBucketWebsiteConfigurationRequest) throws SdkClientException {
+        GetBucketWebsiteConfigurationRequest getBucketWebsiteConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -753,7 +733,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void setBucketWebsiteConfiguration(
-        SetBucketWebsiteConfigurationRequest setBucketWebsiteConfigurationRequest) throws SdkClientException {
+        SetBucketWebsiteConfigurationRequest setBucketWebsiteConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -764,7 +744,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void deleteBucketWebsiteConfiguration(
-        DeleteBucketWebsiteConfigurationRequest deleteBucketWebsiteConfigurationRequest) throws SdkClientException {
+        DeleteBucketWebsiteConfigurationRequest delBucketWebsiteConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -774,20 +754,17 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public BucketPolicy getBucketPolicy(
-        GetBucketPolicyRequest getBucketPolicyRequest) throws SdkClientException {
+    @Override public BucketPolicy getBucketPolicy(GetBucketPolicyRequest getBucketPlcReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setBucketPolicy(String bucketName,
-        String policyText) throws SdkClientException {
+    @Override public void setBucketPolicy(String bucketName, String plcText) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void setBucketPolicy(
-        SetBucketPolicyRequest setBucketPolicyRequest) throws SdkClientException {
+    @Override public void setBucketPolicy(SetBucketPolicyRequest setBucketPlcReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -797,8 +774,7 @@ public final class DummyS3Client extends AmazonS3Client {
     }
 
     /** Unsupported Operation. */
-    @Override public void deleteBucketPolicy(
-        DeleteBucketPolicyRequest deleteBucketPolicyRequest) throws SdkClientException {
+    @Override public void deleteBucketPolicy(DeleteBucketPolicyRequest delBucketPlcReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -810,57 +786,57 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public URL generatePresignedUrl(String bucketName, String key, Date expiration,
-        HttpMethod method) throws SdkClientException {
+        HttpMethod mtd) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public URL generatePresignedUrl(
-        GeneratePresignedUrlRequest generatePresignedUrlRequest) throws SdkClientException {
+        GeneratePresignedUrlRequest generatePresignedUrlReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public InitiateMultipartUploadResult initiateMultipartUpload(
-        InitiateMultipartUploadRequest request) throws SdkClientException {
+        InitiateMultipartUploadRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public UploadPartResult uploadPart(UploadPartRequest request) throws SdkClientException {
+    @Override public UploadPartResult uploadPart(UploadPartRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public PartListing listParts(ListPartsRequest request) throws SdkClientException {
+    @Override public PartListing listParts(ListPartsRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public void abortMultipartUpload(
-        AbortMultipartUploadRequest request) throws SdkClientException {
+        AbortMultipartUploadRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public CompleteMultipartUploadResult completeMultipartUpload(
-        CompleteMultipartUploadRequest request) throws SdkClientException {
+        CompleteMultipartUploadRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public MultipartUploadListing listMultipartUploads(
-        ListMultipartUploadsRequest request) throws SdkClientException {
+        ListMultipartUploadsRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public S3ResponseMetadata getCachedResponseMetadata(AmazonWebServiceRequest request) {
+    @Override public S3ResponseMetadata getCachedResponseMetadata(AmazonWebServiceRequest req) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
-    @Override public void restoreObject(RestoreObjectRequest request) {
+    @Override public void restoreObject(RestoreObjectRequest req) {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -892,7 +868,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void setBucketReplicationConfiguration(
-        SetBucketReplicationConfigurationRequest setBucketReplicationConfigurationRequest) throws SdkClientException {
+        SetBucketReplicationConfigurationRequest setBucketReplicationConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -904,7 +880,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketReplicationConfiguration getBucketReplicationConfiguration(
-        GetBucketReplicationConfigurationRequest getBucketReplicationConfigurationRequest) throws SdkClientException {
+        GetBucketReplicationConfigurationRequest getBucketReplicationConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -916,13 +892,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void deleteBucketReplicationConfiguration(
-        DeleteBucketReplicationConfigurationRequest request) throws SdkClientException {
+        DeleteBucketReplicationConfigurationRequest req) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public boolean doesObjectExist(String bucketName,
-        String objectName) throws SdkClientException {
+        String objName) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -934,7 +910,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public BucketAccelerateConfiguration getBucketAccelerateConfiguration(
-        GetBucketAccelerateConfigurationRequest getBucketAccelerateConfigurationRequest) throws SdkClientException {
+        GetBucketAccelerateConfigurationRequest getBucketAccelerateConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -946,7 +922,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public void setBucketAccelerateConfiguration(
-        SetBucketAccelerateConfigurationRequest setBucketAccelerateConfigurationRequest) throws SdkClientException {
+        SetBucketAccelerateConfigurationRequest setBucketAccelerateConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -958,7 +934,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public DeleteBucketMetricsConfigurationResult deleteBucketMetricsConfiguration(
-        DeleteBucketMetricsConfigurationRequest deleteBucketMetricsConfigurationRequest) throws SdkClientException {
+        DeleteBucketMetricsConfigurationRequest delBucketMetricsConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -970,7 +946,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public GetBucketMetricsConfigurationResult getBucketMetricsConfiguration(
-        GetBucketMetricsConfigurationRequest getBucketMetricsConfigurationRequest) throws SdkClientException {
+        GetBucketMetricsConfigurationRequest getBucketMetricsConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -982,13 +958,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public SetBucketMetricsConfigurationResult setBucketMetricsConfiguration(
-        SetBucketMetricsConfigurationRequest setBucketMetricsConfigurationRequest) throws SdkClientException {
+        SetBucketMetricsConfigurationRequest setBucketMetricsConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public ListBucketMetricsConfigurationsResult listBucketMetricsConfigurations(
-        ListBucketMetricsConfigurationsRequest listBucketMetricsConfigurationsRequest) throws SdkClientException {
+        ListBucketMetricsConfigurationsRequest listBucketMetricsConfigurationsReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1000,7 +976,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public DeleteBucketAnalyticsConfigurationResult deleteBucketAnalyticsConfiguration(
-        DeleteBucketAnalyticsConfigurationRequest deleteBucketAnalyticsConfigurationRequest) throws SdkClientException {
+        DeleteBucketAnalyticsConfigurationRequest delBucketAnalyticsConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1012,7 +988,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public GetBucketAnalyticsConfigurationResult getBucketAnalyticsConfiguration(
-        GetBucketAnalyticsConfigurationRequest getBucketAnalyticsConfigurationRequest) throws SdkClientException {
+        GetBucketAnalyticsConfigurationRequest getBucketAnalyticsConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1024,13 +1000,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public SetBucketAnalyticsConfigurationResult setBucketAnalyticsConfiguration(
-        SetBucketAnalyticsConfigurationRequest setBucketAnalyticsConfigurationRequest) throws SdkClientException {
+        SetBucketAnalyticsConfigurationRequest setBucketAnalyticsConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public ListBucketAnalyticsConfigurationsResult listBucketAnalyticsConfigurations(
-        ListBucketAnalyticsConfigurationsRequest listBucketAnalyticsConfigurationsRequest) throws SdkClientException {
+        ListBucketAnalyticsConfigurationsRequest listBucketAnalyticsConfigurationsReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1042,7 +1018,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public DeleteBucketInventoryConfigurationResult deleteBucketInventoryConfiguration(
-        DeleteBucketInventoryConfigurationRequest deleteBucketInventoryConfigurationRequest) throws SdkClientException {
+        DeleteBucketInventoryConfigurationRequest delBucketInventoryConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1054,7 +1030,7 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public GetBucketInventoryConfigurationResult getBucketInventoryConfiguration(
-        GetBucketInventoryConfigurationRequest getBucketInventoryConfigurationRequest) throws SdkClientException {
+        GetBucketInventoryConfigurationRequest getBucketInventoryConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1066,13 +1042,13 @@ public final class DummyS3Client extends AmazonS3Client {
 
     /** Unsupported Operation. */
     @Override public SetBucketInventoryConfigurationResult setBucketInventoryConfiguration(
-        SetBucketInventoryConfigurationRequest setBucketInventoryConfigurationRequest) throws SdkClientException {
+        SetBucketInventoryConfigurationRequest setBucketInventoryConfigurationReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
     /** Unsupported Operation. */
     @Override public ListBucketInventoryConfigurationsResult listBucketInventoryConfigurations(
-        ListBucketInventoryConfigurationsRequest listBucketInventoryConfigurationsRequest) throws SdkClientException {
+        ListBucketInventoryConfigurationsRequest listBucketInventoryConfigurationsReq) throws SdkClientException {
         throw new UnsupportedOperationException("Operation not supported");
     }
 
@@ -1103,8 +1079,7 @@ public final class DummyS3Client extends AmazonS3Client {
      * @throws AmazonS3Exception If the specified bucket does not exist.
      */
     private void checkBucketExists(String bucketName) {
-        if (!doesBucketExist(bucketName)) {
+        if (!doesBucketExist(bucketName))
             throw new AmazonS3Exception("The specified bucket does not exist");
-        }
     }
 }

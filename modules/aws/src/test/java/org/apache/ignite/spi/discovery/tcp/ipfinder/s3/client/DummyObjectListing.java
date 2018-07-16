@@ -30,17 +30,16 @@ import java.util.stream.Collectors;
  * Class to simulate the functionality of {@link ObjectListing}.
  */
 public class DummyObjectListing extends ObjectListing {
-
     /** Iterator over the S3 object summaries. */
-    private Iterator<S3ObjectSummary> objectSummariesIter;
+    private Iterator<S3ObjectSummary> objSummariesIter;
 
     /**
      * Constructor
      *
-     * @param objectSummaries Iterator over the S3 object summaries.
+     * @param objSummaries Iterator over the S3 object summaries.
      */
-    private DummyObjectListing(Iterator<S3ObjectSummary> objectSummaries) {
-        this.objectSummariesIter = objectSummaries;
+    private DummyObjectListing(Iterator<S3ObjectSummary> objSummaries) {
+        this.objSummariesIter = objSummaries;
     }
 
     /**
@@ -52,31 +51,33 @@ public class DummyObjectListing extends ObjectListing {
      * @return Instance of this object.
      */
     static DummyObjectListing of(String bucketName, Set<String> keys) {
-        List<S3ObjectSummary> objectSummaries = keys.stream().map(key -> {
-            S3ObjectSummary s3ObjectSummary = new S3ObjectSummary();
-            s3ObjectSummary.setBucketName(bucketName);
-            s3ObjectSummary.setKey(key);
-            return s3ObjectSummary;
+        List<S3ObjectSummary> objSummaries = keys.stream().map(key -> {
+            S3ObjectSummary s3ObjSummary = new S3ObjectSummary();
+            s3ObjSummary.setBucketName(bucketName);
+            s3ObjSummary.setKey(key);
+            return s3ObjSummary;
         }).collect(Collectors.toList());
 
-        return new DummyObjectListing(objectSummaries.iterator());
+        return new DummyObjectListing(objSummaries.iterator());
     }
 
     /** {@inheritDoc} */
     @Override public List<S3ObjectSummary> getObjectSummaries() {
-        if (objectSummariesIter.hasNext()) {
-            S3ObjectSummary s3ObjectSummary = objectSummariesIter.next();
+        if (objSummariesIter.hasNext()) {
+            S3ObjectSummary s3ObjSummary = objSummariesIter.next();
+
             List<S3ObjectSummary> list = new LinkedList<>();
-            list.add(s3ObjectSummary);
+
+            list.add(s3ObjSummary);
+
             return list;
         }
-        else {
+        else
             return Collections.emptyList();
-        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isTruncated() {
-        return objectSummariesIter.hasNext();
+        return objSummariesIter.hasNext();
     }
 }
