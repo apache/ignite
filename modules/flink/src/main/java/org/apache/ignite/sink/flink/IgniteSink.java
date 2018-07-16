@@ -18,6 +18,7 @@
 package org.apache.ignite.sink.flink;
 
 import java.util.Map;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,7 +35,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     private static final long DFLT_FLUSH_FREQ = 10000L;
 
     /** Logger. */
-    private final transient IgniteLogger log;
+    private transient IgniteLogger log;
 
     /** Automatic flush frequency. */
     private long autoFlushFrequency = DFLT_FLUSH_FREQ;
@@ -43,13 +44,17 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     private boolean allowOverwrite = false;
 
     /** Flag for stopped state. */
-    private static volatile boolean stopped = true;
+    private volatile boolean stopped = true;
 
     /** Ignite grid configuration file. */
-    private static String igniteCfgFile;
+    protected final String igniteCfgFile;
+
+    protected transient Ignite ignite;
+
+    protected transient IgniteDataStreamer streamer;
 
     /** Cache name. */
-    private static String cacheName;
+    protected final String cacheName;
 
     /**
      * Gets the cache name.
@@ -114,7 +119,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     public IgniteSink(String cacheName, String igniteCfgFile) {
         this.cacheName = cacheName;
         this.igniteCfgFile = igniteCfgFile;
-        this.log = SinkContext.getIgnite().log();
     }
 
     /**
@@ -122,13 +126,20 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      *
      * @throws IgniteException If failed.
      */
+    @Override
     @SuppressWarnings("unchecked")
-    public void start() throws IgniteException {
+    public void open(Configuration parameter) {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
 
-        SinkContext.getStreamer().autoFlushFrequency(autoFlushFrequency);
-        SinkContext.getStreamer().allowOverwrite(allowOverwrite);
+        this.ignite = Ignition.start(igniteCfgFile);
+        this.ignite.getOrCreateCache(cacheName);
+
+        this.log = this.ignite.log();
+
+        this.streamer = this.ignite.dataStreamer(cacheName);
+        this.streamer.autoFlushFrequency(autoFlushFrequency);
+        this.streamer.allowOverwrite(allowOverwrite);
 
         stopped = false;
     }
@@ -138,15 +149,16 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      *
      * @throws IgniteException If failed.
      */
-    public void stop() throws IgniteException {
+    @Override
+    public void close() {
         if (stopped)
             return;
 
         stopped = true;
 
-        SinkContext.getStreamer().close();
-        SinkContext.getIgnite().cache(cacheName).close();
-        SinkContext.getIgnite().close();
+        this.streamer.close();
+        this.ignite.cache(cacheName).close();
+        this.ignite.close();
     }
 
     /**
@@ -162,43 +174,10 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
             if (!(in instanceof Map))
                 throw new IgniteException("Map as a streamer input is expected!");
 
-            SinkContext.getStreamer().addData((Map)in);
+            this.streamer.addData((Map)in);
         }
         catch (Exception e) {
             log.error("Error while processing IN of " + cacheName, e);
-        }
-    }
-
-    /**
-     * Streamer context initializing grid and data streamer instances on demand.
-     */
-    private static class SinkContext {
-        /** Constructor. */
-        private SinkContext() {
-        }
-
-        /** Instance holder. */
-        private static class Holder {
-            private static final Ignite IGNITE = Ignition.start(igniteCfgFile);
-            private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
-        }
-
-        /**
-         * Obtains grid instance.
-         *
-         * @return Grid instance.
-         */
-        private static Ignite getIgnite() {
-            return Holder.IGNITE;
-        }
-
-        /**
-         * Obtains data streamer instance.
-         *
-         * @return Data streamer instance.
-         */
-        private static IgniteDataStreamer getStreamer() {
-            return Holder.STREAMER;
         }
     }
 }
