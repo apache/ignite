@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-require('babel-core/register');
+require('@babel/register');
 module.exports = require('./karma.conf.babel.js');

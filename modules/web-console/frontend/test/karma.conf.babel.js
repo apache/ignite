@@ -29,7 +29,6 @@ export default (/** @type {import('karma').Config} */ config) => {
 
         // List of files / patterns to load in the browser.
         files: [
-            'node_modules/babel-polyfill/dist/polyfill.js',
             'node_modules/angular/angular.js',
             'node_modules/angular-mocks/angular-mocks.js',
             'app/**/*.spec.js',
