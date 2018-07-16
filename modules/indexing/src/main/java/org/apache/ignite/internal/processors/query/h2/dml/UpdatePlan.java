@@ -642,7 +642,9 @@ public final class UpdatePlan {
         @Override protected void onClose() {
             cur.close();
 
-            conn.recycle();
+            ObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
+            if (conn0 != null)
+                conn0.recycle();
         }
 
         /** {@inheritDoc} */
