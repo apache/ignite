@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -176,10 +177,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
         new ConcurrentSkipListMap<>();
-
-    /** */
-    private final AtomicReference<AffinityTopologyVersion> readyTopVer =
-        new AtomicReference<>(AffinityTopologyVersion.NONE);
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
@@ -817,7 +814,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Topology version of latest completed partition exchange.
      */
     public AffinityTopologyVersion readyAffinityVersion() {
-        return readyTopVer.get();
+        return exchFuts.readyTopVer();
     }
 
     /**
@@ -867,7 +864,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return lastInitializedFut0;
         }
 
-        AffinityTopologyVersion topVer = readyTopVer.get();
+        AffinityTopologyVersion topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
             if (log.isDebugEnabled())
@@ -882,7 +879,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Created topology ready future [ver=" + ver + ", fut=" + fut + ']');
 
-        topVer = readyTopVer.get();
+        topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
             if (log.isDebugEnabled())
@@ -1391,15 +1388,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             log.debug("Exchange done [topVer=" + topVer + ", err=" + err + ']');
 
         if (err == null) {
-            while (true) {
-                AffinityTopologyVersion readyVer = readyTopVer.get();
-
-                if (readyVer.compareTo(topVer) >= 0)
-                    break;
-
-                if (readyTopVer.compareAndSet(readyVer, topVer))
-                    break;
-            }
+            exchFuts.readyTopVer(topVer);
 
             for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
                 if (entry.getKey().compareTo(topVer) <= 0) {
@@ -1628,7 +1617,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void dumpDebugInfo(@Nullable GridDhtPartitionsExchangeFuture exchFut) throws Exception {
         AffinityTopologyVersion exchTopVer = exchFut != null ? exchFut.initialVersion() : null;
 
-        U.warn(diagnosticLog, "Ready affinity version: " + readyTopVer.get());
+        U.warn(diagnosticLog, "Ready affinity version: " + exchFuts.readyTopVer());
 
         U.warn(diagnosticLog, "Last exchange future: " + lastInitializedFut);
 
@@ -2762,6 +2751,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** */
         private final int histSize;
 
+        /** */
+        private final AtomicReference<AffinityTopologyVersion> readyTopVer =
+            new AtomicReference<>(AffinityTopologyVersion.NONE);
+
         /**
          * Creates ordered, not strict list set.
          *
@@ -2798,7 +2791,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             while (size() > histSize) {
                 GridDhtPartitionsExchangeFuture last = last();
 
-                if (!last.isDone())
+                if (!last.isDone() || Objects.equals(last.initialVersion(), readyTopVer()))
                     break;
 
                 removeLast();
@@ -2806,6 +2799,29 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             // Return the value in the set.
             return cur == null ? fut : cur;
+        }
+
+        /**
+         * @return Ready top version.
+         */
+        public AffinityTopologyVersion readyTopVer() {
+            return readyTopVer.get();
+        }
+
+        /**
+         * @param readyTopVersion Ready top version.
+         * @return {@code true} if version was set and {@code false} otherwise.
+         */
+        public boolean readyTopVer(AffinityTopologyVersion readyTopVersion) {
+            while (true) {
+                AffinityTopologyVersion readyVer = readyTopVer.get();
+
+                if (readyVer.compareTo(readyTopVersion) >= 0)
+                    return false;
+
+                if (readyTopVer.compareAndSet(readyVer, readyTopVersion))
+                    return true;
+            }
         }
 
         /** {@inheritDoc} */
