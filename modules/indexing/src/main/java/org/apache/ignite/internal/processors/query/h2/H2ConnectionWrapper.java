@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Wrapper to store connection with currently used schema and statement cache.
  */
 public class H2ConnectionWrapper implements AutoCloseable {
+    private static final int STATEMENT_CACHE_SIZE = 256;
     /** */
     private final Connection conn;
 
@@ -42,7 +43,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     H2ConnectionWrapper(Connection conn) {
         this.conn = conn;
-        clearStatementCache();
+        initStatementCache();
     }
 
     /**
@@ -77,7 +78,11 @@ public class H2ConnectionWrapper implements AutoCloseable {
      * Clears statement cache.
      */
     public void clearStatementCache() {
-        statementCache = new H2StatementCache(256);
+        initStatementCache();
+    }
+
+    private void initStatementCache() {
+        statementCache = new H2StatementCache(STATEMENT_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
