@@ -960,6 +960,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         BaselineTopology clusterBlt;
 
         if (globalState.transition()) {
+            // if current BLT equals to previous BLT than it is just a cluster state change (active <-> inactive)
             if (BaselineTopology.equals(globalState.baselineTopology(), globalState.previousBaselineTopology()))
                 clusterBlt = globalState.baselineTopology();
             else
