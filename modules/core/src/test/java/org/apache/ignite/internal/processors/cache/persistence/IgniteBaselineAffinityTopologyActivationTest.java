@@ -56,7 +56,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 
 /**
  *
@@ -368,31 +367,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         nodeC = startGridWithConsistentId("C");
 
         verifyBaselineTopologyOnNodes(verifier2, new Ignite[] {nodeA, nodeB, nodeC});
-    }
-
-    volatile long newTopology;
-
-    private static class SingleMessageInterceptorCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        private volatile CountDownLatch singleMsgSendLatch;
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (((GridIoMessage) msg).message() instanceof GridDhtPartitionsSingleMessage) {
-                try {
-                    if (singleMsgSendLatch != null)
-                        singleMsgSendLatch.await();
-                }
-                catch (Exception ignored) { }
-            }
-
-            super.sendMessage(node, msg, ackC);
-        }
-
-        /** */
-        void blockMsgsWithLatch(CountDownLatch latch) {
-            singleMsgSendLatch = latch;
-        }
     }
 
     /**
@@ -1166,6 +1140,36 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(2)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+    }
+
+    /**
+     * TcpCommunicationSpi aimed to delay {@link GridDhtPartitionsSingleMessage} to emulate PME hanging.
+     */
+    private static class SingleMessageInterceptorCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        private volatile CountDownLatch singleMsgSndLatch;
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
+            if (((GridIoMessage) msg).message() instanceof GridDhtPartitionsSingleMessage) {
+                try {
+                    if (singleMsgSndLatch != null)
+                        singleMsgSndLatch.await();
+                }
+                catch (Exception ignored) { }
+            }
+
+            super.sendMessage(node, msg, ackC);
+        }
+
+        /** */
+        void blockMsgsWithLatch(CountDownLatch latch) {
+            singleMsgSndLatch = latch;
+        }
     }
 
     /** */
