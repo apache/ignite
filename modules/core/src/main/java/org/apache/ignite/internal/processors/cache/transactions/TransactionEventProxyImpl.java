@@ -58,15 +58,13 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     }
 
     /**
-     * @param xid Xid.
      * @param tx Tx proxy.
      */
-    public TransactionEventProxyImpl(IgniteUuid xid, GridNearTxLocal tx) {
-        assert xid != null;
+    public TransactionEventProxyImpl(GridNearTxLocal tx) {
         assert tx != null;
 
-        this.xid = xid;
         this.tx = tx;
+        this.xid = tx.xid();
     }
 
     /** {@inheritDoc} */
@@ -121,7 +119,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
 
     /** {@inheritDoc} */
     @Override public long timeout(long timeout) {
-        return tx().timeout(timeout);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -136,37 +134,37 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
 
     /** {@inheritDoc} */
     @Override public void commit() throws IgniteException {
-        tx().commit();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
-        return tx().commitAsync();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        tx().close();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws IgniteException {
-        tx().rollback();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
-        return tx().rollbackAsync();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
-        tx().resume();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void suspend() throws IgniteException {
-        tx().suspend();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -176,17 +174,17 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
 
     /** {@inheritDoc} */
     @Override public IgniteAsyncSupport withAsync() {
-        return tx().withAsync();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        return tx().isAsync();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        return tx().future();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -197,10 +195,10 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
         if (tx == null)
             throw new IgniteException("Operation allowed only inside remote filter or " +
                 "inside local listener registered on originating node. " +
-                "Only xid() operation allowed in other cases. ");
+                "Only xid() operation allowed in other case. ");
 
         if (proxy == null)
-            proxy = tx.rollbackOnlyProxy();
+            proxy = tx.proxy();
 
         return proxy;
     }

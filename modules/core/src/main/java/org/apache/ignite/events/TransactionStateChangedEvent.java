@@ -47,7 +47,8 @@ public class TransactionStateChangedEvent extends EventAdapter {
     }
 
     /**
-     *
+     * Provides transaction proxy allows all 'get' operations such as {@link Transaction#label()}
+     * and also {@link Transaction#setRollbackOnly()} method.
      */
     public Transaction tx() {
         return tx;

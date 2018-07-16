@@ -1214,7 +1214,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 cctx.discovery().localNode(),
                 null,
                 type,
-                new TransactionEventProxyImpl(xid(), (GridNearTxLocal)this)));
+                new TransactionEventProxyImpl((GridNearTxLocal)this)));
     }
 
     /** {@inheritDoc} */

@@ -53,7 +53,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             Transaction tx = evt.tx();
 
             if (tx.timeout() < 200)
-                tx.rollback();
+                tx.setRollbackOnly();
 
             return true;
         }, EVT_TX_STARTED);
@@ -105,7 +105,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             Transaction tx = evt.tx();
 
             if (tx.label() == null)
-                tx.rollback();
+                tx.setRollbackOnly();
 
             return true;
         }, EVT_TX_STARTED);
@@ -149,7 +149,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
                 Transaction tx = evt.tx();
 
                 if (tx.label() == null)
-                    tx.rollback();
+                    tx.setRollbackOnly();
 
                 return true;
             },
@@ -209,7 +209,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
                 Transaction tx = evt.tx();
 
                 if (tx.timeout() == 0)
-                    tx.rollback();
+                    tx.setRollbackOnly();
 
                 return true;
             },
@@ -274,7 +274,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
                 Transaction tx = evt.tx();
 
                 try {
-                    tx.rollback();
+                    tx.setRollbackOnly();
                 }
                 catch (IgniteException ignored) {
                     alreadyRolledBack.set(rollbackFailed.getAndSet(true));
