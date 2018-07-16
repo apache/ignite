@@ -151,7 +151,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
-import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
+import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
@@ -169,11 +169,7 @@ import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
-import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
-import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
@@ -430,6 +426,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // User operation SQL
         suite.addTestSuite(SqlParserUserSelfTest.class);
         suite.addTestSuite(SqlUserCommandSelfTest.class);
+
+        suite.addTestSuite(ObjectPoolSelfTest.class);
 
         return suite;
     }

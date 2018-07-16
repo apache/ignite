@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import junit.framework.TestCase;
 import org.apache.ignite.internal.processors.query.h2.ObjectPool.Reusable;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class ObjectPoolTest {
+public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     private static class Obj implements AutoCloseable {
         private boolean closed = false;
         @Override
@@ -37,8 +39,7 @@ public class ObjectPoolTest {
 
     private ObjectPool<Obj> pool = new ObjectPool<>(Obj::new, 1);
 
-    @Test
-    public void objectIsReusedAfterRecycling() {
+    public void testObjectIsReusedAfterRecycling() {
         Reusable<Obj> o1 = pool.borrow();
         o1.recycle();
         Reusable<Obj> o2 = pool.borrow();
@@ -47,16 +48,14 @@ public class ObjectPoolTest {
         assertFalse(o1.object().isClosed());
     }
 
-    @Test
-    public void borrowedObjectIsNotReturnedTwice() {
+    public void testBorrowedObjectIsNotReturnedTwice() {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
 
         assertNotSame(o1.object(), o2.object());
     }
 
-    @Test
-    public void objectShouldBeClosedOnRecycleIfPoolIsFull() {
+    public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
         o1.recycle();
