@@ -18,7 +18,7 @@
 import {nonEmpty} from 'app/utils/lodashMixins';
 import { EmptyBean, Bean } from './Beans';
 
-export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults', (JavaTypes, clusterDflts, cacheDflts) => {
+export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults', function(JavaTypes, clusterDflts, cacheDflts) {
     class PlatformGenerator {
         static igniteConfigurationBean(cluster) {
             return new Bean('Apache.Ignite.Core.IgniteConfiguration', 'cfg', cluster, clusterDflts);

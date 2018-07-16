@@ -57,7 +57,7 @@ export class Confirm {
 }
 
 // Confirm popup service.
-export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($root, $q, $modal, $animate) => {
+export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', function($root, $q, $modal, $animate) {
     const scope = $root.$new();
 
     const modal = $modal({templateUrl, scope, show: false, backdrop: true});
