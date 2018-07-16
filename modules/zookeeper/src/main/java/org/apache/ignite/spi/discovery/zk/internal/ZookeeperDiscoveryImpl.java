@@ -464,10 +464,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void doReconnect(UUID newId) {
         if (rtState.joined) {
-            assert rtState.evtsData != null;
-
             lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
-                rtState.evtsData.topVer,
+                rtState.topVer,
                 locNode,
                 rtState.top.topologySnapshot(),
                 Collections.<Long, Collection<ClusterNode>>emptyMap(),
@@ -2608,6 +2606,8 @@ public class ZookeeperDiscoveryImpl {
                 }
             }
         }
+
+        rtState.topVer = newEvts.topVer;
 
         processNewEvents(newEvts);
 

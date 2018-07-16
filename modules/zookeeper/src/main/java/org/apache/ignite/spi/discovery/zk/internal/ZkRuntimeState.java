@@ -55,6 +55,9 @@ class ZkRuntimeState {
     volatile boolean joined;
 
     /** */
+    long topVer;
+
+    /** */
     ZkDiscoveryEventsData evtsData;
 
     /** */
