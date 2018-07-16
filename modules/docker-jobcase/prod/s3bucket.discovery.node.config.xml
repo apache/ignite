@@ -47,9 +47,8 @@
                     <!-- S3 bucket approach for discovery of cluster nodes -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
                         <property name="bucketName" value="#{systemEnvironment['IGNITE_DISCOVERY_S3_BUCKETNAME']}"/>
-                        <!-- Ideally we would use awsCredentialsProvider here, and use the CredentialsProviderChain below
-                             but Ignite comes with an old AWS library that does not include the latter -->
-                        <property name="awsCredentials" ref="aws.creds"/>
+
+                        <property name="awsCredentialsProvider" ref="aws.creds"/>
                         <property name="clientConfiguration">
                             <bean class="com.amazonaws.ClientConfiguration">
                                  <!-- the default is 3, and in test we had issues where this was not enough to reliably start an instance
@@ -63,8 +62,9 @@
         </property>              
     </bean>
     
-    <!-- The S3 buckets used allow access to Ignite nodes themselves, so we don't need additional credentials.
-         This will use anonymous credentials if no credentials are found -->
-    <bean id="aws.creds" class="com.amazonaws.auth.AnonymousAWSCredentials"/>    
+    <!--
+        The S3 buckets used allow access to Ignite nodes themselves, so we don't need additional credentials 
+    -->
+    <bean id="aws.creds" class="com.amazonaws.auth.DefaultAWSCredentialsProviderChain"/>   
     
 </beans>
