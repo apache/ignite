@@ -1747,6 +1747,16 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
          * @return {@code True} if current event is not last and should be skipped.
          */
         private boolean skipExchange(AffinityTopologyVersion initTopVer) {
+            IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange().affinityReadyFuture(initTopVer);
+
+            if (affReadyFut != null) {
+                try {
+                    affReadyFut.get();
+                } catch (IgniteCheckedException e) {
+                    U.error(log, "Error while waiting affinity ready future", e);
+                }
+            }
+
             AffinityTopologyVersion pendingTopVer = null;
             AffinityTopologyVersion newTopVer = currTopVer;
 
@@ -1767,7 +1777,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 AffinityTopologyVersion lastTopVer;
 
                 // If exchange already moved forward - skip current version.
-                if (fut.exchangeDone() && newTopVer.compareTo(lastTopVer = fut.topologyVersion()) < 0)
+                if (newTopVer.compareTo(lastTopVer = fut.topologyVersion()) < 0)
                     pendingTopVer = lastTopVer;
             }
 
@@ -1869,11 +1879,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         // Clean up zombie assignments.
                         IgniteInternalCache<Object, Object> cache = serviceCache();
 
-                        // If topology changed again, let next event handle it.
-                        if (skipExchange(topVer))
-                            return;
-
                         while (it.hasNext()) {
+                            // If topology changed again, let next event handle it.
+                            if (skipExchange(topVer))
+                                return;
+
                             Cache.Entry<Object, Object> e = it.next();
 
                             if (cache.context().affinity().primaryByKey(ctx.grid().localNode(), e.getKey(), topVer)) {
