@@ -1385,23 +1385,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 fut.onNodeLeft();
             }
             catch (IgniteCheckedException e) {
-                if (!cctx.kernalContext().isStopping()) {
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
-                            ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() + ']');
-                    }
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + n.id() + ']');
+                }
 
-                    fut.onResult(e);
-                }
-                else {
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT prepare fut, failed to send request dht, ignore [txId=" + tx.nearXidVersion() +
-                            ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() +
-                            ", err=" + e + ']');
-                    }
-                }
+                fut.onResult(e);
             }
         }
 
