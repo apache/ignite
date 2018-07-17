@@ -23,11 +23,13 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.mockito.Mockito;
 
 /**
  *
@@ -64,20 +66,21 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
         );
 
         PageMemory mem = new PageMemoryImpl(
-            provider, sizes,
-            sharedCtx,
-            PAGE_SIZE,
-            (fullPageId, byteBuf, tag) -> {
-                assert false : "No page replacement (rotation with disk) should happen during the test";
-            },
-            new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-                @Override public void applyx(Long page, FullPageId fullPageId, PageMemoryEx pageMem) {
-                }
-            },
-            () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            null
+                provider, sizes,
+                sharedCtx,
+                PAGE_SIZE,
+                (fullPageId, byteBuf, tag) -> {
+                    assert false : "No page replacement (rotation with disk) should happen during the test";
+                },
+                new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
+                    @Override
+                    public void applyx(Long page, FullPageId fullPageId, PageMemoryEx pageMem) {
+                    }
+                },
+                () -> true,
+                new DataRegionMetricsImpl(new DataRegionConfiguration()),
+                PageMemoryImpl.ThrottlingPolicy.DISABLED,
+                Mockito.mock(CheckpointWriteProgressSupplier.class)
         );
 
         mem.start();
