@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +69,7 @@ public class RandomForestRegressionTrainerTest {
         }
 
         RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1);
-        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> v, (k, v) -> k);
+        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
         model.getModels().forEach(m -> {
             assertTrue(m instanceof ModelOnFeaturesSubspace);
             assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);

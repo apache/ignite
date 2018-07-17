@@ -290,7 +290,7 @@ body > .wrapper > ui-view {
     display: flex;
 
     input[type="checkbox"] {
-        width: 20px;
+        flex: 1 0 auto;
     }
 }
 

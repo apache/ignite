@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
@@ -49,7 +50,7 @@ public class Step_4_Add_age_fare {
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
                         .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
@@ -57,7 +58,7 @@ public class Step_4_Add_age_fare {
                             featureExtractor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
                             strEncoderPreprocessor
