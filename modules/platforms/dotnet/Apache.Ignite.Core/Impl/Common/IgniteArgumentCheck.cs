@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Global
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;

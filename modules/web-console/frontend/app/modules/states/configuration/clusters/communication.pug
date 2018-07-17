@@ -38,7 +38,7 @@ include /app/helpers/jade/mixins
                     +number('Send retry delay:', `${model}.networkSendRetryDelay`, '"networkSendRetryDelay"', 'true', '1000', '1', 'Interval in milliseconds between message send retries')
                 .settings-row
                     +number('Send retry count:', `${model}.networkSendRetryCount`, '"networkSendRetryCount"', 'true', '3', '1', 'Message send retries count')
-                .settings-row
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.3.0"])')
                     +number('Discovery startup delay:', `${model}.discoveryStartupDelay`, '"discoveryStartupDelay"', 'true', '60000', '1', 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen')
                 .settings-row
                     +java-class('Communication listener:', `${communication}.listener`, '"comListener"', 'true', 'false', 'Listener of communication events')

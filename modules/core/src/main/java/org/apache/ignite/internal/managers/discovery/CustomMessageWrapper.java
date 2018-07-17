@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class CustomMessageWrapper implements DiscoverySpiCustomMessage {
+public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

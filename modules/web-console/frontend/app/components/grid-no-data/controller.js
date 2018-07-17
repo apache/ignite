@@ -30,6 +30,8 @@ export default class {
 
     $onChanges(changes) {
         if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+            this.applyValues();
+
             this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
                 this.applyValues();
             });
@@ -39,6 +41,7 @@ export default class {
     applyValues() {
         if (!this.gridApi.grid.rows.length) {
             this.noData = true;
+
             return;
         }
 

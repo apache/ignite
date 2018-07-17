@@ -22,6 +22,7 @@ web-console-header {
     $bottom-border-width: 4px;
 
     display: block;
+    min-height: 85px;
     font-family: Roboto;
     font-size: 16px;
     border-bottom: $bottom-border-width solid red;

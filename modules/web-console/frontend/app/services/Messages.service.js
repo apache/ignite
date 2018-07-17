@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {CancellationError} from 'app/errors/CancellationError';
+
 // Service to show various information and error messages.
 export default ['IgniteMessages', ['$alert', ($alert) => {
     // Common instance of alert modal.
@@ -70,7 +72,7 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
         errorMessage,
         hideAlert,
         showError(message, err) {
-            if (message && message.cancelled)
+            if (message instanceof CancellationError)
                 return false;
 
             _showMessage(message, err, 'danger', 10);

@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
 import org.apache.ignite.cache.store.CacheStoreReadFromBackupTest;
 import org.apache.ignite.cache.store.CacheTransactionalStoreReadFromBackupTest;
@@ -188,6 +189,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
         suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
+        suite.addTestSuite(IgniteCacheEntryProcessorSequentialCallTest.class);
 
         // TODO GG-11148: include test when implemented.
         // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and

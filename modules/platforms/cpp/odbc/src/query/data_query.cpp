@@ -52,11 +52,7 @@ namespace ignite
             SqlResult::Type DataQuery::Execute()
             {
                 if (cursor.get())
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query cursor is in open state already.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                    InternalClose();
 
                 return MakeRequestExecute();
             }
@@ -112,14 +108,12 @@ namespace ignite
                     if (it == columnBindings.end())
                         continue;
 
-                    SqlResult::Type result = row->ReadColumnToBuffer(i, it->second);
+                    app::ConversionResult::Type convRes = row->ReadColumnToBuffer(i, it->second);
+
+                    SqlResult::Type result = ProcessConversionResult(convRes, 0, i);
 
                     if (result == SqlResult::AI_ERROR)
-                    {
-                        diag.AddStatusRecord(SqlState::S01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
-
                         return SqlResult::AI_ERROR;
-                    }
                 }
 
                 return SqlResult::AI_SUCCESS;
@@ -144,14 +138,9 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                SqlResult::Type result = row->ReadColumnToBuffer(columnIdx, buffer);
+                app::ConversionResult::Type convRes = row->ReadColumnToBuffer(columnIdx, buffer);
 
-                if (result == SqlResult::AI_ERROR)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Unknown column type.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                SqlResult::Type result = ProcessConversionResult(convRes, 0, columnIdx);
 
                 return result;
             }
@@ -395,6 +384,66 @@ namespace ignite
                 cursor.reset(new Cursor(rsp.GetQueryId()));
 
                 return SqlResult::AI_SUCCESS;
+            }
+
+            SqlResult::Type DataQuery::ProcessConversionResult(app::ConversionResult::Type convRes, int32_t rowIdx,
+                int32_t columnIdx)
+            {
+                switch (convRes)
+                {
+                    case app::ConversionResult::AI_SUCCESS:
+                    {
+                        return SqlResult::AI_SUCCESS;
+                    }
+
+                    case app::ConversionResult::AI_NO_DATA:
+                    {
+                        return SqlResult::AI_NO_DATA;
+                    }
+
+                    case app::ConversionResult::AI_VARLEN_DATA_TRUNCATED:
+                    {
+                        diag.AddStatusRecord(SqlState::S01004_DATA_TRUNCATED,
+                            "Buffer is too small for the column data. Truncated from the right.", rowIdx, columnIdx);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    case app::ConversionResult::AI_FRACTIONAL_TRUNCATED:
+                    {
+                        diag.AddStatusRecord(SqlState::S01S07_FRACTIONAL_TRUNCATION,
+                            "Buffer is too small for the column data. Fraction truncated.", rowIdx, columnIdx);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    case app::ConversionResult::AI_INDICATOR_NEEDED:
+                    {
+                        diag.AddStatusRecord(SqlState::S22002_INDICATOR_NEEDED,
+                            "Indicator is needed but not suplied for the column buffer.", rowIdx, columnIdx);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    case app::ConversionResult::AI_UNSUPPORTED_CONVERSION:
+                    {
+                        diag.AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Data conversion is not supported.", rowIdx, columnIdx);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    case app::ConversionResult::AI_FAILURE:
+                    default:
+                    {
+                        diag.AddStatusRecord(SqlState::S01S01_ERROR_IN_ROW,
+                            "Can not retrieve row column.", rowIdx, columnIdx);
+
+                        break;
+                    }
+                }
+
+                return SqlResult::AI_ERROR;
             }
         }
     }

@@ -33,6 +33,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -113,8 +114,8 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
 
         startGrid(1);
 
-        //This timeout value was chosen experimentally. Grid rebalancing should already be finished before time is out.
-        Thread.sleep(5000);
+        for (Ignite ig : G.allGrids())
+            ig.cache(PERSON_CACHE).rebalance().get();
 
         while (it.hasNext()) {
             it.next();
@@ -159,8 +160,8 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         // Close cursor. Partitions should be released now.
         qryCursor.close();
 
-        //This timeout value was chosen experimentally. Grid rebalancing should already be finished before time is out.
-        Thread.sleep(5000);
+        for (Ignite ig : G.allGrids())
+            ig.cache(PERSON_CACHE).rebalance().get();
 
         assertEquals("Wrong result set size", partsFilled, cache.query(qry).getAll().size());
     }

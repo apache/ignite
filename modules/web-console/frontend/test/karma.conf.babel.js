@@ -35,7 +35,7 @@ export default (config) => {
         ],
 
         plugins: [
-            require('karma-phantomjs-launcher'),
+            require('karma-chrome-launcher'),
             require('karma-teamcity-reporter'),
             require('karma-mocha-reporter'),
             require('karma-webpack'),
@@ -57,7 +57,7 @@ export default (config) => {
         // Test results reporter to use
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-        reporters: ['mocha'],
+        reporters: [process.env.TEST_REPORTER || 'mocha'],
 
         mochaReporter: {
             showDiff: true
@@ -78,7 +78,13 @@ export default (config) => {
 
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['PhantomJS'],
+        browsers: ['ChromeHeadlessNoSandbox'],
+        customLaunchers: {
+            ChromeHeadlessNoSandbox: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox']
+            }
+        },
 
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits

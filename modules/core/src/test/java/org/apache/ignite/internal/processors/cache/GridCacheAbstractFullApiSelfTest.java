@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -463,14 +464,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++)
             assertEquals(globalPrimarySize, jcache(i).size(PRIMARY));
 
-        int times = 1;
+        // Check how many instances of any given key there is in the cluster.
+        int globalSize = 0;
 
-        if (cacheMode() == REPLICATED)
-            times = gridCount();
-        else if (cacheMode() == PARTITIONED)
-            times = Math.min(gridCount(), jcache().getConfiguration(CacheConfiguration.class).getBackups() + 1);
-
-        int globalSize = globalPrimarySize * times;
+        for (String key : map.keySet())
+            globalSize += affinity(jcache()).mapKeyToPrimaryAndBackups(key).size();
 
         for (int i = 0; i < gridCount(); i++)
             assertEquals(globalSize, jcache(i).size(ALL));
@@ -5044,12 +5042,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 checkIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (Throwable t) {
+                // If AssertionFailedError is in the chain, assume we need to wait and retry.
+                if (!X.hasCause(t, AssertionFailedError.class))
+                    throw t;
+                
                 if (i == 9) {
                     for (int j = 0; j < gridCount(); j++)
                         executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
 
-                    throw e;
+                    throw t;
                 }
 
                 log.info("Iterators not cleared, will wait");

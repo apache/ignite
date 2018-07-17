@@ -16,6 +16,7 @@
  */
 
 import templateUrl from 'views/templates/batch-confirm.tpl.pug';
+import {CancellationError} from 'app/errors/CancellationError';
 
 // Service for confirm or skip several steps.
 export default ['IgniteConfirmBatch', ['$rootScope', '$q', '$modal', ($root, $q, $modal) => {
@@ -33,7 +34,7 @@ export default ['IgniteConfirmBatch', ['$rootScope', '$q', '$modal', ($root, $q,
         scope.confirmModal.hide();
 
         if (cancel)
-            scope.deferred.reject('cancelled');
+            scope.deferred.reject(new CancellationError());
         else
             scope.deferred.resolve();
     };
