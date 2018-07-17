@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.resource;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.spi.IgniteSpi;
@@ -301,11 +304,19 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
         assert clsDesc != null;
 
-        if (clsDesc.isAnnotated(annSet) == 0)
-            return;
+        if (clsDesc.isAnnotated(annSet) != 0) {
+            for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations)
+                clsDesc.inject(obj, ann, nullInjector, null, null);
+        }
 
-        for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations)
-            clsDesc.inject(obj, ann, nullInjector, null, null);
+        if (obj instanceof Closeable) {
+            try {
+                ((Closeable)obj).close();
+            }
+            catch (IOException e) {
+                log.warning("Unable to close resource: " + e.getMessage(), e);
+            }
+        }
     }
 
     /**

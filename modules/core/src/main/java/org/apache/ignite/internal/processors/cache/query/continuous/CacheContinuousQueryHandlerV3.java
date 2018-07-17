@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -181,5 +182,18 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
             rmtTransFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
         else
             rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregister(UUID routineId, GridKernalContext ctx) {
+        super.unregister(routineId, ctx);
+
+        if (rmtTrans instanceof Closeable) {
+            try {
+                ((Closeable)rmtTrans).close();
+            }
+            catch (IOException ignore) {
+            }
+        }
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,7 +77,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.EXPIRED;
@@ -952,6 +953,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private final boolean keepBinary;
 
         /** */
+        private final CacheEntryListener locLsnrImpl;
+
+        /** */
         private volatile UUID routineId;
 
         /**
@@ -962,6 +966,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             this.cfg = cfg;
             this.onStart = onStart;
             this.keepBinary = keepBinary;
+            this.locLsnrImpl = cfg != null && cfg.getCacheEntryListenerFactory() != null ?
+                (CacheEntryListener)cfg.getCacheEntryListenerFactory().create() : null;
         }
 
         /**
@@ -971,8 +977,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         void execute() throws IgniteCheckedException {
             if (!onStart)
                 cctx.config().addCacheEntryListenerConfiguration(cfg);
-
-            CacheEntryListener locLsnrImpl = (CacheEntryListener)cfg.getCacheEntryListenerFactory().create();
 
             if (locLsnrImpl == null)
                 throw new IgniteCheckedException("Local CacheEntryListener is mandatory and can't be null.");
@@ -1063,6 +1067,15 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cctx.kernalContext().continuous().stopRoutine(routineId0).get();
 
             cctx.config().removeCacheEntryListenerConfiguration(cfg);
+
+            if (locLsnrImpl instanceof Closeable) {
+                try {
+                    ((Closeable)locLsnrImpl).close();
+                }
+                catch (IOException e) {
+                    log.warning("Unable to close resource: " + e.getMessage(), e);
+                }
+            }
         }
     }
 
