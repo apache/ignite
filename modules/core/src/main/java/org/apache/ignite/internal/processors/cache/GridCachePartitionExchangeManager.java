@@ -181,6 +181,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final AtomicReference<AffinityTopologyVersion> readyTopVer =
         new AtomicReference<>(AffinityTopologyVersion.NONE);
 
+    /**
+     * Shows the last topology version to be rebalanced. Can be changed by exchange thread if calculated
+     * affinity assignments are different from the previous requested version.
+     */
+    private volatile AffinityTopologyVersion rebalanceTopVer = AffinityTopologyVersion.NONE;
+
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
 
@@ -818,6 +824,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public AffinityTopologyVersion readyAffinityVersion() {
         return readyTopVer.get();
+    }
+
+    /**
+     * @return Latest topology version to be rebalanced.
+     */
+    public AffinityTopologyVersion rebalanceTopologyVersion() {
+        return rebalanceTopVer;
+    }
+
+    /**
+     * @param topVer New topology rebalance version to set.
+     */
+    private void rebalanceTopologyVersion(AffinityTopologyVersion topVer) {
+        if (rebalanceTopVer.compareTo(topVer) < 0)
+            rebalanceTopVer = topVer;
     }
 
     /**
@@ -2552,7 +2573,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
-                                grp.preloader().afterExchange(exchFut);
+                                if (grp.preloader().checkEvents(exchFut))
+                                    rebalanceTopologyVersion(exchFut.context().events().topologyVersion());
 
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
@@ -2580,6 +2602,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     if (assigns != null && assigns.cancelled())
                                         pendingExchange = true;
                                 }
+
+//                                if (grp.preloader().checkAssigns(assigns) || exchFut == null)
+//                                    rebalanceTopologyVersion(grp.topology().readyTopologyVersion());
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }
@@ -2626,16 +2651,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
-                                Runnable cur = grp.preloader().addAssignments(assigns,
-                                    exchFut == null,
-                                    cnt,
-                                    r,
-                                    forcedRebFut);
+                                if (assigns != null &&
+                                    !assigns.isEmpty() && // Keep this short cut to get result faster.
+                                    rebalanceTopVer.compareTo(assigns.topologyVersion()) < 0) {
+                                    grp.preloader().updateRebalanceFuture(assigns.topologyVersion());
 
-                                if (cur != null) {
-                                    rebList.add(grp.cacheOrGroupName());
+                                    U.log(log, "Rebalancing skipped (no group changes) [" +
+                                        "grp=" + grp.cacheOrGroupName() +
+                                        ", mode=" + grp.config().getRebalanceMode() +
+                                        ", lastTopVer=" + assigns.topologyVersion() + ']');
+                                }
+                                else {
+                                    Runnable cur = grp.preloader().addAssignments(assigns,
+                                        exchFut == null,
+                                        cnt,
+                                        r,
+                                        forcedRebFut);
 
-                                    r = cur;
+                                    if (cur != null) {
+                                        rebList.add(grp.cacheOrGroupName());
+
+                                        r = cur;
+                                    }
                                 }
                             }
                         }

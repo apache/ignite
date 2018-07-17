@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,9 +66,23 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param exchFut Completed exchange future.
+     * @param exchFut Completed exchange future to check preloading necessity.
+     * @return {@code True} if preloader rebalance should be scheduled.
      */
-    public void afterExchange(GridDhtPartitionsExchangeFuture exchFut);
+    public boolean checkEvents(GridDhtPartitionsExchangeFuture exchFut);
+
+    /**
+     * @param assigns Cache group assignments to check preloading necessity.
+     * @return {@code True} if preloader rebalance should be scheduled.
+     */
+    public boolean checkAssigns(GridDhtPreloaderAssignments assigns);
+
+    /**
+     * Rebalance can be skipped due to unchange assignments. This method will update rebalance future version.
+     *
+     * @param topVer New topology version.
+     */
+    public void updateRebalanceFuture(AffinityTopologyVersion topVer);
 
     /**
      * @param exchId Exchange ID.
