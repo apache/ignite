@@ -313,85 +313,89 @@ public class SegmentedRingByteBufferTest extends TestCase {
 
         final Object mux = new Object();
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-            try {
-                barrier.await();
-            }
-            catch (InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
+        IgniteInternalFuture<Long> fut;
 
-                fail();
-            }
+        try {
+            fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    barrier.await();
+                }
+                catch (InterruptedException | BrokenBarrierException e) {
+                    e.printStackTrace();
 
-            while (!stop.get()) {
-                TestObject obj = new TestObject();
+                    fail();
+                }
 
-                SegmentedRingByteBuffer.WriteSegment seg = buf.offer(obj.size());
-                ByteBuffer bbuf;
+                while (!stop.get()) {
+                    TestObject obj = new TestObject();
 
-                if (seg == null) {
-                    cnt.incrementAndGet();
+                    SegmentedRingByteBuffer.WriteSegment seg = buf.offer(obj.size());
+                    ByteBuffer bbuf;
 
-                    synchronized (mux) {
-                        try {
-                            if (stop.get())
-                                break;
+                    if (seg == null) {
+                        cnt.incrementAndGet();
 
-                            mux.wait();
+                        synchronized (mux) {
+                            try {
+                                if (stop.get())
+                                    break;
+
+                                mux.wait();
+                            }
+                            catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+
+                        cnt.decrementAndGet();
+
+                        continue;
                     }
 
-                    cnt.decrementAndGet();
+                    bbuf = seg.buffer();
 
-                    continue;
+                    assertEquals(obj.size(), bbuf.remaining());
+
+                    bbuf.putLong(obj.id);
+                    bbuf.putInt(obj.len);
+                    bbuf.put(obj.arr);
+
+                    assertEquals(0, bbuf.remaining());
+
+                    seg.release();
+
+                    long total = totalWritten.addAndGet(obj.size());
+
+                    assertTrue(total <= cap);
                 }
+            }, producerCnt, "producer-thread");
 
-                bbuf = seg.buffer();
+            long endTime = System.currentTimeMillis() + 60 * 1000L;
 
-                assertEquals(obj.size(), bbuf.remaining());
+            while (System.currentTimeMillis() < endTime) {
 
-                bbuf.putLong(obj.id);
-                bbuf.putInt(obj.len);
-                bbuf.put(obj.arr);
+                while (cnt.get() < producerCnt)
+                    U.sleep(10);
 
-                assertEquals(0, bbuf.remaining());
+                synchronized (mux) {
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll();
 
-                seg.release();
+                    if (segs != null) {
+                        for (SegmentedRingByteBuffer.ReadSegment seg : segs)
+                            seg.release();
+                    }
 
-                long total = totalWritten.addAndGet(obj.size());
+                    totalWritten.set(0);
 
-                assertTrue(total <= cap);
+                    mux.notifyAll();
+                }
             }
-        }, producerCnt, "producer-thread");
-
-        long endTime = System.currentTimeMillis() + 60 * 1000L;
-
-        while (System.currentTimeMillis() < endTime) {
-
-            while (cnt.get() < producerCnt)
-                U.sleep(10);
-
+        } finally {
             synchronized (mux) {
-                List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll();
-
-                if (segs != null) {
-                    for (SegmentedRingByteBuffer.ReadSegment seg : segs)
-                        seg.release();
-                }
-
-                totalWritten.set(0);
+                stop.set(true);
 
                 mux.notifyAll();
             }
-        }
-
-        synchronized (mux) {
-            stop.set(true);
-
-            mux.notifyAll();
         }
 
         fut.get();
@@ -411,70 +415,74 @@ public class SegmentedRingByteBufferTest extends TestCase {
 
         final CyclicBarrier barrier = new CyclicBarrier(producerCnt);
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-            try {
-                barrier.await();
-            }
-            catch (InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
+        IgniteInternalFuture<Long> fut;
 
-                fail();
-            }
+        try {
+            fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    barrier.await();
+                }
+                catch (InterruptedException | BrokenBarrierException e) {
+                    e.printStackTrace();
 
-            while (!stop.get()) {
-                TestObject obj = new TestObject();
-
-                SegmentedRingByteBuffer.WriteSegment seg;
-                ByteBuffer bbuf;
-
-                for (;;) {
-                    if (stop.get())
-                        return;
-
-                    seg = buf.offer(obj.size());
-
-                    if (seg != null)
-                        break;
+                    fail();
                 }
 
-                bbuf = seg.buffer();
+                while (!stop.get()) {
+                    TestObject obj = new TestObject();
 
-                assertEquals(obj.size(), bbuf.remaining());
+                    SegmentedRingByteBuffer.WriteSegment seg;
+                    ByteBuffer bbuf;
 
-                bbuf.putLong(obj.id);
-                bbuf.putInt(obj.len);
-                bbuf.put(obj.arr);
+                    for (;;) {
+                        if (stop.get())
+                            return;
 
-                assertEquals(0, bbuf.remaining());
+                        seg = buf.offer(obj.size());
 
-                seg.release();
-            }
-        }, producerCnt, "producer-thread");
+                        if (seg != null)
+                            break;
+                    }
 
-        Random rnd = new Random();
+                    bbuf = seg.buffer();
 
-        long endTime = System.currentTimeMillis() + 60 * 1000L;
+                    assertEquals(obj.size(), bbuf.remaining());
 
-        while (System.currentTimeMillis() < endTime) {
-            try {
-                U.sleep(rnd.nextInt(100) + 1);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                e.printStackTrace();
-            }
+                    bbuf.putLong(obj.id);
+                    bbuf.putInt(obj.len);
+                    bbuf.put(obj.arr);
 
-            List<SegmentedRingByteBuffer.ReadSegment> segs;
-
-            if ((segs = buf.poll()) != null) {
-                for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
-                    assertTrue(seg.buffer().hasRemaining());
+                    assertEquals(0, bbuf.remaining());
 
                     seg.release();
                 }
-            }
-        }
+            }, producerCnt, "producer-thread");
 
-        stop.set(true);
+            Random rnd = new Random();
+
+            long endTime = System.currentTimeMillis() + 60 * 1000L;
+
+            while (System.currentTimeMillis() < endTime) {
+                try {
+                    U.sleep(rnd.nextInt(100) + 1);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    e.printStackTrace();
+                }
+
+                List<SegmentedRingByteBuffer.ReadSegment> segs;
+
+                if ((segs = buf.poll()) != null) {
+                    for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
+                        assertTrue(seg.buffer().hasRemaining());
+
+                        seg.release();
+                    }
+                }
+            }
+        } finally {
+            stop.set(true);
+        }
 
         fut.get();
     }
@@ -495,115 +503,119 @@ public class SegmentedRingByteBufferTest extends TestCase {
 
         final Set<TestObject> items = Collections.newSetFromMap(new ConcurrentHashMap<TestObject, Boolean>());
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-            try {
-                barrier.await();
-            }
-            catch (InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
+        IgniteInternalFuture<Long> fut;
 
-                fail();
-            }
+        try {
+            fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    barrier.await();
+                }
+                catch (InterruptedException | BrokenBarrierException e) {
+                    e.printStackTrace();
 
-            while (!stop.get()) {
-                TestObject obj = new TestObject();
-
-                SegmentedRingByteBuffer.WriteSegment seg;
-                ByteBuffer bbuf;
-
-                for (;;) {
-                    if (stop.get())
-                        return;
-
-                    seg = buf.offer(obj.size());
-
-                    if (seg != null)
-                        break;
+                    fail();
                 }
 
-                bbuf = seg.buffer();
+                while (!stop.get()) {
+                    TestObject obj = new TestObject();
 
-                assertEquals(obj.size(), bbuf.remaining());
+                    SegmentedRingByteBuffer.WriteSegment seg;
+                    ByteBuffer bbuf;
 
-                bbuf.putLong(obj.id);
-                bbuf.putInt(obj.len);
-                bbuf.put(obj.arr);
+                    for (;;) {
+                        if (stop.get())
+                            return;
 
-                assertEquals(0, bbuf.remaining());
+                        seg = buf.offer(obj.size());
 
-                assertTrue("Ooops! The same value is already exist in Set! ", items.add(obj));
+                        if (seg != null)
+                            break;
+                    }
 
-                seg.release();
-            }
-        }, producerCnt, "producer-thread");
+                    bbuf = seg.buffer();
 
-        Random rnd = new Random();
+                    assertEquals(obj.size(), bbuf.remaining());
 
-        long endTime = System.currentTimeMillis() + 60 * 1000L;
+                    bbuf.putLong(obj.id);
+                    bbuf.putInt(obj.len);
+                    bbuf.put(obj.arr);
 
-        while (System.currentTimeMillis() < endTime) {
-            try {
-                U.sleep(rnd.nextInt(100) + 1);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                e.printStackTrace();
-            }
+                    assertEquals(0, bbuf.remaining());
 
-            List<SegmentedRingByteBuffer.ReadSegment> segs;
+                    assertTrue("Ooops! The same value is already exist in Set! ", items.add(obj));
 
-            while ((segs = buf.poll()) != null) {
-                int size = 0;
-
-                for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
-                    ByteBuffer bbuf = seg.buffer();
-
-                    assertTrue(bbuf.hasRemaining());
-
-                    size += bbuf.remaining();
-                }
-
-                byte[] arr = new byte[size];
-
-                int idx = 0;
-
-                for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
-                    ByteBuffer bbuf = seg.buffer();
-
-                    assertTrue(bbuf.hasRemaining());
-
-                    int len = bbuf.remaining();
-
-                    bbuf.get(arr, idx, len);
-
-                    idx += len;
-                }
-
-                ByteBuffer bbuf = ByteBuffer.wrap(arr);
-
-                bbuf.order(ByteOrder.nativeOrder());
-
-                assertTrue(bbuf.hasRemaining());
-
-                while (bbuf.hasRemaining()) {
-                    long id = bbuf.getLong();
-
-                    int len = bbuf.getInt();
-
-                    arr = new byte[len];
-
-                    bbuf.get(arr);
-
-                    TestObject obj = new TestObject(id, arr);
-
-                    assertTrue(items.remove(obj));
-                }
-
-                for (SegmentedRingByteBuffer.ReadSegment seg : segs)
                     seg.release();
-            }
-        }
+                }
+            }, producerCnt, "producer-thread");
 
-        stop.set(true);
+            Random rnd = new Random();
+
+            long endTime = System.currentTimeMillis() + 60 * 1000L;
+
+            while (System.currentTimeMillis() < endTime) {
+                try {
+                    U.sleep(rnd.nextInt(100) + 1);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    e.printStackTrace();
+                }
+
+                List<SegmentedRingByteBuffer.ReadSegment> segs;
+
+                while ((segs = buf.poll()) != null) {
+                    int size = 0;
+
+                    for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
+                        ByteBuffer bbuf = seg.buffer();
+
+                        assertTrue(bbuf.hasRemaining());
+
+                        size += bbuf.remaining();
+                    }
+
+                    byte[] arr = new byte[size];
+
+                    int idx = 0;
+
+                    for (SegmentedRingByteBuffer.ReadSegment seg : segs) {
+                        ByteBuffer bbuf = seg.buffer();
+
+                        assertTrue(bbuf.hasRemaining());
+
+                        int len = bbuf.remaining();
+
+                        bbuf.get(arr, idx, len);
+
+                        idx += len;
+                    }
+
+                    ByteBuffer bbuf = ByteBuffer.wrap(arr);
+
+                    bbuf.order(ByteOrder.nativeOrder());
+
+                    assertTrue(bbuf.hasRemaining());
+
+                    while (bbuf.hasRemaining()) {
+                        long id = bbuf.getLong();
+
+                        int len = bbuf.getInt();
+
+                        arr = new byte[len];
+
+                        bbuf.get(arr);
+
+                        TestObject obj = new TestObject(id, arr);
+
+                        assertTrue(items.remove(obj));
+                    }
+
+                    for (SegmentedRingByteBuffer.ReadSegment seg : segs)
+                        seg.release();
+                }
+            }
+        } finally {
+            stop.set(true);
+        }
 
         fut.get();
 
