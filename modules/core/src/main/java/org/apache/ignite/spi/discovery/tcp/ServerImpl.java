@@ -1090,9 +1090,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         case RES_JOIN_IMPOSSIBLE:
                             failed = true;
 
-                            throw new IgniteSpiException("Impossible to continue join, check if local discovery ports " +
+                            throw new IgniteSpiException("Impossible to continue join, check if local discovery and communication ports " +
                                 "are not blocked with firewall [addr=" + addr +
-                                ", req=" + joinReq + ']');
+                                ", req=" + joinReq + ", discoLocalPort=" + spi.getLocalPort() +
+                                ", discoLocalPortRange=" + spi.getLocalPortRange() + ']');
 
                         default:
                             // Concurrent startup, try next node.
@@ -6758,8 +6759,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (log.isInfoEnabled())
-                log.warning("Failed to ping joining node, closing connection. [node=" + node + ']');
+            U.warn(log, "Failed to ping joining node, closing connection. [node=" + node + ']');
 
             return false;
         }
