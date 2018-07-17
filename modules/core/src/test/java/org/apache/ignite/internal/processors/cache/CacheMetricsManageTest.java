@@ -231,6 +231,25 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testClearStatisticsAfterDisableStatistics() throws Exception {
+        startGrids(3);
+
+        IgniteCache<Integer, String> cache = grid(0).cache(CACHE1);
+
+        cache.enableStatistics(true);
+
+        incrementCacheStatistics(cache);
+
+        cache.enableStatistics(false);
+
+        cache.clearStatistics();
+
+        assertCacheStatisticsIsClear(Collections.singleton(CACHE1));
+    }
+
+    /**
+     *
+     */
     public void testClusterApiClearStatistics() throws Exception {
         startGrids(3);
 
