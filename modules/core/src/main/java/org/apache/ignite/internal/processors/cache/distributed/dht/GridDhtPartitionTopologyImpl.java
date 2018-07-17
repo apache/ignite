@@ -1514,7 +1514,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 GridDhtPartitionMap nodeMap = partMap.get(ctx.localNodeId());
 
-                if (nodeMap != null && grp.persistenceEnabled() && readyTopVer.initialized()) {
+                // Only in real exchange occurred.
+                if (exchangeVer != null &&
+                    nodeMap != null &&
+                    grp.persistenceEnabled() &&
+                    readyTopVer.initialized()) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e : nodeMap.entrySet()) {
                         int p = e.getKey();
                         GridDhtPartitionState state = e.getValue();
@@ -1537,9 +1541,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             rebalancePartition(p, haveHistory);
 
-                            // Should True only if real exchange occurred.
-                            if (exchangeVer != null)
-                                changed = true;
+                            changed = true;
                         }
                     }
                 }
