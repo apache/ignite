@@ -271,7 +271,8 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return Collection of nodes from which partitions was demanded.
+     * @return Collection of nodes from which partitions was demanded. Empty if rebalance not started
+     *         or already finished.
      */
     Collection<UUID> remainingRequestedNodes() {
         return rebalanceFut.remainingRequestedNodes();
@@ -292,6 +293,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * @return Set of partitions remaining to be preloaded for current cache group.
+     *         Empty if rebalance not started or already finished.
      */
     Set<Integer> remainingPreloadPartitions() {
         return rebalanceFut.remainingPreloadPartitions();
@@ -1302,6 +1304,7 @@ public class GridDhtPartitionDemander {
 
         /**
          * @return Collection of nodes remainign to be requested for demanded partitions.
+         *         Empty if rebalance not started or already finished.
          */
         private synchronized Collection<UUID> remainingRequestedNodes() {
             return remaining.keySet();
@@ -1309,6 +1312,7 @@ public class GridDhtPartitionDemander {
 
         /**
          * @return Set of partitions remaining to be preloaded for current cache group.
+         *         Empty if rebalance not started or already finished.
          */
         private synchronized Set<Integer> remainingPreloadPartitions() {
             Set<Integer> parts = new HashSet<>();
