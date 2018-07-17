@@ -210,8 +210,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         leftNodes.retainAll(demander.remainingRequestedNodes());
 
-        // Mark current rebalance as obsolete and prepare new one.
-        return !actTopVer.initialized() ||
+        return !actTopVer.initialized() || // Rebalance not cancelled, not first, first demand send yet.
             isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
             !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
     }
