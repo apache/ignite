@@ -173,8 +173,14 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx client = startGrid(CLIENT);
 
-        createEncCache(client, grid0, cacheName(), null);
-
-        checkEncCaches(grid0, client);
+        assertThrowsWithCause(() -> {
+            try {
+                createEncCache(client, grid0, cacheName(), null);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }, IgniteCheckedException.class);
     }
 }
