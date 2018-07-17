@@ -88,8 +88,8 @@ ENV JVM_METASPACE_SIZE 1g
 # As default, it enables remote debug on port 1044.
 ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044"
 
-# Ignite JVM settings
-ENV JVM_OPTS="-ea -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE} -server -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE} -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
+# Ignite common JVM settings.   Run.sh will concatenate the above settings.
+ENV JVM_OPTS="-server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M"
 
 
 # Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
