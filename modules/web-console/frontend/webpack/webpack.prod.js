@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import merge from 'webpack-merge';
+const path = require('path');
+const merge = require('webpack-merge');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-import UglifyJSPlugin from 'uglifyjs-webpack-plugin';
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
-import commonCfg from './webpack.common';
+const commonCfg = require('./webpack.common');
 
 const basedir = path.join(__dirname, '../');
 

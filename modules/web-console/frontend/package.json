@@ -5,9 +5,9 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "webpack-dev-server --config ./webpack/webpack.dev.babel.js",
+    "start": "webpack-dev-server --config ./webpack/webpack.dev.js",
     "dev": "npm start",
-    "build": "webpack --config ./webpack/webpack.prod.babel.js",
+    "build": "webpack --config ./webpack/webpack.prod.js",
     "test": "karma start ./test/karma.conf.js",
     "test-watch": "npm test -- --no-single-run",
     "eslint": "eslint --format node_modules/eslint-friendly-formatter app/ -- --eff-by-issue"

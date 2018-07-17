@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
-
-import commonCfg from './webpack.common';
+const merge = require('webpack-merge');
+const commonCfg = require('./webpack.common');
 
 export default merge(commonCfg, {
     mode: 'development',

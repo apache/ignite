@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import webpack from 'webpack';
+const path = require('path');
+const webpack = require('webpack');
 
-import CopyWebpackPlugin from 'copy-webpack-plugin';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import ProgressBarPlugin from 'progress-bar-webpack-plugin';
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 
-import eslintFormatter from 'eslint-friendly-formatter';
+const eslintFormatter = require('eslint-friendly-formatter');
 
 const basedir = path.join(__dirname, '../');
 const contentBase = path.join(basedir, 'public');
@@ -154,4 +154,4 @@ const config = {
     ]
 };
 
-export default config;
+module.exports = config;
