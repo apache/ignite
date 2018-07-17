@@ -27,6 +27,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
@@ -85,7 +86,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
@@ -104,7 +105,7 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      */
     @NotNull private <K, V> ModelOnFeaturesSubspace learnModel(
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         Random rnd = new Random();
@@ -148,14 +149,14 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * @param featureExtractor Feature extractor.
      * @param featureMapping Feature mapping.
      */
-    private <K, V> IgniteBiFunction<K, V, double[]> wrapFeatureExtractor(
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+    private <K, V> IgniteBiFunction<K, V, Vector> wrapFeatureExtractor(
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         Map<Integer, Integer> featureMapping) {
 
-        return featureExtractor.andThen((IgniteFunction<double[], double[]>)featureValues -> {
+        return featureExtractor.andThen((IgniteFunction<Vector, Vector>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.size()];
-            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues[featureValueId]);
-            return newFeaturesValues;
+            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues.get(featureValueId));
+            return VectorUtils.of(newFeaturesValues);
         });
     }
 }

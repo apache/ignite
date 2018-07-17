@@ -1871,6 +1871,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.quietAndInfo(log, b.toString());
     }
 
+    /** {@inheritDoc} */
+    @Override public void dumpRingStructure(IgniteLogger log) {
+        U.quietAndInfo(log, ring.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentTopologyVersion() {
+        return ring.topologyVersion();
+    }
+
     /**
      * @param msg Message.
      * @return {@code True} if recordable in debug mode.
@@ -4367,7 +4377,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    spi.collectExchangeData(dataPacket);
+                    if (!node.isDaemon())
+                        spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
@@ -5714,6 +5725,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 lastTimeConnCheckMsgSent = U.currentTimeMillis();
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return String.format("%s, nextNode=[%s]", super.toString(), next);
         }
     }
 
