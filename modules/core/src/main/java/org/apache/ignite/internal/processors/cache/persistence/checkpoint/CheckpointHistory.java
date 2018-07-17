@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
@@ -198,33 +199,9 @@ public class CheckpointHistory {
      * @return List of checkpoints removed from history.
      */
     public List<CheckpointEntry> onCheckpointFinished(GridCacheDatabaseSharedManager.Checkpoint chp, boolean truncateWal) {
-        List<CheckpointEntry> removed = new ArrayList<>();
+        List<CheckpointEntry> rmv = new ArrayList<>();
 
-        final Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
-
-        assert lastEntry != null;
-
-        final Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
-
-        final WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
-
-        long lastIdx = 0;
-
-        long prevIdx = 0;
-
-        final ArrayList<Long> walSegmentsCovered = new ArrayList<>();
-
-        if (lastWALPointer instanceof FileWALPointer) {
-            lastIdx = ((FileWALPointer)lastWALPointer).index();
-
-            if (previousEntry != null)
-                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
-        }
-
-        for (long walCovered = prevIdx; walCovered < lastIdx; walCovered++)
-            walSegmentsCovered.add(walCovered);
-
-        chp.walSegmentsCovered(walSegmentsCovered);
+        chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
         int deleted = 0;
 
@@ -245,12 +222,46 @@ public class CheckpointHistory {
 
             histMap.remove(entry.getKey());
 
-            removed.add(cpEntry);
+            rmv.add(cpEntry);
         }
 
         chp.walFilesDeleted(deleted);
 
-        return removed;
+        return rmv;
+    }
+
+    /**
+     * Calculates indexes of WAL segments covered by last checkpoint.
+     *
+     * @return list of indexes or empty list if there are no checkpoints.
+     */
+    private IgniteBiTuple<Long, Long> calculateWalSegmentsCovered() {
+        IgniteBiTuple<Long, Long> tup = new IgniteBiTuple<>(-1L, -1L);
+
+        Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
+
+        if (lastEntry == null)
+            return tup;
+
+        Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
+
+        WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
+
+        long lastIdx = 0;
+
+        long prevIdx = 0;
+
+        if (lastWALPointer instanceof FileWALPointer) {
+            lastIdx = ((FileWALPointer)lastWALPointer).index();
+
+            if (previousEntry != null)
+                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
+        }
+
+        tup.set1(prevIdx);
+        tup.set2(lastIdx - 1);
+
+        return tup;
     }
 
     /**
