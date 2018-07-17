@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
+import javax.cache.configuration.Factory;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -40,6 +42,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
  *
  */
 public class GridCacheEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
+    /** Eviction policy factory. */
+    private Factory factory;
+
     /** Eviction policy. */
     private EvictionPolicy plc;
 
@@ -63,21 +68,33 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         CacheConfiguration cfg = cctx.config();
 
         if (cctx.isNear()) {
-            plc = (cfg.getNearConfiguration().getNearEvictionPolicyFactory() != null) ?
-                (EvictionPolicy)cfg.getNearConfiguration().getNearEvictionPolicyFactory().create() :
-                cfg.getNearConfiguration().getNearEvictionPolicy();
+            factory = cfg.getNearConfiguration().getNearEvictionPolicyFactory();
+            if (factory != null) {
+                prepare(cfg, factory, cctx.isNear());
+                plc = (EvictionPolicy)factory.create();
+            }
+            else
+                plc = cfg.getNearConfiguration().getNearEvictionPolicy();
         }
-        else if (cfg.getEvictionPolicyFactory() != null)
-            plc = (EvictionPolicy)cfg.getEvictionPolicyFactory().create();
-        else
-            plc = cfg.getEvictionPolicy();
+        else {
+            factory = cfg.getEvictionPolicyFactory();
+            if (factory != null) {
+                prepare(cfg, factory, cctx.isNear());
+                plc = (EvictionPolicy)factory.create();
+            }
+            else
+                plc = cfg.getEvictionPolicy();
+        }
 
         plcEnabled = plc != null;
 
         if (plcEnabled)
             prepare(cfg, plc, cctx.isNear());
 
-        filter = cfg.getEvictionFilter();
+        if (!cctx.isNear()) {
+            filter = cfg.getEvictionFilter();
+            prepare(cfg, filter, cctx.isNear());
+        }
 
         if (log.isDebugEnabled())
             log.debug("Eviction manager started on node: " + cctx.nodeId());
@@ -326,11 +343,15 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      * @throws IgniteCheckedException If failed.
      */
     private void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
-        cctx.kernalContext().resource().injectGeneric(rsrc);
+        if (rsrc != null) {
+            cctx.kernalContext().resource().injectGeneric(rsrc);
 
-        cctx.kernalContext().resource().injectCacheName(rsrc, cfg.getName());
+            cctx.kernalContext().resource().injectCacheName(rsrc, cfg.getName());
 
-        registerMbean(rsrc, cfg.getName(), near);
+            registerMbean(rsrc, cfg.getName(), near);
+
+            U.startLifecycleAware(Collections.singleton(rsrc));
+        }
     }
 
     /**
@@ -376,7 +397,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel, boolean destroy) {
+        cleanup(cctx.config(), filter, cctx.isNear());
         cleanup(cctx.config(), plc, cctx.isNear());
+        cleanup(cctx.config(), factory, cctx.isNear());
     }
 
     /**
@@ -386,6 +409,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      */
     void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
+            U.stopLifecycleAware(log, Collections.singleton(rsrc));
+
             unregisterMbean(rsrc, cfg.getName(), near);
 
             try {
