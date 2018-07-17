@@ -43,11 +43,12 @@ fi
 
 export JVM_XOPTS="$JVM_XOPTS $JVM_DEBUG_OPTS -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
 
-if [ ! -z "${JVM_METASPACE_SIZE} ]; then
-    JVM_XOPTS="$JVM_XOPTS -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE}"
+if [ ! -z "${JVM_METASPACE_SIZE}" ]; then
+    export JVM_XOPTS="$JVM_XOPTS -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE}"
 fi
-if [ ! -z "${JVM_HEAP_SIZE} ]; then
-    JVM_XOPTS="$JVM_XOPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
+
+if [ ! -z "${JVM_HEAP_SIZE}" ]; then
+    export JVM_XOPTS="$JVM_XOPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
 fi    
 
 
