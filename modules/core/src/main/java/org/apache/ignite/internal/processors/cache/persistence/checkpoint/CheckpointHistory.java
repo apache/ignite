@@ -206,7 +206,7 @@ public class CheckpointHistory {
     public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp, boolean truncateWal) {
         WALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
             ? checkpointMarkUntilDeleteByMemorySize()
-            : higherPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
+            : newerPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
 
         if (checkpointMarkUntilDel == null)
             return Collections.emptyList();
@@ -250,11 +250,11 @@ public class CheckpointHistory {
     }
 
     /**
-     * @param firstPointer One of pointers to choose the highest.
-     * @param secondPointer One of pointers to choose the highest.
-     * @return The highest pointer from input ones.
+     * @param firstPointer One of pointers to choose the newest.
+     * @param secondPointer One of pointers to choose the newest.
+     * @return The newest pointer from input ones.
      */
-    private FileWALPointer higherPointer(WALPointer firstPointer, WALPointer secondPointer) {
+    private FileWALPointer newerPointer(WALPointer firstPointer, WALPointer secondPointer) {
         FileWALPointer first = (FileWALPointer)firstPointer;
         FileWALPointer second = (FileWALPointer)secondPointer;
 
