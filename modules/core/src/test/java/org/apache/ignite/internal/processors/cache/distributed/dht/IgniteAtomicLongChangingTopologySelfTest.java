@@ -178,8 +178,8 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                 for (int i = 0; i < 100; i++) {
                     CollectionConfiguration colCfg = new CollectionConfiguration();
 
-                    // TODO This test should test both collocated and non-collocated IgniteSet
-                    // TODO when https://issues.apache.org/jira/browse/IGNITE-9015 is fixed.
+                    // TODO This test should also check non-collocated IgniteSet when
+                    // TODO https://issues.apache.org/jira/browse/IGNITE-9015 is fixed.
                     colCfg.setCollocated(true);
                     colCfg.setBackups(1);
                     colCfg.setCacheMode(PARTITIONED);
