@@ -27,10 +27,10 @@ ENV IGNITE_VERSION 2.5.0
 
 # Oracle JDK Linux x64 download information
 ENV JAVA_VERSION=8 \
-    JAVA_UPDATE=172 \
-    JAVA_BUILD=11 \
-    JAVA_PATH=a58eab1ec242421181065cdc37240b08
-    
+    JAVA_UPDATE=181 \
+    JAVA_BUILD=13 \
+    JAVA_PATH=96a7b8442fe848ef90c96a2fad6ed6d1
+
 # Java home    
 ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle
 
