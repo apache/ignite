@@ -160,7 +160,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
@@ -462,9 +461,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to inject.
      */
     private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
-        prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
-        prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
 
         for (Object obj : objs)
@@ -484,6 +481,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.resource().injectCacheName(rsrc, cfg.getName());
 
             registerMbean(rsrc, cfg.getName(), near);
+
+            U.startLifecycleAware(Collections.singleton(rsrc));
         }
     }
 
@@ -493,9 +492,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void cleanup(GridCacheContext cctx) {
         CacheConfiguration cfg = cctx.config();
 
-        cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
-        cleanup(cfg, cfg.getEvictionFilter(), false);
         cleanup(cfg, cfg.getInterceptor(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
@@ -540,6 +537,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
+            U.stopLifecycleAware(log, Collections.singleton(rsrc));
+
             unregisterMbean(rsrc, cfg.getName(), near);
 
             try {
@@ -983,6 +982,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
         GridCacheContext ctx = cache.context();
 
+        boolean needCleanupAffinity = ctx.group().affinityFunction() != cache.configuration().getAffinity();
+
         try {
             if (!cache.isNear() && ctx.shared().wal() != null) {
                 try {
@@ -1041,8 +1042,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.group().stopCache(ctx, destroy);
 
-            U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
-
             IgnitePageStoreManager pageStore;
 
             if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
@@ -1064,6 +1063,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         finally {
             cleanup(ctx);
+            if (needCleanupAffinity)
+                cleanup(cache.configuration(), cache.configuration().getAffinity(), false);
         }
     }
 
@@ -1222,8 +1223,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             toPrepare.add(cfgStore);
 
         prepare(cfg, toPrepare);
-
-        U.startLifecycleAware(lifecycleAwares(grp, cfg, cfgStore));
+        if (grp.affinityFunction() != cfg.getAffinity())
+            prepare(cfg, cfg.getAffinity(), false);
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
@@ -2447,8 +2448,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Object obj : grp.configuredUserObjects())
             prepare(cfg, obj, false);
 
-        U.startLifecycleAware(grp.configuredUserObjects());
-
         grp.start();
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
@@ -2861,8 +2860,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void stopCacheGroup(CacheGroupContext grp) {
         grp.stopGroup();
-
-        U.stopLifecycleAware(log, grp.configuredUserObjects());
 
         cleanup(grp);
     }
@@ -4803,36 +4800,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to unregister MBean for component: " + o, e);
             }
         }
-    }
-
-    /**
-     * @param grp Cache group.
-     * @param ccfg Cache configuration.
-     * @param objs Extra components.
-     * @return Components provided in cache configuration which can implement {@link LifecycleAware} interface.
-     */
-    private Iterable<Object> lifecycleAwares(CacheGroupContext grp, CacheConfiguration ccfg, Object... objs) {
-        Collection<Object> ret = new ArrayList<>(7 + objs.length);
-
-        if (grp.affinityFunction() != ccfg.getAffinity())
-            ret.add(ccfg.getAffinity());
-
-        ret.add(ccfg.getAffinityMapper());
-        ret.add(ccfg.getEvictionFilter());
-        ret.add(ccfg.getEvictionPolicyFactory());
-        ret.add(ccfg.getEvictionPolicy());
-        ret.add(ccfg.getInterceptor());
-
-        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
-
-        if (nearCfg != null) {
-            ret.add(nearCfg.getNearEvictionPolicyFactory());
-            ret.add(nearCfg.getNearEvictionPolicy());
-        }
-
-        Collections.addAll(ret, objs);
-
-        return ret;
     }
 
     /**
