@@ -41,14 +41,14 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
     fi
 fi
 
-export JVM_XOPTS="$JVM_XOPTS $JVM_DEBUG_OPTS -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
+export JVM_OPTS="$JVM_OPTS $JVM_DEBUG_OPTS -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
 
 if [ ! -z "${JVM_METASPACE_SIZE}" ]; then
-    export JVM_XOPTS="$JVM_XOPTS -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE}"
+    export JVM_OPTS="$JVM_OPTS -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE}"
 fi
 
 if [ ! -z "${JVM_HEAP_SIZE}" ]; then
-    export JVM_XOPTS="$JVM_XOPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
+    export JVM_OPTS="$JVM_OPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
 fi    
 
 
