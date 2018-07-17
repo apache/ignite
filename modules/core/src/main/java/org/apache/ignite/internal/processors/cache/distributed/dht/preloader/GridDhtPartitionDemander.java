@@ -727,77 +727,86 @@ public class GridDhtPartitionDemander {
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-            ctx.database().checkpointReadLock();
+            // Preload.
+            for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
+                int p = e.getKey();
 
-            try {
-                // Preload.
-                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
-                    int p = e.getKey();
+                if (aff.get(p).contains(ctx.localNode())) {
+                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
-                    if (aff.get(p).contains(ctx.localNode())) {
-                        GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                    assert part != null;
 
-                        assert part != null;
+                    boolean last = supply.last().containsKey(p);
 
-                        boolean last = supply.last().containsKey(p);
+                    if (part.state() == MOVING) {
+                        boolean reserved = part.reserve();
 
-                        if (part.state() == MOVING) {
-                            boolean reserved = part.reserve();
+                        assert reserved : "Failed to reserve partition [igniteInstanceName=" +
+                            ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
-                            assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                                ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
+                        part.lock();
 
-                            part.lock();
+                        try {
+                            Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
 
-                            try {
-                                // Loop through all received entries and try to preload them.
-                                for (GridCacheEntryInfo entry : e.getValue().infos()) {
-                                    if (!preloadEntry(node, p, entry, topVer)) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Got entries for invalid partition during " +
-                                                "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+                            // Loop through all received entries and try to preload them.
+                            while (infos.hasNext()) {
+                                ctx.database().checkpointReadLock();
 
-                                        break;
-                                    }
+                                try {
+                                    for (int i = 0; i < 100; i++) {
+                                        if (!infos.hasNext())
+                                            break;
 
-                                    for (GridCacheContext cctx : grp.caches()) {
-                                        if (cctx.statisticsEnabled())
-                                            cctx.cache().metrics0().onRebalanceKeyReceived();
+                                        GridCacheEntryInfo entry = infos.next();
+
+                                        if (!preloadEntry(node, p, entry, topVer)) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Got entries for invalid partition during " +
+                                                        "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+
+                                            break;
+                                        }
+
+                                        for (GridCacheContext cctx : grp.caches()) {
+                                            if (cctx.statisticsEnabled())
+                                                cctx.cache().metrics0().onRebalanceKeyReceived();
+                                        }
                                     }
                                 }
-
-                                // If message was last for this partition,
-                                // then we take ownership.
-                                if (last) {
-                                    fut.partitionDone(nodeId, p, true);
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Finished rebalancing partition: " + part);
+                                finally {
+                                    ctx.database().checkpointReadUnlock();
                                 }
                             }
-                            finally {
-                                part.unlock();
-                                part.release();
+
+                            // If message was last for this partition,
+                            // then we take ownership.
+                            if (last) {
+                                fut.partitionDone(nodeId, p, true);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Finished rebalancing partition: " + part);
                             }
                         }
-                        else {
-                            if (last)
-                                fut.partitionDone(nodeId, p, false);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
+                        finally {
+                            part.unlock();
+                            part.release();
                         }
                     }
                     else {
-                        fut.partitionDone(nodeId, p, false);
+                        if (last)
+                            fut.partitionDone(nodeId, p, false);
 
                         if (log.isDebugEnabled())
-                            log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
+                            log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                     }
                 }
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
+                else {
+                    fut.partitionDone(nodeId, p, false);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
+                }
             }
 
             // Only request partitions based on latest topology version.

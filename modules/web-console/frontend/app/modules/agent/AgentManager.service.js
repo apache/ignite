@@ -816,11 +816,11 @@ export default class AgentManager {
      * @returns {Promise}
      */
     toggleClusterState() {
-        const state = this.connectionSbj.getValue();
-        const active = !state.cluster.active;
+        const { cluster } = this.connectionSbj.getValue();
+        const active = !cluster.active;
 
         return this.visorTask('toggleClusterState', null, active)
-            .then(() => state.updateCluster(Object.assign(state.cluster, { active })));
+            .then(() => this.updateCluster({ ...cluster, active }));
     }
 
     hasCredentials(clusterId) {

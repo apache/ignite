@@ -19,20 +19,18 @@ package org.apache.ignite.examples.ml.tutorial;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculator;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculator;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -67,10 +65,12 @@ public class Step_8_CV {
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
+                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+
                     TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
                         .split(0.75);
 
-                    IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
                         .encodeFeature(1)
                         .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
@@ -78,13 +78,13 @@ public class Step_8_CV {
                             featureExtractor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
                             strEncoderPreprocessor
                         );
 
-                    IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
                         ignite,
                         dataCache,
@@ -100,7 +100,7 @@ public class Step_8_CV {
 
                     for(int p: pSet){
                         for(int maxDeep: maxDeepSet){
-                            IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                            IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                                 .withP(p)
                                 .fit(
                                     ignite,
@@ -110,17 +110,17 @@ public class Step_8_CV {
 
                             DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(maxDeep, 0);
 
-                            CrossValidationScoreCalculator<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
-                                = new CrossValidationScoreCalculator<>();
+                            CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                                = new CrossValidation<>();
 
                             double[] scores = scoreCalculator.score(
                                 trainer,
-                                new AccuracyScoreCalculator<>(),
+                                new Accuracy<>(),
                                 ignite,
                                 dataCache,
                                 split.getTrainFilter(),
                                 normalizationPreprocessor,
-                                (k, v) -> (double) v[1],
+                                lbExtractor,
                                 3
                             );
 
@@ -140,7 +140,7 @@ public class Step_8_CV {
 
                     System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
 
-                    IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                         .withP(bestP)
                         .fit(
                             ignite,
@@ -156,54 +156,20 @@ public class Step_8_CV {
                         dataCache,
                         split.getTrainFilter(),
                         normalizationPreprocessor,
-                        (k, v) -> (double)v[1]
+                        lbExtractor
                     );
 
-                    System.out.println("----------------------------------------------------------------");
-                    System.out.println("| Prediction\t| Ground Truth\t| Name\t|");
-                    System.out.println("----------------------------------------------------------------");
+                    double accuracy = Evaluator.evaluate(
+                        dataCache,
+                        split.getTestFilter(),
+                        bestMdl,
+                        normalizationPreprocessor,
+                        lbExtractor,
+                        new Accuracy<>()
+                    );
 
-                    int amountOfErrors = 0;
-                    int totalAmount = 0;
-
-                    // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                    int[][] confusionMtx = {{0, 0}, {0, 0}};
-
-                    ScanQuery<Integer, Object[]> qry = new ScanQuery<>();
-                    qry.setFilter(split.getTestFilter());
-
-                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(qry)) {
-                        for (Cache.Entry<Integer, Object[]> observation : observations) {
-
-                            Object[] val = observation.getValue();
-                            double groundTruth = (double)val[1];
-                            String name = (String)val[2];
-
-                            double prediction = bestMdl.apply(new DenseLocalOnHeapVector(
-                                normalizationPreprocessor.apply(observation.getKey(), val)));
-
-                            totalAmount++;
-                            if (groundTruth != prediction)
-                                amountOfErrors++;
-
-                            int idx1 = (int)prediction;
-                            int idx2 = (int)groundTruth;
-
-                            confusionMtx[idx1][idx2]++;
-
-                            System.out.printf("| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
-                        }
-
-                        System.out.println("---------------------------------");
-
-                        System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                        double accuracy = 1 - amountOfErrors / (double)totalAmount;
-                        System.out.println("\n>>> Accuracy " + accuracy);
-                        System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                        System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-                        System.out.println(">>> ---------------------------------");
-                    }
+                    System.out.println("\n>>> Accuracy " + accuracy);
+                    System.out.println("\n>>> Test Error " + (1 - accuracy));
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();
