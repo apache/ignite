@@ -104,12 +104,6 @@ public class GridDhtPartitionDemander {
     @GridToStringInclude
     private volatile RebalanceFuture rebalanceFut;
 
-    /**
-     * Shows the last topology version to be rebalanced. Can be changed by exchange thread if calculated
-     * affinity assignments are different from the previous requested version.
-     */
-    private volatile AffinityTopologyVersion topVerToDemand = AffinityTopologyVersion.ZERO;
-
     /** Last timeout object. */
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
 
@@ -245,7 +239,7 @@ public class GridDhtPartitionDemander {
      *         see {@link RebalanceReassignExchangeTask}.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
-        return topVerToDemand.compareTo(fut.topVer) > 0 ||
+        return ctx.exchange().rebalanceTopologyVersion().compareTo(fut.topVer) > 0 ||
             fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
@@ -259,10 +253,10 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return {@code AffinityTopologyVersion.ZERO} if rebalance have never been started or cancelled or demanded
-     *          messages haven't been sent yet. Otherwise the last requested rebalance topology version returned.
+     * @return {@code ZERO} if rebalance have never been started or cancelled or first demand message
+     *         haven't been sent yet. Otherwise {@link RebalanceFuture#topVer} returned.
      */
-    AffinityTopologyVersion activeRebalanceTopVer() {
+    AffinityTopologyVersion activeFutureTopVer() {
         final RebalanceFuture fut = rebalanceFut;
 
         // Future cancelled or demanded message not sent yet, return ZERO.
@@ -271,32 +265,11 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return Collection of nodes from which partitions was demanded. Empty if rebalance not started
-     *         or already finished.
+     * @return Collection of nodes remaining to be requested for demanded partitions.
+     *         {@code Empty} if rebalance not started or already finished.
      */
     Collection<UUID> remainingRequestedNodes() {
         return rebalanceFut.remainingRequestedNodes();
-    }
-
-    /**
-     * @param topVer Target rebalance topology version to be demanded.
-     */
-    void topologyVersionToDemand(AffinityTopologyVersion topVer) {
-        if (topVerToDemand.compareTo(topVer) < 0) {
-            if (log.isDebugEnabled())
-                log.debug("Set topology version to preload [from=" + topVerToDemand +
-                    ", to=" + topVer + ", grp=" + grp.cacheOrGroupName() + "]");
-
-            topVerToDemand = topVer;
-        }
-    }
-
-    /**
-     * @return Set of partitions remaining to be preloaded for current cache group.
-     *         Empty if rebalance not started or already finished.
-     */
-    Set<Integer> remainingPreloadPartitions() {
-        return rebalanceFut.remainingPreloadPartitions();
     }
 
     /**
@@ -346,7 +319,8 @@ public class GridDhtPartitionDemander {
                 return null;
             }
 
-            assert topVerToDemand.compareTo(topVer) <= 0 : "Incorrect topology version to demand";
+            assert ctx.exchange().rebalanceTopologyVersion().equals(topVer) :
+                "Incorrect rebalance topology version [topVer=" + ctx.exchange().rebalanceTopologyVersion() + ']';
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
 
@@ -367,8 +341,6 @@ public class GridDhtPartitionDemander {
                 forcedRebFut.add(fut);
 
             rebalanceFut = fut;
-
-            topVerToDemand = topVer;
 
             for (final GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
@@ -906,8 +878,6 @@ public class GridDhtPartitionDemander {
                         log.debug("Node left during rebalancing [grp=" + grp.cacheOrGroupName() +
                             ", node=" + node.id() + ", msg=" + e.getMessage() + ']');
                     }
-
-                    fut.demanded = false;
                 }
             }
         }
@@ -915,8 +885,6 @@ public class GridDhtPartitionDemander {
             LT.error(log, e, "Error during rebalancing [grp=" + grp.cacheOrGroupName() +
                 ", srcNode=" + node.id() +
                 ", err=" + e + ']');
-
-            fut.demanded = false;
         }
     }
 
@@ -1303,29 +1271,11 @@ public class GridDhtPartitionDemander {
         }
 
         /**
-         * @return Collection of nodes remainign to be requested for demanded partitions.
-         *         Empty if rebalance not started or already finished.
+         * @return Collection of nodes remaining to be requested for demanded partitions.
+         *         {@code Empty} if rebalance not started or already finished.
          */
         private synchronized Collection<UUID> remainingRequestedNodes() {
             return remaining.keySet();
-        }
-
-        /**
-         * @return Set of partitions remaining to be preloaded for current cache group.
-         *         Empty if rebalance not started or already finished.
-         */
-        private synchronized Set<Integer> remainingPreloadPartitions() {
-            Set<Integer> parts = new HashSet<>();
-
-            for (Map.Entry<UUID, T2<Long, IgniteDhtDemandedPartitionsMap>> e : remaining.entrySet()) {
-                IgniteDhtDemandedPartitionsMap partMap = e.getValue().get2();
-
-                parts.addAll(partMap.fullSet());
-
-                parts.addAll(CachePartitionPartialCountersMap.toCountersMap(partMap.historicalMap()).keySet());
-            }
-
-            return parts;
         }
 
         /**

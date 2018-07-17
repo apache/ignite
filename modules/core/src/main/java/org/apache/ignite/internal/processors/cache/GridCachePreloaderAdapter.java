@@ -152,8 +152,8 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void afterExchange(GridDhtPartitionsExchangeFuture exchFut) {
-        // No-op.
+    @Override public boolean checkExchangeEvents(GridDhtPartitionsExchangeFuture exchFut) {
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -181,6 +181,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final AtomicReference<AffinityTopologyVersion> readyTopVer =
         new AtomicReference<>(AffinityTopologyVersion.NONE);
 
+    /**
+     * Shows the last topology version to be rebalanced. Can be changed by exchange thread if calculated
+     * affinity assignments are different from the previous requested version.
+     */
+    private volatile AffinityTopologyVersion rebalanceTopVer = AffinityTopologyVersion.NONE;
+
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
 
@@ -818,6 +824,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public AffinityTopologyVersion readyAffinityVersion() {
         return readyTopVer.get();
+    }
+
+    /**
+     * @return Topology version of latest scheduled rebalance.
+     */
+    public AffinityTopologyVersion rebalanceTopologyVersion() {
+        return rebalanceTopVer;
+    }
+
+    /**
+     * @param topVer New topology version to schedule rebalance.
+     */
+    private void rebalanceTopologyVersion(AffinityTopologyVersion topVer) {
+        if (rebalanceTopVer.compareTo(topVer) < 0)
+            rebalanceTopVer = topVer;
     }
 
     /**
@@ -2552,7 +2573,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
-                                grp.preloader().afterExchange(exchFut);
+                                if (grp.preloader().checkExchangeEvents(exchFut))
+                                    rebalanceTopologyVersion(exchFut.events().topologyVersion());
 
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
@@ -2580,6 +2602,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     if (assigns != null && assigns.cancelled())
                                         pendingExchange = true;
                                 }
+
+                                // If generation assignments have been forced by RebalanceReassignExchangeTask
+                                // or by ForceRebalanceExchangeTask.
+                                if (exchFut == null)
+                                    rebalanceTopologyVersion(grp.topology().readyTopologyVersion());
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }

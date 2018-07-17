@@ -66,8 +66,9 @@ public interface GridCachePreloader {
 
     /**
      * @param exchFut Completed exchange future.
+     * @return {@code True} if preloading should be scheduled.
      */
-    public void afterExchange(GridDhtPartitionsExchangeFuture exchFut);
+    public boolean checkExchangeEvents(GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * @param exchId Exchange ID.

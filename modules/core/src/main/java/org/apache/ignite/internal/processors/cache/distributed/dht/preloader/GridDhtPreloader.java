@@ -171,8 +171,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @param oldTopVer Previous topology version.
      * @param newTopVer New topology version to check result.
-     * @return {@code True} if affinity assignments changed between this two versions for
-     *         {@link GridCacheSharedContext#localNode()} or there is no affinity assignments information
+     * @return {@code True} if affinity assignments changed between two versions for
+     *         {@link GridCacheSharedContext#localNode()}  or there is no affinityassignments information
      *         about old topology version.
      */
     private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
@@ -185,37 +185,40 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         boolean assignsChanged = aff == prevAff;
 
-        for (int p = 0; p < grp.affinity().partitions() && !assignsChanged; p++)
+        for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
 
         return assignsChanged;
     }
 
     /** {@inheritDoc} */
-    @Override public void afterExchange(GridDhtPartitionsExchangeFuture exchFut) {
-        if (!ctx.kernalContext().clientNode()) {
-            AffinityTopologyVersion lastTopVer = exchFut.context().events().topologyVersion();
+    @Override public boolean checkExchangeEvents(GridDhtPartitionsExchangeFuture exchFut) {
+        if (ctx.kernalContext().clientNode())
+            return false; // Doesn't matter. Rebalance for client nodes will be skipped anyway.
 
-            AffinityTopologyVersion actTopVer = demander.activeRebalanceTopVer();
+        if (exchFut.localJoinExchange())
+            return true; // Always schedule new rebalance on local node JOIN event;
 
-            Set<UUID> leftNodes = exchFut.context().events().events().stream()
-                .filter(ExchangeDiscoveryEvents::serverLeftEvent)
-                .map(e -> e.eventNode().id())
-                .collect(Collectors.toSet());
+        AffinityTopologyVersion lastTopVer = exchFut.context().events().topologyVersion();
 
-            leftNodes.retainAll(demander.remainingRequestedNodes());
+        AffinityTopologyVersion actTopVer = demander.activeFutureTopVer();
 
-            if (!actTopVer.initialized() ||
-                isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
-                !leftNodes.isEmpty()) {// Some of nodes left before rabalance compelete.
-                // Mark current rebalance as obsolete and prepare new one.
-                demander.topologyVersionToDemand(lastTopVer);
-            }
-        }
+        Set<UUID> leftNodes = exchFut.context().events().events().stream()
+            .filter(ExchangeDiscoveryEvents::serverLeftEvent)
+            .map(e -> e.eventNode().id())
+            .collect(Collectors.toSet());
+
+        leftNodes.retainAll(demander.remainingRequestedNodes());
+
+        // Mark current rebalance as obsolete and prepare new one.
+        return !actTopVer.initialized() ||
+            isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
+            !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
 
         // No assignments for disabled preloader.
@@ -238,12 +241,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
-
-        // Owners can changed due to obsolete updSeq for exchange on coordinator, refer
-        // to {@link GridDhtPartitionTopologyImpl#resetOwners(java.util.Map, java.util.Set)} for details.
-        boolean changed = false;
-
-        final Set<Integer> partsInProgress = demander.remainingPreloadPartitions();
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -285,9 +282,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
-
-                if (!partsInProgress.contains(p))
-                    changed = true;
 
                 ClusterNode histSupplier = null;
 
@@ -351,10 +345,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         if (!assignments.isEmpty())
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
-
-        // If generation assignments have been forced by RebalanceReassignExchangeTask or ForceRebalanceExchangeTask.
-        if (changed || exchFut == null)
-            demander.topologyVersionToDemand(topVer);
 
         return assignments;
     }
