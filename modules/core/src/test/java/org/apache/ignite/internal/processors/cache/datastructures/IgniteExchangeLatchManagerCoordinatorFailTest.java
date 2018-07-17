@@ -16,16 +16,18 @@
  */
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import com.google.common.collect.Lists;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.google.common.collect.Lists;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -240,5 +242,18 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         finishAllLatches.get(5000);
 
         Assert.assertFalse("All nodes should complete latches without errors", hasErrors.get());
+
+        awaitPartitionMapExchange();
+
+        for (int node = 1; node < 5; node++) {
+            IgniteEx grid = grid(node);
+            ExchangeLatchManager latchMgr = grid.context().cache().context().exchange().latch();
+
+            Map srvLatches = U.field(latchMgr, "serverLatches");
+            Map cliLatches = U.field(latchMgr, "clientLatches");
+
+            assertTrue(srvLatches.keySet().toString(), srvLatches.isEmpty());
+            assertTrue(cliLatches.keySet().toString(), cliLatches.isEmpty());
+        }
     }
 }
