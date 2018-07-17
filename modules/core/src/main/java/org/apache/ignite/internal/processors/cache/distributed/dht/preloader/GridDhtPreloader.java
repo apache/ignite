@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -31,15 +34,16 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -160,9 +164,85 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
-        supplier.onTopologyChanged(lastFut.initialVersion());
+        supplier.onTopologyChanged();
 
         demander.onTopologyChanged(lastFut);
+    }
+
+    /**
+     * @param oldTopVer Previous topology version.
+     * @param newTopVer New topology version to check result.
+     * @return {@code True} if affinity assignments changed between this two versions for
+     *         {@link GridCacheSharedContext#localNode()} or there is no affinity assignments information
+     *         about old topology version.
+     */
+    private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
+        AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
+
+        // We should get assigns based on previous rebalance with successfull result to calculate difference.
+        // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
+        AffinityAssignment prevAff = !oldTopVer.initialized() || !grp.affinity().cachedVersions().contains(oldTopVer) ?
+            aff : grp.affinity().cachedAffinity(oldTopVer);
+
+        boolean assignsChanged = aff == prevAff;
+
+        for (int p = 0; p < grp.affinity().partitions() && !assignsChanged; p++)
+            assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
+
+        return assignsChanged;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkEvents(GridDhtPartitionsExchangeFuture exchFut) {
+        if (ctx.kernalContext().clientNode())
+            return false; // Doesn't matter. Rebalance for client will be skipped anyway.
+
+        if (exchFut.localJoinExchange())
+            return true; // Should always trigger new preoloading.
+
+        AffinityTopologyVersion lastTopVer = exchFut.events().topologyVersion();
+
+        AffinityTopologyVersion actTopVer = demander.activeFutureTopVer();
+
+        Set<UUID> leftNodes = exchFut.events().events().stream()
+            .filter(ExchangeDiscoveryEvents::serverLeftEvent)
+            .map(e -> e.eventNode().id())
+            .collect(Collectors.toSet());
+
+        leftNodes.retainAll(demander.remainingRequestedNodes());
+
+        // Mark current rebalance as obsolete and prepare new one.
+        return !actTopVer.initialized() ||
+            isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
+            !leftNodes.isEmpty(); // Some of nodes left before rabalance compelete.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkAssigns(GridDhtPreloaderAssignments assigns) {
+        if (assigns == null)
+            return true;
+
+        // Owners can changed due to obsolete updSeq for exchange on coordinator, refer
+        // to {@link GridDhtPartitionTopologyImpl#resetOwners(java.util.Map, java.util.Set)} for details.
+        final Set<Integer> partsToPreload = new HashSet<>();
+
+        assigns.entrySet()
+            .stream()
+            .map(d -> d.getValue().partitions())
+            .forEach(p -> {
+                partsToPreload.addAll(p.fullSet());
+
+                partsToPreload.addAll(CachePartitionPartialCountersMap.toCountersMap(p.historicalMap()).keySet());
+            });
+
+        final Set<Integer> partsInProgress = demander.remainingPreloadPartitions();
+
+        return !partsInProgress.isEmpty() && !partsInProgress.containsAll(partsToPreload);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateRebalanceFuture(AffinityTopologyVersion topVer) {
+        demander.updateRebalanceFuture(topVer);
     }
 
     /** {@inheritDoc} */
@@ -377,12 +457,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(
         GridDhtPreloaderAssignments assignments,
-        boolean forceRebalance,
+        boolean forcePreload,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+        return demander.addAssignments(assignments, forcePreload, rebalanceId, next, forcedRebFut);
     }
 
     /**

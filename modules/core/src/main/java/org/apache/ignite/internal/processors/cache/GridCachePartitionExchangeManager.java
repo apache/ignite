@@ -180,6 +180,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final AtomicReference<AffinityTopologyVersion> readyTopVer =
         new AtomicReference<>(AffinityTopologyVersion.NONE);
 
+    /**
+     * Shows the last topology version to be rebalanced. Can be changed by exchange thread if calculated
+     * affinity assignments are different from the previous requested version.
+     */
+    private volatile AffinityTopologyVersion rebalanceTopVer = AffinityTopologyVersion.NONE;
+
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
 
@@ -825,6 +831,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public AffinityTopologyVersion readyAffinityVersion() {
         return readyTopVer.get();
+    }
+
+    /**
+     * @return Latest topology version to be rebalanced.
+     */
+    public AffinityTopologyVersion rebalanceTopologyVersion() {
+        return rebalanceTopVer;
+    }
+
+    /**
+     * @param topVer New topology rebalance version to set.
+     */
+    private void rebalanceTopologyVersion(AffinityTopologyVersion topVer) {
+        if (rebalanceTopVer.compareTo(topVer) < 0)
+            rebalanceTopVer = topVer;
     }
 
     /**
@@ -2449,7 +2470,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
 
-                    boolean forcePreload = false;
+                    boolean pendingExchange = false;
+
+                    boolean forceRebalance = false;
 
                     GridDhtPartitionExchangeId exchId;
 
@@ -2465,7 +2488,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchId = ((RebalanceReassignExchangeTask) task).exchangeId();
                         }
                         else if (task instanceof ForceRebalanceExchangeTask) {
-                            forcePreload = true;
+                            forceRebalance = true;
 
                             timeout = 0; // Force refresh.
 
@@ -2546,6 +2569,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
+                                if (grp.preloader().checkEvents(exchFut))
+                                    rebalanceTopologyVersion(exchFut.context().events().topologyVersion());
+
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
@@ -2566,8 +2592,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance)
+                                if ((delay == 0 || forceRebalance) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
+
+                                    if (assigns != null && assigns.cancelled())
+                                        pendingExchange = true;
+                                }
+
+//                                if (grp.preloader().checkAssigns(assigns) || exchFut == null)
+//                                    rebalanceTopologyVersion(grp.topology().readyTopologyVersion());
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }
@@ -2600,37 +2633,42 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         List<String> rebList = new LinkedList<>();
 
-                        boolean assignsCancelled = false;
-
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                         for (Integer order : orderMap.descendingKeySet()) {
+                            if (pendingExchange)
+                                break; // Pending exchanges found. Nothing to do.
+
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
-                                if (assigns != null)
-                                    assignsCancelled |= assigns.cancelled();
+                                if (assigns != null &&
+                                    !assigns.isEmpty() && // Keep this short cut to get result faster.
+                                    rebalanceTopVer.compareTo(assigns.topologyVersion()) < 0) {
+                                    grp.preloader().updateRebalanceFuture(assigns.topologyVersion());
 
-                                // Cancels previous rebalance future (in case it's not done yet).
-                                // Sends previous rebalance stopped event (if necessary).
-                                // Creates new rebalance future.
-                                // Sends current rebalance started event (if necessary).
-                                // Finishes cache sync future (on empty assignments).
-                                Runnable cur = grp.preloader().addAssignments(assigns,
-                                    forcePreload,
-                                    cnt,
-                                    r,
-                                    forcedRebFut);
+                                    U.log(log, "Rebalancing skipped (no group changes) [" +
+                                        "grp=" + grp.cacheOrGroupName() +
+                                        ", mode=" + grp.config().getRebalanceMode() +
+                                        ", lastTopVer=" + assigns.topologyVersion() + ']');
+                                }
+                                else {
+                                    Runnable cur = grp.preloader().addAssignments(assigns,
+                                        exchFut == null,
+                                        cnt,
+                                        r,
+                                        forcedRebFut);
 
-                                if (cur != null) {
-                                    rebList.add(grp.cacheOrGroupName());
+                                    if (cur != null) {
+                                        rebList.add(grp.cacheOrGroupName());
 
-                                    r = cur;
+                                        r = cur;
+                                    }
                                 }
                             }
                         }
@@ -2638,7 +2676,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled) { // Pending exchange.
+                        if (pendingExchange || hasPendingExchange()) {
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
@@ -2646,19 +2684,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else if (r != null) {
                             Collections.reverse(rebList);
 
-                            U.log(log, "Rebalancing scheduled [order=" + rebList + "]");
+                            U.log(log, "Rebalancing started [order=" + rebList +
+                                ", top=" + resVer + ", forceRebalance=" + forceRebalance +
+                                ", evt=" + exchId.discoveryEventName() +
+                                ", node=" + exchId.nodeId() + ']');
 
-                            if (!hasPendingExchange()) {
-                                U.log(log, "Rebalancing started " +
-                                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                    ", node=" + exchId.nodeId() + ']');
-
-                                r.run(); // Starts rebalancing routine.
-                            }
-                            else
-                                U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
-                                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                    ", node=" + exchId.nodeId() + ']');
+                            r.run(); // Starts rebalancing routine.
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
