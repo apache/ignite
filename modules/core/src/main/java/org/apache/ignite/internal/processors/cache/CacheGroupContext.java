@@ -1061,7 +1061,7 @@ public class CacheGroupContext {
     public void globalWalEnabled(boolean enabled) {
         if (globalWalEnabled != enabled) {
             log.info("Global WAL state for group=" + cacheOrGroupName() +
-                " changed from " + localWalEnabled + " to " + enabled);
+                " changed from " + globalWalEnabled + " to " + enabled);
 
             persistGlobalWalState(enabled);
 
