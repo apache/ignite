@@ -740,4 +740,28 @@ BOOST_AUTO_TEST_CASE(CacheClientClear)
     }
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientDefaultDynamicCache)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110..11120");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<std::string, int64_t> cache =
+        client.CreateCache<std::string, int64_t>("defaultdynamic");
+
+    cache.RefreshAffinityMapping();
+
+    for (int64_t i = 1; i < 1000; ++i)
+        cache.Put(ignite::common::LexicalCast<std::string>(i * 39916801), i * 5039);
+
+    for (int64_t i = 1; i < 1000; ++i)
+    {
+        int64_t val;
+        LocalPeek(cache, ignite::common::LexicalCast<std::string>(i * 39916801), val);
+
+        BOOST_CHECK_EQUAL(val, i * 5039);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
