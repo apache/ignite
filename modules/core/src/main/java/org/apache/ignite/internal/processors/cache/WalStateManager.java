@@ -42,7 +42,6 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -396,11 +395,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         break;
                     }
+
+                    parts++;
                 }
 
                 if (locPart.state() == MOVING)
                     hasMoving = true;
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Prepare change WAL state, grp=" + grp.cacheOrGroupName() +
+                ", grpId=" + grp.groupId() + ", hasOwning=" + hasOwning +
+                ", WALState=" + grp.walEnabled() + ", parts=" + parts);
 
             if (hasOwning && !grp.localWalEnabled()) {
                 grpsToEnableWal.add(grp.groupId());
@@ -1126,7 +1132,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         /** */
         public TemporaryDisabledWal(
             Set<Integer> disabledGrps,
-            AffinityTopologyVersion topVer) {
+            AffinityTopologyVersion topVer
+        ) {
             this.disabledGrps = Collections.unmodifiableSet(disabledGrps);
             this.remainingGrps = new HashSet<>(disabledGrps);
             this.topVer = topVer;
