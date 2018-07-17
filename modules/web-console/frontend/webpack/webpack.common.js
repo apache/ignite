@@ -26,7 +26,6 @@ const eslintFormatter = require('eslint-friendly-formatter');
 
 const basedir = path.join(__dirname, '../');
 const contentBase = path.join(basedir, 'public');
-const node_modules = path.join(basedir, 'node_modules');
 const app = path.join(basedir, 'app');
 
 /** @type {webpack.Configuration} */
@@ -49,7 +48,6 @@ const config = {
 
     // Resolves modules.
     resolve: {
-        modules: [node_modules],
         // A list of module source folders.
         alias: {
             app,
@@ -92,8 +90,8 @@ const config = {
             },
             {
                 test: /\.js$/,
-                exclude: [/node_modules/],
-                use: ['babel-loader']
+                exclude: /node_modules/,
+                loader: 'babel-loader'
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
