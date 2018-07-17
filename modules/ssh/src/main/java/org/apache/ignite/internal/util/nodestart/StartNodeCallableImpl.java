@@ -367,7 +367,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                                 }
 
                                 @Override public String toString() {
-                                    return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+                                    return S.toString("GridTimeoutObject", "cmd", cmd, "thread",
+                                        thread);
                                 }
                             };
 

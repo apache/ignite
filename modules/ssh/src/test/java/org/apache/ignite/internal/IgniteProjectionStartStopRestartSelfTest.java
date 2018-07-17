@@ -513,7 +513,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
                 maps(Collections.singleton(HOST), pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
                 null), false, 0, 16);
 
-        assert res.size() == 3;
+
+            assert res.size() == 3;
 
         res.forEach(t -> {
             assert t.getHostName().equals(HOST);
