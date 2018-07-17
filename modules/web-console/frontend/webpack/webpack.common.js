@@ -58,20 +58,12 @@ const config = {
         }
     },
 
-    // Resolve loader use postfix.
-    resolveLoader: {
-        modules: [
-            node_modules
-        ],
-        moduleExtensions: ['-loader']
-    },
-
     module: {
         rules: [
             // Exclude tpl.pug files to import in bundle.
             {
                 test: /^(?:(?!tpl\.pug$).)*\.pug$/, // TODO: check this regexp for correct.
-                loader: 'pug-html',
+                loader: 'pug-html-loader',
                 query: {
                     basedir
                 }
@@ -81,8 +73,8 @@ const config = {
             {
                 test: /\.tpl\.pug$/,
                 use: [
-                    'file?exports=false&name=assets/templates/[name].[hash].html',
-                    `pug-html?exports=false&basedir=${basedir}`
+                    'file-loader?exports=false&name=assets/templates/[name].[hash].html',
+                    `pug-html-loader?exports=false&basedir=${basedir}`
                 ]
             },
             { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
@@ -91,7 +83,7 @@ const config = {
                 enforce: 'pre',
                 exclude: [/node_modules/],
                 use: [{
-                    loader: 'eslint',
+                    loader: 'eslint-loader',
                     options: {
                         formatter: eslintFormatter,
                         context: process.cwd()
@@ -100,13 +92,13 @@ const config = {
             },
             {
                 test: /\.js$/,
-                exclude: [node_modules],
+                exclude: [/node_modules/],
                 use: ['babel-loader']
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
                 exclude: [contentBase],
-                loader: 'file?name=assets/fonts/[name].[ext]'
+                loader: 'file-loader?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /^(?:(?!url\.svg$).)*\.svg$/,
@@ -116,11 +108,11 @@ const config = {
             {
                 test: /.*\.url\.svg$/,
                 include: [contentBase],
-                loader: 'file?name=assets/fonts/[name].[ext]'
+                loader: 'file-loader?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,
-                loader: 'file?name=assets/images/[name].[hash].[ext]'
+                loader: 'file-loader?name=assets/images/[name].[hash].[ext]'
             },
             {
                 test: require.resolve('jquery'),
