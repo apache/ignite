@@ -42,8 +42,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9004");
-
         super.beforeTest();
     }
 

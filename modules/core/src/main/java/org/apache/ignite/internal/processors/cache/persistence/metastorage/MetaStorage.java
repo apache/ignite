@@ -32,7 +32,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -366,14 +366,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         io.setReuseListRoot(pageAddr, reuseListRoot);
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
-                            wal.log(new MetaPageInitRecord(
-                                METASTORAGE_CACHE_ID,
-                                partMetaId,
-                                io.getType(),
-                                io.getVersion(),
-                                treeRoot,
-                                reuseListRoot
-                            ));
+                            wal.log(new PageSnapshot(new FullPageId(partMetaId, METASTORAGE_CACHE_ID), pageAddr, pageMem.pageSize()));
 
                         allocated = true;
                     }
