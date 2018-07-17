@@ -93,8 +93,6 @@ const config = {
                 use: [{
                     loader: 'eslint',
                     options: {
-                        failOnWarning: false,
-                        failOnError: false,
                         formatter: eslintFormatter,
                         context: process.cwd()
                     }
@@ -146,17 +144,6 @@ const config = {
 
     // Load plugins.
     plugins: [
-        new webpack.LoaderOptionsPlugin({
-            options: {
-                pug: {
-                    basedir
-                },
-                eslint: {
-                    configFile: path.join(basedir, '.eslintrc')
-                },
-                target: 'web'
-            }
-        }),
         new webpack.ProvidePlugin({
             $: 'jquery',
             'window.jQuery': 'jquery',
