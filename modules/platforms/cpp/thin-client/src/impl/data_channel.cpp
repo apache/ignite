@@ -36,14 +36,14 @@ namespace ignite
     {
         namespace thin
         {
-            /** Version 1.1.0. */
-            const ProtocolVersion DataChannel::VERSION_1_1_0(1, 1, 0);
+            /** Version 1.2.0. */
+            const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
 
             /** Current version. */
-            const ProtocolVersion DataChannel::VERSION_CURRENT(VERSION_1_1_0);
+            const ProtocolVersion DataChannel::VERSION_CURRENT(VERSION_1_2_0);
 
             DataChannel::VersionSet::value_type supportedArray[] = {
-                DataChannel::VERSION_1_1_0,
+                DataChannel::VERSION_1_2_0,
             };
 
             const DataChannel::VersionSet DataChannel::supportedVersions(supportedArray,
