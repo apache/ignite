@@ -137,6 +137,7 @@ import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQ
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryCancelOrTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.query.CacheScanQueryFailoverTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
@@ -278,6 +279,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheQueryH2IndexingLeakTest.class);
         suite.addTestSuite(IgniteCacheQueryNoRebalanceSelfTest.class);
         suite.addTestSuite(GridCacheQueryTransformerSelfTest.class);
+        suite.addTestSuite(CacheScanQueryFailoverTest.class);
         suite.addTestSuite(IgniteCachePrimitiveFieldsQuerySelfTest.class);
 
         suite.addTestSuite(IgniteCacheJoinQueryWithAffinityKeyTest.class);

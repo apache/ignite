@@ -64,6 +64,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
+    /** Client listener port. */
+    public static final String CLIENT_LISTENER_PORT = "clientListenerPort";
+
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
@@ -167,6 +170,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             log.info("Client connector processor has started on TCP port " + port);
 
                         lastErr = null;
+
+                        ctx.addNodeAttribute(CLIENT_LISTENER_PORT, port);
 
                         break;
                     }
