@@ -1746,49 +1746,38 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
          * @param initTopVer listening-in topology version.
          * @return {@code True} if current event is not last and should be skipped.
          */
-        private boolean skipExchange(AffinityTopologyVersion initTopVer) {
-            IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange().affinityReadyFuture(initTopVer);
-
-            if (affReadyFut != null) {
-                try {
-                    affReadyFut.get();
-                } catch (IgniteCheckedException e) {
-                    U.error(log, "Error while waiting affinity ready future", e);
-                }
-            }
-
+        private boolean skipExchange(final AffinityTopologyVersion initTopVer) {
             AffinityTopologyVersion pendingTopVer = null;
-            AffinityTopologyVersion newTopVer = currTopVer;
+            AffinityTopologyVersion newTopVer;
 
-            if (!initTopVer.equals(newTopVer))
+            if (!initTopVer.equals(newTopVer = currTopVer))
                 pendingTopVer = newTopVer;
             else {
-                GridDhtTopologyFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+                IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange().affinityReadyFuture(initTopVer);
 
-                if (!fut.isDone() && !fut.isCancelled()) {
+                if (affReadyFut != null) {
                     try {
-                        fut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
+                        affReadyFut.get();
+                    } catch (IgniteCheckedException e) {
+                        U.error(log, "Error while waiting affinity ready future", e);
                     }
                 }
 
-                AffinityTopologyVersion lastTopVer;
-
                 // If exchange already moved forward - skip current version.
-                if (newTopVer.compareTo(lastTopVer = fut.topologyVersion()) < 0)
-                    pendingTopVer = lastTopVer;
+                if (!initTopVer.equals(newTopVer = currTopVer))
+                    pendingTopVer = newTopVer;
             }
 
-            if (pendingTopVer != null && log.isInfoEnabled()) {
+            boolean skipExchange = pendingTopVer != null;
+
+            if (skipExchange && log.isInfoEnabled()) {
                 log.info("Service processor detected a topology change during " +
                     "assignments calculation (will abort current iteration and " +
                     "re-calculate on the newer version): " +
                     "[topVer=" + initTopVer + ", newTopVer=" + pendingTopVer + ']');
             }
 
-            return pendingTopVer != null;
+            return skipExchange;
         }
 
         /** {@inheritDoc} */
