@@ -3142,7 +3142,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             AbstractFileDescriptor currDesc = desc;
 
             if (!desc.file().exists()) {
-                FileWriteAheadLogManager.FileDescriptor zipFile = new FileWriteAheadLogManager.FileDescriptor(
+                FileDescriptor zipFile = new FileDescriptor(
                         new File(walArchiveDir, FileDescriptor.fileName(desc.idx()) + ".zip"));
 
                 if (!zipFile.file.exists()) {
