@@ -30,7 +30,6 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
@@ -80,7 +79,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
     /** {@inheritDoc} */
     @Override public <K, V> Model<Vector, Double> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         learnLabels(datasetBuilder, featureExtractor, lbExtractor);
@@ -102,7 +101,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(VectorUtils.of(featureExtractor.apply(k, v)));
+                Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
                 return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
             };
 
@@ -124,7 +123,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
      * @param lExtractor Labels extractor.
      */
     protected abstract  <V, K> void learnLabels(DatasetBuilder<K, V> builder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
 
     /**
      * Returns regressor model trainer for one step of GDB.
@@ -153,7 +152,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
      * @param lbExtractor Label extractor.
      */
     protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(DatasetBuilder<K, V> builder,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
