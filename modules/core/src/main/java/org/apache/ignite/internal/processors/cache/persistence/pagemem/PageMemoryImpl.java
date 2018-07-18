@@ -529,7 +529,17 @@ public class PageMemoryImpl implements PageMemoryEx {
                     trackingIO.initNewPage(pageAddr, pageId, pageSize());
 
                     if (!ctx.wal().disabled(fullId.groupId()))
-                        ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
+                        if (!ctx.wal().isAlwaysWriteFullPages())
+                            ctx.wal().log(
+                                    new InitNewPageRecord(
+                                            grpId,
+                                            pageId,
+                                            trackingIO.getType(),
+                                            trackingIO.getVersion(), pageId
+                                    )
+                            );
+                        else
+                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
                 }
             }
 

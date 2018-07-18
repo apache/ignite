@@ -349,6 +349,7 @@ public class FilePageStore implements PageStore {
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
+/*TODO*/            if (!(off <= (allocated.get() - headerSize())))
             assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
                 ", allocated=" + allocated.get() + ", headerSize="+headerSize();
 
