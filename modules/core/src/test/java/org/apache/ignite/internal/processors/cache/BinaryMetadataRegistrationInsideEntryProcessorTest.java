@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridCommonAbstractTest{
+public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "test-cache";
 
@@ -51,15 +51,16 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      * @throws Exception If failed;
      */
     public void test() throws Exception {
-        Ignite ignite = startGrid();
+        Ignite ignite = startGrids(2);
 
-        IgniteCache<String, Map<Integer, CustomObj>> cache = ignite.createCache(CACHE_NAME);
+        IgniteCache<Integer, Map<Integer, CustomObj>> cache = ignite.createCache(CACHE_NAME);
 
         try {
-            cache.invoke("1", new CustomProcessor(), null);
+            for (int i = 0; i < 10_000; i++)
+                cache.invoke(i, new CustomProcessor());
         }
         catch (Exception e) {
-            Map<Integer, CustomObj> value = cache.get("1");
+            Map<Integer, CustomObj> value = cache.get(1);
 
             if ((value != null) && (value.get(1) != null) && (value.get(1).getObj() == CustomEnum.ONE))
                 System.out.println("Data was saved.");
@@ -73,11 +74,11 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
     /**
      *
      */
-    private static class CustomProcessor implements EntryProcessor<String,
+    private static class CustomProcessor implements EntryProcessor<Integer,
         Map<Integer, CustomObj>, Object> {
         /** {@inheritDoc} */
         @Override public Object process(
-            MutableEntry<String, Map<Integer, CustomObj>> entry,
+            MutableEntry<Integer, Map<Integer, CustomObj>> entry,
             Object... objects) throws EntryProcessorException {
             Map<Integer, CustomObj> map = new HashMap<>();
 
