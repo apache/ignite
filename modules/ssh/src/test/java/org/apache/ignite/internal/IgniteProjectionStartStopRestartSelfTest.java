@@ -511,10 +511,9 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
                 maps(Collections.singleton(HOST), pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
-                null), false, 0, 16);
+                    null), false, 0, 16);
 
-
-            assert res.size() == 3;
+        assert res.size() == 3;
 
         res.forEach(t -> {
             assert t.getHostName().equals(HOST);
@@ -638,10 +637,10 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert res.size() == 3;
 
         res.forEach(t -> {
-                assert t.getHostName().equals(HOST);
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
