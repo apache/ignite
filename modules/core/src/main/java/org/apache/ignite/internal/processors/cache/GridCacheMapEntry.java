@@ -35,6 +35,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -5365,6 +5367,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return null;
             }
             catch (Exception e) {
+                if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
+                    throw (IgniteException) e;
+
                 writeObj = invokeEntry.valObj;
 
                 return new IgniteBiTuple<>(null, e);
