@@ -301,7 +301,7 @@ public class ZookeeperClient implements Watcher {
 
         int batchSize = 0;
 
-        List<Op> batch = new ArrayList<>(paths.size());
+        List<Op> batch = new LinkedList<>();
 
         for (String path : paths) {
             //TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
@@ -602,7 +602,7 @@ public class ZookeeperClient implements Watcher {
 
         int batchSize = 0;
 
-        List<Op> batch = new ArrayList<>(paths.size());
+        List<Op> batch = new LinkedList<>();
 
         for (String path : paths) {
             String path0 = parent != null ? parent + "/" + path : path;
