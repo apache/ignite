@@ -596,9 +596,14 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                 continue;
             }
+            
+            // Must not send to the participants excluded from recursion, if any.
+            if (this.comm.nodeOnRecursionExclusionList(node)) {
+               continue;
+            }
 
             try {
-                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime, nodeListCp);
 
                 if (res == null) {
                     String msg = "Failed to send class-loading request to node (is node alive?) [node=" +
@@ -615,8 +620,19 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     continue;
                 }
 
-                if (res.success())
+                if (res.success()) {
+                   
+                    // For the next time, start with the node that just succeeded.
+                    if (nodeList.peekFirst() != nodeId) {
+                        synchronized (mux) {
+                            if (nodeList.remove(nodeId)) {
+                                nodeList.addFirst(nodeId);
+                            }
+                        }
+                    }
+                
                     return res.byteSource();
+                }
 
                 // In case of shared resources/classes all nodes should have it.
                 if (log.isDebugEnabled())
@@ -628,8 +644,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                         missedRsrcs.add(path);
                 }
 
-                throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrs=" +
-                    nodeLdrMapCp + ", parentClsLoader=" + getParent() + ", reason=" + res.errorMessage() + ']');
+                // Continue to ask other participants, since this node may not have recursed to find the 
+                // class due to exclusions we passed, or because its path to the class was lost due to 
+                // a node failure.
             }
             catch (IgniteCheckedException e) {
                 // This thread should be interrupted again in communication if it
@@ -736,10 +753,15 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                 continue;
             }
-
+            
+            // Must not send to the participants excluded from recursion
+            if (this.comm.nodeOnRecursionExclusionList(node)) {
+               continue;
+            }
+            
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
-                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime, nodeListCp);
 
                 if (res == null) {
                     U.warn(log, "Failed to get resource from node (is node alive?) [nodeId=" +
@@ -767,10 +789,21 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                             node.id() + ", clsLdrId=" + ldrId + ", resName=" +
                             name + ", parentClsLdr=" + getParent() + ", msg=" + res.errorMessage() + ']');
 
-                    // Do not ask other nodes in case of shared mode all of them should have the resource.
-                    return null;
+                    // Continue to ask other participants, since this node may not have recursed to find the 
+                    // class due to exclusions we passed, or because its path to the class was lost due to 
+                    // a node failure.
                 }
                 else {
+                   
+                    // For the next time, start with the node that just succeeded.
+                    if (nodeList.peekFirst() != nodeId) {
+                        synchronized (mux) {
+                            if (nodeList.remove(nodeId)) {
+                                nodeList.addFirst(nodeId);
+                            }
+                        }
+                    }
+                 
                     return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
                         res.byteSource().size());
                 }
