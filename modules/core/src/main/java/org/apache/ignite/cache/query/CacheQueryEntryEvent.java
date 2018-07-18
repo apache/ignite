@@ -45,4 +45,18 @@ public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEvent<K, V> {
      * @return Value of counter for this event.
      */
     public abstract long getPartitionUpdateCounter();
+
+    /**
+     * Tells whether the invocation occurred on the backup node.
+     *
+     * @retrun {@code True} if cache is being updated on the backup node.
+     */
+    public abstract boolean isBackup();
+
+    /**
+     * Tells whether the invocation occurred on the primary node.
+     *
+     * @retrun {@code True} if cache is being updated on the primary node.
+     */
+    public abstract boolean isPrimary();
 }

@@ -125,6 +125,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param oldVal Old value.
      * @param keepBinary Keep binary flag.
      * @param part Partition.
+     * @param backup Flag of backup node.
      * @param updateCntr Update partition counter.
      * @param topVer Topology version if applicable.
      * @param flags Flags.
@@ -137,6 +138,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         @Nullable CacheObject oldVal,
         boolean keepBinary,
         int part,
+        boolean backup,
         long updateCntr,
         @Nullable AffinityTopologyVersion topVer,
         byte flags) {
@@ -152,6 +154,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         if (keepBinary)
             this.flags |= KEEP_BINARY;
+
+        if (backup)
+            this.flags |= BACKUP_ENTRY;
     }
 
     /**
@@ -250,6 +255,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             null,
             false,
             part,
+            isBackup(),
             updateCntr,
             topVer,
             flags);

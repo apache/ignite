@@ -136,6 +136,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
             true,
             1,
+            true,
             1L,
             new AffinityTopologyVersion(1L),
             (byte)0);
@@ -158,6 +159,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertEquals(e0.isBackup(), e1.isBackup());
         assertEquals(e0.isKeepBinary(), e1.isKeepBinary());
         assertEquals(e0.partition(), e1.partition());
+        assertEquals(e0.isBackup(), e1.isBackup());
         assertEquals(e0.updateCounter(), e1.updateCounter());
 
         // Key and value shouldn't be serialized in case an event is filtered.

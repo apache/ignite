@@ -218,6 +218,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 null,
                 lsnr.keepBinary(),
                 partId,
+                !primary,
                 updCntr,
                 topVer,
                 (byte)0);
@@ -383,6 +384,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,
+                !primary,
                 updateCntr,
                 topVer,
                 (byte)0);
@@ -445,6 +447,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     lsnr.oldValueRequired() ? oldVal : null,
                     lsnr.keepBinary(),
                     e.partition(),
+                    !primary,
                     -1,
                     null,
                     (byte)0);
@@ -787,6 +790,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     null,
                                     keepBinary,
                                     0,
+                                    false,
                                     -1,
                                     null,
                                     (byte)0);
@@ -1303,6 +1307,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public long getPartitionUpdateCounter() {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isBackup() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isPrimary() {
+            return true;
         }
 
         /** {@inheritDoc} */

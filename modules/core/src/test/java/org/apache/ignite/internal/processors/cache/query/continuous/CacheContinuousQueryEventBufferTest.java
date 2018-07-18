@@ -119,6 +119,7 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
                 null,
                 false,
                 0,
+                true,
                 cntr,
                 null,
                 (byte)0);
@@ -139,6 +140,7 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
                     null,
                     false,
                     0,
+                    true,
                     cntr,
                     null,
                     (byte)0);
