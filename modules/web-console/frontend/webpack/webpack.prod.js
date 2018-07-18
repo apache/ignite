@@ -26,7 +26,7 @@ const commonCfg = require('./webpack.common');
 
 const basedir = path.join(__dirname, '../');
 
-export default merge(commonCfg, {
+module.exports = merge(commonCfg, {
     bail: true, // Cancel build on error.
     mode: 'production',
     module: {
