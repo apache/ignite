@@ -306,8 +306,7 @@ public class GridDhtPartitionDemander {
             final AffinityTopologyVersion topVer = assignments.topologyVersion();
 
             if (!force && !assignments.isEmpty() && !topologyChanged(oldFut)) {
-                // Skip assignments as not marked by GridDhtPreloader#afterExchange()
-                // or by GridDhtPreloader#generateAssignments() .
+                // Skip assignments as not marked for preloading.
                 oldFut.latestTopVer = topVer;
 
                 U.log(log, "Rebalancing skipped (no group changes) [grp=" + grp.cacheOrGroupName() +
