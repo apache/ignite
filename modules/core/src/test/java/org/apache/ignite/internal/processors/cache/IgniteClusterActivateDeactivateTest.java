@@ -1172,6 +1172,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @param ignite Ignite instance.
+     * @return True if should be active on start.
+     */
+    private boolean isActiveOnStart(Ignite ignite) {
+        return ignite.configuration().isActiveOnStart() && !CU.isPersistenceEnabled(ignite.configuration());
+    }
+
+    /**
      * @param exp If {@code true} there should be recorded messages.
      */
     private void checkRecordedMessages(boolean exp) {
