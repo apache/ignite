@@ -18,6 +18,7 @@
 const path = require('path');
 const merge = require('webpack-merge');
 
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
@@ -46,6 +47,9 @@ export default merge(commonCfg, {
         ]
     },
     plugins: [
+        new CopyWebpackPlugin([
+            { context: 'public', from: '**/*.{png,svg,ico}' }
+        ]),
         new MiniCssExtractPlugin({filename: 'assets/css/[name].[hash].css'})
     ],
     optimization: {

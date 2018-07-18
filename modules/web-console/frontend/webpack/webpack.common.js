@@ -18,7 +18,6 @@
 const path = require('path');
 const webpack = require('webpack');
 
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 
@@ -145,9 +144,6 @@ const config = {
         new HtmlWebpackPlugin({
             template: path.join(basedir, './views/index.pug')
         }),
-        new CopyWebpackPlugin([
-            { context: 'public', from: '**/*.{png,svg,ico}' }
-        ]),
         new ProgressBarPlugin()
     ]
 };

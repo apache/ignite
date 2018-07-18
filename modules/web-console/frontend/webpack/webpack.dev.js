@@ -21,6 +21,7 @@ const path = require('path');
 
 const commonCfg = require('./webpack.common');
 
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const backendPort = process.env.BACKEND_PORT || 3000;
@@ -60,6 +61,9 @@ module.exports = merge(commonCfg, {
         ]
     },
     plugins: [
+        new CopyWebpackPlugin([
+            { context: 'public', from: '**/*.{png,svg,ico}' }
+        ]),
         new MiniCssExtractPlugin({filename: 'assets/css/[name].css'})
     ],
     devServer: {
