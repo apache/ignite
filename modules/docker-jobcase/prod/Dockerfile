@@ -129,6 +129,9 @@ COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin/libs/optional/ignite-
 # Enable AWS support
 COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin/libs/optional/ignite-aws ${IGNITE_HOME}/libs/ignite-aws/
 
+# Enable AOP support
+COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin/libs/optional/ignite-aop ${IGNITE_HOME}/libs/ignite-aop/
+
 # Copy log4j2 configuration file
 COPY ./ignite-log4j2.xml ${JOBCASE_CONFIG}/
 
