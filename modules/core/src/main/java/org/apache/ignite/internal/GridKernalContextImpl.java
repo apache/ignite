@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -150,7 +152,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor authProc;
+    private GridSecurityProcessor securityProc;
 
     /** */
     @GridToStringExclude
@@ -284,6 +286,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private DataStructuresProcessor dataStructuresProc;
+
+    /** */
+    @GridToStringExclude
+    private IgniteAuthenticationProcessor authProc;
 
     /** */
     @GridToStringExclude
@@ -525,7 +531,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
-            authProc = (GridSecurityProcessor)comp;
+            securityProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -596,8 +602,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
+        else if (comp instanceof IgniteAuthenticationProcessor)
+            authProc = (IgniteAuthenticationProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
-                || comp instanceof PlatformPluginProcessor))
+            || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -623,15 +631,19 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return ((IgniteKernal)grid).isStopping();
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID localNodeId() {
-        if (locNode != null)
-            return locNode.id();
-
-        if (discoMgr != null)
+    /** */
+    @Nullable private ClusterNode localNode() {
+        if (locNode == null && discoMgr != null)
             locNode = discoMgr.localNode();
 
-        return locNode != null ? locNode.id() : config().getNodeId();
+        return locNode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID localNodeId() {
+        ClusterNode locNode0 = localNode();
+
+        return locNode0 != null ? locNode0.id() : config().getNodeId();
     }
 
     /** {@inheritDoc} */
@@ -751,7 +763,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridSecurityProcessor security() {
-        return authProc;
+        return securityProc;
     }
 
     /** {@inheritDoc} */
@@ -851,6 +863,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return authProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteLogger log(String ctgr) {
         return config().getGridLogger().getLogger(ctgr);
     }
@@ -886,7 +903,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        ClusterNode locNode0 = localNode();
+
+        return locNode0 != null ? locNode0.isDaemon() :
+            (config().isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON));
     }
 
     /** {@inheritDoc} */
@@ -1068,10 +1088,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean clientDisconnected() {
-        if (locNode == null)
-            locNode = discoMgr != null ? discoMgr.localNode() : null;
+        ClusterNode locNode0 = localNode();
 
-        return locNode != null ? (locNode.isClient() && disconnected) : false;
+        return locNode0 != null ? (locNode0.isClient() && disconnected) : false;
     }
 
     /** {@inheritDoc} */
@@ -1091,7 +1110,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.disconnected = disconnected;
     }
 
-    /**{@inheritDoc}*/
+    /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
     }

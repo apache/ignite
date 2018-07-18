@@ -17,6 +17,7 @@
 
 import controller from './controller';
 import templateUrl from './template.tpl.pug';
+import {CancellationError} from 'app/errors/CancellationError';
 
 export default class UserNotificationsService {
     static $inject = ['$http', '$modal', '$q', 'IgniteMessages'];
@@ -49,7 +50,7 @@ export default class UserNotificationsService {
 
         const modalHide = modal.hide;
 
-        modal.hide = () => deferred.reject('cancelled');
+        modal.hide = () => deferred.reject(new CancellationError());
 
         return deferred.promise
             .finally(modalHide)

@@ -37,16 +37,16 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Writes proxy method invocation data to the specified writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        /// <param name="method">Method.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
         /// <param name="platform">The platform.</param>
-        public static void WriteProxyMethod(BinaryWriter writer, MethodBase method, object[] arguments, 
-            Platform platform)
+        public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
+            object[] arguments, Platform platform)
         {
             Debug.Assert(writer != null);
-            Debug.Assert(method != null);
 
-            writer.WriteString(method.Name);
+            writer.WriteString(methodName);
 
             if (arguments != null)
             {
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
                 if (platform == Platform.DotNet)
                 {
-                    // Write as is
+                    // Write as is for .NET.
                     foreach (var arg in arguments)
                     {
                         writer.WriteObjectDetached(arg);
@@ -64,11 +64,13 @@ namespace Apache.Ignite.Core.Impl.Services
                 else
                 {
                     // Other platforms do not support Serializable, need to convert arrays and collections
-                    var methodArgs = method.GetParameters();
-                    Debug.Assert(methodArgs.Length == arguments.Length);
+                    var mParams = method != null ? method.GetParameters() : null;
+                    Debug.Assert(mParams == null || mParams.Length == arguments.Length);
 
-                    for (int i = 0; i < arguments.Length; i++)
-                        WriteArgForPlatforms(writer, methodArgs[i], arguments[i]);
+                    for (var i = 0; i < arguments.Length; i++)
+                    {
+                        WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null, arguments[i]);
+                    }
                 }
             }
             else
@@ -213,9 +215,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, object arg)
+        private static void WriteArgForPlatforms(BinaryWriter writer, Type paramType, object arg)
         {
-            var hnd = GetPlatformArgWriter(param, arg);
+            var hnd = GetPlatformArgWriter(paramType, arg);
 
             if (hnd != null)
             {
@@ -230,14 +232,19 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Gets arg writer for platform-compatible service calls.
         /// </summary>
-        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, object arg)
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(Type paramType, object arg)
         {
-            var type = param.ParameterType;
+            if (arg == null)
+            {
+                return null;
+            }
+
+            var type = paramType ?? arg.GetType();
 
             // Unwrap nullable
             type = Nullable.GetUnderlyingType(type) ?? type;
 
-            if (arg == null || type.IsPrimitive)
+            if (type.IsPrimitive)
                 return null;
 
             var handler = BinarySystemHandlers.GetWriteHandler(type);

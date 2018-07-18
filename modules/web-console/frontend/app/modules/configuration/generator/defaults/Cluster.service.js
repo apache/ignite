@@ -241,7 +241,8 @@ const DFLT_CLUSTER = {
                     },
                     maxErrorRetry: {
                         clsName: 'com.amazonaws.retry.PredefinedRetryPolicies'
-                    }
+                    },
+                    honorMaxErrorRetryInClientConfig: false
                 },
                 maxErrorRetry: -1,
                 socketTimeout: 50000,
@@ -254,7 +255,13 @@ const DFLT_CLUSTER = {
                 useReaper: true,
                 useGzip: false,
                 preemptiveBasicProxyAuth: false,
-                useTcpKeepAlive: false
+                useTcpKeepAlive: false,
+                cacheResponseMetadata: true,
+                clientExecutionTimeout: 0,
+                socketSendBufferSizeHint: 0,
+                socketReceiveBufferSizeHint: 0,
+                useExpectContinue: true,
+                useThrottleRetries: true
             }
         },
         JDBC: {
@@ -335,6 +342,10 @@ const DFLT_CLUSTER = {
         checkpointFrequency: 180000,
         checkpointPageBufferSize: 268435456,
         checkpointThreads: 4,
+        checkpointWriteOrder: {
+            clsName: 'org.apache.ignite.configuration.CheckpointWriteOrder',
+            value: 'SEQUENTIAL'
+        },
         walMode: {
             clsName: 'org.apache.ignite.configuration.WALMode',
             value: 'DEFAULT'
@@ -395,6 +406,21 @@ const DFLT_CLUSTER = {
         socketReceiveBufferSize: 0,
         tcpNoDelay: true,
         maxOpenCursorsPerConnection: 128
+    },
+    clientConnectorConfiguration: {
+        port: 10800,
+        portRange: 100,
+        socketSendBufferSize: 0,
+        socketReceiveBufferSize: 0,
+        tcpNoDelay: true,
+        maxOpenCursorsPerConnection: 128,
+        idleTimeout: 0,
+        jdbcEnabled: true,
+        odbcEnabled: true,
+        thinClientEnabled: true,
+        sslEnabled: false,
+        useIgniteSslContextFactory: true,
+        sslClientAuth: false
     }
 };
 

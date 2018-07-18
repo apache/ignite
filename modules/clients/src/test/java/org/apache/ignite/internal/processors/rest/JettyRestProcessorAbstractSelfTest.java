@@ -27,23 +27,33 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
@@ -139,7 +149,15 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
+import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
  * Tests for Jetty REST protocol.
@@ -148,9 +166,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
-
-    /** Url address to send HTTP request. */
-    private final String TEST_URL = "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
 
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
@@ -190,6 +205,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     protected abstract int restPort();
 
     /**
+     * @return Test URL
+     */
+    protected String restUrl() {
+        return "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
+    }
+
+    /**
      * @return Security enabled flag. Should be the same with {@code ctx.security().enabled()}.
      */
     protected boolean securityEnabled() {
@@ -197,12 +219,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
+     * Execute REST command and return result.
+     *
      * @param params Command parameters.
      * @return Returned content.
      * @throws Exception If failed.
      */
     protected String content(Map<String, String> params) throws Exception {
-        SB sb = new SB(TEST_URL);
+        SB sb = new SB(restUrl());
 
         for (Map.Entry<String, String> e : params.entrySet())
             sb.a(e.getKey()).a('=').a(e.getValue()).a('&');
@@ -229,49 +253,61 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * @param content Content to check.
+     * @param cacheName Optional cache name.
+     * @param cmd REST command.
+     * @param params Command parameters.
+     * @return Returned content.
+     * @throws Exception If failed.
      */
-    private void assertResponseContainsError(String content) throws IOException {
-        assertNotNull(content);
-        assertFalse(content.isEmpty());
+    protected String content(String cacheName, GridRestCommand cmd, String... params) throws Exception {
+        Map<String, String> paramsMap = new LinkedHashMap<>();
 
-        JsonNode node = JSON_MAPPER.readTree(content);
+        if (cacheName != null)
+            paramsMap.put("cacheName", cacheName);
 
-        assertEquals(1, node.get("successStatus").asInt());
-        assertFalse(node.get("error").isNull());
-        assertTrue(node.get("response").isNull());
-        assertTrue(node.get("sessionToken").isNull());
+        paramsMap.put("cmd", cmd.key());
+
+        if (params != null) {
+            assertEquals(0, params.length % 2);
+
+            for (int i = 0; i < params.length; i += 2)
+                paramsMap.put(params[i], params[i + 1]);
+        }
+
+        return content(paramsMap);
     }
 
     /**
      * @param content Content to check.
      * @param err Error message.
      */
-    private void assertResponseContainsError(String content, String err) throws IOException {
-        assertNotNull(content);
-        assertFalse(content.isEmpty());
-
+    protected void assertResponseContainsError(String content, String err) throws IOException {
+        assertFalse(F.isEmpty(content));
         assertNotNull(err);
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(1, node.get("successStatus").asInt());
-
+        assertTrue(node.get("successStatus").asInt() != STATUS_SUCCESS);
         assertTrue(node.get("response").isNull());
-        assertEquals(err, node.get("error").asText());
+        assertTrue(node.get("error").asText().contains(err));
     }
 
     /**
      * @param content Content to check.
+     * @return JSON node with actual response.
      */
-    private JsonNode jsonCacheOperationResponse(String content, boolean bulk) throws IOException {
+    protected JsonNode assertResponseSucceeded(String content, boolean bulk) throws IOException {
         assertNotNull(content);
         assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(bulk, node.get("affinityNodeId").isNull());
-        assertEquals(0, node.get("successStatus").asInt());
+        JsonNode affNode = node.get("affinityNodeId");
+
+        if (affNode != null)
+            assertEquals(bulk, affNode.isNull());
+
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
@@ -284,9 +320,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, false);
+        JsonNode ret = assertResponseSucceeded(content, false);
 
-        assertEquals(String.valueOf(res), ret.asText());
+        assertEquals(String.valueOf(res), ret.isObject() ? ret.toString() : ret.asText());
     }
 
     /**
@@ -294,7 +330,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheBulkOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertEquals(String.valueOf(res), ret.asText());
     }
@@ -303,7 +339,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param content Content to check.
      */
     private void assertCacheMetrics(String content) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertTrue(ret.isObject());
     }
@@ -318,7 +354,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
@@ -336,7 +372,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
         assertFalse(node.get("response").isNull());
 
@@ -359,11 +395,121 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testGet() throws Exception {
         jcache().put("getKey", "getVal");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "getKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "getKey");
 
         info("Get command result: " + ret);
 
         assertCacheOperation(ret, "getVal");
+    }
+
+    /**
+     * @param json JSON to check.
+     * @param p Person to compare with.
+     * @throws IOException If failed.
+     */
+    private void checkJson(String json, Person p) throws IOException {
+        JsonNode res = assertResponseSucceeded(json, false);
+
+        assertEquals(p.id.intValue(), res.get("id").asInt());
+        assertEquals(p.getOrganizationId().intValue(), res.get("orgId").asInt());
+        assertEquals(p.getFirstName(), res.get("firstName").asText());
+        assertEquals(p.getLastName(), res.get("lastName").asText());
+        assertEquals(p.getSalary(), res.get("salary").asDouble());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetBinaryObjects() throws Exception {
+        Person p = new Person(1, "John", "Doe", 300);
+
+        jcache().put(300, p);
+
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET,
+            "keyType", "int",
+            "key", "300"
+        );
+
+        info("Get command result: " + ret);
+
+        checkJson(ret, p);
+
+        // Test with remote node.
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET,
+            "keyType", "int",
+            "key", "300",
+            "destId", grid(1).localNode().id().toString()
+        );
+
+        info("Get command result: " + ret);
+
+        checkJson(ret, p);
+
+        // Test with SQL.
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "create table employee(id integer primary key, name varchar(100), salary integer);" +
+            "insert into employee(id, name, salary) values (1, 'Alex', 300);"
+        );
+
+        grid(0).context().query().querySqlFields(qry, true, false);
+
+        ret = content("SQL_PUBLIC_EMPLOYEE", GridRestCommand.CACHE_GET,
+            "keyType", "int",
+            "key", "1"
+        );
+
+        info("Get command result: " + ret);
+
+        JsonNode res = assertResponseSucceeded(ret, false);
+
+        assertEquals("Alex", res.get("NAME").asText());
+        assertEquals(300, res.get("SALARY").asInt());
+
+        // Test with circular reference.
+        CircularRef ref1 = new CircularRef(1, "Alex");
+        CircularRef ref2 = new CircularRef(2, "300");
+        CircularRef ref3 = new CircularRef(3, "220");
+
+        ref1.ref(ref2);
+
+        jcache().put(220, ref1);
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET,
+            "keyType", "int",
+            "key", "220"
+        );
+
+        info("Get command result: " + ret);
+
+        JsonNode json = assertResponseSucceeded(ret, false);
+        assertEquals(ref1.name, json.get("name").asText());
+
+        ref2.ref(ref1);
+
+        jcache().put(222, ref1);
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET,
+            "keyType", "int",
+            "key", "222"
+        );
+
+        info("Get command result: " + ret);
+
+        assertResponseContainsError(ret, "Failed convert to JSON object for circular references");
+
+        ref1.ref(ref2);
+        ref2.ref(ref3);
+        ref3.ref(ref1);
+        jcache().put(223, ref1);
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET,
+            "keyType", "int",
+            "key", "223"
+        );
+
+        info("Get command result: " + ret);
+
+        assertResponseContainsError(ret, "Failed convert to JSON object for circular references");
     }
 
     /**
@@ -376,7 +522,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("mapKey1", map1);
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "mapKey1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "mapKey1");
 
         info("Get command result: " + ret);
 
@@ -390,7 +536,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("mapKey2", map2);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "mapKey2"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "mapKey2");
 
         info("Get command result: " + ret);
 
@@ -407,19 +553,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("simplePersonKey", p);
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "simplePersonKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "simplePersonKey");
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
-        assertEquals(res.get("id").asInt(), p.id);
-        assertEquals(res.get("name").asText(), p.name);
-        assertEquals(res.get("birthday").asText(), p.birthday.toString());
-        assertEquals(res.get("salary").asDouble(), p.salary);
+        assertEquals(p.id, res.get("id").asInt());
+        assertEquals(p.name, res.get("name").asText());
+        assertEquals(p.birthday.toString(), res.get("birthday").asText());
+        assertEquals(p.salary, res.get("salary").asDouble());
         assertNull(res.get("age"));
-        assertNull(res.get("post"));
-        assertNull(res.get("bonus"));
+        assertEquals(p.post, res.get("post").asText());
+        assertEquals(25, res.get("bonus").asInt());
     }
 
     /**
@@ -434,7 +580,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("utilDateKey", utilDate);
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "utilDateKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "utilDateKey");
 
         info("Get command result: " + ret);
 
@@ -444,7 +590,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("sqlDateKey", sqlDate);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "sqlDateKey"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "sqlDateKey");
 
         info("Get SQL result: " + ret);
 
@@ -452,7 +598,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("timestampKey", new java.sql.Timestamp(utilDate.getTime()));
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "timestampKey"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "timestampKey");
 
         info("Get timestamp: " + ret);
 
@@ -467,7 +613,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("uuidKey", uuid);
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "uuidKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "uuidKey");
 
         info("Get command result: " + ret);
 
@@ -477,7 +623,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("igniteUuidKey", igniteUuid);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "igniteUuidKey"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "igniteUuidKey");
 
         info("Get command result: " + ret);
 
@@ -492,11 +638,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("tupleKey", t);
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET.key(), "key", "tupleKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "key", "tupleKey");
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(t.getKey(), res.get("key").asText());
         assertEquals(t.getValue(), res.get("value").asText());
@@ -510,7 +656,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().put("getKey", "getVal");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_SIZE.key()));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_SIZE);
 
         info("Size command result: " + ret);
 
@@ -521,7 +667,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testIgniteName() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.NAME.key()));
+        String ret = content(null, GridRestCommand.NAME);
 
         info("Name command result: " + ret);
 
@@ -529,20 +675,94 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
+     * @param cacheName Cache name to create.
+     * @param mode Expected cache mode.
+     * @param backups Expected number of backups.
+     * @param wrtSync Expected cache write synchronization mode.
+     * @param params Optional cache params.
+     */
+    private void checkGetOrCreateAndDestroy(
+        String cacheName,
+        CacheMode mode,
+        int backups,
+        CacheWriteSynchronizationMode wrtSync,
+        String cacheGrp,
+        String dataRegion,
+        String... params
+    ) throws Exception {
+        String ret = content(cacheName, GridRestCommand.GET_OR_CREATE_CACHE, params);
+
+        info("GetOrCreateCache command result: " + ret);
+
+        IgniteCache<String, String> cache = grid(0).cache(cacheName);
+
+        cache.put("1", "1");
+
+        CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+        assertEquals(backups, ccfg.getBackups());
+        assertEquals(mode, ccfg.getCacheMode());
+        assertEquals(wrtSync, ccfg.getWriteSynchronizationMode());
+
+        if (!F.isEmpty(cacheGrp))
+            assertEquals(cacheGrp, ccfg.getGroupName());
+
+        if (!F.isEmpty(dataRegion))
+            assertEquals(dataRegion, ccfg.getDataRegionName());
+
+        ret = content(cacheName, GridRestCommand.DESTROY_CACHE);
+
+        assertTrue(jsonResponse(ret).isNull());
+        assertNull(grid(0).cache(cacheName));
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testGetOrCreateCache() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.GET_OR_CREATE_CACHE.key(), "cacheName", "testCache"));
+        checkGetOrCreateAndDestroy("testCache", PARTITIONED, 0, FULL_SYNC, null, null);
 
-        info("Name command result: " + ret);
+        checkGetOrCreateAndDestroy("testCache", PARTITIONED, 3, FULL_SYNC, null, null,
+            "backups", "3"
+        );
 
-        grid(0).cache("testCache").put("1", "1");
+        checkGetOrCreateAndDestroy("testCache", PARTITIONED, 2, FULL_ASYNC, null, null,
+            "backups", "2",
+            "writeSynchronizationMode", FULL_ASYNC.name()
+        );
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.DESTROY_CACHE.key(), "cacheName", "testCache"));
+        checkGetOrCreateAndDestroy("testCache", REPLICATED, Integer.MAX_VALUE, FULL_ASYNC, null, null,
+            "templateName", TEMPLATE_REPLICATED,
+            "writeSynchronizationMode", FULL_ASYNC.name()
+        );
 
-        assertTrue(jsonResponse(ret).isNull());
+        checkGetOrCreateAndDestroy("testCache", REPLICATED, Integer.MAX_VALUE, FULL_ASYNC, null, null,
+            "templateName", TEMPLATE_REPLICATED,
+            "backups", "0",
+            "writeSynchronizationMode", FULL_ASYNC.name()
+        );
 
-        assertNull(grid(0).cache("testCache"));
+        checkGetOrCreateAndDestroy("testCache", PARTITIONED, 1, FULL_ASYNC, "testGroup", null,
+            "templateName", TEMPLATE_PARTITIONED,
+            "backups", "1",
+            "writeSynchronizationMode", FULL_ASYNC.name(),
+            "cacheGroup", "testGroup"
+        );
+
+        checkGetOrCreateAndDestroy("testCache", PARTITIONED, 2, FULL_ASYNC, null, "testDataRegion",
+            "templateName", TEMPLATE_PARTITIONED,
+            "backups", "2",
+            "writeSynchronizationMode", FULL_ASYNC.name(),
+            "dataRegion", "testDataRegion"
+        );
+
+        checkGetOrCreateAndDestroy("testCache", PARTITIONED, 3, FULL_ASYNC, "testGroup", "testDataRegion",
+            "templateName", TEMPLATE_PARTITIONED,
+            "backups", "3",
+            "writeSynchronizationMode", FULL_ASYNC.name(),
+            "cacheGroup", "testGroup",
+            "dataRegion", "testDataRegion"
+        );
     }
 
     /**
@@ -553,22 +773,25 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jcache().putAll(entries);
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET_ALL.key(), "k1", "getKey1", "k2", "getKey2"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET_ALL,
+            "k1", "getKey1",
+            "k2", "getKey2"
+        );
 
         info("Get all command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, true);
+        JsonNode res = assertResponseSucceeded(ret, true);
 
         assertTrue(res.isObject());
 
-        assertTrue(entries.equals(JSON_MAPPER.treeToValue(res, Map.class)));
+        assertEquals(entries, JSON_MAPPER.treeToValue(res, Map.class));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testIncorrectPut() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT.key(), "key", "key0"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT, "key", "key0");
 
         assertResponseContainsError(ret,
             "Failed to handle request: [req=CACHE_PUT, err=Failed to find mandatory parameter in request: val]");
@@ -580,7 +803,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testContainsKey() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_CONTAINS_KEY.key(), "key", "key0"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_CONTAINS_KEY, "key", "key0");
 
         assertCacheOperation(ret, true);
     }
@@ -588,12 +811,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testContainesKeys() throws Exception {
+    public void testContainsKeys() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
         grid(0).cache(DEFAULT_CACHE_NAME).put("key1", "val1");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_CONTAINS_KEYS.key(),
-            "k1", "key0", "k2", "key1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_CONTAINS_KEYS,
+            "k1", "key0",
+            "k2", "key1"
+        );
 
         assertCacheBulkOperation(ret, true);
     }
@@ -604,7 +829,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testGetAndPut() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET_AND_PUT.key(), "key", "key0", "val", "val1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET_AND_PUT,
+            "key", "key0",
+            "val", "val1"
+        );
 
         assertCacheOperation(ret, "val0");
 
@@ -617,8 +845,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testGetAndPutIfAbsent() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT.key(),
-            "key", "key0", "val", "val1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT,
+            "key", "key0",
+            "val", "val1"
+        );
 
         assertCacheOperation(ret, "val0");
 
@@ -629,8 +859,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testPutIfAbsent2() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT_IF_ABSENT.key(),
-            "key", "key0", "val", "val1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT_IF_ABSENT,
+            "key", "key0",
+            "val", "val1"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -643,15 +875,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testRemoveValue() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REMOVE_VALUE.key(),
-            "key", "key0", "val", "val1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REMOVE_VALUE,
+            "key", "key0",
+            "val", "val1"
+        );
 
         assertCacheOperation(ret, false);
 
         assertEquals("val0", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REMOVE_VALUE.key(),
-            "key", "key0", "val", "val0"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REMOVE_VALUE,
+            "key", "key0",
+            "val", "val0"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -664,8 +900,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testGetAndRemove() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET_AND_REMOVE.key(),
-            "key", "key0"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET_AND_REMOVE, "key", "key0");
 
         assertCacheOperation(ret, "val0");
 
@@ -678,15 +913,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testReplaceValue() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REPLACE_VALUE.key(),
-            "key", "key0", "val", "val1", "val2", "val2"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REPLACE_VALUE,
+            "key", "key0",
+            "val", "val1",
+            "val2", "val2"
+        );
 
         assertCacheOperation(ret, false);
 
         assertEquals("val0", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REPLACE_VALUE.key(),
-            "key", "key0", "val", "val1", "val2", "val0"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REPLACE_VALUE,
+            "key", "key0",
+            "val", "val1",
+            "val2", "val0"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -699,8 +940,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testGetAndReplace() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_GET_AND_REPLACE.key(),
-            "key", "key0", "val", "val1"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET_AND_REPLACE,
+            "key", "key0",
+            "val", "val1"
+        );
 
         assertCacheOperation(ret, "val0");
 
@@ -723,8 +966,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT.key(),
-            "key", "putKey", "val", "putVal"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "key", "putKey",
+            "val", "putVal"
+        );
 
         info("Put command result: " + ret);
 
@@ -737,8 +982,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testPutWithExpiration() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT.key(),
-            "key", "putKey", "val", "putVal", "exp", "2000"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "key", "putKey",
+            "val", "putVal",
+            "exp", "2000"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -755,8 +1003,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testAdd() throws Exception {
         jcache().put("addKey1", "addVal1");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_ADD.key(),
-            "key", "addKey2", "val", "addVal2"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_ADD,
+            "key", "addKey2",
+            "val", "addVal2"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -768,8 +1018,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testAddWithExpiration() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_ADD.key(),
-            "key", "addKey", "val", "addVal", "exp", "2000"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_ADD,
+            "key", "addKey",
+            "val", "addVal",
+            "exp", "2000"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -784,14 +1037,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testPutAll() throws Exception {
-        Map<String, String> map = F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT_ALL.key());
-
-        map.put("k1", "putKey1");
-        map.put("k2", "putKey2");
-        map.put("v1", "putVal1");
-        map.put("v2", "putVal2");
-
-        String ret = content(map);
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT_ALL,
+            "k1", "putKey1",
+            "k2", "putKey2",
+            "v1", "putVal1",
+            "v2", "putVal2"
+        );
 
         info("Put all command result: " + ret);
 
@@ -809,8 +1060,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("rmvVal", jcache().localPeek("rmvKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REMOVE.key(),
-            "key", "rmvKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REMOVE, "key", "rmvKey");
 
         info("Remove command result: " + ret);
 
@@ -833,8 +1083,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
         assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REMOVE_ALL.key(),
-            "k1", "rmvKey1", "k2", "rmvKey2"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REMOVE_ALL,
+            "k1", "rmvKey1",
+            "k2", "rmvKey2"
+        );
 
         info("Remove all command result: " + ret);
 
@@ -845,7 +1097,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertCacheBulkOperation(ret, true);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REMOVE_ALL.key()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REMOVE_ALL);
 
         info("Remove all command result: " + ret);
 
@@ -853,7 +1105,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertNull(jcache().localPeek("rmvKey2"));
         assertNull(jcache().localPeek("rmvKey3"));
         assertNull(jcache().localPeek("rmvKey4"));
-        assertTrue(jcache().localSize() == 0);
+        assertEquals(0, jcache().localSize());
 
         assertCacheBulkOperation(ret, true);
     }
@@ -866,8 +1118,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("casOldVal", jcache().localPeek("casKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_CAS.key(),
-            "key", "casKey", "val2", "casOldVal", "val1", "casNewVal"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_CAS,
+            "key", "casKey",
+            "val2", "casOldVal",
+            "val1", "casNewVal"
+        );
 
         info("CAS command result: " + ret);
 
@@ -886,8 +1141,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("repOldVal", jcache().localPeek("repKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REPLACE.key(),
-            "key", "repKey", "val", "repVal"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REPLACE,
+            "key", "repKey",
+            "val", "repVal"
+        );
 
         info("Replace command result: " + ret);
 
@@ -904,8 +1161,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("replaceVal", jcache().get("replaceKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_REPLACE.key(),
-            "key", "replaceKey", "val", "replaceValNew", "exp", "2000"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_REPLACE,
+            "key", "replaceKey",
+            "val", "replaceValNew",
+            "exp", "2000"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -923,8 +1183,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testAppend() throws Exception {
         jcache().put("appendKey", "appendVal");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_APPEND.key(),
-            "key", "appendKey", "val", "_suffix"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_APPEND,
+            "key", "appendKey",
+            "val", "_suffix"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -937,8 +1199,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testPrepend() throws Exception {
         jcache().put("prependKey", "prependVal");
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PREPEND.key(),
-            "key", "prependKey", "val", "prefix_"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PREPEND,
+            "key", "prependKey",
+            "val", "prefix_"
+        );
 
         assertCacheOperation(ret, true);
 
@@ -949,15 +1213,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testIncrement() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.ATOMIC_INCREMENT.key(),
-            "key", "incrKey", "init", "2", "delta", "3"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.ATOMIC_INCREMENT,
+            "key", "incrKey",
+            "init", "2",
+            "delta", "3"
+        );
 
         JsonNode res = jsonResponse(ret);
 
         assertEquals(5, res.asInt());
         assertEquals(5, grid(0).atomicLong("incrKey", 0, true).get());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.ATOMIC_INCREMENT.key(), "key", "incrKey", "delta", "10"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.ATOMIC_INCREMENT,
+            "key", "incrKey",
+            "delta", "10"
+        );
 
         res = jsonResponse(ret);
 
@@ -969,16 +1239,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testDecrement() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.ATOMIC_DECREMENT.key(),
-            "key", "decrKey", "init", "15", "delta", "10"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.ATOMIC_DECREMENT,
+            "key", "decrKey",
+            "init", "15",
+            "delta", "10"
+        );
 
         JsonNode res = jsonResponse(ret);
 
         assertEquals(5, res.asInt());
         assertEquals(5, grid(0).atomicLong("decrKey", 0, true).get());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.ATOMIC_DECREMENT.key(),
-            "key", "decrKey", "delta", "3"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.ATOMIC_DECREMENT,
+            "key", "decrKey",
+            "delta", "3"
+        );
 
         res = jsonResponse(ret);
 
@@ -994,8 +1269,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("casOldVal", jcache().localPeek("casKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_CAS.key(),
-            "key", "casKey", "val2", "casOldVal"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_CAS,
+            "key", "casKey",
+            "val2", "casOldVal"
+        );
 
         info("CAR command result: " + ret);
 
@@ -1010,8 +1287,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testPutIfAbsent() throws Exception {
         assertNull(jcache().localPeek("casKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_CAS.key(),
-            "key", "casKey", "val1", "casNewVal"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_CAS,
+            "key", "casKey",
+            "val1", "casNewVal"
+        );
 
         info("PutIfAbsent command result: " + ret);
 
@@ -1028,7 +1307,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals("casVal", jcache().localPeek("casKey"));
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_CAS.key(), "key", "casKey"));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_CAS, "key", "casKey");
 
         info("CAS Remove command result: " + ret);
 
@@ -1041,7 +1320,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testMetrics() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METRICS.key()));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_METRICS);
 
         info("Cache metrics command result: " + ret);
 
@@ -1079,20 +1358,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             assertNotNull(keyClasses);
             assertFalse(keyClasses.isNull());
 
-            assertTrue(meta.keyClasses().equals(JSON_MAPPER.treeToValue(keyClasses, Map.class)));
+            assertEquals(meta.keyClasses(), JSON_MAPPER.treeToValue(keyClasses, Map.class));
 
             JsonNode valClasses = item.get("valClasses");
 
             assertNotNull(valClasses);
             assertFalse(valClasses.isNull());
 
-            assertTrue(meta.valClasses().equals(JSON_MAPPER.treeToValue(valClasses, Map.class)));
+            assertEquals(meta.valClasses(), JSON_MAPPER.treeToValue(valClasses, Map.class));
 
             JsonNode fields = item.get("fields");
 
             assertNotNull(fields);
             assertFalse(fields.isNull());
-            assertTrue(meta.fields().equals(JSON_MAPPER.treeToValue(fields, Map.class)));
+            assertEquals(meta.fields(), JSON_MAPPER.treeToValue(fields, Map.class));
 
             JsonNode indexesByType = item.get("indexes");
 
@@ -1136,32 +1415,35 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-        assertEquals(5, metas.size());
+        // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
+        // int cachesCnt = grid(0).cacheNames().size();
+        // assertEquals(cachesCnt, metas.size());
 
-        String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
+        String ret = content("", GridRestCommand.CACHE_METADATA);
 
         info("Cache metadata: " + ret);
 
-        JsonNode arrResponse = jsonResponse(ret);
+        JsonNode arrRes = jsonResponse(ret);
 
-        assertEquals(5, arrResponse.size());
+        // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
+        // assertEquals(cachesCnt, arrRes.size());
 
-        testMetadata(metas, arrResponse);
+        testMetadata(metas, arrRes);
 
         Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata();
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_METADATA);
 
         info("Cache metadata: " + ret);
 
-        arrResponse = jsonResponse(ret);
+        arrRes = jsonResponse(ret);
 
-        assertEquals(1, arrResponse.size());
+        assertEquals(1, arrRes.size());
 
-        testMetadata(dfltCacheMeta, arrResponse);
+        testMetadata(dfltCacheMeta, arrRes);
 
-        assertResponseContainsError(content(
-            F.asMap("cacheName", "nonExistingCacheName", "cmd", GridRestCommand.CACHE_METADATA.key())));
+        assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
+            "Failed to request meta data. nonExistingCacheName is not found");
     }
 
     /**
@@ -1177,36 +1459,40 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
+        String ret = content("", GridRestCommand.CACHE_METADATA);
 
         info("Cache metadata: " + ret);
 
-        JsonNode arrResponse = jsonResponse(ret);
+        JsonNode arrRes = jsonResponse(ret);
 
-        assertEquals(6, arrResponse.size());
+        // TODO: IGNITE-7740 uncomment after IGNITE-7740 will be fixed.
+        // int cachesCnt = grid(1).cacheNames().size();
+        // assertEquals(cachesCnt, arrRes.size());
 
-        testMetadata(metas, arrResponse);
+        testMetadata(metas, arrRes);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME,
-            "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+        ret = content("person", GridRestCommand.CACHE_METADATA);
 
         info("Cache metadata with cacheName parameter: " + ret);
 
-        arrResponse = jsonResponse(ret);
+        arrRes = jsonResponse(ret);
 
-        assertEquals(1, arrResponse.size());
+        assertEquals(1, arrRes.size());
 
-        testMetadata(metas, arrResponse);
+        testMetadata(metas, arrRes);
 
-        assertResponseContainsError(content(
-            F.asMap("cacheName", "nonExistingCacheName", "cmd", GridRestCommand.CACHE_METADATA.key())));
+        assertResponseContainsError(content("nonExistingCacheName", GridRestCommand.CACHE_METADATA),
+            "Failed to request meta data. nonExistingCacheName is not found");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTopology() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.TOPOLOGY.key(), "attr", "false", "mtr", "false"));
+        String ret = content(null, GridRestCommand.TOPOLOGY,
+            "attr", "false",
+            "mtr", "false"
+        );
 
         info("Topology command result: " + ret);
 
@@ -1229,7 +1515,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             for (JsonNode cache : caches) {
                 String cacheName0 = cache.get("name").asText();
 
-                final String cacheName = cacheName0.equals("") ? null : cacheName0;
+                final String cacheName = cacheName0.isEmpty() ? null : cacheName0;
 
                 IgniteCacheProxy<?, ?> publicCache = F.find(publicCaches, null, new P1<IgniteCacheProxy<?, ?>>() {
                     @Override public boolean apply(IgniteCacheProxy<?, ?> c) {
@@ -1250,8 +1536,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testNode() throws Exception {
-        String ret = content(F.asMap("cmd", GridRestCommand.NODE.key(), "attr", "true", "mtr", "true", "id",
-            grid(0).localNode().id().toString()));
+        String ret = content(null, GridRestCommand.NODE,
+            "attr", "true",
+            "mtr", "true",
+            "id", grid(0).localNode().id().toString()
+        );
 
         info("Topology command result: " + ret);
 
@@ -1260,7 +1549,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertTrue(res.get("attributes").isObject());
         assertTrue(res.get("metrics").isObject());
 
-        ret = content(F.asMap("cmd", GridRestCommand.NODE.key(), "attr", "false", "mtr", "false", "ip", LOC_HOST));
+        ret = content(null, GridRestCommand.NODE,
+            "attr", "false",
+            "mtr", "false",
+            "ip", LOC_HOST
+        );
 
         info("Topology command result: " + ret);
 
@@ -1269,8 +1562,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertTrue(res.get("attributes").isNull());
         assertTrue(res.get("metrics").isNull());
 
-        ret = content(F.asMap("cmd", GridRestCommand.NODE.key(), "attr", "false", "mtr", "false", "ip", LOC_HOST, "id",
-            UUID.randomUUID().toString()));
+        ret = content(null, GridRestCommand.NODE,
+            "attr", "false",
+            "mtr", "false",
+            "ip", LOC_HOST,
+            "id", UUID.randomUUID().toString()
+        );
 
         info("Topology command result: " + ret);
 
@@ -1287,23 +1584,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testExe() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.EXE.key()));
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.EXE);
 
         info("Exe command result: " + ret);
 
-        assertResponseContainsError(ret);
+        assertResponseContainsError(ret, "Failed to find mandatory parameter in request: name");
 
         // Attempt to execute unknown task (UNKNOWN_TASK) will result in exception on server.
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.EXE.key(), "name", "UNKNOWN_TASK"));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.EXE, "name", "UNKNOWN_TASK");
 
         info("Exe command result: " + ret);
 
-        assertResponseContainsError(ret);
+        assertResponseContainsError(ret, "Unknown task name or failed to auto-deploy task (was task (re|un)deployed?)");
 
         grid(0).compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
         grid(0).compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.EXE.key(), "name", TestTask1.class.getName()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.EXE, "name", TestTask1.class.getName());
 
         info("Exe command result: " + ret);
 
@@ -1311,7 +1608,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertTrue(res.isNull());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.EXE.key(), "name", TestTask2.class.getName()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.EXE, "name", TestTask2.class.getName());
 
         info("Exe command result: " + ret);
 
@@ -1319,11 +1616,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals(TestTask2.RES, res.asText());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.RESULT.key()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.RESULT);
 
         info("Exe command result: " + ret);
 
-        assertResponseContainsError(ret);
+        assertResponseContainsError(ret, "Failed to find mandatory parameter in request: id");
     }
 
     /**
@@ -1689,7 +1986,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testVersion() throws Exception {
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.VERSION.key()));
+        String ret = content(null, GridRestCommand.VERSION);
 
         JsonNode res = jsonResponse(ret);
 
@@ -1702,16 +1999,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testQueryArgs() throws Exception {
         String qry = "salary > ? and salary <= ?";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
-        params.put("type", "Person");
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-        params.put("arg1", "1000");
-        params.put("arg2", "2000");
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SQL_QUERY,
+            "type", "Person",
+            "pageSize", "10",
+            "qry", URLEncoder.encode(qry, CHARSET),
+            "arg1", "1000",
+            "arg2", "2000"
+        );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1724,12 +2018,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testQueryScan() throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SCAN_QUERY,
+            "pageSize", "10",
+            "cacheName", "person"
+        );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1742,13 +2034,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testFilterQueryScan() throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("className", ScanFilter.class.getName());
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SCAN_QUERY,
+            "pageSize", "10",
+            "className", ScanFilter.class.getName()
+        );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1763,13 +2052,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testIncorrectFilterQueryScan() throws Exception {
         String clsName = ScanFilter.class.getName() + 1;
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("className", clsName);
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SCAN_QUERY,
+            "pageSize", "10",
+            "className", clsName
+        );
 
         assertResponseContainsError(ret, "Failed to find target class: " + clsName);
     }
@@ -1782,21 +2068,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         grid(0).cache(DEFAULT_CACHE_NAME).put("2", "2");
         grid(0).cache(DEFAULT_CACHE_NAME).put("3", "3");
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cacheName", DEFAULT_CACHE_NAME);
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
-        params.put("type", "String");
-        params.put("pageSize", "1");
-        params.put("qry", URLEncoder.encode("select * from String", CHARSET));
-
-        String ret = content(params);
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.EXECUTE_SQL_QUERY,
+            "type", "String",
+            "pageSize", "1",
+            "qry", URLEncoder.encode("select * from String", CHARSET)
+        );
 
         JsonNode qryId = jsonResponse(ret).get("queryId");
 
         assertFalse(jsonResponse(ret).get("queryId").isNull());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.FETCH_SQL_QUERY.key(),
-            "pageSize", "1", "qryId", qryId.asText()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.FETCH_SQL_QUERY,
+            "pageSize", "1",
+            "qryId", qryId.asText()
+        );
 
         JsonNode res = jsonResponse(ret);
 
@@ -1805,8 +2090,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals(qryId0, qryId);
         assertFalse(res.get("last").asBoolean());
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.FETCH_SQL_QUERY.key(),
-            "pageSize", "1", "qryId", qryId.asText()));
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.FETCH_SQL_QUERY,
+            "pageSize", "1",
+            "qryId", qryId.asText()
+        );
 
         res = jsonResponse(ret);
 
@@ -1826,16 +2113,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             "where \"organization\".Organization.id = Person.orgId " +
             "and \"organization\".Organization.name = ?";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
-        params.put("type", "Person");
-        params.put("distributedJoins", "true");
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-        params.put("arg1", "o1");
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SQL_QUERY,
+            "type", "Person",
+            "distributedJoins", "true",
+            "pageSize", "10",
+            "qry", URLEncoder.encode(qry, CHARSET),
+            "arg1", "o1"
+        );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1850,13 +2134,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testSqlFieldsQuery() throws Exception {
         String qry = "select concat(firstName, ' ', lastName) from Person";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
+            "pageSize", "10",
+            "qry", URLEncoder.encode(qry, CHARSET)
+        );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1871,14 +2152,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testDistributedJoinsSqlFieldsQuery() throws Exception {
         String qry = "select * from \"person\".Person p, \"organization\".Organization o where o.id = p.orgId";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
-        params.put("distributedJoins", "true");
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
+            "distributedJoins", "true",
+            "pageSize", "10",
+            "qry", URLEncoder.encode(qry, CHARSET)
+        );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1893,13 +2171,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testSqlFieldsMetadataQuery() throws Exception {
         String qry = "select firstName, lastName from Person";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
-        params.put("pageSize", "10");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
+            "pageSize", "10",
+            "qry", URLEncoder.encode(qry, CHARSET)
+        );
 
         JsonNode res = jsonResponse(ret);
 
@@ -1926,16 +2201,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testQueryClose() throws Exception {
         String qry = "salary > ? and salary <= ?";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
-        params.put("type", "Person");
-        params.put("pageSize", "1");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-        params.put("arg1", "1000");
-        params.put("arg2", "2000");
-
-        String ret = content(params);
+        String ret = content("person", GridRestCommand.EXECUTE_SQL_QUERY,
+            "type", "Person",
+            "pageSize", "1",
+            "qry", URLEncoder.encode(qry, CHARSET),
+            "arg1", "1000",
+            "arg2", "2000"
+        );
 
         JsonNode res = jsonResponse(ret);
 
@@ -1947,7 +2219,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         String qryId = res.get("queryId").asText();
 
-        content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CLOSE_SQL_QUERY.key(), "cacheName", "person", "qryId", qryId));
+        content("person", GridRestCommand.CLOSE_SQL_QUERY, "qryId", qryId);
 
         assertFalse(queryCursorFound());
     }
@@ -1958,19 +2230,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testQueryDelay() throws Exception {
         String qry = "salary > ? and salary <= ?";
 
-        Map<String, String> params = new HashMap<>();
-        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
-        params.put("type", "Person");
-        params.put("pageSize", "1");
-        params.put("cacheName", "person");
-        params.put("qry", URLEncoder.encode(qry, CHARSET));
-        params.put("arg1", "1000");
-        params.put("arg2", "2000");
-
         String ret = null;
 
         for (int i = 0; i < 10; ++i)
-            ret = content(params);
+            ret = content("person", GridRestCommand.EXECUTE_SQL_QUERY,
+                "type", "Person",
+                "pageSize", "1",
+                "qry", URLEncoder.encode(qry, CHARSET),
+                "arg1", "1000",
+                "arg2", "2000"
+            );
 
         JsonNode items = jsonResponse(ret).get("items");
 
@@ -1981,6 +2250,357 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         U.sleep(10000);
 
         assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @return Cache.
+     */
+    protected <K, V> IgniteCache<K, V> typedCache() {
+        return grid(0).cache("test_typed_access");
+    }
+
+    /**
+     * @param type Key and value type.
+     * @param k Key to put.
+     * @param v Value to put.
+     * @param status Expected operation status to check.
+     * @throws Exception If failed.
+     */
+    private void putTypedValue(String type, String k, String v, int status) throws Exception {
+        String ret = content("test_typed_access", GridRestCommand.CACHE_PUT,
+            "keyType", type,
+            "valueType", type,
+            "key", k,
+            "val", v
+        );
+
+        info("Command result: " + ret);
+
+        JsonNode json = JSON_MAPPER.readTree(ret);
+
+        assertEquals(status, json.get("successStatus").asInt());
+
+        if (status == STATUS_SUCCESS)
+            assertTrue(json.get("error").isNull());
+        else
+            assertTrue(json.get("error").asText().startsWith("Failed to convert value to specified type [type="));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTypedPut() throws Exception {
+        // Test boolean type.
+        putTypedValue("boolean", "true", "false", STATUS_SUCCESS);
+        putTypedValue("java.lang.Boolean", "false", "true", STATUS_SUCCESS);
+
+        IgniteCache<Boolean, Boolean> cBool = typedCache();
+
+        assertEquals(Boolean.FALSE, cBool.get(true));
+        assertEquals(Boolean.TRUE, cBool.get(false));
+
+        // Test byte type.
+        putTypedValue("byte", "64", "100", STATUS_SUCCESS);
+        putTypedValue("java.lang.Byte", "-25", "-127", STATUS_SUCCESS);
+        putTypedValue("byte", "65", "aaa", STATUS_FAILED);
+        putTypedValue("byte", "aaa", "64", STATUS_FAILED);
+        putTypedValue("byte", "aaa", "aaa", STATUS_FAILED);
+
+        IgniteCache<Byte, Byte> cByte = typedCache();
+
+        assertEquals(Byte.valueOf("100"), cByte.get(Byte.valueOf("64")));
+        assertEquals(Byte.valueOf("-127"), cByte.get(Byte.valueOf("-25")));
+
+        // Test short type.
+        putTypedValue("short", "1024", "4096", STATUS_SUCCESS);
+        putTypedValue("java.lang.Short", "-15000", "-16000", STATUS_SUCCESS);
+        putTypedValue("short", "1025", "bbb", STATUS_FAILED);
+        putTypedValue("short", "bbb", "5", STATUS_FAILED);
+        putTypedValue("short", "bbb", "bbb", STATUS_FAILED);
+
+        IgniteCache<Short, Short> cShort = typedCache();
+
+        assertEquals(Short.valueOf("4096"), cShort.get(Short.valueOf("1024")));
+        assertEquals(Short.valueOf("-16000"), cShort.get(Short.valueOf("-15000")));
+
+        // Test integer type.
+        putTypedValue("int", "65555", "128256", STATUS_SUCCESS);
+        putTypedValue("Integer", "74555", "200000", STATUS_SUCCESS);
+        putTypedValue("java.lang.Integer", "-200", "-100000", STATUS_SUCCESS);
+        putTypedValue("int", "0", "ccc", STATUS_FAILED);
+        putTypedValue("int", "ccc", "0", STATUS_FAILED);
+        putTypedValue("int", "ccc", "ccc", STATUS_FAILED);
+
+        IgniteCache<Integer, Integer> cInt = typedCache();
+
+        assertEquals(Integer.valueOf(128256), cInt.get(65555));
+        assertEquals(Integer.valueOf(200000), cInt.get(74555));
+        assertEquals(Integer.valueOf(-100000), cInt.get(-200));
+
+        // Test long type.
+        putTypedValue("long", "3000000", "400000", STATUS_SUCCESS);
+        putTypedValue("java.lang.Long", "-3000000", "-400000", STATUS_SUCCESS);
+        putTypedValue("long", "777", "ddd", STATUS_FAILED);
+        putTypedValue("long", "ddd", "777", STATUS_FAILED);
+        putTypedValue("long", "ddd", "ddd", STATUS_FAILED);
+
+        IgniteCache<Long, Long> cLong = typedCache();
+
+        assertEquals(Long.valueOf(400000), cLong.get(3000000L));
+        assertEquals(Long.valueOf(-400000), cLong.get(-3000000L));
+
+        // Test float type.
+        putTypedValue("float", "1.5", "2.5", STATUS_SUCCESS);
+        putTypedValue("java.lang.Float", "-7.5", "-8.5", STATUS_SUCCESS);
+        putTypedValue("float", "1.5", "hhh", STATUS_FAILED);
+        putTypedValue("float", "hhh", "1.5", STATUS_FAILED);
+        putTypedValue("float", "hhh", "hhh", STATUS_FAILED);
+
+        IgniteCache<Float, Float> cFloat = typedCache();
+
+        assertEquals(2.5f, cFloat.get(1.5f));
+        assertEquals(-8.5f, cFloat.get(-7.5f));
+
+        // Test double type.
+        putTypedValue("double", "5.5", "75.5", STATUS_SUCCESS);
+        putTypedValue("java.lang.Double", "-155.5", "-255.5", STATUS_SUCCESS);
+        putTypedValue("double", "jjj", "75.5", STATUS_FAILED);
+        putTypedValue("double", "6.5", "jjj", STATUS_FAILED);
+        putTypedValue("double", "jjj", "jjj", STATUS_FAILED);
+
+        IgniteCache<Double, Double> cDouble = typedCache();
+
+        assertEquals(75.5d, cDouble.get(5.5d));
+        assertEquals(-255.5d, cDouble.get(-155.5d));
+
+        // Test date type.
+        putTypedValue("date", "2018-02-18", "2017-01-01", STATUS_SUCCESS);
+        putTypedValue("java.sql.Date", "2018-01-01", "2017-02-02", STATUS_SUCCESS);
+        putTypedValue("date", "xxxx-yy-mm", "2017-01-01", STATUS_FAILED);
+        putTypedValue("date", "2018-03-18", "xxxx-yy-mm", STATUS_FAILED);
+        putTypedValue("date", "xxxx-yy-mm", "xxxx-yy-mm", STATUS_FAILED);
+
+        IgniteCache<Date, Date> cDate = typedCache();
+
+        assertEquals(Date.valueOf("2017-01-01"), cDate.get(Date.valueOf("2018-02-18")));
+        assertEquals(Date.valueOf("2017-02-02"), cDate.get(Date.valueOf("2018-01-01")));
+
+        // Test time type.
+        putTypedValue("Time", "01:01:01", "02:02:02", STATUS_SUCCESS);
+        putTypedValue("java.sql.Time", "03:03:03", "04:04:04", STATUS_SUCCESS);
+        putTypedValue("Time", "aa:bb:dd", "02:02:02", STATUS_FAILED);
+        putTypedValue("Time", "01:01:01", "zz:vv:pp", STATUS_FAILED);
+        putTypedValue("Time", "zz:zz:zz", "zz:zz:zz", STATUS_FAILED);
+
+        IgniteCache<Time, Time> cTime = typedCache();
+
+        assertEquals(Time.valueOf("02:02:02"), cTime.get(Time.valueOf("01:01:01")));
+        assertEquals(Time.valueOf("04:04:04"), cTime.get(Time.valueOf("03:03:03")));
+
+        // Test timestamp type.
+        putTypedValue("Timestamp", "2018-02-18%2001:01:01", "2017-01-01%2002:02:02", STATUS_SUCCESS);
+        putTypedValue("java.sql.timestamp", "2018-01-01%2001:01:01", "2018-05-05%2005:05:05", STATUS_SUCCESS);
+        putTypedValue("timestamp", "error", "2018-03-18%2001:01:01", STATUS_FAILED);
+        putTypedValue("timestamp", "2018-03-18%2001:01:01", "error", STATUS_FAILED);
+        putTypedValue("timestamp", "error", "error", STATUS_FAILED);
+
+        IgniteCache<Timestamp, Timestamp> cTimestamp = typedCache();
+
+        assertEquals(Timestamp.valueOf("2017-01-01 02:02:02"), cTimestamp.get(Timestamp.valueOf("2018-02-18 01:01:01")));
+        assertEquals(Timestamp.valueOf("2018-05-05 05:05:05"), cTimestamp.get(Timestamp.valueOf("2018-01-01 01:01:01")));
+
+        // Test UUID type.
+        UUID k1 = UUID.fromString("121f5ae8-148d-11e8-b642-0ed5f89f718b");
+        UUID v1 = UUID.fromString("64c6c225-b31c-4000-b136-ef14562ac785");
+        putTypedValue("UUID", k1.toString(), v1.toString(), STATUS_SUCCESS);
+        putTypedValue("UUID", "error", v1.toString(), STATUS_FAILED);
+        putTypedValue("UUID", k1.toString(), "error", STATUS_FAILED);
+        putTypedValue("UUID", "error", "error", STATUS_FAILED);
+
+        UUID k2 = UUID.randomUUID();
+        UUID v2 = UUID.randomUUID();
+        putTypedValue("java.util.UUID", k2.toString(), v2.toString(), STATUS_SUCCESS);
+
+        IgniteCache<UUID, UUID> cUUID = typedCache();
+
+        assertEquals(v1, cUUID.get(k1));
+        assertEquals(v2, cUUID.get(k2));
+
+        // Test IgniteUuid type.
+        IgniteUuid ik1 = IgniteUuid.randomUuid();
+        IgniteUuid iv1 = IgniteUuid.randomUuid();
+        putTypedValue("IgniteUuid", ik1.toString(), iv1.toString(), STATUS_SUCCESS);
+        putTypedValue("IgniteUuid", "error", iv1.toString(), STATUS_FAILED);
+        putTypedValue("IgniteUuid", ik1.toString(), "error", STATUS_FAILED);
+        putTypedValue("IgniteUuid", "error", "error", STATUS_FAILED);
+
+        IgniteUuid ik2 = IgniteUuid.randomUuid();
+        IgniteUuid iv2 = IgniteUuid.randomUuid();
+        putTypedValue("org.apache.ignite.lang.IgniteUuid", ik2.toString(), iv2.toString(), STATUS_SUCCESS);
+
+        IgniteCache<IgniteUuid, IgniteUuid> cIgniteUUID = typedCache();
+
+        assertEquals(iv1, cIgniteUUID.get(ik1));
+        assertEquals(iv2, cIgniteUUID.get(ik2));
+    }
+
+    /**
+     * @param keyType Key type.
+     * @param k Key value.
+     * @param exp Expected value to test.
+     * @throws Exception If failed.
+     */
+    private void getTypedValue(String keyType, String k, String exp) throws Exception {
+        String ret = content("test_typed_access", GridRestCommand.CACHE_GET,
+            "keyType", keyType,
+            "key", k
+        );
+
+        info("Command result: " + ret);
+
+        JsonNode json = jsonResponse(ret);
+
+        assertEquals(exp, json.isObject() ? json.toString() : json.asText());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTypedGet() throws Exception {
+        // Test boolean type.
+        IgniteCache<Boolean, Boolean> cBool = typedCache();
+
+        cBool.put(true, false);
+        cBool.put(false, true);
+
+        getTypedValue("boolean", "true", "false");
+        getTypedValue("java.lang.Boolean", "false", "true");
+
+        // Test byte type.
+        IgniteCache<Byte, Byte> cByte = typedCache();
+
+        cByte.put((byte)77, (byte)55);
+        cByte.put((byte)-88, (byte)-10);
+
+        getTypedValue("byte", "77", "55");
+        getTypedValue("java.lang.Byte", "-88", "-10");
+
+        // Test short type.
+        IgniteCache<Short, Short> cShort = typedCache();
+
+        cShort.put((short)2222, (short)3333);
+        cShort.put((short)-11111, (short)-12222);
+
+        getTypedValue("short", "2222", "3333");
+        getTypedValue("java.lang.Short", "-11111", "-12222");
+
+        // Test integer type.
+        IgniteCache<Integer, Integer> cInt = typedCache();
+        cInt.put(65555, 128256);
+        cInt.put(74555, 200000);
+        cInt.put(-200, -100000);
+
+        getTypedValue("int", "65555", "128256");
+        getTypedValue("Integer", "74555", "200000");
+        getTypedValue("java.lang.Integer", "-200", "-100000");
+
+        // Test long type.
+        IgniteCache<Long, Long> cLong = typedCache();
+
+        cLong.put(3333333L, 4444444L);
+        cLong.put(-3333333L, -4444444L);
+
+        getTypedValue("long", "3333333", "4444444");
+        getTypedValue("java.lang.Long", "-3333333", "-4444444");
+
+        // Test float type.
+        IgniteCache<Float, Float> cFloat = typedCache();
+
+        cFloat.put(11.5f, 21.5f);
+        cFloat.put(-71.5f, -81.5f);
+
+        getTypedValue("float", "11.5", "21.5");
+        getTypedValue("java.lang.Float", "-71.5", "-81.5");
+
+        // Test double type.
+        IgniteCache<Double, Double> cDouble = typedCache();
+
+        cDouble.put(58.5d, 758.5d);
+        cDouble.put(-1558.5d, -2558.5d);
+
+        getTypedValue("double", "58.5", "758.5");
+        getTypedValue("java.lang.Double", "-1558.5", "-2558.5");
+
+        // Test date type.
+        IgniteCache<Date, Date> cDate = typedCache();
+
+        cDate.put(Date.valueOf("2018-02-18"), Date.valueOf("2017-01-01"));
+        cDate.put(Date.valueOf("2018-01-01"), Date.valueOf("2017-02-02"));
+
+        getTypedValue("Date", "2018-02-18", "2017-01-01");
+        getTypedValue("java.sql.Date", "2018-01-01", "2017-02-02");
+
+        // Test time type.
+        IgniteCache<Time, Time> cTime = typedCache();
+
+        cTime.put(Time.valueOf("01:01:01"), Time.valueOf("02:02:02"));
+        cTime.put(Time.valueOf("03:03:03"), Time.valueOf("04:04:04"));
+
+        getTypedValue("Time", "01:01:01", "02:02:02");
+        getTypedValue("java.sql.Time", "03:03:03", "04:04:04");
+
+        // Test timestamp type.
+        IgniteCache<Timestamp, String> cTimestamp = typedCache();
+
+        cTimestamp.put(Timestamp.valueOf("2018-02-18 01:01:01"), "test1");
+        cTimestamp.put(Timestamp.valueOf("2018-01-01 01:01:01"), "test2");
+
+        getTypedValue("Timestamp", "2018-02-18%2001:01:01", "test1");
+        getTypedValue("java.sql.timestamp", "2018-01-01%2001:01:01", "test2");
+
+        // Test UUID type.
+        IgniteCache<UUID, UUID> cUUID = typedCache();
+
+        UUID k1 = UUID.fromString("121f5ae8-148d-11e8-b642-0ed5f89f718b");
+        UUID v1 = UUID.fromString("64c6c225-b31c-4000-b136-ef14562ac785");
+        cUUID.put(k1, v1);
+
+        UUID k2 = UUID.randomUUID();
+        UUID v2 = UUID.randomUUID();
+        cUUID.put(k2, v2);
+
+        getTypedValue("UUID", k1.toString(), v1.toString());
+        getTypedValue("java.util.UUID", k2.toString(), v2.toString());
+
+        // Test IgniteUuid type.
+        IgniteCache<IgniteUuid, IgniteUuid> cIgniteUUID = typedCache();
+
+        IgniteUuid ik1 = IgniteUuid.randomUuid();
+        IgniteUuid iv1 = IgniteUuid.randomUuid();
+        cIgniteUUID.put(ik1, iv1);
+
+        IgniteUuid ik2 = IgniteUuid.randomUuid();
+        IgniteUuid iv2 = IgniteUuid.randomUuid();
+        cIgniteUUID.put(ik2, iv2);
+
+        getTypedValue("IgniteUuid", ik1.toString(), iv1.toString());
+        getTypedValue("org.apache.ignite.lang.IgniteUuid", ik2.toString(), iv2.toString());
+
+        // Test tuple.
+        IgniteCache<Integer, T2<Integer, String>> cTuple = typedCache();
+
+        T2<Integer, String> tup = new T2<>(1, "test");
+
+        cTuple.put(555, tup);
+
+        getTypedValue("int", "555", JSON_MAPPER.writeValueAsString(tup));
+
+        // Test enum.
+        IgniteCache<Integer, CacheMode> cEnum = typedCache();
+
+        cEnum.put(888, PARTITIONED);
+
+        getTypedValue("int", "888", PARTITIONED.toString());
     }
 
     /**
@@ -2003,7 +2623,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
             ConcurrentHashMap<Long, Iterator> its = GridTestUtils.getFieldValue(qryHnd, "qryCurs");
 
-            found |= its.size() != 0;
+            found |= !its.isEmpty();
         }
 
         return found;
@@ -2013,6 +2633,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     protected void initCache() {
+        CacheConfiguration typedCache = new CacheConfiguration<>("test_typed_access");
+        ignite(0).getOrCreateCache(typedCache);
+
         CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");
 
         orgCacheCfg.setIndexedTypes(Integer.class, Organization.class);
@@ -2085,6 +2708,57 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          */
         public String getName() {
             return name;
+        }
+    }
+
+    /**
+     * Test class that could have circular references.
+     */
+    public static class CircularRef implements Serializable {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /** */
+        private CircularRef ref;
+
+        /**
+         * @param id ID.
+         * @param name Name.
+         */
+        CircularRef(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /**
+         * @return ID.
+         */
+        public int id() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @return Reference to other object.
+         */
+        public CircularRef ref() {
+            return ref;
+        }
+
+        /**
+         * @param ref Reference to other object.
+         */
+        public void ref(CircularRef ref) {
+            this.ref = ref;
         }
     }
 
@@ -2380,10 +3054,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         FileSystemConfiguration igfs = new FileSystemConfiguration();
 
         igfs.setName("igfs");
-
         igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
 
         cfg.setFileSystemConfiguration(igfs);
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        DataRegionConfiguration drCfg = new DataRegionConfiguration();
+        drCfg.setName("testDataRegion");
+        drCfg.setMaxSize(100 * 1024 * 1024);
+
+        dsCfg.setDefaultDataRegionConfiguration(drCfg);
+
+        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
@@ -2395,13 +3078,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     private void assertClusterState(boolean exp) throws Exception {
-        String ret = content(F.asMap("cmd", GridRestCommand.CLUSTER_CURRENT_STATE.key()));
+        String ret = content("cmd", GridRestCommand.CLUSTER_CURRENT_STATE);
 
         info("Cluster state: " + ret);
         JsonNode res = jsonResponse(ret);
 
         assertEquals(exp, res.asBoolean());
-        assertEquals(exp, grid(0).active());
+        assertEquals(exp, grid(0).cluster().active());
     }
 
     /**
@@ -2411,9 +3094,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     private void changeClusterState(boolean state) throws Exception {
-        String cmd = (state ? GridRestCommand.CLUSTER_ACTIVE : GridRestCommand.CLUSTER_INACTIVE).key();
+        GridRestCommand cmd = state ? GridRestCommand.CLUSTER_ACTIVE : GridRestCommand.CLUSTER_INACTIVE;
 
-        String ret = content(F.asMap("cmd", cmd));
+        String ret = content(null, cmd);
 
         JsonNode res = jsonResponse(ret);
 

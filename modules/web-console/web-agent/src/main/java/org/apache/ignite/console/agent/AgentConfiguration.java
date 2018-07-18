@@ -57,7 +57,7 @@ public class AgentConfiguration {
     private String srvUri;
 
     /** */
-    @Parameter(names = {"-n", "--node-uri"}, description = "URI for connect to Ignite node REST server" +
+    @Parameter(names = {"-n", "--node-uri"}, description = "Comma-separated URIs for connect to Ignite node via REST" +
         "                        " +
         "      Default value: " + DFLT_NODE_URI)
     private String nodeUri;

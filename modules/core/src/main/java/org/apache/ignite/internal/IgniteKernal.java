@@ -118,10 +118,13 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -443,14 +446,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isRebalanceEnabled() {
+    @Override public boolean isRebalanceEnabled() {
         return ctx.cache().context().isRebalanceEnabled();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void rebalanceEnabled(boolean rebalanceEnabled) {
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
     }
 
@@ -932,6 +933,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
+                startProcessor(new IgniteAuthenticationProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
@@ -2389,7 +2391,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isDaemon() {
         assert cfg != null;
 
-        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        return cfg.isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
     }
 
     /**
@@ -3163,10 +3165,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cacheName Cache name.
+     * @param templateName Template name.
+     * @param cfgOverride Cache config properties to override.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, String templateName,
+        CacheConfigurationOverride cfgOverride, boolean checkThreadTx) {
         CU.validateCacheName(cacheName);
 
         guard();
@@ -3175,7 +3180,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkClusterState();
 
             if (ctx.cache().cache(cacheName) == null)
-                return ctx.cache().getOrCreateFromTemplate(cacheName, checkThreadTx);
+                return ctx.cache().getOrCreateFromTemplate(cacheName, templateName, cfgOverride, checkThreadTx);
 
             return new GridFinishedFuture<>();
         }
@@ -4010,7 +4015,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    public void dumpDebugInfo() {
+    @Override public void dumpDebugInfo() {
         try {
             GridKernalContextImpl ctx = this.ctx;
 

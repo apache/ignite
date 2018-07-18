@@ -68,6 +68,11 @@ namespace ignite_test
     std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle);
 
     /**
+     * @return Test config directory path.
+     */
+    std::string GetTestConfigDir();
+
+    /**
      * Initialize configuration for a node.
      *
      * Inits Ignite node configuration from specified config file.
@@ -103,6 +108,11 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
+
+    /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
 }
 
 #endif // _IGNITE_ODBC_TEST_TEST_UTILS
