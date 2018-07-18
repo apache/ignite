@@ -782,7 +782,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
             @Override public void run() {
                 ThreadLocalRandom r = ThreadLocalRandom.current();
 
-                IgniteCache<Integer, String> cache = ig.cache(cacheName);
+                IgniteCache<Integer, String> cache = ig.cache(cacheName).withAllowAtomicOpsInTx();
 
                 boolean pessimistic = r.nextBoolean();
 
