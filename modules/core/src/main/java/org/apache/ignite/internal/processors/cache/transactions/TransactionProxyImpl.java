@@ -386,51 +386,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         }
     }
 
-    /**
-     * @param res Result to convert to finished future.
-     */
-    private void save(Object res) {
-        asyncRes = new IgniteFinishedFutureImpl<>(res);
-    }
-
-    /**
-     * @param fut Internal future.
-     */
-    private void saveFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
-        asyncRes = createFuture(fut);
-    }
-
-    /**
-     * @param fut Internal future.
-     * @return User future.
-     */
-    private IgniteFuture<?> createFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
-        IgniteInternalFuture<Transaction> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, Transaction>() {
-            @Override public Transaction applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
-                fut.get();
-
-                return TransactionProxyImpl.this;
-            }
-        });
-
-        return new IgniteFutureImpl(fut0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(tx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (GridNearTxLocal)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TransactionProxyImpl.class, this);
-    }
-
     /** {@inheritDoc} */
     @Override public void savepoint(String name) throws IllegalArgumentException {
         savepoint(name, false);
@@ -497,5 +452,50 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         finally {
             leave();
         }
+    }
+
+    /**
+     * @param res Result to convert to finished future.
+     */
+    private void save(Object res) {
+        asyncRes = new IgniteFinishedFutureImpl<>(res);
+    }
+
+    /**
+     * @param fut Internal future.
+     */
+    private void saveFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
+        asyncRes = createFuture(fut);
+    }
+
+    /**
+     * @param fut Internal future.
+     * @return User future.
+     */
+    private IgniteFuture<?> createFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
+        IgniteInternalFuture<Transaction> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, Transaction>() {
+            @Override public Transaction applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
+                fut.get();
+
+                return TransactionProxyImpl.this;
+            }
+        });
+
+        return new IgniteFutureImpl(fut0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(tx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        tx = (GridNearTxLocal)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TransactionProxyImpl.class, this);
     }
 }

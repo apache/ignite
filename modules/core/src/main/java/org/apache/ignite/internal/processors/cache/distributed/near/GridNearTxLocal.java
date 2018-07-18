@@ -4323,58 +4323,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
     }
 
-    /**
-     * Post-lock closure.
-     *
-     * @param <T> Return type.
-     */
-    protected abstract class FinishClosure<T> implements IgniteBiClosure<T, Exception, T> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public final T apply(T t, @Nullable Exception e) {
-            boolean rollback = true;
-
-            try {
-                if (e != null)
-                    throw new GridClosureException(e);
-
-                t = finish(t);
-
-                // Commit implicit transactions.
-                if (implicit())
-                    commit();
-
-                rollback = false;
-
-                return t;
-            }
-            catch (IgniteCheckedException ex) {
-                throw new GridClosureException(ex);
-            }
-            finally {
-                if (rollback)
-                    setRollbackOnly();
-            }
-        }
-
-        /**
-         * @param t Argument.
-         * @return Result.
-         * @throws IgniteCheckedException If failed.
-         */
-        abstract T finish(T t) throws IgniteCheckedException;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridNearTxLocal.class, this,
-            "thread", IgniteUtils.threadName(threadId),
-            "mappings", mappings,
-            "super", super.toString());
-    }
-
     /** {@inheritDoc} */
     @Override public void savepoint(@NotNull String name, boolean overwrite) throws IgniteCheckedException {
         synchronized (this) {
@@ -4391,7 +4339,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         if (log.isDebugEnabled())
-            log.debug("Saving point created [savepoint=" + name + ", tx=" + this + ']');
+            log.debug("Savepoint created [savepoint=" + name + ", tx=" + this + ']');
     }
 
     /** {@inheritDoc} */
@@ -4557,5 +4505,57 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         } finally {
             cctx.mvcc().removeFuture(fut.futureId());
         }
+    }
+
+    /**
+     * Post-lock closure.
+     *
+     * @param <T> Return type.
+     */
+    protected abstract class FinishClosure<T> implements IgniteBiClosure<T, Exception, T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public final T apply(T t, @Nullable Exception e) {
+            boolean rollback = true;
+
+            try {
+                if (e != null)
+                    throw new GridClosureException(e);
+
+                t = finish(t);
+
+                // Commit implicit transactions.
+                if (implicit())
+                    commit();
+
+                rollback = false;
+
+                return t;
+            }
+            catch (IgniteCheckedException ex) {
+                throw new GridClosureException(ex);
+            }
+            finally {
+                if (rollback)
+                    setRollbackOnly();
+            }
+        }
+
+        /**
+         * @param t Argument.
+         * @return Result.
+         * @throws IgniteCheckedException If failed.
+         */
+        abstract T finish(T t) throws IgniteCheckedException;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearTxLocal.class, this,
+            "thread", IgniteUtils.threadName(threadId),
+            "mappings", mappings,
+            "super", super.toString());
     }
 }

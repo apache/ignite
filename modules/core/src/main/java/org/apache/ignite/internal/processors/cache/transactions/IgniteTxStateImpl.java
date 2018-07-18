@@ -505,7 +505,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /**
-     * Rollback this transaction to previous state. Also deletes all afterward savepoints.
+     * Rollback this transaction to previous state with given savepoint name. Also deletes all afterward savepoints.
      *
      * @param name Savepoint ID.
      * @throws IgniteCheckedException If failed.
@@ -528,9 +528,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
      * Delete savepoint if it exist. Do nothing if there is no savepoint with such name.
      *
      * @param name Savepoint ID.
-     * @throws IgniteCheckedException If failed.
      */
-    public void releaseSavepoint(String name) throws IgniteCheckedException {
+    public void releaseSavepoint(String name) {
         assert name != null;
 
         ListIterator<TxSavepoint> spIter = findSP(name);
@@ -623,7 +622,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /**
-     * Replace current state to the state, saved in savepoint.
+     * Replace current state by the state, saved in savepoint.
      *
      * @param savepoint Savepoint.
      * @param tx Transaction where this state exists.
@@ -642,20 +641,20 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             return;
         }
 
-        Map<IgniteTxKey, IgniteTxEntry> replacedTxMap = replaceTxMap(savepoint);
+        Map<IgniteTxKey, IgniteTxEntry> initTxMap = replaceTxMap(savepoint);
 
         refreshReadWriteViews();
 
         if (tx.optimistic())
             return;
 
-        Collection<IgniteTxKey> keysToUnlock = unlockLocalKeys(tx, replacedTxMap);
+        Collection<IgniteTxKey> keysToUnlock = unlockLocalCacheKeys(tx, initTxMap);
 
         if (keysToUnlock.isEmpty())
             return;
 
         Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping = mapKeysToCaches(
-            keysToUnlock, replacedTxMap);
+            keysToUnlock, initTxMap);
 
         tx.sendRollbackToSavepointMessages(mapping);
 
@@ -688,7 +687,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> caches = new HashMap<>();
 
         for (IgniteTxKey key : keysToUnlock) {
-            GridCacheAdapter cache = replacedTxMap.get(key).cached().context().cache();
+            GridCacheAdapter cache = replacedTxMap.get(key).context().cache();
 
             ClusterNode node = cache.affinity().mapPartitionToNode(key.key().partition());
 
@@ -707,7 +706,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
      * @param replacedTxMap Tx state before rollback.
      * @return Keys which primary node isn't local.
      */
-    private Collection<IgniteTxKey> unlockLocalKeys(GridNearTxLocal tx, Map<IgniteTxKey, IgniteTxEntry> replacedTxMap) {
+    private Collection<IgniteTxKey> unlockLocalCacheKeys(
+        GridNearTxLocal tx,
+        Map<IgniteTxKey, IgniteTxEntry> replacedTxMap
+    ) {
         Collection<IgniteTxKey> keysToUnlock = new ArrayList<>(replacedTxMap.size());
 
         for (Map.Entry<IgniteTxKey, IgniteTxEntry> entry : replacedTxMap.entrySet()) {

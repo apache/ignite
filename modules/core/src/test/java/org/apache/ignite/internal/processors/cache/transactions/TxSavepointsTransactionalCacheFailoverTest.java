@@ -133,10 +133,6 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
         int key1 = generateKey(ignite, 0);
         int key2 = generateKey(ignite, key1 + 1);
 
-        IgniteEx backupNode = (IgniteEx)backupNode(key2, DEFAULT_CACHE_NAME);
-
-        assertNotNull(backupNode);
-
         if (failOnPrimary)
             communication(0).bannedClasses(Collections.singletonList(GridRollbackToSavepointRequest.class));
         else
@@ -153,11 +149,8 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
 
             tx.rollbackToSavepoint("sp");
 
-            if (failOnPrimary) {
-                error("Transaction has been committed");
-
-                fail("Transaction has been committed: " + tx);
-            }
+            if (failOnPrimary)
+                fail("Transaction proceed to commit: " + tx);
 
             tx.commit();
         }
@@ -178,11 +171,11 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
         awaitPartitionMapExchange();
 
         // Check there are no hanging transactions.
-        assertEquals(0, ((IgniteEx)ignite(0)).context().cache().context().tm().idMapSize());
-        assertEquals(0, ((IgniteEx)ignite(failOnPrimary ? 2 : 1)).context().cache().context().tm().idMapSize());
+        G.allGrids().forEach((node) -> {
+            ((IgniteEx)node).context().cache().context().tm().idMapSize();
 
-        assertTrue(((IgniteEx)ignite(0)).context().cache().context().mvcc().lockedKeys().isEmpty());
-        assertTrue(((IgniteEx)ignite(failOnPrimary ? 2 : 1)).context().cache().context().mvcc().lockedKeys().isEmpty());
+            assertTrue(((IgniteEx)node).context().cache().context().mvcc().lockedKeys().isEmpty());
+        });
 
         for (ClusterNode node : grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key1))
             assertEquals(failOnPrimary ? null : key1, grid(node).cache(DEFAULT_CACHE_NAME).localPeek(key1));
