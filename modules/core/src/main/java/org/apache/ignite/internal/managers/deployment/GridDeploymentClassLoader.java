@@ -605,7 +605,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
 
             try {
-                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime, nodeListCp);
 
                 if (res == null) {
                     String msg = "Failed to send class-loading request to node (is node alive?) [node=" +
@@ -622,8 +622,20 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     continue;
                 }
 
-                if (res.success())
+                if (res.success()) {
+                   
+                    // If we searched other nodes w/o succeeding first, then 
+                    // make the node we found the resource on the first to search next time.
+                    if (nodeList.peekFirst() != nodeId) {
+                        synchronized (mux) {
+                            if (nodeList.remove(nodeId)) {
+                                nodeList.addFirst(nodeId);
+                            }
+                        }
+                    }
+                
                     return res.byteSource();
+                }
 
                 // In case of shared resources/classes all nodes should have it.
                 if (log.isDebugEnabled())
@@ -751,7 +763,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
-                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime, nodeListCp);
 
                 if (res == null) {
                     U.warn(log, "Failed to get resource from node (is node alive?) [nodeId=" +
@@ -783,6 +795,17 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     // been able to load resources via another node that has since failed.
                 }
                 else {
+                   
+                    // If we searched other nodes w/o succeeding first, then 
+                    // make the node we found the resource on the first to search next time.
+                    if (nodeList.peekFirst() != nodeId) {
+                        synchronized (mux) {
+                            if (nodeList.remove(nodeId)) {
+                                nodeList.addFirst(nodeId);
+                            }
+                        }
+                    }
+                 
                     return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
                         res.byteSource().size());
                 }
