@@ -184,7 +184,10 @@ public abstract class WALRecord {
         RESERVED,
 
         /** Rotated id part record. */
-        ROTATED_ID_PART_RECORD;
+        ROTATED_ID_PART_RECORD,
+
+        /** Consistent cut record. */
+        CONSISTENT_CUT;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

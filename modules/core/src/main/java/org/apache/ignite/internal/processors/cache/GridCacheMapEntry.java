@@ -3658,6 +3658,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
 
+            cctx.tm().pendingTxsTracker().onKeysWritten(tx.nearXidVersion(), Collections.singletonList(key));
+
             return cctx.shared().wal().log(new DataRecord(new DataEntry(
                 cctx.cacheId(),
                 key,
