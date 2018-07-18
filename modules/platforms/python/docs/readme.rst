@@ -5,8 +5,8 @@ Basic Information
 What it is
 ----------
 
-This is an Apache Ignite lightweight (binary protocol) client library,
-written in Python, abbreviated as *pyignite*.
+This is an Apache Ignite thin (binary protocol) client library,
+written in Python 3, abbreviated as *pyignite*.
 
 `Apache Ignite`_ is a memory-centric distributed database, caching,
 and processing platform for transactional, analytical, and streaming
@@ -21,8 +21,8 @@ Prerequisites
 -------------
 
 - *Python 3.4* or above (3.6 is tested),
-- Access to *Apache Ignite 2.5* node, local or remote. Higher versions
-  of Ignite may or may not work.
+- Access to *Apache Ignite* node, local or remote. The current thin client
+  version was tested on *Apache Ignite 2.5*.
 
 
 Installation
@@ -48,13 +48,18 @@ the whole repository:
 $ git clone git@github.com:nobitlost/ignite.git
 $ git checkout ignite-7782
 $ cd ignite/modules/platforms/python
+$ pip install -e .
+
+This will install the repository version of `pyignite` into your environment
+in so-called “develop” or “editable” mode. You may read more about
+`editable installs`_ in the `pip` manual.
 
 Then run through the contents of `requirements` folder to install
-the necessary prerequisites into your working Python environment using
+the the additional requirements into your working Python environment using
 
 ::
 
-$ pip install -r requirements/install.txt
+$ pip install -r requirements/<your task>.txt
 
 You may also want to consult the `setuptools`_ manual about using `setup.py`.
 
@@ -62,18 +67,11 @@ Examples
 --------
 
 Some examples of using pyignite are provided in
-`ignite/modules/platforms/python/examples` folder.
+`ignite/modules/platforms/python/examples` folder. They are extensively
+commented in the :ref:`examples_of_usage` section of the documentation.
 
 This code implies that it is run in the environment with `pyignite` package
-installed. If you want to play with the repository clone of `pyignite`, run
-
-::
-
-$ cd ignite/modules/platforms/python
-$ pip install -e .
-
-to install the package code in your environment without actually copying it
-to `site-packages` folder.
+installed, and Apache Ignite node is running on localhost:10800.
 
 Testing
 -------
@@ -135,3 +133,4 @@ This is a free software, brought to you on terms of the `Apache License v2`_.
 .. _virtualenv: https://virtualenv.pypa.io/
 .. _setuptools: https://setuptools.readthedocs.io/
 .. _ignite/modules/platforms/python/docs/generated/html/index.html: .
+.. _editable installs: https://pip.pypa.io/en/stable/reference/pip_install/#editable-installs

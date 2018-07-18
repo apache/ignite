@@ -67,10 +67,12 @@ class Connection:
          `ssl` default ciphers are used,
         :param ssl_cert_requires: (optional) determines how the remote side
          certificate is treated:
+
          * `ssl.CERT_NONE` − remote certificate is ignored (default),
          * `ssl.CERT_OPTIONAL` − remote certificate will be validated,
            if provided,
          * `ssl.CERT_REQUIRED` − valid remote certificate is required,
+
         :param ssl_keyfile: (optional) a path to SSL key file to identify
          local party,
         :param ssl_certfile: (optional) a path to ssl certificate file
@@ -125,12 +127,24 @@ class Connection:
         self.host, self.port = host, port
 
     def clone(self) -> object:
+        """
+        Clones this connection in its current state.
+
+        :return: `Connection` object.
+        """
         clone = Connection(**self.init_kwargs)
         if self.port and self.host:
             clone.connect(self.host, self.port)
         return clone
 
     def make_buffered(self, buffer: bytes) -> object:
+        """
+        Creates a mock connection, but provide all the necessary parameters of
+        the real one.
+
+        :param buffer: binary data,
+        :return: `BufferedConnection` object.
+        """
         conn = BufferedConnection(buffer, **self.init_kwargs)
         if self.port and self.host:
             conn.connect(self.host, self.port)
@@ -222,7 +236,7 @@ class BufferedConnection(Connection):
 class PrefetchConnection(Connection):
     """
     Use this socket wrapper, when you wish to “put back” some data you just
-    receive from the socket.
+    receive from the socket and then continue to use the socket as usual.
     """
     prefetch = None
     conn = None

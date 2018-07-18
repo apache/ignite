@@ -44,7 +44,7 @@ with open('README.md', 'r') as readme_file:
 
 setuptools.setup(
     name='pyignite',
-    version='0.1.5',
+    version='0.1.6',
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
     description='Apache Ignite binary client Python API',

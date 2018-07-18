@@ -1,3 +1,5 @@
+.. _examples_of_usage:
+
 =================
 Examples of usage
 =================

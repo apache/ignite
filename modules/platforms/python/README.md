@@ -1,11 +1,11 @@
 # ignite-python-client
-Apache Ignite binary protocol client, written in Python 3.
+Apache Ignite thin (binary protocol) client, written in Python 3.
 
 ## Prerequisites
 
 - Python 3.4 or above (3.6 is tested),
-- Access to Apache Ignite 2.5 node, local or remote. Higher versions
-  of Ignite may or may not work.
+- Access to Apache Ignite node, local or remote. The current thin client
+  version was tested on Apache Ignite 2.5.
 
 ## Installation
 
@@ -22,18 +22,28 @@ the whole repository:
 $ git clone git@github.com:nobitlost/ignite.git
 $ git checkout ignite-7782
 $ cd ignite/modules/platforms/python
+$ pip install -e .
 ```
 
+This will install the repository version of `pyignite` into your environment
+in so-called “develop” or “editable” mode. You may read more about
+[editable installs](https://pip.pypa.io/en/stable/reference/pip_install/#editable-installs)
+in the `pip` manual.
+
 Then run through the contents of `requirements` folder to install
-the necessary prerequisites into your working Python environment using
+the additional requirements into your working Python environment using
 ```
-$ pip install -r requirements/install.txt
+$ pip install -r requirements/<your task>.txt
 ```
 
 You may also want to consult the `setuptools` manual about using `setup.py`.
 
 ## Documentation
-In your virtualenv environment run
+[The package documentation](https://apache-ignite-binary-protocol-client.readthedocs.io)
+is available at *RTD* for your convenience.
+
+If you want to build the documentation from source, do the developer
+installation as described abothe, then run the following commands:
 ```
 $ cd ignite/modules/platforms/python
 $ pip install -r requirements/docs.txt
@@ -41,23 +51,18 @@ $ cd docs
 $ make html
 ```
 
-Then open
-[ignite/modules/platforms/python/docs/generated/html/index.html](ignite/modules/platforms/python/docs/generated/html/index.html)
+Then open `ignite/modules/platforms/python/docs/generated/html/index.html`
 in your browser.
 
 ## Examples
 Some examples of using pyignite are provided in
-`ignite/modules/platforms/python/examples` folder.
+`ignite/modules/platforms/python/examples` folder. They are extensively
+commented in the
+“[Examples of usage](https://apache-ignite-binary-protocol-client.readthedocs.io/en/latest/examples.html)”
+section of the documentation.
 
 This code implies that it is run in the environment with `pyignite` package
-installed. If you want to play with the repository clone of `pyignite`, run
-```
-$ cd ignite/modules/platforms/python
-$ pip install -e .
-``` 
-
-to install the package code in your environment without actually copying it
-to `site-packages` folder.
+installed, and Apache Ignite node is running on localhost:10800.
 
 ## Testing
 Run
