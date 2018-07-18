@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +38,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -453,11 +455,44 @@ public class BinaryContext {
         }
 
         if (typeCfgs != null) {
+            Set<String> clsNames = new HashSet<>();
+
             for (BinaryTypeConfiguration typeCfg : typeCfgs) {
                 String clsName = typeCfg.getTypeName();
 
                 if (clsName == null)
                     throw new BinaryObjectException("Class name is required for binary type configuration.");
+
+                typeCfgsTrie.register(clsName, typeCfg);
+
+                if (!clsName.endsWith(".*")) {
+                    // Resolve mapper.
+                    BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
+                    BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
+                    BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
+                    BinaryIdentityResolver identity = BinaryArrayIdentityResolver.instance();
+
+                    BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
+
+                    String affField = affFields.remove(clsName);
+
+                    descs.add(clsName, mapper, serializer, identity, affField,
+                        typeCfg.isEnum(), typeCfg.getEnumValues(), false);
+                }
+                else {
+                    boolean includeSubPkgs = clsName.endsWith("**");
+
+                    String pkgName = includeSubPkgs? clsName.substring(0, clsName.length() - 3):
+                        clsName.substring(0, clsName.length() - 2);
+
+                    classesInPackage(pkgName, clsNames, includeSubPkgs);
+                }
+            }
+
+            for (String clsName : clsNames) {
+                BinaryTypeConfiguration typeCfg = typeCfgsTrie.resolve(clsName);
+
+                assert typeCfg != null : "Binary type configuration not found [className=" + clsName +"]";
 
                 // Resolve mapper.
                 BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
@@ -467,22 +502,10 @@ public class BinaryContext {
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
-                if (clsName.endsWith(".*")) {
-                    String pkgName = clsName.substring(0, clsName.length() - 2);
+                String affField = affFields.remove(clsName);
 
-                    for (String clsName0 : classesInPackage(pkgName)) {
-                        String affField = affFields.remove(clsName0);
-
-                        descs.add(clsName0, mapper, serializer, identity, affField,
-                            typeCfg.isEnum(), typeCfg.getEnumValues(), true);
-                    }
-                }
-                else {
-                    String affField = affFields.remove(clsName);
-
-                    descs.add(clsName, mapper, serializer, identity, affField,
-                        typeCfg.isEnum(), typeCfg.getEnumValues(), false);
-                }
+                descs.add(clsName, mapper, serializer, identity, affField,
+                    typeCfg.isEnum(), typeCfg.getEnumValues(), true);
             }
         }
 
@@ -550,13 +573,12 @@ public class BinaryContext {
 
     /**
      * @param pkgName Package name.
-     * @return Class names.
+     * @param clsNames Set of class names.
+     * @param includeSubPkgs indicates that all sub-packages should be scanned as well.
      */
     @SuppressWarnings("ConstantConditions")
-    private static Iterable<String> classesInPackage(String pkgName) {
+    private static void classesInPackage(String pkgName, Set<String> clsNames, boolean includeSubPkgs) {
         assert pkgName != null;
-
-        Collection<String> clsNames = new ArrayList<>();
 
         ClassLoader ldr = U.gridClassLoader();
 
@@ -575,11 +597,25 @@ public class BinaryContext {
                         File pkgDir = new File(cpElement, pkgPath);
 
                         if (pkgDir.isDirectory()) {
-                            for (File file : pkgDir.listFiles()) {
-                                String fileName = file.getName();
+                            Queue<IgniteBiTuple<File, String>> dirs = new ArrayDeque<>();
 
-                                if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
-                                    clsNames.add(pkgName + '.' + fileName.substring(0, fileName.length() - 6));
+                            dirs.offer(F.t(pkgDir, pkgName));
+
+                            while (!dirs.isEmpty()) {
+                                IgniteBiTuple<File, String> e = dirs.poll();
+
+                                File dir = e.get1();
+
+                                String curPkgName = e.get2();
+
+                                for (File file : dir.listFiles()) {
+                                    String fileName = file.getName();
+
+                                    if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
+                                        clsNames.add(curPkgName + '.' + fileName.substring(0, fileName.length() - 6));
+                                    else if (file.isDirectory() && includeSubPkgs)
+                                        dirs.offer(F.t(file, curPkgName + "." + fileName));
+                                }
                             }
                         }
                     }
@@ -597,8 +633,8 @@ public class BinaryContext {
 
                                     if (!clsName.contains("/") && !clsName.contains("\\"))
                                         clsNames.add(pkgName + '.' + clsName);
-                                    else {
-                                        clsName = clsName.replace("/", ".");
+                                    else if (includeSubPkgs) {
+                                        clsName = clsName.replace('/', '.').replace('\\', '.');
                                         clsNames.add(pkgName + '.' + clsName);
                                     }
                                 }
@@ -614,8 +650,6 @@ public class BinaryContext {
                 }
             }
         }
-
-        return clsNames;
     }
 
     /**
@@ -977,7 +1011,7 @@ public class BinaryContext {
      * @param cfg Binary configuration.
      * @return Mapper according to configuration.
      */
-    private static BinaryInternalMapper resolveMapper(String clsName, BinaryConfiguration cfg) {
+    private BinaryInternalMapper resolveMapper(String clsName, BinaryConfiguration cfg) {
         assert clsName != null;
 
         if (cfg == null)
@@ -989,34 +1023,21 @@ public class BinaryContext {
         Collection<BinaryTypeConfiguration> typeCfgs = cfg.getTypeConfigurations();
 
         if (typeCfgs != null) {
-            for (BinaryTypeConfiguration typeCfg : typeCfgs) {
-                String typeCfgName = typeCfg.getTypeName();
+            BinaryTypeConfiguration typeCfg = typeCfgsTrie.resolve(clsName);
 
-                // Pattern.
-                if (typeCfgName != null && typeCfgName.endsWith(".*")) {
-                    String pkgName = typeCfgName.substring(0, typeCfgName.length() - 2);
+            if (typeCfg != null) {
+                // Resolve mapper.
+                BinaryIdMapper idMapper = globalIdMapper;
 
-                    int dotIndex = clsName.lastIndexOf('.');
+                if (typeCfg.getIdMapper() != null)
+                    idMapper = typeCfg.getIdMapper();
 
-                    if (dotIndex > 0) {
-                        String typePkgName = clsName.substring(0, dotIndex);
+                BinaryNameMapper nameMapper = globalNameMapper;
 
-                        if (typePkgName.startsWith(pkgName)) {
-                            // Resolve mapper.
-                            BinaryIdMapper idMapper = globalIdMapper;
+                if (typeCfg.getNameMapper() != null)
+                    nameMapper = typeCfg.getNameMapper();
 
-                            if (typeCfg.getIdMapper() != null)
-                                idMapper = typeCfg.getIdMapper();
-
-                            BinaryNameMapper nameMapper = globalNameMapper;
-
-                            if (typeCfg.getNameMapper() != null)
-                                nameMapper = typeCfg.getNameMapper();
-
-                            return resolveMapper(nameMapper, idMapper);
-                        }
-                    }
-                }
+                return resolveMapper(nameMapper, idMapper);
             }
         }
 
@@ -1639,6 +1660,9 @@ public class BinaryContext {
         /** Wildcard symbol. */
         private final static String WILDCARD = "*";
 
+        /** Wildcard symbol which means that all sub-packages should be included as well. */
+        private final static String WILDCARD_ALL = "**";
+
         /** Root. */
         private final Node root = new Node();
 
@@ -1658,7 +1682,7 @@ public class BinaryContext {
             for (int i = 0; i < tokens.length; i++) {
                 String token = tokens[i];
 
-                if (token.equals(WILDCARD) && (i != tokens.length - 1)) {
+                if ((token.equals(WILDCARD) || token.equals(WILDCARD_ALL)) && (i != tokens.length - 1)) {
                     throw new IllegalArgumentException("Incorrect class name format: " + clsName);
                 }
 
@@ -1689,6 +1713,7 @@ public class BinaryContext {
             String[] tokens = clsName.split("\\.");
 
             Node cur = root;
+
             Node lastSuccessfulWildcard = cur;
 
             for (int i = 0; i < tokens.length; i++) {
@@ -1697,13 +1722,16 @@ public class BinaryContext {
                 }
 
                 Node n = cur.children.get(tokens[i]);
-                Node wildcard = cur.children.get(WILDCARD);
 
-                if (n == null)
+                if (n == null) {
+                    Node wildcard = (cur.children.containsKey(WILDCARD))? cur.children.get(WILDCARD):
+                        cur.children.get(WILDCARD_ALL);
+
                     return (wildcard != null)? wildcard.cfg : lastSuccessfulWildcard.cfg;
+                }
 
-                if (wildcard != null)
-                    lastSuccessfulWildcard = wildcard;
+                if (cur.children.containsKey(WILDCARD_ALL))
+                    lastSuccessfulWildcard = cur.children.get(WILDCARD_ALL);
 
                 cur = n;
             }
@@ -1725,24 +1753,4 @@ public class BinaryContext {
         }
     }
 
-    public static void main(String[] args) {
-        BinaryTypeConfigurationTrie c = new BinaryTypeConfigurationTrie();
-
-        c.register("com.base.*", new BinaryTypeConfiguration("com.base.*"));
-        c.register("com.base.impl.*", new BinaryTypeConfiguration("com.base.impl.*"));
-        c.register("com.base.test.a", new BinaryTypeConfiguration("com.base.test.a"));
-
-        Object val;
-        val = c.resolve("com.a");
-        val = c.resolve("com.base.a");
-        val = c.resolve("com.base.impl.a");
-        val = c.resolve("com.base.test.a");
-        val = c.resolve("com.base.test.b");
-        val = c.resolve("ru.a");
-        val = c.resolve("ru.*");
-        val = c.resolve("com.base.*");
-
-        int i = 0;
-        ++i;
-    }
 }
