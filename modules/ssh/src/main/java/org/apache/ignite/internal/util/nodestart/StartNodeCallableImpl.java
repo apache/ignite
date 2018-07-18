@@ -358,45 +358,34 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     boolean first = true;
 
                     while ((line = bufferedReader.readLine()) != null) {
-                        if (first) {
-                            to = new GridTimeoutObjectAdapter(2000) {
-                                private final Thread thread = Thread.currentThread();
-
-                                @Override public void onTimeout() {
-                                    thread.interrupt();
-                                }
-
-                                @Override public String toString() {
-                                    return S.toString("GridTimeoutObject", "cmd", cmd, "thread",
-                                        thread);
-                                }
-                            };
-
-                            assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
-
-                            first = false;
-                        }
-                        else if (ptrn.matcher(line).find()) {
-                            U.sleep(50);
+                        if (ptrn.matcher(line).find()) {
+                            U.sleep(10);
 
                             break;
+                        }
+                        else if (first) {
+                            to = initTimer(cmd);
+
+                            first = false;
                         }
                     }
                 }
                 catch (InterruptedIOException ignore) {
                     // No-op.
                 }
+                finally {
+                    if (to != null) {
+                        boolean r = proc.removeTimeoutObject(to);
+
+                        assert r || to.endTime() <= U.currentTimeMillis() : "Timeout object was not removed: " + to;
+                    }
+                }
+
             }
             else
                 U.sleep(EXECUTE_WAIT_TIME);
         }
         finally {
-            if (to != null) {
-                boolean r = proc.removeTimeoutObject(to);
-
-                assert r || to.endTime() <= U.currentTimeMillis() : "Timeout object was not removed: " + to;
-            }
-
             if (ch != null && ch.isConnected())
                 ch.disconnect();
         }
@@ -511,20 +500,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     out.a(line);
 
                     if (first) {
-                        to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
-                            /**  */
-                            private final Thread thread = Thread.currentThread();
-
-                            @Override public void onTimeout() {
-                                thread.interrupt();
-                            }
-
-                            @Override public String toString() {
-                                return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
-                            }
-                        };
-
-                        assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
+                        to = initTimer(cmd);
 
                         first = false;
                     }
@@ -547,6 +523,30 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (ch != null && ch.isConnected())
                 ch.disconnect();
         }
+    }
+
+    /**
+     * Initialize timer to wait for command execution.
+     *
+     * @param cmd Command to log.
+     */
+    private GridTimeoutObject initTimer(String cmd){
+        GridTimeoutObject to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
+            /**  */
+            private final Thread thread = Thread.currentThread();
+
+            @Override public void onTimeout() {
+                thread.interrupt();
+            }
+
+            @Override public String toString() {
+                return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+            }
+        };
+
+        assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
+
+        return to;
     }
 
     /**
