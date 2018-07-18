@@ -39,7 +39,7 @@ export class Confirm {
                 templateUrl,
                 backdrop: true,
                 onBeforeHide: () => reject(new CancellationError()),
-                controller: ['$scope', ($scope) => {
+                controller: ['$scope', function($scope) {
                     $scope.yesNo = yesNo;
                     $scope.content = content;
                     $scope.confirmCancel = $scope.confirmNo = () => {
