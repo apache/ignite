@@ -211,17 +211,15 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
 
         // was not able to find free slot, allocating new
-        final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath);
+        try (final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath)) {
+            try {
+                final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
+                final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
 
-        try {
-            final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
-            final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
-
-            return generateAndLockNewDbStorage(pstStoreBasePath, nodeIdx);
-        }
-        finally {
-            rootDirLock.release();
-            rootDirLock.close();
+                return generateAndLockNewDbStorage(pstStoreBasePath, nodeIdx);
+            } finally {
+                rootDirLock.release();
+            }
         }
     }
 

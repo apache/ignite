@@ -657,25 +657,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return freeListMap != null ? freeListMap.get(memPlcName) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
-        if (dataRegionMap != null) {
-            for (DataRegion memPlc : dataRegionMap.values()) {
-                memPlc.pageMemory().stop();
-
-                memPlc.evictionTracker().stop();
-
-                unregisterMBean(memPlc.memoryMetrics().getName());
-            }
-
-            dataRegionMap.clear();
-
-            dataRegionMap = null;
-
-            dataRegionsInitialized = false;
-        }
-    }
-
     /**
      * Unregister MBean.
      * @param name Name of mbean.
@@ -705,20 +686,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override public boolean checkpointLockIsHeldByThread() {
         return true;
-    }
-
-    /**
-     *
-     */
-    public void lock() throws IgniteCheckedException {
-
-    }
-
-    /**
-     *
-     */
-    public void unLock() {
-
     }
 
     /**
@@ -1071,7 +1038,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        stop0(false);
+        if (dataRegionMap != null) {
+            for (DataRegion memPlc : dataRegionMap.values()) {
+                memPlc.pageMemory().stop();
+
+                memPlc.evictionTracker().stop();
+
+                unregisterMBean(memPlc.memoryMetrics().getName());
+            }
+
+            dataRegionMap.clear();
+
+            dataRegionMap = null;
+
+            dataRegionsInitialized = false;
+        }
     }
 
     /**
