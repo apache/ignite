@@ -337,7 +337,21 @@ class GridDeploymentCommunication {
                 GridIoPolicy.P2P_POOL);
         }
     }
-
+    
+    /**
+     * Queries whether a node is a direct or indirectly responsible for 
+     * the request being processed by this thread.
+     * 
+     * @param  node The node in question
+     * @return true if the node is active
+     */
+    boolean nodeOriginatedCurrentRequest(final ClusterNode node) {
+       // activeReqNodeIds is thread local.
+       Collection<UUID> nodeIds = activeReqNodeIds.get();
+       
+       return (nodeIds != null && nodeIds.contains(node.id()));
+    }
+    
     /**
      * Sends request to the remote node and wait for response. If there is
      * no response until threshold time, method returns null.
@@ -345,7 +359,8 @@ class GridDeploymentCommunication {
      *
      * @param rsrcName Resource name.
      * @param clsLdrId Class loader ID.
-     * @param dstNode Remote node request should be sent to.
+     * @param dstNode Remote node request should be sent to. The caller must
+     *      avoid using an originating node.
      * @param threshold Time in milliseconds when request is decided to
      *      be obsolete.
      * @return Either response value or {@code null} if timeout occurred.
@@ -359,22 +374,8 @@ class GridDeploymentCommunication {
         assert clsLdrId != null;
 
         Collection<UUID> nodeIds = activeReqNodeIds.get();
-
-        if (nodeIds != null && nodeIds.contains(dstNode.id())) {
-            if (log.isDebugEnabled())
-                log.debug("Node attempts to load resource from one of the requesters " +
-                    "[rsrcName=" + rsrcName + ", dstNodeId=" + dstNode.id() +
-                    ", requesters=" + nodeIds + ']');
-
-            GridDeploymentResponse fake = new GridDeploymentResponse();
-
-            fake.success(false);
-            fake.errorMessage("Node attempts to load resource from one of the requesters " +
-                "[rsrcName=" + rsrcName + ", dstNodeId=" + dstNode.id() +
-                ", requesters=" + nodeIds + ']');
-
-            return fake;
-        }
+        
+        assert(!nodeOriginatedCurrentRequest(dstNode));
 
         Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 

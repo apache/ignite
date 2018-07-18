@@ -596,6 +596,13 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                 continue;
             }
+            
+            // Must not send to the participants that asked us for the resource.
+            // NOTE: We could probably assert this, since this should not be called in the
+            // context of a request.
+            if (this.comm.nodeOriginatedCurrentRequest(node)) {
+               continue;
+            }
 
             try {
                 GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
@@ -628,8 +635,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                         missedRsrcs.add(path);
                 }
 
-                throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrs=" +
-                    nodeLdrMapCp + ", parentClsLoader=" + getParent() + ", reason=" + res.errorMessage() + ']');
+                // Continue to ask other nodes, since this node may have only indirectly 
+                // been able to load resources via another node that has since failed.
             }
             catch (IgniteCheckedException e) {
                 // This thread should be interrupted again in communication if it
@@ -736,7 +743,12 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                 continue;
             }
-
+            
+            // Must not send to the participants that asked us for the resource.
+            if (this.comm.nodeOriginatedCurrentRequest(node)) {
+               continue;
+            }
+            
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
                 GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
@@ -767,8 +779,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                             node.id() + ", clsLdrId=" + ldrId + ", resName=" +
                             name + ", parentClsLdr=" + getParent() + ", msg=" + res.errorMessage() + ']');
 
-                    // Do not ask other nodes in case of shared mode all of them should have the resource.
-                    return null;
+                    // Continue to ask other nodes, since this node may have only indirectly 
+                    // been able to load resources via another node that has since failed.
                 }
                 else {
                     return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
