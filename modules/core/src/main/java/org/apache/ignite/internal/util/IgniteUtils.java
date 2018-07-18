@@ -2239,7 +2239,8 @@ public abstract class IgniteUtils {
         // Check if the address is defined on any interface
         try {
             return NetworkInterface.getByInetAddress(addr) != null;
-        } catch (SocketException e) {
+        }
+        catch (SocketException e) {
             return false;
         }
     }

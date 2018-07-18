@@ -49,6 +49,14 @@ namespace ignite
             typedef common::concurrent::SharedPointer<void> SP_Void;
         public:
             /**
+             * Default constructor.
+             */
+            IgniteClient()
+            {
+                // No-op.
+            }
+
+            /**
              * Destructor.
              */
             ~IgniteClient();
