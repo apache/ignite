@@ -43,13 +43,13 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     private Ignite ignite = null;
 
     /** GAConfiguration */
-    private GAConfiguration config = null;
+    private GAConfiguration cfg;
 
     /**
-     * @param config GAConfiguration
+     * @param cfg GAConfiguration
      */
-    public FitnessTask(GAConfiguration config) {
-        this.config = config;
+    public FitnessTask(GAConfiguration cfg) {
+        this.cfg = cfg;
     }
 
     /**
@@ -65,7 +65,7 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
         for (Long key : chromosomeKeys) {
 
-            FitnessJob ajob = new FitnessJob(key, this.config.getFitnessFunction());
+            FitnessJob ajob = new FitnessJob(key, this.cfg.getFitnessFunction());
 
             ClusterNode primary = affinity.mapKeyToNode(key);
 

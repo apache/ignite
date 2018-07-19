@@ -19,7 +19,7 @@ package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.junit.Test;
 

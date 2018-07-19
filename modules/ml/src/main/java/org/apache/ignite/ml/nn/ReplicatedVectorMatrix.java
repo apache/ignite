@@ -23,9 +23,9 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Spliterator;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.MatrixStorage;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 
 /**
  * Convenient way to create matrix of replicated columns or rows from vector.
@@ -205,7 +205,7 @@ class ReplicatedVectorMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Matrix assign(double[][] vals) {
-        return new DenseLocalOnHeapMatrix(vals);
+        return new DenseMatrix(vals);
     }
 
     /** {@inheritDoc} */
@@ -251,7 +251,7 @@ class ReplicatedVectorMatrix implements Matrix {
         int cols = asCol ? replicationCnt : vector.size();
         int times = asCol ? cols : rows;
 
-        Matrix res = new DenseLocalOnHeapMatrix(rows, cols);
+        Matrix res = new DenseMatrix(rows, cols);
 
         IgniteBiConsumer<Integer, Vector> replicantAssigner = asCol ? res::assignColumn : res::assignRow;
         IgniteBiConsumer<Integer, Vector> assigner = res::assignColumn;
@@ -267,7 +267,7 @@ class ReplicatedVectorMatrix implements Matrix {
         int cols = asCol ? replicationCnt : vector.size();
         int times = asCol ? cols : rows;
 
-        Matrix res = new DenseLocalOnHeapMatrix(rows, cols);
+        Matrix res = new DenseMatrix(rows, cols);
 
         IgniteBiConsumer<Integer, Vector> replicantAssigner = asCol ? res::assignColumn : res::assignRow;
         IgniteBiConsumer<Integer, Vector> assigner = res::assignRow;
@@ -492,11 +492,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public double maxAbsRowSumNorm() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public double sum() {
         return vector.sum() * replicationCnt;
     }
@@ -504,16 +499,6 @@ class ReplicatedVectorMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Matrix transpose() {
         return new ReplicatedVectorMatrix(vector, replicationCnt, !asCol);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix viewPart(int[] off, int[] size) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix viewPart(int rowOff, int rows, int colOff, int cols) {
-        return null;
     }
 
     /** {@inheritDoc} */
