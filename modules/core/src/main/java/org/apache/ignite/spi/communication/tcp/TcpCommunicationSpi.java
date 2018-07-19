@@ -3472,7 +3472,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ", addr=" + addr + ", connectAttempts=" + connectAttempts +
                             ", failureDetThrReached=" + failureDetThrReached + ']', e);
 
-                    if (failureDetThrReached || connectAttempts == reconCnt || connTimeout0 > maxConnTimeout) {
+                    if (failureDetThrReached) {
                         LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
                             "configuration property) [addr=" + addr + ", failureDetectionTimeout=" +
                             failureDetectionTimeout() + ']');
@@ -3487,7 +3487,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
                         break;
-                    } else if (isRecoverableException(errs)) {
+                    } else if (connectAttempts == reconCnt || connTimeout0 > maxConnTimeout) {
+                        LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
+                            "configuration property) [addr=" + addr + ", connTimeout=" +
+                            connTimeout + ", maxConnTimeout=" + maxConnTimeout +", reconCnt=" + reconCnt + ']');
+
+                        if (errs == null)
+                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
+                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                                "in order to prevent parties from waiting forever in case of network issues " +
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']', e);
+
+                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
+                            "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
+
+                        break;
+                    }
+                    else if (isRecoverableException(errs)) {
                         connTimeout0 *= 2;
 
                         LT.warn(log, "Connect timed out (will retry with increased connTimeout " +
