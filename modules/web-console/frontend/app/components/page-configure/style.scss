@@ -34,6 +34,7 @@ page-configure {
         flex-direction: row;
         padding: 10px 20px 10px 30px;
         box-shadow: 0 0px 4px 0 rgba(0, 0, 0, 0.2), 0px 3px 4px -1px rgba(0, 0, 0, 0.2);
+        position: -webkit-sticky;
         position: sticky;
         bottom: 0px;
         // margin: 20px -30px -30px;
