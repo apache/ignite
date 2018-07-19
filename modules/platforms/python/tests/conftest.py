@@ -19,6 +19,7 @@ import ssl
 import pytest
 
 from pyignite.connection import Connection
+from pyignite.constants import *
 from pyignite.api import cache_create, cache_get_names, cache_destroy, hashcode
 
 
@@ -39,14 +40,30 @@ class CertReqsParser(argparse.Action):
             setattr(namespace, self.dest, self.conv_map[value])
         else:
             raise ValueError(
-                'Undefined argument: --ssl-cert-reqs {}'.format(value)
+                'Undefined argument: --ssl-cert-reqs={}'.format(value)
+            )
+
+
+class SSLVersionParser(argparse.Action):
+    conv_map = {
+        'TLSV1_1': ssl.PROTOCOL_TLSv1_1,
+        'TLSV1_2': ssl.PROTOCOL_TLSv1_2,
+    }
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        value = values.upper()
+        if value in self.conv_map:
+            setattr(namespace, self.dest, self.conv_map[value])
+        else:
+            raise ValueError(
+                'Undefined argument: --ssl-version={}'.format(value)
             )
 
 
 @pytest.fixture(scope='module')
 def conn(
     ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
-    ssl_ca_certfile, ssl_cert_reqs,
+    ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version
 ):
     conn = Connection(
         use_ssl=use_ssl,
@@ -54,6 +71,8 @@ def conn(
         ssl_certfile=ssl_certfile,
         ssl_ca_certfile=ssl_ca_certfile,
         ssl_cert_reqs=ssl_cert_reqs,
+        ssl_ciphers=ssl_ciphers,
+        ssl_version=ssl_version
     )
     conn.connect(ignite_host, ignite_port)
     yield conn
@@ -122,6 +141,19 @@ def pytest_addoption(parser):
             'REQUIRED (valid remote certificate is required)'
         )
     )
+    parser.addoption(
+        '--ssl-ciphers',
+        action='store',
+        default=SSL_DEFAULT_CIPHERS,
+        type=str,
+        help='ciphers to use'
+    )
+    parser.addoption(
+        '--ssl-version',
+        action=SSLVersionParser,
+        default=SSL_DEFAULT_VERSION,
+        help='SSL version: TLSV1_1 or TLSV1_2'
+    )
 
 
 def pytest_generate_tests(metafunc):
@@ -133,6 +165,8 @@ def pytest_generate_tests(metafunc):
         'ssl_certfile': None,
         'ssl_ca_certfile': None,
         'ssl_cert_reqs': ssl.CERT_NONE,
+        'ssl_ciphers': SSL_DEFAULT_CIPHERS,
+        'ssl_version': SSL_DEFAULT_VERSION,
     }
 
     for param_name in session_parameters:

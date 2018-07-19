@@ -21,14 +21,16 @@ from pyignite.connection.handshake import HandshakeRequest, read_response
 
 def test_handshake(
     ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
-    ssl_ca_certfile, ssl_cert_reqs
+    ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version
 ):
     conn = Connection(
         use_ssl=use_ssl,
         ssl_keyfile=ssl_keyfile,
         ssl_certfile=ssl_certfile,
         ssl_ca_certfile=ssl_ca_certfile,
-        ssl_cert_reqs=ssl_cert_reqs
+        ssl_cert_reqs=ssl_cert_reqs,
+        ssl_ciphers=ssl_ciphers,
+        ssl_version=ssl_version
     )
     conn.socket = conn._wrap(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
     conn.socket.connect((ignite_host, ignite_port))
