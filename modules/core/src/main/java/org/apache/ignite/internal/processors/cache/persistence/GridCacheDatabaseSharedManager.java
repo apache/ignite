@@ -4286,7 +4286,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** Closes file channel */
         public void close() {
-            U.releaseQuiet(lock);
+            release();
 
             U.closeQuiet(lockFile);
         }
