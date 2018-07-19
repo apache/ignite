@@ -3259,7 +3259,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
-        SocketChannel ch = null;
 
         for (InetSocketAddress addr : addrs) {
             long connTimeout0 = connTimeout;
@@ -3285,12 +3284,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 boolean needWait = false;
 
                 try {
-                    if (getSpiContext().node(node.id()) == null)
-                        throw new ClusterTopologyCheckedException(
-                            "Failed to send message " + "(node left topology): " + node
-                        );
-
-                    ch = SocketChannel.open();
+                    SocketChannel ch = SocketChannel.open();
 
                     ch.configureBlocking(true);
 
@@ -3302,6 +3296,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (sockSndBuf > 0)
                         ch.socket().setSendBufferSize(sockSndBuf);
+
+                    if (getSpiContext().node(node.id()) == null) {
+                        U.closeQuiet(ch);
+
+                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                            "(node left topology): " + node);
+                    }
 
                     ConnectionKey connKey = new ConnectionKey(node.id(), connIdx, -1);
 
