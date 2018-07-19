@@ -492,11 +492,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public double maxAbsRowSumNorm() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public double sum() {
         return vector.sum() * replicationCnt;
     }
