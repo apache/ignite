@@ -37,7 +37,7 @@ module.exports = merge(commonCfg, {
             {
                 test: /\.scss$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader', {
-                    loader: 'sass',
+                    loader: 'sass-loader',
                     options: {
                         includePaths: [basedir]
                     }
