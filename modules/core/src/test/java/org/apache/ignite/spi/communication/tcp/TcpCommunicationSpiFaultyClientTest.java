@@ -158,6 +158,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoServerOnHostCustomFailureDetection() throws Exception {
         connectTimeout = 3000;
         maxConnectTimeout = 6000;
@@ -177,6 +178,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAcceptedConnectionCustomFailureDetection() throws Exception {
         connectTimeout = 3000;
         maxConnectTimeout = 6000;
