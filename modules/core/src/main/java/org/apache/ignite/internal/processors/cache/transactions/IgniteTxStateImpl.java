@@ -380,18 +380,13 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (txMap == null) {
             txMap = U.newLinkedHashMap(txSize > 0 ? txSize : 16);
 
-            refreshReadWriteViews();
+            readView = new IgniteTxMap(txMap, CU.reads());
+            writeView = new IgniteTxMap(txMap, CU.writes());
 
             return true;
         }
 
         return false;
-    }
-
-    /** */
-    public void refreshReadWriteViews() {
-        readView = new IgniteTxMap(txMap, CU.reads());
-        writeView = new IgniteTxMap(txMap, CU.writes());
     }
 
     /** {@inheritDoc} */
@@ -641,9 +636,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             return;
         }
 
-        Map<IgniteTxKey, IgniteTxEntry> initTxMap = replaceTxMap(savepoint);
-
-        refreshReadWriteViews();
+        Map<IgniteTxKey, IgniteTxEntry> initTxMap = extractSavepoint(savepoint);
 
         if (tx.optimistic())
             return;
@@ -663,16 +656,16 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /**
      * @param savepoint Savepoint to rollback.
-     * @return Copy of replaced txMap.
+     * @return Copy of current txMap.
      */
-    private Map<IgniteTxKey, IgniteTxEntry> replaceTxMap(TxSavepoint savepoint) {
-        Map<IgniteTxKey, IgniteTxEntry> cp = new HashMap<>(txMap);
+    private Map<IgniteTxKey, IgniteTxEntry> extractSavepoint(TxSavepoint savepoint) {
+        Map<IgniteTxKey, IgniteTxEntry> curTxMap = new HashMap<>(txMap);
 
         txMap.clear();
 
         txMap.putAll(extractValues(savepoint));
 
-        return cp;
+        return curTxMap;
     }
 
     /**

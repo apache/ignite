@@ -658,7 +658,5 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         assert txState instanceof IgniteTxStateImpl;
 
         ((IgniteTxStateImpl)txState).clearDhtEntries(caches);
-
-        ((IgniteTxStateImpl)txState).refreshReadWriteViews();
     }
 }
