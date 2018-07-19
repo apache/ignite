@@ -2609,9 +2609,6 @@ public class ZookeeperDiscoveryImpl {
 
         processNewEvents(newEvts);
 
-        if (rtState.joined)
-            rtState.evtsData = newEvts;
-
         return newEvts;
     }
 
@@ -2627,7 +2624,6 @@ public class ZookeeperDiscoveryImpl {
 
         boolean evtProcessed = false;
         boolean updateNodeInfo = false;
-        boolean clientLocJoin = false;
 
         try {
             for (ZkDiscoveryEventData evtData : evts.tailMap(rtState.locNodeInfo.lastProcEvt, false).values()) {
@@ -2637,8 +2633,6 @@ public class ZookeeperDiscoveryImpl {
                 switch (evtData.eventType()) {
                     case ZkDiscoveryEventData.ZK_EVT_NODE_JOIN: {
                         evtProcessed = processBulkJoin(evtsData, (ZkDiscoveryNodeJoinEventData)evtData);
-
-                        clientLocJoin = evtProcessed && locNode.isClient();
 
                         break;
                     }
@@ -2716,7 +2710,7 @@ public class ZookeeperDiscoveryImpl {
 
                     rtState.procEvtCnt++;
 
-                    if (!clientLocJoin && rtState.procEvtCnt % evtsAckThreshold == 0)
+                    if (rtState.procEvtCnt % evtsAckThreshold == 0)
                         updateNodeInfo = true;
                 }
             }
@@ -2744,6 +2738,9 @@ public class ZookeeperDiscoveryImpl {
 
             throw e;
         }
+
+        if (rtState.joined)
+            rtState.evtsData = evtsData;
 
         if (rtState.crd)
             handleProcessedEvents("procEvt");
