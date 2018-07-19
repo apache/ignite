@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -339,15 +340,22 @@ class GridDeploymentCommunication {
     }
     
     /**
-     * Queries whether a node is a direct or indirectly responsible for 
-     * the request being processed by this thread.
+     * Returns true if the given node was excluded by the node that sent us the
+     * request we are serving.
+     * {@linkplain GridDeploymentRequest request} (which is not an
+     * {@linkplain GridDeploymentRequest#isUndeploy undeploy}) being processed by this thread.
      * 
-     * @param  node The node in question
-     * @return true if the node is active
+     * @param node The node to query about
+     * @return true if the node is excluded
+     * 
+     * @pre node != null
      */
-    boolean nodeOriginatedCurrentRequest(final ClusterNode node) {
+    boolean nodeOnRecursionExclusionList(ClusterNode node) {
+       assert node != null;
+       
        // activeReqNodeIds is thread local.
        Collection<UUID> nodeIds = activeReqNodeIds.get();
+       
        
        return (nodeIds != null && nodeIds.contains(node.id()));
     }
@@ -363,27 +371,31 @@ class GridDeploymentCommunication {
      * in the graph must be touched at least once.   To avoid all multiple touches 
      * for the resource-not-found case, the response would need to include the 
      * nodes forwarded to, so they could be added to the exclusion list.  However
-     * that seems like overkill for this kinds of graphs peer class loading will generate.
+     * that seems like overkill for the kinds of graphs peer class loading will generate.
      *
      * @param rsrcName Resource name.
      * @param clsLdrId Class loader ID.
      * @param dstNode Remote node request should be sent to. The caller must
-     *      avoid using an originating node.
+     *      avoid sending to a node on the exclusion list
      * @param threshold Time in milliseconds when request is decided to
      *      be obsolete.
      * @param exclusionList - Nodes to avoid recursively searching, in addition to 
-     *      the node(s) that forwarded this request initially.
+     *      the node(s) that forwarded this request initially.  These nodes will 
+     *      end up on the receiver's exclusion list, in addition to nodes on our
+     *      current exclusion list.
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
+     * 
+     * @pre dstNode must not be this threads prior recursion exclusion list
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold, final Collection<UUID> nodesToSkip) throws IgniteCheckedException {
+        final ClusterNode dstNode, long threshold, Collection<UUID> nodesToSkip) throws IgniteCheckedException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
         
-        assert(!nodeOriginatedCurrentRequest(dstNode));
+        assert(!nodeOnRecursionExclusionList(dstNode));
 
         Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
@@ -391,7 +403,7 @@ class GridDeploymentCommunication {
         
         // Receiver should not forward to nodes that originated request nor
         // nodes this node intends to send to.
-        Collection<UUID> nodeIds = activeReqNodeIds.get();
+        Set<UUID> nodeIds = new HashSet<UUID>(activeReqNodeIds.get());
         nodeIds.addAll(nodesToSkip);
 
         req.nodeIds(nodeIds);

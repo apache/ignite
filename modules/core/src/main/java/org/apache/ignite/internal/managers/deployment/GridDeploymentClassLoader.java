@@ -597,10 +597,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 continue;
             }
             
-            // Must not send to the participants that asked us for the resource.
-            // NOTE: We could probably assert this, since this should not be called in the
-            // context of a request.
-            if (this.comm.nodeOriginatedCurrentRequest(node)) {
+            // Must not send to the participants excluded from recursion, if any.
+            if (this.comm.nodeOnRecursionExclusionList(node)) {
                continue;
             }
 
@@ -624,8 +622,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                 if (res.success()) {
                    
-                    // If we searched other nodes w/o succeeding first, then 
-                    // make the node we found the resource on the first to search next time.
+                    // For the next time, start with the node that just succeeded.
                     if (nodeList.peekFirst() != nodeId) {
                         synchronized (mux) {
                             if (nodeList.remove(nodeId)) {
@@ -647,8 +644,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                         missedRsrcs.add(path);
                 }
 
-                // Continue to ask other nodes, since this node may have only indirectly 
-                // been able to load resources via another node that has since failed.
+                // Continue to ask other participants, since this node may not have recursed to find the 
+                // class due to exclusions we passed, or because its path to the class was lost due to 
+                // a node failure.
             }
             catch (IgniteCheckedException e) {
                 // This thread should be interrupted again in communication if it
@@ -756,8 +754,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 continue;
             }
             
-            // Must not send to the participants that asked us for the resource.
-            if (this.comm.nodeOriginatedCurrentRequest(node)) {
+            // Must not send to the participants excluded from recursion
+            if (this.comm.nodeOnRecursionExclusionList(node)) {
                continue;
             }
             
@@ -791,13 +789,13 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                             node.id() + ", clsLdrId=" + ldrId + ", resName=" +
                             name + ", parentClsLdr=" + getParent() + ", msg=" + res.errorMessage() + ']');
 
-                    // Continue to ask other nodes, since this node may have only indirectly 
-                    // been able to load resources via another node that has since failed.
+                    // Continue to ask other participants, since this node may not have recursed to find the 
+                    // class due to exclusions we passed, or because its path to the class was lost due to 
+                    // a node failure.
                 }
                 else {
                    
-                    // If we searched other nodes w/o succeeding first, then 
-                    // make the node we found the resource on the first to search next time.
+                    // For the next time, start with the node that just succeeded.
                     if (nodeList.peekFirst() != nodeId) {
                         synchronized (mux) {
                             if (nodeList.remove(nodeId)) {
