@@ -47,15 +47,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
+public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 2;
 
     /** */
     private static final String DFLT_CACHE = "cache1";
 
-    /** */
-    private static final Collection<CloseableResource> refs = new ConcurrentLinkedDeque<>();
+    /**
+     * List of resources created by factories.
+     */
+    private static final Collection<CloseableResource> rsrcs = new ConcurrentLinkedDeque<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -71,105 +73,140 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
         if (grid(0).cache(DFLT_CACHE) != null)
             grid(0).cache(DFLT_CACHE).destroy();
 
-        refs.clear();
+        rsrcs.clear();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheWriterCleanup() throws Exception {
-        checkResourcesCleanup(cfg().setCacheWriterFactory(factoryOf(new CloseableCacheWriter<>())).setWriteThrough(true));
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
+
+        ccfg.setCacheWriterFactory(factoryOf(new CloseableCacheWriter<>()));
+        ccfg.setWriteThrough(true);
+
+        checkResourcesCleanup(ccfg);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheLoaderCleanup() throws Exception {
-        checkResourcesCleanup(cfg().setCacheLoaderFactory(factoryOf(new CloseableCacheLoader<>())));
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
+
+        ccfg.setCacheLoaderFactory(factoryOf(new CloseableCacheLoader<>()));
+
+        checkResourcesCleanup(ccfg);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheStoreCleanup() throws Exception {
-        checkResourcesCleanup(cfg().setCacheStoreFactory(factoryOf(new CloseableCacheStore<>())));
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
+
+        ccfg.setCacheStoreFactory(factoryOf(new CloseableCacheStore<>()));
+
+        checkResourcesCleanup(ccfg);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheStoreSessionListenerCleanup() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
+
         CloseableCacheStoreSessionListener lsnr1 = new CloseableCacheStoreSessionListener();
         CloseableCacheStoreSessionListener lsnr2 = new CloseableCacheStoreSessionListener();
 
-        checkResourcesCleanup(cfg().setCacheStoreSessionListenerFactories(factoryOf(lsnr1), factoryOf(lsnr2)));
+        ccfg.setCacheStoreSessionListenerFactories(factoryOf(lsnr1), factoryOf(lsnr2));
+
+        checkResourcesCleanup(ccfg);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testEvictPolicyCleanup() throws Exception {
-        checkResourcesCleanup(cfg().setEvictionPolicyFactory(factoryOf(new CloseableEvictionPolicy<>()))
-            .setOnheapCacheEnabled(true));
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
+
+        ccfg.setEvictionPolicyFactory(factoryOf(new CloseableEvictionPolicy<>()));
+        ccfg.setOnheapCacheEnabled(true);
+
+        checkResourcesCleanup(ccfg);
     }
 
-
-    /** */
-    public void testContinuousQueryRemoteFilterCleanupWithCursor() throws Exception {
-        checkResourcesCleanup(cfg(), new CI1<IgniteCache<Integer, String>>() {
-            @Override public void apply(IgniteCache<Integer, String> cache) {
-                ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
-
-                qry.setLocalListener((evts) -> {});
-                qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
-                qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
-
-                assertEquals(0, refs.size());
-
-                try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
-                    // No-op.
-                }
-
-                for (CloseableResource obj : refs)
-                    assertTrue("Was not closed: " + obj, obj.closed());
-            }
-        });
-    }
-
-    /** */
-    public void testContinuousQueryRemoteFilterCleanup() throws Exception {
-        checkResourcesCleanup(cfg(), new CI1<IgniteCache<Integer, String>>() {
-            @Override public void apply(IgniteCache<Integer, String> cache) {
-                ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
-
-                qry.setLocalListener((evts) -> {});
-                qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
-                qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
-
-                assertEquals(0, refs.size());
-
-                // Create cursor but do not close it.
-                cache.query(qry);
-            }
-        });
-    }
-
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testJCacheQueryListenerCleanup() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
+
         MutableCacheEntryListenerConfiguration<Integer, String> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
             factoryOf(new CloseableCacheEntryListener<>()), null, true, true);
 
-        checkResourcesCleanup((CacheConfiguration<Integer, String>)cfg().addCacheEntryListenerConfiguration(lsnrCfg));
+        ccfg.addCacheEntryListenerConfiguration(lsnrCfg);
+
+        checkResourcesCleanup(ccfg);
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
      */
-    private void checkResourcesCleanup(CacheConfiguration<Integer, String> ccfg) throws InterruptedException {
-        checkResourcesCleanup(ccfg, new CI1<IgniteCache<Integer, String>>() {
-            @Override public void apply(IgniteCache<Integer, String> cache) {
-                cache.put(1, "1");
-                cache.put(2, "2");
+    public void testContinuousQueryRemoteFilterCleanup() throws Exception {
+        checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
+            ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
+
+            qry.setLocalListener(evts -> {});
+            qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
+            qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
+
+            assertEquals(0, rsrcs.size());
+
+            cache.query(qry);
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryRemoteFilterCleanupWithCursor() throws Exception {
+        checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
+            ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
+
+            qry.setLocalListener(evts -> {});
+            qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
+            qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
+
+            assertEquals(0, rsrcs.size());
+
+            try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
+                // No-op.
             }
+
+            for (CloseableResource obj : rsrcs)
+                assertTrue("Not closed resource: " + obj, obj.closed());
         });
     }
 
     /**
      * @param ccfg Cache configuration.
+     * @throws Exception If failed.
+     */
+    private void checkResourcesCleanup(CacheConfiguration<Integer, String> ccfg) throws Exception {
+        checkResourcesCleanup(ccfg, cache -> {
+            cache.put(1, "1");
+            cache.put(2, "2");
+        });
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
      */
     private <K, V> void checkResourcesCleanup(CacheConfiguration<K, V> ccfg, CI1<IgniteCache<K, V>> c)
-        throws InterruptedException {
-        assertEquals(0, refs.size());
+        throws Exception {
+        assertEquals(0, rsrcs.size());
 
         Ignite node = grid(0);
 
@@ -181,22 +218,15 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue("No objects was created.", refs.size() > 0);
+        assertTrue("No objects was created.", rsrcs.size() > 0);
 
-        for (CloseableResource obj : refs)
-            assertTrue("Was not closed: " + obj, obj.closed());
+        for (CloseableResource obj : rsrcs)
+            assertTrue("Not closed resource: " + obj, obj.closed());
     }
 
     /** */
     private <T extends CloseableResource> Factory<T> factoryOf(T obj) {
         return new SingletonFactory<>(obj);
-    }
-
-    /**
-     * @return Default cache configuration.
-     */
-    private CacheConfiguration<Integer, String> cfg() {
-        return new CacheConfiguration<>(DFLT_CACHE);
     }
 
     /** */
@@ -211,7 +241,7 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public T create() {
-            refs.add(instance);
+            rsrcs.add(instance);
 
             return instance;
         }
