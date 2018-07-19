@@ -51,7 +51,7 @@ namespace ignite
                 {
                     SP_CacheAffinityInfo affinityInfo = router.Get()->GetAffinityMapping(id);
 
-                    if (!affinityInfo.IsValid())
+                    if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
                     {
                         router.Get()->SyncMessage(req, rsp);
                     }

@@ -1746,39 +1746,40 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
          * @param initTopVer listening-in topology version.
          * @return {@code True} if current event is not last and should be skipped.
          */
-        private boolean skipExchange(AffinityTopologyVersion initTopVer) {
+        private boolean skipExchange(final AffinityTopologyVersion initTopVer) {
             AffinityTopologyVersion pendingTopVer = null;
-            AffinityTopologyVersion newTopVer = currTopVer;
+            AffinityTopologyVersion newTopVer;
 
-            if (!initTopVer.equals(newTopVer))
+            if (!initTopVer.equals(newTopVer = currTopVer))
                 pendingTopVer = newTopVer;
             else {
-                GridDhtTopologyFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+                IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange().affinityReadyFuture(initTopVer);
 
-                if (!fut.isDone() && !fut.isCancelled()) {
+                if (affReadyFut != null) {
                     try {
-                        fut.get();
+                        affReadyFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
+                        U.error(log, "Failed to wait for affinity ready future " +
+                            "(the assignment will be recalculated anyway)", e);
                     }
                 }
 
-                AffinityTopologyVersion lastTopVer;
-
                 // If exchange already moved forward - skip current version.
-                if (fut.exchangeDone() && newTopVer.compareTo(lastTopVer = fut.topologyVersion()) < 0)
-                    pendingTopVer = lastTopVer;
+                if (!initTopVer.equals(newTopVer = currTopVer))
+                    pendingTopVer = newTopVer;
             }
 
-            if (pendingTopVer != null && log.isInfoEnabled()) {
+            boolean skipExchange = pendingTopVer != null;
+
+            if (skipExchange && log.isInfoEnabled()) {
                 log.info("Service processor detected a topology change during " +
                     "assignments calculation (will abort current iteration and " +
                     "re-calculate on the newer version): " +
                     "[topVer=" + initTopVer + ", newTopVer=" + pendingTopVer + ']');
             }
 
-            return pendingTopVer != null;
+            return skipExchange;
         }
 
         /** {@inheritDoc} */
@@ -1869,11 +1870,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         // Clean up zombie assignments.
                         IgniteInternalCache<Object, Object> cache = serviceCache();
 
-                        // If topology changed again, let next event handle it.
-                        if (skipExchange(topVer))
-                            return;
-
                         while (it.hasNext()) {
+                            // If topology changed again, let next event handle it.
+                            if (skipExchange(topVer))
+                                return;
+
                             Cache.Entry<Object, Object> e = it.next();
 
                             if (cache.context().affinity().primaryByKey(ctx.grid().localNode(), e.getKey(), topVer)) {
