@@ -1162,10 +1162,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startFut1.get();
         startFut2.get();
 
-        assertFalse(ignite(4).active());
-        assertFalse(ignite(5).active());
+        assertFalse(ignite(4).cluster().active());
+        assertFalse(ignite(5).cluster().active());
 
-        ignite(4).active(true);
+        ignite(4).cluster().active(true);
 
         for (int i = 0; i < 4; i++)
             startGrid(i);
