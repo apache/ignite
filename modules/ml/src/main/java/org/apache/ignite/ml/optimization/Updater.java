@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.optimization;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Weights updater applied on every gradient descent step to decide how weights should be changed.

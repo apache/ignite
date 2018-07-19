@@ -23,10 +23,10 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
@@ -110,7 +110,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> implements Singl
 
         double[] p = mlp.parameters().getStorage().data();
 
-        return new LinearRegressionModel(new DenseLocalOnHeapVector(
+        return new LinearRegressionModel(new DenseVector(
             Arrays.copyOf(p, p.length - 1)),
             p[p.length - 1]
         );

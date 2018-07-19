@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 
 /** Base class for multi-classification model for set of Logistic Regression classifiers. */

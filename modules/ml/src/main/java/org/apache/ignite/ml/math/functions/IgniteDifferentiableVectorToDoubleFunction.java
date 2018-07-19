@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for differentiable functions from vector to double.
