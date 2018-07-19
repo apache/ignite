@@ -3230,7 +3230,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
-                if (addr.getAddress().isLoopbackAddress() && addr.getPort() == boundTcpPort) {
+                if (isLocalNodeAddress(addr)) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping local address [addr=" + addr +
                             ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
@@ -3473,6 +3473,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             processClientCreationError(node, addrs, errs);
 
         return client;
+    }
+
+    /**
+     * Check is passed  socket address belong to current node. This method should return true only if the passed
+     * in address represent an address which will result in a connection to the local node.
+     *
+     * @param addr address to check.
+     * @return true if passed address belongs to local node, otherwise false.
+     */
+    private boolean isLocalNodeAddress(InetSocketAddress addr) {
+        return addr.getPort() == boundTcpPort
+            && (locHost.equals(addr.getAddress())
+                || addr.getAddress().isAnyLocalAddress()
+                || (locHost.isAnyLocalAddress() && U.isLocalAddress(addr.getAddress())));
     }
 
     /**

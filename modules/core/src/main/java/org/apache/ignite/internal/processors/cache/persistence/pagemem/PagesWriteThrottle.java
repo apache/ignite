@@ -18,8 +18,10 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -50,21 +52,27 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     /** Counter for checkpoint buffer usage ratio throttling (we need a separate one due to IGNITE-7751). */
     private final AtomicInteger inCheckpointBackoffCntr = new AtomicInteger(0);
 
+    /** Logger. */
+    private IgniteLogger log;
+
     /**
      * @param pageMemory Page memory.
      * @param cpProgress Database manager.
      * @param stateChecker checkpoint lock state checker.
      * @param throttleOnlyPagesInCheckpoint If true, throttle will only protect from checkpoint buffer overflow.
+     * @param log Logger.
      */
     public PagesWriteThrottle(PageMemoryImpl pageMemory,
         CheckpointWriteProgressSupplier cpProgress,
         CheckpointLockStateChecker stateChecker,
-        boolean throttleOnlyPagesInCheckpoint
+        boolean throttleOnlyPagesInCheckpoint,
+        IgniteLogger log
     ) {
         this.pageMemory = pageMemory;
         this.cpProgress = cpProgress;
         this.stateChecker = stateChecker;
         this.throttleOnlyPagesInCheckpoint = throttleOnlyPagesInCheckpoint;
+        this.log = log;
 
         if (!throttleOnlyPagesInCheckpoint)
             assert cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
@@ -111,7 +119,14 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         if (shouldThrottle) {
             int throttleLevel = cntr.getAndIncrement();
 
-            LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel)));
+            long throttleParkTimeNs = (long) (STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel));
+
+            if (throttleParkTimeNs > LOGGING_THRESHOLD) {
+                U.warn(log, "Parking thread=" + Thread.currentThread().getName()
+                    + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
+            }
+
+            LockSupport.parkNanos(throttleParkTimeNs);
         }
         else
             cntr.set(0);
