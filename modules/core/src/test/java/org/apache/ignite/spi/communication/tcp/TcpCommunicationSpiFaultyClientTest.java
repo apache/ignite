@@ -152,7 +152,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
      */
     @Test
     public void testNoServerOnHost() throws Exception {
-        testFailClient(null, computeExpectedDelay());
+        testFailClient(null, 0);
     }
 
     /**
@@ -164,7 +164,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         maxConnectTimeout = 6000;
         reconnectCnt = 3;
 
-        testFailClient(null, connectTimeout);
+        testFailClient(null, 0);
     }
 
     /**
