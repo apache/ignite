@@ -252,7 +252,8 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 null
             ) :
-            prevState;
+            prevState != null ? prevState :
+                    DiscoveryDataClusterState.createState(false, null);
     }
 
     /** {@inheritDoc} */
