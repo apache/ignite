@@ -342,32 +342,44 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         this.igniteInstanceName = igniteInstanceName;
     }
 
+    /**
+     * Sets Ignite instance.
+     *
+     * @param ignite Ignite instance.
+     */
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+    }
+
     /** {@inheritDoc} */
     @Override public void onApplicationEvent(ContextRefreshedEvent event) {
-        assert ignite == null;
-
-        if (cfgPath != null && cfg != null) {
-            throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
+        if (ignite == null) {
+            if (cfgPath != null && cfg != null) {
+                throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                     "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                     "SpringCacheManager. If you already have a node running, omit both of them and set" +
                     "'igniteInstanceName' property.");
-        }
-
-        try {
-            if (cfgPath != null) {
-                ignite = IgniteSpring.start(cfgPath, springCtx);
             }
-            else if (cfg != null)
-                ignite = IgniteSpring.start(cfg, springCtx);
-            else
-                ignite = Ignition.ignite(igniteInstanceName);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
 
-        if (transactionConcurrency == null)
-            transactionConcurrency = ignite.configuration().getTransactionConfiguration().getDefaultTxConcurrency();
+            try {
+                if (cfgPath != null) {
+                    ignite = IgniteSpring.start(cfgPath, springCtx);
+                }
+                else if (cfg != null)
+                    ignite = IgniteSpring.start(cfg, springCtx);
+                else
+                    ignite = Ignition.ignite(igniteInstanceName);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            if (transactionConcurrency == null)
+                transactionConcurrency = ignite.configuration().getTransactionConfiguration().getDefaultTxConcurrency();
+        }
+        else {
+            ignite.log().debug("Ignite instance was set explicitly. Skipping Ignite initialization routine.");
+        }
 
         log = ignite.log();
     }
