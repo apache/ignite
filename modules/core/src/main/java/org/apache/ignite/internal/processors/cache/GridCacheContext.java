@@ -272,9 +272,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local node's MAC address. */
     private String locMacs;
 
-    /** */
-    private final List<Closeable> closeableResources = new ArrayList<>(0);
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -302,7 +299,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param drMgr Data center replication manager.
      * @param rslvrMgr Conflict resolution manager.
      * @param pluginMgr Cache plugin manager.
-     * @param rsrcs Closeable resources.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
@@ -330,8 +326,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheDrManager drMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
-        GridCacheAffinityManager affMgr,
-        Collection<Closeable> rsrcs
+        GridCacheAffinityManager affMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -394,12 +389,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (expiryPlc instanceof EternalExpiryPolicy)
             expiryPlc = null;
-
-        if (expiryPlc instanceof Closeable)
-            closeableResources.add((Closeable) expiryPlc);
-
-        if (rsrcs != null)
-            closeableResources.addAll(rsrcs);
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
 
@@ -2023,16 +2012,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         dataStructuresMgr = null;
         cacheObjCtx = null;
 
-        for (Closeable rs : closeableResources) {
+        if (expiryPlc instanceof Closeable) {
             try {
-                rs.close();
+                ((Closeable)expiryPlc).close();
             }
             catch (IOException e) {
                 log.warning("Unable to close resource: " + e.getMessage(), e);
             }
         }
 
-        closeableResources.clear();
         mgrs.clear();
     }
 

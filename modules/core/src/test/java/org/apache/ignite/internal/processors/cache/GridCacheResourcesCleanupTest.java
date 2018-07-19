@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
@@ -57,7 +58,7 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     private static final String DFLT_CACHE = "cache1";
 
     /** */
-    private static final List<CloseableResource> refs = new ArrayList<>();
+    private static final Collection<CloseableResource> refs = new ConcurrentLinkedDeque<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -77,14 +78,6 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testCacheStoreSessionListenerCleanup() throws Exception {
-        CloseableCacheStoreSessionListener lsnr1 = new CloseableCacheStoreSessionListener();
-        CloseableCacheStoreSessionListener lsnr2 = new CloseableCacheStoreSessionListener();
-
-        testResourcesCleanup(cfg().setCacheStoreSessionListenerFactories(factoryOf(lsnr1), factoryOf(lsnr2)));
-    }
-
-    /** */
     public void testCacheWriterCleanup() throws Exception {
         testResourcesCleanup(cfg().setCacheWriterFactory(factoryOf(new CloseableCacheWriter<>())).setWriteThrough(true));
     }
@@ -95,15 +88,24 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testCacheStoreCleanup() throws Exception {
+        testResourcesCleanup(cfg().setCacheStoreFactory(factoryOf(new CloseableCacheStore<>())));
+    }
+
+    /** */
+    public void testCacheStoreSessionListenerCleanup() throws Exception {
+        CloseableCacheStoreSessionListener lsnr1 = new CloseableCacheStoreSessionListener();
+        CloseableCacheStoreSessionListener lsnr2 = new CloseableCacheStoreSessionListener();
+
+        testResourcesCleanup(cfg().setCacheStoreSessionListenerFactories(factoryOf(lsnr1), factoryOf(lsnr2)));
+    }
+
+    /** */
     public void testEvictPolicyCleanup() throws Exception {
         testResourcesCleanup(cfg().setEvictionPolicyFactory(factoryOf(new CloseableEvictionPolicy<>()))
             .setOnheapCacheEnabled(true));
     }
 
-    /** */
-    public void testCacheStoreCleanup() throws Exception {
-        testResourcesCleanup(cfg().setCacheStoreFactory(factoryOf(new CloseableCacheStore<>())));
-    }
 
     /** */
     public void testContinuousQueryRemoteFilterCleanupWithCursor() throws Exception {

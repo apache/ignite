@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,8 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheWriter;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1436,20 +1433,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             suggestOptimizations(cfg, cfgStore != null);
 
         Collection<Object> toPrepare = new ArrayList<>();
-        List<Closeable> rsrcs = new ArrayList<>();
 
         if (cfgStore instanceof GridCacheLoaderWriterStore) {
-            CacheLoader ldr = ((GridCacheLoaderWriterStore)cfgStore).loader();
-            CacheWriter writer = ((GridCacheLoaderWriterStore)cfgStore).writer();
-
-            toPrepare.add(ldr);
-            toPrepare.add(writer);
-
-            if (ldr instanceof Closeable)
-                rsrcs.add((Closeable)ldr);
-
-            if (writer instanceof Closeable)
-                rsrcs.add((Closeable)writer);
+            toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).loader());
+            toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).writer());
         }
         else
             toPrepare.add(cfgStore);
@@ -1497,8 +1484,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             drMgr,
             rslvrMgr,
             pluginMgr,
-            affMgr,
-            rsrcs
+            affMgr
         );
 
         cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
@@ -1630,8 +1616,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 drMgr,
                 rslvrMgr,
                 pluginMgr,
-                affMgr,
-                null
+                affMgr
             );
 
             cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());

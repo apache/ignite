@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Store implementation wrapping {@link CacheLoader} and {@link CacheWriter}.
  */
-class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAware, Serializable {
+class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAware, Serializable, Closeable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -147,5 +149,14 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLoaderWriterStore.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        if (ldr instanceof Closeable)
+            ((Closeable)ldr).close();
+
+        if (writer instanceof Closeable)
+            ((Closeable)writer).close();
     }
 }

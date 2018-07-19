@@ -300,15 +300,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Unwrap Proxy object.
         obj = unwrapTarget(obj);
 
-        GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
-
-        assert clsDesc != null;
-
-        if (clsDesc.isAnnotated(annSet) != 0) {
-            for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations)
-                clsDesc.inject(obj, ann, nullInjector, null, null);
-        }
-
         if (obj instanceof Closeable) {
             try {
                 ((Closeable)obj).close();
@@ -317,6 +308,16 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 log.warning("Unable to close resource: " + e.getMessage(), e);
             }
         }
+
+        GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
+
+        assert clsDesc != null;
+
+        if (clsDesc.isAnnotated(annSet) == 0)
+            return;
+
+        for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations)
+            clsDesc.inject(obj, ann, nullInjector, null, null);
     }
 
     /**
