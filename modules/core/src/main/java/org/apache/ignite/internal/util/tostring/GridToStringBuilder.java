@@ -839,6 +839,9 @@ public class GridToStringBuilder {
             else
                 buf.a(val);
         }
+        catch (RuntimeException e) {
+            buf.a("<error> ").a(e.getClass().getSimpleName()).a(" [").a(e.getMessage()).a("]");
+        }
         finally {
             svdObjs.remove(val);
         }
