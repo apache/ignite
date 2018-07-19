@@ -312,7 +312,7 @@ public class ZookeeperClient implements Watcher {
             if (batchSize + size > MAX_REQ_SIZE) {
                 batches.add(batch);
 
-                batch = new ArrayList<>(paths.size());
+                batch = new LinkedList<>();
 
                 batchSize = 0;
             }
@@ -615,7 +615,7 @@ public class ZookeeperClient implements Watcher {
             if (batchSize + size > MAX_REQ_SIZE) {
                 batches.add(batch);
 
-                batch = new ArrayList<>(paths.size());
+                batch = new LinkedList<>();
 
                 batchSize = 0;
             }
