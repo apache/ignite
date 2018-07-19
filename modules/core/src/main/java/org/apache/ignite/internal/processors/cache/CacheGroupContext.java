@@ -1059,18 +1059,28 @@ public class CacheGroupContext {
      * @param enabled Global WAL enabled flag.
      */
     public void globalWalEnabled(boolean enabled) {
-        persistGlobalWalState(enabled);
+        if (globalWalEnabled != enabled) {
+            log.info("Global WAL state for group=" + cacheOrGroupName() +
+                " changed from " + globalWalEnabled + " to " + enabled);
 
-        this.globalWalEnabled = enabled;
+            persistGlobalWalState(enabled);
+
+            globalWalEnabled = enabled;
+        }
     }
 
     /**
      * @param enabled Local WAL enabled flag.
      */
     public void localWalEnabled(boolean enabled) {
-        persistLocalWalState(enabled);
+        if (localWalEnabled != enabled){
+            log.info("Local WAL state for group=" + cacheOrGroupName() +
+                " changed from " + localWalEnabled + " to " + enabled);
 
-        this.localWalEnabled = enabled;
+            persistLocalWalState(enabled);
+
+            localWalEnabled = enabled;
+        }
     }
 
     /**
