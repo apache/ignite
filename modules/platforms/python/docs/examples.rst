@@ -290,8 +290,9 @@ The Ignite server must be configured for securing the binary protocol port.
 The server configuration process can be split up into these basic steps:
 
 1. Create a key store and a trust store using `Java keytool`_. When creating
-   the trust store, you will probably need a client public key, which we'll
-   talk of lately.
+   the trust store, you will probably need a client X.509 certificate. You
+   will also need to export the server X.509 certificate to include in the
+   client chain of trust.
 
 2. Turn on the `SslContextFactory` for your Ignite cluster according to this
    document: `Securing Connection Between Nodes`_.
@@ -313,8 +314,8 @@ To use the SSL encryption without certificate validation just `use_ssl`.
     conn = Connection(use_ssl=True)
     conn.connect('127.0.0.1', 10800)
 
-To identify the client, create an SSL keypair and a certificate with `openssl`
-command and use it in this manner:
+To identify the client, create an SSL keypair and a certificate with
+`openssl`_ command and use them in this manner:
 
 .. code-block:: python3
 
@@ -353,3 +354,4 @@ the SSL version (`ssl_version`), if the defaults
 .. _Java keytool: https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html
 .. _Securing Connection Between Nodes: https://apacheignite.readme.io/docs/ssltls#section-securing-connection-between-nodes
 .. _ClientConnectorConfiguration: https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/configuration/ClientConnectorConfiguration.html
+.. _openssl: https://www.openssl.org/docs/manmaster/man1/openssl.html
