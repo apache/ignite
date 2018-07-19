@@ -3394,7 +3394,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         client = null;
                     }
 
-                    if (timeoutHelper.checkFailureTimeoutReached(e)) {
+                    if (timeoutHelper.checkFailureTimeoutReached(null)) {
                         String msg = "Handshake timed out (failure detection timeout is reached) " +
                             "[failureDetectionTimeout=" + failureDetectionTimeout() + ", addr=" + addr + ']';
 
@@ -3464,41 +3464,38 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
-                    boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(e);
+                    boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(null);
 
                     if (enableTroubleshootingLog)
                         U.error(log, "Failed to establish connection to a remote node [node=" + node +
                             ", addr=" + addr + ", connectAttempts=" + connectAttempts +
                             ", failureDetThrReached=" + failureDetThrReached + ']', e);
 
-                    if (failureDetThrReached)
+                    if (failureDetThrReached || connectAttempts == reconCnt || connTimeout0 > maxConnTimeout) {
                         LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
                             "configuration property) [addr=" + addr + ", failureDetectionTimeout=" +
                             failureDetectionTimeout() + ']');
-                    else if (X.hasCause(e, SocketTimeoutException.class))
-                        LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
-                            "configuration property) [addr=" + addr + ", connTimeout=" + connTimeout + ']');
 
-                    if (errs == null)
-                        errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                            "Make sure that each ComputeTask and cache Transaction has a timeout set " +
-                            "in order to prevent parties from waiting forever in case of network issues " +
-                            "[nodeId=" + node.id() + ", addrs=" + addrs + ']', e);
+                        if (errs == null)
+                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
+                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                                "in order to prevent parties from waiting forever in case of network issues " +
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']', e);
 
-                    errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
-                        "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
+                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
+                            "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
-                    if (connectAttempts == reconCnt || connTimeout0 > maxConnTimeout)
                         break;
-
-                    if (isRecoverableException(errs) && !failureDetThrReached) {
-                        // Reconnect again if connection was not established within current timeout chunk.
-                        connectAttempts++;
-
+                    } else if (isRecoverableException(errs)) {
                         connTimeout0 *= 2;
+
+                        LT.warn(log, "Connect timed out (will retry with increased connTimeout " +
+                            "[addr=" + addr + ", connTimeout=" + connTimeout0 +
+                            ", maxConnTimeout=" + maxConnTimeout + ']');
                     }
-                    else
-                        break;
+
+                    // Reconnect again if connection was not established within current timeout chunk.
+                    connectAttempts++;
                 }
             }
 

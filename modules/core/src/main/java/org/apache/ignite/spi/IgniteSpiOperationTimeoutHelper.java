@@ -16,11 +16,12 @@
  */
 package org.apache.ignite.spi;
 
-import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.HandshakeException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Object that incorporates logic that determines a timeout value for the next network related operation and checks
@@ -91,13 +92,16 @@ public class IgniteSpiOperationTimeoutHelper {
 
     /**
      * Checks whether the given {@link Exception} is generated because failure detection timeout has been reached.
-     *
+     * Skip exception check if null, and ckeck timeout only.
      * @param e Exception.
      * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
      */
-    public boolean checkFailureTimeoutReached(Exception e) {
+    public boolean checkFailureTimeoutReached(@Nullable Exception e) {
         if (!failureDetectionTimeoutEnabled)
             return false;
+
+        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
+            return true;
 
         return remainingTime(U.currentTimeMillis()) <= 0;
     }
