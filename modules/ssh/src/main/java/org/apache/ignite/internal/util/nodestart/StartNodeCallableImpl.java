@@ -352,13 +352,14 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (regexp != null) {
                 Pattern ptrn = Pattern.compile(regexp);
 
-                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(ch.getInputStream()))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(ch.getInputStream()))) {
                     String line;
 
                     boolean first = true;
 
-                    while ((line = bufferedReader.readLine()) != null) {
+                    while ((line = reader.readLine()) != null) {
                         if (ptrn.matcher(line).find()) {
+                            //wait for a while until process from regexp really will be started.
                             U.sleep(10);
 
                             break;
@@ -544,7 +545,9 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             }
         };
 
-        assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
+        boolean wasAdded = proc.addTimeoutObject(to);
+
+        assert wasAdded : "Timeout object was not added: " + to;
 
         return to;
     }
