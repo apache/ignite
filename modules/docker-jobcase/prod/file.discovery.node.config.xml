@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!-- 
+  The file.discovery.node.config.xml grid configuration file 
+  defines Shared File System Based Apache Ignite Node Discovery.
+
+  As the default, Apache Ignite is using multicast to discover its nodes.
+  This approach won't work on Amazon AWS and most deployments 
+  which include native and dockerized applications.
+  
+  Sharing a file system allows for successful node discovery.
+  
+  When specifying -e "CONFIG_URI=${JOBCASE_CONFIG}/file.discovery.node.config.xml" 
+  in the docker run command
+  it will use file.discovery.node.config.xml as grid configuration file.
+ -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd">
+       
+    <import resource="common.node.config.xml"/>
+       
+    <!--
+        Alter configuration below as needed.
+    -->
+    <bean parent="grid.cfg">
+        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="localPort" value="#{systemEnvironment['IGNITE_DISCOVERY_PORT']}"/>
+                <property name="localPortRange" value="1"/>
+                <property name="ipFinder">
+                    <!-- local FS discovery using a common mounted volume -->
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder">
+                        <property name="path" value="#{systemEnvironment['IGNITE_DISCOVERY_FS']}"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>              
+    </bean>
+</beans>

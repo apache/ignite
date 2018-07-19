@@ -384,6 +384,17 @@
                                             <regexp pattern="ignite.build=.*" />
                                             <substitution expression="ignite.build=${ignite.build}" />
                                         </replaceregexp>
+                                        
+                                        <!-- called mvn -Drelease.version=xyz -->
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.version=.*" />
+                                            <substitution expression="ignite.version=${release.version}" />
+                                        </replaceregexp>
+                                        
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.update.status.params=.*" />
+                                            <substitution expression="ignite.update.status.params=ver=${release.version}&amp;product=${ignite.update.notifier.product}" />
+                                        </replaceregexp>                                                                                                                        
                                     </target>
                                 </configuration>
                             </execution>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!-- 
+  The common.node.config.xml grid configuration file defines settings 
+  which are used across different type of deployments.
+  
+  It is abstract and cannot be directly used as Ignite configuration file.
+  
+  The file (Spring application) makes use of environment variable expansion.
+  It is using Spring EL syntax like #{systemEnvironment['IGNITE_PERSISTENT_STORE']}.
+  
+  The list of referenced environment variables is defined in the Dockerfile.
+  When changing environment variable names the Dockerfile and grid configuration file need to be in-sync.
+ -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd">
+
+
+   <bean abstract="true" id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <!-- Set to true to enable distributed class loading, default is false. -->
+        <property name="peerClassLoadingEnabled" value="true"/>
+        
+        <!-- Set deployment mode.
+             In CONTINUOUS mode, the classes do not get un-deployed when master nodes leave the grid. 
+             Un-deployment only happens when a class user version changes.         
+         --> 
+        <property name="deploymentMode" value="#{systemEnvironment['IGNITE_DEPLOYMENT_MODE']}"/>        
+                
+        <!--  Sets failure detection timeout to use in discoverySpi and communicationSpi. -->
+        <property name="failureDetectionTimeout" value="10000"/>
+        
+        <!-- Sets flag indicating whether the cluster is enabled to activate automatically 
+             after all nodes joined of the pre-defined baseline topology.
+             This value should be the same on all nodes in the cluster. -->
+        <property name="autoActivationEnabled" value="true"/>
+        
+        <!-- As default, Ignite creates a unique id for the node by generating a UUID. 
+             It is used part of the persistent storage folder path. 
+             E. g. persistent storage folder /opt/jobcase/db/node00-49755452-fa53-41d4-82d3-cfff0b830a57.
+             
+             It is recommended that the consistent id is set from the outside instead using generated value.
+         -->
+        <property name="consistentId" value="#{systemEnvironment['IGNITE_CONSISTENT_ID']}"/>
+
+        <!-- Enabling Apache Ignite native persistence.
+             Details https://apacheignite.readme.io/docs/distributed-persistent-store. 
+          -->
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true"/>
+                        
+                        <!-- Increasing the buffer size to 1 GB. -->
+                        <property name="checkpointPageBufferSize" value="#{1024L * 1024 * 1024}"/>
+                        
+                        <property name="name" value="Default_Region"/>
+                        
+                        <!-- Setting the size of the default region to 2GB. -->
+                        <property name="maxSize" value="#{2L * 1024 * 1024 * 1024}"/>                        
+                    </bean>
+                </property>
+                
+                <!-- Set the page size to 4 KB -->
+                <property name="pageSize" value="4096"/>
+                                
+                <!-- Path to the root directory where the Persistent Store will persist data and indexes.                      
+                  -->
+                <property name="storagePath" value="#{systemEnvironment['IGNITE_PERSISTENT_STORE']}"/>
+                
+                <!-- <property name="storagePath" value="/opt/jobcase/db"/>  -->
+                
+                <!-- Sets a path to the directory where WAL is stored. -->                
+                <property name="walPath" value="#{systemEnvironment['IGNITE_PERSISTENT_STORE']}/wal"/>
+                
+                <!-- Sets a path for the WAL archive directory. 
+                     Every WAL segment will be fully copied to this directory 
+                     before it can be reused for WAL purposes. -->                
+                <property name="walArchivePath" value="#{systemEnvironment['IGNITE_PERSISTENT_STORE']}/wal/archive"/>
+            </bean>
+       </property>
+       
+       <!--  Explicitly configure JDBC connector communication -->
+       <property name="clientConnectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+                <property name="port" value="#{systemEnvironment['IGNITE_JDBC_PORT']}"/>
+                <property name="portRange" value="1"/>
+            </bean>
+       </property>
+       
+       <!--  Explicitly configure TCP connector communication -->
+       <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <!-- Binary Client Protocol port -->
+                <property name="port" value="#{systemEnvironment['IGNITE_SERVER_PORT']}"/>
+                <property name="portRange" value="1"/>
+                
+                <!-- Path to Jetty configuration file (REST API configuration).  -->
+                <property name="jettyPath" value="#{systemEnvironment['JOBCASE_CONFIG']}/jetty-config.xml"/>
+            </bean>
+       </property>
+              
+       <!--  Explicitly configure TCP server communication -->
+       <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <property name="localPort" value="#{systemEnvironment['IGNITE_COMMUNICATION_PORT']}"/>
+                <property name="localPortRange" value="1"/>
+                <!-- Maintain connection for outgoing and incoming messages separately. 
+                     Default is false. -->
+                <property name="usePairedConnections" value="false"/>
+            </bean>
+       </property>
+       
+       <!-- Enable cache events. -->
+       <property name="includeEventTypes">
+          <list>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CHECKPOINT_SAVED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_TIMEDOUT"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_REJECTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_CANCELLED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_DEPLOY_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_NODE_JOINED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_NODE_LEFT"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_NODE_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CLASS_UNDEPLOYED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_DEPLOY_FAILED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_STARTED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_STOPPED"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_NODES_LEFT"/>
+          </list>
+       </property>       
+       
+        <!--
+            Logger to use.
+        -->
+        <property name="gridLogger">
+            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
+                <constructor-arg type="java.lang.String" value="#{systemEnvironment['JOBCASE_CONFIG']}/ignite-log4j2.xml"/>
+            </bean>
+        </property>
+   </bean>
+</beans>

@@ -1,0 +1,96 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Basic validation of the Apache Ignite container.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.sharedworkspace.SharedWorkspace plugin="shared-workspace@1.0.2">
+      <name>NONE</name>
+    </org.jenkinsci.plugins.sharedworkspace.SharedWorkspace>
+  </properties>
+  <scm class="hudson.plugins.cloneworkspace.CloneWorkspaceSCM" plugin="clone-workspace-scm@0.6">
+    <parentJobName>BuildIgniteAssembly-2.5</parentJobName>
+    <criteria>Any</criteria>
+  </scm>
+  <assignedNode>docker</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <jdk>JDK8u152</jdk>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>id
+
+echo &quot;${WORKSPACE}&quot;
+
+container_ip=&quot;172.17.0.2&quot;
+
+# get container id       
+container_id=$(docker ps --filter &quot;name=jobcase&quot; --quiet | awk &apos;{print $1}&apos;)
+
+if [ -n &quot;${container_id}&quot; ]; then
+  docker stop ${container_id}
+fi
+
+docker rm ignite-jobcase
+
+# start ignite container
+# bridge network
+docker run \
+        -d=true \
+        -v /home/ec2-user/mgay/ignite_nodes/logs:/opt/jobcase/logs \
+        -v /home/ec2-user/mgay/ignite_nodes/db:/opt/jobcase/data \
+        -v /home/ec2-user/mgay/ignite_nodes/discovery:/opt/jobcase/discovery \
+        -e IGNITE_CONSISTENT_ID=`hostname` \
+        --name=ignite-jobcase apacheignite/jobcase:2.5.0
+       
+# get container id       
+container_id=$(docker ps --filter &quot;name=jobcase&quot; --quiet | awk &apos;{print $1}&apos;)
+       
+echo &quot;${container_id}&quot;
+
+# get IGNITE_HOME env
+ignite_home=$(docker exec ${container_id} printenv IGNITE_HOME)
+
+# activate grid
+docker exec ${container_id} ${ignite_home}/bin/control.sh --activate
+
+# get IGNITE_REST_PORT env
+ignite_rest_port=$(docker exec ${container_id} printenv IGNITE_REST_PORT)
+
+result=$(curl -s &quot;http://${container_ip}:${ignite_rest_port}/ignite?cmd=version&quot;)
+
+# &quot;successStatus&quot;:0
+[[ ${result} = *\&quot;successStatus\&quot;:0* ]] &amp;&amp; echo Yes || exit 1
+
+result=$(curl -s &quot;http://${container_ip}:${ignite_rest_port}/ignite?cmd=node&amp;ip=${container_ip}&quot;)
+
+[[ ${result} = *\&quot;successStatus\&quot;:0* ]] &amp;&amp; echo Yes || exit 1
+
+key=&quot;key&quot;
+value=&quot;val.test-cache.&quot;
+cache=&quot;test-cache&quot;
+
+# create cache test-cache
+result=$(curl -s &quot;http://${container_ip}:${ignite_rest_port}/ignite?cmd=getorcreate&amp;cacheName=${cache}&quot;)
+
+[[ ${result} = *\&quot;successStatus\&quot;:0* ]] &amp;&amp; echo Yes || exit 1
+  
+# add 100 entries to test-cache
+for i in {1..100}
+do
+  result=$(curl -s &quot;http://${container_ip}:${ignite_rest_port}/ignite?cmd=add&amp;key=${key}${i}&amp;val=${value}${i}&amp;cacheName=${cache}&quot;)
+  
+  [[ ${result} = *\&quot;successStatus\&quot;:0* ]] &amp;&amp; echo Yes || exit 1
+done
+
+# stop ignite container
+docker stop ${container_id}</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
