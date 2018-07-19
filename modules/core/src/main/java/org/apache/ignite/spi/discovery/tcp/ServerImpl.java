@@ -2400,12 +2400,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             msgs.add(new PendingMessage(msg));
 
             while (msgs.size() > MAX) {
-                PendingMessage polled = msgs.poll();
+                PendingMessage queueHead = msgs.peek();
 
-                assert polled != null;
+                assert queueHead != null;
 
-                if (polled.id.equals(discardId))
+                if (queueHead.customMsg && customDiscardId != null) {
+                    if (queueHead.id.equals(customDiscardId))
+                        customDiscardId = null;
+                }
+                else if (!queueHead.customMsg && discardId != null) {
+                    if (queueHead.id.equals(discardId))
+                        discardId = null;
+                }
+                else
                     break;
+
+                msgs.poll();
             }
         }
 
@@ -5348,8 +5358,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);
-                        else
+                        else {
+                            registerPendingMessage(msg);
+
                             processCustomMessage(msg, waitForNotification);
+                        }
                     }
 
                     msg.message(null, msg.messageBytes());
