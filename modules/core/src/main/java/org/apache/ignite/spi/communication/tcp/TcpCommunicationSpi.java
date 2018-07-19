@@ -3481,7 +3481,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
                                 "Make sure that each ComputeTask and cache Transaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']', e);
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
                         errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
                             "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
@@ -3496,7 +3496,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
                                 "Make sure that each ComputeTask and cache Transaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']', e);
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
                         errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
                             "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
