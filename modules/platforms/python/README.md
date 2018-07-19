@@ -72,11 +72,5 @@ $ python setup.py pytest
 ```
 
 *NB!* All tests require Apache Ignite node running on localhost:10800.
-To override the default parameters, use command line options
-`--ignite-host` and `--ignite-port`:
-```
-$ python setup.py pytest --addopts "--ignite-host=example.com --ignite-port=19840"
-```
-
-You can use each of these options multiple times. All combinations
-of given host and port will be tested.
+If you need to change the connection parameters, see the documentation on
+[testing](https://apache-ignite-binary-protocol-client.readthedocs.io/en/latest/readme.html#testing).

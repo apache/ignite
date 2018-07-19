@@ -86,16 +86,38 @@ $ python ./setup.py pytest
 This does not require `pytest` and other test dependencies to be installed
 in your environment.
 
-*NB!* Some or all tests require Apache Ignite node running on localhost:10800.
+Some or all tests require Apache Ignite node running on localhost:10800.
 To override the default parameters, use command line options
-`--ignite-host` and `--ignite-port`:
+``--ignite-host`` and ``--ignite-port``:
 
 ::
 
 $ python ./setup.py pytest --addopts "--ignite-host=example.com --ignite-port=19840"
 
-You can use each of these options multiple times. All combinations
+You can use each of these two options multiple times. All combinations
 of given host and port will be tested.
+
+You can also test client against a server with SSL-encrypted connection.
+SSL-related `pytest` parameters are:
+
+``--use-ssl`` − use SSL encryption,
+
+``--ssl-certfile`` − a path to ssl certificate file to identify local party,
+
+``--ssl-ca-certfile`` − a path to a trusted certificate or a certificate chain,
+
+``--ssl-cert-reqs`` − determines how the remote side certificate is treated:
+
+- ``NONE`` (ignore, default),
+- ``OPTIONAL`` (validate, if provided),
+- ``REQUIRED`` (valid remote certificate is required),
+
+``--ssl-ciphers`` − ciphers to use,
+
+``--ssl-version`` − SSL version:
+
+- ``TLSV1_1`` (default),
+- ``TLSV1_2``.
 
 Documentation
 -------------
