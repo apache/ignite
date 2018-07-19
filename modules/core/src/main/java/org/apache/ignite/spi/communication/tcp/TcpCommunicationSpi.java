@@ -3536,8 +3536,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 break;
                             }
                         }
-
-                        connTimeout0 *= 2;
                     }
                     else
                         break;

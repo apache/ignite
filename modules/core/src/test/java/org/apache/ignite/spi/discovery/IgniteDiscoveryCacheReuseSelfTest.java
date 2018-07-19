@@ -18,22 +18,13 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,9 +38,9 @@ import org.junit.runners.JUnit4;
 public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
@@ -81,16 +72,8 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
      * @param v1 First version.
      * @param v2 Next version.
      */
-    private void assertDiscoCacheReuse(AffinityTopologyVersion v1, AffinityTopologyVersion v2) throws IgniteCheckedException {
-        assertTrue(v2.compareTo(v1) > 0);
-
+    private void assertDiscoCacheReuse(AffinityTopologyVersion v1, AffinityTopologyVersion v2) {
         for (Ignite ignite : G.allGrids()) {
-            final IgniteInternalFuture<AffinityTopologyVersion> fut =
-                ((IgniteEx)ignite).context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)).affinity().readyFuture(v2);
-
-            if (fut != null)
-                fut.get(3000);
-
             GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
                 U.field(((IgniteEx) ignite).context().discovery(), "discoCacheHist");
 

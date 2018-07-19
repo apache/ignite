@@ -138,7 +138,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             memCfg.setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
-        cfg.setFailureDetectionTimeout(60_000);
+
+        // Speed up reconnect time on client node fail.
+        if (cfg.isClientMode())
+            cfg.setFailureDetectionTimeout(1000);
 
         if (testSpi) {
             TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
