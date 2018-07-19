@@ -49,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -483,7 +484,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 log.debug("Try to capture file lock [nodeId=" +
                         cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
-            fileLockHolder.tryLock(lockWaitTime);
+            if (!fileLockHolder.isLocked())
+                fileLockHolder.tryLock(lockWaitTime);
 
             cleanupTempCheckpointDirectory();
 
@@ -986,8 +988,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (log.isDebugEnabled())
                     log.debug("Release file lock [nodeId=" +
                             cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
-
-                fileLockHolder.release();
 
                 fileLockHolder.close();
             }
@@ -4126,6 +4126,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Lock. */
         private FileLock lock;
 
+        /** Locked flag */
+        private final AtomicBoolean locked = new AtomicBoolean();
+
         /** Kernal context to generate Id of locked node in file. */
         @NotNull private GridKernalContext ctx;
 
@@ -4200,6 +4203,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (lock != null && lock.isValid()) {
                             writeContent(sb.toString());
 
+                            locked.set(true);
+
                             return;
                         }
                     }
@@ -4267,13 +4272,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return content;
         }
 
+        /** Locked or not. */
+        public boolean isLocked() {
+            return locked.get();
+        }
+
         /** Releases file lock */
         public void release() {
+            locked.set(false);
+
             U.releaseQuiet(lock);
         }
 
         /** Closes file channel */
         public void close() {
+            U.releaseQuiet(lock);
+
             U.closeQuiet(lockFile);
         }
 
