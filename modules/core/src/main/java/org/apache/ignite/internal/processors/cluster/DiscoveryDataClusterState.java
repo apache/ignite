@@ -17,18 +17,16 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * A pojo-object representing current cluster global state. The state includes cluster active flag and cluster
@@ -243,10 +241,9 @@ public class DiscoveryDataClusterState implements Serializable {
      * state as transitional and creates a new state with the state transition result.
      *
      * @param success Transition success status.
-     * @param config Ignite configuration.
      * @return Cluster state that finished transition.
      */
-    public DiscoveryDataClusterState finish(boolean success, IgniteConfiguration config) {
+    public DiscoveryDataClusterState finish(boolean success) {
         return success ?
             new DiscoveryDataClusterState(
                 null,
@@ -256,8 +253,7 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 null
             ) :
-            prevState != null ? prevState :
-                    DiscoveryDataClusterState.createState(!CU.isPersistenceEnabled(config) && config.isActiveOnStart(), null);
+            prevState;
     }
 
     /** {@inheritDoc} */
