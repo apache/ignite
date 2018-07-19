@@ -96,7 +96,7 @@ public class IgniteSpiOperationTimeoutHelper {
      */
     public boolean checkFailureTimeoutReached(Exception e) {
         return failureDetectionTimeoutEnabled &&
-            (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class)
+            (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class)
                 || remainingTime(U.currentTimeMillis()) <= 0);
     }
 
