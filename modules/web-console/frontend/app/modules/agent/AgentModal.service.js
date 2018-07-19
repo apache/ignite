@@ -21,6 +21,8 @@ export default class AgentModal {
     static $inject = ['$rootScope', '$state', '$modal', 'IgniteMessages'];
 
     constructor($root, $state, $modal, Messages) {
+        const self = this;
+
         this.$root = $root;
         this.$state = $state;
         this.Messages = Messages;
@@ -31,7 +33,7 @@ export default class AgentModal {
             show: false,
             backdrop: 'static',
             keyboard: false,
-            controller: () => this,
+            controller() { return self;},
             controllerAs: 'ctrl'
         });
 

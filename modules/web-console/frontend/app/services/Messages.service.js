@@ -20,7 +20,7 @@ import isEmpty from 'lodash/isEmpty';
 import {nonEmpty} from 'app/utils/lodashMixins';
 
 // Service to show various information and error messages.
-export default ['IgniteMessages', ['$alert', ($alert) => {
+export default ['IgniteMessages', ['$alert', function($alert) {
     // Common instance of alert modal.
     let msgModal;
 
