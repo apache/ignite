@@ -87,6 +87,7 @@ ENV JVM_METASPACE_SIZE 1g
 # Define additional JVM options for debug purpose
 # As default, it enables remote debug on port 1044.
 ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044"
+ENV JVM_DEBUG_PORT 1044
 
 # Ignite common JVM settings.   Run.sh will concatenate the above settings.
 ENV JVM_OPTS="-server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M"
@@ -173,4 +174,4 @@ ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
 # Set default arguments for ENTRYPOINT
 CMD ["--debug", "--launch", "${IGNITE_HOME}/run.sh &"]
 
-EXPOSE $IGNITE_SERVER_PORT $IGNITE_COMMUNICATION_PORT $IGNITE_DISCOVERY_PORT $IGNITE_JMX_PORT $IGNITE_JDBC_PORT $IGNITE_REST_PORT
+EXPOSE $IGNITE_SERVER_PORT $IGNITE_COMMUNICATION_PORT $IGNITE_DISCOVERY_PORT $IGNITE_JMX_PORT $IGNITE_JDBC_PORT $IGNITE_REST_PORT $JVM_DEBUG_PORT
