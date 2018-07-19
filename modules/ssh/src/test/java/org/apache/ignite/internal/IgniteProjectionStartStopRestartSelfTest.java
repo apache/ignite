@@ -166,6 +166,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
             return true;
         }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        assert ignite.cluster().nodes().isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -186,7 +188,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
             wasEmpty = ignite.cluster().nodes().isEmpty();
         }
 
-        G.stop(true);
+        G.stopAll(true);
 
         joinedCnt.set(0);
         leftCnt.set(0);
