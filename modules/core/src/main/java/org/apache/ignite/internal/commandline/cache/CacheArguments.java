@@ -58,6 +58,9 @@ public class CacheArguments {
     /** Calculate partition hash and print into standard output. */
     private boolean dump;
 
+    /** Skip zeros partitions. */
+    private boolean skipZeros;
+
     /**
      * @return Command.
      */
@@ -210,5 +213,19 @@ public class CacheArguments {
      */
     public void dump(boolean dump) {
         this.dump = dump;
+    }
+
+    /**
+     * @return Skip zeros partitions(size == 0) in result.
+     */
+    public boolean isSkipZeros() {
+        return skipZeros;
+    }
+
+    /**
+     * @param skipZeros Skip zeros partitions.
+     */
+    public void skipZeros(boolean skipZeros) {
+        this.skipZeros = skipZeros;
     }
 }

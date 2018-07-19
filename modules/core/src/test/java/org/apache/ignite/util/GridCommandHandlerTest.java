@@ -947,9 +947,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skipZeros", DEFAULT_CACHE_NAME));
 
-        assertTrue(testOut.toString().contains("found " + parts + " partitions"));
+        assertTrue(testOut.toString().contains("VisorIdleVerifyDumpTask successfully written output to"));
     }
 
     /**
@@ -982,7 +982,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
 
-        assertTrue(testOut.toString().contains("found " + parts + " partitions"));
+        assertTrue(testOut.toString().contains("VisorIdleVerifyDumpTask successfully written output to"));
     }
 
     /**

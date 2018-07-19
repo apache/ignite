@@ -16,45 +16,66 @@
  */
 package org.apache.ignite.internal.processors.cache.verify;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for collection checksums primary and backup partitions of specified caches.
- * <br> Argument: Set of cache names, 'null' will trigger verification for all caches.
- * <br> Result: {@link IdleVerifyDumpResult} with all found partitions.
+ * Task for collection checksums primary and backup partitions of specified caches. <br> Argument: Set of cache names,
+ * 'null' will trigger verification for all caches. <br> Result: {@link IdleVerifyDumpResult} with all found partitions.
  * <br> Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
  */
 @GridInternal
-public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdleVerifyTaskArg, IdleVerifyDumpResult> {
+public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdleVerifyTaskArg, String> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Time formatter for dump file name. */
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /** Delegate for map execution */
     private final VerifyBackupPartitionsTaskV2 delegate = new VerifyBackupPartitionsTaskV2();
 
+    /** */
+    private VisorIdleVerifyDumpTaskArg taskArg;
+
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
+        if (arg instanceof VisorIdleVerifyDumpTaskArg)
+            taskArg = (VisorIdleVerifyDumpTaskArg)arg;
+
         return delegate.map(subgrid, arg);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyDumpResult reduce(List<ComputeJobResult> results)
+    @Nullable @Override public String reduce(List<ComputeJobResult> results)
         throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
@@ -68,17 +89,112 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             }
         }
 
-        Comparator<PartitionHashRecordV2> recordV2Comparator = buildRecordComparator().reversed();
+        Comparator<PartitionHashRecordV2> recordComparator = buildRecordComparator().reversed();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions = new LinkedHashMap<>();
 
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
-            entry.getValue().sort(recordV2Comparator);
+        int skippedRecords = 0;
 
-            partitions.put(entry.getKey(), entry.getValue());
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
+            if (needToAdd(entry.getValue())) {
+                entry.getValue().sort(recordComparator);
+
+                partitions.put(entry.getKey(), entry.getValue());
+            }
+            else
+                skippedRecords++;
         }
 
-        return new IdleVerifyDumpResult(partitions);
+        return writeHashes(partitions, delegate.reduce(results), skippedRecords);
+    }
+
+    /**
+     * Checking conditions for adding given record to result.
+     *
+     * @param records records to check.
+     * @return {@code true} if this records should be add to result and {@code false} otherwise.
+     */
+    private boolean needToAdd(List<PartitionHashRecordV2> records) {
+        if (records.isEmpty() || (taskArg != null && !taskArg.isSkipZeros()))
+            return true;
+
+        PartitionHashRecordV2 record = records.get(0);
+
+        if (record.updateCounter() != 0 || record.size() != 0)
+            return true;
+
+        int firstHash = record.partitionHash();
+
+        for (int i = 1; i < records.size(); i++) {
+            record = records.get(i);
+
+            if (record.partitionHash() != firstHash || record.updateCounter() != 0 || record.size() != 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param partitions Dump result.
+     * @return Path where results are written.
+     * @throws IgniteException If failed to write the file.
+     */
+    private String writeHashes(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
+        IdleVerifyResultV2 conflictRes,
+        int skippedRecords
+    ) throws IgniteException {
+        File workDir = ignite.configuration().getWorkDirectory() == null
+            ? new File("/tmp")
+            : new File(ignite.configuration().getWorkDirectory());
+
+        File out = new File(workDir, "idle-dump-" + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
+
+        ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(out))) {
+            try {
+
+                writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
+
+                if (skippedRecords > 0)
+                    writer.write(skippedRecords + " partitions was skipped\n");
+
+                if (!F.isEmpty(partitions)) {
+                    writer.write("Cluster partitions:\n");
+
+                    for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : partitions.entrySet()) {
+                        writer.write("Partition: " + entry.getKey() + "\n");
+
+                        writer.write("Partition instances: " + entry.getValue() + "\n");
+                    }
+
+                    writer.write("\n\n-----------------------------------\n\n");
+
+                    conflictRes.print(str -> {
+                        try {
+                            writer.write(str);
+                        }
+                        catch (IOException e) {
+                            throw new IgniteException("Failed to write partitions conflict.", e);
+                        }
+                    });
+                }
+            }
+            finally {
+                writer.flush();
+            }
+
+            ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
+        }
+        catch (IOException | IgniteException e) {
+            ignite.log().error("Failed to write dump file: " + out.getAbsolutePath(), e);
+
+            throw new IgniteException(e);
+        }
+
+        return out.getAbsolutePath();
     }
 
     /**
