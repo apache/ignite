@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+import ssl
+
 import pytest
 
 from pyignite.connection import Connection
@@ -23,9 +26,35 @@ IGNITE_DEFAULT_HOST = 'localhost'
 IGNITE_DEFAULT_PORT = 10800
 
 
+class CertReqsParser(argparse.Action):
+    conv_map = {
+        'NONE': ssl.CERT_NONE,
+        'OPTIONAL': ssl.CERT_OPTIONAL,
+        'REQUIRED': ssl.CERT_REQUIRED,
+    }
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        value = values[-1].upper()
+        if value in self.conv_map:
+            setattr(namespace, self.dest, self.conv_map[value])
+        else:
+            raise ValueError(
+                'Undefined argument: --ssl-cert-reqs {}'.format(value)
+            )
+
+
 @pytest.fixture(scope='module')
-def conn(ignite_host, ignite_port):
-    conn = Connection()
+def conn(
+    ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
+    ssl_ca_certfile, ssl_cert_reqs,
+):
+    conn = Connection(
+        use_ssl=use_ssl,
+        ssl_keyfile=ssl_keyfile,
+        ssl_certfile=ssl_certfile,
+        ssl_ca_certfile=ssl_ca_certfile,
+        ssl_cert_reqs=ssl_cert_reqs,
+    )
     conn.connect(ignite_host, ignite_port)
     yield conn
     for cache_name in cache_get_names(conn).value:
@@ -55,18 +84,63 @@ def pytest_addoption(parser):
         type=int,
         help='Ignite binary protocol test server port (default: 10800)'
     )
+    parser.addoption(
+        '--use-ssl',
+        action='store_true',
+        default=False,
+        help='Use SSL encryption'
+    )
+    parser.addoption(
+        '--ssl-keyfile',
+        action='store',
+        default=None,
+        type=str,
+        help='a path to SSL key file to identify local party'
+    )
+    parser.addoption(
+        '--ssl-certfile',
+        action='store',
+        default=None,
+        type=str,
+        help='a path to ssl certificate file to identify local party'
+    )
+    parser.addoption(
+        '--ssl-ca-certfile',
+        action='store',
+        default=None,
+        type=str,
+        help='a path to a trusted certificate or a certificate chain'
+    )
+    parser.addoption(
+        '--ssl-cert-reqs',
+        action=CertReqsParser,
+        default=ssl.CERT_NONE,
+        help=(
+            'determines how the remote side certificate is treated: '
+            'NONE (ignore, default), '
+            'OPTIONAL (validate, if provided) or '
+            'REQUIRED (valid remote certificate is required)'
+        )
+    )
 
 
 def pytest_generate_tests(metafunc):
-    if 'ignite_host' in metafunc.fixturenames:
-        metafunc.parametrize(
-            'ignite_host',
-            metafunc.config.getoption('ignite_host') or [IGNITE_DEFAULT_HOST],
-            scope='session'
-        )
-    if 'ignite_port' in metafunc.fixturenames:
-        metafunc.parametrize(
-            'ignite_port',
-            metafunc.config.getoption('ignite_port') or [IGNITE_DEFAULT_PORT],
-            scope='session'
-        )
+    session_parameters = {
+        'ignite_host': IGNITE_DEFAULT_HOST,
+        'ignite_port': IGNITE_DEFAULT_PORT,
+        'use_ssl': False,
+        'ssl_keyfile': None,
+        'ssl_certfile': None,
+        'ssl_ca_certfile': None,
+        'ssl_cert_reqs': ssl.CERT_NONE,
+    }
+
+    for param_name in session_parameters:
+        if param_name in metafunc.fixturenames:
+            param = (
+                metafunc.config.getoption(param_name)
+                or session_parameters[param_name]
+            )
+            if type(param) is not list:
+                param = [param]
+            metafunc.parametrize(param_name, param, scope='session')

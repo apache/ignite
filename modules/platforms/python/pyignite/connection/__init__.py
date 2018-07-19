@@ -41,9 +41,10 @@ class Connection:
             'use_ssl',
             'ssl_version',
             'ssl_ciphers',
-            'ssl_cert_requires',
+            'ssl_cert_reqs',
             'ssl_keyfile',
             'ssl_certfile',
+            'ssl_ca_certfile',
         ]
         for kw in kwargs:
             if kw not in expected_args:
@@ -65,7 +66,7 @@ class Connection:
          `ssl` module. Defaults to TLS v1.1, as in Ignite 2.5,
         :param ssl_ciphers: (optional) ciphers to use. If not provided,
          `ssl` default ciphers are used,
-        :param ssl_cert_requires: (optional) determines how the remote side
+        :param ssl_cert_reqs: (optional) determines how the remote side
          certificate is treated:
 
          * `ssl.CERT_NONE` − remote certificate is ignored (default),
@@ -74,27 +75,37 @@ class Connection:
          * `ssl.CERT_REQUIRED` − valid remote certificate is required,
 
         :param ssl_keyfile: (optional) a path to SSL key file to identify
-         local party,
+         local (client) party,
         :param ssl_certfile: (optional) a path to ssl certificate file
-         to identify local party.
+         to identify local (client) party,
+        :param ssl_ca_certfile: (optional) a path to a trusted certificate
+         or a certificate chain. Required to check the validity of the remote
+         (server-side) certificate.
         """
         self.check_kwargs(kwargs)
         self.init_kwargs = kwargs
 
-        _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    read_response = read_response
 
-        if getattr(kwargs, 'use_ssl', None):
+    def _wrap(self, _socket):
+        """ Wrap socket in SSL wrapper. """
+        if self.init_kwargs.get('use_ssl', None):
             _socket = ssl.wrap_socket(
                 _socket,
-                ssl_version=getattr(kwargs, 'ssl_version', SSL_DEFAULT_VERSION),
-                ciphers=getattr(kwargs, 'ssl_ciphers', SSL_DEFAULT_CIPHERS),
-                cert_reqs=getattr(kwargs, 'ssl_cert_requires', ssl.CERT_NONE),
-                keyfile=getattr(kwargs, 'ssl_keyfile', None),
-                certfile=getattr(kwargs, 'ssl_certfile', None),
+                ssl_version=self.init_kwargs.get(
+                    'ssl_version', SSL_DEFAULT_VERSION
+                ),
+                ciphers=self.init_kwargs.get(
+                    'ssl_ciphers', SSL_DEFAULT_CIPHERS
+                ),
+                cert_reqs=self.init_kwargs.get(
+                    'ssl_cert_reqs', ssl.CERT_NONE
+                ),
+                keyfile=self.init_kwargs.get('ssl_keyfile', None),
+                certfile=self.init_kwargs.get('ssl_certfile', None),
+                ca_certs=self.init_kwargs.get('ssl_ca_certfile', None),
             )
-        self.socket = _socket
-
-    read_response = read_response
+        return _socket
 
     def connect(self, host: str, port: int):
         """
@@ -103,7 +114,10 @@ class Connection:
         :param host: Ignite server host,
         :param port: Ignite server port.
         """
-        if self.socket is not None:
+        if self.socket is None:
+            self.socket = self._wrap(
+                socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            )
             self.socket.connect((host, port))
 
         hs_request = HandshakeRequest()
@@ -200,7 +214,7 @@ class Connection:
         sockets are automatically closed when they are garbage-collected.
         """
         self.socket.close()
-        self.host = self.port = None
+        self.socket = self.host = self.port = None
 
 
 class BufferedConnection(Connection):

@@ -281,6 +281,75 @@ Now read the row using an SQL function.
   :language: python
   :lines: 118-134
 
+SSL/TLS
+-------
+
+There are some special requirements for testing SSL connectivity.
+
+The Ignite server must be configured for securing the binary protocol port.
+The server configuration process can be split up into these basic steps:
+
+1. Create a key store and a trust store using `Java keytool`_. When creating
+   the trust store, you will probably need a client public key, which we'll
+   talk of lately.
+
+2. Turn on the `SslContextFactory` for your Ignite cluster according to this
+   document: `Securing Connection Between Nodes`_.
+
+3. Tell Ignite to encrypt data on its thin client port, using the settings for
+   `ClientConnectorConfiguration`_. If you only want to encrypt connection,
+   not to validate client's certificate, set `sslClientAuth` property to
+   `false`. You'll still have to set up the trust store on step 1 though.
+
+Client SSL settings is summarized here:
+:class:`~pyignite.connection.Connection`.
+
+To use the SSL encryption without certificate validation just `use_ssl`.
+
+.. code-block:: python3
+
+    from pyignite.connection import Connection
+
+    conn = Connection(use_ssl=True)
+    conn.connect('127.0.0.1', 10800)
+
+To identify the client, create an SSL keypair and a certificate with `openssl`
+command and use it in this manner:
+
+.. code-block:: python3
+
+    from pyignite.connection import Connection
+
+    conn = Connection(
+        use_ssl=True,
+        ssl_keyfile='etc/.ssl/keyfile.key',
+        ssl_certfile='etc/.ssl/certfile.crt',
+    )
+    conn.connect('ignite-example.com', 10800)
+
+To check the authenticity of the server, get the server certificate or
+certificate chain and provide its path in the `ssl_ca_certfile` parameter.
+
+.. code-block:: python3
+
+    import ssl
+
+    from pyignite.connection import Connection
+
+    conn = Connection(
+        use_ssl=True,
+        ssl_ca_certfile='etc/.ssl/ca_certs',
+        ssl_cert_reqs=ssl.CERT_REQUIRED,
+    )
+    conn.connect('ignite-example.com', 10800)
+
+You can also provide such parameters as the set of ciphers (`ssl_ciphers`) and
+the SSL version (`ssl_version`), if the defaults
+(:py:obj:`ssl._DEFAULT_CIPHERS` and TLS 1.1) do not suit you.
+
 .. _Getting Started: https://apacheignite-sql.readme.io/docs/getting-started
 .. _Ignite GitHub repository: https://github.com/apache/ignite/blob/master/examples/sql/world.sql
 .. _Complex object: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-complex-object
+.. _Java keytool: https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html
+.. _Securing Connection Between Nodes: https://apacheignite.readme.io/docs/ssltls#section-securing-connection-between-nodes
+.. _ClientConnectorConfiguration: https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/configuration/ClientConnectorConfiguration.html
