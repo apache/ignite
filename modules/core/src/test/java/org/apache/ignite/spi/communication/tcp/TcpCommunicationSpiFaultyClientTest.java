@@ -164,7 +164,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         maxConnectTimeout = 6000;
         reconnectCnt = 3;
 
-        testFailClient(null, computeExpectedDelay());
+        testFailClient(null, connectTimeout);
     }
 
     /**
