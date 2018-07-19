@@ -364,7 +364,7 @@ class GridDeploymentCommunication {
      * Sends request to the remote node and wait for response. If there is
      * no response until threshold time, method returns null.  The receiver
      * may forward the request to other nodes, but not to nodes that have been
-     * searched already, or nodes we intend to search directly.
+     * searched already, or nodes we intend to search directly. 
      *
      * The exclusion list severely weakens the potential n-squared behavior when a 
      * resource does not exist. If the resource does not exist, all nodes 
@@ -375,8 +375,9 @@ class GridDeploymentCommunication {
      *
      * @param rsrcName Resource name.
      * @param clsLdrId Class loader ID.
-     * @param dstNode Remote node request should be sent to. The caller must
-     *      avoid sending to a node on the exclusion list
+     * @param dstNode Remote node request should be sent to. 
+     *        {@linkplain GridDeploymentCommunication.nodeOnRecursionExclusionList 
+     *        nodeOnRecursionExclusionList(dstNode) must be false.}
      * @param threshold Time in milliseconds when request is decided to
      *      be obsolete.
      * @param exclusionList - Nodes to avoid recursively searching, in addition to 
@@ -386,7 +387,6 @@ class GridDeploymentCommunication {
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      * 
-     * @pre dstNode must not be this threads prior recursion exclusion list
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
