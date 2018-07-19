@@ -24,6 +24,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -103,17 +104,17 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private DecisionTreeNode split(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter filter, int deep,
         ImpurityMeasureCalculator<T> impurityCalc) {
         if (deep >= maxDeep)
-            return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
+            return createLeafNode(dataset, filter);
 
         StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
 
         if (criterionFunctions == null)
-            return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
+            return createLeafNode(dataset, filter);
 
         SplitPoint splitPnt = calculateBestSplitPoint(criterionFunctions);
 
         if (splitPnt == null)
-            return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
+            return createLeafNode(dataset, filter);
 
         return new DecisionTreeConditionalNode(
             splitPnt.col,
@@ -121,6 +122,14 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc),
             split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc)
         );
+    }
+
+    private DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter filter) {
+        long startTs = System.currentTimeMillis();
+        DecisionTreeLeafNode node = decisionTreeLeafBuilder.createLeafNode(dataset, filter);
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH,
+            "Create leaf node time: %d ms", System.currentTimeMillis() - startTs);
+        return node;
     }
 
     /**
@@ -133,7 +142,9 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      */
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
-        return dataset.compute(
+
+        long startTs = System.currentTimeMillis();
+        StepFunction<T>[] result = dataset.compute(
             part -> {
                 if (compressor != null)
                     return compressor.compress(impurityCalc.calculate(part.filter(filter)));
@@ -141,6 +152,10 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
                     return impurityCalc.calculate(part.filter(filter));
             }, this::reduce
         );
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH,
+            "Calculate impurity for all columns time: %d ms", System.currentTimeMillis() - startTs);
+
+        return result;
     }
 
     /**
@@ -152,6 +167,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private SplitPoint calculateBestSplitPoint(StepFunction<T>[] criterionFunctions) {
         SplitPoint<T> res = null;
 
+        long startTs = System.currentTimeMillis();
         for (int col = 0; col < criterionFunctions.length; col++) {
             StepFunction<T> criterionFunctionForCol = criterionFunctions[col];
 
@@ -165,6 +181,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             }
         }
 
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH,
+            "Calculate best split point time: %d ms", System.currentTimeMillis() - startTs);
         return res;
     }
 
@@ -261,7 +279,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      */
     public static String printTree(DecisionTreeNode node, boolean pretty) {
         StringBuilder builder = new StringBuilder();
-        printTree(node, 0, builder, pretty);
+        printTree(node, 0, builder, pretty, false);
         return builder.toString();
     }
 
@@ -273,23 +291,24 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param builder String builder.
      * @param pretty Use pretty mode.
      */
-    private static void printTree(DecisionTreeNode node, int depth, StringBuilder builder, boolean pretty) {
+    private static void printTree(DecisionTreeNode node, int depth, StringBuilder builder, boolean pretty, boolean isThen) {
         builder.append(pretty ? String.join("", Collections.nCopies(depth, "\t")) : "");
         if (node instanceof DecisionTreeLeafNode) {
             DecisionTreeLeafNode leaf = (DecisionTreeLeafNode)node;
-            builder.append(pretty ? "" : " ").append("leaf [").append(String.format("%.4f", leaf.getVal())).append("]");
+            builder.append(String.format("%s return ", isThen ? "then" : "else"))
+                .append(String.format("%.4f", leaf.getVal()));
         }
         else if (node instanceof DecisionTreeConditionalNode) {
             DecisionTreeConditionalNode condition = (DecisionTreeConditionalNode)node;
-            builder.append(pretty ? "" : " (").append("cond [x")
+            String prefix = depth == 0 ? "" : (isThen ? "then " : "else ");
+            builder.append(String.format("%sif (x", prefix))
                 .append(condition.getCol())
                 .append(" > ")
                 .append(String.format("%.4f", condition.getThreshold()))
-                .append(pretty ? "]\n" : "]");
-            printTree(condition.getThenNode(), depth + 1, builder, pretty);
-            builder.append(pretty ? "\n" : ", ");
-            printTree(condition.getElseNode(), depth + 1, builder, pretty);
-            builder.append(pretty ? "" : ")");
+                .append(pretty ? ")\n" : ") ");
+            printTree(condition.getThenNode(), depth + 1, builder, pretty, true);
+            builder.append(pretty ? "\n" : " ");
+            printTree(condition.getElseNode(), depth + 1, builder, pretty, false);
         }
         else
             throw new IllegalArgumentException();

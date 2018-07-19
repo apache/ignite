@@ -24,6 +24,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * This class provides kNN Multiple Linear Regression or Locally [weighted] regression (Simple and Weighted versions).
@@ -94,10 +95,10 @@ public class KNNRegressionModel extends KNNClassificationModel {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return new StringBuilder("KNNRegressionModel [")
-            .append("k = ").append(k).append(", ")
-            .append("measure = ").append(distanceMeasure.getClass().getSimpleName()).append(", ")
-            .append("strategy = ").append(stgy).append("]")
+        return ModelTrace.builder("KNNClassificationModel", pretty)
+            .addField("k", String.valueOf(k))
+            .addField("measure", distanceMeasure.getClass().getSimpleName())
+            .addField("strategy", stgy.name())
             .toString();
     }
 }

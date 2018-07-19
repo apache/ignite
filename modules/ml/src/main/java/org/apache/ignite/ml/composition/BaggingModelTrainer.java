@@ -33,6 +33,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
@@ -92,24 +93,21 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         MLLogger log = environment.logger(getClass());
-        log.log(MLLogger.VerboseLevel.MIN, "Start learning");
+        log.log(MLLogger.VerboseLevel.LOW, "Start learning");
 
         Long startTs = System.currentTimeMillis();
-        List<Promise<ModelOnFeaturesSubspace>> learnedModelsF = new ArrayList<>();
-        for (int i = 0; i < ensembleSize; i++) {
-            learnedModelsF.add(environment.parallelismStrategy().submit(() ->
-                learnModel(datasetBuilder, featureExtractor, lbExtractor)
-            ));
-        }
 
-        List<Model<Vector, Double>> models = learnedModelsF.stream()
-            .map(Promise::unsafeGet)
-            .peek(model -> log.log(MLLogger.VerboseLevel.MAX, model))
+        List<IgniteSupplier<ModelOnFeaturesSubspace>> tasks = new ArrayList<>();
+        for(int i = 0; i < ensembleSize; i++)
+            tasks.add(() -> learnModel(datasetBuilder, featureExtractor, lbExtractor));
+
+        List<Model<Vector, Double>> models = environment.parallelismStrategy().submit(tasks)
+            .stream().map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
         double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-        log.log(MLLogger.VerboseLevel.MID, "The training time was %.2fs", learningTime);
-        log.log(MLLogger.VerboseLevel.MIN, "Learning finished");
+        log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
+        log.log(MLLogger.VerboseLevel.LOW, "Learning finished");
         return new ModelsComposition(models, predictionsAggregator);
     }
 
@@ -131,10 +129,13 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
+        Long startTs = System.currentTimeMillis();
         Model<Vector, Double> mdl = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, "One model training time was %.2fs", learningTime);
 
         return new ModelOnFeaturesSubspace(featuresMapping, mdl);
     }

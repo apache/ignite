@@ -44,42 +44,42 @@ public class DefaultParallelismStrategy implements ParallelismStrategy {
      * @param <T>
      */
     public static class FutureWrapper<T> implements Promise<T> {
-        private final Future<T> fut;
+        private final Future<T> f;
 
         /**
          * Create an instance of FutureWrapper.
          *
-         * @param fut Future.
+         * @param f Future.
          */
-        public FutureWrapper(Future<T> fut) {
-            this.fut = fut;
+        public FutureWrapper(Future<T> f) {
+            this.f = f;
         }
 
         /** {@inheritDoc} */
         @Override public boolean cancel(boolean mayInterruptIfRunning) {
-            return fut.cancel(mayInterruptIfRunning);
+            return f.cancel(mayInterruptIfRunning);
         }
 
         /** {@inheritDoc} */
         @Override public boolean isCancelled() {
-            return fut.isCancelled();
+            return f.isCancelled();
         }
 
         /** {@inheritDoc} */
         @Override public boolean isDone() {
-            return fut.isDone();
+            return f.isDone();
         }
 
         /** {@inheritDoc} */
         @Override public T get() throws InterruptedException, ExecutionException {
-            return fut.get();
+            return f.get();
         }
 
         /** {@inheritDoc} */
         @Override public T get(long timeout,
             @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
 
-            return fut.get(timeout, unit);
+            return f.get(timeout, unit);
         }
     }
 }

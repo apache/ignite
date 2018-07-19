@@ -19,10 +19,10 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * Model consisting of several models and prediction aggregation strategy.
@@ -84,10 +84,9 @@ public class ModelsComposition implements Model<Vector, Double> {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return new StringBuilder("ModelsComposition [").append(pretty ? "\n\t" : "")
-            .append("aggregator = ").append(predictionsAggregator.toString(pretty)).append(pretty ? "\n\t" : ", ")
-            .append("models = [").append(pretty ? "\n\t\t" : "")
-            .append(models.stream().map(x -> x.toString(false)).collect(Collectors.joining(pretty ? "\n\t\t" : ", ")))
-            .append(pretty ? "\n\t]\n]" : "]]").toString();
+        return ModelTrace.builder("Models composition", pretty)
+            .addField("aggregator", predictionsAggregator.toString(pretty))
+            .addField("models", models)
+            .toString();
     }
 }

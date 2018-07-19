@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.environment.parallelism;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
@@ -35,4 +37,11 @@ public interface ParallelismStrategy {
      * @param task Task.
      */
     public <T> Promise<T> submit(IgniteSupplier<T> task);
+
+    public default <T> List<Promise<T>> submit(List<IgniteSupplier<T>> tasks) {
+        List<Promise<T>> results = new ArrayList<>();
+        for(IgniteSupplier<T> task : tasks)
+            results.add(submit(task));
+        return results;
+    }
 }

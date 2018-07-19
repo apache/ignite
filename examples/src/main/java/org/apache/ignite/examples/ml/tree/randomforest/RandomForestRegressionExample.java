@@ -65,7 +65,7 @@ public class RandomForestRegressionExample {
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
                 trainer.setEnvironment(LearningEnvironment.builder()
                     .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.MID))
+                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
                     .build()
                 );
 

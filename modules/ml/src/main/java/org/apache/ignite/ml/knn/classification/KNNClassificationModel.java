@@ -38,6 +38,7 @@ import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.ModelTrace;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -278,10 +279,10 @@ public class KNNClassificationModel implements Model<Vector, Double>, Exportable
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return new StringBuilder("KNNClassificationModel [")
-            .append("k = ").append(k).append(", ")
-            .append("measure = ").append(distanceMeasure.getClass().getSimpleName()).append(", ")
-            .append("strategy = ").append(stgy).append("]")
+        return ModelTrace.builder("KNNClassificationModel", pretty)
+            .addField("k", String.valueOf(k))
+            .addField("measure", distanceMeasure.getClass().getSimpleName())
+            .addField("strategy", stgy.name())
             .toString();
     }
 }

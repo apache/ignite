@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
@@ -74,7 +75,6 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
         return mdl;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return toString(false);
@@ -82,18 +82,13 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        StringBuilder builder = new StringBuilder();
-
-        final String POSTFIX = pretty ? "\n" : "";
-        builder.append("ModelOnFeatureSubspace [").append(POSTFIX)
-            .append(pretty ? "\t" : "").append("model = ").append(mdl.toString(false)).append(POSTFIX)
-            .append(pretty ? "\t" : ", ").append("features mapping = ");
-
         String mappingStr = featuresMapping.entrySet().stream()
             .map(e -> String.format("%d -> %d", e.getKey(), e.getValue()))
             .collect(Collectors.joining(", ", "{", "}"));
 
-        builder.append(mappingStr).append(POSTFIX).append("]");
-        return builder.toString();
+        return ModelTrace.builder("ModelOnFeatureSubspace", pretty)
+            .addField("features mapping", mappingStr)
+            .addField("model", mdl.toString(false))
+            .toString();
     }
 }

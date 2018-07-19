@@ -25,16 +25,16 @@ import org.apache.ignite.ml.math.Vector;
 /**
  * MLLogger implementation based on IgniteLogger.
  */
-public class OnIgniteMLLogger implements MLLogger {
+public class CustomMLLogger implements MLLogger {
     /** Ignite logger instance. */
     private final IgniteLogger logger;
 
     /**
-     * Creates an instance of OnIgniteMLLogger.
+     * Creates an instance of CustomMLLogger.
      *
      * @param logger Basic Logger.
      */
-    private OnIgniteMLLogger(IgniteLogger logger) {
+    private CustomMLLogger(IgniteLogger logger) {
         this.logger = logger;
     }
 
@@ -72,20 +72,17 @@ public class OnIgniteMLLogger implements MLLogger {
      */
     private void log(VerboseLevel verboseLevel, String line) {
         switch (verboseLevel) {
-            case MIN:
+            case LOW:
                 logger.info(line);
                 break;
-            case MID:
+            case HIGH:
                 logger.debug(line);
-                break;
-            case MAX:
-                logger.trace(line);
                 break;
         }
     }
 
     /**
-     * OnIgniteMLLogger factory.
+     * CustomMLLogger factory.
      */
     private static class Factory implements MLLogger.Factory {
         /** Root logger. */
@@ -102,7 +99,7 @@ public class OnIgniteMLLogger implements MLLogger {
 
         /** {@inheritDoc} */
         @Override public <T> MLLogger create(Class<T> targetCls) {
-            return new OnIgniteMLLogger(rootLogger.getLogger(targetCls));
+            return new CustomMLLogger(rootLogger.getLogger(targetCls));
         }
     }
 }

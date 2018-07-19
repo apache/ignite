@@ -18,11 +18,14 @@
 package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * This class encapsulates result of clusterization by KMeans algorithm.
@@ -118,34 +121,12 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         String measureName = distanceMeasure.getClass().getSimpleName();
-        final String ENDING = pretty ? "\n" : "";
-        final String PREFIX = pretty ? "\t" : "";
+        List<String> centersList = Arrays.stream(centers).map(x -> Tracer.asAscii(x, "%.4f", false))
+            .collect(Collectors.toList());
 
-        StringBuilder builder = new StringBuilder("KMeansModel [").append(ENDING)
-            .append(PREFIX).append("distance measure = ").append(measureName).append(pretty ? "\n" : ", ")
-            .append(PREFIX).append("centroids = [").append(ENDING);
-
-        for (int i = 0; i < centers.length; i++) {
-            Vector v = centers[i];
-            boolean isLast = i == centers.length - 1;
-
-            final String DOUBLE_PREFIX = pretty ? "\t\t" : "";
-            final String DELIM = isLast ? "" : ", ";
-            if (centers.length <= 20) {
-                builder.append(DOUBLE_PREFIX)
-                    .append(Tracer.asAscii(v, "%.4f", false))
-                    .append(DELIM)
-                    .append(ENDING);
-            }
-            else {
-                builder.append(DOUBLE_PREFIX)
-                    .append(v.getClass().getSimpleName())
-                    .append(DELIM)
-                    .append(ENDING);
-            }
-        }
-
-        builder.append(PREFIX).append("]").append(ENDING).append("]");
-        return builder.toString();
+        return ModelTrace.builder("KMeansModel", pretty)
+            .addField("distance measure", measureName)
+            .addField("centroids", centersList)
+            .toString();
     }
 }
