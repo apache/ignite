@@ -3503,7 +3503,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         break;
                     }
-                    else if (isRecoverableException(errs)) {
+                    else if (isRecoverableException(e)) {
                         connTimeout0 *= 2;
 
                         LT.warn(log, "Connect timed out (will retry with increased connTimeout " +
