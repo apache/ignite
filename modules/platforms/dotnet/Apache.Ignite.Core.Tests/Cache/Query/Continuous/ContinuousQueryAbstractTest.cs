@@ -948,7 +948,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             if (!e.HasOldValue)
                 return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
 
-            if (e.Key.Equals(e.OldValue))
+            if (e.Value.Equals(e.OldValue))
                 return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
 
             return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
