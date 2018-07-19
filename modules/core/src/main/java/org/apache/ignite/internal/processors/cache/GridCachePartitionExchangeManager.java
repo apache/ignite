@@ -46,7 +46,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -493,6 +492,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 else if (msg.exchangeId().topologyVersion().topologyVersion() >= cctx.discovery().localJoinEvent().topologyVersion())
                     exchangeFuture(msg.exchangeId(), null, null, null, null)
                         .onAffinityChangeMessage(evt.eventNode(), msg);
+            }
+            else if (customMsg instanceof DynamicCacheChangeFailureMessage) {
+                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage) customMsg;
+
+                if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                    affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                    exchangeFuture(msg.exchangeId(), null, null, null, null)
+                        .onDynamicCacheChangeFail(evt.eventNode(), msg);
             }
             else if (customMsg instanceof SnapshotDiscoveryMessage
                 && ((SnapshotDiscoveryMessage) customMsg).needExchange()) {
@@ -2485,17 +2492,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int dumpCnt = 0;
 
-                            IgniteConfiguration cfg = cctx.gridConfig();
-
-                            long rollbackTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
                             final long dumpTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
 
                             long nextDumpTime = 0;
 
                             while (true) {
                                 try {
-                                    resVer = exchFut.get(rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout);
+                                    resVer = exchFut.get(dumpTimeout);
 
                                     break;
                                 }
@@ -2504,7 +2507,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
-                                            (rollbackTimeout == 0 ? "Consider changing TransactionConfiguration.txTimeoutOnPartitionMapSynchronization to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 
                                         try {
@@ -2515,12 +2517,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         }
 
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
-                                    }
-
-                                    if (rollbackTimeout > 0) {
-                                        rollbackTimeout = 0; // Try automatic rollback only once.
-
-                                        cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());
                                     }
                                 }
                                 catch (Exception e) {
