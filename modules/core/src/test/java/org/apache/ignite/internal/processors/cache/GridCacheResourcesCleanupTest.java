@@ -19,20 +19,17 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Closeable;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
-import javax.cache.event.CacheEntryListenerException;
 import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriter;
-import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.eviction.EvictableEntry;
@@ -43,9 +40,9 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,17 +76,17 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
 
     /** */
     public void testCacheWriterCleanup() throws Exception {
-        testResourcesCleanup(cfg().setCacheWriterFactory(factoryOf(new CloseableCacheWriter<>())).setWriteThrough(true));
+        checkResourcesCleanup(cfg().setCacheWriterFactory(factoryOf(new CloseableCacheWriter<>())).setWriteThrough(true));
     }
 
     /** */
     public void testCacheLoaderCleanup() throws Exception {
-        testResourcesCleanup(cfg().setCacheLoaderFactory(factoryOf(new CloseableCacheLoader<>())));
+        checkResourcesCleanup(cfg().setCacheLoaderFactory(factoryOf(new CloseableCacheLoader<>())));
     }
 
     /** */
     public void testCacheStoreCleanup() throws Exception {
-        testResourcesCleanup(cfg().setCacheStoreFactory(factoryOf(new CloseableCacheStore<>())));
+        checkResourcesCleanup(cfg().setCacheStoreFactory(factoryOf(new CloseableCacheStore<>())));
     }
 
     /** */
@@ -97,19 +94,19 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
         CloseableCacheStoreSessionListener lsnr1 = new CloseableCacheStoreSessionListener();
         CloseableCacheStoreSessionListener lsnr2 = new CloseableCacheStoreSessionListener();
 
-        testResourcesCleanup(cfg().setCacheStoreSessionListenerFactories(factoryOf(lsnr1), factoryOf(lsnr2)));
+        checkResourcesCleanup(cfg().setCacheStoreSessionListenerFactories(factoryOf(lsnr1), factoryOf(lsnr2)));
     }
 
     /** */
     public void testEvictPolicyCleanup() throws Exception {
-        testResourcesCleanup(cfg().setEvictionPolicyFactory(factoryOf(new CloseableEvictionPolicy<>()))
+        checkResourcesCleanup(cfg().setEvictionPolicyFactory(factoryOf(new CloseableEvictionPolicy<>()))
             .setOnheapCacheEnabled(true));
     }
 
 
     /** */
     public void testContinuousQueryRemoteFilterCleanupWithCursor() throws Exception {
-        testResourcesCleanup(cfg(), new IgniteInClosure<IgniteCache<Integer, String>>() {
+        checkResourcesCleanup(cfg(), new CI1<IgniteCache<Integer, String>>() {
             @Override public void apply(IgniteCache<Integer, String> cache) {
                 ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
 
@@ -131,7 +128,7 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
 
     /** */
     public void testContinuousQueryRemoteFilterCleanup() throws Exception {
-        testResourcesCleanup(cfg(), new IgniteInClosure<IgniteCache<Integer, String>>() {
+        checkResourcesCleanup(cfg(), new CI1<IgniteCache<Integer, String>>() {
             @Override public void apply(IgniteCache<Integer, String> cache) {
                 ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
 
@@ -147,11 +144,19 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
         });
     }
 
+    /** */
+    public void testJCacheQueryListenerCleanup() throws Exception {
+        MutableCacheEntryListenerConfiguration<Integer, String> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
+            factoryOf(new CloseableCacheEntryListener<>()), null, true, true);
+
+        checkResourcesCleanup((CacheConfiguration<Integer, String>)cfg().addCacheEntryListenerConfiguration(lsnrCfg));
+    }
+
     /**
      * @param ccfg Cache configuration.
      */
-    private void testResourcesCleanup(CacheConfiguration<Integer, String> ccfg) throws InterruptedException {
-        testResourcesCleanup(ccfg, new IgniteInClosure<IgniteCache<Integer, String>>() {
+    private void checkResourcesCleanup(CacheConfiguration<Integer, String> ccfg) throws InterruptedException {
+        checkResourcesCleanup(ccfg, new CI1<IgniteCache<Integer, String>>() {
             @Override public void apply(IgniteCache<Integer, String> cache) {
                 cache.put(1, "1");
                 cache.put(2, "2");
@@ -162,7 +167,7 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     /**
      * @param ccfg Cache configuration.
      */
-    private <K, V> void testResourcesCleanup(CacheConfiguration<K, V> ccfg, IgniteInClosure<IgniteCache<K, V>> c)
+    private <K, V> void checkResourcesCleanup(CacheConfiguration<K, V> ccfg, CI1<IgniteCache<K, V>> c)
         throws InterruptedException {
         assertEquals(0, refs.size());
 
@@ -181,7 +186,6 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
         for (CloseableResource obj : refs)
             assertTrue("Was not closed: " + obj, obj.closed());
     }
-
 
     /** */
     private <T extends CloseableResource> Factory<T> factoryOf(T obj) {
@@ -239,22 +243,22 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     /** */
     private static class CloseableCacheWriter<K, V> extends CloseableResource implements CacheWriter<K, V> {
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry entry) throws CacheWriterException {
+        @Override public void write(Cache.Entry entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void delete(Object key) throws CacheWriterException {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void deleteAll(Collection keys) throws CacheWriterException {
+        @Override public void deleteAll(Collection keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection coll) throws CacheWriterException {
+        @Override public void writeAll(Collection coll) {
             // No-op.
         }
     }
@@ -262,12 +266,12 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     /** */
     private static class CloseableCacheLoader<k, V> extends CloseableResource implements CacheLoader<k, V> {
         /** {@inheritDoc} */
-        @Override public V load(k key) throws CacheLoaderException {
+        @Override public V load(k key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<k, V> loadAll(Iterable<? extends k> keys) throws CacheLoaderException {
+        @Override public Map<k, V> loadAll(Iterable<? extends k> keys) {
             return null;
         }
     }
@@ -283,43 +287,43 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     /** */
     private static class CloseableCacheStore<k, V> extends CloseableResource implements CacheStore<k, V> {
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<k, V> clo, @Nullable Object... args) throws CacheLoaderException {
+        @Override public void loadCache(IgniteBiInClosure<k, V> clo, @Nullable Object... args) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public V load(k key) throws CacheLoaderException {
+        @Override public V load(k key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<k, V> loadAll(Iterable<? extends k> keys) throws CacheLoaderException {
+        @Override public Map<k, V> loadAll(Iterable<? extends k> keys) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends k, ? extends V> entry) throws CacheWriterException {
+        @Override public void write(Cache.Entry<? extends k, ? extends V> entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void writeAll(
-            Collection<Cache.Entry<? extends k, ? extends V>> entries) throws CacheWriterException {
+            Collection<Cache.Entry<? extends k, ? extends V>> entries) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void delete(Object key) throws CacheWriterException {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
+        @Override public void deleteAll(Collection<?> keys) {
             // No-op.
         }
     }
@@ -340,7 +344,7 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
     /** */
     private static class CloseableRemoteFilter<K, V> extends CloseableResource implements CacheEntryEventFilter<K, V> {
         /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent ignore) throws CacheEntryListenerException {
+        @Override public boolean evaluate(CacheEntryEvent ignore) {
             return true;
         }
     }
@@ -352,5 +356,16 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
         @Override public T apply(CacheEntryEvent<? extends K, ? extends V> evt) {
             return null;
         }
+    }
+
+    /** */
+    public static class CloseableCacheEntryListener<K, V> extends CloseableResource
+        implements CacheEntryCreatedListener<K, V> {
+
+        /** {@inheritDoc} */
+        @Override public void onCreated(Iterable<CacheEntryEvent<? extends K, ? extends V>> evts) {
+            // No-op.
+        }
+
     }
 }

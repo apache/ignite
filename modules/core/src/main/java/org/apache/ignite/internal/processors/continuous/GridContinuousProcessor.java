@@ -710,17 +710,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
 
-        Iterator<Map.Entry<UUID, LocalRoutineInfo>> it2 = locInfos.entrySet().iterator();
+        Iterator<Map.Entry<UUID, LocalRoutineInfo>> locIter = locInfos.entrySet().iterator();
 
-        while (it2.hasNext()) {
-            Map.Entry<UUID, LocalRoutineInfo> entry = it2.next();
+        while (locIter.hasNext()) {
+            Map.Entry<UUID, LocalRoutineInfo> entry = locIter.next();
 
             GridContinuousHandler hnd = entry.getValue().hnd;
 
             if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName())) {
                 hnd.unregister(entry.getKey(), this.ctx);
 
-                it2.remove();
+                locIter.remove();
             }
         }
     }
