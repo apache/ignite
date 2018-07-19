@@ -19,8 +19,8 @@ package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownStringValue;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 

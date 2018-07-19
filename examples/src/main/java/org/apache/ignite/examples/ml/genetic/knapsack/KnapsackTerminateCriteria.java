@@ -79,7 +79,7 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     private double calculateTotalWeight(List<Gene> genes) {
         double totalWeight = 0;
         for (Gene gene : genes)
-            totalWeight = totalWeight + ((Item)gene.getValue()).getWeight();
+            totalWeight = totalWeight + ((Item)gene.getVal()).getWeight();
 
         return totalWeight;
     }
@@ -92,9 +92,9 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     private void printItems(List<Gene> genes) {
         for (Gene gene : genes) {
             igniteLogger.info("------------------------------------------------------------------------------------------");
-            igniteLogger.info("Name: " + ((Item)gene.getValue()).getName().toString());
-            igniteLogger.info("Weight: " + ((Item)gene.getValue()).getWeight());
-            igniteLogger.info("Value: " + ((Item)gene.getValue()).getValue());
+            igniteLogger.info("Name: " + ((Item)gene.getVal()).getName().toString());
+            igniteLogger.info("Weight: " + ((Item)gene.getVal()).getWeight());
+            igniteLogger.info("Value: " + ((Item)gene.getVal()).getValue());
         }
     }
 }

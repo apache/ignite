@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -37,7 +37,7 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, V
     private static final long serialVersionUID = 6873438115778921295L;
 
     /** Normalization in L^p space. Must be greater than 0. Default value is 2. */
-    private int p = 2;
+    private int p;
 
     /** Base preprocessor. */
     private final IgniteBiFunction<K, V, Vector> basePreprocessor;
