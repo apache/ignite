@@ -56,7 +56,8 @@ public class RandomForestRegressionTrainerTest {
     }
 
     /** */
-    @Test public void testFit() {
+    @Test
+    public void testFit() {
         int sampleSize = 1000;
         Map<Double, double[]> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
@@ -69,13 +70,15 @@ public class RandomForestRegressionTrainerTest {
         }
 
         RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1);
-        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
-        model.getModels().forEach(m -> {
+
+        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
+
+        mdl.getModels().forEach(m -> {
             assertTrue(m instanceof ModelOnFeaturesSubspace);
             assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
         });
 
-        assertTrue(model.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
-        assertEquals(5, model.getModels().size());
+        assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
+        assertEquals(5, mdl.getModels().size());
     }
 }

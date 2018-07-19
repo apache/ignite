@@ -100,11 +100,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> implements Singl
             seed
         );
 
-        IgniteBiFunction<K, V, double[]> lbE = new IgniteBiFunction<K, V, double[]>() {
-            @Override public double[] apply(K k, V v) {
-                return new double[]{lbExtractor.apply(k, v)};
-            }
-        };
+        IgniteBiFunction<K, V, double[]> lbE = (IgniteBiFunction<K, V, double[]>)(k, v) -> new double[]{lbExtractor.apply(k, v)};
 
         MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, lbE);
 

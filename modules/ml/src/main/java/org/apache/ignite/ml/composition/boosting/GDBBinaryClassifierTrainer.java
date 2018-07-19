@@ -76,9 +76,8 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
 
         List<Double> uniqLabels = new ArrayList<Double>(
             builder.build(new EmptyContextBuilder<>(), new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lExtractor))
-                .compute((IgniteFunction<LabeledDataset<Double,LabeledVector>, Set<Double>>) x -> {
-                        return Arrays.stream(x.labels()).boxed().collect(Collectors.toSet());
-                    }, (a, b) -> {
+                .compute((IgniteFunction<LabeledDataset<Double,LabeledVector>, Set<Double>>) x ->
+                    Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
                         if (a == null)
                             return b;
                         if (b == null)

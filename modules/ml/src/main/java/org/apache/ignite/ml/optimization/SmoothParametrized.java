@@ -40,6 +40,6 @@ public interface SmoothParametrized<M extends Parametrized<M>> extends Parametri
      * @param truthBatch Batch of ground truths.
      * @return Gradient of h at current point in parameters space.
      */
-    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         Matrix inputsBatch, Matrix truthBatch);
 }

@@ -71,7 +71,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(data -> data.colSize(), (a, b) -> a == null ? b : a);
+            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
             final int weightVectorSizeWithIntercept = cols + 1;
             weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 

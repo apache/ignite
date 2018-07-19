@@ -62,9 +62,6 @@ public class HammingDistance implements DistanceMeasure {
         if (this == obj)
             return true;
 
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-
-        return true;
+        return obj != null && getClass() == obj.getClass();
     }
 }

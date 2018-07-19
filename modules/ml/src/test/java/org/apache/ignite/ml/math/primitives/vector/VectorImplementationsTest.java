@@ -480,9 +480,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
         (new ExternalizeTest<Vector>() {
             /** {@inheritDoc} */
             @Override public void externalizeTest() {
-                consumeSampleVectors((v, desc) -> {
-                    externalizeTest(v);
-                });
+                consumeSampleVectors((v, desc) -> externalizeTest(v));
             }
         }).externalizeTest();
     }

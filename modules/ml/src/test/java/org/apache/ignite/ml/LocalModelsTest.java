@@ -70,14 +70,14 @@ public class LocalModelsTest {
     @Test
     public void importExportLinearRegressionModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            LinearRegressionModel model = new LinearRegressionModel(new DenseVector(new double[]{1, 2}), 3);
+            LinearRegressionModel mdl = new LinearRegressionModel(new DenseVector(new double[]{1, 2}), 3);
             Exporter<LinearRegressionModel, String> exporter = new FileExporter<>();
-            model.saveModel(exporter, mdlFilePath);
+            mdl.saveModel(exporter, mdlFilePath);
 
             LinearRegressionModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
-            Assert.assertEquals("", model, load);
+            Assert.assertEquals("", mdl, load);
 
             return null;
         });

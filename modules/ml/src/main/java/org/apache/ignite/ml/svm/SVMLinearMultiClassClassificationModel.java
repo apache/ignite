@@ -76,9 +76,14 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
     @Override public String toString() {
         StringBuilder wholeStr = new StringBuilder();
 
-        models.forEach((clsLb, mdl) -> {
-            wholeStr.append("The class with label ").append(clsLb).append(" has classifier: ").append(mdl.toString()).append(System.lineSeparator());
-        });
+        models.forEach((clsLb, mdl) ->
+            wholeStr
+                .append("The class with label ")
+                .append(clsLb)
+                .append(" has classifier: ")
+                .append(mdl.toString())
+                .append(System.lineSeparator())
+        );
 
         return wholeStr.toString();
     }

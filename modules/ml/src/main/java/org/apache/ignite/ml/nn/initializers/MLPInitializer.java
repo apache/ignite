@@ -29,12 +29,12 @@ public interface MLPInitializer {
      *
      * @param weights Matrix representing weights.
      */
-    void initWeights(Matrix weights);
+    public void initWeights(Matrix weights);
 
     /**
      * In-place change values of vector representing vectors.
      *
      * @param biases Vector representing vectors.
      */
-    void initBiases(Vector biases);
+    public void initBiases(Vector biases);
 }

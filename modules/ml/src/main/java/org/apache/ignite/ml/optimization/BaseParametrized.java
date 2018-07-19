@@ -31,21 +31,21 @@ interface BaseParametrized<M extends BaseParametrized<M>> {
      *
      * @return Parameters vector.
      */
-    Vector parameters();
+    public Vector parameters();
 
     /**
      * Set parameters.
      *
      * @param vector Parameters vector.
      */
-    M setParameters(Vector vector);
+    public M setParameters(Vector vector);
 
     /**
      * Return new model with given parameters vector.
      *
      * @param vector Parameters vector.
      */
-    default M withParameters(Vector vector) {
+    public default M withParameters(Vector vector) {
         return Utils.copy(this).setParameters(vector);
     }
 
@@ -54,5 +54,5 @@ interface BaseParametrized<M extends BaseParametrized<M>> {
      *
      * @return Count of parameters of this model.
      */
-    int parametersCount();
+    public int parametersCount();
 }
