@@ -2012,14 +2012,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         dataStructuresMgr = null;
         cacheObjCtx = null;
 
-        if (expiryPlc instanceof Closeable) {
-            try {
-                ((Closeable)expiryPlc).close();
-            }
-            catch (IOException e) {
-                log.warning("Unable to close resource: " + e.getMessage(), e);
-            }
-        }
+        if (expiryPlc instanceof Closeable)
+            U.closeQuiet((Closeable)expiryPlc);
 
         mgrs.clear();
     }

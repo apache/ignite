@@ -122,6 +122,9 @@ public class GridCacheResourcesCleanupTest extends GridCommonAbstractTest {
                 try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
                     // No-op.
                 }
+
+                for (CloseableResource obj : refs)
+                    assertTrue("Was not closed: " + obj, obj.closed());
             }
         });
     }

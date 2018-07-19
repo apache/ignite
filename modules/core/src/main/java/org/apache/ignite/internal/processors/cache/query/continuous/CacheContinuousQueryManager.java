@@ -1068,14 +1068,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             cctx.config().removeCacheEntryListenerConfiguration(cfg);
 
-            if (locLsnrImpl instanceof Closeable) {
-                try {
-                    ((Closeable)locLsnrImpl).close();
-                }
-                catch (IOException e) {
-                    log.warning("Unable to close resource: " + e.getMessage(), e);
-                }
-            }
+            if (locLsnrImpl instanceof Closeable)
+                U.closeQuiet((Closeable)locLsnrImpl);
         }
     }
 

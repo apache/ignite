@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.resource;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -300,14 +299,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Unwrap Proxy object.
         obj = unwrapTarget(obj);
 
-        if (obj instanceof Closeable) {
-            try {
-                ((Closeable)obj).close();
-            }
-            catch (IOException e) {
-                log.warning("Unable to close resource: " + e.getMessage(), e);
-            }
-        }
+        if (obj instanceof Closeable)
+            U.closeQuiet((Closeable)obj);
 
         GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
 

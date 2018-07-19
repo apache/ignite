@@ -176,12 +176,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
         super.unregister(routineId, ctx);
 
-        if (filter instanceof Closeable) {
-            try {
-                ((Closeable)filter).close();
-            }
-            catch (IOException ignore) {
-            }
-        }
+        if (filter instanceof Closeable)
+            U.closeQuiet((Closeable)filter);
     }
 }
