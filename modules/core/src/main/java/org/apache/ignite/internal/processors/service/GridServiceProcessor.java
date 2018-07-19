@@ -1636,7 +1636,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (dep != null && e.getEventType() != REMOVED) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(dep.configuration().getName());
 
             // Ignore other utility cache events.
@@ -1982,7 +1982,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (assigns != null && e.getEventType() != REMOVED) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(assigns.name());
 
             Throwable t = null;

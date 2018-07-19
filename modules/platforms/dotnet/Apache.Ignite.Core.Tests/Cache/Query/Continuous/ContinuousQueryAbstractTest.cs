@@ -652,10 +652,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 cbEntry = cbEvt.entries.Single();
                 Assert.IsTrue(cbEntry.HasOldValue);
-                Assert.IsFalse(cbEntry.HasValue);
+                Assert.IsTrue(cbEntry.HasValue);
                 Assert.AreEqual(key, cbEntry.Key);
                 Assert.AreEqual(2, cbEntry.OldValue);
-                Assert.AreEqual(null, cbEntry.Value);
+                Assert.AreEqual(2, cbEntry.Value);
             }
         }
 
@@ -948,7 +948,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             if (!e.HasOldValue)
                 return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
 
-            if (!e.HasValue)
+            if (e.Key.Equals(e.OldValue))
                 return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
 
             return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
