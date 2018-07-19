@@ -23,9 +23,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
@@ -111,7 +111,7 @@ public class MLPTrainerExample {
                 // Calculate score.
                 for (int i = 0; i < 4; i++) {
                     LabeledPoint pnt = trainingSet.get(i);
-                    Matrix predicted = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{pnt.x, pnt.y}}));
+                    Matrix predicted = mlp.apply(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
                     failCnt += Math.abs(predicted.get(0, 0) - pnt.lb) < 0.5 ? 0 : 1;
                 }
 

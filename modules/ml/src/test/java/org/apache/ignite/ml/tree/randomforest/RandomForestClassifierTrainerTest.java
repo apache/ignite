@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +56,8 @@ public class RandomForestClassifierTrainerTest {
     }
 
     /** */
-    @Test public void testFit() {
+    @Test
+    public void testFit() {
         int sampleSize = 1000;
         Map<double[], Double> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
@@ -69,13 +70,15 @@ public class RandomForestClassifierTrainerTest {
         }
 
         RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1);
-        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-        model.getModels().forEach(m -> {
+
+        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+
+        mdl.getModels().forEach(m -> {
             assertTrue(m instanceof ModelOnFeaturesSubspace);
             assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
         });
 
-        assertTrue(model.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
-        assertEquals(5, model.getModels().size());
+        assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
+        assertEquals(5, mdl.getModels().size());
     }
 }
