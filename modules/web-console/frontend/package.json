@@ -71,10 +71,10 @@
     "tf-metatags": "2.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.53",
-    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.53",
-    "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.53",
-    "@babel/preset-env": "^7.0.0-beta.53",
+    "@babel/core": "^7.0.0-beta.54",
+    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.54",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.54",
+    "@babel/preset-env": "^7.0.0-beta.54",
     "@types/angular": "1.6.48",
     "@types/angular-animate": "1.5.10",
     "@types/angular-mocks": "1.5.12",
@@ -135,7 +135,6 @@
     "style-loader": "0.19.0",
     "svg-sprite-loader": "^3.9.0",
     "teamcity-service-messages": "0.1.9",
-    "type-detect": "4.0.3",
     "uglifyjs-webpack-plugin": "1.2.4",
     "webpack": "4.12.0",
     "webpack-cli": "^3.0.8",

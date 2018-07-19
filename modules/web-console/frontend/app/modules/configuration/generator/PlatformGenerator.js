@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import {nonEmpty} from 'app/utils/lodashMixins';
 import { EmptyBean, Bean } from './Beans';
 

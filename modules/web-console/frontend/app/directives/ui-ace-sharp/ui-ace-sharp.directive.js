@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import template from './ui-ace-sharp.pug';
 import controller from './ui-ace-sharp.controller';
 
