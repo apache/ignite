@@ -34,7 +34,7 @@ class CertReqsParser(argparse.Action):
     }
 
     def __call__(self, parser, namespace, values, option_string=None):
-        value = values[-1].upper()
+        value = values.upper()
         if value in self.conv_map:
             setattr(namespace, self.dest, self.conv_map[value])
         else:
