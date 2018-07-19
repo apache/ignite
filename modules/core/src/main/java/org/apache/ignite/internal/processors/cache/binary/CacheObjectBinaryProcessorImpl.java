@@ -770,8 +770,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObjectContext contextForCache(CacheConfiguration cfg) throws IgniteCheckedException {
         assert cfg != null;
 
-        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
-            !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
+        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName());
 
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
