@@ -17,8 +17,9 @@
 
 package org.apache.ignite.tensorflow.cluster;
 
+import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteServices;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * TensorFlow cluster manager that allows to start, maintain and stop TensorFlow cluster using
@@ -34,6 +35,9 @@ public class TensorFlowClusterGatewayManager {
     /** Ignite instance. */
     private final Ignite ignite;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Constructs a new instance of TensorFlow cluster manager with maintenance.
      *
@@ -43,24 +47,25 @@ public class TensorFlowClusterGatewayManager {
         assert ignite != null : "Ignite should not be null";
 
         this.ignite = ignite;
+        this.log = ignite.log().getLogger(TensorFlowClusterGatewayManager.class);
     }
 
     /**
      * Creates and starts a new TensorFlow cluster for the specified cache if it doesn't exist, otherwise returns
      * existing one.
      *
-     * @param upstreamCacheName Upstream cache name.
+     * @param clusterId Cluster identifier.
+     * @param jobArchive Job archive.
      * @return TensorFlow cluster gateway that allows to subscribe on cluster changes.
      */
-    public TensorFlowClusterGateway getOrCreateCluster(String upstreamCacheName) {
-        String svcName = String.format(SERVICE_NAME_TEMPLATE, upstreamCacheName);
-        String topicName = String.format(SERVICE_TOPIC_NAME_TEMPLATE, upstreamCacheName);
+    public TensorFlowClusterGateway getOrCreateCluster(UUID clusterId, TensorFlowJobArchive jobArchive) {
+        String svcName = String.format(SERVICE_NAME_TEMPLATE, clusterId);
+        String topicName = String.format(SERVICE_TOPIC_NAME_TEMPLATE, clusterId);
 
         TensorFlowClusterGateway gateway = createTensorFlowClusterGateway(topicName);
 
-        IgniteServices services = ignite.services();
-
-        services.deployClusterSingleton(svcName, new TensorFlowClusterMaintainer(upstreamCacheName, topicName));
+        ignite.services().deployClusterSingleton(svcName, new TensorFlowClusterMaintainer(clusterId, jobArchive, topicName));
+        log.info("Cluster maintainer deployed as a service [clusterId=" + clusterId + "]");
 
         return gateway;
     }
@@ -68,12 +73,11 @@ public class TensorFlowClusterGatewayManager {
     /**
      * Stops TensorFlow cluster.
      *
-     * @param upstreamCacheName Upstream cache name.
+     * @param clusterId Cluster identifier.
      */
-    public void stopClusterIfExists(String upstreamCacheName) {
-        IgniteServices services = ignite.services();
-
-        services.cancel(String.format(SERVICE_NAME_TEMPLATE, upstreamCacheName));
+    public void stopClusterIfExists(UUID clusterId) {
+        ignite.services().cancel(String.format(SERVICE_NAME_TEMPLATE, clusterId));
+        log.info("Cluster maintained cancelled as a service [clusterId=" + clusterId + "]");
     }
 
     /**
@@ -83,9 +87,13 @@ public class TensorFlowClusterGatewayManager {
      * @return TensorFlow cluster gateway.
      */
     private TensorFlowClusterGateway createTensorFlowClusterGateway(String topicName) {
-        TensorFlowClusterGateway gateway = new TensorFlowClusterGateway();
+        TensorFlowClusterGateway gateway = new TensorFlowClusterGateway(subscriber -> {
+            ignite.message().stopLocalListen(topicName, subscriber);
+            log.info("Stop listen to cluster gateway [topicName=" + topicName + "]");
+        });
 
         ignite.message().localListen(topicName, gateway);
+        log.info("Start listen to cluster gateway [topicName=" + topicName + "]");
 
         return gateway;
     }

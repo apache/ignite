@@ -60,7 +60,7 @@ public class TensorFlowClusterExample {
             System.out.println(">>> Cache created.");
 
             TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
-            TensorFlowClusterGateway gateway = mgr.getOrCreateCluster("TEST_CACHE");
+            TensorFlowClusterGateway gateway = mgr.getOrCreateCluster(UUID.randomUUID(), null);
 
             System.out.println(">>> TensorFlow cluster gateway started.");
 
@@ -76,7 +76,7 @@ public class TensorFlowClusterExample {
                     (Supplier<Ignite> & Serializable)() -> ignite
                 );
 
-                String clusterSpec = srvMgr.formatClusterSpec(cluster.getSpec());
+                String clusterSpec = cluster.getSpec().format(ignite);
                 builder.append(clusterSpec).append('\n');
 
                 Map<UUID, List<LongRunningProcessStatus>> statuses = srvMgr.ping(cluster.getProcesses());
@@ -110,7 +110,7 @@ public class TensorFlowClusterExample {
 
             latch.await();
 
-            mgr.stopClusterIfExists("TEST_CACHE");
+            mgr.stopClusterIfExists(UUID.randomUUID());
 
             System.out.println(">>> TensorFlow cluster example completed.");
         }

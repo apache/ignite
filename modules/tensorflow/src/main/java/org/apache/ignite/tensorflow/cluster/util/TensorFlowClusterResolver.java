@@ -33,6 +33,12 @@ public class TensorFlowClusterResolver implements Serializable {
     /** */
     private static final long serialVersionUID = 631456775167710173L;
 
+    /** TensorFlow worker job name. */
+    private static final String WORKER_JOB_NAME = "worker";
+
+    /** TensorFlow chief job name. */
+    private static final String CHIEF_JOB_NAME = "chief";
+
     /** Cluster port manager. */
     private final ClusterPortManager portMgr;
 
@@ -77,8 +83,14 @@ public class TensorFlowClusterResolver implements Serializable {
 
             int port = portMgr.acquirePort(nodeId);
 
-            spec.addTask("WORKER", nodeId, port);
+            spec.addTask(WORKER_JOB_NAME, nodeId, port);
         }
+
+        ClusterNode chiefNode = ignite.cluster().localNode();
+        UUID chiefNodeId = chiefNode.id();
+        int chiefPort = portMgr.acquirePort(chiefNodeId);
+
+        spec.addTask(CHIEF_JOB_NAME, chiefNodeId, chiefPort);
 
         return spec;
     }
@@ -92,6 +104,24 @@ public class TensorFlowClusterResolver implements Serializable {
         for (String jobName : spec.getJobs().keySet())
             for (TensorFlowServerAddressSpec address : spec.getJobs().get(jobName))
                 portMgr.freePort(address.getNodeId(), address.getPort());
+    }
+
+    /**
+     * Returns worker job name.
+     *
+     * @return Worker job name.
+     */
+    public String getWorkerJobName() {
+        return WORKER_JOB_NAME;
+    }
+
+    /**
+     * Returns chief job name.
+     *
+     * @return Chief job name.
+     */
+    public String getChiefJobName() {
+        return CHIEF_JOB_NAME;
     }
 
     /** Destroys TensorFlow cluster resolver. */

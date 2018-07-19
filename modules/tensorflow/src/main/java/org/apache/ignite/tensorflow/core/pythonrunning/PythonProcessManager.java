@@ -54,30 +54,9 @@ public class PythonProcessManager extends ProcessManagerWrapper<NativeProcess, P
     /** {@inheritDoc} */
     @Override protected NativeProcess transformSpecification(PythonProcess spec) {
         return new NativeProcess(
-            new PythonProcessBuilderSupplier(),
+            new PythonProcessBuilderSupplier(true),
             spec.getStdin(),
             spec.getNodeId()
         );
-    }
-
-    /**
-     * Python process builder supplier that is used to create Python process builder.
-     */
-    private static class PythonProcessBuilderSupplier implements Supplier<ProcessBuilder>, Serializable {
-        /** */
-        private static final long serialVersionUID = 8497087649461965914L;
-
-        /** Python environment variable name. */
-        private static final String PYTHON_ENV_NAME = "PYTHON";
-
-        /** {@inheritDoc} */
-        @Override public ProcessBuilder get() {
-            String python = System.getenv(PYTHON_ENV_NAME);
-
-            if (python == null)
-                python = "python3";
-
-            return new ProcessBuilder(python, "-i");
-        }
     }
 }

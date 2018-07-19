@@ -21,19 +21,32 @@ import java.util.HashSet;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.tensorflow.SerializableConsumer;
 
 /**
  * TensorFlow cluster gateway that allows to subscribe on changes in cluster configuration.
  */
-public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorFlowCluster> {
+public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorFlowCluster>, AutoCloseable {
     /** */
     private static final long serialVersionUID = -540323262800791340L;
+
+    /** Callback that will be called on unsubscribe. */
+    private final SerializableConsumer<TensorFlowClusterGateway> unsubscribeCb;
 
     /** Subscribers. */
     private final HashSet<Consumer<TensorFlowCluster>> subscribers = new HashSet<>();
 
     /** Last value received from the upstream. */
     private TensorFlowCluster last;
+
+    /**
+     * Constructs a new instance of TensorFlow cluster gateway.
+     *
+     * @param unsubscribeCb Callback that will be called on unsubscribe.
+     */
+    public TensorFlowClusterGateway(SerializableConsumer<TensorFlowClusterGateway> unsubscribeCb) {
+        this.unsubscribeCb = unsubscribeCb;
+    }
 
     /**
      * Subscribers the specified subscriber on the upstream events.
@@ -64,5 +77,11 @@ public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorF
         last = cluster;
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        subscribers.clear();
+        unsubscribeCb.accept(this);
     }
 }
