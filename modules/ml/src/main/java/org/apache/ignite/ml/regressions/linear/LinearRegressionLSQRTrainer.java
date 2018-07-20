@@ -18,43 +18,33 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.DatasetTrainer;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.isolve.LinSysPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * Trainer of the linear regression model based on LSQR algorithm.
  *
- * @param <K> Type of a key in {@code upstream} data.
- * @param <V> Type of a value in {@code upstream} data.
- *
  * @see AbstractLSQR
  */
-public class LinearRegressionLSQRTrainer<K, V> implements DatasetTrainer<K, V, LinearRegressionModel> {
+public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
+    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         LSQRResult res;
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
-            new LinSysPartitionDataBuilderOnHeap<>(
-                (k, v) -> {
-                    double[] row = Arrays.copyOf(featureExtractor.apply(k, v), cols + 1);
-
-                    row[cols] = 1.0;
-
-                    return row;
-                },
-                lbExtractor,
-                cols + 1
+            new SimpleLabeledDatasetDataBuilder<>(
+                new FeatureExtractorWrapper<>(featureExtractor),
+                lbExtractor.andThen(e -> new double[]{e})
             )
         )) {
             res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
@@ -63,8 +53,9 @@ public class LinearRegressionLSQRTrainer<K, V> implements DatasetTrainer<K, V, L
             throw new RuntimeException(e);
         }
 
-        Vector weights = new DenseLocalOnHeapVector(Arrays.copyOfRange(res.getX(), 0, cols));
+        double[] x = res.getX();
+        Vector weights = new DenseLocalOnHeapVector(Arrays.copyOfRange(x, 0, x.length - 1));
 
-        return new LinearRegressionModel(weights, res.getX()[cols]);
+        return new LinearRegressionModel(weights, x[x.length - 1]);
     }
 }

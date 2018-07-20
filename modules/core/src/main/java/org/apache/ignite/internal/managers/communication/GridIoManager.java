@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +97,6 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -164,8 +164,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final UUID locNodeId;
 
     /** Cache for messages that were received prior to discovery. */
-    private final ConcurrentMap<UUID, ConcurrentLinkedDeque8<DelayedMessage>> waitMap =
-        new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
     private CommunicationListener<Serializable> commLsnr;
@@ -299,9 +298,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
                     throws IgniteCheckedException {
-                    assert rmtNodeId != null;
 
-                    return new DirectMessageReader(msgFactory, U.directProtocolVersion(ctx, rmtNodeId));
+                    return new DirectMessageReader(msgFactory,
+                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : GridIoManager.DIRECT_PROTO_VER);
                 }
             };
         }
@@ -774,7 +773,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         lock.writeLock().lock();
 
                         try {
-                            ConcurrentLinkedDeque8<DelayedMessage> waitList = waitMap.remove(nodeId);
+                            Deque<DelayedMessage> waitList = waitMap.remove(nodeId);
 
                             if (log.isDebugEnabled())
                                 log.debug("Removed messages from discovery startup delay list " +
@@ -804,9 +803,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         try {
             started = true;
 
-            for (Entry<UUID, ConcurrentLinkedDeque8<DelayedMessage>> e : waitMap.entrySet()) {
+            for (Entry<UUID, Deque<DelayedMessage>> e : waitMap.entrySet()) {
                 if (ctx.discovery().node(e.getKey()) != null) {
-                    ConcurrentLinkedDeque8<DelayedMessage> waitList = waitMap.remove(e.getKey());
+                    Deque<DelayedMessage> waitList = waitMap.remove(e.getKey());
 
                     if (log.isDebugEnabled())
                         log.debug("Processing messages from discovery startup delay list: " + waitList);
@@ -954,8 +953,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             log.debug("Adding message to waiting list [senderId=" + nodeId +
                                 ", msg=" + msg + ']');
 
-                        ConcurrentLinkedDeque8<DelayedMessage> list =
-                            F.addIfAbsent(waitMap, nodeId, F.<DelayedMessage>newDeque());
+                        Deque<DelayedMessage> list = F.<UUID, Deque<DelayedMessage>>addIfAbsent(
+                            waitMap,
+                            nodeId,
+                            ConcurrentLinkedDeque::new
+                        );
 
                         assert list != null;
 

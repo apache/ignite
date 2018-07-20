@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains standardization preprocessor.
+ * Contains Normalizer preprocessor.
  */
 package org.apache.ignite.ml.preprocessing.normalization;

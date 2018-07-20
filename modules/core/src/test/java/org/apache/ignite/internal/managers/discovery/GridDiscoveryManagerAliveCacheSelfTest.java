@@ -178,16 +178,20 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * Waits while topology on all nodes became equals to the expected size.
      *
      * @param nodesCnt Expected nodes count.
-     * @throws InterruptedException If interrupted.
+     * @throws Exception If interrupted.
      */
     @SuppressWarnings("BusyWait")
-    private void awaitDiscovery(long nodesCnt) throws InterruptedException {
-        for (Ignite g : alive) {
-            ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
+    private void awaitDiscovery(int nodesCnt) throws Exception {
+        if (tcpDiscovery()) {
+            for (Ignite g : alive) {
+                ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
 
-            while (g.cluster().nodes().size() != nodesCnt)
-                Thread.sleep(10);
+                while (g.cluster().nodes().size() != nodesCnt)
+                    Thread.sleep(10);
+            }
         }
+        else
+            waitForTopology(nodesCnt);
     }
 
     /**

@@ -38,12 +38,6 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = GRIDS; i-- >= 0;)
-            stopGrid(i);
-    }
-
     /**
      *
      */

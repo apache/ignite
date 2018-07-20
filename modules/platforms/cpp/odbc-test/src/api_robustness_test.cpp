@@ -22,6 +22,8 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#include <cstdio>
+
 #include <vector>
 #include <string>
 
@@ -119,31 +121,6 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
         BOOST_CHECK(ret == SQL_ERROR);
 
         CheckSQLStatementDiagnosticError("HY106");
-    }
-
-    void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
-    {
-        SQLCHAR state[ODBC_BUFFER_SIZE];
-        SQLINTEGER nativeError = 0;
-        SQLCHAR message[ODBC_BUFFER_SIZE];
-        SQLSMALLINT messageLen = 0;
-
-        SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
-
-        const std::string sqlState = reinterpret_cast<char*>(state);
-        BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
-        BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
-        BOOST_REQUIRE(messageLen > 0);
-    }
-
-    void CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
-    }
-
-    void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
     }
 
     /**
@@ -1124,6 +1101,24 @@ BOOST_AUTO_TEST_CASE(TestSQLDiagnosticRecords)
     ret = SQLFreeStmt(stmt, 4);
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     CheckSQLStatementDiagnosticError("HY092");
+}
+
+BOOST_AUTO_TEST_CASE(TestManyFds)
+{
+    enum { FDS_NUM = 2000 };
+
+    std::FILE* fds[FDS_NUM];
+
+    for (int i = 0; i < FDS_NUM; ++i)
+        fds[i] = tmpfile();
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    for (int i = 0; i < FDS_NUM; ++i)
+    {
+        if (fds[i])
+            fclose(fds[i]);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

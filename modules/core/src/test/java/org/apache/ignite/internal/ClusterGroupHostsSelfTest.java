@@ -61,6 +61,9 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testForHosts() throws Exception {
+        if (!tcpDiscovery())
+            return;
+
         Ignite ignite = grid();
 
         assertEquals(1, ignite.cluster().forHost("h_1").nodes().size());

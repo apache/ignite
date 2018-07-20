@@ -19,17 +19,14 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
        xmlns:tx="http://www.springframework.org/schema/tx"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
 
     <tx:annotation-driven/>
-    <context:component-scan base-package="org.apache.ignite.transactions.spring">
-        <context:exclude-filter type="annotation" expression="org.springframework.context.annotation.Configuration"/>
-    </context:component-scan>
+
+    <bean id="gridSpringTransactionService" class="org.apache.ignite.transactions.spring.GridSpringTransactionService"/>
 
     <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
         <property name="transactionConcurrency" value="OPTIMISTIC"/>

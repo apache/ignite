@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * safe to use when all transactions that involve moving primary partitions are completed and partition map
  * exchange is also completed.
  * <p/>
- * When new new cache operation is started, it will wait for this future before acquiring new locks on particular
+ * When new cache operation is started, it will wait for this future before acquiring new locks on particular
  * topology version.
  */
 public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopologyVersion> {
@@ -47,7 +47,7 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
 
     /**
      * Gets result topology version of this future. Result version can differ from initial exchange version
-     * if excanges for multiple discovery events are merged, in this case result version is version of last
+     * if exchanges for multiple discovery events are merged, in this case result version is version of last
      * discovery event.
      * <p>
      * This method should be called only for finished topology future

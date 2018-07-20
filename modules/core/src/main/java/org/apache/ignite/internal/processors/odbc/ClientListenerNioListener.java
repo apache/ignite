@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -26,13 +27,16 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,7 +59,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
 
     /** Connection-related metadata key. */
-    private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Next connection id. */
+    private static AtomicInteger nextConnId = new AtomicInteger(1);
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -87,6 +94,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         this.busyLock = busyLock;
         this.maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         this.cliConnCfg = cliConnCfg;
+
         log = ctx.log(getClass());
     }
 
@@ -134,7 +142,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse client request.", e);
+            U.error(log, "Failed to parse client request.", e);
 
             ses.close();
 
@@ -155,19 +163,21 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             ClientListenerResponse resp = handler.handle(req);
 
-            if (log.isDebugEnabled()) {
-                long dur = (System.nanoTime() - startTime) / 1000;
+            if (resp != null) {
+                if (log.isDebugEnabled()) {
+                    long dur = (System.nanoTime() - startTime) / 1000;
 
-                log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
-                    ", resp=" + resp.status() + ']');
+                    log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
+                        ", resp=" + resp.status() + ']');
+                }
+
+                byte[] outMsg = parser.encode(resp);
+
+                ses.send(outMsg);
             }
-
-            byte[] outMsg = parser.encode(resp);
-
-            ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process client request [req=" + req + ']', e);
+            U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
         }
@@ -192,7 +202,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         byte cmd = reader.readByte();
 
         if (cmd != ClientListenerRequest.HANDSHAKE) {
-            log.error("Unexpected client request (will close session): " + ses.remoteAddress());
+            U.warn(log, "Unexpected client request (will close session): " + ses.remoteAddress());
 
             ses.close();
 
@@ -212,7 +222,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(clientType);
+            connCtx = prepareContext(ses, clientType);
 
             ensureClientPermissions(clientType);
 
@@ -221,16 +231,25 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
-            else {
-                log.warning("Unsupported version: " + ver.toString());
-
+            else
                 throw new IgniteCheckedException("Unsupported version.");
-            }
 
             connCtx.handler().writeHandshake(writer);
         }
+        catch (IgniteAccessControlException authEx) {
+            writer.writeBoolean(false);
+
+            writer.writeShort((short)0);
+            writer.writeShort((short)0);
+            writer.writeShort((short)0);
+
+            writer.doWriteString(authEx.getMessage());
+
+            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
+                writer.writeInt(ClientStatus.AUTH_FAILED);
+        }
         catch (IgniteCheckedException e) {
-            log.error("Error on handshake. " + e.getMessage(), e);
+            U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
 
             ClientListenerProtocolVersion currVer;
 
@@ -240,10 +259,15 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 currVer = connCtx.currentVersion();
 
             writer.writeBoolean(false);
+
             writer.writeShort(currVer.major());
             writer.writeShort(currVer.minor());
             writer.writeShort(currVer.maintenance());
+
             writer.doWriteString(e.getMessage());
+
+            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
+                writer.writeInt(ClientStatus.FAILED);
         }
 
         ses.send(writer.array());
@@ -252,23 +276,34 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /**
      * Prepare context.
      *
+     * @param ses Session.
      * @param clientType Client type.
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
+        long connId = nextConnectionId();
+
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, busyLock, maxCursors);
+                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, maxCursors);
+                return new ClientConnectionContext(ctx, connId, maxCursors);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);
+    }
+
+    /**
+     * Generate unique connection id.
+     * @return connection id.
+     */
+    private long nextConnectionId() {
+        return (ctx.discovery().localNode().order() << 32) + nextConnId.getAndIncrement();
     }
 
     /**

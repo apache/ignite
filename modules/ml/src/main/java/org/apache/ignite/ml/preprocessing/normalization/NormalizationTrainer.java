@@ -17,74 +17,44 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
 /**
- * Trainer of the normalization preprocessor.
+ * Trainer of the Normalization preprocessor.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
+public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
+    /**  Normalization in L^p space. Must be greater than 0. Default value is 2. */
+    private int p = 2;
+
     /** {@inheritDoc} */
     @Override public NormalizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> basePreprocessor, int cols) {
-        try (Dataset<EmptyContext, NormalizationPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
-                double[] min = new double[cols];
-                double[] max = new double[cols];
+        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        return new NormalizationPreprocessor<>(p, basePreprocessor);
+    }
 
-                for (int i = 0; i < cols; i++) {
-                    min[i] = Double.MAX_VALUE;
-                    max[i] = -Double.MAX_VALUE;
-                }
+    /**
+     * Gets the degree of L space parameter value.
+     * @return The parameter value.
+     */
+    public double p() {
+        return p;
+    }
 
-                while (upstream.hasNext()) {
-                    UpstreamEntry<K, V> entity = upstream.next();
-                    double[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
-                    for (int i = 0; i < cols; i++) {
-                        if (row[i] < min[i])
-                            min[i] = row[i];
-                        if (row[i] > max[i])
-                            max[i] = row[i];
-                    }
-                }
-                return new NormalizationPartitionData(min, max);
-            }
-        )) {
-            double[][] minMax = dataset.compute(
-                data -> new double[][]{ data.getMin(), data.getMax() },
-                (a, b) -> {
-                    if (a == null)
-                        return b;
-
-                    if (b == null)
-                        return a;
-
-                    double[][] res = new double[2][];
-
-                    res[0] = new double[a[0].length];
-                    for (int i = 0; i < res[0].length; i++)
-                        res[0][i] = Math.min(a[0][i], b[0][i]);
-
-                    res[1] = new double[a[1].length];
-                    for (int i = 0; i < res[1].length; i++)
-                        res[1][i] = Math.max(a[1][i], b[1][i]);
-
-                    return res;
-                }
-            );
-
-            return new NormalizationPreprocessor<>(minMax[0], minMax[1], basePreprocessor);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    /**
+     * Sets the p parameter value. Must be greater than 0.
+     *
+     * @param p The given value.
+     * @return The Normalization trainer.
+     */
+    public NormalizationTrainer<K, V> withP(int p) {
+        assert p > 0;
+        this.p = p;
+        return this;
     }
 }

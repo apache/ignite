@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -37,40 +38,41 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
-
-    /** Number of columns (features). */
-    private final int cols;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
-     * @param cols Number of columns (features).
      */
-    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor, int cols) {
+    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor) {
         this.featureExtractor = featureExtractor;
-        this.cols = cols;
     }
 
     /** {@inheritDoc} */
     @Override public SimpleDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         // Prepares the matrix of features in flat column-major format.
-        double[] features = new double[Math.toIntExact(upstreamDataSize * cols)];
+        int cols = -1;
+        double[] features = null;
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            double[] row = featureExtractor.apply(entry.getKey(), entry.getValue());
+            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue());
 
-            assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
+            if (cols < 0) {
+                cols = row.size();
+                features = new double[Math.toIntExact(upstreamDataSize * cols)];
+            }
+            else
+                assert row.size() == cols : "Feature extractor must return exactly " + cols + " features";
 
             for (int i = 0; i < cols; i++)
-                features[Math.toIntExact(i * upstreamDataSize + ptr)] = row[i];
+                features[Math.toIntExact(i * upstreamDataSize + ptr)] = row.get(i);
 
             ptr++;
         }
 
-        return new SimpleDatasetData(features, Math.toIntExact(upstreamDataSize), cols);
+        return new SimpleDatasetData(features, Math.toIntExact(upstreamDataSize));
     }
 }

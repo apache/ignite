@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Common functionality implementation for eviction policies with max size/max memory and batch eviction support.
  */
 public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, V>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 4358725333474509598L;
+
     /** Max memory size occupied by elements in container. */
     private volatile long maxMemSize;
 

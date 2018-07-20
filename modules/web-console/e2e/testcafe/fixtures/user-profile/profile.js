@@ -15,70 +15,46 @@
  * limitations under the License.
  */
 
-const { Selector } = require('testcafe');
-const { removeData, insertTestUser } = require('../../envtools');
-const { signIn } = require('../../roles');
+import { Selector } from 'testcafe';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../environment/envtools';
+import { createRegularUser } from '../../roles';
+import {pageProfile} from '../../page-models/pageProfile';
+
+const regularUser = createRegularUser();
 
 fixture('Checking user profile')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`
-    .beforeEach(async(t) => {
-        await t.setNativeDialogHandler(() => true);
-        await removeData();
+    .before(async() => {
+        await dropTestDB();
         await insertTestUser();
-        await signIn(t);
-
-        await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
+    })
+    .beforeEach(async(t) => {
+        await t.useRole(regularUser);
+        await t.navigateTo(resolveUrl('/settings/profile'));
     })
     .after(async() => {
-        await removeData();
+        await dropTestDB();
     });
 
 test('Testing user data change', async(t) => {
-
-    const newUserData = {
-        firstName: {
-            selector: '#firstNameInput',
-            value: 'Richard'
-        },
-        lastName: {
-            selector: '#lastNameInput',
-            value: 'Roe'
-        },
-        email: {
-            selector: '#emailInput',
-            value: 'r.roe@mail.com'
-        },
-        company: {
-            selector: '#companyInput',
-            value: 'New Company'
-        },
-        country: {
-            selector: '#countryInput',
-            value: 'Israel'
-        }
-    };
-
-    ['firstName', 'lastName', 'email', 'company'].forEach(async(item) => {
-        await t
-            .click(newUserData[item].selector)
-            .pressKey('ctrl+a delete')
-            .typeText(newUserData[item].selector, newUserData[item].value);
-    });
+    const firstName = 'Richard';
+    const lastName = 'Roe';
+    const email = 'r.roe@mail.com';
+    const company = 'New Company';
+    const country = 'Israel';
 
     await t
-        .click(newUserData.country.selector)
-        .click(Selector('span').withText(newUserData.country.value))
-        .click(Selector('button').withText('Save Changes'));
-
-    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
-
-    ['firstName', 'lastName', 'email', 'company'].forEach(async(item) => {
-        await t
-            .expect(await Selector(newUserData[item].selector).getAttribute('value'))
-            .eql(newUserData[item].value);
-    });
+        .typeText(pageProfile.firstName.control, firstName, {replace: true})
+        .typeText(pageProfile.lastName.control, lastName, {replace: true})
+        .typeText(pageProfile.email.control, email, {replace: true})
+        .typeText(pageProfile.company.control, company, {replace: true});
+    await pageProfile.country.selectOption(country);
+    await t.click(pageProfile.saveChangesButton);
 
     await t
-        .expect(Selector(newUserData.country.selector).innerText)
-        .eql(newUserData.country.value);
+        .navigateTo(resolveUrl('/settings/profile'))
+        .expect(pageProfile.firstName.control.value).eql(firstName)
+        .expect(pageProfile.lastName.control.value).eql(lastName)
+        .expect(pageProfile.email.control.value).eql(email)
+        .expect(pageProfile.company.control.value).eql(company)
+        .expect(pageProfile.country.control.innerText).eql(country);
 });

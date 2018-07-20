@@ -27,6 +27,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,6 +44,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -63,9 +67,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -122,7 +125,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, GridCacheVersion> near2dht = newMap();
 
     /** Finish futures. */
-    private final ConcurrentLinkedDeque8<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
+    private final FastSizeDeque<FinishLockFuture> finishFuts = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Nested listener calls. */
     private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocal<Integer>() {
@@ -310,6 +313,42 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         col.addAll(futs.values());
 
         return col;
+    }
+
+    /**
+     * Creates a future that will wait for finishing all remote transactions (primary -> backup)
+     * with topology version less or equal to {@code topVer}.
+     *
+     * @param topVer Topology version.
+     * @return Compound future of all {@link GridDhtTxFinishFuture} futures.
+     */
+    public IgniteInternalFuture<?> finishRemoteTxs(AffinityTopologyVersion topVer) {
+        GridCompoundFuture<?, ?> res = new CacheObjectsReleaseFuture<>("RemoteTx", topVer);
+
+        for (GridCacheFuture<?> fut : futs.values()) {
+            if (fut instanceof GridDhtTxFinishFuture) {
+                GridDhtTxFinishFuture finishTxFuture = (GridDhtTxFinishFuture) fut;
+
+                if (cctx.tm().needWaitTransaction(finishTxFuture.tx(), topVer))
+                    res.add(ignoreErrors(finishTxFuture));
+            }
+        }
+
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
+     * Future wrapper which ignores any underlying future errors.
+     *
+     * @param f Underlying future.
+     * @return Future wrapper which ignore any underlying future errors.
+     */
+    private IgniteInternalFuture ignoreErrors(IgniteInternalFuture<?> f) {
+        GridFutureAdapter<?> wrapper = new GridFutureAdapter();
+        f.listen(future -> wrapper.onDone());
+        return wrapper;
     }
 
     /**

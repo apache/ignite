@@ -32,17 +32,14 @@ public class VectorAttributesTest {
     /** */
     private final List<AttrCfg> attrCfgs = Arrays.asList(
         new AttrCfg("isDense", Vector::isDense,
-            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, RandomVector.class, ConstantVector.class,
-            SingleElementVector.class),
+            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class),
         new AttrCfg("isArrayBased", Vector::isArrayBased,
             DenseLocalOnHeapVector.class),
         new AttrCfg("isSequentialAccess", Vector::isSequentialAccess,
-            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, SparseLocalVectorSequentialAccess.class,
-            RandomVector.class, ConstantVector.class, SingleElementVector.class),
+            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, SparseLocalVectorSequentialAccess.class),
         new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
         new AttrCfg("isRandomAccess", Vector::isRandomAccess,
-            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, RandomVector.class, ConstantVector.class,
-            SingleElementVector.class, SparseLocalVectorSequentialAccess.class, SparseLocalVectorRandomAccess.class),
+            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, SparseLocalVectorSequentialAccess.class, SparseLocalVectorRandomAccess.class),
         new AttrCfg("isDistributed", Vector::isDistributed));
 
     /** */
@@ -57,22 +54,6 @@ public class VectorAttributesTest {
             "isRandomAccess", "isDistributed"),
         new Specification(new SparseLocalVectorSequentialAccess(1)),
         new Specification(new SparseLocalVectorRandomAccess(1)),
-        new Specification(new RandomVector(1)),
-        new Specification(new ConstantVector(1, 1.0)),
-        new Specification(new FunctionVector(1, idx -> (double)idx)),
-        new Specification(new SingleElementVector(1, 0, 1.0)),
-        new Specification(new PivotedVectorView(new DenseLocalOnHeapVector(1), new int[] {0}),
-            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess",
-            "isRandomAccess", "isDistributed"),
-        new Specification(new PivotedVectorView(new DenseLocalOffHeapVector(1), new int[] {0}),
-            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess",
-            "isRandomAccess", "isDistributed"),
-        new Specification(new SingleElementVectorView(new DenseLocalOnHeapVector(1), 0),
-            DenseLocalOnHeapVector.class, "isDense", "isSequentialAccess",
-            "isRandomAccess", "isDistributed"),
-        new Specification(new SingleElementVectorView(new DenseLocalOffHeapVector(1), 0),
-            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess",
-            "isRandomAccess", "isDistributed"),
         new Specification(new MatrixVectorView(new DenseLocalOnHeapMatrix(1, 1), 0, 0, 1, 1),
             DenseLocalOnHeapVector.class, "isDense",
             "isRandomAccess", "isDistributed"), // TODO: IGNTIE-5723, find out why "isSequentialAccess" fails here

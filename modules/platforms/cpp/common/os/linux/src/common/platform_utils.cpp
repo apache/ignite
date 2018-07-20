@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-#include <time.h>
+#include <cstdio>
+#include <ctime>
 
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <glob.h>
+#include <unistd.h>
+#include <ftw.h>
 
 #include <ignite/common/utils.h>
 
@@ -90,6 +94,18 @@ namespace ignite
             return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
         }
 
+        static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+        {
+            remove(pathname);
+
+            return 0;
+        }
+
+        bool DeletePath(const std::string& path)
+        {
+            return nftw(path.c_str(), rmFiles, 10, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) == 0;
+        }
+
         StdCharOutStream& Fs(StdCharOutStream& ostr)
         {
             ostr.put('/');
@@ -103,6 +119,19 @@ namespace ignite
             ostr.write(expansion, sizeof(expansion) - 1);
 
             return ostr;
+        }
+
+        unsigned GetRandSeed()
+        {
+            timespec ts;
+
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+
+            unsigned res = static_cast<unsigned>(ts.tv_sec);
+            res ^= static_cast<unsigned>(ts.tv_nsec);
+            res ^= static_cast<unsigned>(getpid());
+
+            return res;
         }
     }
 }

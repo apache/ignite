@@ -565,6 +565,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public Object defaultValue() {
                     return null;
                 }
+
+                /** */
+                @Override public int precision() {
+                    return -1;
+                }
+
+                /** */
+                @Override public int scale() {
+                    return -1;
+                }
             };
         }
 

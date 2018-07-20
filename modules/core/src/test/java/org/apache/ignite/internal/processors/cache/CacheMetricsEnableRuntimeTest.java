@@ -167,6 +167,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         grid(0).getOrCreateCache(cacheCfg2);
 
+        awaitPartitionMapExchange();
+
         final CyclicBarrier barrier = new CyclicBarrier(10);
 
         final AtomicInteger gridIdx = new AtomicInteger(-1);

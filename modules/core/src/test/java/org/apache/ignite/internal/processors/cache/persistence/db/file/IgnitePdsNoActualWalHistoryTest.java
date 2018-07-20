@@ -67,7 +67,7 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
             .setWalSegments(10)
             .setWalMode(WALMode.LOG_ONLY)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(100 * 1024 * 1024)
+                .setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true));
 
         cfg.setMarshaller(null);

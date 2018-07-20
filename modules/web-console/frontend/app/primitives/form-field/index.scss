@@ -18,21 +18,35 @@
 @import '../../../public/stylesheets/variables';
 
 .theme--ignite {
+    [ignite-icon='info'], .tipLabel {
+        color: $ignite-brand-success;
+    }
+
     .ignite-form-field {
         width: 100%;
 
         &.radio--ignite {
             width: auto;
+
         }
 
-        &__label {
-            float: left;
-            width: 100%;
-            margin: 0 10px 4px;
+        &.ignite-form-field-dropdown {
+            .ignite-form-field__control button {
+                display: inline-block;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+            }
+        }
 
-            color: $gray-light;
-            font-size: 12px;
-            line-height: 12px;
+        [ignite-icon='info'], .tipLabel {
+            margin-left: 4px;
+            flex: 0 0 auto;
+        }
+
+
+        label.required {
+            content: '*';
+            margin-left: 0.25em;
         }
 
         .ignite-form-field__control {
@@ -75,10 +89,20 @@
                     &:disabled {
                         opacity: .5;
                     }
+
+
+                    &:focus {
+                        border-color: $ignite-brand-success;
+                        box-shadow: inset 0 1px 3px 0 rgba($ignite-brand-success, .5);
+                    }
+
+                    &:disabled {
+                        opacity: .5;
+                    }
                 }
 
                 & > input[type='number'] {
-                    text-align: right;
+                    text-align: left;
                 }
             }
 
@@ -87,6 +111,62 @@
             }
        }
     }
+    .ignite-form-field__label {
+        float: left;
+        width: 100%;
+        margin: 0 0 2px;
+        padding: 0 10px;
+        height: 16px;
+        display: inline-flex;
+        align-items: center;
+
+        color: $gray-light;
+        font-size: 12px;
+        line-height: 12px;
+
+        &-disabled {
+            opacity: 0.5;   
+        }
+    }
+   .ignite-form-field__errors {
+        color: $ignite-brand-primary;
+        padding: 5px 10px 0px;
+        line-height: 14px;
+        font-size: 12px;
+        clear: both;
+
+        &:empty {
+            display: none;
+        }
+
+        [ng-message] + [ng-message] {
+            margin-top: 10px;
+        }
+   }
+   @keyframes error-pulse {
+        from {
+            color: $ignite-brand-primary;
+        }
+        50% {
+            color: transparent;
+        }
+        to {
+            color: $ignite-brand-primary;
+        }
+   }
+   .ignite-form-field__error-blink {
+        .ignite-form-field__errors {
+            animation-name: error-pulse;
+            animation-iteration-count: 2;
+            animation-duration: 500ms;
+        }
+   }
+
+   .ignite-form-field.form-field-checkbox {
+        input[disabled] ~ * {
+            opacity: 0.5;
+        }
+   }
 }
 
 .form-field {
@@ -160,6 +240,20 @@
                 box-shadow: none;
             }
         }
+
+        // Added right offset to appearance of input for invalid password
+        & > input[type='email'].ng-invalid.ng-touched,
+        & > input[type='text'].ng-invalid.ng-touched,
+        & > input[type='password'].ng-invalid.ng-touched {
+            padding-right: 36px;
+        }
+
+        // Added right offset to appearance of dropdown for invalid data
+        & > button.select-toggle.ng-invalid.ng-touched {
+            &:after {
+                right: 36px;
+            }
+        }
     }
 
     &__errors {
@@ -215,6 +309,7 @@
 }
 
 .form-field__checkbox {
+    $errorSize: 16px;
     display: flex;
 
     .form-field {
@@ -227,6 +322,7 @@
             width: auto;
             margin-right: 10px;
             padding: 3px 0;
+            flex: 0 0 auto;
 
             input {
                 width: auto;
@@ -234,5 +330,55 @@
                 margin: 0;
             }
         }
+
+        &__errors {
+            position: static;
+            right: initial;
+            bottom: initial;
+            order: 3;
+            margin-left: 5px;
+
+            .form-field__error {
+                width: $errorSize;
+                height: $errorSize;
+
+                div {
+                    // Required to correctly position error popover
+                    top: -10px;
+                    height: 36px;
+                    
+                    width: $errorSize;                    
+                }
+
+                [ignite-icon] {
+                    width: $errorSize;
+                    top: 0;
+                }
+            }
+        }
+    }
+}
+
+.form-field__password {
+    // Validation error notification will overlap with visibility button if it's not moved more to the left
+    input[type='password'].ng-invalid.ng-touched,
+    input[type='password'].ng-invalid.ng-touched + input {
+        padding-right: 62px;
+    }
+
+    // Extra space for visibility button
+    input {
+        padding-right: 36px;
+    }
+
+    // Distance between error notification and visibility button
+    .form-field__errors {
+        right: 26px;
+    }
+
+    password-visibility-toggle-button {
+        position: absolute;
+        right: 0;
+        height: 36px;
     }
 }

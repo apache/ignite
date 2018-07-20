@@ -36,6 +36,8 @@ import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
 import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobContextImpl;
@@ -603,8 +605,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         X.hasCause(e, ClusterTopologyCheckedException.class))
                         // Should be throttled, because GridServiceProxy continuously retry getting service.
                         LT.error(log, e, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']');
-                    else
+                    else {
                         U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+
+                        if (X.hasCause(e, OutOfMemoryError.class))
+                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                    }
 
                     ex = e;
                 }
@@ -678,7 +684,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         if (msg == null) {
             msg = "Failed to execute job due to unexpected runtime exception [jobId=" + ses.getJobId() +
-                ", ses=" + ses + ']';
+                ", ses=" + ses + ", err=" + e.getMessage() + ']';
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }

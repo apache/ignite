@@ -17,8 +17,14 @@
 
 package org.apache.ignite.ml.preprocessing;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+
+import java.util.Map;
 
 /**
  * Trainer for preprocessor.
@@ -34,9 +40,40 @@ public interface PreprocessingTrainer<K, V, T, R> {
      *
      * @param datasetBuilder Dataset builder.
      * @param basePreprocessor Base preprocessor.
-     * @param cols Number of columns.
      * @return Preprocessor.
      */
     public IgniteBiFunction<K, V, R> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, T> basePreprocessor, int cols);
+        IgniteBiFunction<K, V, T> basePreprocessor);
+
+    /**
+     * Fits preprocessor.
+     *
+     * @param ignite Ignite instance.
+     * @param cache Ignite cache.
+     * @param basePreprocessor Base preprocessor.
+     * @return Preprocessor.
+     */
+    public default IgniteBiFunction<K, V, R> fit(Ignite ignite, IgniteCache<K, V> cache,
+        IgniteBiFunction<K, V, T> basePreprocessor) {
+        return fit(
+            new CacheBasedDatasetBuilder<>(ignite, cache),
+            basePreprocessor
+        );
+    }
+
+    /**
+     * Fits preprocessor.
+     *
+     * @param data Data.
+     * @param parts Number of partitions.
+     * @param basePreprocessor Base preprocessor.
+     * @return Preprocessor.
+     */
+    public default IgniteBiFunction<K, V, R> fit(Map<K, V> data, int parts,
+        IgniteBiFunction<K, V, T> basePreprocessor) {
+        return fit(
+            new LocalDatasetBuilder<>(data, parts),
+            basePreprocessor
+        );
+    }
 }

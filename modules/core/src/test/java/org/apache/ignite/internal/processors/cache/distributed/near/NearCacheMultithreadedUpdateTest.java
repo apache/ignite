@@ -74,13 +74,6 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
         client = false;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

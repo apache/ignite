@@ -61,7 +61,10 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
      * @param str String to trim.
      * @return The trimmed string.
      */
-    @NotNull private String trim(String str) {
+    private String trim(String str) {
+        if (str.isEmpty())
+            return null;
+
         int startPos = quoteChars.indexOf(str.charAt(0)) != -1 ? 1 : 0;
         int endPos = quoteChars.indexOf(str.charAt(str.length() - 1)) != -1 ? str.length() - 1 : str.length();
 

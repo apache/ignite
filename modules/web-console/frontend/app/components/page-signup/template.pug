@@ -1,0 +1,121 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+web-console-header
+    web-console-header-left
+        ignite-header-title
+
+.container.body-container
+    section
+        -var form = '$ctrl.form'
+        h3 Don't Have An Account?
+        form(name=form novalidate ng-submit='$ctrl.signup()')
+            .full-width
+                +form-field__email({
+                    label: 'Email:',
+                    model: '$ctrl.data.email',
+                    name: '"email"',
+                    placeholder: 'Input email',
+                    required: true
+                })(
+                    ng-model-options='{allowInvalid: true}'
+                    autocomplete='email'
+                    ignite-auto-focus
+                )
+                    +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+            div
+                +form-field__password({
+                    label: 'Password:',
+                    model: '$ctrl.data.password',
+                    name: '"password"',
+                    placeholder: 'Input password',
+                    required: true
+                })(
+                    autocomplete='new-password'
+                )
+            div
+                +form-field__password({
+                    label: 'Confirm:',
+                    model: 'confirm',
+                    name: '"confirm"',
+                    placeholder: 'Confirm password',
+                    required: true
+                })(
+                    ignite-match='$ctrl.data.password'
+                    autocomplete='off'
+                )
+            div
+                +form-field__text({
+                    label: 'First name:',
+                    model: '$ctrl.data.firstName',
+                    name: '"firstName"',
+                    placeholder: 'Input first name',
+                    required: true
+                })(
+                    autocomplete='given-name'
+                )
+            div
+                +form-field__text({
+                    label: 'Last name:',
+                    model: '$ctrl.data.lastName',
+                    name: '"lastName"',
+                    placeholder: 'Input last name',
+                    required: true
+                })(
+                    autocomplete='family-name'
+                )
+            div
+                +form-field__phone({
+                    label: 'Phone:',
+                    model: '$ctrl.data.phone',
+                    name: '"phone"',
+                    placeholder: 'Input phone (ex.: +15417543010)',
+                    optional: true
+                })(
+                    autocomplete='tel'
+                )
+            div
+                +form-field__dropdown({
+                    label: 'Country:',
+                    model: '$ctrl.data.country',
+                    name: '"country"',
+                    required: true,
+                    placeholder: 'Choose your country',
+                    options: '$ctrl.countries'
+                })(
+                    autocomplete='country'
+                )
+            .full-width
+                +form-field__text({
+                    label: 'Company:',
+                    model: '$ctrl.data.company',
+                    name: '"company"',
+                    placeholder: 'Input company name',
+                    required: true
+                })(
+                    ignite-on-enter-focus-move='countryInput'
+                    autocomplete='organization'
+                )
+            footer.full-width.form-footer
+                button.btn-ignite.btn-ignite--primary(
+                    type='submit'
+                ) Sign Up
+        footer.page-signup__has-account-message
+            | Already have an account? #[a(ui-sref='signin') Sign in here]
+
+web-console-footer

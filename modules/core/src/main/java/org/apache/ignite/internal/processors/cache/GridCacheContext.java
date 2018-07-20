@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -39,6 +40,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -106,12 +108,14 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -258,6 +262,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Statistics enabled flag. */
     private volatile boolean statisticsEnabled;
 
+    /** Whether to enable read load balancing. */
+    private final boolean readLoadBalancingEnabled = IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, true);
+
+    /** Flag indicating whether data can be read from backup. */
+    private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
+
+    /** Local node's MAC address. */
+    private String locMacs;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -377,6 +390,12 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+
+        readFromBackup = cacheCfg.isReadFromBackup();
+
+        locMacs = localNode().attribute(ATTR_MACS);
+
+        assert locMacs != null;
     }
 
     /**
@@ -1780,7 +1799,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
         assert validObjectForCache(obj) : obj;
 
-        return cacheObjects().toCacheObject(cacheObjCtx, obj, true);
+        return cacheObjects().toCacheObject(cacheObjCtx, obj, true, grp.isTopologyLocked());
     }
 
     /**
@@ -1822,6 +1841,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException, If validation fails.
      */
     public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        // No validation for removal.
+        if (val == null)
+            return;
+
         if (!isQueryEnabled())
             return;
 
@@ -2049,7 +2072,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             topology().partitionState(localNodeId(), part) == OWNING :
             "result=" + result + ", persistenceEnabled=" + group().persistenceEnabled() +
                 ", partitionState=" + topology().partitionState(localNodeId(), part) +
-                ", replicated=" + isReplicated();
+                ", replicated=" + isReplicated() + ", part=" + part;
 
         return result;
     }
@@ -2155,6 +2178,51 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return true;
+    }
+
+    /**
+     * Determines an affinity node to send get request to.
+     *
+     * @param affNodes All affinity nodes.
+     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
+     */
+    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+        if (!readLoadBalancingEnabled) {
+            if (!canRemap) {
+                for (ClusterNode node : affNodes) {
+                    if (ctx.discovery().alive(node))
+                        return node;
+                }
+
+                return null;
+            }
+            else
+                return affNodes.get(0);
+        }
+
+        if (!readFromBackup)
+            return affNodes.get(0);
+
+        assert locMacs != null;
+
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+
+        ClusterNode n0 = null;
+
+        for (ClusterNode node : affNodes) {
+            if (canRemap || discovery().alive(node)) {
+                if (locMacs.equals(node.attribute(ATTR_MACS)))
+                    return node;
+
+                if (r >= 0 || n0 == null)
+                    n0 = node;
+            }
+
+            r--;
+        }
+
+        return n0;
     }
 
     /**

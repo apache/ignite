@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Structure;
     using Apache.Ignite.Core.Impl.Common;
@@ -770,7 +771,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var typeName = ReadString();  // Must read always.
 
-            return knownType ?? Marshaller.ResolveType(typeName);
+            var type = knownType ?? Marshaller.ResolveType(typeName);
+
+            if (type == null)
+            {
+                throw new IgniteException("Could not resolve unregistered type " + typeName);
+            }
+
+            return type;
         }
 
         /// <summary>

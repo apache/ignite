@@ -30,9 +30,9 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -106,11 +106,16 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             }
 
             X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
+
             watchdog.interrupt();
         }
         catch (Throwable e) {
+            e.printStackTrace();
+
             X.println("Dumping classpath, error occurred: " + e);
+
             dumpClasspath();
+
             throw e;
         }
     }
@@ -146,6 +151,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
         };
 
         final Thread thread = new Thread(target);
+
         thread.setDaemon(true);
         thread.start();
 
@@ -158,7 +164,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     private static void dumpClasspath() {
         ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
 
-        for (URL url : IgniteUtils.classLoaderUrls(clsLdr))
+        for (URL url : CompatibilityTestsUtils.classLoaderUrls(clsLdr))
             X.println("Classpath url: [" + url.getPath() + ']');
     }
 

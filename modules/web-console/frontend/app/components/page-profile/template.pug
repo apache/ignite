@@ -90,34 +90,40 @@ div
 
         .row#security-token-section
             .col-50
-                .panel--ignite.panel--collapse(ng-class='{ in: !$ctrl.ui.expandedToken }')
-                    header(ng-click='$ctrl.toggleToken()')
-                        svg(ignite-icon='expand')
-                        svg(ignite-icon='collapse')
-
-                        | {{$ctrl.ui.expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
-                    hr
-                    section(ng-if='$ctrl.ui.expandedToken')
+                panel-collapsible(
+                    opened='$ctrl.ui.expandedToken'
+                    on-open='$ctrl.ui.expandedToken = true'
+                    on-close='$ctrl.onSecurityTokenPanelClose()'
+                )
+                    panel-title
+                        | {{ $panel.opened ? 'Cancel security token changing...' : 'Show security token...' }}
+                    panel-content
                         .row
-                            .col-25
-                                label.required Security token:
-                            .col-75
-                                label#current-security-token {{$ctrl.ui.user.token || 'No security token. Regenerate please.'}}
-                                label
-                                    i.tipLabel.fa.fa-refresh(ng-click='$ctrl.generateToken()' bs-tooltip='' data-title='Generate random security token')
-                                    i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{$ctrl.ui.user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
-                                    i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+                            .col-50
+                                +form-field__text({
+                                    label: 'Security Token:',
+                                    model: '$ctrl.ui.user.token',
+                                    tip: 'The security token is used for authentication of Web agent',
+                                    name: '"securityToken"',
+                                    placeholder: 'No security token. Regenerate please.'
+                                })(
+                                    autocomplete='security-token'
+                                    ng-disabled='::true'
+                                    copy-input-value-button='Copy security token to clipboard'
+                                )
+                            .col-50
+                                a(ng-click='$ctrl.generateToken()') Generate Random Security Token?
 
         .row
             .col-50
-                .panel--ignite.panel--collapse(ng-class='{ in: !$ctrl.ui.expandedPassword }')
-                    header(ng-click='$ctrl.togglePassword()')
-                        svg(ignite-icon='expand')
-                        svg(ignite-icon='collapse')
-
-                        | {{ $ctrl.ui.expandedPassword ? 'Cancel password changing...' : 'Change password...' }}
-                    hr
-                    section(ng-if='$ctrl.ui.expandedPassword')
+                panel-collapsible(
+                    opened='$ctrl.ui.expandedPassword'
+                    on-open='$ctrl.ui.expandedToken = false'
+                    on-close='$ctrl.onPasswordPanelClose()'
+                )
+                    panel-title
+                        | {{ $panel.opened ? 'Cancel password changing...' : 'Change password...' }}
+                    panel-content(ng-if='$panel.opened')
                         .row
                             .col-100
                                 +form-field__password({

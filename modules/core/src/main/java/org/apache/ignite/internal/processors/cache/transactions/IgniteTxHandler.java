@@ -256,9 +256,6 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
 
-        if (locTx.isRollbackOnly())
-            locTx.rollbackNearTxLocalAsync();
-
         return fut.chain(new C1<IgniteInternalFuture<GridNearTxPrepareResponse>, GridNearTxPrepareResponse>() {
             @Override public GridNearTxPrepareResponse apply(IgniteInternalFuture<GridNearTxPrepareResponse> f) {
                 try {
@@ -800,9 +797,9 @@ public class IgniteTxHandler {
         if (locTx != null)
             req.txState(locTx.txState());
 
-        // 'baseVersion' message field is re-used for version to be added in completed versions.
-        if (!req.commit() && req.baseVersion() != null)
-            ctx.tm().addRolledbackTx(null, req.baseVersion());
+        // Always add near version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
@@ -885,7 +882,7 @@ public class IgniteTxHandler {
                 req.threadId(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException("Transaction has been already completed."));
+                new IgniteTxRollbackCheckedException("Transaction has been already completed or not started yet."));
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
@@ -1698,6 +1695,8 @@ public class IgniteTxHandler {
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
             if (tx.empty() && req.last()) {
+                tx.skipCompletedVersions(req.skipCompletedVersion());
+
                 tx.rollbackRemoteTx();
 
                 return null;
@@ -1878,8 +1877,8 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
-        if (txRecoveryMsgLog.isDebugEnabled()) {
-            txRecoveryMsgLog.debug("Received tx recovery response [txId=" + res.version() +
+        if (txRecoveryMsgLog.isInfoEnabled()) {
+            txRecoveryMsgLog.info("Received tx recovery response [txId=" + res.version() +
                 ", node=" + nodeId +
                 ", res=" + res + ']');
         }
@@ -1887,8 +1886,8 @@ public class IgniteTxHandler {
         GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
-            if (txRecoveryMsgLog.isDebugEnabled()) {
-                txRecoveryMsgLog.debug("Failed to find future for tx recovery response [txId=" + res.version() +
+            if (txRecoveryMsgLog.isInfoEnabled()) {
+                txRecoveryMsgLog.info("Failed to find future for tx recovery response [txId=" + res.version() +
                     ", node=" + nodeId + ", res=" + res + ']');
             }
 

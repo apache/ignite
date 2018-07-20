@@ -57,7 +57,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     private int cmd;
 
     /** Data in this batch. */
-    @NotNull private byte[] data;
+    private byte[] data;
 
     /**
      * Creates the request with uninitialized parameters.
@@ -79,6 +79,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd) {
         this(qryId, batchIdx, cmd, new byte[0]);
     }
@@ -91,6 +92,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      * @param data The data block (zero length is acceptable).
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd, @NotNull byte[] data) {
         super(BULK_LOAD_BATCH);
 
@@ -135,6 +137,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      *
      * @return data if data was not supplied
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @NotNull public byte[] data() {
         return data;
     }

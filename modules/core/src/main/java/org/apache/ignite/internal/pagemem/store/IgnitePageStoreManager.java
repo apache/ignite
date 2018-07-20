@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -193,6 +194,15 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @throws IgniteCheckedException If failed.
      */
     public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException;
+
+    /**
+     * Remove cache configuration data file.
+     *
+     * @param cacheData Cache configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException;
+
     /**
      * @param grpId Cache group ID.
      * @return {@code True} if index store for given cache group existed before node started.
@@ -211,4 +221,16 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return number of pages.
      */
     public long pagesAllocated(int grpId);
+
+    /**
+     * Cleanup persistent space for cache.
+     *
+     * @param cacheConfiguration Cache configuration of cache which should be cleanup.
+     */
+    public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException;
+
+    /**
+     * Cleanup persistent space for all caches.
+     */
+    public void cleanupPersistentSpace() throws IgniteCheckedException;
 }

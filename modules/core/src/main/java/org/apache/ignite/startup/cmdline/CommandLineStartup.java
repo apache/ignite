@@ -43,8 +43,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteState.STOPPED;
-import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
+import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -326,7 +325,7 @@ public final class CommandLineStartup {
                 if (!F.eq(igniteInstanceName, name))
                     return;
 
-                if (state == STOPPED || state == STOPPED_ON_SEGMENTATION)
+                if (state != STARTED)
                     latch.countDown();
             }
         });

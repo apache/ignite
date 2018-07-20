@@ -82,13 +82,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /** Argument for simple SQL (2). */
     protected static final int SQL_ARG_2 = 80;
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Create server configuration.
      *
@@ -143,7 +136,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         cfg.setMarshaller(new BinaryMarshaller());
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 

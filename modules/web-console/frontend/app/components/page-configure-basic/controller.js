@@ -15,125 +15,181 @@
  * limitations under the License.
  */
 
+import {Observable} from 'rxjs/Observable';
+import 'rxjs/add/operator/map';
+import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/combineLatest';
+import naturalCompare from 'natural-compare-lite';
+import {
+    changeItem,
+    removeClusterItems,
+    basicSave,
+    basicSaveAndDownload
+} from 'app/components/page-configure/store/actionCreators';
+
+import {Confirm} from 'app/services/Confirm.service';
+import ConfigureState from 'app/components/page-configure/services/ConfigureState';
+import ConfigSelectors from 'app/components/page-configure/store/selectors';
+import Caches from 'app/services/Caches';
+import Clusters from 'app/services/Clusters';
+import IgniteVersion from 'app/services/Version.service';
+import {default as ConfigChangesGuard} from 'app/components/page-configure/services/ConfigChangesGuard';
 
 export default class PageConfigureBasicController {
+    /** @type {ng.IFormController} */
+    form;
+
     static $inject = [
-        '$scope',
-        'PageConfigureBasic',
-        'Clusters',
-        'ConfigureState',
-        'ConfigurationDownload',
-        'IgniteVersion'
+        Confirm.name, '$uiRouter', ConfigureState.name, ConfigSelectors.name, Clusters.name, Caches.name, IgniteVersion.name, '$element', 'ConfigChangesGuard', 'IgniteFormUtils', '$scope'
     ];
 
-    constructor($scope, pageService, Clusters, ConfigureState, ConfigurationDownload, Version) {
-        Object.assign(this, {$scope, pageService, Clusters, ConfigureState, ConfigurationDownload, Version});
-    }
-
-    $onInit() {
-        this.subscription = this.getObservable(this.ConfigureState.state$, this.Version.currentSbj).subscribe();
-        this.discoveries = this.Clusters.discoveries;
-        this.minMemorySize = this.Clusters.minMemoryPolicySize;
-
-        // TODO IGNITE-5271: extract into size input component
-        this.sizesMenu = [
-            {label: 'Kb', value: 1024},
-            {label: 'Mb', value: 1024 * 1024},
-            {label: 'Gb', value: 1024 * 1024 * 1024}
-        ];
-
-        this.memorySizeScale = this.sizesMenu[2];
-        this.pageService.setCluster(-1);
-    }
-
-    getObservable(state$, version$) {
-        return state$.combineLatest(version$, (state, version) => ({
-            clusters: state.list.clusters,
-            caches: state.list.caches,
-            state: state.configureBasic,
-            allClusterCaches: this.getAllClusterCaches(state.configureBasic),
-            cachesMenu: this.getCachesMenu(state.list.caches),
-            clustersMenu: this.getClustersMenu(state.list.clusters),
-            defaultMemoryPolicy: this.getDefaultClusterMemoryPolicy(state.configureBasic.cluster, version),
-            memorySizeInputVisible: this.getMemorySizeInputVisibility(version)
-        }))
-        .do((value) => this.applyValue(value));
-    }
-
-    applyValue(value) {
-        this.$scope.$applyAsync(() => Object.assign(this, value));
+    /**
+     * @param {Confirm} Confirm
+     * @param {uirouter.UIRouter} $uiRouter
+     * @param {ConfigureState} ConfigureState
+     * @param {ConfigSelectors} ConfigSelectors
+     * @param {Clusters} Clusters
+     * @param {Caches} Caches
+     * @param {IgniteVersion} IgniteVersion
+     * @param {JQLite} $element
+     * @param {ConfigChangesGuard} ConfigChangesGuard
+     * @param {object} IgniteFormUtils
+     * @param {ng.IScope} $scope
+     */
+    constructor(Confirm, $uiRouter, ConfigureState, ConfigSelectors, Clusters, Caches, IgniteVersion, $element, ConfigChangesGuard, IgniteFormUtils, $scope) {
+        Object.assign(this, {IgniteFormUtils});
+        this.ConfigChangesGuard = ConfigChangesGuard;
+        this.$uiRouter = $uiRouter;
+        this.$scope = $scope;
+        this.$element = $element;
+        this.Caches = Caches;
+        this.Clusters = Clusters;
+        this.Confirm = Confirm;
+        this.ConfigureState = ConfigureState;
+        this.ConfigSelectors = ConfigSelectors;
+        this.IgniteVersion = IgniteVersion;
     }
 
     $onDestroy() {
         this.subscription.unsubscribe();
+        if (this.onBeforeTransition) this.onBeforeTransition();
+        this.$element = null;
     }
 
-    set clusterID(value) {
-        this.pageService.setCluster(value);
+    $postLink() {
+        this.$element.addClass('panel--ignite');
     }
 
-    get clusterID() {
-        return get(this, 'state.clusterID');
+    _uiCanExit($transition$) {
+        if ($transition$.options().custom.justIDUpdate) return true;
+        $transition$.onSuccess({}, () => this.reset());
+        return Observable.forkJoin(
+            this.ConfigureState.state$.pluck('edit', 'changes').take(1),
+            this.clusterID$.switchMap((id) => this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterShortCaches(id))).take(1),
+            this.shortCaches$.take(1)
+        ).toPromise()
+        .then(([changes, originalShortCaches, currentCaches]) => {
+            return this.ConfigChangesGuard.guard(
+                {
+                    cluster: this.Clusters.normalize(this.originalCluster),
+                    caches: originalShortCaches.map(this.Caches.normalize)
+                },
+                {
+                    cluster: {...this.Clusters.normalize(this.clonedCluster), caches: changes.caches.ids},
+                    caches: currentCaches.map(this.Caches.normalize)
+                }
+            );
+        });
     }
 
-    set oldClusterCaches(value) {
-        this.pageService.setSelectedCaches(value);
-    }
+    $onInit() {
+        this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
 
-    _oldClusterCaches = [];
+        this.memorySizeInputVisible$ = this.IgniteVersion.currentSbj
+            .map((version) => this.IgniteVersion.since(version.ignite, '2.0.0'));
 
-    get oldClusterCaches() {
-        // TODO IGNITE-5271 Keep ng-model reference the same, otherwise ng-repeat in bs-select will enter into
-        // infinite digest loop.
-        this._oldClusterCaches.splice(0, this._oldClusterCaches.length, ...get(this, 'state.oldClusterCaches', []).map((c) => c._id));
-        return this._oldClusterCaches;
+        const clusterID$ = this.$uiRouter.globals.params$.take(1).pluck('clusterID').filter((v) => v).take(1);
+        this.clusterID$ = clusterID$;
+
+        this.isNew$ = this.$uiRouter.globals.params$.pluck('clusterID').map((id) => id === 'new');
+        this.shortCaches$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortCaches);
+        this.shortClusters$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectShortClustersValue());
+        this.originalCluster$ = clusterID$.distinctUntilChanged().switchMap((id) => {
+            return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id));
+        }).distinctUntilChanged().publishReplay(1).refCount();
+
+        this.subscription = Observable.merge(
+            this.shortCaches$.map((caches) => caches.sort((a, b) => naturalCompare(a.name, b.name))).do((v) => this.shortCaches = v),
+            this.shortClusters$.do((v) => this.shortClusters = v),
+            this.originalCluster$.do((v) => {
+                this.originalCluster = v;
+                // clonedCluster should be set only when particular cluster edit starts.
+                // 
+                // Stored cluster changes should not propagate to clonedCluster because it's assumed
+                // that last saved copy has same shape to what's already loaded. If stored cluster would overwrite
+                // clonedCluster every time, then data rollback on server errors would undo all changes
+                // made by user and we don't want that. Advanced configuration forms do the same too.
+                if (get(v, '_id') !== get(this.clonedCluster, '_id')) this.clonedCluster = cloneDeep(v);
+                this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);
+            })
+        ).subscribe();
+
+        this.formActionsMenu = [
+            {
+                text: 'Save and Download',
+                click: () => this.save(true),
+                icon: 'download'
+            },
+            {
+                text: 'Save',
+                click: () => this.save(),
+                icon: 'checkmark'
+            }
+        ];
+
+        this.cachesColDefs = [
+            {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
+                Atomicity:
+                <ul>
+                    <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
+                    <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>
+                </ul>
+            `},
+            {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
+                Number of nodes used to back up single partition for partitioned cache
+            `}
+        ];
     }
 
     addCache() {
-        this.pageService.addCache();
+        this.ConfigureState.dispatchAction({type: 'ADD_CACHE_TO_EDIT'});
     }
 
     removeCache(cache) {
-        this.pageService.removeCache(cache);
+        this.ConfigureState.dispatchAction(
+            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', [cache._id], false, false)
+        );
     }
 
-    save() {
-        return this.pageService.saveClusterAndCaches(this.state.cluster, this.allClusterCaches);
+    changeCache(cache) {
+        return this.ConfigureState.dispatchAction(changeItem('caches', cache));
     }
 
-    saveAndDownload() {
-        return this.save().then(([clusterID]) => (
-            this.ConfigurationDownload.downloadClusterConfiguration({_id: clusterID, name: this.state.cluster.name})
-        ));
+    save(download = false) {
+        if (this.form.$invalid) return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
+        this.ConfigureState.dispatchAction((download ? basicSaveAndDownload : basicSave)(cloneDeep(this.clonedCluster)));
     }
 
-    getClustersMenu(clusters = new Map()) {
-        const newOne = {_id: -1, name: '+ Add new cluster'};
-        return clusters.size
-            ? [newOne, ...clusters.values()]
-            : [newOne];
+    reset() {
+        this.clonedCluster = cloneDeep(this.originalCluster);
+        this.ConfigureState.dispatchAction({type: 'RESET_EDIT_CHANGES'});
     }
 
-    getCachesMenu(caches = []) {
-        return [...caches.values()].map((c) => ({_id: c._id, name: c.name}));
-    }
-
-    getAllClusterCaches(state = {oldClusterCaches: [], newClusterCaches: []}) {
-        return [...state.oldClusterCaches, ...state.newClusterCaches];
-    }
-
-    getDefaultClusterMemoryPolicy(cluster, version) {
-        if (this.Version.since(version.ignite, ['2.1.0', '2.3.0']))
-            return get(cluster, 'memoryConfiguration.memoryPolicies', []).find((p) => p.name === 'default');
-
-        return get(cluster, 'dataStorageConfiguration.defaultDataRegionConfiguration') ||
-            get(cluster, 'dataStorageConfiguration.dataRegionConfigurations', []).find((p) => p.name === 'default');
-    }
-
-    getMemorySizeInputVisibility(version) {
-        return this.Version.since(version.ignite, '2.0.0');
+    confirmAndReset() {
+        return this.Confirm.confirm('Are you sure you want to undo all changes for current cluster?')
+        .then(() => this.reset())
+        .catch(() => {});
     }
 }

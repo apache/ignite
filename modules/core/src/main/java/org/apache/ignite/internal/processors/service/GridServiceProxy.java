@@ -47,6 +47,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -150,7 +151,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @return Result.
      */
     @SuppressWarnings("BusyWait")
-    public Object invokeMethod(final Method mtd, final Object[] args) {
+    public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -205,7 +206,25 @@ public class GridServiceProxy<T> implements Serializable {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
+                    // Check if ignorable exceptions are in the cause chain.
+                    Throwable ignorableCause = X.cause(e, GridServiceNotFoundException.class);
+
+                    if (ignorableCause == null)
+                        ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
+
+                    if (ignorableCause != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Service was not found or topology changed (will retry): " + ignorableCause.getMessage());
+                    }
+                    else {
+                        // Rethrow original service method exception so that calling user code can handle it correctly.
+                        ServiceProxyException svcProxyE = X.cause(e, ServiceProxyException.class);
+
+                        if (svcProxyE != null)
+                            throw svcProxyE.getCause();
+
+                        throw U.convertException(e);
+                    }
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);
@@ -352,7 +371,7 @@ public class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @SuppressWarnings("BusyWait")
-        @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) {
+        @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
             return invokeMethod(mtd, args);
         }
     }
@@ -418,8 +437,7 @@ public class GridServiceProxy<T> implements Serializable {
                 return mtd.invoke(svcCtx.service(), args);
             }
             catch (InvocationTargetException e) {
-                // Get error message.
-                throw new IgniteCheckedException(e.getCause().getMessage(), e);
+                throw new ServiceProxyException(e.getCause());
             }
         }
 
@@ -442,6 +460,19 @@ public class GridServiceProxy<T> implements Serializable {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ServiceProxyCallable.class, this);
+        }
+    }
+
+    /**
+     * Exception class that wraps an exception thrown by the service implementation.
+     */
+    private static class ServiceProxyException extends RuntimeException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        ServiceProxyException(Throwable cause) {
+            super(cause);
         }
     }
 }

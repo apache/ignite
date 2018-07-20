@@ -18,6 +18,8 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParametersDelegate;
+import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -29,6 +31,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
+import org.apache.ignite.yardstick.upload.UploadBenchmarkArguments;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -100,6 +103,14 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
     private int preloadAmount = 500_000;
+
+    /** */
+    @Parameter(names = {"-pdrm", "--preloadDataRegionMult"}, description = "Data region size multiplier for preload.")
+    private int preloadDataRegionMult = 0;
+
+    /** */
+    @Parameter(names = {"-ep", "--enablePreload"}, description = "Enable preload flag.")
+    private boolean enablePreload = false;
 
     /** */
     @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
@@ -262,6 +273,10 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    @ParametersDelegate
+    @GridToStringInclude
+    public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -384,7 +399,7 @@ public class IgniteBenchmarkArguments {
     /**
      * @return {@code True} if flag for native benchmarking is set.
      */
-    public boolean isNative(){
+    public boolean isNative() {
         return ntv;
     }
 
@@ -402,6 +417,10 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    public void setRange(int newVal) {
+        range = newVal;
+    }
+
     /**
      * @return Scale factor.
      */
@@ -414,6 +433,20 @@ public class IgniteBenchmarkArguments {
      */
     public int preloadAmount() {
         return preloadAmount;
+    }
+
+    /**
+     * @return Preload data region multiplier.
+     */
+    public int preloadDataRegionMult() {
+        return preloadDataRegionMult;
+    }
+
+    /**
+     * @return Reset range for preload flag.
+     */
+    public boolean enablePreload() {
+        return enablePreload;
     }
 
     /**

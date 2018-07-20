@@ -15,49 +15,49 @@
  * limitations under the License.
  */
 
-const { Selector } = require('testcafe');
-const { removeData, insertTestUser } = require('../../envtools');
-const { signIn } = require('../../roles');
+import { dropTestDB, insertTestUser, resolveUrl } from '../../environment/envtools';
+import { createRegularUser } from '../../roles';
+import {pageProfile} from '../../page-models/pageProfile';
+import {confirmation} from '../../components/confirmation';
+import {successNotification} from '../../components/notifications';
+
+const regularUser = createRegularUser();
 
 fixture('Checking user credentials change')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`
-    .beforeEach(async(t) => {
-        await t.setNativeDialogHandler(() => true);
-        await removeData();
+    .before(async() => {
+        await dropTestDB();
         await insertTestUser();
-        await signIn(t);
-
-        await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
+    })
+    .beforeEach(async(t) => {
+        await t.useRole(regularUser);
+        await t.navigateTo(resolveUrl('/settings/profile'));
     })
     .after(async() => {
-        await removeData();
+        await dropTestDB();
     });
 
 test('Testing secure token change', async(t) => {
-    await t.click(Selector('header').withAttribute('ng-click', '$ctrl.toggleToken()'));
+    await t.click(pageProfile.securityToken.panel.heading);
 
-    const currentToken = await Selector('#current-security-token').innerText;
-
-    await t
-        .click(Selector('i').withAttribute('ng-click', '$ctrl.generateToken()'))
-        .expect(Selector('p').withText('Are you sure you want to change security token?').exists)
-        .ok()
-        .click('#confirm-btn-ok', {timeout: 5000});
+    const currentToken = await pageProfile.securityToken.value.control.value;
 
     await t
-        .expect(await Selector('#current-security-token').innerText)
-        .notEql(currentToken);
+        .click(pageProfile.securityToken.generateTokenButton)
+        .expect(confirmation.body.innerText).contains(
+`Are you sure you want to change security token?
+If you change the token you will need to restart the agent.`
+        )
+        .click(confirmation.confirmButton)
+        .expect(pageProfile.securityToken.value.control.value).notEql(currentToken);
 });
 
 test('Testing password change', async(t) => {
-    await t.click(Selector('header').withAttribute('ng-click', '$ctrl.togglePassword()'));
+    const pass = 'newPass';
 
     await t
-        .typeText('#passwordInput', 'newPass')
-        .typeText('#passwordConfirmInput', 'newPass')
-        .click(Selector('button').withText('Save Changes'));
-
-    await t
-        .expect(Selector('span').withText('Profile saved.').exists)
-        .ok();
+        .click(pageProfile.password.panel.heading)
+        .typeText(pageProfile.password.newPassword.control, pass)
+        .typeText(pageProfile.password.confirmPassword.control, pass)
+        .click(pageProfile.saveChangesButton)
+        .expect(successNotification.withText('Profile saved.').exists).ok();
 });

@@ -156,7 +156,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public double getAverageCpuLoad();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Average time spent in CG since the last update.")
+    @MXBeanDescription("Average time spent in GC since the last update.")
     public double getCurrentGcCpuLoad();
 
     /** {@inheritDoc} */
@@ -258,6 +258,22 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public int getTotalNodes();
 
     /**
+     * Get count of total baseline nodes.
+     *
+     * @return Count of total baseline nodes.
+     */
+    @MXBeanDescription("Total baseline nodes count.")
+    public int getTotalBaselineNodes();
+
+    /**
+     * Get count of active baseline nodes.
+     *
+     * @return Count of active baseline nodes.
+     */
+    @MXBeanDescription("Active baseline nodes count.")
+    public int getActiveBaselineNodes();
+
+    /**
      * Get count of server nodes.
      *
      * @return Count of server nodes.
@@ -284,7 +300,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     /**
      * Get distinct attribute names for given nodes projection.
      */
-    @MXBeanDescription("Distinct attrubute names for given nodes projection.")
+    @MXBeanDescription("Distinct attribute names for given nodes projection.")
     public Set<String> attributeNames();
 
 
@@ -293,7 +309,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      *
      * @param attrName Attribute name.
      */
-    @MXBeanDescription("Distinct attrubute values for given nodes projection.")
+    @MXBeanDescription("Distinct attribute values for given nodes projection.")
     @MXBeanParametersNames("attrName")
     @MXBeanParametersDescriptions("Attribute name.")
     public Set<String> attributeValues(String attrName);

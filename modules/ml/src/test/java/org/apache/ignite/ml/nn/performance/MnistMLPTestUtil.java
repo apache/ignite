@@ -22,19 +22,13 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
 
-import static org.apache.ignite.ml.math.VectorUtils.num2Vec;
-
 /** */
-class MnistMLPTestUtil {
+public class MnistMLPTestUtil {
     /** Name of the property specifying path to training set images. */
     private static final String PROP_TRAINING_IMAGES = "mnist.training.images";
 
@@ -51,38 +45,47 @@ class MnistMLPTestUtil {
     static IgniteBiTuple<Stream<DenseLocalOnHeapVector>, Stream<DenseLocalOnHeapVector>> loadMnist(int samplesCnt) throws IOException {
         Properties props = loadMNISTProperties();
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES),
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnistAsStream(props.getProperty(PROP_TRAINING_IMAGES),
             props.getProperty(PROP_TRAINING_LABELS), new Random(123L), samplesCnt);
 
-        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES),
+        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnistAsStream(props.getProperty(PROP_TEST_IMAGES),
             props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
 
         return new IgniteBiTuple<>(trainingMnistStream, testMnistStream);
+    }
+
+    /**
+     * Loads training set.
+     *
+     * @param cnt Count of objects.
+     * @return List of MNIST images.
+     * @throws IOException In case of exception.
+     */
+    public static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
+        Properties props = loadMNISTProperties();
+        return MnistUtils.mnistAsList(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
+    }
+
+    /**
+     * Loads test set.
+     *
+     * @param cnt Count of objects.
+     * @return List of MNIST images.
+     * @throws IOException In case of exception.
+     */
+    public static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
+        Properties props = loadMNISTProperties();
+        return MnistUtils.mnistAsList(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
     }
 
     /** Load properties for MNIST tests. */
     private static Properties loadMNISTProperties() throws IOException {
         Properties res = new Properties();
 
-        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
+        InputStream is = MnistMLPTestUtil.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
 
         res.load(is);
 
         return res;
-    }
-
-    /** */
-    static IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
-        Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);
-        Matrix labels = new DenseLocalOnHeapMatrix(10, samplesCnt);
-        List<DenseLocalOnHeapVector> sc = s.collect(Collectors.toList());
-
-        for (int i = 0; i < samplesCnt; i++) {
-            DenseLocalOnHeapVector v = sc.get(i);
-            vectors.assignColumn(i, v.viewPart(0, featCnt));
-            labels.assignColumn(i, num2Vec((int)v.getX(featCnt), 10));
-        }
-
-        return new IgniteBiTuple<>(vectors, labels);
     }
 }

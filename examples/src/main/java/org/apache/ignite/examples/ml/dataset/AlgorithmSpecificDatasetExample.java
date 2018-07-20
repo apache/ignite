@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.math.VectorUtils;
 
 /**
  * Example that shows how to implement your own algorithm (gradient descent trainer for linear regression) which uses
@@ -65,9 +66,8 @@ public class AlgorithmSpecificDatasetExample {
                 persons,
                 (upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
                 new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
-                    (k, v) -> new double[] {v.getAge()},
-                    (k, v) -> v.getSalary(),
-                    1
+                    (k, v) -> VectorUtils.of(v.getAge()),
+                    (k, v) -> new double[] {v.getSalary()}
                 ).andThen((data, ctx) -> {
                     double[] features = data.getFeatures();
                     int rows = data.getRows();
@@ -80,7 +80,7 @@ public class AlgorithmSpecificDatasetExample {
 
                     System.arraycopy(features, 0, a, rows, features.length);
 
-                    return new SimpleLabeledDatasetData(a, rows, data.getCols() + 1, data.getLabels());
+                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
                 })
             ).wrap(AlgorithmSpecificDataset::new)) {
                 // Trains linear regression model using gradient descent.
@@ -125,11 +125,12 @@ public class AlgorithmSpecificDatasetExample {
         double[] gradient(double[] x) {
             return computeWithCtx((ctx, data, partIdx) -> {
                 double[] tmp = Arrays.copyOf(data.getLabels(), data.getRows());
-                blas.dgemv("N", data.getRows(), data.getCols(), 1.0, data.getFeatures(),
+                int featureCols = data.getFeatures().length / data.getRows();
+                blas.dgemv("N", data.getRows(), featureCols, 1.0, data.getFeatures(),
                     Math.max(1, data.getRows()), x, 1, -1.0, tmp, 1);
 
-                double[] res = new double[data.getCols()];
-                blas.dgemv("T", data.getRows(), data.getCols(), 1.0, data.getFeatures(),
+                double[] res = new double[featureCols];
+                blas.dgemv("T", data.getRows(), featureCols, 1.0, data.getFeatures(),
                     Math.max(1, data.getRows()), tmp, 1, 0.0, res, 1);
 
                 int iteration = ctx.getIteration();

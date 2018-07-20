@@ -25,10 +25,7 @@ import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.CacheVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseLocalOffHeapVector;
@@ -271,8 +268,7 @@ public class Blas {
      * Currently we support only local onheap matrices for BLAS.
      */
     private static void checkMatrixType(Matrix a, String op) {
-        if (a instanceof DenseLocalOffHeapMatrix || a instanceof SparseDistributedMatrix
-            || a instanceof SparseBlockDistributedMatrix)
+        if (a instanceof DenseLocalOffHeapMatrix)
             throw new IllegalArgumentException("Operation doesn't support for matrix [class="
                 + a.getClass().getName() + ", operation=" + op + "].");
     }
@@ -281,7 +277,7 @@ public class Blas {
      * Currently we support only local onheap vectors for BLAS.
      */
     private static void checkVectorType(Vector a, String op) {
-        if (a instanceof DenseLocalOffHeapVector || a instanceof SparseLocalOffHeapVector || a instanceof CacheVector)
+        if (a instanceof DenseLocalOffHeapVector || a instanceof SparseLocalOffHeapVector)
             throw new IllegalArgumentException("Operation doesn't support for vector [class="
                 + a.getClass().getName() + ", operation=" + op + "].");
     }

@@ -84,13 +84,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-        
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -160,6 +153,11 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         int key = 0;
+
+        // Call EntryProcessor on every node to ensure that binary metadata has been registered everywhere.
+        for (int i = 0; i < 1_000; i++)
+            ignite(i % SRV_CNT).<Integer, TestValue>cache(ccfg.getName())
+                .invoke(key++, new TestEntryProcessor(OP_UPDATE), new TestValue(Integer.MIN_VALUE));
 
         checkEntryProcessCall(key++, clientCache1, null, null, expCallCnt);
 

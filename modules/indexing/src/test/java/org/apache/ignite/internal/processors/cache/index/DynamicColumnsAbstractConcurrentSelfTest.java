@@ -143,7 +143,11 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        return super.commonConfiguration(idx).setDiscoverySpi(new TestTcpDiscoverySpi());
+        TestTcpDiscoverySpi spi = new TestTcpDiscoverySpi();
+        spi.setIpFinder(LOCAL_IP_FINDER);
+
+        return super.commonConfiguration(idx)
+            .setDiscoverySpi(spi);
     }
 
     /**
@@ -311,7 +315,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     private void checkNodeJoinOnPendingOperation(boolean addOrRemove) throws Exception {
-        CountDownLatch finishLatch = new CountDownLatch(4);
+        CountDownLatch finishLatch = new CountDownLatch(3);
 
         IgniteEx srv1 = ignitionStart(serverConfiguration(1), finishLatch);
 
@@ -330,7 +334,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         ignitionStart(serverConfiguration(2), finishLatch);
         ignitionStart(serverConfiguration(3, true), finishLatch);
-        ignitionStart(clientConfiguration(4), finishLatch);
 
         assertFalse(idxFut.isDone());
 

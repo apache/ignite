@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -113,10 +114,12 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param stateChecker Checkpoint lock state provider.
      * @param log Logger.
      */
-    public PagesWriteSpeedBasedThrottle(PageMemoryImpl pageMemory,
-        CheckpointWriteProgressSupplier cpProgress,
-        CheckpointLockStateChecker stateChecker,
-        IgniteLogger log) {
+    public PagesWriteSpeedBasedThrottle(
+            PageMemoryImpl pageMemory,
+            CheckpointWriteProgressSupplier cpProgress,
+            CheckpointLockStateChecker stateChecker,
+            IgniteLogger log
+    ) {
         this.pageMemory = pageMemory;
         this.cpProgress = cpProgress;
         totalPages = pageMemory.totalPages();
@@ -196,20 +199,22 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                         markDirtySpeed,
                         curCpWriteSpeed);
 
-                    level = ThrottleMode.LIMITED;
+                    level = throttleParkTimeNs == 0 ? ThrottleMode.NO : ThrottleMode.LIMITED;
                 }
             }
         }
 
-        if (level == ThrottleMode.NO) {
-            exponentialBackoffCntr.set(0);
-
-            throttleParkTimeNs = 0;
-        }
-        else if (level == ThrottleMode.EXPONENTIAL) {
+        if (level == ThrottleMode.EXPONENTIAL) {
             int exponent = exponentialBackoffCntr.getAndIncrement();
 
             throttleParkTimeNs = (long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent));
+        }
+        else {
+            if (isPageInCheckpoint)
+                exponentialBackoffCntr.set(0);
+
+            if (level == ThrottleMode.NO)
+                throttleParkTimeNs = 0;
         }
 
         if (throttleParkTimeNs > 0) {
@@ -227,6 +232,11 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param throttleParkTimeNs the maximum number of nanoseconds to wait
      */
     protected void doPark(long throttleParkTimeNs) {
+        if (throttleParkTimeNs > LOGGING_THRESHOLD) {
+            U.warn(log, "Parking thread=" + Thread.currentThread().getName()
+                + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
+        }
+
         LockSupport.parkNanos(throttleParkTimeNs);
     }
 

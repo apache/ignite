@@ -103,6 +103,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @GridDirectTransient
     private List<IgniteTxKey> nearWritesCacheMissed;
 
+    /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
+    private boolean skipCompletedVers;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -169,6 +172,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
 
         nearNodeId = tx.nearNodeId();
+
+        skipCompletedVers = tx.xidVersion() == tx.nearXidVersion();
     }
 
     /**
@@ -293,6 +298,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
+     * @return {@code True} if remote tx should skip adding itself to completed versions map on finish.
+     */
+    public boolean skipCompletedVersion() {
+        return skipCompletedVers;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @param ctx
@@ -369,11 +381,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -443,18 +450,24 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("skipCompletedVers", skipCompletedVers))
                     return false;
 
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 31:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 32:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -549,7 +562,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 29:
-                subjId = reader.readUuid("subjId");
+                skipCompletedVers = reader.readBoolean("skipCompletedVers");
 
                 if (!reader.isLastRead())
                     return false;
@@ -557,7 +570,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 30:
-                taskNameHash = reader.readInt("taskNameHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -565,6 +578,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 31:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 32:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -584,6 +605,16 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 32;
+        return 33;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
     }
 }

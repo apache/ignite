@@ -203,7 +203,7 @@ class OptimizedMarshallerUtils {
             try {
                 registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName());
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 

@@ -27,8 +27,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -44,7 +46,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Abstract class for tests over split in two half topology.
  */
 public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbstractTest {
-
     /** Segmentation state. */
     private volatile boolean segmented;
 
@@ -54,13 +55,42 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(3_000L);
-
-        cfg.setDiscoverySpi(new SplitTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new SplitTcpDiscoverySpi().setReconnectCount(2));
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
+    }
+
+    /**
+     * @param seg Cluster segment.
+     * @param topVer Topology version to wait for.
+     */
+    protected void awaitExchangeVersionFinished(Collection<Ignite> seg, long topVer) {
+        AffinityTopologyVersion waitTopVer = new AffinityTopologyVersion(topVer, 0);
+
+        for (Ignite grid : seg) {
+            IgniteInternalFuture<?> exchFut =
+                ((IgniteEx)grid).context().cache().context().exchange().affinityReadyFuture(waitTopVer);
+
+            if (exchFut != null && !exchFut.isDone()) {
+                try {
+                    if (log.isDebugEnabled())
+                        log.debug("Waiting for topology exchange future [grid=" + grid.name() + ", ver="
+                            + topVer + ", curTopVer=" + grid.cluster().topologyVersion() + "]" );
+
+                    exchFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to wait for exchange [topVer=" + waitTopVer +
+                        ", node=" + grid.name() + ']', e);
+                }
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Finished topology exchange future [grid=" + grid.name() + ", curTopVer="
+                    + grid.cluster().topologyVersion() + "]" );
+        }
     }
 
     /**
@@ -97,15 +127,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             }
         });
 
-        for (Ignite grid : seg0)
-            ((IgniteKernal)grid).context().discovery().topologyFuture(topVer + seg1.size()).get();
-
-        for (Ignite grid : seg1)
-            ((IgniteKernal)grid).context().discovery().topologyFuture(topVer + seg0.size()).get();
-
-        // awaitPartitionMapExchange won't work because coordinator is wrong for second segment.
-        for (Ignite grid : G.allGrids())
-            ((IgniteKernal)grid).context().cache().context().exchange().lastTopologyFuture().get();
+        awaitExchangeVersionFinished(seg0, topVer + seg1.size());
+        awaitExchangeVersionFinished(seg1, topVer + seg0.size());
 
         if (log.isInfoEnabled())
             log.info(">>> Finished waiting for split");
@@ -180,18 +203,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
          * @throws SocketTimeoutException If segmented.
          */
         protected void checkSegmented(InetSocketAddress sockAddr, long timeout) throws SocketTimeoutException {
-            if (segmented(sockAddr)) {
-                if (timeout > 0) {
-                    try {
-                        Thread.sleep(timeout);
-                    }
-                    catch (InterruptedException e) {
-                        // No-op.
-                    }
-                }
-
+            if (segmented(sockAddr))
                 throw new SocketTimeoutException("Fake socket timeout.");
-            }
         }
 
         /** {@inheritDoc} */

@@ -28,6 +28,9 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  */
 public class NesterovUpdateCalculator<M extends SmoothParametrized<M>>
     implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = 251066184668190622L;
+
     /**
      * Learning rate.
      */
@@ -60,14 +63,12 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized<M>>
 
         M newMdl = mdl;
 
-        if (iteration > 0) {
-            Vector curParams = mdl.parameters();
-            newMdl = mdl.withParameters(curParams.minus(prevUpdates.times(momentum)));
-        }
+        if (iteration > 0)
+            newMdl = mdl.withParameters(mdl.parameters().minus(prevUpdates.times(momentum)));
 
         Vector gradient = newMdl.differentiateByParameters(loss, inputs, groundTruth);
 
-        return new NesterovParameterUpdate(prevUpdates.plus(gradient.times(learningRate)));
+        return new NesterovParameterUpdate(prevUpdates.times(momentum).plus(gradient.times(learningRate)));
     }
 
     /** {@inheritDoc} */

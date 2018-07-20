@@ -242,11 +242,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite(0).destroyCache("S2P");
         ignite(0).destroyCache("I2P");

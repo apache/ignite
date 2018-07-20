@@ -101,8 +101,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         if (storeStgy != null)
             storeStgy.resetStore();
     }
@@ -115,6 +113,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected void initStoreStrategy() throws IgniteCheckedException {
         if (storeStgy == null)
             storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
+        else if (isMultiJvm() && !(storeStgy instanceof H2CacheStoreStrategy))
+            storeStgy = new H2CacheStoreStrategy();
     }
 
     /** {@inheritDoc} */
@@ -369,7 +369,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).cache(DEFAULT_CACHE_NAME);
+        return ignite(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
     }
 
     /**

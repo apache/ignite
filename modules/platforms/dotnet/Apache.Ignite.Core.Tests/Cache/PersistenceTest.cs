@@ -152,7 +152,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var metrics = ignite.GetDataStorageMetrics();
             Assert.Greater(metrics.WalLoggingRate, 0);
-            Assert.Greater(metrics.WalFsyncTimeAverage, 0);
         }
 
         /// <summary>

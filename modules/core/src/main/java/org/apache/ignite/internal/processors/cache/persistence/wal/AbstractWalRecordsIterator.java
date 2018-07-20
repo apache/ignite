@@ -33,11 +33,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log.
@@ -88,21 +91,21 @@ public abstract class AbstractWalRecordsIterator
      * @param sharedCtx Shared context.
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
-     * @param bufSize buffer for reading records size.
+     * @param initialReadBufferSize buffer for reading records size.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
-        final int bufSize
+        final int initialReadBufferSize
     ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
 
-        buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+        buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
 
     /** {@inheritDoc} */
@@ -187,18 +190,20 @@ public abstract class AbstractWalRecordsIterator
     /**
      * Switches records iterator to the next WAL segment
      * as result of this method, new reference to segment should be returned.
-     * Null for current handle means stop of iteration
-     * @throws IgniteCheckedException if reading failed
+     * Null for current handle means stop of iteration.
+     *
      * @param curWalSegment current open WAL segment or null if there is no open segment yet
      * @return new WAL segment to read or null for stop iteration
+     * @throws IgniteCheckedException if reading failed
      */
     protected abstract AbstractReadFileHandle advanceSegment(
         @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException;
 
     /**
-     * Switches to new record
-     * @param hnd currently opened read handle
-     * @return next advanced record
+     * Switches to new record.
+     *
+     * @param hnd currently opened read handle.
+     * @return next advanced record.
      */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
         @Nullable final AbstractReadFileHandle hnd
@@ -220,8 +225,12 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
-            if (!(e instanceof SegmentEofException))
-                handleRecordException(e, actualFilePtr);
+            if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
+                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
+
+                if (e0 != null)
+                    throw e0;
+            }
 
             return null;
         }
@@ -239,15 +248,19 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /**
-     * Handler for record deserialization exception
+     * Handler for record deserialization exception.
+     *
      * @param e problem from records reading
      * @param ptr file pointer was accessed
+     *
+     * @return {@code null} if the error was handled and we can go ahead,
+     *  {@code IgniteCheckedException} if the error was not handled, and we should stop the iteration.
      */
-    protected void handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
+    protected IgniteCheckedException handleRecordException(@NotNull final Exception e, @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
+
+        return new IgniteCheckedException(e);
     }
 
     /**
@@ -259,17 +272,15 @@ public abstract class AbstractWalRecordsIterator
      */
     protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
-        @Nullable final FileWALPointer start)
-        throws IgniteCheckedException, FileNotFoundException {
+        @Nullable final FileWALPointer start
+    ) throws IgniteCheckedException, FileNotFoundException {
         try {
             FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
 
             try {
-                IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
+                SegmentHeader segmentHeader = readSegmentHeader(fileIO, curWalSegmIdx);
 
-                int serVer = tup.get1();
-
-                boolean isCompacted = tup.get2();
+                boolean isCompacted = segmentHeader.isCompacted();
 
                 if (isCompacted)
                     serializerFactory.skipPositionCheck(true);
@@ -288,6 +299,8 @@ public abstract class AbstractWalRecordsIterator
                         in.seek(startOff);
                     }
                 }
+
+                int serVer = segmentHeader.getSerializerVersion();
 
                 return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
             }

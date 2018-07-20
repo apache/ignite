@@ -68,11 +68,6 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *  {@inheritDoc}
      */

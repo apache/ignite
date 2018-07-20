@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -178,12 +179,12 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
             pageStore.pageSize(),
             backupIoFactory);
 
-        final FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)cacheCtx.wal();
+        final IgniteWriteAheadLogManager walMgr = cacheCtx.wal();
 
-        if (walMgr != null && IgniteNativeIoLib.isJnaAvailable()) {
-            walMgr.setCreateWalFileListener(new IgniteInClosure<FileIO>() {
+        if (walMgr != null && walMgr instanceof FileWriteAheadLogManager && IgniteNativeIoLib.isJnaAvailable()) {
+            ((FileWriteAheadLogManager)walMgr).setCreateWalFileListener(new IgniteInClosure<FileIO>() {
                 @Override public void apply(FileIO fileIO) {
-                    adviceFileDontNeed(fileIO, walMgr.maxWalSegmentSize());
+                    adviceFileDontNeed(fileIO, ((FileWriteAheadLogManager)walMgr).maxWalSegmentSize());
                 }
             });
         }

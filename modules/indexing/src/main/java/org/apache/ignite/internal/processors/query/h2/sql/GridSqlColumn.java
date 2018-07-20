@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
+import org.h2.value.Value;
 
 /**
  * Column.
@@ -126,6 +127,20 @@ public class GridSqlColumn extends GridSqlElement {
         Expression dfltExpr = col.getDefaultExpression();
 
         return dfltExpr != null ? col.convert(dfltExpr.getValue(null)).getObject() : null;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return (int) col.getPrecision();
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return col.getScale();
     }
 
     /**

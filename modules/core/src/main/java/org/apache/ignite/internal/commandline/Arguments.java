@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+
 /**
  * Bean with all parsed and validated arguments.
  */
 public class Arguments {
     /** Command. */
-    private String cmd;
+    private Command cmd;
 
     /** Host. */
     private String host;
@@ -36,6 +40,9 @@ public class Arguments {
     /** Password. */
     private String pwd;
 
+    /** Force option is used for auto confirmation. */
+    private boolean autoConfirmation;
+
     /**
      * Action for baseline command.
      */
@@ -46,6 +53,30 @@ public class Arguments {
      */
     private String baselineArgs;
 
+    /** Transaction arguments. */
+    private final VisorTxTaskArg txArg;
+
+    /**
+     * Arguments for --cache subcommand.
+     */
+    private CacheArguments cacheArgs;
+
+    /**
+     * Action for WAL command.
+     */
+    private String walAct;
+
+    /**
+     * Arguments for WAL command.
+     */
+    private String walArgs;
+
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    private long pingTimeout;
+
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    private long pingInterval;
+
     /**
      * @param cmd Command.
      * @param host Host.
@@ -54,9 +85,17 @@ public class Arguments {
      * @param pwd Password.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
+     * @param txArg TX arg.
+     * @param cacheArgs --cache subcommand arguments.
+     * @param walAct WAL action.
+     * @param walArgs WAL args.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
+     * @param autoConfirmation Auto confirmation flag.
      */
-    public Arguments(String cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
+                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+                     Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -64,12 +103,19 @@ public class Arguments {
         this.pwd = pwd;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+        this.txArg = txArg;
+        this.cacheArgs = cacheArgs;
+        this.walAct = walAct;
+        this.walArgs = walArgs;
+        this.pingTimeout = pingTimeout;
+        this.pingInterval = pingInterval;
+        this.autoConfirmation = autoConfirmation;
     }
 
     /**
      * @return command
      */
-    public String command() {
+    public Command command() {
         return cmd;
     }
 
@@ -113,5 +159,58 @@ public class Arguments {
      */
     public String baselineArguments() {
         return baselineArgs;
+    }
+
+    /**
+     * @return Transaction arguments.
+     */
+    public VisorTxTaskArg transactionArguments() {
+        return txArg;
+    }
+
+    /**
+     * @return Arguments for --cache subcommand.
+     */
+    public CacheArguments cacheArgs() {
+        return cacheArgs;
+    }
+
+    /**
+     * @return WAL action.
+     */
+    public String walAction() {
+        return walAct;
+    }
+
+    /**
+     * @return WAL arguments.
+     */
+    public String walArguments() {
+        return walArgs;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingTimeout}.
+     *
+     * @return Ping timeout.
+     */
+    public long pingTimeout() {
+        return pingTimeout;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingInterval}.
+     *
+     * @return Ping interval.
+     */
+    public long pingInterval() {
+        return pingInterval;
+    }
+
+    /**
+     * @return Auto confirmation option.
+     */
+    public boolean autoConfirmation() {
+        return autoConfirmation;
     }
 }

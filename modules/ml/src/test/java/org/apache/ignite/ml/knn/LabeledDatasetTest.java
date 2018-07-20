@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.ExternalizableTest;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
@@ -32,9 +31,13 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
+import org.junit.Test;
+
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.fail;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTest<LabeledDataset> {
+public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
@@ -50,11 +53,9 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     /** */
     private static final String IRIS_MISSED_DATA = "datasets/knn/missed_data.txt";
 
-
     /** */
+    @Test
     public void testFeatureNames() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {
                 {1.0, 1.0},
@@ -72,9 +73,8 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testAccessMethods() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {
                 {1.0, 1.0},
@@ -99,9 +99,8 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testFailOnYNull() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {
                 {1.0, 1.0},
@@ -123,9 +122,8 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testFailOnXNull() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {};
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
@@ -141,18 +139,17 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testLoadingCorrectTxtFile() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
+        LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(KNN_IRIS_TXT, false);
         assertEquals(training.rowSize(), 150);
     }
 
     /** */
+    @Test
     public void testLoadingEmptyFile() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         try {
-            loadDatasetFromTxt(EMPTY_TXT, false);
+            LabeledDatasetHelper.loadDatasetFromTxt(EMPTY_TXT, false);
             fail("EmptyFileException");
         }
         catch (EmptyFileException e) {
@@ -162,11 +159,10 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testLoadingFileWithFirstEmptyRow() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         try {
-            loadDatasetFromTxt(NO_DATA_TXT, false);
+            LabeledDatasetHelper.loadDatasetFromTxt(NO_DATA_TXT, false);
             fail("NoDataException");
         }
         catch (NoDataException e) {
@@ -176,19 +172,17 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testLoadingFileWithIncorrectData() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
-        LabeledDataset training = loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
+        LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
         assertEquals(149, training.rowSize());
     }
 
     /** */
+    @Test
     public void testFailOnLoadingFileWithIncorrectData() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         try {
-            loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
+            LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
             fail("FileParsingException");
         }
         catch (FileParsingException e) {
@@ -199,9 +193,8 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testLoadingFileWithMissedData() throws URISyntaxException, IOException {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Path path = Paths.get(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA).toURI());
 
         LabeledDataset training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
@@ -210,9 +203,8 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testSplitting() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {
                 {1.0, 1.0},
@@ -247,9 +239,8 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     }
 
     /** */
+    @Test
     public void testLabels() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {
                 {1.0, 1.0},
@@ -268,8 +259,6 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
 
     /** */
     @Override public void testExternalization() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         double[][] mtx =
             new double[][] {
                 {1.0, 1.0},

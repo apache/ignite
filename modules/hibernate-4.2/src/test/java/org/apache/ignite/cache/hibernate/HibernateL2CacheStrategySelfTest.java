@@ -86,11 +86,6 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
             cache.clear();

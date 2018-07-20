@@ -263,6 +263,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private void writeBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
+        if (inMemoryMode)
+            return;
+
         sharedCtx.database().checkpointReadLock();
 
         try {
@@ -318,6 +321,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override @Nullable public IgniteInternalFuture<Boolean> onLocalJoin(DiscoCache discoCache) {
         final DiscoveryDataClusterState state = globalState;
 
+        if (state.active())
+            checkLocalNodeInBaseline(state.baselineTopology());
+
         if (state.transition()) {
             joinFut = new TransitionOnJoinWaitFuture(state, discoCache);
 
@@ -331,6 +337,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 changeGlobalState0(true, state.baselineTopology(), false);
 
         return null;
+    }
+
+    /**
+     * Checks whether local node participating in Baseline Topology and warn if not.
+     */
+    private void checkLocalNodeInBaseline(BaselineTopology blt) {
+        if (blt == null || blt.consistentIds() == null || ctx.clientNode() || ctx.isDaemon())
+            return;
+
+        if (!CU.isPersistenceEnabled(ctx.config()))
+            return;
+
+        if (!blt.consistentIds().contains(ctx.discovery().localNode().consistentId())) {
+            U.quietAndInfo(log, "Local node is not included in Baseline Topology and will not be used " +
+                "for persistent data storage. Use control.(sh|bat) script or IgniteCluster interface to include " +
+                "the node to Baseline Topology.");
+        }
     }
 
     /**
@@ -636,46 +659,50 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!dataBag.commonDataCollectedFor(STATE_PROC.ordinal())) {
-            DiscoveryDataBag.JoiningNodeDiscoveryData joiningNodeData = dataBag.newJoinerDiscoveryData(STATE_PROC.ordinal());
+        DiscoveryDataBag.JoiningNodeDiscoveryData joiningNodeData = dataBag.newJoinerDiscoveryData(STATE_PROC.ordinal());
 
-            BaselineTopologyHistory historyToSend = null;
+        if (joiningNodeData != null && !joiningNodeData.hasJoiningNodeData())
+            compatibilityMode = true; //compatibility mode: only old nodes don't send any data on join
 
-            if (joiningNodeData != null) {
-                if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
-                    //compatibility mode: old nodes don't send any data on join, so coordinator of new version
-                    //doesn't send BaselineTopology history, only its current globalState
-                    dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
+        if (dataBag.commonDataCollectedFor(STATE_PROC.ordinal()) || joiningNodeData == null)
+            return;
 
-                    return;
-                }
+        if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
+            //compatibility mode: old nodes don't send any data on join, so coordinator of new version
+            //doesn't send BaselineTopology history, only its current globalState
+            dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
 
-                DiscoveryDataClusterState joiningNodeState = null;
-
-                try {
-                    if (joiningNodeData.joiningNodeData() != null)
-                        joiningNodeState = marsh.unmarshal(
-                            (byte[]) joiningNodeData.joiningNodeData(),
-                            U.resolveClassLoader(ctx.config()));
-                } catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
-
-                    return;
-                }
-
-                if (!bltHist.isEmpty()) {
-                    if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
-                        int lastId = joiningNodeState.baselineTopology().id();
-
-                        historyToSend = bltHist.tailFrom(lastId);
-                    }
-                    else
-                        historyToSend = bltHist;
-                }
-
-                dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
-            }
+            return;
         }
+
+        DiscoveryDataClusterState joiningNodeState = null;
+
+        try {
+            if (joiningNodeData.joiningNodeData() != null)
+                joiningNodeState = marsh.unmarshal(
+                    (byte[])joiningNodeData.joiningNodeData(),
+                    U.resolveClassLoader(ctx.config())
+                );
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
+
+            return;
+        }
+
+        BaselineTopologyHistory historyToSend = null;
+
+        if (!bltHist.isEmpty()) {
+            if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
+                int lastId = joiningNodeState.baselineTopology().id();
+
+                historyToSend = bltHist.tailFrom(lastId);
+            }
+            else
+                historyToSend = bltHist;
+        }
+
+        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
     }
 
     /** {@inheritDoc} */
@@ -920,8 +947,24 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
 
+        if (globalState.transition() && globalState.previousBaselineTopology() == null) {
+            //case when cluster is activating for the first time and other node with existing baseline topology
+            //tries to join
+
+            String msg = "Node with set up BaselineTopology is not allowed " +
+                "to join cluster in the process of first activation: " + node.consistentId();
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
+
+        BaselineTopology clusterBlt;
+
+        if (globalState.transition())
+            clusterBlt = globalState.previousBaselineTopology();
+        else
+            clusterBlt = globalState.baselineTopology();
+
         BaselineTopology joiningNodeBlt = joiningNodeState.baselineTopology();
-        BaselineTopology clusterBlt = globalState.baselineTopology();
 
         String recommendation = " Consider cleaning persistent storage of the node and adding it to the cluster again.";
 
@@ -941,7 +984,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (!clusterBlt.isCompatibleWith(joiningNodeBlt)) {
                 String msg = "BaselineTopology of joining node ("
                     + node.consistentId()
-                    + " ) is not compatible with BaselineTopology in the cluster."
+                    + ") is not compatible with BaselineTopology in the cluster."
                     + " Branching history of cluster BlT (" + clusterBlt.branchingHistory()
                     + ") doesn't contain branching point hash of joining node BlT ("
                     + joiningNodeBlt.branchingPointHash()
@@ -1028,7 +1071,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", client=" + ctx.clientNode() +
                 ", daemon" + ctx.isDaemon() + "]");
         }
-        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+
+        ClusterGroupAdapter clusterGroupAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
+
+        if (F.isEmpty(clusterGroupAdapter.nodes()))
+            return false;
+
+        IgniteCompute comp = clusterGroupAdapter.compute();
 
         return comp.call(new IgniteCallable<Boolean>() {
             @IgniteInstanceResource
@@ -1088,6 +1137,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private void onFinalActivate(final StateChangeRequest req) {
         ctx.dataStructures().onBeforeActivate();
 
+        checkLocalNodeInBaseline(globalState.baselineTopology());
+
         ctx.closure().runLocalSafe(new Runnable() {
             @Override public void run() {
                 boolean client = ctx.clientNode();
@@ -1139,9 +1190,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
+    @Override public void onBaselineTopologyChanged
+    (
+        BaselineTopology blt,
+        BaselineTopologyHistoryItem prevBltHistItem
+    ) throws IgniteCheckedException {
         if (compatibilityMode) {
-            if (log.isDebugEnabled())
+            if (log.isInfoEnabled())
                 log.info("BaselineTopology won't be stored as this node is running in compatibility mode");
 
             return;

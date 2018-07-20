@@ -142,6 +142,27 @@
     <ClCompile Include="..\..\src\queries_ssl_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\config\connection_string_parser.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\config\config_tools.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\ssl\ssl_mode.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record_storage.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\common_types.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\authentication_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -177,6 +198,12 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\queries-ssl-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-auth.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-auth-32.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

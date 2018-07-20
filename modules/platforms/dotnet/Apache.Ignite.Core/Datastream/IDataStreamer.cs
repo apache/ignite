@@ -52,6 +52,13 @@ namespace Apache.Ignite.Core.Datastream
     ///         remote node. Default value is 1024.</description>
     ///     </item>
     ///     <item>
+    ///         <term>PerThreadBufferSize</term>
+    ///         <description>When entries are added to data streamer they are not sent to Ignite 
+    ///         right away and are buffered internally on per thread basis for better performance and network utilization. 
+    ///         This setting controls the size of internal per-thread buffer before buffered data is sent to 
+    ///         remote node. Default value is 4096.</description>
+    ///     </item>
+    ///     <item>
     ///         <term>PerNodeParallelOperations</term>
     ///         <description>Sometimes data may be added to the data streamer faster than it can be put 
     ///         in cache. In this case, new buffered load messages are sent to remote nodes before 
@@ -115,6 +122,16 @@ namespace Apache.Ignite.Core.Datastream
         /// </summary>
         [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
         int PerNodeBufferSize { get; set; }
+
+        /// <summary>
+        /// Size of per thread key-value pairs buffer.
+        /// <para />
+        /// Setter must be called before any add/remove operation.
+        /// <para />
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
+        /// </summary>
+        [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
+        int PerThreadBufferSize { get; set; }
 
         /// <summary>
         /// Maximum number of parallel load operations for a single node.

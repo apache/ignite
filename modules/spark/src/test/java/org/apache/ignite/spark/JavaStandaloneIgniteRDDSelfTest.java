@@ -117,12 +117,6 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
             Ignition.start(getConfiguration("grid-" + i, false));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < GRID_CNT; i++)
-            Ignition.stop("grid-" + i, false);
-    }
-
     /**
      * @throws Exception If failed.
      */

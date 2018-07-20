@@ -29,7 +29,7 @@ import org.junit.Test;
  * Tests for {@link LinearRegressionModel}.
  */
 public class SVMModelTest {
-    /** */
+    /** Precision in test checks. */
     private static final double PRECISION = 1e-6;
 
     /** */
@@ -93,7 +93,9 @@ public class SVMModelTest {
         observation = new DenseLocalOnHeapVector(new double[]{-1.0, -2.0});
         TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
 
-        mdl.withIntercept(-2.0).withWeights(new DenseLocalOnHeapVector(new double[]{-2.0, -2.0}));
+        final SVMLinearBinaryClassificationModel mdlWithNewData = mdl.withIntercept(-2.0).withWeights(new DenseLocalOnHeapVector(new double[] {-2.0, -2.0}));
+        System.out.println("The SVM model is " + mdlWithNewData);
+
         observation = new DenseLocalOnHeapVector(new double[]{-1.0, -2.0});
         TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
         TestUtils.assertEquals(-2.0, mdl.intercept(), PRECISION);

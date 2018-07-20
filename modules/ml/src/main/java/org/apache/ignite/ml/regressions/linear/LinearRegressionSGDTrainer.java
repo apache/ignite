@@ -17,51 +17,102 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.Trainer;
-import org.apache.ignite.ml.math.Matrix;
+import java.io.Serializable;
+import java.util.Arrays;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.optimization.BarzilaiBorweinUpdater;
-import org.apache.ignite.ml.optimization.GradientDescent;
-import org.apache.ignite.ml.optimization.LeastSquaresGradientFunction;
-import org.apache.ignite.ml.optimization.SimpleUpdater;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.nn.Activators;
+import org.apache.ignite.ml.nn.MLPTrainer;
+import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
+import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
+import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * Linear regression trainer based on least squares loss function and gradient descent optimization algorithm.
+ * Trainer of the linear regression model based on stochastic gradient descent algorithm.
  */
-public class LinearRegressionSGDTrainer implements Trainer<LinearRegressionModel, Matrix> {
-    /**
-     * Gradient descent optimizer.
-     */
-    private final GradientDescent gradientDescent;
+public class LinearRegressionSGDTrainer<P extends Serializable> implements SingleLabelDatasetTrainer<LinearRegressionModel> {
+    /** Update strategy. */
+    private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
-    /** */
-    public LinearRegressionSGDTrainer(GradientDescent gradientDescent) {
-        this.gradientDescent = gradientDescent;
-    }
+    /** Max number of iteration. */
+    private final int maxIterations;
 
-    /** */
-    public LinearRegressionSGDTrainer(int maxIterations, double convergenceTol) {
-        this.gradientDescent = new GradientDescent(new LeastSquaresGradientFunction(), new BarzilaiBorweinUpdater())
-            .withMaxIterations(maxIterations)
-            .withConvergenceTol(convergenceTol);
-    }
+    /** Batch size. */
+    private final int batchSize;
 
-    /** */
-    public LinearRegressionSGDTrainer(int maxIterations, double convergenceTol, double learningRate) {
-        this.gradientDescent = new GradientDescent(new LeastSquaresGradientFunction(), new SimpleUpdater(learningRate))
-            .withMaxIterations(maxIterations)
-            .withConvergenceTol(convergenceTol);
-    }
+    /** Number of local iterations. */
+    private final int locIterations;
+
+    /** Seed for random generator. */
+    private final long seed;
 
     /**
-     * {@inheritDoc}
+     * Constructs a new instance of linear regression SGD trainer.
+     *
+     * @param updatesStgy Update strategy.
+     * @param maxIterations Max number of iteration.
+     * @param batchSize Batch size.
+     * @param locIterations Number of local iterations.
+     * @param seed Seed for random generator.
      */
-    @Override public LinearRegressionModel train(Matrix data) {
-        Vector variables = gradientDescent.optimize(data, data.likeVector(data.columnSize()));
-        Vector weights = variables.viewPart(1, variables.size() - 1);
+    public LinearRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
+        int batchSize, int locIterations, long seed) {
+        this.updatesStgy = updatesStgy;
+        this.maxIterations = maxIterations;
+        this.batchSize = batchSize;
+        this.locIterations = locIterations;
+        this.seed = seed;
+    }
 
-        double intercept = variables.get(0);
+    /** {@inheritDoc} */
+    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return new LinearRegressionModel(weights, intercept);
+        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
+
+            int cols = dataset.compute(data -> {
+                if (data.getFeatures() == null)
+                    return null;
+                return data.getFeatures().length / data.getRows();
+            }, (a, b) -> a == null ? b : a);
+
+            MLPArchitecture architecture = new MLPArchitecture(cols);
+            architecture = architecture.withAddedLayer(1, true, Activators.LINEAR);
+
+            return architecture;
+        };
+
+        MLPTrainer<?> trainer = new MLPTrainer<>(
+            archSupplier,
+            LossFunctions.MSE,
+            updatesStgy,
+            maxIterations,
+            batchSize,
+            locIterations,
+            seed
+        );
+
+        IgniteBiFunction<K, V, double[]> lbE = new IgniteBiFunction<K, V, double[]>() {
+            @Override public double[] apply(K k, V v) {
+                return new double[]{lbExtractor.apply(k, v)};
+            }
+        };
+
+        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, lbE);
+
+        double[] p = mlp.parameters().getStorage().data();
+
+        return new LinearRegressionModel(new DenseLocalOnHeapVector(
+            Arrays.copyOf(p, p.length - 1)),
+            p[p.length - 1]
+        );
     }
 }

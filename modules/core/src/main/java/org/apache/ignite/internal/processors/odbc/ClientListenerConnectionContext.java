@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL listener connection context.
  */
 public interface ClientListenerConnectionContext {
+    /**
+     * @return Current connection id.
+     */
+    long connectionId();
+
     /**
      * @param ver Version to check.
      * @return {@code true} if version is supported.
@@ -39,8 +47,10 @@ public interface ClientListenerConnectionContext {
      *
      * @param ver Protocol version.
      * @param reader Reader set to the configuration part of the handshake message.
+     * @throws IgniteCheckedException On error.
      */
-    void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader);
+    void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException;
 
     /**
      * Handler getter.
@@ -59,4 +69,11 @@ public interface ClientListenerConnectionContext {
      * or due to {@code IOException} during network operations.
      */
     void onDisconnected();
+
+    /**
+     * Return connection authorization context.
+     *
+     * @return authorization context.
+     */
+    @Nullable AuthorizationContext authorizationContext();
 }

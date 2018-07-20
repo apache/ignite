@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -211,7 +212,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                             new DataStructuresEntryFilter(),
                             cctx.isReplicated() && cctx.affinityNode(),
                             false,
-                            false
+                            false,
+                            true
                         ));
                 }
             }
@@ -623,11 +625,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
+    private <T> void removeDataStructure(
+        @Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
         final String name,
         String grpName,
         final DataStructureType type,
-        @Nullable final IgniteInClosureX<T> afterRmv) throws IgniteCheckedException {
+        @Nullable final IgniteInClosureX<T> afterRmv
+    ) throws IgniteCheckedException {
         assert name != null;
         assert grpName != null;
         assert type != null;
@@ -643,29 +647,48 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
                 if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        AtomicDataStructureValue val = cache.get(key);
+                    boolean isInterrupted = Thread.interrupted();
 
-                        if (val == null)
-                            return null;
+                    try {
+                        while(true) {
+                            try {
+                                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                                    AtomicDataStructureValue val = cache.get(key);
 
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Data structure has different type " +
-                                "[name=" + name +
-                                ", expectedType=" + type +
-                                ", actualType=" + val.type() + ']');
+                                    if (val == null)
+                                        return null;
 
-                        if (pred == null || pred.applyx(val)) {
-                            cache.remove(key);
+                                    if (val.type() != type)
+                                        throw new IgniteCheckedException("Data structure has different type " +
+                                            "[name=" + name +
+                                            ", expectedType=" + type +
+                                            ", actualType=" + val.type() + ']');
 
-                            tx.commit();
+                                    if (pred == null || pred.applyx(val)) {
+                                        cache.remove(key);
 
-                            if (afterRmv != null)
-                                afterRmv.applyx(null);
+                                        tx.commit();
+
+                                        if (afterRmv != null)
+                                            afterRmv.applyx(null);
+                                    }
+                                }
+
+                                break;
+                            }
+                            catch (IgniteCheckedException e) {
+                                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class))
+                                    isInterrupted = Thread.interrupted();
+                                else
+                                    throw e;
+                            }
                         }
                     }
                     finally {
                         cache.context().gate().leave();
+
+                        if (isInterrupted)
+                            Thread.currentThread().interrupt();
                     }
                 }
 
@@ -1213,6 +1236,37 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
+
+                //check Cluster state against semaphore state
+                if (val != null && failoverSafe) {
+                    GridCacheSemaphoreState semState = (GridCacheSemaphoreState) val;
+
+                    boolean updated = false;
+
+                    Map<UUID,Integer> waiters = semState.getWaiters();
+
+                    Integer permit = ((GridCacheSemaphoreState) val).getCount();
+
+                    for (UUID nodeId : new HashSet<>(waiters.keySet())) {
+
+                        ClusterNode node = ctx.cluster().get().node(nodeId);
+
+                        if (node == null) {
+
+                            permit += waiters.get(nodeId);
+
+                            waiters.remove(nodeId);
+
+                            updated = true;
+                        }
+                    }
+                    if (updated) {
+                        semState.setWaiters(waiters);
+                        semState.setCount(permit);
+
+                        retVal = semState;
+                    }
+                }
 
                 return new T2<>(sem0, retVal);
             }

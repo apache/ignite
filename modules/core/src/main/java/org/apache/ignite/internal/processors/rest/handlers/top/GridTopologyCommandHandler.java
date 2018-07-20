@@ -346,7 +346,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
      *
      * @param protoCls Protocol class.
      * @param def Default value if such class is not registered.
-     * @return Registered port for the protocol class or {@code def}ault value if such class is not registered.
+     * @return Registered port for the protocol class or {@code default value if such class is not registered.
      */
     private int getRegisteredPort(Class<? extends GridRestProtocol> protoCls, int def) {
         for (GridPortRecord r : ctx.ports().records()) {

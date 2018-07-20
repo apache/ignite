@@ -135,6 +135,20 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
+     * @return Column's precision.
+     */
+    public int precision() {
+        return -1;
+    }
+
+    /**
+     * @return Column's scale.
+     */
+    public int scale() {
+        return -1;
+    }
+
+    /**
      * Return 'nullable' flag in compatibility mode (according with column name and column type).
      *
      * @return {@code true} in case the column allows null values. Otherwise returns {@code false}

@@ -27,9 +27,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -80,11 +80,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         startGrid(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test cluster group metrics in case of statistics enabled.
      */
@@ -103,7 +98,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
 
             for (ClusterNode node : nodes) {
-                Map<Integer, CacheMetrics> metrics = ((TcpDiscoveryNode)node).cacheMetrics();
+                Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
                 assertNotNull(metrics);
                 assertFalse(metrics.isEmpty());
             }
@@ -118,6 +113,8 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
 
     /**
      * Test cluster group metrics in case of statistics disabled.
+     *
+     * @throws Exception If failed.
      */
     public void testMetricsStatisticsDisabled() throws Exception {
         createCaches(false);
@@ -134,7 +131,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
 
             for (ClusterNode node : nodes) {
-                Map<Integer, CacheMetrics> metrics = ((TcpDiscoveryNode) node).cacheMetrics();
+                Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
                 assertNotNull(metrics);
                 assertTrue(metrics.isEmpty());
             }
@@ -172,7 +169,9 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be received.
+     *
+     * @throws InterruptedException If interrupted.
      */
     private void awaitMetricsUpdate() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 2);

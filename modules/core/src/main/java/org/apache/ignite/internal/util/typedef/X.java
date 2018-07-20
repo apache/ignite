@@ -53,8 +53,24 @@ public final class X {
     /** An empty immutable {@code Object} array. */
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
+    /** Millis in second. */
+    private static final long MILLIS_IN_SECOND = 1000L;
+
+    /** Seconds in minute. */
+    private static final long SECONDS_IN_MINUTE = 60L;
+
+    /** Minuses in hour. */
+    private static final long MINUTES_IN_HOUR = 60L;
+
+    /** Hours in day. */
+    private static final long HOURS_IN_DAY = 24L;
+
     /** Time span dividers. */
-    private static final long[] SPAN_DIVS = new long[] {1000L, 60L, 60L, 60L};
+    private static final long[] SPAN_DIVS = new long[] {
+        MILLIS_IN_SECOND, SECONDS_IN_MINUTE, MINUTES_IN_HOUR, HOURS_IN_DAY};
+
+    /** Millis in day. */
+    private static final long MILLIS_IN_DAY = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY;
 
     /** The names of methods commonly used to access a wrapped exception. */
     private static final String[] CAUSE_MTD_NAMES = new String[] {
@@ -75,9 +91,6 @@ public final class X {
     /** The Method object for Java 1.4 getCause. */
     private static final Method THROWABLE_CAUSE_METHOD;
 
-    /**
-     *
-     */
     static {
         Method causeMtd;
 
@@ -200,7 +213,7 @@ public final class X {
      * Creates string presentation of given time {@code span} in hh:mm:ss.msec {@code HMSM} format.
      *
      * @param span Time span.
-     * @return String presentation.
+     * @return String presentation. If duration if longer than 1 day, days count is ignored.
      */
     public static String timeSpan2HMSM(long span) {
         long[] t = new long[4];
@@ -233,6 +246,27 @@ public final class X {
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
             (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
             (t[1] < 10 ? "0" + t[1] : Long.toString(t[1]));
+    }
+
+    /**
+     * Creates string presentation of given time {@code span} in days, hh:mm:ss.mmm {@code HMS} format.
+     *
+     * @param span Time span.
+     * @return String presentation.
+     */
+    public static String timeSpan2DHMSM(long span) {
+        String days = "";
+
+        String hmsm = timeSpan2HMSM(span % MILLIS_IN_DAY);
+
+        long daysCnt = span / MILLIS_IN_DAY;
+
+        if (daysCnt == 1)
+            days = "1 day, ";
+        else if (daysCnt > 1)
+            days = daysCnt + " days, ";
+
+        return days + hmsm;
     }
 
     /**
@@ -433,14 +467,14 @@ public final class X {
      *      {@code false} otherwise.
      */
     @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
+    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
         if (t == null || F.isEmpty(cls))
             return false;
 
         assert cls != null;
 
         for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls) {
+            for (Class<?> c : cls) {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
             }
@@ -469,14 +503,12 @@ public final class X {
         if (t == null || cls == null)
             return false;
 
-        if (t.getSuppressed() != null) {
-            for (Throwable th : t.getSuppressed()) {
-                if (cls.isAssignableFrom(th.getClass()))
-                    return true;
+        for (Throwable th : t.getSuppressed()) {
+            if (cls.isAssignableFrom(th.getClass()))
+                return true;
 
-                if (hasSuppressed(th, cls))
-                    return true;
-            }
+            if (hasSuppressed(th, cls))
+                return true;
         }
 
         return false;
@@ -746,6 +778,29 @@ public final class X {
         List<Throwable> list = getThrowableList(throwable);
 
         return list.toArray(new Throwable[list.size()]);
+    }
+
+    /**
+     * Collects suppressed exceptions from throwable and all it causes.
+     *
+     * @param t Throwable.
+     * @return List of suppressed throwables.
+     */
+    public static List<Throwable> getSuppressedList(@Nullable Throwable t) {
+        List<Throwable> result = new ArrayList<>();
+
+        if (t == null)
+            return result;
+
+        do {
+            for (Throwable suppressed : t.getSuppressed()) {
+                result.add(suppressed);
+
+                result.addAll(getSuppressedList(suppressed));
+            }
+        } while ((t = t.getCause()) != null);
+
+        return result;
     }
 
     /**

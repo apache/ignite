@@ -39,7 +39,7 @@ public class StoredCacheData implements Serializable {
 
     /** Cache configuration. */
     @GridToStringInclude
-    private final CacheConfiguration<?, ?> ccfg;
+    private CacheConfiguration<?, ?> ccfg;
 
     /** Query entities. */
     @GridToStringInclude
@@ -58,6 +58,13 @@ public class StoredCacheData implements Serializable {
 
         this.ccfg = ccfg;
         this.qryEntities = ccfg.getQueryEntities();
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     */
+    public void config(CacheConfiguration<?, ?> ccfg) {
+        this.ccfg = ccfg;
     }
 
     /**

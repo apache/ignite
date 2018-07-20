@@ -24,13 +24,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -79,6 +82,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final DataRegion dataRegion;
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private MetastorageTree tree;
 
     /** */
@@ -109,17 +115,22 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final Marshaller marshaller = new JdkMarshaller();
 
     /** */
-    public MetaStorage(IgniteWriteAheadLogManager wal, DataRegion dataRegion, DataRegionMetricsImpl regionMetrics,
-        boolean readOnly) {
-        this.wal = wal;
+    public MetaStorage(
+        GridCacheSharedContext cctx,
+        DataRegion dataRegion,
+        DataRegionMetricsImpl regionMetrics,
+        boolean readOnly
+    ) {
+        wal = cctx.wal();
         this.dataRegion = dataRegion;
         this.regionMetrics = regionMetrics;
         this.readOnly = readOnly;
+        log = cctx.logger(getClass());
     }
 
     /** */
-    public MetaStorage(IgniteWriteAheadLogManager wal, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
-        this(wal, memPlc, memMetrics, false);
+    public MetaStorage(GridCacheSharedContext cctx, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
+        this(cctx, memPlc, memMetrics, false);
     }
 
     /** */
@@ -154,7 +165,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred)
+    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred)
         throws IgniteCheckedException {
         Map<String, Serializable> res = null;
 
@@ -228,7 +239,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
-            wal.fsync(ptr);
+            wal.flush(ptr, false);
 
             synchronized (this) {
                 MetastorageDataRow oldRow = tree.findOne(new MetastorageDataRow(key, null));
@@ -272,7 +283,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, null));
 
-            wal.fsync(ptr);
+            wal.flush(ptr, false);
 
             synchronized (this) {
                 MetastorageDataRow row = new MetastorageDataRow(key, null);
@@ -284,6 +295,17 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 }
             }
         }
+    }
+
+    /** */
+    private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
+        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+            throw new StorageException("Wrong tree root page id flag: treeRoot="
+                + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
+
+        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+            throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
+                + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
 
     /** */
@@ -307,8 +329,15 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
                     PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
 
-                    treeRoot = new RootPage(new FullPageId(io.getTreeRoot(pageAddr), METASTORAGE_CACHE_ID), false);
-                    reuseListRoot = new RootPage(new FullPageId(io.getReuseListRoot(pageAddr), METASTORAGE_CACHE_ID), false);
+                    long treeRoot = io.getTreeRoot(pageAddr);
+                    long reuseListRoot = io.getReuseListRoot(pageAddr);
+
+                    checkRootsPageIdFlag(treeRoot, reuseListRoot);
+
+                    this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), false);
+                    this.reuseListRoot = new RootPage(new FullPageId(reuseListRoot, METASTORAGE_CACHE_ID), false);
+
+                    rmvId.set(io.getGlobalRemoveId(pageAddr));
                 }
                 finally {
                     pageMem.readUnlock(METASTORAGE_CACHE_ID, partId, partMetaPage);
@@ -354,10 +383,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         treeRoot = io.getTreeRoot(pageAddr);
                         reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(treeRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(reuseListRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
+                        rmvId.set(io.getGlobalRemoveId(pageAddr));
+
+                        checkRootsPageIdFlag(treeRoot, reuseListRoot);
                     }
 
                     this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), allocated);
@@ -384,21 +412,46 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
         freeList.saveMetadata();
 
-        MetastorageRowStore rowStore = tree.rowStore();
-
-        saveStoreMetadata(rowStore, ctx);
+        saveStoreMetadata();
     }
 
     /**
-     * @param rowStore Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
-    private void saveStoreMetadata(MetastorageRowStore rowStore, Context ctx) throws IgniteCheckedException {
-        FreeListImpl freeList = (FreeListImpl)rowStore.freeList();
+    private void saveStoreMetadata() throws IgniteCheckedException {
+        PageMemoryEx pageMem = (PageMemoryEx) pageMemory();
 
-        freeList.saveMetadata();
+        int partId = 0;
+
+        long partMetaId = pageMem.partitionMetaPageId(METASTORAGE_CACHE_ID, partId);
+        long partMetaPage = pageMem.acquirePage(METASTORAGE_CACHE_ID, partMetaId);
+
+        try {
+            long partMetaPageAddr = pageMem.writeLock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
+
+            if (partMetaPageAddr == 0L) {
+                U.warn(log, "Failed to acquire write lock for meta page [metaPage=" + partMetaPage + ']');
+
+                return;
+            }
+
+            boolean changed = false;
+
+            try {
+                PagePartitionMetaIO io = PageIO.getPageIO(partMetaPageAddr);
+
+                changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId.get());
+            }
+            finally {
+                pageMem.writeUnlock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage, null, changed);
+            }
+        }
+        finally {
+            pageMem.releasePage(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
+        }
     }
 
+    /** */
     public void applyUpdate(String key, byte[] value) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates == null)

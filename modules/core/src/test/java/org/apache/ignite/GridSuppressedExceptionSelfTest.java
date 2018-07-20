@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.io.IOException;
+import java.util.List;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 
@@ -65,6 +66,26 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
             assertTrue(X.hasCause(e, IgniteCheckedException.class));
             assertTrue(X.hasCause(e, IllegalArgumentException.class));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testXGetSuppressedList() throws Exception {
+        IgniteCheckedException me = prepareMultiException();
+
+        assertEquals(3, X.getSuppressedList(me).size());
+
+        RuntimeException e = new RuntimeException();
+        e.addSuppressed(me);
+
+        List<Throwable> suppresseds = X.getSuppressedList(e);
+
+        assertEquals(4, suppresseds.size());
+
+        assertEquals("Test message.", suppresseds.get(0).getMessage());
+        for (int i = 1; i <= 3; i++)
+            assertEquals("Demo exception.", suppresseds.get(1).getMessage());
     }
 
     /**

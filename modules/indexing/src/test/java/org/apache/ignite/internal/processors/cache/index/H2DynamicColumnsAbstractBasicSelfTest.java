@@ -74,13 +74,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -191,6 +184,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             "(7, 'Denver', 3000000, 'Colorado')");
 
         run(cache, "ALTER TABLE City DROP COLUMN state_name");
+
+        List<List<?>> res1 = run(cache, "SELECT * from City c " +
+            "WHERE c.population > 5000000");
+
+        assertEquals(res1.get(0).size(), 3);
 
         List<List<?>> res = run(cache, "SELECT p.name from Person p join City c on p.city = c.name where " +
             "c.population > 5000000 order by p.name");
@@ -637,6 +635,38 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         }
 
         cache.destroy();
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnPriorToIndexedColumn() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a CHAR, b INT)");
+
+            run("CREATE INDEX idxB ON test(b)");
+
+            run("INSERT INTO test VALUES(1, 'one', 11), (2, 'two', 22), (3, 'three', 33)");
+
+            List<List<?>> res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
+
+            assertEquals(3, res.size());
+            assertEquals(3, res.get(0).size());
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
+
+            assertEquals(3, res.size());
+            assertEquals(2, res.get(0).size());
+
+            assertEquals(1, res.get(0).get(0));
+            assertEquals(11, res.get(0).get(1));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
     }
 
     /**

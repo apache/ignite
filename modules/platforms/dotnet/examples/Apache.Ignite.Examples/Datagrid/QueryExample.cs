@@ -53,7 +53,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine(">>> Cache query example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                    new CacheConfiguration(EmployeeCacheName, typeof(Employee)));
+                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
 
                 // Populate cache with sample data entries.
                 PopulateCache(employeeCache);

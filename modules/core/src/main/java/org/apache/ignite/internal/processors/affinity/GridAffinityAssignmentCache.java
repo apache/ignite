@@ -34,25 +34,31 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -61,6 +67,9 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
+
+    /** Partition distribution. */
+    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -112,9 +121,6 @@ public class GridAffinityAssignmentCache {
 
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
-
-    /** History size ignoring client events changes. */
-    private final AtomicInteger histSize = new AtomicInteger();
 
     /** Full history size. */
     private final AtomicInteger fullHistSize = new AtomicInteger();
@@ -197,11 +203,13 @@ public class GridAffinityAssignmentCache {
      */
     public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
+
         assert idealAssignment != null;
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
-        affCache.put(topVer, new HistoryAffinityAssignment(assignment));
+        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment));
+
         head.set(assignment);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
@@ -214,7 +222,15 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        onHistoryAdded(assignment);
+        // In case if value was replaced there is no sense to clean the history.
+        if (hAff == null)
+            onHistoryAdded();
+
+        if (log.isTraceEnabled()) {
+            log.trace("New affinity assignment [grp=" + cacheOrGrpName
+                + ", topVer=" + topVer
+                + ", aff=" + fold(affAssignment) + "]");
+        }
     }
 
     /**
@@ -258,6 +274,8 @@ public class GridAffinityAssignmentCache {
 
         affCache.clear();
 
+        fullHistSize.set(0);
+
         head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
         stopErr = null;
@@ -267,16 +285,19 @@ public class GridAffinityAssignmentCache {
      * Calculates affinity cache for given topology version.
      *
      * @param topVer Topology version to calculate affinity cache for.
-     * @param discoEvt Discovery event that caused this topology version change.
+     * @param events Discovery events that caused this topology version change.
      * @param discoCache Discovery cache.
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, @Nullable DiscoveryEvent discoEvt,
-        @Nullable DiscoCache discoCache) {
+    public List<List<ClusterNode>> calculate(
+        AffinityTopologyVersion topVer,
+        @Nullable ExchangeDiscoveryEvents events,
+        @Nullable DiscoCache discoCache
+    ) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
-                ", discoEvt=" + discoEvt + ']');
+                ", discoEvts=" + events + ']');
 
         List<List<ClusterNode>> prevAssignment = idealAssignment;
 
@@ -303,46 +324,68 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
-        if (prevAssignment != null && discoEvt != null) {
-            boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
+        if (prevAssignment != null && events != null) {
+            /* Skip affinity calculation only when all nodes triggered exchange
+               don't belong to affinity for current group (client node or filtered by nodeFilter). */
+            boolean skipCalculation = true;
 
-            if (!affNode)
+            for (DiscoveryEvent event : events.events()) {
+                boolean affinityNode = CU.affinityNode(event.eventNode(), nodeFilter);
+
+                if (affinityNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                    skipCalculation = false;
+
+                    break;
+                }
+            }
+
+            if (skipCalculation)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
                     baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                         discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                        prevAssignment, discoEvt, topVer, backups));
+                        prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
             else if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, discoEvt, topVer, backups));
+                    prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
-            else
+            else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    events.lastEvent(), topVer, backups));
+            }
         }
         else {
+            DiscoveryEvent event = null;
+
+            if (events != null)
+                event = events.lastEvent();
+
             if (hasBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, discoEvt, topVer, backups));
+                    prevAssignment, event, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
-            else
+            else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    event, topVer, backups));
+            }
         }
 
         assert assignment != null;
 
         idealAssignment = assignment;
+
+        if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED && !ctx.clientNode())
+            printDistributionIfThresholdExceeded(assignment, sorted.size());
 
         if (hasBaseline) {
             baselineTopology = discoCache.state().baselineTopology();
@@ -395,6 +438,44 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * Calculates and logs partitions distribution if threshold of uneven distribution {@link #partDistribution} is exceeded.
+     *
+     * @param assignments Assignments to calculate partitions distribution.
+     * @param nodes Affinity nodes number.
+     * @see IgniteSystemProperties#IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD
+     */
+    private void printDistributionIfThresholdExceeded(List<List<ClusterNode>> assignments, int nodes) {
+        int locPrimaryCnt = 0;
+        int locBackupCnt = 0;
+
+        for (List<ClusterNode> assignment : assignments) {
+            for (int i = 0; i < assignment.size(); i++) {
+                ClusterNode node = assignment.get(i);
+
+                if (node.isLocal()) {
+                    if (i == 0)
+                        locPrimaryCnt++;
+                    else
+                        locBackupCnt++;
+                }
+            }
+        }
+
+        float expCnt = (float)partsCnt / nodes;
+
+        float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt) * 100;
+        float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups)) * 100;
+
+        if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
+            log.info(String.format("Local node affinity assignment distribution is not ideal " +
+                    "[cache=%s, expectedPrimary=%.2f, actualPrimary=%d, " +
+                    "expectedBackups=%.2f, actualBackups=%d, warningThreshold=%.2f%%]",
+                cacheOrGrpName, expCnt, locPrimaryCnt,
+                expCnt * backups, locBackupCnt, partDistribution));
+        }
+    }
+
+    /**
      * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
      * (e.g. client node joins on leaves).
      *
@@ -406,12 +487,14 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignment aff = head.get();
 
-        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
-        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
+
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
 
         GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
 
-        affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
+        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
+
         head.set(assignmentCpy);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
@@ -424,7 +507,9 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        onHistoryAdded(assignmentCpy);
+        // In case if value was replaced there is no sense to clean the history.
+        if (hAff == null)
+            onHistoryAdded();
     }
 
     /**
@@ -701,27 +786,15 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param aff Added affinity assignment.
+     * Cleaning the affinity history.
      */
-    private void onHistoryAdded(GridAffinityAssignment aff) {
-        int fullSize = fullHistSize.incrementAndGet();
-
-        int size;
-
-        if (aff.clientEventChange())
-            size = histSize.get();
-        else
-            size = histSize.incrementAndGet();
-
-        int rmvCnt = size - MAX_HIST_SIZE;
-
-        if (rmvCnt <= 0) {
-            if (fullSize > MAX_HIST_SIZE * 2)
-                rmvCnt = MAX_HIST_SIZE;
-        }
-
-        if (rmvCnt > 0) {
+    private void onHistoryAdded() {
+        if (fullHistSize.incrementAndGet() > MAX_HIST_SIZE) {
             Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
+
+            int rmvCnt = MAX_HIST_SIZE / 2;
+
+            AffinityTopologyVersion topVerRmv = null;
 
             while (it.hasNext() && rmvCnt > 0) {
                 AffinityAssignment aff0 = it.next();
@@ -730,11 +803,14 @@ public class GridAffinityAssignmentCache {
 
                 rmvCnt--;
 
-                if (!aff0.clientEventChange())
-                    histSize.decrementAndGet();
-
                 fullHistSize.decrementAndGet();
+
+                topVerRmv = aff0.topologyVersion();
             }
+
+            topVerRmv = it.hasNext() ? it.next().topologyVersion() : topVerRmv;
+
+            ctx.affinity().removeCachedAffinity(topVerRmv);
         }
     }
 
@@ -743,6 +819,36 @@ public class GridAffinityAssignmentCache {
      */
     public Collection<AffinityTopologyVersion> cachedVersions() {
         return affCache.keySet();
+    }
+
+    /**
+     * @param affAssignment Affinity assignment.
+     * @return String representation of given {@code affAssignment}.
+     */
+    private static String fold(List<List<ClusterNode>> affAssignment) {
+        SB sb = new SB();
+
+        for (int p = 0; p < affAssignment.size(); p++) {
+            sb.a("Part [");
+            sb.a("id=" + p + ", ");
+
+            SB partOwners = new SB();
+
+            List<ClusterNode> affOwners = affAssignment.get(p);
+
+            for (ClusterNode node : affOwners) {
+                partOwners.a(node.consistentId());
+                partOwners.a(' ');
+            }
+
+            sb.a("owners=[");
+            sb.a(partOwners);
+            sb.a(']');
+
+            sb.a("] ");
+        }
+
+        return sb.toString();
     }
 
     /**

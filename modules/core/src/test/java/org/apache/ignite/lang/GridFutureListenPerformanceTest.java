@@ -20,6 +20,7 @@ package org.apache.ignite.lang;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +28,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  *
@@ -43,7 +43,7 @@ public class GridFutureListenPerformanceTest {
     public static void main(String[] args) throws InterruptedException {
         final LongAdder cnt = new LongAdder();
 
-        final ConcurrentLinkedDeque8<GridFutureAdapter<Object>> futs = new ConcurrentLinkedDeque8<>();
+        final ConcurrentLinkedDeque<GridFutureAdapter<Object>> futs = new ConcurrentLinkedDeque<>();
 
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 

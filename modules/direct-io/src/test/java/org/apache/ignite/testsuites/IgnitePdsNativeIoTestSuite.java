@@ -31,6 +31,9 @@ public class IgnitePdsNativeIoTestSuite extends TestSuite {
 
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
+        //long running test by design with light parameters
+        suite.addTestSuite(IgnitePdsReplacementNativeIoTest.class);
+
         suite.addTestSuite(IgniteNativeIoWithNoPersistenceTest.class);
 
         return suite;

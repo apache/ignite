@@ -107,19 +107,12 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
         client = false;
 
-        startGrids(NODES_CNT);
+        startGridsMultiThreaded(NODES_CNT);
 
         client = true;
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i + NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**
@@ -156,8 +149,6 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
      * @throws Exception If failed.
      */
     public void testDeadlocksLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7581");
-
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             IgniteCache cache = null;
 
@@ -271,7 +262,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                 Ignite ignite = loc ? ignite(0) : ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
-                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
+                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                 List<Object> keys = keySets.get(threadNum - 1);
 

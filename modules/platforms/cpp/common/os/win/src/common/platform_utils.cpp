@@ -16,6 +16,7 @@
  */
 
 #include <time.h>
+#include <vector>
 
 #include <windows.h>
 
@@ -92,6 +93,28 @@ namespace ignite
             return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
         }
 
+        bool DeletePath(const std::string& path)
+        {
+            std::vector<TCHAR> path0(path.begin(), path.end());
+            path0.push_back('\0');
+            path0.push_back('\0');
+
+            SHFILEOPSTRUCT fileop;
+            fileop.hwnd = NULL;
+            fileop.wFunc = FO_DELETE;
+            fileop.pFrom = &path0[0];
+            fileop.pTo = NULL;
+            fileop.fFlags = FOF_NOCONFIRMATION | FOF_SILENT;
+
+            fileop.fAnyOperationsAborted = FALSE;
+            fileop.lpszProgressTitle = NULL;
+            fileop.hNameMappings = NULL;
+
+            int ret = SHFileOperation(&fileop);
+
+            return ret == 0;
+        }
+
         StdCharOutStream& Fs(StdCharOutStream& ostr)
         {
             ostr.put('\\');
@@ -105,6 +128,11 @@ namespace ignite
             ostr.write(expansion, sizeof(expansion) - 1);
 
             return ostr;
+        }
+
+        unsigned GetRandSeed()
+        {
+            return static_cast<unsigned>(GetTickCount() ^ GetCurrentProcessId());
         }
     }
 }

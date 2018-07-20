@@ -177,7 +177,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.getAndRemoveAsync(i).get();
@@ -221,7 +221,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.remove(i);
@@ -239,7 +239,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.put(2, 2);
         cache.put(3, 3);
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         Set<Integer> keys = new HashSet<>(4, 1);
         keys.add(1);
@@ -272,7 +272,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         IgniteFuture<?> fut = cache.removeAllAsync(keys);
 
@@ -672,6 +672,45 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.remove(1);
 
         assertEquals(1L, cache.localMetrics().getCacheRemovals());
+    }
+
+    /**
+     * Test {@link CacheMetrics#getSize()} and {@link CacheMetrics#getCacheSize()} work equally.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheSizeWorksAsSize() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+
+        for (int i = 0; i < KEY_CNT; i++) {
+            cache.put(i, i);
+
+            CacheMetrics metrics = cache.metrics();
+
+            assertEquals(metrics.getSize(), metrics.getCacheSize());
+
+            CacheMetrics localMetrics = cache.localMetrics();
+
+            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
+        }
+
+        for (int i = 0; i < KEY_CNT / 2; i++) {
+            cache.remove(i, i);
+
+            CacheMetrics metrics = cache.metrics();
+
+            assertEquals(metrics.getSize(), metrics.getCacheSize());
+
+            CacheMetrics localMetrics = cache.localMetrics();
+
+            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
+        }
+
+        cache.removeAll();
+
+        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
     }
 
     /**

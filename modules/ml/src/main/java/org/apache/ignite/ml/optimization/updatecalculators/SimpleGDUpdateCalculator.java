@@ -27,6 +27,9 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  * Simple gradient descent parameters updater.
  */
 public class SimpleGDUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, SimpleGDParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = -4237332083320879334L;
+
     /** Learning rate. */
     private double learningRate;
 

@@ -17,21 +17,19 @@
 
 page-configure-basic {
     display: block;
-    padding: 30px;
+    padding: 30px 20px;
     $max-row-width: 500px;
     $row-height: 28px;
 
-    .details-row, .settings-row {
-        max-width: $max-row-width;
-
-        &>label:only-child {
-            padding-top: 5px;
+    .pcb-row-no-margin {
+        [class*='grid-col'] {
+            margin-top: 0 !important;
         }
+    }
 
-        .checkbox {
-            margin-top: 4px;
-            margin-bottom: 0;
-        }
+    .pcb-inner-padding {
+        padding-left: 10px;
+        padding-right: 10px;
     }
 
     .pcb-cache-name-row {
@@ -46,67 +44,19 @@ page-configure-basic {
             max-width: $max-row-width;
             flex-grow: 10;
         }
-
-        .pcb-cache-remove {
-            line-height: $row-height;
-            margin-right: $margin;
-            flex: 1 0;
-            text-align: right;
-            white-space: nowrap;
-        }
     }
 
-    .pcb-buttons-group {
-        display: flex;
-        flex-direction: row;
-
-        .btn-ignite + .btn-ignite {
-            margin-left: 10px;
-        }
-
-        .link-primary + .link-primary {
-            margin-left: 40px;
-        }
+    .pcb-section-notification {
+        font-size: 14px;
+        color: #757575;
+        margin-bottom: 1em;
     }
 
-    .pcb-form-flex-grid {
-        $column: 450px;
-
-        &,
-        &>div:not(.details-row):not(.settings-row):not(.pcb-flex-grid-break) {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-
-        .details-row, .settings-row, .pcb-flex-grid-break {
-            margin: 0 10px 10px 0 !important;
-            flex: 1 1 $column;
-        }
-
-        .pcb-flex-grid-break {
-            height: 0;
-        }
-    }
-
-    .pcb-select-existing-cache {
-        position: relative;
-
-        button {
-            background: none;
-            border: none;
-            padding: 0;
-            margin: 0;
-            outline: none !important;
-        }
-    }
-
-    .pcb-no-caches {
-        font-style: italic;
-    }
-
-    .docs-header h1 {
-        margin-bottom: 20px;
+    .pcb-section-header {
+        margin-top: 0;
+        margin-bottom: 7px;
+        font-size: 16px;
+        line-height: 19px;
     }
 
     .pcb-memory-size {
@@ -125,6 +75,7 @@ page-configure-basic {
                 padding-top: 0;
                 padding-bottom: 0;
                 flex: 0 0 auto;
+                width: 60px !important;
             }
         }
     }
@@ -135,9 +86,72 @@ page-configure-basic {
         }
     }
 
-    .pcb-caches {
-        .panel-details {
-            padding-left: 10px;
+    .pcb-form-main-buttons {
+        display: flex;
+        flex-direction: row;
+        .pcb-form-main-buttons-left {
+            margin-right: auto;
+        }
+        .pcb-form-main-buttons-right {
+            margin-left: auto;
+        }
+    }
+    .pc-form-actions-panel {
+        margin: 20px -20px -30px;
+        box-shadow: 0px -2px 4px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-field-checkbox {
+        margin-top: auto;
+        margin-bottom: 8px;
+    }
+
+    .pcb-form-grid-row {
+        @media(min-width: 992px) {
+            &>.pc-form-grid-col-10 {
+                flex: 0 0 calc(100% / 6);
+            }
+
+            &>.pc-form-grid-col-20 {
+                flex: 0 0 calc(100% / 6);
+            }
+
+            &>.pc-form-grid-col-30 {
+                flex: 0 0 calc(100% / 4);
+            }
+
+            &>.pc-form-grid-col-40 {
+                flex: 0 0 calc(100% / 3);
+            }
+
+            &>.pc-form-grid-col-60 {
+                flex: 0 0 calc(100% / 2);
+            }
+            &>.pc-form-grid-col-120 {
+                flex: 0 0 100%;
+            }
+        }
+        @media(max-width: 992px) {
+            &>.pc-form-grid-col-10 {
+                flex: 0 0 calc(100% / 6);
+            }
+
+            &>.pc-form-grid-col-20 {
+                flex: 0 0 calc(100% / 3);
+            }
+
+            &>.pc-form-grid-col-30 {
+                flex: 0 0 calc(100% / 2);
+            }
+
+            &>.pc-form-grid-col-40 {
+                flex: 0 0 calc(100% / 1.5);
+            }
+
+            &>.pc-form-grid-col-60,
+            &>.pc-form-grid-col-120 {
+                flex: 0 0 100%;
+            }
         }
     }
 }

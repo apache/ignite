@@ -24,17 +24,19 @@ export default ['bsSelect', [() => {
         const $render = ngModel.$render;
 
         ngModel.$render = () => {
-            $render();
+            if (scope.$destroyed) return;
+            scope.$applyAsync(() => {
+                $render();
+                const value = ngModel.$viewValue;
 
-            const value = ngModel.$viewValue;
+                if (_.isNil(value) || (attrs.multiple && !value.length)) {
+                    $element.html(attrs.placeholder);
 
-            if (_.isNil(value) || (attrs.multiple && !value.length)) {
-                $element.html(attrs.placeholder);
-
-                $element.addClass('placeholder');
-            }
-            else
-                $element.removeClass('placeholder');
+                    $element.addClass('placeholder');
+                }
+                else
+                    $element.removeClass('placeholder');
+            });
         };
     };
 

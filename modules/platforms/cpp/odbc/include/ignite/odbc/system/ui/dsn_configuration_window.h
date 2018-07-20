@@ -44,6 +44,7 @@ namespace ignite
                             CONNECTION_SETTINGS_GROUP_BOX = 100,
                             SSL_SETTINGS_GROUP_BOX,
                             ADDITIONAL_SETTINGS_GROUP_BOX,
+                            AUTH_SETTINGS_GROUP_BOX,
                             NAME_EDIT,
                             NAME_LABEL,
                             ADDRESS_EDIT,
@@ -68,6 +69,10 @@ namespace ignite
                             SSL_CERT_FILE_EDIT,
                             SSL_CA_FILE_LABEL,
                             SSL_CA_FILE_EDIT,
+                            USER_LABEL,
+                            USER_EDIT,
+                            PASSWORD_LABEL,
+                            PASSWORD_EDIT,
                             OK_BUTTON,
                             CANCEL_BUTTON
                         };
@@ -136,6 +141,14 @@ namespace ignite
                     void RetrieveConnectionParameters(config::Configuration& cfg) const;
 
                     /**
+                     * Retrieves current values from the Authentication UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveAuthParameters(config::Configuration& cfg) const;
+
+                    /**
                      * Retrieves current values from the SSL UI group and
                      * stores them to the specified configuration.
                      *
@@ -160,6 +173,16 @@ namespace ignite
                      * @return Size by Y.
                      */
                     int CreateConnectionSettingsGroup(int posX, int posY, int sizeX);
+
+                    /**
+                     * Create aythentication settings group box.
+                     *
+                     * @param posX X position.
+                     * @param posY Y position.
+                     * @param sizeX Width.
+                     * @return Size by Y.
+                     */
+                    int CreateAuthSettingsGroup(int posX, int posY, int sizeX);
 
                     /**
                      * Create SSL settings group box.
@@ -192,6 +215,9 @@ namespace ignite
 
                     /** SSL settings group box. */
                     std::auto_ptr<Window> sslSettingsGroupBox;
+
+                    /** Authentication settings group box. */
+                    std::auto_ptr<Window> authSettingsGroupBox;
 
                     /** Additional settings group box. */
                     std::auto_ptr<Window> additionalSettingsGroupBox;
@@ -273,6 +299,18 @@ namespace ignite
 
                     /** SSL Certificate Authority File edit. */
                     std::auto_ptr<Window> sslCaFileEdit;
+
+                    /** User label. */
+                    std::auto_ptr<Window> userLabel;
+
+                    /** User edit. */
+                    std::auto_ptr<Window> userEdit;
+
+                    /** Password label. */
+                    std::auto_ptr<Window> passwordLabel;
+
+                    /** Password edit. */
+                    std::auto_ptr<Window> passwordEdit;
 
                     /** Configuration. */
                     config::Configuration& config;

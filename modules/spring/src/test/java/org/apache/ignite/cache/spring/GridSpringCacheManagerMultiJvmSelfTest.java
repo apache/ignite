@@ -37,11 +37,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  */
 public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
     }

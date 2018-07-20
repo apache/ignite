@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -338,6 +338,16 @@
                                                                                     <xs:attribute name="notNull" type="xs:boolean">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Indicates whether null value is allowed for the field.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="precision" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Precision of field</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="scale" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Scale of field</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
                                                                                 </xs:complexType>
@@ -1224,6 +1234,13 @@
                                 <xs:documentation>Delay after which pessimistic recovery entries will be cleaned up for failed node.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="defaultTimeoutOnPartitionMapExchange" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Transaction timeout for partition map synchronization. TimeSpan.Zero for infinite timeout.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
@@ -1993,6 +2010,25 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="failureHandler" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tryStop" type="xs:boolean" default="false">
+                            <xs:annotation>
+                                <xs:documentation>Try stop before halt node parameter, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="timeout" type="xs:string" default="0:0:0">
+                            <xs:annotation>
+                                <xs:documentation>Timeout for node stop, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
@@ -2207,6 +2243,11 @@
             <xs:attribute name="isActiveOnStart" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="authenticationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">

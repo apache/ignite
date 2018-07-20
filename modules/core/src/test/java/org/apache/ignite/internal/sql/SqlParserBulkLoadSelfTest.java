@@ -21,70 +21,102 @@ package org.apache.ignite.internal.sql;
  * Tests for SQL parser: COPY command.
  */
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
-    /**
-     * Tests for COPY command.
-     *
-     * @throws Exception If any of sub-tests was failed.
-     */
+    /** Tests for COPY command. */
     public void testCopy() {
         assertParseError(null,
-            "copy grom \"any.file\" into Person (_key, age, firstName, lastName) format csv",
+            "copy grom 'any.file' into Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"GROM\" (expected: \"FROM\")");
 
         assertParseError(null,
             "copy from into Person (_key, age, firstName, lastName) format csv",
-            "Unexpected token: \"INTO\" (expected: \"[quoted file name]\"");
+            "Unexpected token: \"INTO\" (expected: \"[file name: string]\"");
 
         assertParseError(null,
             "copy from unquoted into Person (_key, age, firstName, lastName) format csv",
-            "Unexpected token: \"UNQUOTED\" (expected: \"[quoted file name]\"");
+            "Unexpected token: \"UNQUOTED\" (expected: \"[file name: string]\"");
 
         assertParseError(null,
             "copy from unquoted.file into Person (_key, age, firstName, lastName) format csv",
-            "Unexpected token: \"UNQUOTED\" (expected: \"[quoted file name]\"");
+            "Unexpected token: \"UNQUOTED\" (expected: \"[file name: string]\"");
 
         new SqlParser(null,
-            "copy from \"\" into Person (_key, age, firstName, lastName) format csv")
+            "copy from '' into Person (_key, age, firstName, lastName) format csv")
             .nextCommand();
 
         new SqlParser(null,
-            "copy from \"d:/copy/from/into/format.csv\" into Person (_key, age, firstName, lastName) format csv")
+            "copy from 'd:/copy/from/into/format.csv' into Person (_key, age, firstName, lastName) format csv")
             .nextCommand();
 
         new SqlParser(null,
-            "copy from \"/into\" into Person (_key, age, firstName, lastName) format csv")
+            "copy from '/into' into Person (_key, age, firstName, lastName) format csv")
             .nextCommand();
 
         new SqlParser(null,
-            "copy from \"into\" into Person (_key, age, firstName, lastName) format csv")
+            "copy from 'into' into Person (_key, age, firstName, lastName) format csv")
             .nextCommand();
 
         assertParseError(null,
-            "copy from \"any.file\" to Person (_key, age, firstName, lastName) format csv",
+            "copy from 'any.file' to Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"TO\" (expected: \"INTO\")");
 
         // Column list
 
         assertParseError(null,
-            "copy from \"any.file\" into Person () format csv",
+            "copy from '" +
+                "any.file' into Person () format csv",
             "Unexpected token: \")\" (expected: \"[identifier]\")");
 
         assertParseError(null,
-            "copy from \"any.file\" into Person (,) format csv",
+            "copy from 'any.file' into Person (,) format csv",
             "Unexpected token: \",\" (expected: \"[identifier]\")");
 
         assertParseError(null,
-            "copy from \"any.file\" into Person format csv",
+            "copy from 'any.file' into Person format csv",
             "Unexpected token: \"FORMAT\" (expected: \"(\")");
 
         // FORMAT
 
         assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName)",
+            "copy from 'any.file' into Person (_key, age, firstName, lastName)",
             "Unexpected end of command (expected: \"FORMAT\")");
 
         assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format lsd",
             "Unknown format name: LSD");
+
+        // FORMAT CSV CHARSET
+
+        new SqlParser(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv charset" +
+            " 'utf-8'")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv charset" +
+            " 'UTF-8'")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv charset" +
+            " 'UtF-8'")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv charset" +
+            " 'windows-1251'")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv charset" +
+            " 'ISO-2022-JP'")
+            .nextCommand();
+
+        assertParseError(null,
+            "copy from 'any.file' into Person (_key, age, firstName, lastName) format csv charset ",
+            "Unexpected end of command (expected: \"[string]\")");
     }
 }

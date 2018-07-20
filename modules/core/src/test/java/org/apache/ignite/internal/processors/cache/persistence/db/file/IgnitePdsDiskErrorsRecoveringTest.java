@@ -24,8 +24,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -35,6 +35,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -42,13 +44,16 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 
 /**
@@ -62,19 +67,13 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     private static final int WAL_SEGMENT_SIZE = 1024 * PAGE_SIZE;
 
     /** */
-    private static final long DFLT_DISK_SPACE_BYTES = Long.MAX_VALUE;
-
-    /** */
     private static final long STOP_TIMEOUT_MS = 30 * 1000;
 
     /** */
     private static final String CACHE_NAME = "cache";
 
-    /** */
-    private boolean failPageStoreDiskOperations = false;
-
-    /** */
-    private long diskSpaceBytes = DFLT_DISK_SPACE_BYTES;
+    /** Specified i/o factory for particular test. */
+    private FileIOFactory ioFactory;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -89,8 +88,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        failPageStoreDiskOperations = false;
-        diskSpaceBytes = DFLT_DISK_SPACE_BYTES;
+        ioFactory = null;
         System.clearProperty(IGNITE_WAL_MMAP);
     }
 
@@ -100,14 +98,15 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+                        new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(WALMode.LOG_ONLY)
                 .setWalCompactionEnabled(false)
                 .setWalSegmentSize(WAL_SEGMENT_SIZE)
+                .setCheckpointFrequency(240 * 60 * 1000)
                 .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        if (failPageStoreDiskOperations)
-            dsCfg.setFileIOFactory(new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), diskSpaceBytes));
+        if (ioFactory != null)
+            dsCfg.setFileIOFactory(ioFactory);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -123,19 +122,17 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test node stopping & recovering on cache initialization fail.
      */
-    public void testRecoveringOnCacheInitError() throws Exception {
-        failPageStoreDiskOperations = true;
-
-        // Two pages is enough to initialize MetaStorage.
-        diskSpaceBytes = 2 * PAGE_SIZE;
+    public void testRecoveringOnCacheInitFail() throws Exception {
+        // Fail to initialize page store. 2 extra pages is needed for MetaStorage.
+        ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 2 * PAGE_SIZE));
 
         final IgniteEx grid = startGrid(0);
 
         boolean failed = false;
         try {
-            grid.active(true);
+            grid.cluster().active(true);
         } catch (Exception expected) {
             log.warning("Expected cache error", expected);
 
@@ -148,21 +145,128 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         awaitStop(grid);
 
         // Grid should be successfully recovered after stopping.
-        failPageStoreDiskOperations = false;
+        ioFactory = null;
 
         IgniteEx recoveredGrid = startGrid(0);
         recoveredGrid.active(true);
     }
 
     /**
+     * Test node stopping & recovering on start marker writing fail during activation.
      *
+     * @throws Exception If test failed.
      */
-    public void testRecoveringOnCheckpointWritingError() throws Exception {
-        failPageStoreDiskOperations = true;
-        diskSpaceBytes = 1024 * PAGE_SIZE;
+    public void testRecoveringOnNodeStartMarkerWriteFail() throws Exception {
+        // Fail to write node start marker tmp file at the second checkpoint. Pass only initial checkpoint.
+        ioFactory = new FilteringFileIOFactory("started.bin" + GridCacheDatabaseSharedManager.FILE_TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
+
+        IgniteEx grid = startGrid(0);
+        grid.cluster().active(true);
+
+        for (int i = 0; i < 1000; i++) {
+            byte payload = (byte) i;
+            byte[] data = new byte[2048];
+            Arrays.fill(data, payload);
+
+            grid.cache(CACHE_NAME).put(i, data);
+        }
+
+        stopAllGrids();
+
+        boolean activationFailed = false;
+        try {
+            grid = startGrid(0);
+            grid.cluster().active(true);
+        }
+        catch (IgniteException e) {
+            log.warning("Activation test exception", e);
+
+            activationFailed = true;
+        }
+
+        Assert.assertTrue("Activation must be failed", activationFailed);
+
+        // Grid should be automatically stopped after checkpoint fail.
+        awaitStop(grid);
+
+        // Grid should be successfully recovered after stopping.
+        ioFactory = null;
+
+        IgniteEx recoveredGrid = startGrid(0);
+        recoveredGrid.cluster().active(true);
+
+        for (int i = 0; i < 1000; i++) {
+            byte payload = (byte) i;
+            byte[] data = new byte[2048];
+            Arrays.fill(data, payload);
+
+            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            Assert.assertArrayEquals(data, actualData);
+        }
+    }
+
+
+    /**
+     * Test node stopping & recovering on checkpoint begin fail.
+     *
+     * @throws Exception If test failed.
+     */
+    public void testRecoveringOnCheckpointBeginFail() throws Exception {
+        // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
+        ioFactory = new FilteringFileIOFactory("START.bin" + GridCacheDatabaseSharedManager.FILE_TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
 
         final IgniteEx grid = startGrid(0);
-        grid.active(true);
+        grid.cluster().active(true);
+
+        for (int i = 0; i < 1000; i++) {
+            byte payload = (byte) i;
+            byte[] data = new byte[2048];
+            Arrays.fill(data, payload);
+
+            grid.cache(CACHE_NAME).put(i, data);
+        }
+
+        String errMsg = "Failed to write checkpoint entry";
+
+        boolean checkpointFailed = false;
+        try {
+            forceCheckpoint();
+        }
+        catch (IgniteCheckedException e) {
+            if (e.getMessage().contains(errMsg))
+                checkpointFailed = true;
+        }
+
+        Assert.assertTrue("Checkpoint must be failed by IgniteCheckedException: " + errMsg, checkpointFailed);
+
+        // Grid should be automatically stopped after checkpoint fail.
+        awaitStop(grid);
+
+        // Grid should be successfully recovered after stopping.
+        ioFactory = null;
+
+        IgniteEx recoveredGrid = startGrid(0);
+        recoveredGrid.cluster().active(true);
+
+        for (int i = 0; i < 1000; i++) {
+            byte payload = (byte) i;
+            byte[] data = new byte[2048];
+            Arrays.fill(data, payload);
+
+            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            Assert.assertArrayEquals(data, actualData);
+        }
+    }
+
+    /**
+     * Test node stopping & recovering on checkpoint pages write fail.
+     */
+    public void testRecoveringOnCheckpointWriteFail() throws Exception {
+        // Fail write partition and index files at the second checkpoint. Pass only initial checkpoint.
+        ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 128 * PAGE_SIZE));
+
+        final IgniteEx grid = startGrid(0);
+        grid.cluster().active(true);
 
         for (int i = 0; i < 1000; i++) {
             byte payload = (byte) i;
@@ -188,10 +292,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         awaitStop(grid);
 
         // Grid should be successfully recovered after stopping.
-        failPageStoreDiskOperations = false;
+        ioFactory = null;
 
         IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.active(true);
+        recoveredGrid.cluster().active(true);
 
         for (int i = 0; i < 1000; i++) {
             byte payload = (byte) i;
@@ -204,33 +308,35 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test node stopping & recovering on WAL writing fail with enabled MMAP (Batch allocation for WAL segments).
      */
-    public void testRecoveringOnWALErrorWithMmap() throws Exception {
-        diskSpaceBytes = WAL_SEGMENT_SIZE;
+    public void testRecoveringOnWALWritingFail1() throws Exception {
+        // Allow to allocate only 1 wal segment, fail on write to second.
+        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), WAL_SEGMENT_SIZE));
         System.setProperty(IGNITE_WAL_MMAP, "true");
-        emulateRecoveringOnWALWritingError();
+        doTestRecoveringOnWALWritingFail();
     }
 
     /**
-     *
+     * Test node stopping & recovering on WAL writing fail with disabled MMAP.
      */
-    public void testRecoveringOnWALErrorWithoutMmap() throws Exception {
-        diskSpaceBytes = 2 * WAL_SEGMENT_SIZE;
+    public void testRecoveringOnWALWritingFail2() throws Exception {
+        // Fail somewhere on the second wal segment.
+        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
         System.setProperty(IGNITE_WAL_MMAP, "false");
-        emulateRecoveringOnWALWritingError();
+        doTestRecoveringOnWALWritingFail();
     }
 
     /**
-     *
+     * Test node stopping & recovery on WAL writing fail.
      */
-    private void emulateRecoveringOnWALWritingError() throws Exception {
+    private void doTestRecoveringOnWALWritingFail() throws Exception {
         final IgniteEx grid = startGrid(0);
 
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)grid.context().cache().context().wal();
-        wal.setFileIOFactory(new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), diskSpaceBytes));
+        wal.setFileIOFactory(ioFactory);
 
-        grid.active(true);
+        grid.cluster().active(true);
 
         int failedPosition = -1;
 
@@ -255,9 +361,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         // Grid should be automatically stopped after WAL fail.
         awaitStop(grid);
 
+        ioFactory = null;
+
         // Grid should be successfully recovered after stopping.
         IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.active(true);
+        recoveredGrid.cluster().active(true);
 
         for (int i = 0; i < failedPosition; i++) {
             byte payload = (byte) i;
@@ -270,25 +378,20 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Use stop node on critical error handler for this test class.
      *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Failure handler instance.
      */
-    private void awaitStop(final IgniteEx grid) throws IgniteInterruptedCheckedException {
-        GridTestUtils.waitForCondition(() -> grid.context().gateway().getState() == GridKernalState.STOPPED, STOP_TIMEOUT_MS);
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     /**
      *
      */
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
+    private void awaitStop(final IgniteEx grid) throws IgniteInterruptedCheckedException {
+        GridTestUtils.waitForCondition(() -> grid.context().gateway().getState() == GridKernalState.STOPPED, STOP_TIMEOUT_MS);
     }
 
     /**
@@ -326,19 +429,58 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] buf, int off, int len) throws IOException {
-            super.write(buf, off, len);
+        @Override public int write(byte[] buf, int off, int len) throws IOException {
+            final int num = super.write(buf, off, len);
             availableSpaceBytes.addAndGet(-len);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
+            return num;
         }
 
         /** {@inheritDoc} */
-        @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-            availableSpaceBytes.addAndGet(-maxWalSegmentSize);
+        @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+            availableSpaceBytes.addAndGet(-sizeBytes);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
-            return super.map(maxWalSegmentSize);
+            return super.map(sizeBytes);
+        }
+    }
+
+    /**
+     * Factory to provide custom File I/O interfaces only for files with specified suffix.
+     * For other files {@link RandomAccessFileIO} will be used.
+     */
+    private static class FilteringFileIOFactory implements FileIOFactory {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Delegate. */
+        private final FileIOFactory delegate;
+
+        /** File suffix pattern. */
+        private final String pattern;
+
+        /**
+         * Constructor.
+         *
+         * @param pattern File suffix pattern.
+         * @param delegate I/O Factory delegate.
+         */
+        FilteringFileIOFactory(String pattern, FileIOFactory delegate) {
+            this.delegate = delegate;
+            this.pattern = pattern;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return create(file, CREATE, WRITE, READ);
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            if (file.getName().endsWith(pattern))
+                return delegate.create(file, modes);
+            return new RandomAccessFileIO(file, modes);
         }
     }
 

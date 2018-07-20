@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 
@@ -93,7 +94,13 @@ public class RecordV2Serializer implements RecordSerializer {
 
         /** {@inheritDoc} */
         @Override public int sizeWithHeaders(WALRecord record) throws IgniteCheckedException {
-            return dataSerializer.size(record) + REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
+            int recordSize = dataSerializer.size(record);
+
+            int recordSizeWithType = recordSize + REC_TYPE_SIZE;
+
+            // Why this condition here, see SWITCH_SEGMENT_RECORD doc.
+            return record.type() != SWITCH_SEGMENT_RECORD ?
+                recordSizeWithType + FILE_WAL_POINTER_SIZE + CRC_SIZE : recordSizeWithType;
         }
 
         /** {@inheritDoc} */
@@ -103,10 +110,13 @@ public class RecordV2Serializer implements RecordSerializer {
         ) throws IOException, IgniteCheckedException {
             WALRecord.RecordType recType = RecordV1Serializer.readRecordType(in);
 
-            if (recType == WALRecord.RecordType.SWITCH_SEGMENT_RECORD)
+            if (recType == SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
             FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck);
+
+            if (recType == null)
+                throw new IOException("Unknown record type: " + recType);
 
             if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
@@ -162,6 +172,10 @@ public class RecordV2Serializer implements RecordSerializer {
             // Write record type.
             RecordV1Serializer.putRecordType(buf, record);
 
+            // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
+            if (record.type() == SWITCH_SEGMENT_RECORD)
+                return;
+
             // Write record file position.
             putPositionOfRecord(buf, record);
 
@@ -172,13 +186,19 @@ public class RecordV2Serializer implements RecordSerializer {
 
     /**
      * Create an instance of Record V2 serializer.
+     *
      * @param dataSerializer V2 data serializer.
      * @param marshalledMode Marshalled mode.
      * @param skipPositionCheck Skip position check mode.
-     * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
+     * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record.
      */
-    public RecordV2Serializer(RecordDataV2Serializer dataSerializer, boolean writePointer,
-        boolean marshalledMode, boolean skipPositionCheck, IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
+    public RecordV2Serializer(
+        RecordDataV2Serializer dataSerializer,
+        boolean writePointer,
+        boolean marshalledMode,
+        boolean skipPositionCheck,
+        IgniteBiPredicate<RecordType, WALPointer> recordFilter
+    ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.marshalledMode = marshalledMode;

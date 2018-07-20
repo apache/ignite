@@ -22,9 +22,16 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  *
  */
-public class NodeStoppingException extends IgniteCheckedException {
+public class NodeStoppingException extends IgniteCheckedException implements InvalidEnvironmentException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * @param cause Original node stopping cause.
+     */
+    public NodeStoppingException(NodeStoppingException cause) {
+        super(cause);
+    }
 
     /**
      * @param msg Exception message.
