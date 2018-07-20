@@ -781,7 +781,7 @@ public class GridToStringBuilder {
      * @param <T> Type of the object.
      * @param cls Declaration class of the object. Note that this should not be a runtime class.
      * @param obj Object to get a string presentation for.
-     * @param parent String representation of parent.
+     * @param parent String representation of parent.bkb
      * @return String presentation of the given object.
      */
     public static <T> String toString(Class<T> cls, T obj, String parent) {
@@ -838,9 +838,6 @@ public class GridToStringBuilder {
                 addMap(buf, (Map<?, ?>) val);
             else
                 buf.a(val);
-        }
-        catch (RuntimeException e) {
-            buf.a("<error> ").a(e.getClass().getSimpleName()).a(" [").a(e.getMessage()).a("]");
         }
         finally {
             svdObjs.remove(val);

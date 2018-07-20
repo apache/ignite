@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -58,6 +59,25 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobWithRestart() throws Exception {
+        // Non-collocated IgniteSet uses cache iterator, which can fail
+        // on unstable topology when the job is logged.
+        fail("https://issues.apache.org/jira/browse/IGNITE-1666");
+
+        checkDatastructureJobWithRestart(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJobWithRestartCollocated() throws Exception {
+        checkDatastructureJobWithRestart(true);
+    }
+
+    /**
+     * @param collocated Collocated flag.
+     * @throws Exception If failed.
+     */
+    private void checkDatastructureJobWithRestart(boolean collocated) throws Exception {
         Ignite ignite = startGrid(0);
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -87,10 +107,11 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
                             return 1;
                         }
-                    }, ignite.set("set", new CollectionConfiguration()));
+                    }, ignite.set("set", new CollectionConfiguration().setCollocated(collocated)));
                 }
-                catch (IgniteException ignore) {
-                    // No-op.
+                catch (IgniteException e) {
+                    if (X.hasCause(e, AssertionError.class))
+                        throw e;
                 }
 
                 if (iter++ % 1000 == 0)
