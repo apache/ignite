@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.primitives.vector;
 
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

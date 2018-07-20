@@ -24,9 +24,8 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -104,17 +103,17 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private DecisionTreeNode split(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter filter, int deep,
         ImpurityMeasureCalculator<T> impurityCalc) {
         if (deep >= maxDeep)
-            return createLeafNode(dataset, filter);
+            return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
         StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
 
         if (criterionFunctions == null)
-            return createLeafNode(dataset, filter);
+            return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
         SplitPoint splitPnt = calculateBestSplitPoint(criterionFunctions);
 
         if (splitPnt == null)
-            return createLeafNode(dataset, filter);
+            return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
         return new DecisionTreeConditionalNode(
             splitPnt.col,
@@ -122,14 +121,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc),
             split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc)
         );
-    }
-
-    private DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter filter) {
-        long startTs = System.currentTimeMillis();
-        DecisionTreeLeafNode node = decisionTreeLeafBuilder.createLeafNode(dataset, filter);
-        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH,
-            "Create leaf node time: %d ms", System.currentTimeMillis() - startTs);
-        return node;
     }
 
     /**
@@ -143,7 +134,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
 
-        long startTs = System.currentTimeMillis();
         StepFunction<T>[] result = dataset.compute(
             part -> {
                 if (compressor != null)
@@ -152,8 +142,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
                     return impurityCalc.calculate(part.filter(filter));
             }, this::reduce
         );
-        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH,
-            "Calculate impurity for all columns time: %d ms", System.currentTimeMillis() - startTs);
 
         return result;
     }
@@ -167,7 +155,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private SplitPoint calculateBestSplitPoint(StepFunction<T>[] criterionFunctions) {
         SplitPoint<T> res = null;
 
-        long startTs = System.currentTimeMillis();
         for (int col = 0; col < criterionFunctions.length; col++) {
             StepFunction<T> criterionFunctionForCol = criterionFunctions[col];
 
@@ -181,8 +168,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             }
         }
 
-        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH,
-            "Calculate best split point time: %d ms", System.currentTimeMillis() - startTs);
         return res;
     }
 

@@ -20,7 +20,7 @@ package org.apache.ignite.ml.environment.logging;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Tracer;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * MLLogger implementation based on IgniteLogger.

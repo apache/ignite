@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.math.Tracer;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.util.ModelTrace;
 
 /**

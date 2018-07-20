@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Helper for ML-specific objects logging.
