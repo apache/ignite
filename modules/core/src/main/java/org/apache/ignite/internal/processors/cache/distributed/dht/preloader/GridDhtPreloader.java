@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -171,19 +170,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @param oldTopVer Previous topology version.
      * @param newTopVer New topology version to check result.
-     * @return {@code True} if affinity assignments changed between two versions for
-     *         {@link GridCacheSharedContext#localNode()}  or there is no affinityassignments information
-     *         about old topology version.
+     * @return {@code True} if affinity assignments changed between two versions for local node.
      */
     private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
-        AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
+        final AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
 
         // We should get assigns based on previous rebalance with successfull result to calculate difference.
         // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
-        AffinityAssignment prevAff = !oldTopVer.initialized() || !grp.affinity().cachedVersions().contains(oldTopVer) ?
-            aff : grp.affinity().cachedAffinity(oldTopVer);
+        final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
+            grp.affinity().cachedAffinity(oldTopVer) : aff;
 
-        boolean assignsChanged = aff == prevAff;
+        boolean assignsChanged = false;
 
         for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
@@ -192,16 +189,24 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkExchangeEvents(GridDhtPartitionsExchangeFuture exchFut) {
-        if (ctx.kernalContext().clientNode())
-            return false; // Doesn't matter. Rebalance for client nodes will be skipped anyway.
+    @Override public void updateRebalanceFuture(AffinityTopologyVersion topVer) {
+        demander.updateRebalanceFuture(topVer);
+    }
 
-        if (exchFut.localJoinExchange())
-            return true; // Always schedule new rebalance on local node JOIN event;
+    /** {@inheritDoc} */
+    @Override public boolean checkExchangeEvents(AffinityTopologyVersion rebTopVer,
+        GridDhtPartitionsExchangeFuture exchFut) {
+        final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
-        AffinityTopologyVersion lastTopVer = exchFut.context().events().topologyVersion();
+        assert rebTopVer.initialized() :
+            "Exchange events cannot be checked. Rebalance topology version incorrect " +
+                "[rebTopVer=" + rebTopVer +
+                ", exchTopVer=" + exchTopVer + ']';
 
-        AffinityTopologyVersion actTopVer = demander.activeFutureTopVer();
+        // Rebalance for client nodes always skipped.
+        // Rebalance on local node JOIN event always must be scheduled.
+        if (ctx.kernalContext().clientNode() || exchFut.localJoinExchange())
+            return true;
 
         Set<UUID> leftNodes = exchFut.context().events().events().stream()
             .filter(ExchangeDiscoveryEvents::serverLeftEvent)
@@ -210,14 +215,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         leftNodes.retainAll(demander.remainingRequestedNodes());
 
-        return !actTopVer.initialized() || // Rebalance not cancelled, not first, first demand not send yet.
-            isAssignsChanged(actTopVer, lastTopVer) || // Local node may have no affinity changes.
+        return isAssignsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
             !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
 
         // No assignments for disabled preloader.
@@ -242,16 +245,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partCnt; p++) {
-            if (ctx.exchange().hasPendingExchange()) {
-                if (log.isDebugEnabled())
-                    log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
-                        exchId);
-
-                assignments.cancelled(true);
-
-                return assignments;
-            }
-
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);

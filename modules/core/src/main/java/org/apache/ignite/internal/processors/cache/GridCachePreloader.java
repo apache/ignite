@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -65,15 +64,21 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param exchFut Completed exchange future.
-     * @return {@code True} if preloading should be scheduled.
+     * @param topVer New rebalance topology version.
      */
-    public boolean checkExchangeEvents(GridDhtPartitionsExchangeFuture exchFut);
+    public void updateRebalanceFuture(AffinityTopologyVersion topVer);
+
+    /**
+     * @param rebTopVer Previously rebalancing topology version.
+     * @param exchFut Completed exchange future.
+     * @return {@code True} if checked events will trigger new rebalance.
+     */
+    public boolean checkExchangeEvents(AffinityTopologyVersion rebTopVer, GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * @param exchId Exchange ID.
      * @param exchFut Exchange future. Can be {@code null} if forced or reassigned generation performed.
-     * @return Generated assignments. Assignments can be cancelled due to pending exchanges.
+     * @return Generated assignments based on difference between current topology and new affinity version.
      */
     @Nullable public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
                                                                      @Nullable GridDhtPartitionsExchangeFuture exchFut);
@@ -82,8 +87,7 @@ public interface GridCachePreloader {
      * Adds assignments to preloader.
      *
      * @param assignments Assignments to add.
-     * @param forcePreload {@code True} if force preload request by {@link ForceRebalanceExchangeTask}
-     *                     or by {@link RebalanceReassignExchangeTask}.
+     * @param forcePreload {@code True} if force preload requested by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id created by exchange thread.
      * @param next Runnable responsible for cache rebalancing chain.
      * @param forcedRebFut Always {@code null} except is not part of {@link ForceRebalanceExchangeTask}.
@@ -124,7 +128,7 @@ public interface GridCachePreloader {
      * restarted at current or pending topology.
      *
      * Note that topology change creates new futures and finishes previous. Previous future
-     * does not cancels if assignments not changed, only topology version updated.
+     * does not cancel if assignments not changed, only topology version updated.
      */
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 
