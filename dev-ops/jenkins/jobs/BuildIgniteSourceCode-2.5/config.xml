@@ -7,8 +7,18 @@
     <org.jenkinsci.plugins.sharedworkspace.SharedWorkspace plugin="shared-workspace@1.0.2">
       <name>NONE</name>
     </org.jenkinsci.plugins.sharedworkspace.SharedWorkspace>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH_NAME</name>
+          <description></description>
+          <defaultValue>ignite-2.5</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.7.0">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.9.1">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -17,7 +27,7 @@
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/ignite-2.5</name>
+        <name>*/${BRANCH_NAME}</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -33,10 +43,10 @@
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
-    <org.jfrog.hudson.maven3.Maven3Builder plugin="artifactory@2.14.0">
+    <org.jfrog.hudson.maven3.Maven3Builder plugin="artifactory@2.16.1">
       <mavenName>Maven 3.3.9</mavenName>
       <rootPom>pom.xml</rootPom>
-      <goals>clean install -Pall-java,all-scala,licenses -DskipTests</goals>
+      <goals>clean install -Pall-java,all-scala,licenses -DskipTests -Drelease.version=2.5.0</goals>
       <mavenOpts></mavenOpts>
     </org.jfrog.hudson.maven3.Maven3Builder>
   </builders>

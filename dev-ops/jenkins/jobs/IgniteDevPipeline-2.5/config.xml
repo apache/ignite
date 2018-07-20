@@ -1,8 +1,8 @@
 <?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job@2.17">
+<flow-definition plugin="workflow-job@2.21">
   <actions>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.2.7"/>
-    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.2.7">
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.3"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.3">
       <jobProperties/>
       <triggers/>
       <parameters/>
@@ -11,6 +11,13 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.TimerTrigger>
+          <spec># H H/2 * * *</spec>
+        </hudson.triggers.TimerTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.BooleanParameterDefinition>
@@ -18,10 +25,22 @@
           <description></description>
           <defaultValue>true</defaultValue>
         </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH_NAME</name>
+          <description></description>
+          <defaultValue>ignite-2.5</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DOCKER_IMAGE_NAME</name>
+          <description></description>
+          <defaultValue>apacheignite-jobcase</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.45">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.54">
     <script>#!/usr/bin/env groovy
 
 pipeline {
@@ -29,7 +48,10 @@ pipeline {
     stages {
         stage(&quot;Build Code&quot;) {
             steps {
-                build(&quot;BuildIgniteSourceCode-2.5&quot;)
+                build(job: &quot;BuildIgniteSourceCode-2.5&quot;,
+                      parameters:
+                        [string(name: &apos;BRANCH_NAME&apos;, value: &quot;${params.BRANCH_NAME}&quot;)]
+                )
             }
         }
         stage(&quot;Run Tests&quot;) {
@@ -59,7 +81,10 @@ pipeline {
         }        
         stage(&quot;Publish Docker Image&quot;) {
             steps {
-                build(&quot;PushIgniteDockerImage-2.5&quot;)
+                build(job: &quot;PushIgniteDockerImage-2.5&quot;,
+                      parameters:
+                        [string(name: &apos;DOCKER_IMAGE_NAME&apos;, value: &quot;${params.DOCKER_IMAGE_NAME}&quot;)]                
+                )
             }
         }        
     }

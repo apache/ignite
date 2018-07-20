@@ -7,6 +7,16 @@
     <org.jenkinsci.plugins.sharedworkspace.SharedWorkspace plugin="shared-workspace@1.0.2">
       <name>NONE</name>
     </org.jenkinsci.plugins.sharedworkspace.SharedWorkspace>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>DOCKER_IMAGE_NAME</name>
+          <description></description>
+          <defaultValue>apacheignite-jobcase</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
   <assignedNode>docker</assignedNode>
@@ -23,13 +33,15 @@
 
 docker login jobcase-platform-docker.jfrog.io --username ${ARTIFACTORY_USER} --password ${ARTIFACTORY_PWD}
 
-docker tag apacheignite/jobcase:2.5.0 jobcase-platform-docker.jfrog.io/apacheignite-jobcase:2.5.0
+docker tag apacheignite/jobcase:2.5.0 jobcase-platform-docker.jfrog.io/${DOCKER_IMAGE_NAME}:2.5.0-build${BUILD_NUMBER}
+docker tag apacheignite/jobcase:2.5.0 jobcase-platform-docker.jfrog.io/${DOCKER_IMAGE_NAME}:LATEST2.5
 
-docker push jobcase-platform-docker.jfrog.io/apacheignite-jobcase:2.5.0</command>
+docker push jobcase-platform-docker.jfrog.io/${DOCKER_IMAGE_NAME}:2.5.0-build${BUILD_NUMBER}
+docker push jobcase-platform-docker.jfrog.io/${DOCKER_IMAGE_NAME}:LATEST2.5</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <hudson.tasks.Mailer plugin="mailer@1.20">
+    <hudson.tasks.Mailer plugin="mailer@1.21">
       <recipients>mgay@jobcase.com</recipients>
       <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
       <sendToIndividuals>false</sendToIndividuals>
@@ -58,7 +70,7 @@ docker push jobcase-platform-docker.jfrog.io/apacheignite-jobcase:2.5.0</command
     </jenkins.plugins.slack.SlackNotifier>
   </publishers>
   <buildWrappers>
-    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.15">
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.16">
       <bindings>
         <org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordMultiBinding>
           <credentialsId>ce30af54-69c8-4e27-98e6-261a67458634</credentialsId>
