@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -189,6 +190,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
     /** Moving partitions. */
     private Map<Integer, Boolean> movingParts;
+
+    /** Update counters to be sent to the near node in case it is a backup node also. */
+    protected GridLongList nearUpdCntrs;
 
     /**
      *  @param nearNodeId Near node ID.
@@ -574,7 +578,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         cnt++;
 
         if (op != READ)
-            addToBatch(entry.key(), val, updRes.mvccHistory());
+            addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updatePartitionCounter(), entry.context().cacheId());
     }
 
     /**
@@ -584,9 +588,10 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      * @param key Key.
      * @param val Value.
      * @param hist History rows.
+     * @param updCntr Update counter.
      */
-    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist)
-        throws IgniteCheckedException {
+    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist, long updCntr,
+        int cacheId) throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
         if (F.isEmpty(backups))
@@ -599,15 +604,20 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         for (ClusterNode node : backups) {
             assert !node.isLocal();
 
+            updateMappings(node, cacheId, part);
+
             boolean moving = isMoving(node, part);
 
             if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !moving) {
-                updateMappings(node);
-
                 if (newRemoteTx(node))
                     tx.addLockTransactionNode(node);
 
                 hasNearNodeUpdates = true;
+
+                if (nearUpdCntrs == null)
+                    nearUpdCntrs = new GridLongList();
+
+                nearUpdCntrs.add(updCntr);
 
                 continue;
             }
@@ -628,7 +638,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 hist0 = fetchHistoryInfo(key, hist);
             }
 
-            batch.add(key, moving ? hist0 : val);
+            batch.add(key, moving ? hist0 : val, updCntr);
 
             if (batch.size() == BATCH_SIZE) {
                 assert batches != null;
@@ -738,8 +748,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         ClusterNode node = batch.node();
 
-        updateMappings(node);
-
         GridDhtTxQueryEnlistRequest req;
 
         if (newRemoteTx(node)) {
@@ -759,7 +767,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 it.operation(),
                 FIRST_BATCH_ID,
                 batch.keys(),
-                batch.values());
+                batch.values(),
+                batch.updateCounters());
         }
         else {
             // Send only keys, values, LockVersion and batchId if this is not a first request to this backup.
@@ -770,7 +779,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 ++batchIdCntr,
                 mvccSnapshot.operationCounter(),
                 batch.keys(),
-                batch.values());
+                batch.values(),
+                batch.updateCounters());
         }
 
         ConcurrentMap<Integer, Batch> pending0 = null;
@@ -791,7 +801,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /** */
-    private synchronized void updateMappings(ClusterNode node) throws IgniteCheckedException {
+    private synchronized void updateMappings(ClusterNode node, Integer cacheId, Integer part) throws IgniteCheckedException {
         checkCompleted();
 
         Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
@@ -802,6 +812,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             m.put(node.id(), mapping = new GridDistributedTxMapping(node));
 
         mapping.markQueryUpdate();
+        mapping.addPartition(cacheId, part);
     }
 
     /**
@@ -1025,6 +1036,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          */
         private List<Message> vals;
 
+        /** Update counters. */
+        private GridLongList updCntrs;
+
         /**
          * @param node Cluster node.
          */
@@ -1045,8 +1059,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          * @param key Key.
          * @param val Value or preload entries collection.
          */
-        public void add(KeyCacheObject key, Message val) {
+        public void add(KeyCacheObject key, Message val, long updCntr) {
             assert val == null || val instanceof CacheObject || val instanceof CacheEntryInfoCollection;
+            assert updCntr > 0;
 
             if (keys == null)
                 keys = new ArrayList<>();
@@ -1059,6 +1074,11 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
                 vals.add(val);
             }
+
+            if (updCntrs == null)
+                updCntrs = new GridLongList();
+
+            updCntrs.add(updCntr);
 
             assert (vals == null) || keys.size() == vals.size();
         }
@@ -1082,6 +1102,13 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          */
         public List<Message> values() {
             return vals;
+        }
+
+        /**
+         * @return Update counters.
+         */
+        public GridLongList updateCounters() {
+            return updCntrs;
         }
     }
 

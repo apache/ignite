@@ -1462,7 +1462,18 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
             Map activeTrackers = GridTestUtils.getFieldValue(crd, "activeTrackers");
 
-            GridAbsPredicate cond = () -> activeTxs.isEmpty() && cntrFuts.isEmpty() && ackFuts.isEmpty() && activeTrackers.isEmpty();
+            GridAbsPredicate cond = () -> {
+                log.info("activeTxs=" + activeTxs + ", cntrFuts=" + cntrFuts + ", ackFuts=" + ackFuts +
+                    ", activeTrackers=" + activeTrackers);
+
+                boolean empty = true;
+
+                for (Map map : cntrFuts.values())
+                    if (!(empty = map.isEmpty()))
+                        break;
+
+                return activeTxs.isEmpty() && empty && ackFuts.isEmpty() && activeTrackers.isEmpty();
+            };
 
             GridTestUtils.waitForCondition(cond, TX_TIMEOUT);
 

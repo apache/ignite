@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -97,16 +98,20 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
 
             GridCacheVersion ver = null;
             IgniteUuid id = null;
+            GridLongList updCntrs = null;
 
             if (future.hasNearNodeUpdates) {
                 ver = future.cctx.tm().mappedVersion(future.nearLockVer);
                 id = future.futId;
+                updCntrs = future.nearUpdCntrs;
             }
 
-            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId, future.nearLockVer, future.cnt, ver, id);
+            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
+                future.nearLockVer, future.cnt, ver, id, updCntrs);
         }
         catch (IgniteCheckedException e) {
-            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId, future.nearLockVer, e);
+            return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
+                future.nearLockVer, e);
         }
     }
 

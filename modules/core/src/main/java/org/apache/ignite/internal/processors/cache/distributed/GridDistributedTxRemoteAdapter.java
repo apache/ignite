@@ -943,6 +943,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void updateCountersMap(Map<Integer, Map<Integer, Long>> updCntrsMap) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Map<Integer, Long>> updateCountersMap() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxRemoteAdapter.class, this, "super", super.toString());
     }

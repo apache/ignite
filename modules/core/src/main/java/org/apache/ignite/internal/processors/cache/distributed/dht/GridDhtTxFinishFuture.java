@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -32,6 +35,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -100,6 +104,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
     /** Near mappings. */
     private Map<UUID, GridDistributedTxMapping> nearMap;
+
+    /** Set of partitions  which update counter has been extra incremented on commit stage to prevent races. */
+    private Set<GridDhtLocalPartition> extraCntrUpd;
 
     /**
      * @param cctx Context.
@@ -456,6 +463,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             for (IgniteTxEntry e : dhtMapping.entries())
                 updCntrs.add(e.updateCounter());
 
+            Map<Integer, Map<Integer, Long>> updCntrsMap = null;
+
+            if (dhtMapping.queryUpdate() && commit)
+                updCntrsMap = processAffectedPartitions(dhtMapping.affectedPartitions());
+
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -482,7 +494,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 updCntrs,
                 false,
                 false,
-                mvccSnapshot);
+                mvccSnapshot,
+                updCntrsMap);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -585,6 +598,57 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         fut.onResult(e);
                     }
                 }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
+     * counters only on commit phase. On enlist phase only additional mvcc counters are incremented. And then,
+     * if transaction is successfully committed, these mvcc counters merge to partitions counter.
+     *
+     * @param cacheParts Partitions.
+     * @return Map of partition update counters.
+     */
+    private Map<Integer, Map<Integer, Long>> processAffectedPartitions(Map<Integer, Set<Integer>> cacheParts) {
+        assert !F.isEmpty(cacheParts);
+
+        Map<Integer, Map<Integer, Long>> res = new HashMap<>();
+
+        for (Integer cacheId : cacheParts.keySet()) {
+            Set<Integer> parts = cacheParts.get(cacheId);
+
+            assert !F.isEmpty(parts);
+
+            Map<Integer, Long> partsRes = new HashMap<>(parts.size());
+
+            res.put(cacheId, partsRes);
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            for (Integer part : parts) {
+                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(part);
+
+                assert dhtPart != null;
+
+                long cntr;
+
+                if (extraCntrUpd == null || !extraCntrUpd.contains(dhtPart)) {
+                    cntr = dhtPart.nextMvccUpdateCounter(); // Extra increment on transaction commit to prevent races.
+
+                    if (extraCntrUpd == null)
+                        extraCntrUpd = new HashSet<>();
+
+                    extraCntrUpd.add(dhtPart);
+                }
+                else
+                    cntr = dhtPart.mvccUpdateCounter();
+
+                dhtPart.updateCounter(cntr);
+
+                partsRes.put(part, cntr);
             }
         }
 

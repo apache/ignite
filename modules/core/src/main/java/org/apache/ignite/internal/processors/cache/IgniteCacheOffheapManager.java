@@ -614,7 +614,7 @@ public interface IgniteCacheOffheapManager {
         long updateCounter();
 
         /**
-         *
+         * @param val Update counter.
          */
         void updateCounter(long val);
 
@@ -622,6 +622,16 @@ public interface IgniteCacheOffheapManager {
          * @return Next update counter.
          */
         public long nextUpdateCounter();
+
+        /**
+         * @return Next mvcc update counter.
+         */
+        long nextMvccUpdateCounter();
+
+        /**
+         * @return Current mvcc update counter value.
+         */
+        long mvccUpdateCounter();
 
         /**
          * @return Initial update counter.

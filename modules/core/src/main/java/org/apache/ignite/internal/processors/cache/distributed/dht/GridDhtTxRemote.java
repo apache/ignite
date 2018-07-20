@@ -27,6 +27,7 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSi
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,6 +80,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** Store write through flag. */
     private boolean storeWriteThrough;
 
+    /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
+    private Map<Integer, Map<Integer, Long>> updCntrs;
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -389,7 +393,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
-        List<Message> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+        List<Message> vals, MvccSnapshot snapshot, GridLongList updCntrs) throws IgniteCheckedException {
+        assert keys != null && updCntrs != null && keys.size() == updCntrs.size();
 
         WALPointer ptr = null;
 
@@ -432,7 +437,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                     updRes = entry.mvccRemove(this,
                                         ctx.localNodeId(),
                                         topologyVersion(),
-                                        null,
+                                        updCntrs.get(i),
                                         snapshot,
                                         false);
 
@@ -445,7 +450,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         val,
                                         0,
                                         topologyVersion(),
-                                        null,
+                                        updCntrs.get(i),
                                         snapshot,
                                         op,
                                         false);
@@ -462,7 +467,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                             updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
                                 ctx.localNodeId(),
                                 topologyVersion(),
-                                null,
+                                updCntrs.get(i),
                                 entries.infos(),
                                 op,
                                 snapshot);
@@ -489,6 +494,16 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         if (ptr != null && !ctx.tm().logTxRecords())
             ctx.shared().wal().flush(ptr, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateCountersMap(Map<Integer, Map<Integer, Long>> updCntrsMap) {
+       this.updCntrs = updCntrsMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Map<Integer, Long>> updateCountersMap() {
+        return updCntrs;
     }
 
     /** {@inheritDoc} */

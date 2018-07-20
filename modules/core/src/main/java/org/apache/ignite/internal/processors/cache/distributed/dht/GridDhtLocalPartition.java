@@ -952,6 +952,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @return Current mvcc update counter value.
+     */
+    public long mvccUpdateCounter() {
+        return store.mvccUpdateCounter();
+    }
+
+    /**
+     * @return Next mvcc update counter.
+     */
+    public long nextMvccUpdateCounter() {
+        return store.nextMvccUpdateCounter();
+    }
+
+    /**
      * @return Initial update counter.
      */
     public long initialUpdateCounter() {

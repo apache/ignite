@@ -1538,6 +1538,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
+    /**
+     * @return Map of affected partitions: cacheId -> partId.
+     */
+    public Map<Integer, Set<Integer>> partsMap() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),

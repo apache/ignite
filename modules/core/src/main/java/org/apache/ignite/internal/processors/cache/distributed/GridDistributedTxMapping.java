@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -60,6 +64,9 @@ public class GridDistributedTxMapping {
 
     /** {@code True} if this is first mapping for optimistic tx on client node. */
     private boolean clientFirst;
+
+    /** Map of affected partitions per node. CacheId -> NodeId */
+    private Map<Integer, Set<Integer>> parts;
 
     /**
      * @param primary Primary node.
@@ -280,6 +287,31 @@ public class GridDistributedTxMapping {
      */
     public boolean empty() {
         return entries.isEmpty();
+    }
+
+    /**
+     * Adds partition to mapping.
+     * @param cacheId Cache id.
+     * @param part Part id.
+     */
+    @SuppressWarnings("Java8MapApi")
+    public void addPartition(Integer cacheId, Integer part) {
+        if (parts == null)
+            parts = new HashMap<>();
+
+        Set<Integer> cacheParts = parts.get(cacheId);
+
+        if (cacheParts == null)
+            parts.put(cacheId, cacheParts = new HashSet<>());
+
+        cacheParts.add(part);
+    }
+
+    /**
+     * @return Affected partitions.
+     */
+    public Map<Integer, Set<Integer>> affectedPartitions() {
+        return parts;
     }
 
     /** {@inheritDoc} */
