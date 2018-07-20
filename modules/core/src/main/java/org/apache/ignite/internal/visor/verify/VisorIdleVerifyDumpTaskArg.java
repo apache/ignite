@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /** */
+    private static final long serialVersionUID = 0L;
+    /** */
     private boolean skipZeros;
 
     /**
