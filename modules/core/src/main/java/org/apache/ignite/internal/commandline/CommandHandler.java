@@ -34,6 +34,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -51,8 +52,12 @@ import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
+import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -82,6 +87,7 @@ import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
@@ -89,6 +95,7 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 
@@ -138,8 +145,8 @@ public class CommandHandler {
     /** */
     private static final String CMD_USER = "--user";
 
-    /** Force option is used for auto confirmation. */
-    private static final String CMD_FORCE = "--force";
+    /** Option is used for auto confirmation. */
+    private static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** */
     protected static final String CMD_PING_INTERVAL = "--ping-interval";
@@ -155,7 +162,7 @@ public class CommandHandler {
         AUX_COMMANDS.add(CMD_PORT);
         AUX_COMMANDS.add(CMD_PASSWORD);
         AUX_COMMANDS.add(CMD_USER);
-        AUX_COMMANDS.add(CMD_FORCE);
+        AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
     }
@@ -228,6 +235,9 @@ public class CommandHandler {
 
     /** */
     private static final String TX_ORDER = "order";
+
+    /** */
+    public static final String CMD_TX_ORDER_START_TIME="START_TIME";
 
     /** */
     private static final String TX_SERVERS = "servers";
@@ -343,9 +353,6 @@ public class CommandHandler {
      * @return Prompt text if confirmation needed, otherwise {@code null}.
      */
     private String confirmationPrompt(Arguments args) {
-        if (args.force())
-            return null;
-
         String str = null;
 
         switch (args.command()) {
@@ -710,10 +717,39 @@ public class CommandHandler {
     }
 
     /**
+     * Executes appropriate version of idle_verify check. Old version will be used if there are old nodes in the cluster.
+     *
      * @param client Client.
      * @param cacheArgs Cache args.
      */
     private void cacheIdleVerify(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+        Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
+
+        boolean idleVerifyV2 = true;
+
+        for (GridClientNode node : nodes) {
+            String nodeVerStr = node.attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
+
+            IgniteProductVersion nodeVer = IgniteProductVersion.fromString(nodeVerStr);
+
+            if (nodeVer.compareTo(VerifyBackupPartitionsTaskV2.V2_SINCE_VER) < 0) {
+                idleVerifyV2 = false;
+
+                break;
+            }
+        }
+
+        if (idleVerifyV2)
+            cacheIdleVerifyV2(client, cacheArgs);
+        else
+            legacyCacheIdleVerify(client, cacheArgs);
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
+    private void legacyCacheIdleVerify(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorIdleVerifyTaskResult res = executeTask(
             client, VisorIdleVerifyTask.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
 
@@ -732,6 +768,65 @@ public class CommandHandler {
 
                 log("Partition instances: " + entry.getValue());
             }
+        }
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
+    private void cacheIdleVerifyV2(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+        IdleVerifyResultV2 res = executeTask(
+            client, VisorIdleVerifyTaskV2.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
+
+        if (!res.hasConflicts()) {
+            log("idle_verify check has finished, no conflicts have been found.");
+            nl();
+        }
+        else {
+            int cntrConflictsSize = res.counterConflicts().size();
+            int hashConflictsSize = res.hashConflicts().size();
+
+            log("idle_verify check has finished, found " + (cntrConflictsSize + hashConflictsSize) +
+                " conflict partitions: [counterConflicts=" + cntrConflictsSize + ", hashConflicts=" +
+                hashConflictsSize + "]");
+            nl();
+
+            if (!F.isEmpty(res.counterConflicts())) {
+                log("Update counter conflicts:");
+
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : res.counterConflicts().entrySet()) {
+                    log("Conflict partition: " + entry.getKey());
+
+                    log("Partition instances: " + entry.getValue());
+                }
+
+                nl();
+            }
+
+            if (!F.isEmpty(res.hashConflicts())) {
+                log("Hash conflicts:");
+
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : res.hashConflicts().entrySet()) {
+                    log("Conflict partition: " + entry.getKey());
+
+                    log("Partition instances: " + entry.getValue());
+                }
+
+                nl();
+            }
+        }
+
+        if (!F.isEmpty(res.movingPartitions())) {
+            log("Verification was skipped for " + res.movingPartitions().size() + " MOVING partitions:");
+
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : res.movingPartitions().entrySet()) {
+                log("Rebalancing partition: " + entry.getKey());
+
+                log("Partition instances: " + entry.getValue());
+            }
+
+            nl();
         }
     }
 
@@ -978,22 +1073,37 @@ public class CommandHandler {
 
                 ClusterNode key = entry.getKey();
 
-                log(key.toString());
+                log(key.getClass().getSimpleName() + " [id=" + key.id() +
+                    ", addrs=" + key.addresses() +
+                    ", order=" + key.order() +
+                    ", ver=" + key.version() +
+                    ", isClient=" + key.isClient() +
+                    ", consistentId=" + key.consistentId() +
+                    "]");
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
                     log("    Tx: [xid=" + info.getXid() +
                         ", label=" + info.getLabel() +
                         ", state=" + info.getState() +
+                        ", startTime=" + info.getFormattedStartTime() +
                         ", duration=" + info.getDuration() / 1000 +
                         ", isolation=" + info.getIsolation() +
                         ", concurrency=" + info.getConcurrency() +
                         ", timeout=" + info.getTimeout() +
                         ", size=" + info.getSize() +
-                        ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                        @Override public String apply(UUID id) {
-                            return U.id8(id);
-                        }
-                    }) +
+                        ", dhtNodes=" + (info.getPrimaryNodes() == null ? "N/A" :
+                        F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                            @Override public String apply(UUID id) {
+                                return U.id8(id);
+                            }
+                        })) +
+                        ", nearXid=" + info.getNearXid() +
+                        ", parentNodeIds=" + (info.getMasterNodeIds() == null ? "N/A" :
+                        F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                            @Override public String apply(UUID id) {
+                                return U.id8(id);
+                            }
+                        })) +
                         ']');
             }
         }
@@ -1239,7 +1349,7 @@ public class CommandHandler {
 
         String walArgs = "";
 
-        boolean force = false;
+        boolean autoConfirmation = false;
 
         CacheArguments cacheArgs = null;
 
@@ -1361,8 +1471,8 @@ public class CommandHandler {
 
                         break;
 
-                    case CMD_FORCE:
-                        force = true;
+                    case CMD_AUTO_CONFIRMATION:
+                        autoConfirmation = true;
 
                         break;
 
@@ -1389,7 +1499,7 @@ public class CommandHandler {
             throw new IllegalArgumentException("Both user and password should be specified");
 
         return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
-                pingTimeout, pingInterval, force);
+                pingTimeout, pingInterval, autoConfirmation);
     }
 
     /**
@@ -1722,22 +1832,22 @@ public class CommandHandler {
                 log("This utility can do the following commands:");
 
                 usage("  Activate cluster:", ACTIVATE);
-                usage("  Deactivate cluster:", DEACTIVATE, " [--force]");
+                usage("  Deactivate cluster:", DEACTIVATE, " [" + CMD_AUTO_CONFIRMATION + "]");
                 usage("  Print current cluster state:", STATE);
                 usage("  Print cluster baseline topology:", BASELINE);
-                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN] [--force]");
-                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
-                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
-                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
+                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
+                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
+                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
+                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [" + CMD_AUTO_CONFIRMATION + "]");
                 usage("  List or kill transactions:", TX, " [xid XID] [minDuration SECONDS] " +
                     "[minSize SIZE] [label PATTERN_REGEX] [servers|clients] " +
-                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE] [kill] [--force]");
+                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE|", CMD_TX_ORDER_START_TIME, "] [kill] [" + CMD_AUTO_CONFIRMATION + "]");
 
                 if(enableExperimental) {
                     usage("  Print absolute paths of unused archived wal segments on each node:", WAL,
                             " print [consistentId1,consistentId2,....,consistentIdN]");
                     usage("  Delete unused archived wal segments on each node:", WAL,
-                            " delete [consistentId1,consistentId2,....,consistentIdN] [--force]");
+                            " delete [consistentId1,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
                 }
 
                 log("  View caches information in a cluster. For more details type:");
@@ -1745,7 +1855,7 @@ public class CommandHandler {
                 nl();
 
                 log("By default commands affecting the cluster require interactive confirmation.");
-                log("Use --force option to disable it.");
+                log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
                 nl();
 
                 log("Default values:");
@@ -1767,7 +1877,7 @@ public class CommandHandler {
 
             Arguments args = parseAndValidate(rawArgs);
 
-            if (!confirm(args)) {
+            if (!args.autoConfirmation() && !confirm(args)) {
                 log("Operation cancelled.");
 
                 return EXIT_CODE_OK;

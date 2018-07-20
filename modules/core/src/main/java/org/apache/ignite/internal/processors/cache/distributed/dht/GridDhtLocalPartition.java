@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -812,11 +813,23 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Awaits completion of partition destroy process in case of {@code EVICTED} partition state.
      */
     public void awaitDestroy() {
-        try {
-            if (state() == EVICTED)
-                rent.get();
-        } catch (IgniteCheckedException e) {
-            log.error("Unable to await partition destroy " + this, e);
+        if (state() != EVICTED)
+            return;
+
+        final long timeout = 10_000;
+
+        for (;;) {
+            try {
+                rent.get(timeout);
+
+                break;
+            }
+            catch (IgniteFutureTimeoutCheckedException ignored) {
+                U.warn(log, "Failed to await partition destroy within timeout " + this);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to await partition destroy " + this, e);
+            }
         }
     }
 
@@ -837,14 +850,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Tries to start partition clear process {@link GridDhtLocalPartition#clearAll()}).
+     * Tries to start partition clear process {@link GridDhtLocalPartition#clearAll(EvictionContext)}).
      * Only one thread is allowed to do such process concurrently.
      * At the end of clearing method completes {@code clearFuture}.
      *
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
-    public boolean tryClear() throws NodeStoppingException {
+    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
         if (clearFuture.isDone())
             return true;
 
@@ -856,7 +869,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (addEvicting()) {
             try {
                 // Attempt to evict partition entries from cache.
-                long clearedEntities = clearAll();
+                long clearedEntities = clearAll(evictionCtx);
 
                 if (log.isDebugEnabled())
                     log.debug("Partition is cleared [clearedEntities=" + clearedEntities + ", part=" + this + "]");
@@ -972,7 +985,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Number of rows cleared from page memory.
      * @throws NodeStoppingException If node stopping.
      */
-    private long clearAll() throws NodeStoppingException {
+    private long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
         GridCacheVersion clearVer = ctx.versions().next();
 
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
@@ -987,6 +1000,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             clear(singleCacheEntryMap.map, extras, rec);
 
         long cleared = 0;
+
+        final int stopCheckingFreq = 1000;
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
@@ -1038,6 +1053,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         cleared++;
                     }
+
+                    // For each 'stopCheckingFreq' cleared entities check clearing process to stop.
+                    if (cleared % stopCheckingFreq == 0 && evictionCtx.shouldStop())
+                        return cleared;
                 }
                 catch (GridDhtInvalidPartitionException e) {
                     assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';

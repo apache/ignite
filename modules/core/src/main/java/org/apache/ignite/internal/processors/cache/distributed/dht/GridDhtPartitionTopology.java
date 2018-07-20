@@ -60,6 +60,10 @@ public interface GridDhtPartitionTopology {
     public void readUnlock();
 
     /**
+     * @return {@code True} if locked by current thread.
+     */
+    public boolean holdsLock();
+    /**
      * Updates topology version.
      *
      * @param exchFut Exchange future.
@@ -289,6 +293,7 @@ public interface GridDhtPartitionTopology {
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
+        @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
@@ -383,6 +388,16 @@ public interface GridDhtPartitionTopology {
      * @param threshold Threshold for number of entries.
      */
     public void printMemoryStats(int threshold);
+
+    /**
+     * @return Sizes of up-to-date partition versions in topology.
+     */
+    Map<Integer, Long> globalPartSizes();
+
+    /**
+     * @param partSizes Sizes of up-to-date partition versions in topology.
+     */
+    void globalPartSizes(@Nullable Map<Integer, Long> partSizes);
 
     /**
      * @param topVer Topology version.

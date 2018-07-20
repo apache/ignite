@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -83,10 +82,11 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * Constructor.
      * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        super(ctx);
+    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;

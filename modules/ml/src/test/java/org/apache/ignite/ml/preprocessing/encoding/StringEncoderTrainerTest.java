@@ -66,13 +66,15 @@ public class StringEncoderTrainerTest {
 
         DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        StringEncoderTrainer<Integer, String[]> strEncoderTrainer = new StringEncoderTrainer<>();
+        StringEncoderTrainer<Integer, String[]> strEncoderTrainer = new StringEncoderTrainer<Integer, String[]>()
+            .encodeFeature(0)
+            .encodeFeature(1);
 
         StringEncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
             (k, v) -> v
         );
 
-        assertArrayEquals(new double[] {0.0, 2.0}, preprocessor.apply(7, new String[] {"Monday", "September"}), 1e-8);
+        assertArrayEquals(new double[] {0.0, 2.0}, preprocessor.apply(7, new String[] {"Monday", "September"}).asArray(), 1e-8);
     }
 }

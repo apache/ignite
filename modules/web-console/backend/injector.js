@@ -24,7 +24,6 @@ module.exports = fireUp.newInjector({
         './errors/**/*.js',
         './middlewares/**/*.js',
         './routes/**/*.js',
-        './services/**/*.js',
-        './ignite_modules/**/*.js'
+        './services/**/*.js'
     ]
 });

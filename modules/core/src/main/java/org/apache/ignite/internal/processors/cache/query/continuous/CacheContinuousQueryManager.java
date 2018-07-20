@@ -560,6 +560,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param rmtFilter Remote filter.
      * @param loc Local flag.
      * @param notifyExisting Notify existing flag.
+     * @param sync Synchronous flag.
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
@@ -567,7 +568,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         final CacheEntryEventSerializableFilter rmtFilter,
         final boolean loc,
         final boolean notifyExisting,
-        final boolean ignoreClassNotFound)
+        final boolean ignoreClassNotFound,
+        final boolean sync)
         throws IgniteCheckedException
     {
         return executeQuery0(
@@ -580,7 +582,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         locLsnr,
                         rmtFilter,
                         true,
-                        false,
+                        sync,
                         true,
                         ignoreClassNotFound);
                 }

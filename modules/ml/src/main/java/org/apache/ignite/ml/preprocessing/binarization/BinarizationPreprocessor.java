@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -28,7 +29,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
     private static final long serialVersionUID = 6877811577892621239L;
 
@@ -36,7 +37,7 @@ public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, do
     private final double threshold;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, double[]> basePreprocessor;
+    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
 
     /**
      * Constructs a new instance of Binarization preprocessor.
@@ -44,7 +45,7 @@ public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, do
      * @param threshold Threshold value.
      * @param basePreprocessor Base preprocessor.
      */
-    public BinarizationPreprocessor(double threshold, IgniteBiFunction<K, V, double[]> basePreprocessor) {
+    public BinarizationPreprocessor(double threshold, IgniteBiFunction<K, V, Vector> basePreprocessor) {
         this.threshold = threshold;
         this.basePreprocessor = basePreprocessor;
     }
@@ -56,12 +57,12 @@ public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, do
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public double[] apply(K k, V v) {
-        double[] res = basePreprocessor.apply(k, v);
+    @Override public Vector apply(K k, V v) {
+        Vector res = basePreprocessor.apply(k, v);
 
-        for (int i = 0; i < res.length; i++) {
-            if(res[i] > threshold) res[i] = 1.0;
-            else res[i] = 0.0;
+        for (int i = 0; i < res.size(); i++) {
+            if(res.get(i) > threshold) res.set(i, 1.0);
+            else res.set(i, 0.0);
         }
 
         return res;

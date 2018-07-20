@@ -136,9 +136,6 @@ namespace ignite_test
         std::string home = ignite::jni::ResolveIgniteHome();
         std::string workDir = AppendPath(home, "work");
 
-        ignite::common::DeletePath(AppendPath(workDir, "cp"));
-        ignite::common::DeletePath(AppendPath(workDir, "db"));
-        ignite::common::DeletePath(AppendPath(workDir, "marshaller"));
-        ignite::common::DeletePath(AppendPath(workDir, "binary_meta"));
+        ignite::common::DeletePath(workDir);
     }
 }

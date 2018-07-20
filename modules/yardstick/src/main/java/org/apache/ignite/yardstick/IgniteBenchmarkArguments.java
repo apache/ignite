@@ -111,6 +111,14 @@ public class IgniteBenchmarkArguments {
     private int preloadAmount = 500_000;
 
     /** */
+    @Parameter(names = {"-pdrm", "--preloadDataRegionMult"}, description = "Data region size multiplier for preload.")
+    private int preloadDataRegionMult = 0;
+
+    /** */
+    @Parameter(names = {"-ep", "--enablePreload"}, description = "Enable preload flag.")
+    private boolean enablePreload = false;
+
+    /** */
     @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
     private long preloadLogsInterval = 30_000;
 
@@ -440,6 +448,10 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    public void setRange(int newVal) {
+        range = newVal;
+    }
+
     /**
      * @return Scale factor.
      */
@@ -452,6 +464,20 @@ public class IgniteBenchmarkArguments {
      */
     public int preloadAmount() {
         return preloadAmount;
+    }
+
+    /**
+     * @return Preload data region multiplier.
+     */
+    public int preloadDataRegionMult() {
+        return preloadDataRegionMult;
+    }
+
+    /**
+     * @return Reset range for preload flag.
+     */
+    public boolean enablePreload() {
+        return enablePreload;
     }
 
     /**

@@ -94,6 +94,7 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
@@ -311,7 +312,7 @@ public class DmlStatementsProcessor {
 
             if (opCtx == null)
                 // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
+                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false, true);
             else if (!opCtx.isKeepBinary())
                 newOpCtx = opCtx.keepBinary();
 
@@ -1136,8 +1137,7 @@ public class DmlStatementsProcessor {
             CacheOperationContext newOpCtx = null;
 
             if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
+                newOpCtx = new CacheOperationContext().keepBinary();
             else if (!opCtx.isKeepBinary())
                 newOpCtx = opCtx.keepBinary();
 

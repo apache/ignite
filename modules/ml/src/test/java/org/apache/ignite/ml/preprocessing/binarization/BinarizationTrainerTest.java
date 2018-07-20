@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -67,9 +68,9 @@ public class BinarizationTrainerTest {
 
         BinarizationPreprocessor<Integer, double[]> preprocessor = binarizationTrainer.fit(
             datasetBuilder,
-            (k, v) -> v
+            (k, v) -> VectorUtils.of(v)
         );
 
-        assertArrayEquals(new double[] {0, 0, 1}, preprocessor.apply(5, new double[] {1, 10, 100}), 1e-8);
+        assertArrayEquals(new double[] {0, 0, 1}, preprocessor.apply(5, new double[] {1, 10, 100}).asArray(), 1e-8);
     }
 }

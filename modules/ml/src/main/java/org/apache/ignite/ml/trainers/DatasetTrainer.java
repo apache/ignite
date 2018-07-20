@@ -25,6 +25,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -44,7 +45,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
+    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor);
 
     /**
@@ -59,7 +60,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @return Model.
      */
     public default <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new CacheBasedDatasetBuilder<>(ignite, cache),
             featureExtractor,
@@ -80,7 +81,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @return Model.
      */
     public default <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new CacheBasedDatasetBuilder<>(ignite, cache, filter),
             featureExtractor,
@@ -99,7 +100,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public default <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, double[]> featureExtractor,
+    public default <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new LocalDatasetBuilder<>(data, parts),
@@ -121,7 +122,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @return Model.
      */
     public default <K, V> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new LocalDatasetBuilder<>(data, filter, parts),

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -36,7 +37,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     private static final long serialVersionUID = 3678784980215216039L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /** Function that extracts labels from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, Double> lbExtractor;
@@ -47,7 +48,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
      */
-    public DecisionTreeDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor,
+    public DecisionTreeDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -62,7 +63,8 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            features[ptr] = featureExtractor.apply(entry.getKey(), entry.getValue());
+            features[ptr] = featureExtractor.apply(entry.getKey(), entry.getValue()).asArray();
+
             labels[ptr] = lbExtractor.apply(entry.getKey(), entry.getValue());
 
             ptr++;
