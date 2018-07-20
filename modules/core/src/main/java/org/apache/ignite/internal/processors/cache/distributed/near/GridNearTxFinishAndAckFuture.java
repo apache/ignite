@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -62,16 +62,17 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
 
                     IgniteInternalFuture<Void> ackFut = null;
 
-                    MvccQueryTracker qryTracker = tx.mvccQueryTracker();
+                    MvccQueryTracker tracker = tx.mvccQueryTracker();
 
-                    MvccTxInfo mvccInfo = tx.mvccInfo();
+                    MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-                    if (qryTracker != null)
-                        ackFut = qryTracker.onTxDone(mvccInfo, tx.context(), true);
-                    else if (mvccInfo != null) {
-                        ackFut = tx.context().coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(),
-                            mvccInfo.snapshot(),
-                            null);
+                    if (tracker != null)
+                        ackFut = tracker.onDone(tx, commit);
+                    else if (mvccSnapshot != null) {
+                        if (commit)
+                            ackFut = tx.context().coordinators().ackTxCommit(mvccSnapshot);
+                        else
+                            tx.context().coordinators().ackTxRollback(mvccSnapshot);
                     }
 
                     if (ackFut != null) {

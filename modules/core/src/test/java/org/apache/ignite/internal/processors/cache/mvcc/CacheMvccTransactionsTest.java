@@ -47,7 +47,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -66,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -93,11 +92,11 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.KEY_VALUE;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -1323,21 +1322,21 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_SingleNode_GetAll() throws Exception {
-        putAllGetAll(null, 1, 0, 0, 64, GET);
+        putAllGetAll(null, 1, 0, 0, 64, null, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_SingleNode_SinglePartition_GetAll() throws Exception {
-        putAllGetAll(null, 1, 0, 0, 1, GET);
+        putAllGetAll(null, 1, 0, 0, 1, null, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups0_GetAll() throws Exception {
-        putAllGetAll(null, 4, 2, 0, 64, GET);
+        putAllGetAll(null, 4, 2, 0, 64, null, GET, PUT);
     }
 
     /**
@@ -1353,43 +1352,42 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_GetAll() throws Exception {
-        putAllGetAll(null, 4, 2, 1, 64, GET);
+        putAllGetAll(null, 4, 2, 1, 64, null, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups2_GetAll() throws Exception {
-        putAllGetAll(null, 4, 2, 2, 64, GET);
+        putAllGetAll(null, 4, 2, 2, 64, null, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_GetAll() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
-        putAllGetAll(RestartMode.RESTART_CRD, 4, 2, 1, 64, GET);
+        putAllGetAll(RestartMode.RESTART_CRD, 4, 2, 1, 64, null, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_SingleNode_Scan() throws Exception {
-        putAllGetAll(null, 1, 0, 0, 64, SCAN);
+        putAllGetAll(null, 1, 0, 0, 64, null, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_SingleNode_SinglePartition_Scan() throws Exception {
-        putAllGetAll(null, 1, 0, 0, 1, SCAN);
+        putAllGetAll(null, 1, 0, 0, 1, null, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups0_Scan() throws Exception {
-        putAllGetAll(null, 4, 2, 0, 64, SCAN);
+        putAllGetAll(null, 4, 2, 0, 64, null, SCAN, PUT);
     }
 
     /**
@@ -1405,334 +1403,170 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_Scan() throws Exception {
-        putAllGetAll(null, 4, 2, 1, 64, SCAN);
+        putAllGetAll(null, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups2_Scan() throws Exception {
-        putAllGetAll(null, 4, 2, 2, 64, SCAN);
+        putAllGetAll(null, 4, 2, 2, 64, null, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_Scan() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
-        putAllGetAll(RestartMode.RESTART_CRD, 4, 2, 1, 64, SCAN);
+        putAllGetAll(RestartMode.RESTART_CRD, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
-        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, SCAN);
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
-    /**
-     * @param restartMode Restart mode.
-     * @param srvs Number of server nodes.
-     * @param clients Number of client nodes.
-     * @param cacheBackups Number of cache backups.
-     * @param cacheParts Number of cache partitions.
-     * @param readMode Read mode.
-     * @throws Exception If failed.
-     */
-    private void putAllGetAll(
-        RestartMode restartMode,
-        final int srvs,
-        final int clients,
-        int cacheBackups,
-        int cacheParts,
-        ReadMode readMode
-    ) throws Exception
-    {
-        final int RANGE = 20;
 
-        final int writers = 4;
-
-        final int readers = 4;
-
-        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
-            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
-            @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                int min = idx * RANGE;
-                int max = min + RANGE;
-
-                info("Thread range [min=" + min + ", max=" + max + ']');
-
-                Map<Integer, Integer> map = new HashMap<>();
-
-                int v = idx * 1_000_000;
-
-                boolean updated = false;
-
-                while (!stop.get()) {
-                    while (map.size() < RANGE)
-                        map.put(rnd.nextInt(min, max), v);
-
-                    TestCache<Integer, Integer> cache = randomCache(caches, rnd);
-
-                    try {
-                        IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
-
-                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            if (updated && rnd.nextBoolean()) {
-                                Map<Integer, Integer> res = checkAndGetAll(false, cache.cache, map.keySet(), GET, SCAN);
-
-                                for (Integer k : map.keySet())
-                                    assertEquals(v - 1, (Object)res.get(k));
-                            }
-
-                            cache.cache.putAll(map);
-
-                            tx.commit();
-
-                            updated = true;
-                        }
-
-                        if (rnd.nextBoolean()) {
-                            Map<Integer, Integer> res = checkAndGetAll(false, cache.cache, map.keySet(), GET, SCAN);
-
-                            for (Integer k : map.keySet())
-                                assertEquals(v, (Object)res.get(k));
-                        }
-                    }
-                    finally {
-                        cache.readUnlock();
-                    }
-
-                    map.clear();
-
-                    v++;
-                }
-
-                info("Writer done, updates: " + v);
-            }
-        };
-
-        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader =
-            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    Set<Integer> keys = new LinkedHashSet<>();
-
-                    Map<Integer, Integer> readVals = new HashMap<>();
-
-                    while (!stop.get()) {
-                        int range = rnd.nextInt(0, writers);
-
-                        int min = range * RANGE;
-                        int max = min + RANGE;
-
-                        while (keys.size() < RANGE)
-                            keys.add(rnd.nextInt(min, max));
-
-                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
-
-                        Map<Integer, Integer> map;
-
-                        try {
-                            map = checkAndGetAll(false, cache.cache, keys, readMode);
-                        }
-                        finally {
-                            cache.readUnlock();
-                        }
-
-                        assertTrue("Invalid map size: " + map.size(),
-                            map.isEmpty() || map.size() == RANGE);
-
-                        Integer val0 = null;
-
-                        for (Map.Entry<Integer, Integer> e: map.entrySet()) {
-                            Integer val = e.getValue();
-
-                            assertNotNull(val);
-
-                            if (val0 == null) {
-                                Integer readVal = readVals.get(range);
-
-                                if (readVal != null)
-                                    assertTrue(readVal <= val);
-
-                                readVals.put(range, val);
-
-                                val0 = val;
-                            }
-                            else {
-                                if (!F.eq(val0, val)) {
-                                    assertEquals("Unexpected value [range=" + range + ", key=" + e.getKey() + ']',
-                                        val0,
-                                        val);
-                                }
-                            }
-                        }
-
-                        keys.clear();
-                    }
-                }
-            };
-
-        readWriteTest(
-            restartMode,
-            srvs,
-            clients,
-            cacheBackups,
-            cacheParts,
-            writers,
-            readers,
-            DFLT_TEST_TIME,
-            null,
-            null,
-            writer,
-            reader);
-
-        for (Ignite node : G.allGrids())
-            checkActiveQueriesCleanup(node);
-    }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_SingleNode() throws Exception {
-        accountsTxReadAll(1, 0, 0, 64, null, false, GET, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 64, null, false, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_WithRemoves_SingleNode() throws Exception {
-        accountsTxReadAll(1, 0, 0, 64, null, true, GET, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 64, null, true, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, null, false, GET, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 1, null, false, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_WithRemoves_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, null, true, GET, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 1, null, true, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_ClientServer_Backups0() throws Exception {
-        accountsTxReadAll(4, 2, 0, 64, null, false, GET, KEY_VALUE);
+        accountsTxReadAll(4, 2, 0, 64, null, false, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_WithRemoves_ClientServer_Backups0() throws Exception {
-        accountsTxReadAll(4, 2, 0, 64, null, true, GET, KEY_VALUE);
+        accountsTxReadAll(4, 2, 0, 64, null, true, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_ClientServer_Backups1() throws Exception {
-        accountsTxReadAll(4, 2, 1, 64, null, false, GET, KEY_VALUE);
+        accountsTxReadAll(4, 2, 1, 64, null, false, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_WithRemoves_ClientServer_Backups1() throws Exception {
-        accountsTxReadAll(4, 2, 1, 64, null, true, GET, KEY_VALUE);
+        accountsTxReadAll(4, 2, 1, 64, null, true, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_ClientServer_Backups2() throws Exception {
-        accountsTxReadAll(4, 2, 2, 64, null, false, GET, KEY_VALUE);
+        accountsTxReadAll(4, 2, 2, 64, null, false, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_WithRemoves_ClientServer_Backups2() throws Exception {
-        accountsTxReadAll(4, 2, 2, 64, null, true, GET, KEY_VALUE);
+        accountsTxReadAll(4, 2, 2, 64, null, true, GET, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, null, false, SCAN, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 1, null, false, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_WithRemoves_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, null, true, SCAN, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 1, null, true, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_SingleNode() throws Exception {
-        accountsTxReadAll(1, 0, 0, 64, null, false, SCAN, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 64, null, false, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_WithRemoves_SingleNode() throws Exception {
-        accountsTxReadAll(1, 0, 0, 64, null, true, SCAN, KEY_VALUE);
+        accountsTxReadAll(1, 0, 0, 64, null, true, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_ClientServer_Backups0() throws Exception {
-        accountsTxReadAll(4, 2, 0, 64, null, false, SCAN, KEY_VALUE);
+        accountsTxReadAll(4, 2, 0, 64, null, false, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_WithRemoves_ClientServer_Backups0() throws Exception {
-        accountsTxReadAll(4, 2, 0, 64, null, true, SCAN, KEY_VALUE);
+        accountsTxReadAll(4, 2, 0, 64, null, true, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_ClientServer_Backups1() throws Exception {
-        accountsTxReadAll(4, 2, 1, 64, null, false, SCAN, KEY_VALUE);
+        accountsTxReadAll(4, 2, 1, 64, null, false, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_WithRemoves_ClientServer_Backups1() throws Exception {
-        accountsTxReadAll(4, 2, 1, 64, null, true, SCAN, KEY_VALUE);
+        accountsTxReadAll(4, 2, 1, 64, null, true, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_ClientServer_Backups2() throws Exception {
-        accountsTxReadAll(4, 2, 2, 64, null, false, SCAN, KEY_VALUE);
+        accountsTxReadAll(4, 2, 2, 64, null, false, SCAN, PUT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_WithRemoves_ClientServer_Backups2() throws Exception {
-        accountsTxReadAll(4, 2, 2, 64, null, true, SCAN, KEY_VALUE);
+        accountsTxReadAll(4, 2, 2, 64, null, true, SCAN, PUT);
     }
 
     /**
@@ -2408,7 +2242,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         srvSpi.blockMessages(GridNearGetResponse.class, getTestIgniteInstanceName(1));
 
-        TestRecordingCommunicationSpi.spi(client).blockMessages(MvccAckRequestQuery.class,
+        TestRecordingCommunicationSpi.spi(client).blockMessages(MvccAckRequestQueryCntr.class,
             getTestIgniteInstanceName(0));
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -2443,8 +2277,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8031");
-
         Ignite srv0 = startGrid(0);
 
         IgniteCache<Integer, Integer> cache =  (IgniteCache)srv0.createCache(
@@ -2524,8 +2356,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceWithRemovedValuesSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8031");
-
         Ignite node = startGrid(0);
 
         IgniteTransactions txs = node.transactions();
@@ -2572,98 +2402,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         stopGrid(0);
 
         checkValues(expVals, jcache(1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorFailureSimplePessimisticTx() throws Exception {
-        coordinatorFailureSimple(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorFailureSimpleSerializableTx() throws Exception {
-        coordinatorFailureSimple(OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorFailureSimpleOptimisticTx() throws Exception {
-        coordinatorFailureSimple(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @param concurrency Transaction concurrency.
-     * @param isolation Transaction isolation.
-     * @throws Exception If failed.
-     */
-    private void coordinatorFailureSimple(
-        final TransactionConcurrency concurrency,
-        final TransactionIsolation isolation
-    ) throws Exception {
-        testSpi = true;
-
-        startGrids(3);
-
-        client = true;
-
-        final Ignite client = startGrid(3);
-
-        final IgniteCache cache = client.createCache(
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT));
-
-        final Integer key1 = primaryKey(jcache(1));
-        final Integer key2 = primaryKey(jcache(2));
-
-        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(ignite(0));
-
-        crdSpi.blockMessages(MvccSnapshotResponse.class, client.name());
-
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                try {
-                    try (Transaction tx = client.transactions().txStart(concurrency, isolation)) {
-                        cache.put(key1, 1);
-                        cache.put(key2, 2);
-
-                        tx.commit();
-                    }
-
-                    fail();
-                }
-                catch (ClusterTopologyException e) {
-                    info("Expected exception: " + e);
-
-                    assertNotNull(e.retryReadyFuture());
-
-                    e.retryReadyFuture().get();
-                }
-
-                return null;
-            }
-        }, "tx-thread");
-
-        crdSpi.waitForBlocked();
-
-        stopGrid(0);
-
-        fut.get();
-
-        assertNull(checkAndGet(false, cache, key1, GET, SCAN));
-        assertNull(checkAndGet(false, cache, key2, GET, SCAN));
-
-        try (Transaction tx = client.transactions().txStart(concurrency, isolation)) {
-            cache.put(key1, 1);
-            cache.put(key2, 2);
-
-            tx.commit();
-        }
-
-        assertEquals(1, checkAndGet(false, cache, key1, GET, SCAN));
-        assertEquals(2, checkAndGet(false, cache, key2, GET, SCAN));
     }
 
     /**
@@ -2816,528 +2554,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             checkValues(vals, node.cache(cache.getName()));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxInProgressCoordinatorChangeSimple() throws Exception {
-        txInProgressCoordinatorChangeSimple(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxInProgressCoordinatorChangeSimple_Readonly() throws Exception {
-        txInProgressCoordinatorChangeSimple(true);
-    }
-
-    /**
-     * @param readOnly If {@code true} tests read-only transaction.
-     * @throws Exception If failed.
-     */
-    private void txInProgressCoordinatorChangeSimple(boolean readOnly) throws Exception {
-        MvccProcessor.coordinatorAssignClosure(new CoordinatorAssignClosure());
-
-        Ignite srv0 = startGrids(4);
-
-        client = true;
-
-        startGrid(4);
-
-        client = false;
-
-        nodeAttr = CRD_ATTR;
-
-        int crdIdx = 5;
-
-        startGrid(crdIdx);
-
-        srv0.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
-            setNodeFilter(new CoordinatorNodeFilter()));
-
-        Set<Integer> keys = F.asSet(1, 2, 3);
-
-        for (int i = 0; i < 5; i++) {
-            Ignite node = ignite(i);
-
-            info("Test with node: " + node.name());
-
-            IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
-
-            try (Transaction tx = node.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                assertTrue(checkAndGetAll(false, cache, keys, SCAN, GET).isEmpty());
-
-                if (!readOnly)
-                    cache.put(0, 0);
-
-                startGrid(crdIdx + 1);
-
-                stopGrid(crdIdx);
-
-                crdIdx++;
-
-                tx.commit();
-            }
-
-            checkActiveQueriesCleanup(ignite(crdIdx));
-        }
-    }
-    
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReadInProgressCoordinatorFailsSimple_FromServer() throws Exception {
-        readInProgressCoordinatorFailsSimple(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReadInProgressCoordinatorFailsSimple_FromClient() throws Exception {
-        readInProgressCoordinatorFailsSimple(true);
-    }
-
-    /**
-     * @param fromClient {@code True} if read from client node, otherwise from server node.
-     * @throws Exception If failed.
-     */
-    private void readInProgressCoordinatorFailsSimple(boolean fromClient) throws Exception {
-        for (boolean readInTx : new boolean[]{false, true}) {
-            for (int i = 1; i <= 3; i++) {
-                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx);
-
-                afterTest();
-            }
-        }
-    }
-
-    /**
-     * @param fromClient {@code True} if read from client node, otherwise from server node.
-     * @param crdChangeCnt Number of coordinator changes.
-     * @param readInTx {@code True} to read inside transaction.
-     * @throws Exception If failed.
-     */
-    private void readInProgressCoordinatorFailsSimple(boolean fromClient, int crdChangeCnt, final boolean readInTx)
-        throws Exception
-    {
-        info("readInProgressCoordinatorFailsSimple [fromClient=" + fromClient +
-            ", crdChangeCnt=" + crdChangeCnt +
-            ", readInTx=" + readInTx + ']');
-
-        testSpi = true;
-
-        client = false;
-
-        final int SRVS = 3;
-        final int COORDS = crdChangeCnt + 1;
-
-        startGrids(SRVS + COORDS);
-
-        client = true;
-
-        assertTrue(startGrid(SRVS + COORDS).configuration().isClientMode());
-
-        final Ignite getNode = fromClient ? ignite(SRVS + COORDS) : ignite(COORDS);
-
-        String[] excludeNodes = new String[COORDS];
-
-        for (int i = 0; i < COORDS; i++)
-            excludeNodes[i] = testNodeName(i);
-
-        final IgniteCache cache = getNode.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
-            setNodeFilter(new TestCacheNodeExcludingFilter(excludeNodes)));
-
-        final Set<Integer> keys = new HashSet<>();
-
-        List<Integer> keys1 = primaryKeys(jcache(COORDS), 10);
-
-        keys.addAll(keys1);
-        keys.addAll(primaryKeys(jcache(COORDS + 1), 10));
-
-        Map<Integer, Integer> vals = new HashMap();
-
-        for (Integer key : keys)
-            vals.put(key, -1);
-
-        try (Transaction tx = getNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            cache.putAll(vals);
-
-            tx.commit();
-        }
-
-        final TestRecordingCommunicationSpi getNodeSpi = TestRecordingCommunicationSpi.spi(getNode);
-
-        getNodeSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                return msg instanceof GridNearGetRequest;
-            }
-        });
-
-        IgniteInternalFuture getFut = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                Map<Integer, Integer> res;
-
-                if (readInTx) {
-                    try (Transaction tx = getNode.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                        res = checkAndGetAll(false, cache, keys, SCAN, GET);
-
-                        tx.rollback();
-                    }
-                }
-                else
-                    res = checkAndGetAll(false, cache, keys, SCAN, GET);;
-
-                assertEquals(20, res.size());
-
-                Integer val = null;
-
-                for (Integer val0 : res.values()) {
-                    assertNotNull(val0);
-
-                    if (val == null)
-                        val = val0;
-                    else
-                        assertEquals(val, val0);
-                }
-
-                return null;
-            }
-        }, "get-thread");
-
-        getNodeSpi.waitForBlocked();
-
-        for (int i = 0; i < crdChangeCnt; i++)
-            stopGrid(i);
-
-        for (int i = 0; i < 10; i++) {
-            vals = new HashMap();
-
-            for (Integer key : keys)
-                vals.put(key, i);
-
-            while (true) {
-                try (Transaction tx = getNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.putAll(vals);
-
-                    tx.commit();
-
-                    break;
-                }
-                catch (Exception e) {
-                    if (!X.hasCause(e, ClusterTopologyException.class))
-                        fail("Unexpected error: " + e);
-                    else
-                        info("Tx error, need retry: " + e);
-                }
-            }
-        }
-
-        getNodeSpi.stopBlock(true);
-
-        getFut.get();
-
-        for (Ignite node : G.allGrids())
-            checkActiveQueriesCleanup(node);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorChangeActiveQueryClientFails_Simple() throws Exception {
-        testSpi = true;
-
-        client = false;
-
-        final int SRVS = 3;
-        final int COORDS = 1;
-
-        startGrids(SRVS + COORDS);
-
-        client = true;
-
-        Ignite client = startGrid(SRVS + COORDS);
-
-        final IgniteCache cache = client.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
-            setNodeFilter(new TestCacheNodeExcludingFilter(testNodeName(0))));
-
-        final Map<Integer, Integer> vals = new HashMap();
-
-        for (int i = 0; i < 100; i++)
-            vals.put(i, i);
-
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            cache.putAll(vals);
-
-            tx.commit();
-        }
-
-        final TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
-
-        clientSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                return msg instanceof GridNearGetRequest;
-            }
-        });
-
-        IgniteInternalFuture getFut = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                checkAndGetAll(false, cache, vals.keySet(), SCAN, GET);
-
-                return null;
-            }
-        }, "get-thread");
-
-        clientSpi.waitForBlocked();
-
-        stopGrid(0);
-
-        stopGrid(client.name());
-
-        try {
-            getFut.get();
-
-            fail();
-        }
-        catch (Exception ignore) {
-            // No-op.
-        }
-
-        for (Ignite node : G.allGrids())
-            checkActiveQueriesCleanup(node);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReadInProgressCoordinatorFails() throws Exception {
-        readInProgressCoordinatorFails(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReadInsideTxInProgressCoordinatorFails() throws Exception {
-        readInProgressCoordinatorFails(false, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReadInProgressCoordinatorFails_ReadDelay() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
-        readInProgressCoordinatorFails(true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReadInsideTxInProgressCoordinatorFails_ReadDelay() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
-        readInProgressCoordinatorFails(true, true);
-    }
-
-    /**
-     * @param readDelay {@code True} if delays get requests.
-     * @param readInTx {@code True} to read inside transaction.
-     * @throws Exception If failed.
-     */
-    private void readInProgressCoordinatorFails(boolean readDelay, final boolean readInTx) throws Exception {
-        final int COORD_NODES = 5;
-        final int SRV_NODES = 4;
-
-        if (readDelay)
-            testSpi = true;
-
-        startGrids(COORD_NODES);
-
-        startGridsMultiThreaded(COORD_NODES, SRV_NODES);
-
-        client = true;
-
-        Ignite client = startGrid(COORD_NODES + SRV_NODES);
-
-        final List<String> cacheNames = new ArrayList<>();
-
-        final int KEYS = 100;
-
-        final Map<Integer, Integer> vals = new HashMap<>();
-
-        for (int i = 0; i < KEYS; i++)
-            vals.put(i, 0);
-
-        String[] exclude = new String[COORD_NODES];
-
-        for (int i = 0; i < COORD_NODES; i++)
-            exclude[i] = testNodeName(i);
-
-        for (CacheConfiguration ccfg : cacheConfigurations()) {
-            ccfg.setName("cache-" + cacheNames.size());
-
-            // First server nodes are 'dedicated' coordinators.
-            ccfg.setNodeFilter(new TestCacheNodeExcludingFilter(exclude));
-
-            cacheNames.add(ccfg.getName());
-
-            IgniteCache cache = client.createCache(ccfg);
-
-            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cache.putAll(vals);
-
-                tx.commit();
-            }
-        }
-
-        if (readDelay) {
-            for (int i = COORD_NODES; i < COORD_NODES + SRV_NODES + 1; i++) {
-                TestRecordingCommunicationSpi.spi(ignite(i)).closure(new IgniteBiInClosure<ClusterNode, Message>() {
-                    @Override public void apply(ClusterNode node, Message msg) {
-                        if (msg instanceof GridNearGetRequest)
-                            doSleep(ThreadLocalRandom.current().nextLong(50) + 1);
-                    }
-                });
-            }
-        }
-
-        final AtomicBoolean done = new AtomicBoolean();
-
-        try {
-            final AtomicInteger readNodeIdx = new AtomicInteger(0);
-
-            IgniteInternalFuture getFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    try {
-                        Ignite node = ignite(COORD_NODES + (readNodeIdx.getAndIncrement() % (SRV_NODES + 1)));
-
-                        int cnt = 0;
-
-                        while (!done.get()) {
-                            for (String cacheName : cacheNames) {
-                                IgniteCache cache = node.cache(cacheName);
-
-                                Map<Integer, Integer> res;
-
-                                if (readInTx) {
-                                    try (Transaction tx = node.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                        res = checkAndGetAll(true, cache, vals.keySet(), SCAN, GET);
-
-                                        tx.rollback();
-                                    }
-                                }
-                                else
-                                    res = checkAndGetAll(true, cache, vals.keySet(), SCAN, GET);
-
-                                assertEquals(vals.size(), res.size());
-
-                                Integer val0 = null;
-
-                                for (Integer val : res.values()) {
-                                    if (val0 == null)
-                                        val0 = val;
-                                    else
-                                        assertEquals(val0, val);
-                                }
-                            }
-
-                            cnt++;
-                        }
-
-                        log.info("Finished [node=" + node.name() + ", readCnt=" + cnt + ']');
-
-                        return null;
-                    }
-                    catch (Throwable e) {
-                        error("Unexpected error: " + e, e);
-
-                        throw e;
-                    }
-                }
-            }, ((SRV_NODES + 1) + 1) * 2, "get-thread");
-
-            IgniteInternalFuture putFut1 = GridTestUtils.runAsync(new Callable() {
-                @Override public Void call() throws Exception {
-                    Ignite node = ignite(COORD_NODES);
-
-                    List<IgniteCache> caches = new ArrayList<>();
-
-                    for (String cacheName : cacheNames)
-                        caches.add(node.cache(cacheName));
-
-                    Integer val = 1;
-
-                    while (!done.get()) {
-                        Map<Integer, Integer> vals = new HashMap<>();
-
-                        for (int i = 0; i < KEYS; i++)
-                            vals.put(i, val);
-
-                        for (IgniteCache cache : caches) {
-                            try {
-                                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    cache.putAll(vals);
-
-                                    tx.commit();
-                                }
-                            }
-                            catch (ClusterTopologyException e) {
-                                info("Tx failed: " + e);
-                            }
-                        }
-
-                        val++;
-                    }
-
-                    return null;
-                }
-            }, "putAll-thread");
-
-            IgniteInternalFuture putFut2 = GridTestUtils.runAsync(new Callable() {
-                @Override public Void call() throws Exception {
-                    Ignite node = ignite(COORD_NODES);
-
-                    IgniteCache cache = node.cache(cacheNames.get(0));
-
-                    Integer val = 0;
-
-                    while (!done.get()) {
-                        try {
-                            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                cache.put(Integer.MAX_VALUE, val);
-
-                                tx.commit();
-                            }
-                        }
-                        catch (ClusterTopologyException e) {
-                            info("Tx failed: " + e);
-                        }
-
-                        val++;
-                    }
-
-                    return null;
-                }
-            }, "put-thread");
-
-            for (int i = 0; i < COORD_NODES && !getFut.isDone(); i++) {
-                U.sleep(3000);
-
-                stopGrid(i);
-
-                awaitPartitionMapExchange();
-            }
-
-            done.set(true);
-
-            getFut.get();
-            putFut1.get();
-            putFut2.get();
-
-            for (Ignite node : G.allGrids())
-                checkActiveQueriesCleanup(node);
-        }
-        finally {
-            done.set(true);
-        }
-
-    }
 
     /**
      * @throws Exception If failed.
@@ -3530,7 +2746,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             IgniteCache cache = client.createCache(ccfg);
 
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cache.putAll(vals);
+                writeAllByMode(cache, vals, PUT, INTEGER_CODEC);
 
                 tx.commit();
             }
@@ -3549,10 +2765,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                     while (!done.get()) {
                         for (String cacheName : cacheNames) {
-                            IgniteCache cache = node.cache(cacheName);
-
                             // TODO IGNITE-6754 add SQL and SCAN support.
-                            Map<Integer, Integer> res = checkAndGetAll(false, node.cache(cacheName), vals.keySet(), GET);
+                            Map<Integer, Integer> res = readAllByMode(node.cache(cacheName), vals.keySet(), GET, INTEGER_CODEC);
 
                             assertEquals(vals, res);
                         }
@@ -3631,7 +2845,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 1, 10_000, GET);
+            updateNObjectsTest(n, 1, 0, 0, 1, 10_000, null, GET, PUT, null);
 
             afterTest();
         }
@@ -3644,7 +2858,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 64, 10_000, GET);
+            updateNObjectsTest(n, 1, 0, 0, 64, 10_000, null, GET, PUT, null);
 
             afterTest();
         }
@@ -3657,7 +2871,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 1, 10_000, SCAN);
+            updateNObjectsTest(n, 1, 0, 0, 1, 10_000, null, SCAN, PUT, null);
 
             afterTest();
         }
@@ -3670,178 +2884,36 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
-            updateNObjectsTest(n, 1, 0, 0, 64, 10_000, SCAN);
+            updateNObjectsTest(n, 1, 0, 0, 64, 10_000, null, SCAN, PUT, null);
 
             afterTest();
         }
     }
 
     /**
-     * @param N Number of object to update in single transaction.
-     * @param srvs Number of server nodes.
-     * @param clients Number of client nodes.
-     * @param cacheBackups Number of cache backups.
-     * @param cacheParts Number of cache partitions.
-     * @param time Test time.
-     * @param readMode Read mode.
      * @throws Exception If failed.
      */
-    private void updateNObjectsTest(
-        final int N,
-        final int srvs,
-        final int clients,
-        int cacheBackups,
-        int cacheParts,
-        long time,
-        ReadMode readMode
-    )
-        throws Exception
-    {
-        final int TOTAL = 20;
+    public void testUpdate_N_Objects_ClientServer_Backups2_Get() throws Exception {
+        int[] nValues = {3, 5, 10};
 
-        assert N <= TOTAL;
+        for (int n : nValues) {
+            updateNObjectsTest(n, 4, 2, 2, DFLT_PARTITION_COUNT, 10_000, null, GET, PUT, null);
 
-        info("updateNObjectsTest [n=" + N + ", total=" + TOTAL + ']');
+            afterTest();
+        }
+    }
 
-        final int writers = 4;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUpdate_N_Objects_ClientServer_Backups1_Scan() throws Exception {
+        int[] nValues = {3, 5, 10};
 
-        final int readers = 4;
+        for (int n : nValues) {
+            updateNObjectsTest(n, 2, 1, 1, DFLT_PARTITION_COUNT, 10_000, null, SCAN, PUT, null);
 
-        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
-            @Override public void apply(IgniteCache<Object, Object> cache) {
-                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
-
-                Map<Integer, Integer> vals = new HashMap<>();
-
-                for (int i = 0; i < TOTAL; i++)
-                    vals.put(i, N);
-
-                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.putAll(vals);
-
-                    tx.commit();
-                }
-            }
-        };
-
-        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
-            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    int cnt = 0;
-
-                    while (!stop.get()) {
-                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
-                        IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
-
-                        TreeSet<Integer> keys = new TreeSet<>();
-
-                        while (keys.size() < N)
-                            keys.add(rnd.nextInt(TOTAL));
-
-                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Map<Integer, Integer> curVals = checkAndGetAll(true, cache.cache, keys, readMode);
-
-                            assertEquals(N, curVals.size());
-
-                            Map<Integer, Integer> newVals = new HashMap<>();
-
-                            for (Map.Entry<Integer, Integer> e : curVals.entrySet())
-                                newVals.put(e.getKey(), e.getValue() + 1);
-
-                            cache.cache.putAll(newVals);
-
-                            tx.commit();
-                        }
-                        finally {
-                            cache.readUnlock();
-                        }
-
-                        cnt++;
-                    }
-
-                    info("Writer finished, updates: " + cnt);
-                }
-            };
-
-        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader =
-            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
-                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    Set<Integer> keys = new LinkedHashSet<>();
-
-                    while (!stop.get()) {
-                        while (keys.size() < TOTAL)
-                            keys.add(rnd.nextInt(TOTAL));
-
-                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
-
-                        Map<Integer, Integer> vals;
-
-                        try {
-                            vals = checkAndGetAll(false, cache.cache, keys, readMode);
-                        }
-                        finally {
-                            cache.readUnlock();
-                        }
-
-                        assertEquals(TOTAL, vals.size());
-
-                        int sum = 0;
-
-                        for (int i = 0; i < TOTAL; i++) {
-                            Integer val = vals.get(i);
-
-                            assertNotNull(val);
-
-                            sum += val;
-                        }
-
-                        assertEquals(0, sum % N);
-                    }
-
-                    if (idx == 0) {
-                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
-
-                        Map<Integer, Integer> vals;
-
-                        try {
-                            vals = checkAndGetAll(false, cache.cache, keys, readMode);
-                        }
-                        finally {
-                            cache.readUnlock();
-                        }
-
-                        int sum = 0;
-
-                        for (int i = 0; i < TOTAL; i++) {
-                            Integer val = vals.get(i);
-
-                            info("Value [id=" + i + ", val=" + val + ']');
-
-                            sum += val;
-                        }
-
-                        info("Sum [sum=" + sum + ", mod=" + sum % N + ']');
-                    }
-                }
-            };
-
-        readWriteTest(
-            null,
-            srvs,
-            clients,
-            cacheBackups,
-            cacheParts,
-            writers,
-            readers,
-            time,
-            null,
-            init,
-            writer,
-            reader);
+            afterTest();
+        }
     }
 
     /**
@@ -4163,7 +3235,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessor crd = cctx.kernalContext().coordinators();
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccSnapshot> fut = crd.requestQuerySnapshot(crd.currentCoordinator());
+        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync();
 
         fut.get();
 
@@ -4239,7 +3311,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         cctx.offheap().mvccRemoveAll((GridCacheMapEntry)cctx.cache().entryEx(key));
 
-        crd.ackQueryDone(crd.currentCoordinator(), fut.get());
+        crd.ackQueryDone(fut.get(), MVCC_TRACKER_ID_NA);
     }
 
     /**
@@ -4332,23 +3404,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     private MvccSnapshotResponse version(long crdVer, long cntr) {
         MvccSnapshotResponse res = new MvccSnapshotResponse();
 
-        res.init(0, crdVer, cntr, MvccUtils.MVCC_START_OP_CNTR, MvccUtils.MVCC_COUNTER_NA);
+        res.init(0, crdVer, cntr, MvccUtils.MVCC_START_OP_CNTR, MvccUtils.MVCC_COUNTER_NA, 0);
 
         return res;
-    }
-
-    /**
-     * @return Cache configurations.
-     */
-    private List<CacheConfiguration<Object, Object>> cacheConfigurations() {
-        List<CacheConfiguration<Object, Object>> ccfgs = new ArrayList<>();
-
-        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
-        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
-        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 2, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
-        ccfgs.add(cacheConfiguration(REPLICATED, FULL_SYNC, 0, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
-
-        return ccfgs;
     }
 
     /**
@@ -4513,7 +3571,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param readMode Read mode.
      * @return Value.
      */
-    private Map getAllByReadMode(boolean inTx, IgniteCache cache, Set<Object> keys, ReadMode readMode) {
+    private Map getAllByReadMode(boolean inTx, IgniteCache cache, Set keys, ReadMode readMode) {
 
         // TODO Remove in IGNITE-6938
         if (inTx)

@@ -17,50 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.cache.CacheMode;
 
 /**
- *
+ * Coordinator failover test for replicated caches.
  */
-public class MvccFuture<T> extends GridFutureAdapter<T> {
-    /** */
-    protected UUID crdId;
-
-    /**
-     * Default constructor.
-     */
-    public MvccFuture() {
-    }
-
-    /**
-     * @param crdId MVCC coordinator node ID.
-     */
-    public MvccFuture(UUID crdId) {
-        assert crdId != null;
-
-        this.crdId = crdId;
-    }
-
-    /**
-     * @return MVCC coordinator node ID.
-     */
-    public UUID coordinatorNodeId() {
-        return crdId;
-    }
-
-    /**
-     * @param crdId MVCC coordinator node ID.
-     */
-    public void coordinatorNodeId(UUID crdId) {
-        assert crdId != null;
-
-        this.crdId = crdId;
-    }
-
+public class CacheMvccReplicatedCoordinatorFailoverTest extends CacheMvccAbstractCoordinatorFailoverTest {
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccFuture.class, this, super.toString());
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 }

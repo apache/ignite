@@ -313,9 +313,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     resCrd = rowCrd;
                     resCntr = rowCntr;
                 }
-                else {
+                else
                     throw unexpectedStateException(cctx, txState, rowCrd, rowCntr, rowOpCntr, mvccSnapshot);
-                }
             }
         }
 

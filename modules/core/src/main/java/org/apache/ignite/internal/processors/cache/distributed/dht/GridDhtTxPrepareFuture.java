@@ -63,8 +63,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
@@ -111,7 +109,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware, MvccSnapshotResponseListener {
+    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -890,7 +888,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
-        res.mvccInfo(tx.mvccInfo());
+        res.mvccSnapshot(tx.mvccSnapshot());
 
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
@@ -1254,19 +1252,19 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 assert tx.txState().mvccEnabled(cctx);
 
-                MvccCoordinator crd = cctx.coordinators().currentCoordinator();
+                try {
+                    // Request snapshot locally only because
+                    // Mvcc Coordinator is expected to be local.
+                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
 
-                assert crd != null : tx.topologyVersion();
+                    assert snapshot != null : tx.topologyVersion();
 
-                if (crd.nodeId().equals(cctx.localNodeId()))
-                    onResponse(cctx.localNodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx));
-                else {
-                    IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(crd,
-                        this,
-                        tx.nearXidVersion());
+                    tx.mvccSnapshot(snapshot);
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    onDone(e);
 
-                    if (tx.onePhaseCommit())
-                        waitCrdCntrFut = crdCntrFut;
+                    return;
                 }
             }
 
@@ -1323,16 +1321,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onResponse(UUID crdId, MvccSnapshot res) {
-        tx.mvccInfo(new MvccTxInfo(crdId, res));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(IgniteCheckedException e) {
-        onError((Throwable) e);
-    }
-
     /**
      *
      */
@@ -1347,7 +1335,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccInfo() != null;
+        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
 
         int miniId = 0;
 
@@ -1356,10 +1344,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
         // Do not need process active transactions on backups.
-        MvccTxInfo mvccInfo = tx.mvccInfo();
+        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-        if (mvccInfo != null)
-            mvccInfo = mvccInfo.withoutActiveTransactions();
+        if (mvccSnapshot != null)
+            mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
@@ -1404,7 +1392,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                mvccInfo);
+                mvccSnapshot);
 
             req.queryUpdate(dhtMapping.queryUpdate());
 
@@ -1520,7 +1508,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    mvccInfo);
+                    mvccSnapshot);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {

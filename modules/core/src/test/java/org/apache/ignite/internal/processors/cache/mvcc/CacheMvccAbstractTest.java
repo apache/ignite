@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,6 +45,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -61,10 +64,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -89,7 +90,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -99,6 +104,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static final ObjectCodec<Integer> INTEGER_CODEC = new IntegerCodec();
+
+    /** */
+    protected static final ObjectCodec<MvccTestAccount> ACCOUNT_CODEC = new AccountCodec();
 
     /** */
     static final int DFLT_PARTITION_COUNT = RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
@@ -181,7 +192,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         DataRegionConfiguration regionCfg = new DataRegionConfiguration();
 
         regionCfg.setPersistenceEnabled(persistence);
-        regionCfg.setMaxSize(32L * 1024 * 1024);
+        regionCfg.setMaxSize(64L * 1024 * 1024);
 
         storageCfg.setDefaultDataRegionConfiguration(regionCfg);
 
@@ -314,7 +325,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final ReadMode readMode,
         final WriteMode writeMode
     ) throws Exception {
-        accountsTxReadAll(srvs, clients, cacheBackups, cacheParts, cfgC, withRmvs, readMode, writeMode, DFLT_TEST_TIME);
+        accountsTxReadAll(srvs, clients, cacheBackups, cacheParts, cfgC, withRmvs, readMode, writeMode, DFLT_TEST_TIME, null);
     }
 
     /**
@@ -338,7 +349,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final boolean withRmvs,
         final ReadMode readMode,
         final WriteMode writeMode,
-        long testTime
+        long testTime,
+        RestartMode restartMode
     ) throws Exception {
         final int ACCOUNTS = 20;
 
@@ -352,7 +364,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             @Override public void apply(IgniteCache<Object, Object> cache) {
                 final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                if (writeMode == WriteMode.KEY_VALUE) {
+                if (writeMode == WriteMode.PUT) {
                     Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
                     for (int i = 0; i < ACCOUNTS; i++)
@@ -427,7 +439,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                 Map<Integer, MvccTestAccount> accounts = null;
 
-                                if (writeMode == WriteMode.KEY_VALUE)
+                                if (writeMode == WriteMode.PUT)
                                     accounts = cache.cache.getAll(keys);
                                 else if (writeMode == WriteMode.DML)
                                     accounts = getAllSql(cache);
@@ -444,7 +456,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                     cntr1 = a1.updateCnt + 1;
                                     cntr2 = a2.updateCnt + 1;
 
-                                    if (writeMode == WriteMode.KEY_VALUE) {
+                                    if (writeMode == WriteMode.PUT) {
                                         cache.cache.put(id1, new MvccTestAccount(a1.val + 1, cntr1));
                                         cache.cache.put(id2, new MvccTestAccount(a2.val - 1, cntr2));
                                     }
@@ -467,7 +479,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                             }
 
                                             if (rmvd != null) {
-                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                if (writeMode == WriteMode.PUT) {
                                                     if (rmvd.equals(id1)) {
                                                         cache.cache.remove(id1);
                                                         cache.cache.put(id2, new MvccTestAccount(a1.val + a2.val, 1));
@@ -491,7 +503,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                                     assert false : "Unknown write mode";
                                             }
                                             else {
-                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                if (writeMode == WriteMode.PUT) {
                                                     cache.cache.put(id1, new MvccTestAccount(a1.val + 1, 1));
                                                     cache.cache.put(id2, new MvccTestAccount(a2.val - 1, 1));
                                                 }
@@ -507,7 +519,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                             if (a1 == null) {
                                                 inserted = id1;
 
-                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                if (writeMode == WriteMode.PUT) {
                                                     cache.cache.put(id1, new MvccTestAccount(100, 1));
                                                     cache.cache.put(id2, new MvccTestAccount(a2.val - 100, 1));
                                                 }
@@ -521,7 +533,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                             else {
                                                 inserted = id2;
 
-                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                if (writeMode == WriteMode.PUT) {
                                                     cache.cache.put(id1, new MvccTestAccount(a1.val - 100, 1));
                                                     cache.cache.put(id2, new MvccTestAccount(100, 1));
                                                 }
@@ -559,7 +571,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             if (!withRmvs) {
                                 Map<Integer, MvccTestAccount> accounts = null;
 
-                                if (writeMode == WriteMode.KEY_VALUE)
+                                if (writeMode == WriteMode.PUT)
                                     accounts = cache.cache.getAll(keys);
                                 else if (writeMode == WriteMode.DML)
                                     accounts = getAllSql(cache);
@@ -576,16 +588,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 assertTrue(a2.updateCnt >= cntr2);
                             }
                         }
-                        catch (Throwable e) {
-                            if (X.cause(e, IgniteTxTimeoutCheckedException.class) == null) {
-                                IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
-
-                                if (sqlEx == null || sqlEx.statusCode() != IgniteQueryErrorCode.CONCURRENT_UPDATE) {
-                                    error("Writer error: ", e);
-
-                                    throw e;
-                                }
-                            }
+                        catch (Exception e) {
+                            handleTxException(e);
                         }
                         finally {
                             cache.readUnlock();
@@ -633,7 +637,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                             IgniteCache.Entry<Integer, MvccTestAccount> e = it.next();
                                             MvccTestAccount old = accounts.put(e.getKey(), e.getValue());
 
-                                            assertNull(old);
+                                            assertNull("new=" + e + ", old=" + old, old);
                                         }
                                     } finally {
                                         U.closeQuiet((AutoCloseable) it);
@@ -672,11 +676,20 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 }
 
                                 case SQL_SUM: {
-                                    List<List<?>> res = cache.cache.query(sumQry).getAll();
+                                    BigDecimal sum;
 
-                                    assertEquals(1, res.size());
+                                    if (rnd.nextBoolean()) {
+                                        List<List<?>> res =  cache.cache.query(sumQry).getAll();
 
-                                    BigDecimal sum = (BigDecimal)res.get(0).get(0);
+                                        assertEquals(1, res.size());
+
+                                        sum = (BigDecimal)res.get(0).get(0);
+                                    }
+                                    else {
+                                        Map res = readAllByMode(cache.cache, keys, readMode, ACCOUNT_CODEC);
+
+                                        sum = (BigDecimal)((Map.Entry)res.entrySet().iterator().next()).getValue();
+                                    }
 
                                     assertEquals(ACCOUNT_START_VAL * ACCOUNTS, sum.intValue());
 
@@ -726,8 +739,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                         Map<Integer, MvccTestAccount> accounts;
 
+                        ReadMode readMode0 = readMode == SQL_SUM ? SQL : readMode;
+
                         try {
-                            accounts = cache.cache.getAll(keys);
+                            accounts = readAllByMode(cache.cache, keys, readMode0, ACCOUNT_CODEC);;
                         }
                         finally {
                             cache.readUnlock();
@@ -752,7 +767,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             };
 
         readWriteTest(
-            null,
+            restartMode,
             srvs,
             clients,
             cacheBackups,
@@ -830,6 +845,365 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             " (" + key+ ", " + val + ", " + updateCnt + ")");
 
         cache.cache.query(qry).getAll();
+    }
+
+    /**
+     * @param restartMode Restart mode.
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
+     * @param readMode Read mode.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected void putAllGetAll(
+        RestartMode restartMode,
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts,
+        @Nullable IgniteInClosure<CacheConfiguration> cfgC,
+        ReadMode readMode,
+        WriteMode writeMode
+    ) throws Exception {
+        final int RANGE = 20;
+
+        final int writers = 4;
+
+        final int readers = 4;
+
+        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
+            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    int min = idx * RANGE;
+                    int max = min + RANGE;
+
+                    info("Thread range [min=" + min + ", max=" + max + ']');
+
+                    Map<Integer, Integer> map = new HashMap<>();
+
+                    int v = idx * 1_000_000;
+
+                    boolean first = true;
+
+                    while (!stop.get()) {
+                        while (map.size() < RANGE)
+                            map.put(rnd.nextInt(min, max), v);
+
+                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        try {
+                            IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
+
+                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                if (!first && rnd.nextBoolean()) {
+                                    Map<Integer, Integer> res = readAllByMode(cache.cache, map.keySet(), readMode, INTEGER_CODEC);
+
+                                    for (Integer k : map.keySet())
+                                        assertEquals("res=" + res, v - 1, (Object)res.get(k));
+                                }
+
+                                writeAllByMode(cache.cache, map, writeMode, INTEGER_CODEC);
+
+                                tx.commit();
+
+                                first = false;
+                            }
+
+                            if (rnd.nextBoolean()) {
+                                Map<Integer, Integer> res = readAllByMode(cache.cache, map.keySet(), readMode, INTEGER_CODEC);
+
+                                for (Integer k : map.keySet())
+                                    assertEquals("key=" + k, v, (Object)res.get(k));
+                            }
+
+                            map.clear();
+
+                            v++;
+                        }
+                        catch (Exception e) {
+                            handleTxException(e);
+                        }
+                        finally {
+                            cache.readUnlock();
+
+                            map.clear();
+                        }
+                    }
+
+                    info("Writer done, updates: " + v);
+                }
+            };
+
+        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader =
+            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    Set<Integer> keys = new LinkedHashSet<>();
+
+                    Map<Integer, Integer> readVals = new HashMap<>();
+
+                    while (!stop.get()) {
+                        int range = rnd.nextInt(0, writers);
+
+                        int min = range * RANGE;
+                        int max = min + RANGE;
+
+                        while (keys.size() < RANGE)
+                            keys.add(rnd.nextInt(min, max));
+
+                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        Map<Integer, Integer> map;
+
+                        try {
+                            map = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
+                        }
+                        catch (Exception e) {
+                            handleTxException(e);
+
+                            continue;
+                        }
+                        finally {
+                            cache.readUnlock();
+                        }
+
+                        assertTrue("Invalid map size: " + map.size() + ", map=" + map, map.isEmpty() || map.size() == RANGE);
+
+                        Integer val0 = null;
+
+                        for (Map.Entry<Integer, Integer> e: map.entrySet()) {
+                            Integer val = e.getValue();
+
+                            assertNotNull(val);
+
+                            if (val0 == null) {
+                                Integer readVal = readVals.get(range);
+
+                                if (readVal != null)
+                                    assertTrue("readVal=" + readVal + ", val=" + val +  ", map=" + map,readVal <= val);
+
+                                readVals.put(range, val);
+
+                                val0 = val;
+                            }
+                            else {
+                                if (!F.eq(val0, val)) {
+                                    assertEquals("Unexpected value [range=" + range + ", key=" + e.getKey() + ']' +
+                                        ", map=" + map,
+                                        val0,
+                                        val);
+                                }
+                            }
+                        }
+
+                        keys.clear();
+                    }
+                }
+            };
+
+        readWriteTest(
+            restartMode,
+            srvs,
+            clients,
+            cacheBackups,
+            cacheParts,
+            writers,
+            readers,
+            DFLT_TEST_TIME,
+            cfgC,
+            null,
+            writer,
+            reader);
+
+        for (Ignite node : G.allGrids())
+            checkActiveQueriesCleanup(node);
+    }
+
+
+
+    /**
+     * @param N Number of object to update in single transaction.
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
+     * @param time Test time.
+     * @param readMode Read mode.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected void updateNObjectsTest(
+        final int N,
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts,
+        long time,
+        @Nullable IgniteInClosure<CacheConfiguration> cfgC,
+        ReadMode readMode,
+        WriteMode writeMode,
+        RestartMode restartMode
+    )
+        throws Exception
+    {
+        final int TOTAL = 20;
+
+        assert N <= TOTAL;
+
+        info("updateNObjectsTest [n=" + N + ", total=" + TOTAL + ']');
+
+        final int writers = 4;
+
+        final int readers = 4;
+
+        final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
+            @Override public void apply(IgniteCache<Object, Object> cache) {
+                final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                Map<Integer, Integer> vals = new HashMap<>();
+
+                for (int i = 0; i < TOTAL; i++)
+                    vals.put(i, N);
+
+                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    writeAllByMode(cache, vals, writeMode, INTEGER_CODEC);
+
+                    tx.commit();
+                }
+            }
+        };
+
+        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
+            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    int cnt = 0;
+
+                    while (!stop.get()) {
+                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
+                        IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
+
+                        TreeSet<Integer> keys = new TreeSet<>();
+
+                        while (keys.size() < N)
+                            keys.add(rnd.nextInt(TOTAL));
+
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            tx.timeout(TX_TIMEOUT);
+
+                            Map<Integer, Integer> curVals = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
+
+                            assertEquals(N, curVals.size());
+
+                            Map<Integer, Integer> newVals = new TreeMap<>();
+
+                            for (Map.Entry<Integer, Integer> e : curVals.entrySet())
+                                newVals.put(e.getKey(), e.getValue() + 1);
+
+                            writeAllByMode(cache.cache, newVals, writeMode, INTEGER_CODEC);
+
+                            tx.commit();
+                        }
+                        catch (Exception e) {
+                            handleTxException(e);
+                        }
+                        finally {
+                            cache.readUnlock();
+                        }
+
+                        cnt++;
+                    }
+
+                    info("Writer finished, updates: " + cnt);
+                }
+            };
+
+        GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader =
+            new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
+                @Override public void apply(Integer idx, List<TestCache> caches, AtomicBoolean stop) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    Set<Integer> keys = new LinkedHashSet<>();
+
+                    while (!stop.get()) {
+                        while (keys.size() < TOTAL)
+                            keys.add(rnd.nextInt(TOTAL));
+
+                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        Map<Integer, Integer> vals = null;
+
+                        try {
+                            vals = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
+                        }
+                        catch (Exception e) {
+                            handleTxException(e);
+                        }
+                        finally {
+                            cache.readUnlock();
+                        }
+
+                        assertEquals("vals=" + vals, TOTAL, vals.size());
+
+                        int sum = 0;
+
+                        for (int i = 0; i < TOTAL; i++) {
+                            Integer val = vals.get(i);
+
+                            assertNotNull(val);
+
+                            sum += val;
+                        }
+
+                        assertEquals(0, sum % N);
+                    }
+
+                    if (idx == 0) {
+                        TestCache<Integer, Integer> cache = randomCache(caches, rnd);
+
+                        Map<Integer, Integer> vals;
+
+                        try {
+                            vals = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
+                        }
+                        finally {
+                            cache.readUnlock();
+                        }
+
+                        int sum = 0;
+
+                        for (int i = 0; i < TOTAL; i++) {
+                            Integer val = vals.get(i);
+
+                            info("Value [id=" + i + ", val=" + val + ']');
+
+                            sum += val;
+                        }
+
+                        info("Sum [sum=" + sum + ", mod=" + sum % N + ']');
+                    }
+                }
+            };
+
+        readWriteTest(
+            restartMode,
+            srvs,
+            clients,
+            cacheBackups,
+            cacheParts,
+            writers,
+            readers,
+            time,
+            cfgC,
+            init,
+            writer,
+            reader);
     }
 
     /**
@@ -1066,6 +1440,15 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Handles transaction exception.
+     * @param e Exception.
+     */
+    protected void handleTxException(Exception e) {
+        if (log.isTraceEnabled())
+            log.trace("Exception during tx execution: " + X.getFullStackTrace(e));
+    }
+
+    /**
      * @throws Exception If failed.
      */
     final void verifyCoordinatorInternalState() throws Exception {
@@ -1075,16 +1458,24 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             crd.stopVacuum(); // to prevent new futures creation.
 
             Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
-            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotFuts");
+            Map<?, Map> cntrFuts = GridTestUtils.getFieldValue(crd, "snapLsnrs");
             Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
+            Map activeTrackers = GridTestUtils.getFieldValue(crd, "activeTrackers");
 
-            GridAbsPredicate cond = () -> activeTxs.isEmpty() && cntrFuts.isEmpty() && ackFuts.isEmpty();
+            GridAbsPredicate cond = () -> activeTxs.isEmpty() && cntrFuts.isEmpty() && ackFuts.isEmpty() && activeTrackers.isEmpty();
 
             GridTestUtils.waitForCondition(cond, TX_TIMEOUT);
 
             assertTrue("activeTxs: " + activeTxs,  activeTxs.isEmpty());
-            assertTrue(cntrFuts.isEmpty());
-            assertTrue(ackFuts.isEmpty());
+
+            boolean empty = true;
+
+            for (Map map : cntrFuts.values())
+                if (!(empty = map.isEmpty())) break;
+
+            assertTrue("cntrFuts: " + cntrFuts,  empty);
+            assertTrue("ackFuts: " + ackFuts,  ackFuts.isEmpty());
+            assertTrue("activeTrackers: " + activeTrackers,  activeTrackers.isEmpty());
 
             checkActiveQueriesCleanup(node);
         }
@@ -1095,8 +1486,64 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    final void verifyOldVersionsCleaned() throws Exception {
-        GridCompoundFuture fut = new GridCompoundFuture();
+    private void verifyOldVersionsCleaned() throws Exception {
+        runVacuumSync();
+
+        // Check versions.
+        boolean cleaned = checkOldVersions(false);
+
+        if (!cleaned) { // Retry on a stable topology with a newer snapshot.
+            awaitPartitionMapExchange();
+
+            runVacuumSync();
+
+            checkOldVersions(true);
+        }
+    }
+
+    /**
+     * Checks if outdated versions were cleaned after the vacuum process.
+     *
+     * @param failIfNotCleaned Fail test if not cleaned.
+     * @return {@code False} if not cleaned.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean checkOldVersions(boolean failIfNotCleaned) throws IgniteCheckedException {
+        for (Ignite node : G.allGrids()) {
+            for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
+                GridCacheContext cctx = cache.context();
+
+                if (!cctx.userCache() || !cctx.group().mvccEnabled())
+                    continue;
+
+                for (Object e : cache.withKeepBinary()) {
+                    IgniteBiTuple entry = (IgniteBiTuple)e;
+
+                    KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+                    List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
+                        .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
+
+                    if (vers.size() > 1) {
+                        if (failIfNotCleaned)
+                            fail("[key="  + key.value(null, false) + "; vers=" + vers + ']');
+                        else
+                            return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Runs vacuum on all nodes and waits for its completion.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void runVacuumSync() throws IgniteCheckedException {
+        GridCompoundIdentityFuture<VacuumMetrics> fut = new GridCompoundIdentityFuture<>();
 
         // Run vacuum manually.
         for (Ignite node : G.allGrids()) {
@@ -1115,27 +1562,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         // Wait vacuum finished.
         fut.get();
-
-        // Check versions.
-        for (Ignite node : G.allGrids()) {
-            for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
-                GridCacheContext cctx = cache.context();
-
-                if (!cctx.userCache() || !cctx.group().mvccEnabled())
-                    continue;
-
-                for (Object e : cache.withKeepBinary()) {
-                    IgniteBiTuple entry = (IgniteBiTuple)e;
-
-                    KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
-
-                    List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key)
-                        .stream().filter(t -> t.get1() != null).collect(Collectors.toList());
-
-                    assertTrue("[key="  + key.value(null, false) + "; vers=" + vers + ']', vers.size() <= 1);
-                }
-            }
-        }
     }
 
     /**
@@ -1188,6 +1614,401 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             }, 8_000)
         );
     }
+
+    /**
+     * @return Cache configurations.
+     */
+    protected List<CacheConfiguration<Object, Object>> cacheConfigurations() {
+        List<CacheConfiguration<Object, Object>> ccfgs = new ArrayList<>();
+
+        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+        ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 2, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+        ccfgs.add(cacheConfiguration(REPLICATED, FULL_SYNC, 0, RendezvousAffinityFunction.DFLT_PARTITION_COUNT));
+
+        return ccfgs;
+    }
+
+    /**
+     * Reads value from cache for the given key using given read mode.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param readMode Read mode.
+     * @param codec Sql object codec.
+     * @return Value.
+     */
+    @SuppressWarnings("unchecked")
+    protected Object readByMode(IgniteCache cache, final Object key, ReadMode readMode, ObjectCodec codec) {
+        assert cache != null && key != null && readMode != null && readMode != SQL_SUM;
+        assert readMode != SQL || codec != null;
+
+        boolean emulateLongQry = ThreadLocalRandom.current().nextBoolean();
+
+        switch (readMode) {
+            case GET:
+                return cache.get(key);
+
+            case SCAN:
+                ScanQuery scanQry = new ScanQuery(new IgniteBiPredicate() {
+                    @Override public boolean apply(Object k, Object v) {
+                        if (emulateLongQry)
+                            doSleep(ThreadLocalRandom.current().nextInt(50));
+
+                        return k.equals(key);
+                    }
+                });
+
+                List res = cache.query(scanQry).getAll();
+
+                assertTrue(res.size() <= 1);
+
+                return res.isEmpty() ? null : ((IgniteBiTuple)res.get(0)).getValue();
+
+            case SQL:
+                String qry = "SELECT * FROM " + codec.tableName() + " WHERE _key=" + key;
+
+                SqlFieldsQuery sqlFieldsQry =  new SqlFieldsQuery(qry);
+
+                if (emulateLongQry)
+                    sqlFieldsQry.setLazy(true).setPageSize(1);
+
+                List<List> rows;
+
+                if (emulateLongQry) {
+                    FieldsQueryCursor<List> cur = cache.query(sqlFieldsQry);
+
+                    rows = new ArrayList<>();
+
+                    for (List row : cur) {
+                        rows.add(row);
+
+                        doSleep(ThreadLocalRandom.current().nextInt(50));
+                    }
+                }
+                else
+                    rows = cache.query(sqlFieldsQry).getAll();
+
+                assertTrue(rows.size() <= 1);
+
+                return rows.isEmpty() ? null : codec.decode(rows.get(0));
+
+            default:
+                throw new AssertionError("Unsupported read mode: " + readMode);
+        }
+    }
+
+    /**
+     * Writes value into cache using given write mode.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @param writeMode Write mode.
+     * @param codec Sql object codec.
+     */
+    @SuppressWarnings("unchecked")
+    protected void writeByMode(IgniteCache cache, final Object key, Object val, WriteMode writeMode, ObjectCodec codec) {
+        assert writeMode != DML || codec != null;
+        assert cache != null && key != null && writeMode != null && val != null;
+
+        switch (writeMode) {
+            case PUT:
+                cache.put(key, val);
+
+                return;
+
+            case DML:
+                String qry = "MERGE INTO " + codec.tableName() + " (" + codec.columnsNames() +  ") VALUES " +
+                    '(' + key + ", " + codec.encode(val) + ')';
+
+                List<List> rows = cache.query(new SqlFieldsQuery(qry)).getAll();
+
+                assertTrue(rows.size() <= 1);
+
+                return;
+
+            default:
+                throw new AssertionError("Unsupported write mode: " + writeMode);
+        }
+    }
+
+
+    /**
+     * Reads value from cache for the given key using given read mode.
+     *
+     * @param cache Cache.
+     * @param keys Key.
+     * @param readMode Read mode.
+     * @param codec Value codec.
+     * @return Value.
+     */
+    @SuppressWarnings("unchecked")
+    protected Map readAllByMode(IgniteCache cache, Set keys, ReadMode readMode, ObjectCodec codec) {
+        assert cache != null && keys != null && readMode != null;
+        assert readMode != SQL || codec != null;
+
+        boolean emulateLongQry = ThreadLocalRandom.current().nextBoolean();
+
+        switch (readMode) {
+            case GET:
+                return cache.getAll(keys);
+
+            case SCAN:
+                ScanQuery scanQry = new ScanQuery(new IgniteBiPredicate() {
+                    @Override public boolean apply(Object k, Object v) {
+                        if (emulateLongQry)
+                            doSleep(ThreadLocalRandom.current().nextInt(50));
+
+                        return keys.contains(k);
+                    }
+                });
+
+
+                Map res = (Map)cache.query(scanQry).getAll()
+                    .stream()
+                    .collect(Collectors.toMap(v -> ((IgniteBiTuple)v).getKey(), v -> ((IgniteBiTuple)v).getValue()));
+
+                assertTrue("res.size()=" + res.size() + ", keys.size()=" + keys.size(), res.size() <= keys.size());
+
+                return res;
+
+            case SQL:
+                StringBuilder b = new StringBuilder("SELECT " + codec.columnsNames() + " FROM " + codec.tableName() + " WHERE _key IN (");
+
+                boolean first = true;
+
+                for (Object key : keys) {
+                    if (first)
+                        first = false;
+                    else
+                        b.append(", ");
+
+                    b.append(key);
+                }
+
+                b.append(')');
+
+                String qry = b.toString();
+
+                SqlFieldsQuery sqlFieldsQry =  new SqlFieldsQuery(qry);
+
+                if (emulateLongQry)
+                    sqlFieldsQry.setLazy(true).setPageSize(1);
+
+                List<List> rows;
+
+                if (emulateLongQry) {
+                    FieldsQueryCursor<List> cur = cache.query(sqlFieldsQry);
+
+                    rows = new ArrayList<>();
+
+                    for (List row : cur) {
+                        rows.add(row);
+
+                        doSleep(ThreadLocalRandom.current().nextInt(50));
+                    }
+                }
+                else
+                    rows = cache.query(sqlFieldsQry).getAll();
+
+                if (rows.isEmpty())
+                    return Collections.EMPTY_MAP;
+
+                res = new HashMap();
+
+                for (List row : rows)
+                    res.put(row.get(0), codec.decode(row));
+
+                return res;
+
+            case SQL_SUM:
+                b = new StringBuilder("SELECT SUM(" + codec.aggregateColumnName() + ") FROM " + codec.tableName() + " WHERE _key IN (");
+
+                first = true;
+
+                for (Object key : keys) {
+                    if (first)
+                        first = false;
+                    else
+                        b.append(", ");
+
+                    b.append(key);
+                }
+
+                b.append(')');
+
+                qry = b.toString();
+
+                FieldsQueryCursor<List> cur = cache.query(new SqlFieldsQuery(qry));
+
+                rows = cur.getAll();
+
+                if (rows.isEmpty())
+                    return Collections.EMPTY_MAP;
+
+                res = new HashMap();
+
+                for (List row : rows)
+                    res.put(row.get(0), row.get(0));
+
+                return res;
+
+            default:
+                throw new AssertionError("Unsupported read mode: " + readMode);
+        }
+    }
+
+    /**
+     * Writes all entries using given write mode.
+     *
+     * @param cache Cache.
+     * @param entries Entries to write.
+     * @param writeMode Write mode.
+     * @param codec Entry codec.
+     */
+    @SuppressWarnings("unchecked")
+    protected void writeAllByMode(IgniteCache cache, final Map entries, WriteMode writeMode, ObjectCodec codec) {
+        assert cache != null && entries != null && writeMode != null;
+        assert writeMode != DML || codec != null;
+
+        switch (writeMode) {
+            case PUT:
+                cache.putAll(entries);
+
+                return;
+
+            case DML:
+                StringBuilder b = new StringBuilder("MERGE INTO " + codec.tableName() + " (" + codec.columnsNames() +  ") VALUES ");
+
+                boolean first = true;
+
+                for (Object entry : entries.entrySet()) {
+                    Map.Entry e = (Map.Entry)entry;
+                    if (first)
+                        first = false;
+                    else
+                        b.append(", ");
+
+                    b.append('(')
+                        .append(e.getKey())
+                        .append(", ")
+                        .append(codec.encode(e.getValue()))
+                        .append(')');
+                }
+
+                String qry = b.toString();
+
+                cache.query(new SqlFieldsQuery(qry)).getAll();
+
+                return;
+
+            default:
+                throw new AssertionError("Unsupported write mode: " + writeMode);
+        }
+    }
+
+    /**
+     * Object codec for SQL queries.
+     *
+     * @param <T> Type.
+     */
+    private interface ObjectCodec<T> {
+        /**
+         * Decodes object from SQL request result.
+         *
+         * @param row SQL request result.
+         * @return Decoded object.
+         */
+        T decode(List<?> row);
+
+        /**
+         * Encodes object into SQL string for INSERT clause.
+         *
+         * @param obj Object.
+         * @return Sql string.
+         */
+        String encode(T obj);
+
+        /**
+         * @return Table name.
+         */
+        String tableName();
+
+        /**
+         * @return Columns names.
+         */
+        String columnsNames();
+
+        /**
+         * @return Column for aggregate functions.
+         */
+        String aggregateColumnName();
+    }
+
+    /**
+     * Codec for {@code Integer} table.
+     */
+    private static class IntegerCodec implements ObjectCodec<Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer decode(List<?> row) {
+            return (Integer)row.get(1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String encode(Integer obj) {
+            return String.valueOf(obj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String tableName() {
+            return "Integer";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String columnsNames() {
+            return "_key, _val";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String aggregateColumnName() {
+            return "_val";
+        }
+    }
+
+    /**
+     * Codec for {@code MvccTestAccount} table.
+     */
+    private static class AccountCodec implements ObjectCodec<MvccTestAccount> {
+        /** {@inheritDoc} */
+        @Override public MvccTestAccount decode(List<?> row) {
+            Integer val = (Integer)row.get(1);
+            Integer updateCnt = (Integer)row.get(2);
+
+            return new MvccTestAccount(val, updateCnt);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String encode(MvccTestAccount obj) {
+            return String.valueOf(obj.val) + ", " + String.valueOf(obj.updateCnt);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String tableName() {
+            return "MvccTestAccount";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String columnsNames() {
+            return "_key, val, updateCnt";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String aggregateColumnName() {
+            return "val";
+        }
+    }
+
 
     /**
      * @param caches Caches.
@@ -1274,7 +2095,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         DML,
 
         /** */
-        KEY_VALUE
+        PUT
     }
 
     /**

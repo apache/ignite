@@ -391,7 +391,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 return;
             }
 
-            initMvccVersionFuture(mvccCrd, keyLockFut != null ? 2 : 1, remap);
+            initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
         }
 
         if (keyLockFut != null)
@@ -501,7 +501,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null;
 
         if (mvccCrd != null)
-            initMvccVersionFuture(mvccCrd, keyLockFut != null ? 2 : 1, remap);
+            initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
 
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();

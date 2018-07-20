@@ -43,8 +43,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -475,15 +476,20 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 GridLongList waitTxs = tx.mvccWaitTransactions();
 
                 if (waitTxs != null) {
-                    MvccTxInfo mvccInfo = tx.mvccInfo();
+                    MvccSnapshot snapshot = tx.mvccSnapshot();
 
-                    assert mvccInfo != null;
+                    MvccCoordinator crd = cctx.coordinators().currentCoordinator();
 
-                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(mvccInfo.coordinatorNodeId(),
-                        waitTxs);
+                    assert snapshot != null;
 
-                    add(fut);
+                    if (snapshot.coordinatorVersion() == crd.coordinatorVersion()) {
+                        IgniteInternalFuture fut = cctx.coordinators()
+                            .waitTxsFuture(cctx.coordinators().currentCoordinatorId(), waitTxs);
+
+                        add(fut);
+                    }
                 }
+
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
@@ -803,7 +809,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash(),
-            tx.mvccInfo(),
+            tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled()
         );
 
@@ -1236,5 +1242,4 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return S.toString(CheckRemoteTxMiniFuture.class, this);
         }
     }
-
 }

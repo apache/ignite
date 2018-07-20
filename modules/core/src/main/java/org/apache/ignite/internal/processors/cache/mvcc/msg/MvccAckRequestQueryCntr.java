@@ -15,71 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class MvccTxInfo implements Message {
+public class MvccAckRequestQueryCntr implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID crd;
-
-    /** */
-    private MvccSnapshot mvccSnapshot;
+    private long cntr;
 
     /**
-     *
+     * Required by {@link GridIoMessageFactory}.
      */
-    public MvccTxInfo() {
+    public MvccAckRequestQueryCntr() {
         // No-op.
     }
 
     /**
-     * @param crd Coordinator node ID.
-     * @param mvccSnapshot MVCC snapshot.
+     * @param cntr Query counter.
      */
-    public MvccTxInfo(UUID crd, MvccSnapshot mvccSnapshot) {
-        assert crd != null;
-        assert mvccSnapshot != null;
+    public MvccAckRequestQueryCntr(long cntr) {
+        this.cntr = cntr;
+    }
 
-        this.crd = crd;
-        this.mvccSnapshot = mvccSnapshot;
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean processedFromNioThread() {
+        return true;
     }
 
     /**
-     * @return Instance with version without active transactions.
+     * @return Counter.
      */
-    public MvccTxInfo withoutActiveTransactions() {
-        MvccSnapshot mvccSnapshot0 = mvccSnapshot.withoutActiveTransactions();
-
-        if (mvccSnapshot0 == mvccSnapshot)
-            return this;
-
-        return new MvccTxInfo(crd, mvccSnapshot0);
-    }
-
-    /**
-     * @return Coordinator node ID.
-     */
-    public UUID coordinatorNodeId() {
-        return crd;
-    }
-
-    /**
-     * @return Mvcc version.
-     */
-    public MvccSnapshot snapshot() {
-        return mvccSnapshot;
+    public long counter() {
+        return cntr;
     }
 
     /** {@inheritDoc} */
@@ -95,13 +77,7 @@ public class MvccTxInfo implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("crd", crd))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeLong("cntr", cntr))
                     return false;
 
                 writer.incrementState();
@@ -120,15 +96,7 @@ public class MvccTxInfo implements Message {
 
         switch (reader.state()) {
             case 0:
-                crd = reader.readUuid("crd");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                cntr = reader.readLong("cntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,17 +105,17 @@ public class MvccTxInfo implements Message {
 
         }
 
-        return reader.afterMessageRead(MvccTxInfo.class);
+        return reader.afterMessageRead(MvccAckRequestQueryCntr.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 144;
+        return 140;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -157,6 +125,6 @@ public class MvccTxInfo implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccTxInfo.class, this);
+        return S.toString(MvccAckRequestQueryCntr.class, this);
     }
 }

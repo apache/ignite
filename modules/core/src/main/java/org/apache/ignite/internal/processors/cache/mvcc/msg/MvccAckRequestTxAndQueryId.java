@@ -26,44 +26,34 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
+public class MvccAckRequestTxAndQueryId extends MvccAckRequestTx {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long qryCrdVer;
-
-    /** */
-    private long qryCntr;
+    private long qryTrackerId;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public MvccAckRequestTxAndQueryEx() {
+    public MvccAckRequestTxAndQueryId() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
      * @param txCntr Counter assigned to transaction update.
-     * @param qryCrdVer Version of coordinator assigned read counter.
-     * @param qryCntr Counter assigned for transaction reads.
+     * @param qryTrackerId Query tracker id.
      */
-    public MvccAckRequestTxAndQueryEx(long futId, long txCntr, long qryCrdVer, long qryCntr) {
+    public MvccAckRequestTxAndQueryId(long futId, long txCntr, long qryTrackerId) {
         super(futId, txCntr);
 
-        this.qryCrdVer = qryCrdVer;
-        this.qryCntr = qryCntr;
+        this.qryTrackerId = qryTrackerId;
     }
 
     /** {@inheritDoc} */
-    @Override public long queryCoordinatorVersion() {
-        return qryCrdVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long queryCounter() {
-        return qryCntr;
+    @Override public long queryTrackerId() {
+        return qryTrackerId;
     }
 
     /** {@inheritDoc} */
@@ -82,17 +72,10 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeLong("qryCntr", qryCntr))
+                if (!writer.writeLong("qryTrackerId", qryTrackerId))
                     return false;
 
                 writer.incrementState();
-
-            case 4:
-                if (!writer.writeLong("qryCrdVer", qryCrdVer))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -110,15 +93,7 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
 
         switch (reader.state()) {
             case 3:
-                qryCntr = reader.readLong("qryCntr");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                qryCrdVer = reader.readLong("qryCrdVer");
+                qryTrackerId = reader.readLong("qryTrackerId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -127,7 +102,7 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
 
         }
 
-        return reader.afterMessageRead(MvccAckRequestTxAndQueryEx.class);
+        return reader.afterMessageRead(MvccAckRequestTxAndQueryId.class);
     }
 
     /** {@inheritDoc} */
@@ -137,11 +112,11 @@ public class MvccAckRequestTxAndQueryEx extends MvccAckRequestTx {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccAckRequestTxAndQueryEx.class, this);
+        return S.toString(MvccAckRequestTxAndQueryId.class, this);
     }
 }

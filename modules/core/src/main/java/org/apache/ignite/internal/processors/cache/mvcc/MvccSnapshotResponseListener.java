@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -25,10 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
  */
 public interface MvccSnapshotResponseListener {
     /**
-     * @param crdId Coordinator node ID.
      * @param res Version.
      */
-    public void onResponse(UUID crdId, MvccSnapshot res);
+    public void onResponse(MvccSnapshot res);
 
     /**
      * @param e Error.

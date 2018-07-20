@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,8 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  *
@@ -36,8 +39,11 @@ class MvccPreviousCoordinatorQueries {
     /** */
     private volatile boolean prevQueriesDone;
 
+    /** Map of nodes to active {@link MvccQueryTracker} IDs list. */
+    private final ConcurrentHashMap<UUID, Set<Long>> activeQueries = new ConcurrentHashMap<>();
+
     /** */
-    private final ConcurrentHashMap<UUID, Map<MvccVersion, Integer>> activeQueries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Set<Long>> rcvdAcks = new ConcurrentHashMap<>();
 
     /** */
     private Set<UUID> rcvd;
@@ -53,7 +59,7 @@ class MvccPreviousCoordinatorQueries {
      * @param discoCache Discovery data.
      * @param mgr Discovery manager.
      */
-    void init(Map<UUID, Map<MvccVersion, Integer>> nodeQueries, DiscoCache discoCache, GridDiscoveryManager mgr) {
+    void init(Map<UUID, GridLongList> nodeQueries, DiscoCache discoCache, GridDiscoveryManager mgr) {
         synchronized (this) {
             assert !initDone;
             assert waitNodes == null;
@@ -70,12 +76,12 @@ class MvccPreviousCoordinatorQueries {
             initDone = waitNodes.isEmpty();
 
             if (nodeQueries != null) {
-                for (Map.Entry<UUID, Map<MvccVersion, Integer>> e : nodeQueries.entrySet())
-                    addAwaitedActiveQueries(e.getKey(), e.getValue());
+                for (Map.Entry<UUID, GridLongList> e : nodeQueries.entrySet())
+                    mergeToActiveQueries(e.getKey(), e.getValue());
             }
 
             if (initDone && !prevQueriesDone)
-                prevQueriesDone = activeQueries.isEmpty();
+                prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();
         }
     }
 
@@ -87,43 +93,49 @@ class MvccPreviousCoordinatorQueries {
     }
 
     /**
+     * Merges current node active queries with the given ones.
+     *
      * @param nodeId Node ID.
-     * @param nodeQueries Active queries started on node.
+     * @param nodeTrackers Active query trackers started on node.
      */
-    private void addAwaitedActiveQueries(UUID nodeId, Map<MvccVersion, Integer> nodeQueries) {
-        if (F.isEmpty(nodeQueries) || prevQueriesDone)
+    private void mergeToActiveQueries(UUID nodeId, GridLongList nodeTrackers) {
+        if (nodeTrackers == null || nodeTrackers.isEmpty() || prevQueriesDone)
             return;
 
-        Map<MvccVersion, Integer> queries = activeQueries.get(nodeId);
+        Set<Long> currTrackers = activeQueries.get(nodeId);
 
-        if (queries == null)
-            activeQueries.put(nodeId, nodeQueries);
-        else {
-            for (Map.Entry<MvccVersion, Integer> e : nodeQueries.entrySet()) {
-                Integer qryCnt = queries.get(e.getKey());
+        if (currTrackers == null)
+            activeQueries.put(nodeId, currTrackers = addAll(nodeTrackers, null));
+        else
+            addAll(nodeTrackers, currTrackers);
 
-                int newQryCnt = (qryCnt == null ? 0 : qryCnt) + e.getValue();
+        // Check if there were any acks had been arrived before.
+        Set<Long> currAcks = rcvdAcks.get(nodeId);
 
-                if (newQryCnt == 0) {
-                    queries.remove(e.getKey());
+        if (!currTrackers.isEmpty() && currAcks != null && !currAcks.isEmpty()) {
+            Collection<Long> intersection =  new HashSet<>(currAcks);
 
-                    if (queries.isEmpty())
-                        activeQueries.remove(nodeId);
-                }
-                else
-                    queries.put(e.getKey(), newQryCnt);
-            }
+            intersection.retainAll(currTrackers);
+
+            currAcks.removeAll(intersection);
+            currTrackers.removeAll(intersection);
+
+            if (currTrackers.isEmpty())
+                activeQueries.remove(nodeId);
+
+            if (currAcks.isEmpty())
+                rcvdAcks.remove(nodeId);
         }
 
         if (initDone && !prevQueriesDone)
-            prevQueriesDone = activeQueries.isEmpty();
+            prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();
     }
 
     /**
      * @param nodeId Node ID.
-     * @param nodeQueries Active queries started on node.
+     * @param nodeTrackers  Active query trackers started on node.
      */
-    void addNodeActiveQueries(UUID nodeId, @Nullable Map<MvccVersion, Integer> nodeQueries) {
+    void addNodeActiveQueries(UUID nodeId, @Nullable GridLongList nodeTrackers) {
         synchronized (this) {
             if (initDone)
                 return;
@@ -134,13 +146,16 @@ class MvccPreviousCoordinatorQueries {
 
                 rcvd.add(nodeId);
             }
-            else
-                initDone = waitNodes.remove(nodeId);
+            else {
+                waitNodes.remove(nodeId);
 
-            addAwaitedActiveQueries(nodeId, nodeQueries);
+                initDone = waitNodes.isEmpty();
+            }
+
+            mergeToActiveQueries(nodeId, nodeTrackers);
 
             if (initDone && !prevQueriesDone)
-                prevQueriesDone = activeQueries.isEmpty();
+                prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();
         }
     }
 
@@ -149,45 +164,59 @@ class MvccPreviousCoordinatorQueries {
      */
     void onNodeFailed(UUID nodeId) {
         synchronized (this) {
-            initDone = waitNodes != null && waitNodes.remove(nodeId);
+            if (waitNodes != null) {
+                waitNodes.remove(nodeId);
+
+                initDone = waitNodes.isEmpty();
+            }
 
             if (initDone && !prevQueriesDone && activeQueries.remove(nodeId) != null)
-                prevQueriesDone = activeQueries.isEmpty();
+                prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();
         }
     }
 
     /**
      * @param nodeId Node ID.
-     * @param crdVer Coordinator version.
-     * @param cntr Counter.
+     * @param qryTrackerId Query tracker Id.
      */
-    void onQueryDone(UUID nodeId, long crdVer, long cntr) {
-        assert crdVer != MvccUtils.MVCC_CRD_COUNTER_NA && cntr != MvccUtils.MVCC_COUNTER_NA;
+    void onQueryDone(UUID nodeId, long qryTrackerId) {
+        if (qryTrackerId == MVCC_TRACKER_ID_NA)
+            return;
 
         synchronized (this) {
-            MvccVersion mvccCntr = new MvccVersionImpl(crdVer, cntr, MvccUtils.MVCC_OP_COUNTER_NA);
+            Set<Long> nodeTrackers = activeQueries.get(nodeId);
 
-            Map<MvccVersion, Integer> nodeQueries = activeQueries.get(nodeId);
+            if (nodeTrackers == null || !nodeTrackers.remove(qryTrackerId)) {
+                Set<Long> nodeAcks = rcvdAcks.get(nodeId);
 
-            if (nodeQueries == null)
-                activeQueries.put(nodeId, nodeQueries = new HashMap<>());
+                if (nodeAcks == null)
+                    rcvdAcks.put(nodeId, nodeAcks = new HashSet<>());
 
-            Integer qryCnt = nodeQueries.get(mvccCntr);
-
-            int newQryCnt = (qryCnt != null ? qryCnt : 0) - 1;
-
-            if (newQryCnt == 0) {
-                nodeQueries.remove(mvccCntr);
-
-                if (nodeQueries.isEmpty()) {
-                    activeQueries.remove(nodeId);
-
-                    if (initDone && !prevQueriesDone)
-                        prevQueriesDone = activeQueries.isEmpty();
-                }
+                // We received qry done ack before the active qry message. Need to save it.
+                nodeAcks.add(qryTrackerId);
             }
-            else
-                nodeQueries.put(mvccCntr, newQryCnt);
+
+            if (nodeTrackers != null && nodeTrackers.isEmpty())
+                activeQueries.remove(nodeId);
+
+            if (initDone && !prevQueriesDone)
+                prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();
         }
+    }
+
+    /**
+     * @param from Long list.
+     * @param to Set.
+     */
+    private Set<Long> addAll(GridLongList from, Set<Long> to) {
+        assert from != null;
+
+        if (to == null)
+            to = new HashSet<>(from.size());
+
+        for (int i = 0; i < from.size(); i++)
+            to.add(from.get(i));
+
+        return to;
     }
 }

@@ -29,14 +29,13 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -111,8 +110,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     private GridDhtPartitionsFullMessage finishMsg;
 
     /** */
-    @GridDirectMap(keyType = Message.class, valueType = Integer.class)
-    private Map<MvccVersion, Integer> activeQrys;
+    private GridLongList activeQryTrackers;
 
     /**
      * Required by {@link Externalizable}.
@@ -140,15 +138,15 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @return Active queries started with previous coordinator.
      */
-    Map<MvccVersion, Integer> activeQueries() {
-        return activeQrys;
+    GridLongList activeQueries() {
+        return activeQryTrackers;
     }
 
     /**
      * @param activeQrys Active queries started with previous coordinator.
      */
-    void activeQueries(Map<MvccVersion, Integer> activeQrys) {
-        this.activeQrys = activeQrys;
+    void activeQueries(GridLongList activeQrys) {
+        this.activeQryTrackers = activeQrys;
     }
 
     /**
@@ -476,7 +474,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         switch (writer.state()) {
             case 5:
-                if (!writer.writeMap("activeQrys", activeQrys, MessageCollectionItemType.MSG, MessageCollectionItemType.INT))
+                if (!writer.writeMessage("activeQryTrackers", activeQryTrackers))
                     return false;
 
                 writer.incrementState();
@@ -551,7 +549,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         switch (reader.state()) {
             case 5:
-                activeQrys = reader.readMap("activeQrys", MessageCollectionItemType.MSG, MessageCollectionItemType.INT, false);
+                activeQryTrackers = reader.readMessage("activeQryTrackers");
 
                 if (!reader.isLastRead())
                     return false;

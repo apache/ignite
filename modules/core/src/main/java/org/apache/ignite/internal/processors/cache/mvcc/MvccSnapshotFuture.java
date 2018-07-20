@@ -17,50 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class MvccFuture<T> extends GridFutureAdapter<T> {
-    /** */
-    protected UUID crdId;
+public class MvccSnapshotFuture extends MvccFuture<MvccSnapshot> implements MvccSnapshotResponseListener {
+    /** {@inheritDoc} */
+    @Override public void onResponse(MvccSnapshot res) {
+        assert res != null;
 
-    /**
-     * Default constructor.
-     */
-    public MvccFuture() {
+        onDone(res);
     }
 
-    /**
-     * @param crdId MVCC coordinator node ID.
-     */
-    public MvccFuture(UUID crdId) {
-        assert crdId != null;
-
-        this.crdId = crdId;
-    }
-
-    /**
-     * @return MVCC coordinator node ID.
-     */
-    public UUID coordinatorNodeId() {
-        return crdId;
-    }
-
-    /**
-     * @param crdId MVCC coordinator node ID.
-     */
-    public void coordinatorNodeId(UUID crdId) {
-        assert crdId != null;
-
-        this.crdId = crdId;
+    /** {@inheritDoc} */
+    @Override public void onError(IgniteCheckedException err) {
+        onDone(err);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccFuture.class, this, super.toString());
+        return S.toString(MvccSnapshotFuture.class, this, super.toString());
     }
 }
