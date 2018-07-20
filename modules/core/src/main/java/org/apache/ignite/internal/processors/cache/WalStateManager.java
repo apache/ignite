@@ -42,7 +42,6 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -66,6 +65,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -131,7 +131,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (kernalCtx != null) {
             IgniteConfiguration cfg = kernalCtx.config();
 
-            srv = !cfg.isClientMode() && !cfg.isDaemon();
+            boolean client = cfg.isClientMode() != null && cfg.isClientMode();
+
+            srv = !client && !cfg.isDaemon();
 
             log = kernalCtx.log(WalStateManager.class);
         }
@@ -377,6 +379,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 continue;
 
             boolean hasOwning = false;
+            boolean hasMoving = false;
+
+            int parts = 0;
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == OWNING) {
@@ -390,13 +395,23 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         break;
                     }
+
+                    parts++;
                 }
+
+                if (locPart.state() == MOVING)
+                    hasMoving = true;
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Prepare change WAL state, grp=" + grp.cacheOrGroupName() +
+                    ", grpId=" + grp.groupId() + ", hasOwning=" + hasOwning + ", hasMoving=" + hasMoving +
+                    ", WALState=" + grp.walEnabled() + ", parts=" + parts);
 
             if (hasOwning && !grp.localWalEnabled()) {
                 grpsToEnableWal.add(grp.groupId());
             }
-            else if (!hasOwning && grp.localWalEnabled()) {
+            else if (hasMoving && !hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
 
                 grpsWithWalDisabled.add(grp.groupId());
@@ -412,7 +427,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         try {
             if (hasNonEmptyOwning && !grpsToEnableWal.isEmpty())
-                triggerCheckpoint(0).finishFuture().get();
+                triggerCheckpoint("wal-local-state-change-" + topVer).finishFuture().get();
         }
         catch (IgniteCheckedException ex) {
             throw new IgniteException(ex);
@@ -456,7 +471,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 tmpDisabledWal = null;
             }
 
-            CheckpointFuture cpFut = triggerCheckpoint(0);
+            CheckpointFuture cpFut = triggerCheckpoint("wal-local-state-changed-rebalance-finished-" + topVer);
 
             assert cpFut != null;
 
@@ -609,7 +624,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         res = new WalStateResult(msg, false);
                     else {
                         // Initiate a checkpoint.
-                        CheckpointFuture cpFut = triggerCheckpoint(msg.groupId());
+                        CheckpointFuture cpFut = triggerCheckpoint("wal-state-change-grp-" + msg.groupId());
 
                         if (cpFut != null) {
                             try {
@@ -1000,11 +1015,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /**
      * Force checkpoint.
      *
-     * @param grpId Group ID.
+     * @param msg Message.
      * @return Checkpoint future or {@code null} if failed to get checkpointer.
      */
-    @Nullable private CheckpointFuture triggerCheckpoint(int grpId) {
-        return cctx.database().forceCheckpoint("wal-state-change-grp-" + grpId);
+    @Nullable private CheckpointFuture triggerCheckpoint(String msg) {
+        return cctx.database().forceCheckpoint(msg);
     }
 
     /**
@@ -1117,7 +1132,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         /** */
         public TemporaryDisabledWal(
             Set<Integer> disabledGrps,
-            AffinityTopologyVersion topVer) {
+            AffinityTopologyVersion topVer
+        ) {
             this.disabledGrps = Collections.unmodifiableSet(disabledGrps);
             this.remainingGrps = new HashSet<>(disabledGrps);
             this.topVer = topVer;

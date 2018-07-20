@@ -29,7 +29,7 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
      * @param combiner Combiner.
      * @return Combination of models.
      */
-    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
+    public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
         return v -> combiner.apply(apply(v), other.apply(v));
     }
 }

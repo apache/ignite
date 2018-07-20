@@ -31,9 +31,9 @@ import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -77,7 +77,7 @@ public class KNNRegressionExample {
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
+                        double prediction = knnMdl.apply(new DenseVector(inputs));
 
                         mse += Math.pow(prediction - groundTruth, 2.0);
                         mae += Math.abs(prediction - groundTruth);

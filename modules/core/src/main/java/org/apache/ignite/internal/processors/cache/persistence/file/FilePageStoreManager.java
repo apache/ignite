@@ -22,6 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -92,6 +93,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
+
+    /** */
+    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + ".tmp";
 
     /** */
     public static final String DFLT_STORE_DIR = "db";
@@ -321,12 +325,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         if (overwrite || !file.exists() || file.length() == 0) {
             try {
-                file.createNewFile();
+                File tmp = new File(file.getParent(), file.getName() + ".tmp");
+
+                tmp.createNewFile();
 
                 // Pre-existing file will be truncated upon stream open.
-                try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+                try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
                     marshaller.marshal(cacheData, stream);
                 }
+
+                if (file.exists())
+                    file.delete();
+
+                Files.move(tmp.toPath(), file.toPath());
             }
             catch (IOException ex) {
                 throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
@@ -688,6 +699,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         for (File file : files) {
             if (file.isDirectory()) {
+                File[] tmpFiles = file.listFiles(new FilenameFilter() {
+                    @Override public boolean accept(File dir, String name) {
+                        return name.endsWith(CACHE_DATA_TMP_FILENAME);
+                    }
+                });
+
+                if (tmpFiles != null) {
+                    for (File tmpFile: tmpFiles) {
+                        if (!tmpFile.delete())
+                            log.warning("Failed to delete temporary cache config file" +
+                                    "(make sure Ignite process has enough rights):" + file.getName());
+                    }
+                }
+
                 if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
                     File conf = new File(file, CACHE_DATA_FILENAME);
 
@@ -748,18 +773,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try (InputStream stream = new BufferedInputStream(new FileInputStream(conf))) {
             return marshaller.unmarshal(stream, U.resolveClassLoader(igniteCfg));
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to read cache configuration from disk for cache: " +
-                conf.getAbsolutePath(), e);
-        }
-        catch (IgniteCheckedException e) {
-            if (e.hasCause(ClassNotFoundException.class))
+        catch (IgniteCheckedException | IOException e) {
                 throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
-                    conf.getAbsolutePath() + "]. You may want to remove the configuration file; cache will be running " +
-                    "after next node start if static Ignite Configuration contains correct configuration of this cache. " +
-                    "If it was started dynamically, you may need to start it again (all data will be present).", e);
-            else
-                throw e;
+                    conf.getAbsolutePath() + "]", e);
         }
     }
 

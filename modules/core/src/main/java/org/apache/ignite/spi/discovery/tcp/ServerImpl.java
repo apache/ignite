@@ -1859,6 +1859,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.quietAndInfo(log, b.toString());
     }
 
+    /** {@inheritDoc} */
+    @Override public void dumpRingStructure(IgniteLogger log) {
+        U.quietAndInfo(log, ring.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentTopologyVersion() {
+        return ring.topologyVersion();
+    }
+
     /**
      * @param msg Message.
      * @return {@code True} if recordable in debug mode.
@@ -2399,12 +2409,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             msgs.add(new PendingMessage(msg));
 
             while (msgs.size() > MAX) {
-                PendingMessage polled = msgs.poll();
+                PendingMessage queueHead = msgs.peek();
 
-                assert polled != null;
+                assert queueHead != null;
 
-                if (polled.id.equals(discardId))
+                if (queueHead.customMsg && customDiscardId != null) {
+                    if (queueHead.id.equals(customDiscardId))
+                        customDiscardId = null;
+                }
+                else if (!queueHead.customMsg && discardId != null) {
+                    if (queueHead.id.equals(discardId))
+                        discardId = null;
+                }
+                else
                     break;
+
+                msgs.poll();
             }
         }
 
@@ -4355,7 +4375,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    spi.collectExchangeData(dataPacket);
+                    if (!node.isDaemon())
+                        spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
@@ -5442,8 +5463,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);
-                        else
+                        else {
+                            registerPendingMessage(msg);
+
                             processCustomMessage(msg);
+                        }
                     }
 
                     msg.message(null, msg.messageBytes());
@@ -5702,6 +5726,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 lastTimeConnCheckMsgSent = U.currentTimeMillis();
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return String.format("%s, nextNode=[%s]", super.toString(), next);
         }
     }
 

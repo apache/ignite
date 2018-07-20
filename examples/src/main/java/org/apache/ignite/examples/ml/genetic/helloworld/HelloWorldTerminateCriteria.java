@@ -81,7 +81,7 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
         StringBuffer sbPhrase = new StringBuffer();
 
         for (Gene gene : genes) {
-            sbPhrase.append(((Character)gene.getValue()).toString());
+            sbPhrase.append(((Character)gene.getVal()).toString());
         }
         igniteLogger.info(sbPhrase.toString());
     }
