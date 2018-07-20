@@ -842,11 +842,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param updated Rebalance topology version to complete.
-     * @return {@code True} if new topology version have been successfully set.
+     * @param updated New rebalance topology version to set.
      */
-    public boolean setRebalanceTopologyVersion(final AffinityTopologyVersion updated) {
-        return rebalanceTopVer.updateAndGet(ver -> ver.compareTo(updated) < 0 ? updated : ver).equals(updated);
+    public void setRebalanceTopologyVersion(final AffinityTopologyVersion updated) {
+        rebalanceTopVer.updateAndGet(ver -> ver.compareTo(updated) < 0 ? updated : ver);
     }
 
     /**
@@ -2575,7 +2574,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     continue;
 
                                 if (grp.preloader().checkExchangeEvents(rebTopVer, exchFut))
-                                    rebalanceTopVer.compareAndSet(rebTopVer, resVer);
+                                    setRebalanceTopologyVersion(resVer);
 
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
@@ -2604,7 +2603,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (resVer == null) {
                                     resVer = grp.topology().readyTopologyVersion();
 
-                                    rebalanceTopVer.set(resVer);
+                                    setRebalanceTopologyVersion(resVer);
                                 }
 
                                 assignsMap.put(grp.groupId(), assigns);
