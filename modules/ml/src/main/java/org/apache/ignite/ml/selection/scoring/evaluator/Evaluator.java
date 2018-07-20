@@ -20,7 +20,7 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
