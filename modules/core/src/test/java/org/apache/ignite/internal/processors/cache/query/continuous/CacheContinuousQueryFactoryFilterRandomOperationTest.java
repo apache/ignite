@@ -349,8 +349,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key,
-                        newVal == null ? oldVal : newVal, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
                     expData.put(key, newVal);
 
@@ -419,8 +418,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                     if (oldVal != null) {
                         updatePartitionCounter(cache, key, partCntr);
 
-                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key,
-                            newVal == null ? oldVal : newVal, oldVal);
+                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
                         expData.put(key, newVal);
                     }
@@ -439,8 +437,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                     if (oldVal != null) {
                         updatePartitionCounter(cache, key, partCntr);
 
-                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key,
-                            newVal == null ? oldVal : newVal, oldVal);
+                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
                         expData.put(key, newVal);
                     }
@@ -464,8 +461,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                             updatePartitionCounter(cache, key, partCntr);
 
-                            waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key,
-                                newVal == null ? oldVal : newVal, oldVal);
+                            waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
                             expData.put(key, newVal);
                         }
