@@ -1572,8 +1572,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         else if (localJoinExchange())
             msg.cacheGroupsAffinityRequest(exchCtx.groupsAffinityRequestOnJoin());
 
-        if (log.isDebugEnabled())
-            log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + msg + ']');
+        if (log.isInfoEnabled())
+            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId +
+                ". Local node id " + cctx.localNodeId() +
+                ", msg=" + msg + ']');
 
         try {
             cctx.io().send(node, msg, SYSTEM_POOL);
@@ -1667,6 +1669,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 cctx.io().send(node, sndMsg, SYSTEM_POOL);
+
+                if (log.isInfoEnabled())
+                    log.info("Sending full msg2 " +
+                        ". Local node id "  + cctx.localNodeId() +
+                        " to node " + node.id() +
+                            ". Initial version " + this.initialVersion() +
+                            ". Current exch fut " + toString()
+                );
             }
             catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
@@ -3114,9 +3124,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.io().send(node, fullMsg, SYSTEM_POOL);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Full message was sent to node: " +
+                if (log.isInfoEnabled()) {
+                    log.info("Full message was sent to node: " +
                         node +
+                          ". Local node id "  + cctx.localNodeId() +
+                        ". Initial version " + this.initialVersion() +
+                        ". Current exch fut " + toString() +
                         ", fullMsg: " + fullMsg
                     );
                 }
