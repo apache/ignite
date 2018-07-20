@@ -803,7 +803,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (dataEntry.op() == READ)
                 readKeys.add(dataEntry.key());
             else
-                readKeys.add(dataEntry.key());
+                writeKeys.add(dataEntry.key());
 
             if (!readKeys.isEmpty())
                 cctx.tm().pendingTxsTracker().onKeysRead(nearXidVersion(), readKeys);
