@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import ctypes
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 import decimal
 import uuid
 
@@ -345,9 +345,11 @@ class DateObject(StandardObject):
         )
 
     @classmethod
-    def from_python(cls, value: datetime):
+    def from_python(cls, value: [date, datetime]):
         if value is None:
             return Null.from_python()
+        if type(value) is date:
+            value = datetime.combine(value, time())
         data_type = cls.build_c_type()
         data_object = data_type()
         data_object.type_code = int.from_bytes(
