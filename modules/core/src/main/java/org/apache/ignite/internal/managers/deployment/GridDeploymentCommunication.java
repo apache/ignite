@@ -346,14 +346,14 @@ class GridDeploymentCommunication {
      * @param rsrcName Resource name.
      * @param clsLdrId Class loader ID.
      * @param dstNode Remote node request should be sent to.
-     * @param threshold Time in milliseconds when request is decided to
-     *      be obsolete.
+     * @param timeout Request timeout in milliseconds
+     * @param resGetTryNum Number of tries to get response
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
+        final ClusterNode dstNode, long timeout, int resGetTryNum) throws IgniteCheckedException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
@@ -458,17 +458,16 @@ class GridDeploymentCommunication {
 
             synchronized (qryMux) {
                 try {
-                    long timeout = threshold - start;
+                    int cnt = 0;
 
                     if (log.isDebugEnabled()) {
                         log.debug("Waiting for peer response from node [node=" + dstNode.id() +
-                            ", timeout=" + timeout + ']');
+                            ", timeout=" + timeout + ", tryNumber=" + cnt + "]");
                     }
 
-                    while (res.get() == null && timeout > 0) {
+                    while (res.get() == null && cnt < resGetTryNum) {
+                        cnt++;
                         qryMux.wait(timeout);
-
-                        timeout = threshold - U.currentTimeMillis();
                     }
                 }
                 catch (InterruptedException e) {

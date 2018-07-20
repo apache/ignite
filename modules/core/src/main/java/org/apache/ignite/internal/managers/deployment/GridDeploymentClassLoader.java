@@ -83,6 +83,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     /** P2P timeout. */
     private final long p2pTimeout;
 
+    /** Number of tries to get response. */
+    private final int resGetTryNum = DFLT_TRY_GET_RESPONSE_NUMBER;
+
     /** Cache of missed resources names. */
     @GridToStringExclude
     private final GridBoundedLinkedHashSet<String> missedRsrcs;
@@ -562,8 +565,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     private GridByteArrayList sendClassRequest(String name, String path) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
-        long endTime = computeEndTime(p2pTimeout);
-
         Collection<UUID> nodeListCp;
         Map<UUID, IgniteUuid> nodeLdrMapCp;
 
@@ -598,7 +599,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
 
             try {
-                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, p2pTimeout, resGetTryNum);
 
                 if (res == null) {
                     String msg = "Failed to send class-loading request to node (is node alive?) [node=" +
@@ -705,8 +706,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     @Nullable private InputStream sendResourceRequest(String name) {
         assert !Thread.holdsLock(mux);
 
-        long endTime = computeEndTime(p2pTimeout);
-
         Collection<UUID> nodeListCp;
         Map<UUID, IgniteUuid> nodeLdrMapCp;
 
@@ -739,7 +738,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
-                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, p2pTimeout, resGetTryNum);
 
                 if (res == null) {
                     U.warn(log, "Failed to get resource from node (is node alive?) [nodeId=" +
