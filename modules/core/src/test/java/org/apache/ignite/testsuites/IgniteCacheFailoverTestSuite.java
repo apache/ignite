@@ -61,7 +61,7 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
 
-        for(int i = 0; i < 10; i++)
+        for(int i = 0; i < 100; i++)
         suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
 
         return suite;
