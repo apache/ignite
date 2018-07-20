@@ -148,7 +148,16 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8189
         String evtDir = paths.distributedFutureBasePath(futId);
 
-        client.deleteAll(evtDir, client.getChildrenIfPathExists(evtDir), -1);
+        try {
+            client.deleteAll(evtDir,
+                client.getChildrenIfPathExists(evtDir),
+                -1);
+        }
+        catch (KeeperException.NoNodeException e) {
+            U.log(log, "Node for deletion was not found: " + e.getPath());
+
+            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8189
+        }
 
         client.deleteIfExists(evtDir, -1);
 
