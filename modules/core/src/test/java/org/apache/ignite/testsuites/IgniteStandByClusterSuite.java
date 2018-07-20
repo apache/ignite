@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.Ig
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateFailOverTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateServiceTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteNoParrallelClusterIsAllowedTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
@@ -71,6 +72,8 @@ public class IgniteStandByClusterSuite extends TestSuite {
         suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
         suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
 //TODO        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+
+        suite.addTestSuite(IgniteNoParrallelClusterIsAllowedTest.class);
 
         suite.addTestSuite(CacheBaselineTopologyTest.class);
         suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
