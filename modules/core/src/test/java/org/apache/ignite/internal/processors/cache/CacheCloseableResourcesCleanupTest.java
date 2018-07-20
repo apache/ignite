@@ -143,7 +143,7 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
 
         MutableCacheEntryListenerConfiguration<Integer, String> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
-            factoryOf(new CloseableCacheEntryListener<>()), null, true, true);
+            factoryOf(new CloseableCacheEntryListener<>()), factoryOf(new CloseableRemoteFilter<>()), true, true);
 
         ccfg.addCacheEntryListenerConfiguration(lsnrCfg);
 
@@ -396,6 +396,5 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends K, ? extends V>> evts) {
             // No-op.
         }
-
     }
 }
