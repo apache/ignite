@@ -36,9 +36,6 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private final AffinityTopologyVersion topVer;
 
-    /** */
-    private boolean cancelled;
-
     /**
      * @param exchangeId Exchange ID.
      * @param topVer Last join order.
@@ -49,20 +46,6 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
 
         this.exchangeId = exchangeId;
         this.topVer = topVer;
-    }
-
-    /**
-     * @return {@code True} if assignments creation was cancelled.
-     */
-    public boolean cancelled() {
-        return cancelled;
-    }
-
-    /**
-     * @param cancelled {@code True} if assignments creation was cancelled.
-     */
-    public void cancelled(boolean cancelled) {
-        this.cancelled = cancelled;
     }
 
     /**
