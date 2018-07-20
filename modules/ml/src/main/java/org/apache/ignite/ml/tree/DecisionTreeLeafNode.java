@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Decision tree leaf node which contains value.

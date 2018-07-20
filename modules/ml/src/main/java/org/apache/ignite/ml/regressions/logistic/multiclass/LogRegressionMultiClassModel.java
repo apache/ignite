@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 
 /** Base class for multi-classification model for set of Logistic Regression classifiers. */
@@ -77,9 +77,14 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
     @Override public String toString() {
         StringBuilder wholeStr = new StringBuilder();
 
-        models.forEach((clsLb, mdl) -> {
-            wholeStr.append("The class with label ").append(clsLb).append(" has classifier: ").append(mdl.toString()).append(System.lineSeparator());
-        });
+        models.forEach((clsLb, mdl) ->
+            wholeStr
+                .append("The class with label ")
+                .append(clsLb)
+                .append(" has classifier: ")
+                .append(mdl.toString())
+                .append(System.lineSeparator())
+        );
 
         return wholeStr.toString();
     }
