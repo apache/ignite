@@ -17,21 +17,24 @@
 
 package org.apache.ignite.tensorflow.cluster;
 
-import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServer;
@@ -39,19 +42,17 @@ import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
 import org.apache.ignite.tensorflow.cluster.util.TensorFlowChiefRunner;
 import org.apache.ignite.tensorflow.cluster.util.TensorFlowClusterResolver;
 import org.apache.ignite.tensorflow.cluster.util.TensorFlowUserScriptRunner;
+import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
 
 /**
  * TensorFlow cluster manager that allows to start, maintain and stop TensorFlow cluster.
  */
-public class TensorFlowClusterManager implements Serializable {
-    /** */
-    private static final long serialVersionUID = -4847155592164802806L;
-
+public class TensorFlowClusterManager {
     /** TensorFlow cluster metadata cache name. */
     private static final String TF_CLUSTER_METADATA_CACHE_NAME = "TF_CLUSTER_METADATA_CACHE";
 
-    /** Ignite instance supplier. */
-    private final Supplier<Ignite> igniteSupplier;
+    /** Ignite instance. */
+    private final Ignite ignite;
 
     /** TensorFlow server manager. */
     private final TensorFlowServerManager srvProcMgr;
@@ -60,60 +61,28 @@ public class TensorFlowClusterManager implements Serializable {
     private final TensorFlowClusterResolver clusterRslvr;
 
     /** TensorFlow cluster metadata cache. */
-    private transient IgniteCache<UUID, TensorFlowCluster> cache;
+    private IgniteCache<UUID, TensorFlowCluster> cache;
 
     /** TensorFlow chief runners. */
-    private transient ConcurrentMap<UUID, TensorFlowChiefRunner> chiefRunners;
+    private ConcurrentMap<UUID, TensorFlowChiefRunner> chiefRunners;
 
     /** TensorFlow user script runners. */
-    private transient ConcurrentMap<UUID, TensorFlowUserScriptRunner> userScriptRunners;
+    private ConcurrentMap<UUID, TensorFlowUserScriptRunner> userScriptRunners;
 
     /**
      * Constructs a new instance of TensorFlow cluster manager.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> TensorFlowClusterManager(T igniteSupplier) {
-        this(
-            igniteSupplier,
-            new TensorFlowServerManager(igniteSupplier),
-            new TensorFlowClusterResolver(igniteSupplier)
-        );
-    }
+    public TensorFlowClusterManager(Ignite ignite) {
+        assert ignite != null : "Ignite instance should not be null";
 
-    /**
-     * Constructs a new instance of TensorFlow cluster manager.
-     *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param srvProcMgr TensorFlow server manager.
-     * @param clusterRslvr TensorFlow cluster resolver.
-     */
-    public <T extends Supplier<Ignite> & Serializable> TensorFlowClusterManager(T igniteSupplier,
-        TensorFlowServerManager srvProcMgr, TensorFlowClusterResolver clusterRslvr) {
-        assert igniteSupplier != null : "Ignite supplier should not be null";
-        assert srvProcMgr != null : "TensorFlow server manager should not be null";
-        assert clusterRslvr != null : "TensorFlow cluster resolver should not be null";
-
-        this.igniteSupplier = igniteSupplier;
-        this.srvProcMgr = srvProcMgr;
-        this.clusterRslvr = clusterRslvr;
-    }
-
-    /** Initializes TensorFlow cluster manager and gets or creates correspondent caches. */
-    public void init() {
-        clusterRslvr.init();
-
-        CacheConfiguration<UUID, TensorFlowCluster> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName(TF_CLUSTER_METADATA_CACHE_NAME);
-        cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
-        cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        Ignite ignite = igniteSupplier.get();
-        cache = ignite.getOrCreateCache(cacheConfiguration);
-
-        chiefRunners = new ConcurrentHashMap<>();
-        userScriptRunners = new ConcurrentHashMap<>();
+        this.ignite = ignite;
+        this.srvProcMgr = new TensorFlowServerManager(ignite);
+        this.clusterRslvr = new TensorFlowClusterResolver(ignite, "TF", 10000, 1000);
+        this.cache = getOrCreateCache();
+        this.chiefRunners = new ConcurrentHashMap<>();
+        this.userScriptRunners = new ConcurrentHashMap<>();
     }
 
     /**
@@ -124,9 +93,8 @@ public class TensorFlowClusterManager implements Serializable {
      * @param jobArchive Job archive.
      * @return TensorFlow cluster metadata.
      */
-    public TensorFlowCluster getOrCreateCluster(UUID clusterId, TensorFlowJobArchive jobArchive, IgniteRunnable cb) {
-        checkThatInitialized();
-
+    public TensorFlowCluster getOrCreateCluster(UUID clusterId, TensorFlowJobArchive jobArchive,
+        Consumer<String> userScriptOut, Consumer<String> userScriptErr) {
         Lock clusterMgrCacheLock = cache.lock(clusterId);
         clusterMgrCacheLock.lock();
 
@@ -135,7 +103,7 @@ public class TensorFlowClusterManager implements Serializable {
 
             if (cluster == null) {
                 TensorFlowClusterSpec clusterSpec = clusterRslvr.resolveAndAcquirePorts(jobArchive.getUpstreamCacheName());
-                cluster = startCluster(clusterId, clusterSpec, jobArchive, cb);
+                cluster = startCluster(clusterId, clusterSpec, jobArchive, userScriptOut, userScriptErr);
                 cache.put(clusterId, cluster);
             }
 
@@ -152,8 +120,6 @@ public class TensorFlowClusterManager implements Serializable {
      * @param clusterId TensorFlow cluster identifier.
      */
     public void stopClusterIfExists(UUID clusterId) {
-        checkThatInitialized();
-
         Lock clusterMgrCacheLock = cache.lock(clusterId);
         clusterMgrCacheLock.lock();
 
@@ -164,7 +130,7 @@ public class TensorFlowClusterManager implements Serializable {
                 stopChief(clusterId);
                 stopUserScript(clusterId);
                 srvProcMgr.stop(cluster.getProcesses(), true);
-                clusterRslvr.freePorts(cluster.getSpec());
+                clusterRslvr.releasePorts(cluster.getSpec());
                 cache.remove(clusterId);
             }
         }
@@ -176,8 +142,6 @@ public class TensorFlowClusterManager implements Serializable {
     /** Destroys TensorFlow cluster manager and related caches. */
     public void destroy() {
         clusterRslvr.destroy();
-
-        Ignite ignite = igniteSupplier.get();
         ignite.destroyCache(TF_CLUSTER_METADATA_CACHE_NAME);
     }
 
@@ -188,13 +152,14 @@ public class TensorFlowClusterManager implements Serializable {
      * @param spec TensorFlow cluster specification.
      * @return TensorFlow cluster metadata.
      */
-    private TensorFlowCluster startCluster(UUID clusterId, TensorFlowClusterSpec spec, TensorFlowJobArchive jobArchive, IgniteRunnable cb) {
+    private TensorFlowCluster startCluster(UUID clusterId, TensorFlowClusterSpec spec, TensorFlowJobArchive jobArchive,
+        Consumer<String> userScriptOut, Consumer<String> userScriptErr) {
         Map<String, List<TensorFlowServerAddressSpec>> jobs = spec.getJobs();
 
-        Map<UUID, List<UUID>> workerProcesses = startWorkers(spec, jobs.get(clusterRslvr.getWorkerJobName()));
+        Map<UUID, List<UUID>> workerProcesses = startWorkers(spec, jobs.get(TensorFlowClusterResolver.WORKER_JOB_NAME));
 
         startChief(clusterId, spec);
-        startUserScript(clusterId, jobArchive, spec, cb);
+        startUserScript(clusterId, jobArchive, spec, userScriptOut, userScriptErr);
 
         return new TensorFlowCluster(spec, workerProcesses);
     }
@@ -212,7 +177,7 @@ public class TensorFlowClusterManager implements Serializable {
 
         if (tasks != null) {
             for (int i = 0; i < tasks.size(); i++) {
-                TensorFlowServer srvSpec = new TensorFlowServer(spec, clusterRslvr.getWorkerJobName(), i);
+                TensorFlowServer srvSpec = new TensorFlowServer(spec, TensorFlowClusterResolver.WORKER_JOB_NAME, i);
                 srvs.add(srvSpec);
             }
         }
@@ -227,25 +192,19 @@ public class TensorFlowClusterManager implements Serializable {
      * @param spec TensorFlow cluster specification.
      */
     private void startChief(UUID clusterId, TensorFlowClusterSpec spec) {
-        TensorFlowChiefRunner chiefRunner = new TensorFlowChiefRunner(spec);
+        TensorFlowChiefRunner chiefRunner = new TensorFlowChiefRunner(
+            ignite,
+            Executors.newSingleThreadExecutor(
+                new CustomizableThreadFactory("tf-ch", true)
+            ),
+            spec,
+            System.out::println,
+            System.err::println
+        );
+
         chiefRunner.start();
 
         chiefRunners.put(clusterId, chiefRunner);
-    }
-
-    /**
-     * Starts user script processes using the specified job archive.
-     *
-     * @param clusterId Cluster identifier.
-     * @param jobArchive Job archive.
-     * @param clusterSpec Cluster specification.
-     */
-    private void startUserScript(UUID clusterId, TensorFlowJobArchive jobArchive, TensorFlowClusterSpec clusterSpec,
-        IgniteRunnable cb) {
-        TensorFlowUserScriptRunner userScriptRunner = new TensorFlowUserScriptRunner(jobArchive, clusterSpec, cb);
-        userScriptRunner.start("stdout_" + clusterId, "stderr_" + clusterId);
-
-        userScriptRunners.put(clusterId, userScriptRunner);
     }
 
     /**
@@ -261,6 +220,31 @@ public class TensorFlowClusterManager implements Serializable {
     }
 
     /**
+     * Starts user script processes using the specified job archive.
+     *
+     * @param clusterId Cluster identifier.
+     * @param jobArchive Job archive.
+     * @param clusterSpec Cluster specification.
+     */
+    private void startUserScript(UUID clusterId, TensorFlowJobArchive jobArchive, TensorFlowClusterSpec clusterSpec,
+        Consumer<String> out, Consumer<String> err) {
+        TensorFlowUserScriptRunner userScriptRunner = new TensorFlowUserScriptRunner(
+            ignite,
+            Executors.newSingleThreadExecutor(
+                new CustomizableThreadFactory("tf-us", true)
+            ),
+            jobArchive,
+            clusterSpec,
+            out,
+            err
+        );
+
+        userScriptRunner.start();
+
+        userScriptRunners.put(clusterId, userScriptRunner);
+    }
+
+    /**
      * Stops user script process.
      *
      * @param clusterId Cluster identifier.
@@ -272,12 +256,36 @@ public class TensorFlowClusterManager implements Serializable {
             runner.stop();
     }
 
+    public boolean isUserScriptCompleted(UUID clusterId) {
+        TensorFlowUserScriptRunner runner = userScriptRunners.get(clusterId);
+
+        return runner != null && runner.isCompleted();
+    }
+
     /**
-     * Checks that the component has been initialized.
+     * Returns cluster by identifier.
+     *
+     * @param clusterId Cluster identifier.
+     * @return TensorFlow cluster.
      */
-    private void checkThatInitialized() {
-        if (cache == null)
-            throw new IllegalStateException("TensorFlow Cluster Manager is not initialized");
+    public TensorFlowCluster getCluster(UUID clusterId) {
+        return cache.get(clusterId);
+    }
+
+    /**
+     * Returns list of maintained TensorFlow clusters.
+     *
+     * @return List of maintained TensorFlow clusters.
+     */
+    public Map<UUID, TensorFlowCluster> getAllClusters() {
+        Map<UUID, TensorFlowCluster> res = new HashMap<>();
+
+        ScanQuery<UUID, TensorFlowCluster> qry = new ScanQuery<>();
+        QueryCursor<Cache.Entry<UUID, TensorFlowCluster>> cursor = cache.query(qry);
+        for (Cache.Entry<UUID, TensorFlowCluster> e : cursor)
+            res.put(e.getKey(), e.getValue());
+
+        return res;
     }
 
     /** */
@@ -285,8 +293,17 @@ public class TensorFlowClusterManager implements Serializable {
         return srvProcMgr;
     }
 
-    /** */
-    public IgniteCache<UUID, TensorFlowCluster> getCache() {
-        return cache;
+    /**
+     * Returns existing cluster manager cache or creates a new one.
+     *
+     * @return Cluster manager cache.
+     */
+    private IgniteCache<UUID, TensorFlowCluster> getOrCreateCache() {
+        CacheConfiguration<UUID, TensorFlowCluster> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName(TF_CLUSTER_METADATA_CACHE_NAME);
+        cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
+        cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        return ignite.getOrCreateCache(cacheConfiguration);
     }
 }

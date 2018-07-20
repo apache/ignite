@@ -18,6 +18,7 @@
 package org.apache.ignite.tensorflow.cluster;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -26,7 +27,7 @@ import org.apache.ignite.tensorflow.SerializableConsumer;
 /**
  * TensorFlow cluster gateway that allows to subscribe on changes in cluster configuration.
  */
-public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorFlowCluster>, AutoCloseable {
+public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, Optional<TensorFlowCluster>>, AutoCloseable {
     /** */
     private static final long serialVersionUID = -540323262800791340L;
 
@@ -34,10 +35,10 @@ public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorF
     private final SerializableConsumer<TensorFlowClusterGateway> unsubscribeCb;
 
     /** Subscribers. */
-    private final HashSet<Consumer<TensorFlowCluster>> subscribers = new HashSet<>();
+    private final HashSet<Consumer<Optional<TensorFlowCluster>>> subscribers = new HashSet<>();
 
     /** Last value received from the upstream. */
-    private TensorFlowCluster last;
+    private Optional<TensorFlowCluster> last;
 
     /**
      * Constructs a new instance of TensorFlow cluster gateway.
@@ -53,7 +54,7 @@ public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorF
      *
      * @param subscriber Subscriber.
      */
-    public synchronized void subscribe(Consumer<TensorFlowCluster> subscriber) {
+    public synchronized void subscribe(Consumer<Optional<TensorFlowCluster>> subscriber) {
         subscribers.add(subscriber);
 
         if (last != null)
@@ -65,13 +66,13 @@ public class TensorFlowClusterGateway implements IgniteBiPredicate<UUID, TensorF
      *
      * @param subscriber Subscriber.
      */
-    public synchronized void unsubscribe(Consumer<TensorFlowCluster> subscriber) {
+    public synchronized void unsubscribe(Consumer<Optional<TensorFlowCluster>> subscriber) {
         subscribers.remove(subscriber);
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean apply(UUID uuid, TensorFlowCluster cluster) {
-        for (Consumer<TensorFlowCluster> subscriber : subscribers)
+    @Override public synchronized boolean apply(UUID uuid, Optional<TensorFlowCluster> cluster) {
+        for (Consumer<Optional<TensorFlowCluster>> subscriber : subscribers)
             subscriber.accept(cluster);
 
         last = cluster;

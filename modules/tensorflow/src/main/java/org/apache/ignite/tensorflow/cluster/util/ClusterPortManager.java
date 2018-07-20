@@ -17,24 +17,26 @@
 
 package org.apache.ignite.tensorflow.cluster.util;
 
-import java.io.Serializable;
 import java.util.BitSet;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Cluster port manager that allows to reliably {@link #acquirePort(UUID)} and {@link #freePort(UUID, int)} on the
+ * Cluster port manager that allows to reliably {@link #acquirePort(UUID)} and {@link #releasePort(UUID, int)} on the
  * cluster nodes.
  */
-public class ClusterPortManager implements Serializable {
-    /** */
-    private static final long serialVersionUID = -5116593574559007292L;
+public class ClusterPortManager {
+    /** Ignite instance. */
+    private final Ignite ignite;
+
+    /** Ignite logger. */
+    private final IgniteLogger log;
 
     /** Port manager cache name. */
     private final String portMgrCacheName;
@@ -45,11 +47,8 @@ public class ClusterPortManager implements Serializable {
     /** Port range size. */
     private final int cnt;
 
-    /** Ignite instance supplier. */
-    private final Supplier<Ignite> igniteSupplier;
-
     /** Port manager cache */
-    private transient IgniteCache<UUID, BitSet> cache;
+    private final IgniteCache<UUID, BitSet> cache;
 
     /**
      * Constructs a new instance of cluster port manager.
@@ -58,28 +57,19 @@ public class ClusterPortManager implements Serializable {
      * @param from Port range from point.
      * @param cnt Port range size.
      */
-    public <T extends Supplier<Ignite> & Serializable> ClusterPortManager(String poolName, int from, int cnt,
-        T igniteSupplier) {
+    public ClusterPortManager(Ignite ignite, String poolName, int from, int cnt) {
+        assert ignite != null : "Ignite instance should not be null";
         assert poolName != null : "Pool name should not be null";
         assert cnt >= 0 : "Count should not be negative";
         assert from >= 0 && cnt + from <= 0xFFFF : "Port range should be between 0 and 65535";
-        assert igniteSupplier != null : "Ignite supplier should not be null";
 
-        this.portMgrCacheName = String.format("PORT_MANAGER_CACHE_%s", poolName);
+        this.ignite = ignite;
+        this.log = ignite.log().getLogger(ClusterPortManager.class);
+
+        this.portMgrCacheName = String.format("PORT_MANAGER_%s_CACHE", poolName);
         this.from = from;
         this.cnt = cnt;
-        this.igniteSupplier = igniteSupplier;
-    }
-
-    /** Initializes port manager and creates or gets correspondent caches. */
-    public void init() {
-        CacheConfiguration<UUID, BitSet> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName(portMgrCacheName);
-        cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
-        cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        Ignite ignite = igniteSupplier.get();
-        cache = ignite.getOrCreateCache(cacheConfiguration);
+        this.cache = getOrCreateCache();
     }
 
     /**
@@ -89,8 +79,6 @@ public class ClusterPortManager implements Serializable {
      * @return Port to be acquired.
      */
     public int acquirePort(UUID nodeId) {
-        checkThatInitialized();
-
         Lock lock = cache.lock(nodeId);
         lock.lock();
 
@@ -106,6 +94,7 @@ public class ClusterPortManager implements Serializable {
                 throw new IllegalStateException("No free ports in range [from=" + from + ", cnt=" + cnt + "]");
 
             ports.set(free);
+            log.debug("Port acquired [nodeId=" + nodeId + ", port=" + (from + free) + "]");
 
             cache.put(nodeId, ports);
 
@@ -117,15 +106,13 @@ public class ClusterPortManager implements Serializable {
     }
 
     /**
-     * Frees acquired port on the specified node.
+     * Releases acquired port on the specified node.
      *
      * @param nodeId Node identifier.
      * @param port Acquired port to be free.
      */
-    public void freePort(UUID nodeId, int port) {
+    public void releasePort(UUID nodeId, int port) {
         assert port - from >= 0 && port - from < cnt : "Port not in the range";
-
-        checkThatInitialized();
 
         Lock lock = cache.lock(nodeId);
         lock.lock();
@@ -135,6 +122,7 @@ public class ClusterPortManager implements Serializable {
 
             if (ports != null) {
                 ports.clear(port - from);
+                log.debug("Port released [nodeId=" + nodeId + ", port=" + port + "]");
 
                 if (ports.isEmpty())
                     cache.remove(nodeId);
@@ -147,15 +135,20 @@ public class ClusterPortManager implements Serializable {
 
     /** Destroys port manager and related caches. */
     public void destroy() {
-        Ignite ignite = igniteSupplier.get();
         ignite.destroyCache(portMgrCacheName);
     }
 
     /**
-     * Checks that the component has been initialized.
+     * Returns existed port pool cache or creates a new one.
+     *
+     * @return Port pool cache.
      */
-    private void checkThatInitialized() {
-        if (cache == null)
-            throw new IllegalStateException("Cluster Port Manager is not initialized");
+    private IgniteCache<UUID, BitSet> getOrCreateCache() {
+        CacheConfiguration<UUID, BitSet> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName(portMgrCacheName);
+        cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
+        cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        return ignite.getOrCreateCache(cacheConfiguration);
     }
 }

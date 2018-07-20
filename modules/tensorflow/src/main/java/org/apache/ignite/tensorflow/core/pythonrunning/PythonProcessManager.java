@@ -17,8 +17,6 @@
 
 package org.apache.ignite.tensorflow.core.pythonrunning;
 
-import java.io.Serializable;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.core.ProcessManager;
 import org.apache.ignite.tensorflow.core.ProcessManagerWrapper;
@@ -29,17 +27,13 @@ import org.apache.ignite.tensorflow.core.nativerunning.NativeProcessManager;
  * Python process manager that allows to  start, stop and make other actions with python processes.
  */
 public class PythonProcessManager extends ProcessManagerWrapper<NativeProcess, PythonProcess> {
-    /** */
-    private static final long serialVersionUID = -7095409565854538504L;
-
     /**
      * Constructs a new instance of python process manager.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> PythonProcessManager(T igniteSupplier) {
-        this(new NativeProcessManager(igniteSupplier));
+    public PythonProcessManager(Ignite ignite) {
+        this(new NativeProcessManager(ignite));
     }
 
     /**

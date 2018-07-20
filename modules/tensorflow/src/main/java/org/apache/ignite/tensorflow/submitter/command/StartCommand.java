@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -58,28 +59,26 @@ public class StartCommand implements Command {
             TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
             TensorFlowClusterGateway gateway = mgr.getOrCreateCluster(clusterId, jobArchive);
 
+            ignite.message().localListen("us_out_" + clusterId, (node, msg) -> {
+                System.out.println(msg);
+                return true;
+            });
+
+            ignite.message().localListen("us_err_" + clusterId, (node, msg) -> {
+                System.err.println(msg);
+                return true;
+            });
+
             CountDownLatch latch = new CountDownLatch(1);
 
-            Consumer<TensorFlowCluster> subscriber = cluster -> {
-                System.out.println(clusterId);
-                latch.countDown();
+            Consumer<Optional<TensorFlowCluster>> subscriber = cluster -> {
+                if (!cluster.isPresent())
+                    latch.countDown();
             };
 
             gateway.subscribe(subscriber);
             latch.await();
             gateway.unsubscribe(subscriber);
-
-            ignite.message().localListen("stderr_" + clusterId, (node, msg) -> {
-                System.err.println(msg);
-                return true;
-            });
-
-            ignite.message().localListen("stdout_" + clusterId, (node, msg) -> {
-                System.out.println(msg);
-                return true;
-            });
-
-            Thread.currentThread().join();
         }
         catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);

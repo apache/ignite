@@ -18,96 +18,63 @@
 package org.apache.ignite.tensorflow.cluster.util;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
+import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServer;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerScriptFormatter;
-import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessBuilderSupplier;
-import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
+import org.apache.ignite.tensorflow.core.util.AsyncNativeProcessRunner;
+import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 
 /**
- * TensorFlow chief job runner.
+ * Utils class that helps to start and stop chief process.
  */
-public class TensorFlowChiefRunner {
-    /** Chief process thread name. */
-    private static final String CHIEF_PROCESS_THREAD_NAME = "tensorflow-chief";
-
-    /** TensorFlow server script formatter. */
-    private static final TensorFlowServerScriptFormatter scriptFormatter = new TensorFlowServerScriptFormatter();
-
-    /** Native process runner. */
-    private static final NativeProcessRunner processRunner = new NativeProcessRunner();
-
-    /** Process builder supplier. */
-    private static final PythonProcessBuilderSupplier processBuilderSupplier = new PythonProcessBuilderSupplier(true);
-
-    /** Logger. */
-    private final IgniteLogger log;
+public class TensorFlowChiefRunner extends AsyncNativeProcessRunner {
+    /** Ignite instance. */
+    private final Ignite ignite;
 
     /** TensorFlow cluster specification. */
     private final TensorFlowClusterSpec spec;
 
-    /** Executors that is used to start and control native process. */
-    private final ExecutorService executor;
+    /** Output stream data consumer. */
+    private final Consumer<String> out;
 
-    /** Future of the chief process. */
-    private Future<?> fut;
+    /** Error stream data consumer. */
+    private final Consumer<String> err;
 
     /**
      * Constructs a new instance of TensorFlow chief runner.
      *
+     * @param ignite Ignite instance.
+     * @param executor Executor to be used in {@link AsyncNativeProcessRunner}.
      * @param spec TensorFlow cluster specification.
+     * @param out Output stream data consumer.
+     * @param err Error stream data consumer.
      */
-    public TensorFlowChiefRunner(TensorFlowClusterSpec spec) {
-        this.log = Ignition.ignite().log().getLogger(TensorFlowChiefRunner.class);
+    public TensorFlowChiefRunner(Ignite ignite, ExecutorService executor, TensorFlowClusterSpec spec,
+        Consumer<String> out, Consumer<String> err) {
+        super(ignite, executor);
+        this.ignite = ignite;
         this.spec = spec;
-        this.executor = Executors.newSingleThreadExecutor(
-            new CustomizableThreadFactory(CHIEF_PROCESS_THREAD_NAME, true)
+        this.out = out;
+        this.err = err;
+    }
+
+    /** {@inheritDoc} */
+    @Override public NativeProcessRunner doBefore() {
+        TensorFlowServer srv = new TensorFlowServer(spec, TensorFlowClusterResolver.CHIEF_JOB_NAME, 0);
+
+        return new NativeProcessRunner(
+            new PythonProcessBuilderSupplier(true).get(),
+            new TensorFlowServerScriptFormatter().format(srv, true, ignite),
+            out,
+            err
         );
     }
 
-    /**
-     * Starts chief runner process.
-     */
-    public void start() {
-        log.info("Starting chief");
-
-        TensorFlowServer srv = new TensorFlowServer(spec, "chief", 0);
-
-        fut = executor.submit(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    log.info("Starting chief native process");
-                    processRunner.startAndWait(
-                        processBuilderSupplier.get(),
-                        scriptFormatter.format(srv, true, Ignition.ignite()),
-                        System.out::println,
-                        System.err::println
-                    );
-                    log.info("Chief native process has been completed");
-                }
-                catch (InterruptedException e) {
-                    log.info("Chief native process has been interrupted");
-                    break;
-                }
-                catch (Exception e) {
-                    log.error("Chief native process failed", e);
-                }
-            }
-        });
-    }
-
-    /**
-     * Stop chief runner process.
-     */
-    public void stop() {
-        log.info("Stopping chief");
-
-        if (fut != null && !fut.isDone())
-            fut.cancel(true);
+    /** {@inheritDoc} */
+    @Override public void doAfter() {
+        // Do nothing.
     }
 }

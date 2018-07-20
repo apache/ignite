@@ -18,6 +18,8 @@
 package org.apache.ignite.tensorflow.core.nativerunning.task;
 
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.tensorflow.core.nativerunning.NativeProcess;
 import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
@@ -28,9 +30,6 @@ import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 public class NativeProcessStartTask implements IgniteRunnable {
     /** */
     private static final long serialVersionUID = 8421398298283116405L;
-
-    /** Native process runner. */
-    private static final NativeProcessRunner processRunner = new NativeProcessRunner();
 
     /** Native process specification. */
     private final NativeProcess procSpec;
@@ -51,11 +50,26 @@ public class NativeProcessStartTask implements IgniteRunnable {
         Supplier<ProcessBuilder> procBuilderSupplier = procSpec.getProcBuilderSupplier();
         ProcessBuilder procBuilder = procBuilderSupplier.get();
 
+        NativeProcessRunner procRunner = new NativeProcessRunner(
+            procBuilder,
+            procSpec.getStdin(),
+            System.out::println,
+            System.err::println
+        );
+
+        IgniteLogger log = Ignition.ignite().log().getLogger(NativeProcessStartTask.class);
+
         try {
-            processRunner.startAndWait(procBuilder, procSpec.getStdin(), System.out::println, System.err::println);
+            log.debug("Starting native process");
+            procRunner.startAndWait();
+            log.debug("Native process completed");
         }
         catch (InterruptedException e) {
-            // Do nothing.
+            log.debug("Native process interrupted");
+        }
+        catch (Exception e) {
+            log.error("Native process failed", e);
+            throw e;
         }
     }
 }

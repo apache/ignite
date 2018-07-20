@@ -17,28 +17,20 @@
 
 package org.apache.ignite.tensorflow.submitter.command;
 
-import java.io.Serializable;
+import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.tensorflow.cluster.TensorFlowCluster;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterManager;
 
 public class PsCommand implements Command {
     /** {@inheritDoc} */
     @Override public void runWithinIgnite(Ignite ignite) {
-        TensorFlowClusterManager mgr = new TensorFlowClusterManager((Supplier<Ignite> & Serializable)() -> ignite);
-        mgr.init();
+        TensorFlowClusterManager mgr = new TensorFlowClusterManager(ignite);
 
-        IgniteCache<UUID, TensorFlowCluster> cache = mgr.getCache();
-        ScanQuery<UUID, TensorFlowCluster> qry = new ScanQuery<>();
-        QueryCursor<Cache.Entry<UUID, TensorFlowCluster>> cursor = cache.query(qry);
+        Map<UUID, TensorFlowCluster> clusters = mgr.getAllClusters();
 
-        for (Cache.Entry<UUID, TensorFlowCluster> e : cursor)
-            System.out.println(e.getKey());
+        for (UUID clusterId : clusters.keySet())
+            System.out.println(clusterId);
     }
 }

@@ -30,18 +30,39 @@ import java.util.function.Consumer;
  */
 public class NativeProcessRunner {
     /** Thread name to be used by threads that forward streams. */
-    private static final String NATIVE_PROCESS_FORWARD_STREAM_THREAD_NAME = "tensorflow-forward-native-output";
+    private static final String NATIVE_PROCESS_FORWARD_STREAM_THREAD_NAME = "tf-forward-native-output";
+
+    /** Process builder. */
+    private final ProcessBuilder procBuilder;
+
+    /** Standard input of the process. */
+    private final String stdin;
+
+    /** Output stream data consumer. */
+    private final Consumer<String> out;
+
+    /** Error stream data consumer. */
+    private final Consumer<String> err;
 
     /**
-     * Starts the native process and waits it to be completed successfully or with exception.
+     * Constructs a new instance of native process runner.
      *
      * @param procBuilder Process builder.
      * @param stdin Standard input of the process.
-     * @param out Target for standard output stream.
-     * @param err Target for error stream.
+     * @param out Output stream data consumer.
+     * @param err Error stream data consumer.
      */
-    public void startAndWait(ProcessBuilder procBuilder, String stdin, Consumer<String> out, Consumer<String> err)
-        throws InterruptedException {
+    public NativeProcessRunner(ProcessBuilder procBuilder, String stdin, Consumer<String> out, Consumer<String> err) {
+        this.procBuilder = procBuilder;
+        this.stdin = stdin;
+        this.out = out;
+        this.err = err;
+    }
+
+    /**
+     * Starts the native process and waits it to be completed successfully or with exception.
+     */
+    public void startAndWait() throws InterruptedException {
         Process proc;
         try {
             proc = procBuilder.start();
@@ -75,7 +96,7 @@ public class NativeProcessRunner {
             Runtime.getRuntime().removeShutdownHook(shutdownHook);
 
             if (status != 0)
-                throw new IllegalStateException("Native process exit status is " + status);
+                throw new IllegalStateException("Native process exit [status=" + status + "]");
         }
         finally {
             outForward.cancel(true);

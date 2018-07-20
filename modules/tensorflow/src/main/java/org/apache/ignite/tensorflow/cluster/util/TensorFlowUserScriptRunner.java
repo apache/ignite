@@ -23,154 +23,100 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
-import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
+import org.apache.ignite.tensorflow.core.util.AsyncNativeProcessRunner;
 import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 
 /**
  * Utils class that helps to start and stop user script process.
  */
-public class TensorFlowUserScriptRunner {
-    /** User script process thread name. */
-    private static final String USER_SCRIPT_PROCESS_THREAD_NAME = "tensorflow-user-script";
-
-    /** User script folder prefix. */
-    private static final String USER_SCRIPT_FOLDER_PREFIX = "tf_user_script_";
-
-    /** Native process runner. */
-    private static final NativeProcessRunner processRunner = new NativeProcessRunner();
-
-    /** Logger. */
+public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
+    /** Ignite logger. */
     private final IgniteLogger log;
 
-    /** Job archive. */
+    /** Job archive that will be extracted and used as working directory for the native process. */
     private final TensorFlowJobArchive jobArchive;
 
     /** TensorFlow cluster specification. */
     private final TensorFlowClusterSpec clusterSpec;
 
-    /** Executors that is used to start and control native process. */
-    private final ExecutorService executor;
+    /** Output stream data consumer. */
+    private final Consumer<String> out;
+
+    /** Error stream data consumer. */
+    private final Consumer<String> err;
 
     /** Working directory of the user script process. */
     private File workingDir;
 
-    /** Future of the user script process. */
-    private Future<?> fut;
-
-    /** Callback. */
-    private IgniteRunnable cb;
-
     /**
      * Constructs a new instance of TensorFlow user script runner.
      *
-     * @param jobArchive Job archive.
+     * @param ignite Ignite instance.
+     * @param executor Executor to be used in {@link AsyncNativeProcessRunner}.
+     * @param jobArchive  Job archive that will be extracted and used as working directory for the native process.
      * @param clusterSpec TensorFlow cluster specification.
+     * @param out Output stream data consumer.
+     * @param err  Error stream data consumer.
      */
-    public TensorFlowUserScriptRunner(TensorFlowJobArchive jobArchive, TensorFlowClusterSpec clusterSpec, IgniteRunnable cb) {
-        this.log = Ignition.ignite().log().getLogger(TensorFlowUserScriptRunner.class);
+    public TensorFlowUserScriptRunner(Ignite ignite, ExecutorService executor, TensorFlowJobArchive jobArchive,
+        TensorFlowClusterSpec clusterSpec, Consumer<String> out, Consumer<String> err) {
+        super(ignite, executor);
+
+        this.log = ignite.log().getLogger(TensorFlowUserScriptRunner.class);
+
         this.jobArchive = jobArchive;
         this.clusterSpec = clusterSpec;
-        this.cb = cb;
-        this.executor = Executors.newSingleThreadExecutor(
-            new CustomizableThreadFactory(USER_SCRIPT_PROCESS_THREAD_NAME, true)
-        );
+        this.out = out;
+        this.err = err;
     }
 
-    /**
-     * Starts user script process.
-     */
-    public void start(String stdoutTopicName, String stderrTopicName) {
-        log.info("Starting user script");
-
+    /** {@inheritDoc} */
+    @Override public NativeProcessRunner doBefore() {
         try {
-            workingDir = Files.createTempDirectory(USER_SCRIPT_FOLDER_PREFIX).toFile();
+            workingDir = Files.createTempDirectory("tf_us_").toFile();
+            log.debug("Directory has been created [path=" + workingDir.getAbsolutePath() + "]");
+
             unzip(jobArchive.getData(), workingDir);
+            log.debug("Job archive has been extracted [path=" + workingDir.getAbsolutePath() + "]");
 
-            log.info("User script has been extracted into " + workingDir.getAbsolutePath());
-
-            ProcessBuilder procBuilder = prepareProcessBuilder(workingDir);
-
-            fut = executor.submit(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        log.info("Starting user script native process in " + workingDir.getAbsolutePath());
-                        processRunner.startAndWait(
-                            procBuilder,
-                            null,
-                            str -> {
-                                System.out.println(str);
-                                Ignition.ignite().message().send(stdoutTopicName, str);
-                            },
-                            str -> {
-                                System.err.println(str);
-                                Ignition.ignite().message().send(stderrTopicName, str);
-                            }
-                        );
-                        log.info("User script native process in " + workingDir.getAbsolutePath() +
-                            " has been completed");
-                        cb.run();
-                        break;
-                    }
-                    catch (InterruptedException e) {
-                        log.info("User script native process in " + workingDir.getAbsolutePath() +
-                            " has been interrupted");
-                        break;
-                    }
-                    catch (Exception e) {
-                        log.error("User script native process failed", e);
-                    }
-                }
-            });
+            return prepareNativeProcessRunner();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
-        catch (Exception e) {
-            if (workingDir != null) {
-                delete(workingDir);
-                log.info("Directory " + workingDir.getAbsolutePath() + " has been deleted");
-            }
-
-            throw e;
-        }
     }
 
-    /**
-     * Stops user script process.
-     */
-    public void stop() {
-        log.info("Stopping user script");
-
-        if (fut != null && !fut.isDone())
-            fut.cancel(true);
-
+    /** {@inheritDoc} */
+    @Override public void doAfter() {
         if (workingDir != null) {
             delete(workingDir);
-            log.info("Directory " + workingDir.getAbsolutePath() + " has been deleted");
+            log.debug("Directory has been deleted [path=" + workingDir.getAbsolutePath() + "]");
         }
     }
 
     /**
      * Prepares process builder and specifies working directory and command to be run.
      *
-     * @param workingDir Working directory.
      * @return Prepared process builder.
      */
-    private ProcessBuilder prepareProcessBuilder(File workingDir) {
+    private NativeProcessRunner prepareNativeProcessRunner() {
+        if (workingDir == null)
+            throw new IllegalStateException("Working directory is not created");
+
         ProcessBuilder procBuilder = new ProcessBuilder();
 
         procBuilder.directory(workingDir);
@@ -182,7 +128,7 @@ public class TensorFlowUserScriptRunner {
         env.put("TF_WORKERS", formatTfWorkersVar());
         env.put("TF_CHIEF_SERVER", formatTfChiefServerVar());
 
-        return procBuilder;
+        return new NativeProcessRunner(procBuilder, null, out, err);
     }
 
     /**
@@ -195,7 +141,7 @@ public class TensorFlowUserScriptRunner {
             .append("{\"cluster\" : ")
             .append(clusterSpec.format(Ignition.ignite()))
             .append(", ")
-            .append("\"task\": {\"type\" : \"chief\", \"index\": 0}}")
+            .append("\"task\": {\"type\" : \"" + TensorFlowClusterResolver.CHIEF_JOB_NAME + "\", \"index\": 0}}")
             .toString();
     }
 
@@ -207,9 +153,9 @@ public class TensorFlowUserScriptRunner {
     private String formatTfWorkersVar() {
         StringJoiner joiner = new StringJoiner(", ");
 
-        int cnt = clusterSpec.getJobs().get("worker").size();
+        int cnt = clusterSpec.getJobs().get(TensorFlowClusterResolver.WORKER_JOB_NAME).size();
         for (int i = 0; i < cnt; i++)
-            joiner.add("\"/job:worker/task:" + i + "\"");
+            joiner.add("\"/job:" + TensorFlowClusterResolver.WORKER_JOB_NAME + "/task:" + i + "\"");
 
         return "[" + joiner + "]";
     }
@@ -220,8 +166,14 @@ public class TensorFlowUserScriptRunner {
      * @return Formatted "TF_CHIEF_SERVER" variable to be passed into user script.
      */
     private String formatTfChiefServerVar() {
-        TensorFlowServerAddressSpec spec = clusterSpec.getJobs().get("chief").get(0);
-        return "grpc://" + spec.format(Ignition.ignite());
+        List<TensorFlowServerAddressSpec> tasks = clusterSpec.getJobs().get(TensorFlowClusterResolver.CHIEF_JOB_NAME);
+
+        if (tasks == null || tasks.size() != 1)
+            throw new IllegalStateException("TensorFlow cluster specification should contain exactly one chief task");
+
+        TensorFlowServerAddressSpec addrSpec = tasks.iterator().next();
+
+        return "grpc://" + addrSpec.format(Ignition.ignite());
     }
 
     /**
@@ -238,11 +190,11 @@ public class TensorFlowUserScriptRunner {
                     delete(new File(file, fileToBeDeleted));
 
             if (!file.delete())
-                throw new IllegalStateException("Can't delete directory [name=" + file.getAbsolutePath() + "]");
+                throw new IllegalStateException("Can't delete directory [path=" + file.getAbsolutePath() + "]");
         }
         else {
             if (!file.delete())
-                throw new IllegalStateException("Can't delete file [name=" + file.getAbsolutePath() + "]");
+                throw new IllegalStateException("Can't delete file [path=" + file.getAbsolutePath() + "]");
         }
     }
 
@@ -261,13 +213,13 @@ public class TensorFlowUserScriptRunner {
                 if (entry.isDirectory() && !file.exists()) {
                     boolean created = file.mkdirs();
                     if (!created)
-                        throw new IllegalStateException("Can't create directory [name=" + file.getAbsolutePath() + "]");
+                        throw new IllegalStateException("Can't create directory [path=" + file.getAbsolutePath() + "]");
                 }
                 else {
                     if (!file.getParentFile().exists()) {
                         boolean created = file.getParentFile().mkdirs();
                         if (!created)
-                            throw new IllegalStateException("Can't create directory [name=" +
+                            throw new IllegalStateException("Can't create directory [path=" +
                                 file.getParentFile().getAbsolutePath() + "]");
                     }
 

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.tensorflow.submitter.command;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowCluster;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterManager;
@@ -36,13 +34,12 @@ public class DescribeCommand implements Command {
 
     /** {@inheritDoc} */
     @Override public void runWithinIgnite(Ignite ignite) {
-        TensorFlowClusterManager mgr = new TensorFlowClusterManager((Supplier<Ignite> & Serializable)() -> ignite);
-        mgr.init();
+        TensorFlowClusterManager mgr = new TensorFlowClusterManager(ignite);
 
-        TensorFlowCluster cluster = mgr.getCache().get(clusterId);
+        TensorFlowCluster cluster = mgr.getCluster(clusterId);
 
         if (cluster != null) {
-            TensorFlowServerManager s = new TensorFlowServerManager((Supplier<Ignite> & Serializable)() -> ignite);
+            TensorFlowServerManager s = new TensorFlowServerManager(ignite);
 
             System.out.println("========== Cluster ID =====================");
             System.out.println(clusterId);

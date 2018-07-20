@@ -17,16 +17,14 @@
 
 package org.apache.ignite.tensorflow.cluster;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -43,6 +41,14 @@ public class TensorFlowClusterMaintainer implements Service {
     /** */
     private static final long serialVersionUID = -3220563310643566419L;
 
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private transient Ignite ignite;
+
+    /** Logger. */
+    @LoggerResource
+    private transient IgniteLogger log;
+
     /** TensorFlow cluster identifier. */
     private final UUID clusterId;
 
@@ -53,15 +59,7 @@ public class TensorFlowClusterMaintainer implements Service {
     private final String topicName;
 
     /** TensorFlow cluster manager. */
-    private final TensorFlowClusterManager clusterMgr;
-
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private transient Ignite ignite;
-
-    /** Logger. */
-    @LoggerResource
-    private transient IgniteLogger log;
+    private transient TensorFlowClusterManager clusterMgr;
 
     /** Previous partition mapping. */
     private transient UUID[] prev;
@@ -81,35 +79,36 @@ public class TensorFlowClusterMaintainer implements Service {
         this.clusterId = clusterId;
         this.jobArchive = jobArchive;
         this.topicName = topicName;
-        this.clusterMgr = new TensorFlowClusterManager((Supplier<Ignite> & Serializable)Ignition::ignite);
     }
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
         clusterMgr.stopClusterIfExists(clusterId);
-        log.info("Cluster maintainer canceled [clusterId=" + clusterId + "]");
+        log.debug("Cluster maintainer canceled [clusterId=" + clusterId + "]");
     }
 
     /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) {
-        clusterMgr.init();
-        log.info("Cluster maintainer initialized [clusterId=" + clusterId + "]");
+        clusterMgr = new TensorFlowClusterManager(ignite);
+        log.debug("Cluster maintainer initialized [clusterId=" + clusterId + "]");
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ServiceContext ctx) throws Exception {
-        AtomicBoolean competed = new AtomicBoolean(false);
+    @Override public void execute(ServiceContext ctx) {
+        while (!ctx.isCancelled()) {
+            LockSupport.parkNanos(1_000_000);
 
-        while (!competed.get() && !ctx.isCancelled()) {
-            Thread.sleep(1000);
+            boolean completed = clusterMgr.isUserScriptCompleted(clusterId);
+            if (completed)
+                break;
 
             boolean restartRequired = hasAffinityChanged();
 
             if (restartRequired)
-                log.info("Cluster restart required because of affinity change [clusterId=" + clusterId + "]");
+                log.debug("Affinity mapping changed, cluster will be restarted [clusterId=" + clusterId + "]");
 
             if (!restartRequired) {
-                TensorFlowCluster cluster = clusterMgr.getCache().get(clusterId);
+                TensorFlowCluster cluster = clusterMgr.getCluster(clusterId);
                 Map<UUID, List<LongRunningProcessStatus>> statuses = clusterMgr.getSrvProcMgr()
                     .ping(cluster.getProcesses());
 
@@ -123,17 +122,34 @@ public class TensorFlowClusterMaintainer implements Service {
                 }
 
                 if (restartRequired)
-                    log.info("Cluster restart required because of process statues [clusterId=" + clusterId + "]");
+                    log.debug("Fail detected, cluster will be restarted [clusterId=" + clusterId + "]");
             }
 
             if (restartRequired) {
                 clusterMgr.stopClusterIfExists(clusterId);
 
-                TensorFlowCluster cluster =  clusterMgr.getOrCreateCluster(clusterId, jobArchive, () -> competed.set(true));
+                TensorFlowCluster cluster = clusterMgr.getOrCreateCluster(
+                    clusterId,
+                    jobArchive,
+                    str -> {
+                        System.out.println(str);
+                        ignite.message().sendOrdered("us_out_" + clusterId, str, 60 * 1000);
+                    },
+                    str -> {
+                        System.err.println(str);
+                        ignite.message().sendOrdered("us_err_" + clusterId, str, 60 * 1000);
+                    }
+                );
 
-                ignite.message().send(topicName, cluster);
+                ignite.message().send(topicName, Optional.of(cluster));
             }
         }
+
+        clusterMgr.stopClusterIfExists(clusterId);
+
+        ignite.message().send(topicName, Optional.empty());
+
+        log.debug("Cluster maintainer completed [clusterId=" + clusterId + "]");
     }
 
     /**

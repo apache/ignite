@@ -78,7 +78,7 @@ public class LongRunningProcessStartTask extends LongRunningProcessTask<List<UUI
      */
     private Future<?> runTask(Runnable task) {
         return Executors
-            .newSingleThreadExecutor(new CustomizableThreadFactory("LONG_RUNNING_PROCESS_TASK", true))
+            .newSingleThreadExecutor(new CustomizableThreadFactory("tf-long-running", true))
             .submit(task);
     }
 

@@ -17,11 +17,9 @@
 
 package org.apache.ignite.tensorflow.cluster.tfrunning;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
@@ -35,20 +33,16 @@ import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessManager;
  * TensorFlow server manager that allows to start, stop and make other actions with TensorFlow servers.
  */
 public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess, TensorFlowServer> {
-    /** */
-    private static final long serialVersionUID = 8355019934723445973L;
-
     /** TensorFlow server script formatter. */
     private static final TensorFlowServerScriptFormatter scriptFormatter = new TensorFlowServerScriptFormatter();
 
     /**
      * Constructs a new instance of TensorFlow server manager.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> TensorFlowServerManager(T igniteSupplier) {
-        this(new PythonProcessManager(igniteSupplier));
+    public TensorFlowServerManager(Ignite ignite) {
+        this(new PythonProcessManager(ignite));
     }
 
     /**
