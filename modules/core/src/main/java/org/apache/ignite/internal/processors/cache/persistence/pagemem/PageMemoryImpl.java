@@ -531,12 +531,12 @@ public class PageMemoryImpl implements PageMemoryEx {
                     if (!ctx.wal().disabled(fullId.groupId()))
                         if (!ctx.wal().isAlwaysWriteFullPages())
                             ctx.wal().log(
-                                    new InitNewPageRecord(
-                                            grpId,
-                                            pageId,
-                                            trackingIO.getType(),
-                                            trackingIO.getVersion(), pageId
-                                    )
+                                new InitNewPageRecord(
+                                    grpId,
+                                    pageId,
+                                    trackingIO.getType(),
+                                    trackingIO.getVersion(), pageId
+                                )
                             );
                         else
                             ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));

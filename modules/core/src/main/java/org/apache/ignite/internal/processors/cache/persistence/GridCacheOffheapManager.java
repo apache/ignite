@@ -701,12 +701,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null))
                         wal.log(new MetaPageInitRecord(
-                                grpId,
-                                metaId,
-                                pageIO.getType(),
-                                pageIO.getVersion(),
-                                metastoreRoot,
-                                reuseListRoot
+                            grpId,
+                            metaId,
+                            pageIO.getType(),
+                            pageIO.getVersion(),
+                            metastoreRoot,
+                            reuseListRoot
                         ));
 
                     allocated = true;

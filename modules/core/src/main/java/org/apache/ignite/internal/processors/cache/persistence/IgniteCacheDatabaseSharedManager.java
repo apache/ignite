@@ -657,6 +657,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return freeListMap != null ? freeListMap.get(memPlcName) : null;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        onDeActivate(cctx.kernalContext());
+    }
+
     /**
      * Unregister MBean.
      * @param name Name of mbean.

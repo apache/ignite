@@ -367,12 +367,12 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageInitRecord(
-                                    METASTORAGE_CACHE_ID,
-                                    partMetaId,
-                                    io.getType(),
-                                    io.getVersion(),
-                                    treeRoot,
-                                    reuseListRoot
+                                METASTORAGE_CACHE_ID,
+                                partMetaId,
+                                io.getType(),
+                                io.getVersion(),
+                                treeRoot,
+                                reuseListRoot
                             ));
 
                         allocated = true;
