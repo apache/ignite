@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -174,6 +175,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            Thread curThread = Thread.currentThread();
+
+            if (curThread instanceof IgniteThread)
+                writer.failIfUnregistered(((IgniteThread)curThread).executingEntryProcessor());
+
             writer.typeId(typeId);
 
             BinaryBuilderSerializer serializationCtx = new BinaryBuilderSerializer();
