@@ -56,6 +56,9 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
+    /** Visible for testing. */
+    public static final String IDLE_DUMP_FILE_PREMIX = "idle-dump-";
+
     /** Delegate for map execution */
     private final VerifyBackupPartitionsTaskV2 delegate = new VerifyBackupPartitionsTaskV2();
 
@@ -149,7 +152,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             ? new File("/tmp")
             : new File(ignite.configuration().getWorkDirectory());
 
-        File out = new File(workDir, "idle-dump-" + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
+        File out = new File(workDir, IDLE_DUMP_FILE_PREMIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
         ignite.log().info("IdleVerifyDumpTask will write output to " + out.getAbsolutePath());
 
