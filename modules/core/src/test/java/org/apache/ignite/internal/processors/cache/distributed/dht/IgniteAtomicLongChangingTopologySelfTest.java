@@ -108,34 +108,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testQueueCreateNodesJoin() throws Exception {
-        CountDownLatch startLatch = new CountDownLatch(GRID_CNT);
-        final AtomicBoolean run = new AtomicBoolean(true);
-
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            futs.add(startNodeAndCreaterThread(i, startLatch, run));
-
-        startLatch.await();
-
-        info("All nodes started.");
-
-        Thread.sleep(10_000);
-
-        run.set(false);
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get();
-
-        info("Increments: " + queue.size());
-
-        assert !queue.isEmpty();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
@@ -143,48 +115,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                     IgniteAtomicLong l = ignite.atomicLong("long-" + 1, 0, true);
 
                     l.close();
-                }
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientQueueCreateCloseFailover() throws Exception {
-        testFailoverWithClient(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite ignite) {
-                for (int i = 0; i < 100; i++) {
-                    CollectionConfiguration colCfg = new CollectionConfiguration();
-
-                    colCfg.setBackups(1);
-                    colCfg.setCacheMode(PARTITIONED);
-                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
-
-                    IgniteQueue q = ignite.queue("q-" + i, 0, colCfg);
-
-                    q.close();
-                }
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientSetCreateCloseFailover() throws Exception {
-        testFailoverWithClient(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite ignite) {
-                for (int i = 0; i < 100; i++) {
-                    CollectionConfiguration colCfg = new CollectionConfiguration();
-
-                    colCfg.setBackups(1);
-                    colCfg.setCacheMode(PARTITIONED);
-                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
-
-                    IgniteSet set = ignite.set("set-" + i, colCfg);
-
-                    set.close();
                 }
             }
         });
@@ -261,111 +191,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                 return null;
             }
         }, "restart-thread");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIncrementConsistency() throws Exception {
-        startGrids(GRID_CNT);
-
-        final AtomicBoolean run = new AtomicBoolean(true);
-
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            /** {@inheritDoc} */
-            @Override public Void call() throws Exception {
-                IgniteAtomicLong cntr = ignite(0).atomicLong(ATOMIC_LONG_NAME, 0, true);
-
-                while (run.get())
-                    queue.add(cntr.getAndIncrement());
-
-                return null;
-            }
-        }, 4, "increment-runner");
-
-        for (int i = 0; i < RESTART_CNT; i++) {
-            int restartIdx = ThreadLocalRandom.current().nextInt(GRID_CNT - 1) + 1;
-
-            stopGrid(restartIdx);
-
-            U.sleep(500);
-
-            startGrid(restartIdx);
-        }
-
-        run.set(false);
-
-        fut.get();
-
-        info("Increments: " + queue.size());
-
-        checkQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testQueueClose() throws Exception {
-        startGrids(GRID_CNT);
-
-        int threads = 4;
-
-        final AtomicBoolean run = new AtomicBoolean(true);
-        final AtomicInteger idx = new AtomicInteger();
-        final AtomicReferenceArray<Exception> arr = new AtomicReferenceArray<>(threads);
-
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            /** {@inheritDoc} */
-            @Override public Void call() throws Exception {
-                int base = idx.getAndIncrement();
-
-                try {
-                    int delta = 0;
-
-                    while (run.get()) {
-                        IgniteAtomicLong cntr = ignite(0).atomicLong(ATOMIC_LONG_NAME + "-" + base + "-" + delta, 0, true);
-
-                        for (int i = 0; i < 5; i++)
-                            queue.add(cntr.getAndIncrement());
-
-                        cntr.close();
-
-                        delta++;
-                    }
-                }
-                catch (Exception e) {
-                    arr.set(base, e);
-
-                    throw e;
-                }
-                finally {
-                    info("RUNNER THREAD IS STOPPING");
-                }
-
-                return null;
-            }
-        }, threads, "increment-runner");
-
-        for (int i = 0; i < RESTART_CNT; i++) {
-            int restartIdx = ThreadLocalRandom.current().nextInt(GRID_CNT - 1) + 1;
-
-            stopGrid(restartIdx);
-
-            U.sleep(500);
-
-            startGrid(restartIdx);
-        }
-
-        run.set(false);
-
-        fut.get();
-
-        for (int i = 0; i < threads; i++) {
-            Exception err = arr.get(i);
-
-            if (err != null)
-                throw err;
-        }
     }
 
     /**
