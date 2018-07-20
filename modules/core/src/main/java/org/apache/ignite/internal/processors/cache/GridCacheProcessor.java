@@ -1415,7 +1415,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             prepare(cfg, factory.loaderFactory(), false);
             prepare(cfg, factory.writerFactory(), false);
         }
-        else
+        elseSnapshotMoveFuture
             prepare(cfg, cfg.getCacheStoreFactory(), false);
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
