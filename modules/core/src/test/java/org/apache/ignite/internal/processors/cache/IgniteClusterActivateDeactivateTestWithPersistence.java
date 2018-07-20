@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 
 /**
- *
+ * Variant of {@link IgniteClusterActivateDeactivateTest} with persistence enabled.
  */
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
@@ -102,7 +102,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     private Map<Integer, Integer> startGridsAndLoadData(int srvs) throws Exception {
         Ignite srv = startGrids(srvs);
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         srv.createCaches(Arrays.asList(cacheConfigurations1()));
 
@@ -161,6 +161,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         startGrid(nodes++);
 
+        resetBaselineTopologyIfNeeded();
+
         for (int i = 0; i < nodes; i++) {
             for (int c = 0; c < CACHES; c++)
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
@@ -171,6 +173,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         client = true;
 
         startGrid(nodes++);
+
+        resetBaselineTopologyIfNeeded();
 
         for (int c = 0; c < CACHES; c++)
             checkCache(ignite(nodes - 1), CACHE_NAME_PREFIX + c, false);
@@ -253,20 +257,25 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         srv.cluster().active(true);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         srv.createCache(ccfg);
 
         stopAllGrids();
 
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + 1);
+        ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + 1);
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
         ccfgs = new CacheConfiguration[] {ccfg};
 
+        // Start all grids but the last.
+        startGrids(SRVS - 2);
+
         try {
-            startGrids(SRVS);
+            // Start the last grid; activation will be triggered
+            // (because of reaching baseline) and fail.
+            startGrid(SRVS - 1);
 
             fail();
         }
