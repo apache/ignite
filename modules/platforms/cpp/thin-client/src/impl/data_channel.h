@@ -57,8 +57,8 @@ namespace ignite
                 /** Version set type. */
                 typedef std::set<ProtocolVersion> VersionSet;
 
-                /** Version 1.1.0. */
-                static const ProtocolVersion VERSION_1_1_0;
+                /** Version 1.2.0. */
+                static const ProtocolVersion VERSION_1_2_0;
 
                 /** Current version. */
                 static const ProtocolVersion VERSION_CURRENT;
