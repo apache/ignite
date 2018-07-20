@@ -205,6 +205,8 @@ public class CheckpointHistory {
      * @return List of checkpoints removed from history.
      */
     public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp, boolean truncateWal) {
+        chp.walSegsCoveredRange(calculateWalSegmentsCovered());
+
         WALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
             ? checkpointMarkUntilDeleteByMemorySize()
             : newerPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
@@ -213,20 +215,6 @@ public class CheckpointHistory {
             return Collections.emptyList();
 
         List<CheckpointEntry> deletedCheckpoints = onWalTruncated(checkpointMarkUntilDel);
-
-        final Map.Entry<Long, CheckpointEntry> lastEntry = histMap.lastEntry();
-
-        assert lastEntry != null;
-
-        final Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
-
-        final WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
-
-        long lastIdx = 0;
-
-        long prevIdx = 0;
-
-        chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
         int deleted = 0;
 
