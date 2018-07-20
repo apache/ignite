@@ -2199,6 +2199,14 @@ class ClusterCachesInfo {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} if cache is restarting.
+     */
+    public boolean isRestarting(String cacheName) {
+        return restartingCaches.containsKey(cacheName);
+    }
+
+    /**
      * Holds direct comparator (first system caches) and reverse comparator (first user caches).
      * Use DIRECT comparator for ordering cache start operations.
      * Use REVERSE comparator for ordering cache stop operations.
