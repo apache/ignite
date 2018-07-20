@@ -410,7 +410,7 @@ class BinaryObject:
             'type_id': ctype_object.type_id,
             'hash_code': ctype_object.hash_code,
             'schema_id': ctype_object.schema_id,
-            'fields': {},
+            'fields': OrderedDict(),
         }
         # hack, but robust
         for field_name, field_c_type in ctype_object.object_fields._fields_:
