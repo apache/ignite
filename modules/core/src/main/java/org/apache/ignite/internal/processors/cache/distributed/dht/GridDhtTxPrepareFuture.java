@@ -1252,32 +1252,19 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 assert tx.txState().mvccEnabled(cctx);
 
-                MvccCoordinator crd = cctx.coordinators().currentCoordinator();
+                try {
+                    // Request snapshot locally only because
+                    // Mvcc Coordinator is expected to be local.
+                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
 
-                assert crd != null : tx.topologyVersion();
+                    assert snapshot != null : tx.topologyVersion();
 
-                MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
-
-                if (snapshot != null)
                     tx.mvccSnapshot(snapshot);
-                else {
-                    IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(tx);
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    onDone(e);
 
-                    if (tx.onePhaseCommit())
-                        waitCrdCntrFut = snapshotFut;
-
-                    snapshotFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
-                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> f) {
-                            try {
-                                MvccSnapshot s = f.get();
-
-                                tx.mvccSnapshot(s);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onError(e);
-                            }
-                        }
-                    });
+                    return;
                 }
             }
 

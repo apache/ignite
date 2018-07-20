@@ -112,6 +112,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
@@ -583,7 +584,9 @@ public class GridReduceQueryExecutor {
 
             List<Integer> cacheIds = qry.cacheIds();
 
-            final GridNearTxLocal curTx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.tx(ctx) : null;
+            boolean mvccEnabled = mvccEnabled(ctx);
+
+            final GridNearTxLocal curTx = mvccEnabled ? checkActive(tx(ctx)) : null;
 
             final GridNearTxSelectForUpdateFuture sfuFut;
 
@@ -593,7 +596,7 @@ public class GridReduceQueryExecutor {
 
             if (qry.forUpdate()) {
                 // Indexing should have started TX at this point for FOR UPDATE query.
-                assert MvccUtils.mvccEnabled(ctx) && curTx != null;
+                assert mvccEnabled && curTx != null;
 
                 try {
                     TxTopologyVersionFuture topFut = new TxTopologyVersionFuture(curTx, mvccTracker.context());

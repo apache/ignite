@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
+public class MvccAckRequestTxAndQueryCntr extends MvccAckRequestTx {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public MvccAckRequestTxAndQuery() {
+    public MvccAckRequestTxAndQueryCntr() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
      * @param txCntr Counter assigned to transaction update.
      * @param qryCntr Counter assigned for transaction reads.
      */
-    public MvccAckRequestTxAndQuery(long futId, long txCntr, long qryCntr) {
+    public MvccAckRequestTxAndQueryCntr(long futId, long txCntr, long qryCntr) {
         super(futId, txCntr);
 
         this.qryCntr = qryCntr;
@@ -103,7 +103,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
 
         }
 
-        return reader.afterMessageRead(MvccAckRequestTxAndQuery.class);
+        return reader.afterMessageRead(MvccAckRequestTxAndQueryCntr.class);
     }
 
     /** {@inheritDoc} */
@@ -118,6 +118,6 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccAckRequestTxAndQuery.class, this);
+        return S.toString(MvccAckRequestTxAndQueryCntr.class, this);
     }
 }

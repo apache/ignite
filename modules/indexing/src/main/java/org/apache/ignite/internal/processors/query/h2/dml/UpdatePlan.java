@@ -29,7 +29,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -491,7 +490,7 @@ public final class UpdatePlan {
      * @param op Cache operation.
      * @return Iterator.
      */
-    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursorImpl<List<?>> cur,
+    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursor<List<?>> cur,
         GridCacheOperation op) {
         switch (mode) {
             case MERGE:

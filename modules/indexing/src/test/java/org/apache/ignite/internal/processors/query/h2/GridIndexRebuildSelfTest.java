@@ -211,7 +211,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws IgniteCheckedException if failed.
      */
     private static void lockVersion(IgniteEx node) throws IgniteCheckedException {
-        node.context().coordinators().requestSnapshotAsync(null).get();
+        node.context().coordinators().requestSnapshotAsync().get();
     }
 
     /**

@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -96,6 +96,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -2241,7 +2242,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         srvSpi.blockMessages(GridNearGetResponse.class, getTestIgniteInstanceName(1));
 
-        TestRecordingCommunicationSpi.spi(client).blockMessages(MvccAckRequestQuery.class,
+        TestRecordingCommunicationSpi.spi(client).blockMessages(MvccAckRequestQueryCntr.class,
             getTestIgniteInstanceName(0));
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -3234,7 +3235,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessor crd = cctx.kernalContext().coordinators();
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync(null);
+        IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync();
 
         fut.get();
 
@@ -3310,7 +3311,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         cctx.offheap().mvccRemoveAll((GridCacheMapEntry)cctx.cache().entryEx(key));
 
-        crd.ackQueryDone(fut.get());
+        crd.ackQueryDone(fut.get(), MVCC_TRACKER_ID_NA);
     }
 
     /**

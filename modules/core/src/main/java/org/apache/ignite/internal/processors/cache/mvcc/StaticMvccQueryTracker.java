@@ -17,46 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Simple MVCC tracker used only as an Mvcc snapshot holder.
  */
 public class StaticMvccQueryTracker implements MvccQueryTracker {
     /** */
-    protected volatile MvccSnapshot mvccSnapshot;
-
+    private final MvccSnapshot snapshot;
     /** */
-    @GridToStringExclude
-    protected final GridCacheContext cctx;
+    private final GridCacheContext cctx;
 
     /**
-     *
-     */
-    private StaticMvccQueryTracker() {
-        cctx = null;
-    }
-
-    /**
-     * @param mvccSnapshot Mvcc snapshot.
      * @param cctx Cache context.
+     * @param snapshot Mvcc snapshot.
      */
-    public StaticMvccQueryTracker(MvccSnapshot mvccSnapshot, GridCacheContext cctx) {
-        this.mvccSnapshot = mvccSnapshot;
+    public StaticMvccQueryTracker(GridCacheContext cctx, MvccSnapshot snapshot) {
+        this.snapshot = snapshot;
         this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
     @Override public MvccSnapshot snapshot() {
-        assert mvccSnapshot != null : this;
+        assert snapshot != null : this;
 
-        return mvccSnapshot;
+        return snapshot;
     }
 
     /** {@inheritDoc} */
@@ -65,33 +55,42 @@ public class StaticMvccQueryTracker implements MvccQueryTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void requestVersion(final AffinityTopologyVersion topVer) {
-        throw new UnsupportedOperationException("Operation is not supported.");
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return AffinityTopologyVersion.NONE;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteInternalFuture<Void> onDone() {
+    @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot() {
+        return new GridFinishedFuture<>(snapshot);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot(@NotNull final AffinityTopologyVersion topVer) {
+        return new GridFinishedFuture<>(snapshot);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void requestSnapshot(@NotNull AffinityTopologyVersion topVer, @NotNull MvccSnapshotResponseListener lsnr) {
+        lsnr.onResponse(snapshot);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDone() {
         // No-op.
-        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDone(IgniteCheckedException e) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public IgniteInternalFuture<Void> onDone(GridNearTxLocal tx, boolean commit) {
+    @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
         throw new UnsupportedOperationException("Operation is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        throw new UnsupportedOperationException("Operation is not supported.");
+        return MVCC_TRACKER_ID_NA;
     }
 
     /** {@inheritDoc} */
     @Override public long id() {
-        throw new UnsupportedOperationException("Operation is not supported.");
+        return MVCC_TRACKER_ID_NA;
     }
 }

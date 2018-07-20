@@ -18,18 +18,26 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public interface MvccSnapshotResponseListener {
-    /**
-     * @param res Version.
-     */
-    public void onResponse(MvccSnapshot res);
+public class MvccSnapshotFuture extends MvccFuture<MvccSnapshot> implements MvccSnapshotResponseListener {
+    /** {@inheritDoc} */
+    @Override public void onResponse(MvccSnapshot res) {
+        assert res != null;
 
-    /**
-     * @param e Error.
-     */
-    public void onError(IgniteCheckedException e);
+        onDone(res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onError(IgniteCheckedException err) {
+        onDone(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MvccSnapshotFuture.class, this, super.toString());
+    }
 }

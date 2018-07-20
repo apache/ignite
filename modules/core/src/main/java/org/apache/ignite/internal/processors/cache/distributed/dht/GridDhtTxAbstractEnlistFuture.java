@@ -959,7 +959,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         }
 
         return (backupLeft || nearNodeId.equals(nodeId)) && onDone(
-            new ClusterTopologyCheckedException(backupLeft ? "Backup" : "Requesting" +
+            new ClusterTopologyCheckedException((backupLeft ? "Backup" : "Requesting") +
                 " node left the grid [nodeId=" + nodeId + ']'));
     }
 

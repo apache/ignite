@@ -192,6 +192,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -1035,8 +1039,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean startTx, int timeout, final GridQueryCancel cancel,
         MvccQueryTracker mvccTracker) throws IgniteCheckedException {
 
-        GridNearTxLocal tx = null;
-        boolean mvccEnabled = MvccUtils.mvccEnabled(kernalContext());
+        GridNearTxLocal tx = null; boolean mvccEnabled = mvccEnabled(kernalContext());
 
         assert mvccEnabled || mvccTracker == null;
 
@@ -1093,7 +1096,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (mvccTracker != null) {
                     ctx.mvccSnapshot(mvccTracker.snapshot());
 
-                    if ((tx = MvccUtils.tx(this.ctx)) != null) {
+                    if ((tx = checkActive(tx(this.ctx))) != null) {
                         int tm1 = (int)tx.remainingTime(), tm2 = timeout;
 
                         timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
@@ -1229,7 +1232,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {
-            if (mvccEnabled && (tx != null || (tx = MvccUtils.tx(ctx)) != null))
+            if (mvccEnabled && (tx != null || (tx = tx(ctx)) != null))
                 tx.setRollbackOnly();
 
             throw e;
@@ -1688,7 +1691,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 MvccUtils.mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
 
             if (qry.forUpdate())
-                qry.forUpdate(MvccUtils.tx(ctx) != null);
+                qry.forUpdate(checkActive(tx(ctx)) != null);
 
             return new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1902,14 +1905,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     private void processTxCommand(SqlCommand cmd, SqlFieldsQuery qry) throws IgniteCheckedException {
-        if (!MvccUtils.mvccEnabled(ctx))
+        if (!mvccEnabled(ctx))
             throw new IgniteSQLException("MVCC must be enabled in order to invoke transactional operation: " +
                 qry.getSql(), IgniteQueryErrorCode.MVCC_DISABLED);
 
         NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
             NestedTxMode.DEFAULT;
 
-        GridNearTxLocal tx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.tx(ctx) : null;
+        GridNearTxLocal tx = tx(ctx);
 
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (tx != null) {
@@ -1920,7 +1923,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     case COMMIT:
                         doCommit(tx);
 
-                        MvccUtils.txStart(ctx, qry.getTimeout());
+                        txStart(ctx, qry.getTimeout());
 
                         break;
 
@@ -1939,7 +1942,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
             else
-                MvccUtils.txStart(ctx, qry.getTimeout());
+                txStart(ctx, qry.getTimeout());
         }
         else if (cmd instanceof SqlCommitTransactionCommand) {
             // Do nothing if there's no transaction.
@@ -2005,7 +2008,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
         GridQueryCancel cancel) {
-        boolean mvccEnabled = MvccUtils.mvccEnabled(ctx), startTx = autoStartTx(qry);
+        boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
             List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
@@ -2091,7 +2094,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (RuntimeException | Error e) {
             GridNearTxLocal tx;
 
-            if (mvccEnabled && (tx = MvccUtils.tx(ctx)) != null)
+            if (mvccEnabled && (tx = tx(ctx)) != null)
                 tx.setRollbackOnly();
 
             throw e;
@@ -2383,10 +2386,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code True} if need to start transaction.
      */
     public boolean autoStartTx(SqlFieldsQuery qry) {
-        if (!MvccUtils.mvccEnabled(ctx))
+        if (!mvccEnabled(ctx))
             return false;
 
-        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && MvccUtils.tx(ctx) == null;
+        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && tx(ctx) == null;
     }
 
     /** {@inheritDoc} */
@@ -3274,10 +3277,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void onClientDisconnect() throws IgniteCheckedException {
-        if (!MvccUtils.mvccEnabled(ctx))
+        if (!mvccEnabled(ctx))
             return;
 
-        GridNearTxLocal tx = MvccUtils.tx(ctx);
+        GridNearTxLocal tx = tx(ctx);
 
         if (tx != null)
             doRollback(tx);

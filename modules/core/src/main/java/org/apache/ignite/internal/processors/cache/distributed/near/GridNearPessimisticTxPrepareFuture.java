@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -61,6 +60,9 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
  *
  */
 public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter {
+    /** */
+    private static final long serialVersionUID = 4014479758215810181L;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -240,6 +242,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      * @param miniId Mini future ID.
      * @param nearEntries {@code True} if prepare near cache entries.
      */
+    @SuppressWarnings("unchecked")
     private void prepareLocal(GridNearTxPrepareRequest req,
         GridDistributedTxMapping m,
         int miniId,
@@ -269,6 +272,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /**
      *
      */
+    @SuppressWarnings("unchecked")
     private void preparePessimistic() {
         Map<UUID, GridDistributedTxMapping> mappings = new HashMap<>();
 
@@ -370,7 +374,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             boolean needCntr = false;
 
             if (mvccCrd != null) {
-                if (tx.onePhaseCommit() || mvccCrd.equals(primary)) {
+                if (tx.onePhaseCommit() || mvccCrd.nodeId().equals(primary.id())) {
                     needCntr = true;
 
                     mvccCrd = null;
@@ -449,34 +453,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (mvccCrd != null) {
             assert !tx.onePhaseCommit();
 
-            MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
+            MvccSnapshotFutureExt fut = new MvccSnapshotFutureExt();
 
-            if (snapshot != null)
-                tx.mvccSnapshot(snapshot);
-            else {
-                IgniteInternalFuture<MvccSnapshot> snapshotFut = cctx.coordinators().requestSnapshotAsync(tx);
+            cctx.coordinators().requestSnapshotAsync(tx, fut);
 
-                add((IgniteInternalFuture)snapshotFut);
-
-                snapshotFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
-                    @Override public void apply(IgniteInternalFuture<MvccSnapshot> f) {
-                        try {
-                            MvccSnapshot s = f.get();
-
-                            tx.mvccSnapshot(s);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (e instanceof ClusterTopologyCheckedException) {
-                                IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
-
-                                ((ClusterTopologyCheckedException)e).retryReadyFuture(fut);
-                            }
-
-                            ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e);
-                        }
-                    }
-                });
-            }
+            add((IgniteInternalFuture)fut);
         }
 
         markInitialized();
@@ -515,13 +496,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                         ", loc=" + ((MiniFuture)f).primary().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccCoordinatorAware) {
-                    MvccCoordinatorAware crdFut = (MvccCoordinatorAware)f;
-
-                    return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
-                        ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
-                        ", done=" + f.isDone() + "]";
-                }
                 else
                     return f.toString();
             }
@@ -536,6 +510,33 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /**
      *
      */
+    private class MvccSnapshotFutureExt extends GridFutureAdapter<Void> implements MvccSnapshotResponseListener {
+        /** {@inheritDoc} */
+        @Override public void onResponse(MvccSnapshot res) {
+            tx.mvccSnapshot(res);
+
+            onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onError(IgniteCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Error on tx prepare [fut=" + this + ", err=" + e + ", tx=" + tx +  ']');
+
+            if (ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e))
+                tx.setRollbackOnly();
+
+            onDone(e);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MvccSnapshotFutureExt.class, this, super.toString());
+        }
+    }
+
+
+    /** */
     private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         private final int futId;

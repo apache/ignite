@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMvccQueryTracker.MVCC_TRACKER_ID_NA;
-
 /**
  *
  */
@@ -64,17 +62,17 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
 
                     IgniteInternalFuture<Void> ackFut = null;
 
-                    MvccQueryTracker qryTracker = tx.mvccQueryTracker();
+                    MvccQueryTracker tracker = tx.mvccQueryTracker();
 
                     MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-                    if (qryTracker != null)
-                        ackFut = qryTracker.onDone(tx, commit);
+                    if (tracker != null)
+                        ackFut = tracker.onDone(tx, commit);
                     else if (mvccSnapshot != null) {
                         if (commit)
-                            ackFut = tx.context().coordinators().ackTxCommit(mvccSnapshot, null, MVCC_TRACKER_ID_NA);
+                            ackFut = tx.context().coordinators().ackTxCommit(mvccSnapshot);
                         else
-                            tx.context().coordinators().ackTxRollback(mvccSnapshot, null, MVCC_TRACKER_ID_NA);
+                            tx.context().coordinators().ackTxRollback(mvccSnapshot);
                     }
 
                     if (ackFut != null) {

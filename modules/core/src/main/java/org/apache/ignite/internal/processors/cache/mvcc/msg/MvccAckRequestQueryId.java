@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class MvccNewQueryAckRequest implements MvccMessage {
+public class MvccAckRequestQueryId implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,14 +36,14 @@ public class MvccNewQueryAckRequest implements MvccMessage {
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public MvccNewQueryAckRequest() {
+    public MvccAckRequestQueryId() {
         // No-op.
     }
 
     /**
      * @param qryTrackerId Query tracker Id.
      */
-    public MvccNewQueryAckRequest(long qryTrackerId) {
+    public MvccAckRequestQueryId(long qryTrackerId) {
         this.qryTrackerId = qryTrackerId;
     }
 
@@ -105,7 +105,7 @@ public class MvccNewQueryAckRequest implements MvccMessage {
 
         }
 
-        return reader.afterMessageRead(MvccNewQueryAckRequest.class);
+        return reader.afterMessageRead(MvccAckRequestQueryId.class);
     }
 
     /** {@inheritDoc} */
@@ -125,6 +125,6 @@ public class MvccNewQueryAckRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccNewQueryAckRequest.class, this);
+        return S.toString(MvccAckRequestQueryId.class, this);
     }
 }

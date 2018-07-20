@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -306,10 +306,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             MvccCoordinator crd = cctx.coordinators().currentCoordinator();
 
-            if (crd.coordinatorVersion() == snapshot.coordinatorVersion()) {
-                IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(crd.nodeId(), waitTxs);
-
-                add(fut);
+            if (crd != null && crd.coordinatorVersion() == snapshot.coordinatorVersion()) {
+                add((IgniteInternalFuture)cctx.coordinators().waitTxsFuture(crd.nodeId(), waitTxs));
 
                 sync = true;
             }
@@ -618,8 +616,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                             return;
                         }
                     }
-                    else if (MvccCoordinatorAware.class.isInstance(fut)) {
-                        MvccCoordinatorAware f = (MvccCoordinatorAware)fut;
+                    else if (fut instanceof MvccFuture) {
+                        MvccFuture f = (MvccFuture)fut;
 
                         if (!cctx.localNodeId().equals(f.coordinatorNodeId())) {
                             ctx.basicInfo(f.coordinatorNodeId(), "GridDhtTxFinishFuture " +
@@ -644,8 +642,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         ", loc=" + ((MiniFuture)f).node().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof MvccCoordinatorAware) {
-                    MvccCoordinatorAware crdFut = (MvccCoordinatorAware)f;
+                else if (f instanceof MvccFuture) {
+                    MvccFuture crdFut = (MvccFuture)f;
 
                     return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
                         ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +

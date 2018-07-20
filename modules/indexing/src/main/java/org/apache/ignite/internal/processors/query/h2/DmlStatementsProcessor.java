@@ -55,9 +55,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -96,6 +94,11 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
@@ -495,7 +498,7 @@ public class DmlStatementsProcessor {
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            GridNearTxLocal tx = MvccUtils.tx(cctx.kernalContext());
+            GridNearTxLocal tx = tx(cctx.kernalContext());
 
             boolean implicit = (tx == null);
 
@@ -503,9 +506,9 @@ public class DmlStatementsProcessor {
                 ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
 
             if (implicit)
-                tx = MvccUtils.txStart(cctx, fieldsQry.getTimeout());
+                tx = txStart(cctx, fieldsQry.getTimeout());
 
-            MvccSnapshot mvccSnapshot = MvccUtils.requestMvccVersion(cctx, tx);
+            requestSnapshot(cctx, checkActive(tx));
 
             try (GridNearTxLocal toCommit = commit ? tx : null) {
                 long timeout;
@@ -535,7 +538,7 @@ public class DmlStatementsProcessor {
                     else if (plan.hasRows())
                         it = new DmlUpdateResultsIterator(op, plan, plan.createRows(fieldsQry.getArgs()));
                     else {
-                        // TODO IGNITE-8865 if there is no ORDER BY statement it's no use to prevent entries order on locking (sequential = false).
+                        // TODO IGNITE-8865 if there is no ORDER BY statement it's no use to retain entries order on locking (sequential = false).
                         SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
                             .setArgs(fieldsQry.getArgs())
                             .setDistributedJoins(fieldsQry.isDistributedJoins())
@@ -544,15 +547,11 @@ public class DmlStatementsProcessor {
                             .setPageSize(fieldsQry.getPageSize())
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
-                        MvccQueryTracker mvccQryTracker = new StaticMvccQueryTracker(mvccSnapshot, cctx);
-
-                        QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName,
-                            newFieldsQry, null, true, true, mvccQryTracker, cancel).get(0);
+                        FieldsQueryCursor<List<?>> cur = idx.querySqlFields(schemaName, newFieldsQry, null,
+                            true, true, mvccTracker(cctx, tx), cancel).get(0);
 
                         it = plan.iteratorForTransaction(idx, cur, op);
                     }
-
-                    tx.addActiveCache(cctx, false);
 
                     IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, it,
                         fieldsQry.getPageSize(), timeout, sequential);
@@ -1160,12 +1159,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(mvccSnapshot, cctx), cancel).get(0);
+                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(mvccSnapshot, cctx));
+                new StaticMvccQueryTracker(cctx, mvccSnapshot));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

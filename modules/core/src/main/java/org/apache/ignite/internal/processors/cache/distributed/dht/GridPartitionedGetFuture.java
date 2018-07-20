@@ -43,9 +43,10 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.ActiveMvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -69,7 +69,7 @@ import org.jetbrains.annotations.Nullable;
  * Colocated get future.
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V>
-    implements IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> {
+    implements MvccSnapshotResponseListener {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -171,30 +171,29 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
         }
 
-        if (cctx.mvccEnabled() && mvccSnapshot == null) {
-            mvccTracker = new ActiveMvccQueryTracker(cctx, canRemap, this);
+        if (!cctx.mvccEnabled() || mvccSnapshot != null)
+            initialMap(topVer);
+        else {
+            mvccTracker = new MvccQueryTrackerImpl(cctx, canRemap);
 
             trackable = true;
 
             cctx.mvcc().addFuture(this, futId);
 
-            mvccTracker.requestVersion(topVer);
-
-            return;
+            mvccTracker.requestSnapshot(topVer, this);
         }
+    }
+
+    @Override public void onResponse(MvccSnapshot res) {
+        AffinityTopologyVersion topVer = mvccTracker.topologyVersion();
+
+        assert topVer != null;
 
         initialMap(topVer);
     }
 
-    /** {@inheritDoc} */
-    @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
-        if (e != null)
-            onDone(e);
-        else {
-            assert topVer != null;
-
-            initialMap(topVer);
-        }
+    @Override public void onError(IgniteCheckedException e) {
+        onDone(e);
     }
 
     /**

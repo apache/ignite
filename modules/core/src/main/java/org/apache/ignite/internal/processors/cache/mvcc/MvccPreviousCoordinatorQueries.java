@@ -30,17 +30,16 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.TrackableStaticMvccQueryTracker.MVCC_TRACKER_ID_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  *
  */
-@SuppressWarnings({"TypeMayBeWeakened", "Java8MapApi"})
 class MvccPreviousCoordinatorQueries {
     /** */
     private volatile boolean prevQueriesDone;
 
-    /** Map of nodes to active {@link TrackableStaticMvccQueryTracker} IDs list. */
+    /** Map of nodes to active {@link MvccQueryTracker} IDs list. */
     private final ConcurrentHashMap<UUID, Set<Long>> activeQueries = new ConcurrentHashMap<>();
 
     /** */
@@ -113,7 +112,7 @@ class MvccPreviousCoordinatorQueries {
         // Check if there were any acks had been arrived before.
         Set<Long> currAcks = rcvdAcks.get(nodeId);
 
-        if (currTrackers != null && !currTrackers.isEmpty() && currAcks != null && !currAcks.isEmpty()) {
+        if (!currTrackers.isEmpty() && currAcks != null && !currAcks.isEmpty()) {
             Collection<Long> intersection =  new HashSet<>(currAcks);
 
             intersection.retainAll(currTrackers);

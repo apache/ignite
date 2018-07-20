@@ -1458,7 +1458,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             crd.stopVacuum(); // to prevent new futures creation.
 
             Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
-            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotLsnrs");
+            Map<?, Map> cntrFuts = GridTestUtils.getFieldValue(crd, "snapLsnrs");
             Map ackFuts = GridTestUtils.getFieldValue(crd, "ackFuts");
             Map activeTrackers = GridTestUtils.getFieldValue(crd, "activeTrackers");
 
@@ -1467,7 +1467,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             GridTestUtils.waitForCondition(cond, TX_TIMEOUT);
 
             assertTrue("activeTxs: " + activeTxs,  activeTxs.isEmpty());
-            assertTrue("cntrFuts: " + cntrFuts,  cntrFuts.isEmpty());
+
+            boolean empty = true;
+
+            for (Map map : cntrFuts.values())
+                if (!(empty = map.isEmpty())) break;
+
+            assertTrue("cntrFuts: " + cntrFuts,  empty);
             assertTrue("ackFuts: " + ackFuts,  ackFuts.isEmpty());
             assertTrue("activeTrackers: " + activeTrackers,  activeTrackers.isEmpty());
 
