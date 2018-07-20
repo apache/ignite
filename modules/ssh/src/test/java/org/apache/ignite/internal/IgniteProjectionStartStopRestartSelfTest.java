@@ -101,7 +101,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private static final String CUSTOM_CFG_ATTR_VAL = "true";
 
     /** */
-    private static final long WAIT_TIMEOUT = 40 * 1000;
+    private static final long WAIT_TIMEOUT = 60 * 1000;
 
     /** */
     private String pwd;
@@ -166,8 +166,6 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
             return true;
         }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
-        assert ignite.cluster().nodes().isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -202,7 +200,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90 * 1000;
+        return 120 * 1000;
     }
 
     /**
@@ -828,6 +826,49 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
         assert ignite.cluster().nodes().size() == 3;
+    }
+
+    /**
+<<<<<<< HEAD
+=======
+     * Starts nodes and checks that nodes launched successfully.
+     * If some node could not start because of ssh connection, will try one more time.
+     *
+     * @param hosts Hosts.
+     * @param restart Restart.
+     * @param timeout Timeout.
+     * @param maxConn Max connection.
+     * @param expNodes Count of nodes that should be started.
+     */
+    private void startCheckNodes(Collection<Map<String, Object>> hosts, boolean restart, int timeout, int maxConn,
+        int expNodes) {
+        int startNodes = 0;
+
+        for (int i = 0; i < 2; i++) {
+            Collection<ClusterStartNodeResult> startNodeResults = ignite.cluster().startNodesAsync(hosts, null,
+                restart, timeout, maxConn).get(WAIT_TIMEOUT);
+
+            assert restart ? startNodeResults.size() == expNodes : startNodeResults.size() == expNodes - startNodes;
+
+            for (ClusterStartNodeResult res : startNodeResults) {
+                assert res.getHostName().equals(HOST);
+
+                if (!res.isSuccess()) {
+                    String errorMsg = res.getError();
+
+                    if (errorMsg.contains("Remote node could not start.") && i == 0) {
+                        info("Got exception because remote node could not start for 2 seconds. Reason may be" +
+                            " in ssh connection., will retry.");
+                    }
+                    else
+                        throw new IgniteException(errorMsg);
+                }
+                else
+                    startNodes++;
+            }
+            if (expNodes == startNodes)
+                break;
+        }
     }
 
     /**

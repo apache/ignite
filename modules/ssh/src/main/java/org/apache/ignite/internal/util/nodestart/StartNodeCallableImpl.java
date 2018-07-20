@@ -360,7 +360,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     while ((line = reader.readLine()) != null) {
                         if (ptrn.matcher(line).find()) {
                             //wait for a while until process from regexp really will be started.
-                            U.sleep(10);
+                            U.sleep(50);
 
                             break;
                         }
