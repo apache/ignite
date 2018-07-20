@@ -68,7 +68,7 @@ public class KnapsackGAExample {
             List<Gene> genes = getGenePool();
 
             // set the Chromosome Length to '10' since our knapsack may contain a total of 10 items.
-            gaConfig.setChromosomeLength(10);
+            gaConfig.setChromosomeLen(10);
 
             // initialize gene pool
             gaConfig.setGenePool(genes);

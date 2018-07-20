@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -37,7 +38,7 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     private static final long serialVersionUID = 3678784980215216039L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /** Function that extracts labels from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, double[]> lbExtractor;
@@ -48,7 +49,7 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
      */
-    public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor,
+    public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, double[]> lbExtractor) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -67,18 +68,18 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            double[] featureRow = featureExtractor.apply(entry.getKey(), entry.getValue());
+            Vector featureRow = featureExtractor.apply(entry.getKey(), entry.getValue());
 
             if (featureCols < 0) {
-                featureCols = featureRow.length;
+                featureCols = featureRow.size();
                 features = new double[Math.toIntExact(upstreamDataSize * featureCols)];
             }
             else
-                assert featureRow.length == featureCols : "Feature extractor must return exactly " + featureCols
+                assert featureRow.size() == featureCols : "Feature extractor must return exactly " + featureCols
                     + " features";
 
             for (int i = 0; i < featureCols; i++)
-                features[Math.toIntExact(i * upstreamDataSize) + ptr] = featureRow[i];
+                features[Math.toIntExact(i * upstreamDataSize) + ptr] = featureRow.get(i);
 
             double[] lbRow = lbExtractor.apply(entry.getKey(), entry.getValue());
 

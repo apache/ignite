@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -25,23 +26,23 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
     private static final long serialVersionUID = 6887800576392623469L;
 
     /** Filling values. */
-    private final double[] imputingValues;
+    private final Vector imputingValues;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, double[]> basePreprocessor;
+    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
 
     /**
      * Constructs a new instance of imputing preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
      */
-    public ImputerPreprocessor(double[] imputingValues,
-        IgniteBiFunction<K, V, double[]> basePreprocessor) {
+    public ImputerPreprocessor(Vector imputingValues,
+        IgniteBiFunction<K, V, Vector> basePreprocessor) {
         this.imputingValues = imputingValues;
         this.basePreprocessor = basePreprocessor;
     }
@@ -53,14 +54,14 @@ public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, double[
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public double[] apply(K k, V v) {
-        double[] res = basePreprocessor.apply(k, v);
+    @Override public Vector apply(K k, V v) {
+        Vector res = basePreprocessor.apply(k, v);
 
-        assert res.length == imputingValues.length;
+        assert res.size() == imputingValues.size();
 
-        for (int i = 0; i < res.length; i++) {
-            if (Double.valueOf(res[i]).equals(Double.NaN))
-                res[i] = imputingValues[i];
+        for (int i = 0; i < res.size(); i++) {
+            if (Double.valueOf(res.get(i)).equals(Double.NaN))
+                res.set(i, imputingValues.get(i));
         }
         return res;
     }

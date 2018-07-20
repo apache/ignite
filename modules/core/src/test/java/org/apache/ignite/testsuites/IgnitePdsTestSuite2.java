@@ -22,13 +22,15 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorage
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedCacheDataTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesDestroyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteRebalanceScheduleResendPartitionsTest;
+import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
@@ -39,9 +41,11 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageE
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsUnusedWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNodeStoppedDuringDisableWALTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundWithMmapBufferSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
@@ -52,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlyWithMmapBufferSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFormatFileFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
@@ -85,6 +90,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(FileDownloaderTest.class);
 
+        suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
+
         return suite;
     }
 
@@ -110,6 +117,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
 
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest.class);
 
         suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
 
@@ -137,6 +146,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
+
+        suite.addTestSuite(SlowHistoricalRebalanceSmallHistoryTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 
@@ -171,8 +182,12 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
 
-        suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
-
         suite.addTestSuite(IgniteWalIteratorSwitchSegmentTest.class);
+
+        suite.addTestSuite(IgniteWalIteratorExceptionDuringReadTest.class);
+
+        suite.addTestSuite(IgniteNodeStoppedDuringDisableWALTest.class);
+
+        suite.addTestSuite(IgniteRebalanceScheduleResendPartitionsTest.class);
     }
 }

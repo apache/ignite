@@ -118,8 +118,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
-    /** This property allow rewriting default ({@code 30}) rest session expire time (in seconds). */
+    /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
     public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
+
+    /** This property allow rewriting default ({@code 300}) REST session security token expire time (in seconds). */
+    public static final String IGNITE_REST_SECURITY_TOKEN_TIMEOUT = "IGNITE_REST_SECURITY_TOKEN_TIMEOUT";
 
     /**
      * This property allows to override maximum count of task results stored on one node
@@ -330,6 +333,11 @@ public final class IgniteSystemProperties {
      * Flag indicating whether performance suggestions output on start should be disabled.
      */
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
+
+    /**
+     * Flag indicating whether atomic operations allowed for use inside transactions.
+     */
+    public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
 
     /**
      * Atomic cache deferred update response buffer size.
@@ -916,6 +924,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
+     *
+     * Default is 500 ms.
+     */
+    public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
@@ -988,7 +1003,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1016,7 +1031,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Float value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1044,7 +1059,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code long} using {@code Long.parseLong()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1072,7 +1087,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code double} using {@code Double.parseDouble()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.

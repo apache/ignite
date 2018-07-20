@@ -97,7 +97,7 @@ final class MarshallerMappingFileStore {
 
             try (FileOutputStream out = new FileOutputStream(file)) {
                 try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    try (FileLock fileLock = fileLock(out.getChannel(), false)) {
+                    try (FileLock ignored = fileLock(out.getChannel(), false)) {
                         writer.write(typeName);
 
                         writer.flush();
@@ -133,12 +133,13 @@ final class MarshallerMappingFileStore {
 
         try {
             File file = new File(workDir, fileName);
+
             long time = 0;
 
             while (true) {
                 try (FileInputStream in = new FileInputStream(file)) {
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                        try (FileLock fileLock = fileLock(in.getChannel(), true)) {
+                        try (FileLock ignored = fileLock(in.getChannel(), true)) {
                             if (file.length() > 0)
                                 return reader.readLine();
 

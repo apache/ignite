@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.preprocessing.binarization;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
@@ -27,13 +28,13 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class BinarizationTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
+public class BinarizationTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** Threshold. */
     private double threshold;
 
     /** {@inheritDoc} */
     @Override public BinarizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> basePreprocessor) {
+        IgniteBiFunction<K, V, Vector> basePreprocessor) {
         return new BinarizationPreprocessor<>(threshold, basePreprocessor);
     }
 

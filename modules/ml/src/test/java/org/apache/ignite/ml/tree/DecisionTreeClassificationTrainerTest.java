@@ -17,11 +17,16 @@
 
 package org.apache.ignite.ml.tree;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.*;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -37,6 +42,7 @@ public class DecisionTreeClassificationTrainerTest {
     /** Number of partitions. */
     @Parameterized.Parameter
     public int parts;
+
 
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
@@ -65,7 +71,7 @@ public class DecisionTreeClassificationTrainerTest {
         DecisionTreeNode tree = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOf(v, v.length - 1),
+            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
             (k, v) -> v[v.length - 1]
         );
 
