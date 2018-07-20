@@ -180,7 +180,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
             grp.affinity().cachedAffinity(oldTopVer) : aff;
 
-        boolean assignsChanged = false;
+        boolean assignsChanged = prevAff == aff;
 
         for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
