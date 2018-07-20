@@ -111,6 +111,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -2110,6 +2111,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     boolean validation = false;
 
+                    IgniteThread.onEntryProcessorEntered();
+
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
@@ -2147,6 +2150,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     }
                     finally {
+                        IgniteThread.onEntryProcessorLeft();
+
                         if (curInvokeRes != null) {
                             invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), curInvokeRes.result(),
                                 curInvokeRes.error(), req.keepBinary());

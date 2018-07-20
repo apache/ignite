@@ -460,17 +460,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (mergedMeta == oldMeta)
                 return;
 
-            boolean topLocked = false;
-
-            for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
-                if (grp.isTopologyLocked()) {
-                    topLocked = true;
-
-                    break;
-                }
-            }
-
-            if (failIfUnregistered || topLocked)
+            if (failIfUnregistered)
                 throw new UnregisteredBinaryTypeException(
                     "Attempted to update binary metadata inside a critical synchronization block (will be automatically " +
                         "retried). This exception must not be wrapped to any other exception class. If you encounter " +

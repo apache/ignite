@@ -56,6 +56,9 @@ public class IgniteThread extends Thread {
     /** */
     private final byte plc;
 
+    /** */
+    private boolean executingEntryProcessor;
+
     /**
      * Creates thread with given worker.
      *
@@ -157,10 +160,28 @@ public class IgniteThread extends Thread {
         this.compositeRwLockIdx = compositeRwLockIdx;
     }
 
+    public boolean executingEntryProcessor() {
+        return executingEntryProcessor;
+    }
+
+    public static void onEntryProcessorEntered() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).executingEntryProcessor = true;
+    }
+
+    public static void onEntryProcessorLeft() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).executingEntryProcessor = false;
+    }
+
     /**
      * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
      */
-    public static IgniteThread current(){
+    public static IgniteThread current() {
         Thread thread = Thread.currentThread();
 
         return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ?
