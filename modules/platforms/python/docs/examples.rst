@@ -165,8 +165,8 @@ Finally, delete the tables used in this example with the following queries:
 Complex objects
 ---------------
 
-Reading
-=======
+Read
+====
 
 `Complex object`_ (that is often called ‘Binary object’) is used to represent
 user-defined complex data types. It have the following features:
@@ -230,8 +230,8 @@ an additional step to explicitly decode it.
   :language: python
   :lines: 341-362
 
-Creating
-========
+Create
+======
 
 Now, that we aware of the internal structure of the Ignite SQL storage,
 we can create a table and put data in it using only key-value functions.
@@ -280,6 +280,32 @@ Now read the row using an SQL function.
 .. literalinclude:: ../examples/create_binary.py
   :language: python
   :lines: 118-134
+
+Migrate
+=======
+
+Suppose we have an accounting app that stores its data in key-value format.
+Our task would be to introduce the following changes to the original expense
+voucher's format and data:
+
+- rename `date` to `expense_date`,
+- add `report_date`,
+- set `report_date` to the current date if `reported` is True, None if False,
+- delete `reported`,
+- change `sum` type from float to decimal.
+
+Note that we can not be certain of the other fields of the expense
+voucher's object type.
+
+The changes are incompatible with the current object's schema, so we have
+to add the new Binary object type to the system instead of adding a new schema
+to the old Binary object type.
+
+Now read the row using an SQL function.
+
+.. literalinclude:: ../examples/migrate_binary.py
+  :language: python
+  :lines: 132-210
 
 SSL/TLS
 -------

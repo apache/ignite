@@ -129,7 +129,8 @@ for key, value in old_data:
         value_hint=BinaryObject,
     )
 
-# get the old schema
+# get the old schema by its type id, which can be stored in code
+# or calculated as `hashcode('ExpenseVoucher'.lower())`
 result = get_binary_type(conn, old_type_id)
 
 schema = OrderedDict([

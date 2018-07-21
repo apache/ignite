@@ -41,12 +41,20 @@ cache_put(conn, hashcode(CACHE_NAME), 'test_value', test_value)
 
 while True:
     try:
+        # reconnect
         conn.connect(*nodes[node_idx])
         cache_put(conn, hashcode(CACHE_NAME), 'test_value', test_value)
+
+        # proceed with modifying data
         while True:
             result = cache_get(conn, hashcode(CACHE_NAME), 'test_value')
             print(result.value)
-            cache_put(conn, hashcode(CACHE_NAME), 'test_value', result.value + 1)
+            cache_put(
+                conn,
+                hashcode(CACHE_NAME),
+                'test_value',
+                result.value + 1
+            )
     except Exception as e:
         # count errors
         err_count += 1
@@ -57,4 +65,6 @@ while True:
         node_idx = node_idx + 1
         if node_idx >= len(nodes):
             node_idx = 0
-        print('“{}” is just happened; switching to node {}.'.format(e, node_idx))
+        print(
+            '“{}” just happened; switching to node {}.'.format(e, node_idx)
+        )
