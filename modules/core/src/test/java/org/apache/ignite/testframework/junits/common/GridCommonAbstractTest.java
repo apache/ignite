@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
@@ -1944,10 +1945,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * @param ig Ignite instance.
      * @param caches Cache names (if null, all user caches will be verified).
-     * @return Map of conflicts.
+     * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected Map<PartitionKey, List<PartitionHashRecord>> idleVerify(Ignite ig, String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
@@ -1967,11 +1968,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
 
-        VisorIdleVerifyTaskResult res = ig.compute().execute(
+        return ig.compute().execute(
             VisorIdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
-
-        return res.getConflicts();
     }
 }
