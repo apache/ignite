@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -40,29 +39,32 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
  */
-public class TxTimeoutTest extends GridCommonAbstractTest {
+public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstractTest {
     /** */
     public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final int TIME_TO_EXECUTE = 30 * 1000;
 
     /** */
     private boolean client;
@@ -100,11 +102,6 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return super.getTestTimeout() * 4;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -114,10 +111,48 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Random transaction type.
+     */
+    protected TransactionConcurrency transactionConcurrency() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        return random.nextBoolean() ? OPTIMISTIC : PESSIMISTIC;
+    }
+
+    /**
+     * @return Random transaction isolation level.
+     */
+    protected TransactionIsolation transactionIsolation(){
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        switch (random.nextInt(3)) {
+            case 0:
+                return READ_COMMITTED;
+            case 1:
+                return REPEATABLE_READ;
+            case 2:
+                return SERIALIZABLE;
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * @return Random timeout.
+     */
+    protected long randomTimeOut() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        return random.nextLong(5, 20);
+    }
+
+    /**
+     * https://issues.apache.org/jira/browse/IGNITE-9042
+     *
      * @throws Exception If failed.
      */
     public void test() throws Exception {
-        IgniteEx ig = (IgniteEx)startGrids(4);
+        startGrids(4);
 
         client = true;
 
@@ -129,7 +164,6 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Long> cache = igClient.cache(DEFAULT_CACHE_NAME);
 
-        //int threads = Runtime.getRuntime().availableProcessors();
         int threads = 1;
 
         int keyId = 0;
@@ -144,7 +178,11 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
             while (!stop.get()) {
                 long newVal = cnt.getAndIncrement();
 
-                try (Transaction tx = txMgr.txStart(PESSIMISTIC, REPEATABLE_READ, 5, 1)) {
+                TransactionConcurrency concurrency = transactionConcurrency();
+
+                TransactionIsolation transactionIsolation = transactionIsolation();
+
+                try (Transaction tx = txMgr.txStart(concurrency, transactionIsolation, randomTimeOut(), 1)) {
                     cache.put(keyId, newVal);
 
                     tx.commit();
@@ -164,9 +202,7 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
 
         runAsync(() -> {
             try {
-                int time = 60 * 1000;
-
-                Thread.sleep(time);
+                Thread.sleep(TIME_TO_EXECUTE);
             }
             catch (InterruptedException ignore) {
                 // Ignore.
@@ -179,17 +215,7 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
 
         f.get();
 
-        Set<String> caches = new HashSet<>();
-
-        caches.add(DEFAULT_CACHE_NAME);
-
-        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(caches);
-
-        VisorIdleVerifyTaskResult res = igClient.compute().execute(
-            VisorIdleVerifyTask.class.getName(),
-            new VisorTaskArgument<>(ig.localNode().id(), taskArg, false));
-
-        Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
+        Map<PartitionKey, List<PartitionHashRecord>> conflicts = idleVerify(igClient, DEFAULT_CACHE_NAME);
 
         log.info("Current counter value:" + cnt.get());
 
