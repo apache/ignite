@@ -34,10 +34,12 @@ class Connection:
     socket = None
     host = None
     port = None
+    timeout = None
 
     @staticmethod
     def check_kwargs(kwargs):
         expected_args = [
+            'timeout',
             'use_ssl',
             'ssl_version',
             'ssl_ciphers',
@@ -60,6 +62,9 @@ class Connection:
         For the use of the last two parameters see
         https://docs.python.org/3/library/ssl.html#ssl-certificates.
 
+        :param timeout: (optional) sets timeout (in seconds) for each socket
+         operation including `connect`. 0 means non-blocking mode. Can accept
+         integer or float value. Default is None (blocking mode),
         :param use_ssl: (optional) set to True if Ignite server uses SSL
          on its binary connector. Defaults to not use SSL,
         :param ssl_version: (optional) SSL version constant from standard
@@ -83,6 +88,7 @@ class Connection:
          (server-side) certificate.
         """
         self.check_kwargs(kwargs)
+        self.timeout = kwargs.pop('timeout', None)
         self.init_kwargs = kwargs
 
     read_response = read_response
@@ -114,11 +120,10 @@ class Connection:
         :param host: Ignite server host,
         :param port: Ignite server port.
         """
-        if self.socket is None:
-            self.socket = self._wrap(
-                socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            )
-            self.socket.connect((host, port))
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(self.timeout)
+        self.socket = self._wrap(self.socket)
+        self.socket.connect((host, port))
 
         hs_request = HandshakeRequest()
         self.send(hs_request)
