@@ -1945,7 +1945,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param ig Ignite instance.
      * @param caches Cache names (if null, all user caches will be verified).
      * @return Map of conflicts.
-     * @throws IgniteCheckedException If checksum conflict has been found.
+     * @throws IgniteException If none caches or node found.
      */
     protected Map<PartitionKey, List<PartitionHashRecord>> idleVerify(Ignite ig, String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
