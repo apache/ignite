@@ -1959,8 +1959,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * @param ig Ignite.
      * @param caches Cache names for verification.
+     * @return Map of conflicts.
+     * @throws IgniteException If caches set for checking is empty.
      */
-    protected VisorIdleVerifyTaskResult idleVerify(Ignite ig, String... caches) {
+    protected Map<PartitionKey, List<PartitionHashRecord>> idleVerify(Ignite ig, String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
@@ -1975,9 +1977,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
 
-        return ig.compute().execute(
+        VisorIdleVerifyTaskResult res = ig.compute().execute(
             VisorIdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(ig0.localNode().id(), taskArg, false)
         );
+
+        return res.getConflicts();
     }
 }
