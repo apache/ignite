@@ -195,8 +195,8 @@ object. Any integer data type is acceptable.
 :class:`~pyignite.datatypes.internal.AnyDataArray`
 ==================================================
 
-A sequence of :class:`~pyignite.datatypes.AnyDataObject` objects prepended by
-:class:`~pyignite.datatypes.primitive.Int` counter. Unlike
+A sequence of :class:`~pyignite.datatypes.internal.AnyDataObject` objects
+prepended by :class:`~pyignite.datatypes.primitive.Int` counter. Unlike
 :class:`~pyignite.datatypes.complex.MapObject` it do not have common `type_id`
 or `type` fields.
 
@@ -232,7 +232,7 @@ uses :mod:`~pyignite.queries.Query` and :mod:`~pyignite.queries.Response` base
 classes respectively under their hoods. These classes are a natural extension
 of the data type parsing/constructing module (:mod:`~pyignite.datatypes`) and
 uses all the power of the indigenous
-:mod:`~pyignite.datatypes.any_object.AnyDataObject`.
+:mod:`~pyignite.datatypes.any_object.internal.AnyDataObject`.
 
 Each function returns operation status and result data (or verbose error
 message) in :mod:`~pyignite.api.result.APIResult` object.
