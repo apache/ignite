@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
@@ -98,6 +99,11 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -789,23 +795,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("awaitPartitionMapExchange finished");
-    }
-
-    /**
-     * Compares checksums between primary and backup partitions of specified caches.
-     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
-     * concurrently updated.
-     *
-     * @param ig Ignite instance.
-     * @param cacheNames Cache names (if null, all user caches will be verified).
-     * @throws IgniteCheckedException If checksum conflict has been found.
-     */
-    protected void verifyBackupPartitions(Ignite ig, Set<String> cacheNames) throws IgniteCheckedException {
-        Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
-            new VerifyBackupPartitionsTask(), cacheNames);
-
-        if (!conflicts.isEmpty())
-            throw new IgniteCheckedException("Conflict partitions: " + conflicts.keySet());
     }
 
     /**
@@ -1947,5 +1936,41 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             dbMgr.waitForCheckpoint("test");
         }
+    }
+
+    /**
+     * Compares checksums between primary and backup partitions of specified caches.
+     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
+     * concurrently updated.
+     *
+     * @param ig Ignite instance.
+     * @param caches Cache names (if null, all user caches will be verified).
+     * @return Conflicts result.
+     * @throws IgniteException If none caches or node found.
+     */
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, String... caches) {
+        IgniteEx ig0 = (IgniteEx)ig;
+
+        Set<String> cacheNames = new HashSet<>();
+
+        if (F.isEmpty(caches))
+            cacheNames.addAll(ig0.cacheNames());
+        else
+            Collections.addAll(cacheNames, caches);
+
+        if (cacheNames.isEmpty())
+            throw new IgniteException("None cache for checking.");
+
+        ClusterNode node = !ig0.localNode().isClient() ? ig0.localNode() : ig0.cluster().forServers().forRandom().node();
+
+        if (node == null)
+            throw new IgniteException("None server node for verification.");
+
+        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
+
+        return ig.compute().execute(
+            VisorIdleVerifyTaskV2.class.getName(),
+            new VisorTaskArgument<>(node.id(), taskArg, false)
+        );
     }
 }
