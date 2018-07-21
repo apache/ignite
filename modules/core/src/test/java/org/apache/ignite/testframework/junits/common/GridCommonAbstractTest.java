@@ -98,6 +98,11 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -1947,5 +1952,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             dbMgr.waitForCheckpoint("test");
         }
+    }
+
+    /**
+     * Verification of consistency primary and backup.
+     *
+     * @param ig Ignite.
+     * @param caches Cache names for verification.
+     */
+    protected VisorIdleVerifyTaskResult idleVerify(Ignite ig, String... caches) {
+        IgniteEx ig0 = (IgniteEx)ig;
+
+        Set<String> cacheNames = new HashSet<>();
+
+        if (F.isEmpty(caches))
+            cacheNames.addAll(ig0.cacheNames());
+        else
+            Collections.addAll(cacheNames, caches);
+
+        if (cacheNames.isEmpty())
+            throw new IgniteException("None cache for checking.");
+
+        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
+
+        return ig.compute().execute(
+            VisorIdleVerifyTaskV2.class.getName(),
+            new VisorTaskArgument<>(ig0.localNode().id(), taskArg, false)
+        );
     }
 }
