@@ -190,12 +190,8 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
 
                     tx.commit();
                 }
-                catch (TransactionTimeoutException e) {
-                    continue;
-                }
-                catch (CacheException e) {
-                    if (X.hasCause(e, TransactionTimeoutException.class))
-                        continue;
+                catch (Throwable e) {
+                  // Ignore.
                 }
             }
 
