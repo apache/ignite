@@ -797,23 +797,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Compares checksums between primary and backup partitions of specified caches.
-     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
-     * concurrently updated.
-     *
-     * @param ig Ignite instance.
-     * @param cacheNames Cache names (if null, all user caches will be verified).
-     * @throws IgniteCheckedException If checksum conflict has been found.
-     */
-    protected void verifyBackupPartitions(Ignite ig, Set<String> cacheNames) throws IgniteCheckedException {
-        Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
-            new VerifyBackupPartitionsTask(), cacheNames);
-
-        if (!conflicts.isEmpty())
-            throw new IgniteCheckedException("Conflict partitions: " + conflicts.keySet());
-    }
-
-    /**
      * @param top Topology.
      * @param topVer Version to wait for.
      * @throws Exception If failed.
@@ -1955,12 +1938,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Verification of consistency primary and backup.
+     * Compares checksums between primary and backup partitions of specified caches.
+     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
+     * concurrently updated.
      *
-     * @param ig Ignite.
-     * @param caches Cache names for verification.
+     * @param ig Ignite instance.
+     * @param caches Cache names (if null, all user caches will be verified).
      * @return Map of conflicts.
-     * @throws IgniteException If caches set for checking is empty.
+     * @throws IgniteCheckedException If checksum conflict has been found.
      */
     protected Map<PartitionKey, List<PartitionHashRecord>> idleVerify(Ignite ig, String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
@@ -1975,11 +1960,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (cacheNames.isEmpty())
             throw new IgniteException("None cache for checking.");
 
+        ClusterNode node = !ig0.localNode().isClient() ? ig0.localNode() : ig0.cluster().forServers().forRandom().node();
+
+        if (node == null)
+            throw new IgniteException("None server node for verification.");
+
         VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
 
         VisorIdleVerifyTaskResult res = ig.compute().execute(
             VisorIdleVerifyTaskV2.class.getName(),
-            new VisorTaskArgument<>(ig0.localNode().id(), taskArg, false)
+            new VisorTaskArgument<>(node.id(), taskArg, false)
         );
 
         return res.getConflicts();
