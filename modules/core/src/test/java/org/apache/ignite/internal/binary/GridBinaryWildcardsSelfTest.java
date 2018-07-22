@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
+import org.apache.ignite.internal.binary.test.subpackage.GridBinaryTestClass3;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -48,6 +49,9 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String CLASS2_FULL_NAME = GridBinaryTestClass2.class.getName();
+
+    /** */
+    public static final String CLASS3_FULL_NAME = GridBinaryTestClass3.class.getName();
 
     /** */
     public static final String INNER_CLASS_FULL_NAME = GridBinaryTestClass1.class.getName() + "$InnerClass";
@@ -132,6 +136,41 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
         assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).idMapper().typeId(INNER_CLASS_FULL_NAME));
+    }
+
+    public void testClassNamesWithSubpackage() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(null, new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
+            @Override public int typeId(String clsName) {
+                if (clsName.endsWith("1"))
+                    return 300;
+                else if (clsName.endsWith("2"))
+                    return 400;
+                else if (clsName.endsWith("3"))
+                    return 500;
+                else if (clsName.endsWith("InnerClass"))
+                    return 600;
+                else
+                    return -500;
+            }
+
+            @Override public int fieldId(int typeId, String fieldName) {
+                return 0;
+            }
+        }, Arrays.asList(
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.**")
+        ));
+
+        BinaryContext ctx = binaryContext(marsh);
+
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
+
+        assertEquals(4, typeMappers.size());
+
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(CLASS3_FULL_NAME).idMapper().typeId(CLASS3_FULL_NAME));
+        assertEquals(600, typeMappers.get(INNER_CLASS_FULL_NAME).idMapper().typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
@@ -612,6 +651,51 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testOverrideTypeConfigurations() throws Exception {
+        BinaryBasicNameMapper globalNameMapper = new BinaryBasicNameMapper(false);
+
+        BinaryBasicIdMapper globalIdMapper = new BinaryBasicIdMapper(true);
+
+        BinaryMarshaller marsh = binaryMarshaller(globalNameMapper, globalIdMapper, Arrays.asList(
+            binaryTypeConfiguration("org.apache.ignite.internal.binary.test.GridBinaryTestClass1", 100),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*")
+                .setIdMapper(new BinaryIdMapper() {
+                    @Override public int typeId(String typeName) {
+                        if (typeName.endsWith("InnerClass"))
+                            return 200;
+                        else if (typeName.endsWith("2"))
+                            return 300;
+
+                        return -100;
+                    }
+
+                    @Override public int fieldId(int typeId, String fieldName) {
+                        return 0;
+                    }
+                }),
+            binaryTypeConfiguration("org.apache.ignite.internal.binary.test.**", 400)
+            ));
+
+        BinaryContext ctx = binaryContext(marsh);
+
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
+
+        assertEquals(4, types.size());
+
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
+
+        assertEquals(4, typeMappers.size());
+
+        assertEquals(100, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
+        assertEquals(200, typeMappers.get(INNER_CLASS_FULL_NAME).idMapper().typeId(INNER_CLASS_FULL_NAME));
+        assertEquals(300, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS3_FULL_NAME).idMapper().typeId(CLASS3_FULL_NAME));
+    }
+
+    /**
      * @param marsh Marshaller.
      * @return Binary context.
      */
@@ -619,6 +703,29 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         GridBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
+    }
+
+    /**
+     * Return a new instance of {@link BinaryTypeConfiguration} for the given {@code clsName} and {@code typeId}.
+     *
+     * @param clsName Class name.
+     * @param typeId Type id.
+     * @return a new instance of {@link BinaryTypeConfiguration}.
+     */
+    private BinaryTypeConfiguration binaryTypeConfiguration(String clsName, final int typeId) {
+        BinaryTypeConfiguration cfg = new BinaryTypeConfiguration(clsName);
+
+        cfg.setIdMapper(new BinaryIdMapper() {
+            @Override public int typeId(String typeName) {
+                return typeId;
+            }
+
+            @Override public int fieldId(int typeId, String fieldName) {
+                return 0;
+            }
+        });
+
+        return cfg;
     }
 
     /**
