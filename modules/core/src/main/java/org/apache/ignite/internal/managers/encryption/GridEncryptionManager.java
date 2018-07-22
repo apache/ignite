@@ -355,20 +355,23 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Group id.
      */
     public void removeGroupKey(int grpId) {
-        ctx.cache().context().database().checkpointReadLock();
+        synchronized (mux) {
+            ctx.cache().context().database().checkpointReadLock();
 
-        try {
-            grpEncKeys.remove(grpId);
+            try {
+                grpEncKeys.remove(grpId);
 
-            metaStorage.remove(ENCRYPTION_KEY_PREFIX + grpId);
+                metaStorage.remove(ENCRYPTION_KEY_PREFIX + grpId);
 
-            if (log.isDebugEnabled())
-                log.debug("Key removed. [grp=" + grpId + "]");
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to clear meta storage", e);
-        } finally {
-            ctx.cache().context().database().checkpointReadUnlock();
+                if (log.isDebugEnabled())
+                    log.debug("Key removed. [grp=" + grpId + "]");
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to clear meta storage", e);
+            }
+            finally {
+                ctx.cache().context().database().checkpointReadUnlock();
+            }
         }
     }
 

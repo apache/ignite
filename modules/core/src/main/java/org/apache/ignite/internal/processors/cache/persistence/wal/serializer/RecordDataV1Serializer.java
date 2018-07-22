@@ -104,6 +104,8 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
@@ -132,10 +134,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private final EncryptionSpi encryptionSpi;
 
     /** */
-    static final byte ENCRYPTED = 1;
+    private static final byte ENCRYPTED = 1;
 
     /** */
-    static final byte PLAIN = 0;
+    private static final byte PLAIN = 0;
 
     /**
      * @param cctx Cache shared context.
@@ -214,7 +216,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param grpId Group id.
      * @return {@code True} if this record should be encrypted.
      */
-    boolean needEncryption(int grpId) {
+    private boolean needEncryption(int grpId) {
         return cctx.kernalContext().encryption().groupKey(grpId) != null;
     }
 
@@ -339,7 +341,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                return 4 + dataSize(dataRec);
+                return 4 + dataSize(dataRec, isDataRecordEncrypted(dataRec));
 
             case METASTORE_DATA_RECORD:
                 MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
@@ -576,7 +578,19 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readDataEntry(in));
+                    entries.add(readPlainDataEntry(in));
+
+                res = new DataRecord(entries, 0L);
+
+                break;
+
+            case ENCRYPTED_DATA_RECORD:
+                entryCnt = in.readInt();
+
+                entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(readEncryptedDataEntry(in));
 
                 res = new DataRecord(entries, 0L);
 
@@ -1143,8 +1157,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(dataRec.writeEntries().size());
 
-                for (DataEntry dataEntry : dataRec.writeEntries())
-                    putDataEntry(buf, dataEntry);
+                boolean encrypted = isDataRecordEncrypted(dataRec);
+
+                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                    if (encrypted)
+                        putEncryptedDataEntry(buf, dataEntry);
+                    else
+                        putPlainDataEntry(buf, dataEntry);
+                }
 
                 break;
 
@@ -1595,7 +1615,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param entry Data entry.
      * @throws IgniteCheckedException If failed.
      */
-    void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+    void putEncryptedDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(entry.cacheId());
 
         if (desc != null && needEncryption(desc.groupId())) {
@@ -1620,7 +1640,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer to write to.
      * @param entry Data entry.
      */
-    private void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+    void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1690,7 +1710,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    DataEntry readDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         boolean needDecryption = in.readByte() == ENCRYPTED;
 
         if (needDecryption) {
@@ -1715,7 +1735,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param in Input to read from.
      * @return Read entry.
      */
-    private DataEntry readPlainDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readPlainDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();
@@ -1782,6 +1802,33 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
+     * @param rec Record.
+     * @return Real record type.
+     */
+    RecordType recordType(WALRecord rec) {
+        if (needEncryption(rec))
+            return ENCRYPTED_RECORD;
+
+        if (rec.type() != DATA_RECORD)
+            return rec.type();
+
+        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD : DATA_RECORD;
+    }
+
+    /**
+     * @param rec Data record.
+     * @return {@code True} if this data record should be encrypted.
+     */
+    boolean isDataRecordEncrypted(DataRecord rec) {
+        for (DataEntry e : rec.writeEntries()) {
+            if(needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param buf Buffer to read from.
      * @return Read map.
      */
@@ -1839,21 +1886,24 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param dataRec Data record to serialize.
+     * @param encrypted Encrypted flag.
      * @return Full data record size.
      * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
      */
-    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+    private int dataSize(DataRecord dataRec, boolean encrypted) throws IgniteCheckedException {
         int sz = 0;
 
         for (DataEntry entry : dataRec.writeEntries()) {
             int clSz = entrySize(entry);
 
-            if (needEncryption(cctx.cacheContext(entry.cacheId()).groupId())) {
-                sz += encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */
-                    + 4 /* data size */;
+            if (needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
+                sz += encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */;
+            else {
+                sz += clSz;
+
+                if (encrypted)
+                    sz += 1 /* encrypted flag */;
             }
-            else
-                sz += clSz + 1 /* encrypted flag */;
         }
 
         return sz;

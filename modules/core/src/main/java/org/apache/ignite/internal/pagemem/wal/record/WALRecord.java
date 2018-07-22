@@ -187,7 +187,10 @@ public abstract class WALRecord {
         ROTATED_ID_PART_RECORD,
 
         /** Encrypted WAL-record. */
-        ENCRYPTED_RECORD;
+        ENCRYPTED_RECORD,
+
+        /** Ecnrypted data record */
+        ENCRYPTED_DATA_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

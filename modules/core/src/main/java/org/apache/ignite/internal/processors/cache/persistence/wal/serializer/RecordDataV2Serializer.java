@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -46,9 +45,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.record.Header
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.PLAIN;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.ENCRYPTED;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 
 /**
@@ -135,7 +134,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
      * @return Plain(without encryption) size of serialized record in bytes.
      * @throws IgniteCheckedException If failed.
      */
-     int plainSize(WALRecord rec) throws IgniteCheckedException {
+    private int plainSize(WALRecord rec) throws IgniteCheckedException {
         switch (rec.type()) {
             case HEADER_RECORD:
                 return HEADER_RECORD_DATA_SIZE;
@@ -211,9 +210,21 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(delegateSerializer.readDataEntry(in));
+                    entries.add(delegateSerializer.readPlainDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
+
+            case ENCRYPTED_DATA_RECORD:
+                entryCnt = in.readInt();
+                timeStamp = in.readLong();
+
+                entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(delegateSerializer.readEncryptedDataEntry(in));
+
+                return new DataRecord(entries, timeStamp);
+
             case SNAPSHOT:
                 long snpId = in.readLong();
                 byte full = in.readByte();
@@ -242,7 +253,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
      * @param buf Output buffer.
      * @throws IgniteCheckedException If failed.
      */
-    void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    private void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec instanceof HeaderRecord)
             throw new UnsupportedOperationException("Writing header records is forbidden since version 2 of serializer");
 
@@ -279,8 +290,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 buf.putInt(dataRec.writeEntries().size());
                 buf.putLong(dataRec.timestamp());
 
-                for (DataEntry dataEntry : dataRec.writeEntries())
-                    delegateSerializer.putDataEntry(buf, dataEntry);
+                boolean encrypted = delegateSerializer.isDataRecordEncrypted(dataRec);
+
+                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                    if (encrypted)
+                        delegateSerializer.putEncryptedDataEntry(buf, dataEntry);
+                    else
+                        delegateSerializer.putPlainDataEntry(buf, dataEntry);
+                }
 
                 break;
 
@@ -312,11 +329,11 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     }
 
     /**
-     * @param rec Record to check.
-     * @return {@code True} if this record should be encrypted.
+     * @param record Record.
+     * @return Real record type.
      */
-    boolean needEncryption(WALRecord rec) {
-        return delegateSerializer.needEncryption(rec);
+    RecordType recordType(WALRecord record) {
+        return delegateSerializer.recordType(record);
     }
 
     /**
