@@ -27,6 +27,7 @@ from pyignite.datatypes import (
     LongObject, String,
 )
 from pyignite.datatypes.internal import tc_map
+from pyignite.utils import unwrap_binary
 
 
 # prepare old data
@@ -159,13 +160,7 @@ def migrate(data):
     """ Migrate given data pages. """
     for key, value in data.items():
         # read data
-        blob, offset = value
-        mock_conn = conn.make_buffered(blob)
-        mock_conn.pos = offset
-        data_class, data_bytes = BinaryObject.parse(mock_conn)
-        fields = BinaryObject.to_python(
-            data_class.from_buffer_copy(data_bytes)
-        )['fields']
+        fields = unwrap_binary(conn, value)['fields']
 
         # process data
         fields['expense_date'] = fields['date']
@@ -190,14 +185,7 @@ def migrate(data):
 
         # verify data
         verify = cache_get(conn, hashcode('accounting'), key)
-        blob, offset = verify.value
-        mock_conn = conn.make_buffered(blob)
-        mock_conn.pos = offset
-        data_class, data_bytes = BinaryObject.parse(mock_conn)
-        fields = BinaryObject.to_python(
-            data_class.from_buffer_copy(data_bytes)
-        )['fields']
-        print(dict(fields))
+        print(dict(unwrap_binary(conn, verify.value)['fields']))
 
 
 # migrate data

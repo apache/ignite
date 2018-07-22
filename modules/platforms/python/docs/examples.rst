@@ -228,7 +228,7 @@ an additional step to explicitly decode it.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 341-362
+  :lines: 341-355
 
 Create
 ======
@@ -305,7 +305,7 @@ Now read the row using an SQL function.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 132-210
+  :lines: 133-198
 
 
 Failover

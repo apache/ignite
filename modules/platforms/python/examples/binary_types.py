@@ -20,7 +20,7 @@ from pyignite.api import (
     cache_get_configuration, get_binary_type, scan,
 )
 from pyignite.connection import Connection
-from pyignite.datatypes import BinaryObject
+from pyignite.utils import unwrap_binary
 
 PAGE_SIZE = 5
 
@@ -339,15 +339,8 @@ print(result.value['data'])
 # }
 
 wrapped_value = list(result.value['data'].values())[0]
-value_binary_data, offset = wrapped_value
-
-mock_conn = conn.make_buffered(value_binary_data)
-mock_conn.pos = offset
-
-data_class, data_bytes = BinaryObject.parse(mock_conn)
-value = BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
-
-print(value)
+binary_obj = unwrap_binary(conn, wrapped_value)
+print(binary_obj)
 
 # {
 #     'version': 1,

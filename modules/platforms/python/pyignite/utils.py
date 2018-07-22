@@ -39,3 +39,20 @@ def int_overflow(value: int) -> int:
     Simulates 32bit integer overflow.
     """
     return ((value ^ 0x80000000) & 0xffffffff) - 0x80000000
+
+
+def unwrap_binary(conn, wrapped: tuple):
+    """
+    Unwrap wrapped BinaryObject and convert it to Python data.
+
+    :param conn: connection to Ignite cluster,
+    :param wrapped: WrappedDataObject value,
+    :return: dict representing wrapped BinaryObject.
+    """
+    from pyignite.datatypes import BinaryObject
+
+    blob, offset = wrapped
+    mock_conn = conn.make_buffered(blob)
+    mock_conn.pos = offset
+    data_class, data_bytes = BinaryObject.parse(mock_conn)
+    return BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))

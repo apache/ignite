@@ -25,6 +25,7 @@ from pyignite.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, String,
 )
 from pyignite.datatypes.prop_codes import *
+from pyignite.utils import unwrap_binary
 
 
 insert_data = [
@@ -100,15 +101,8 @@ def test_sql_read_as_binary(conn):
     for key, value in result.value['data'].items():
         # we can't automagically unwind the contents of the WrappedDataObject
         # the same way we do for Map or Collection, we got bytes instead
-        buffer, offset = value
-        # offset is 0 in this example, but that's not granted
-        mock_conn = conn.make_buffered(buffer)
-        mock_conn.pos = offset
-
-        data_class, data_bytes = BinaryObject.parse(mock_conn)
-        value = BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
-        assert buffer == data_bytes
-        assert len(value['fields']) == 4
+        binary_obj = unwrap_binary(conn, value)
+        assert len(binary_obj['fields']) == 4
 
     result = cache_get_configuration(conn, table_hash_code)
     assert result.status == 0, result.message
