@@ -46,12 +46,14 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     /** Flag for stopped state. */
     private volatile boolean stopped = true;
 
-    /** Ignite grid configuration file. */
-    protected final String igniteCfgFile;
-
+    /** Ignite instance. */
     protected transient Ignite ignite;
 
+    /** Ignite Data streamer instance. */
     protected transient IgniteDataStreamer streamer;
+
+    /** Ignite grid configuration file. */
+    protected final String igniteCfgFile;
 
     /** Cache name. */
     protected final String cacheName;
@@ -72,6 +74,15 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      */
     public String getIgniteConfigFile() {
         return igniteCfgFile;
+    }
+
+    /**
+     * Gets the Ignite instance.
+     *
+     * @return Ignite instance.
+     */
+    public Ignite getIgnite() {
+        return ignite;
     }
 
     /**
@@ -114,7 +125,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      * Default IgniteSink constructor.
      *
      * @param cacheName Cache name.
-     * @param igniteCfgFile Ignite configuration file.
      */
     public IgniteSink(String cacheName, String igniteCfgFile) {
         this.cacheName = cacheName;
@@ -132,7 +142,13 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
 
-        this.ignite = Ignition.start(igniteCfgFile);
+        try {
+            this.ignite = Ignition.start(igniteCfgFile);
+        } catch (IgniteException e) {
+            // if an ignite instance is already started in same JVM then use it.
+            this.ignite = Ignition.ignite();
+        }
+
         this.ignite.getOrCreateCache(cacheName);
 
         this.log = this.ignite.log();
@@ -157,8 +173,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
         stopped = true;
 
         this.streamer.close();
-        this.ignite.cache(cacheName).close();
-        this.ignite.close();
     }
 
     /**
