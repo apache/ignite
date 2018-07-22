@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.events.EventType.EVT_NODE_PARTITIONS_EVICTION;
 
 /**
  * Discovery events processed in single exchange (contain multiple events if exchanges for multiple
@@ -67,6 +67,9 @@ public class ExchangeDiscoveryEvents {
     /** Sever left flag. */
     private boolean srvLeft;
 
+    /** Sever left flag. */
+    private boolean srvEvicting;
+
     /**
      * @param fut Current exchange future.
      */
@@ -79,11 +82,12 @@ public class ExchangeDiscoveryEvents {
      */
     public void processEvents(GridDhtPartitionsExchangeFuture fut) {
         for (DiscoveryEvent evt : evts) {
-            if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+            if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED
+                /*todo || evt.type() == EVT_NODE_PARTITIONS_EVICTION*/)
                 fut.sharedContext().mvcc().removeExplicitNodeLocks(evt.eventNode().id(), fut.initialVersion());
         }
 
-        if (hasServerLeft())
+        if (hasServerLeftOrEvicting())
             warnNoAffinityNodes(fut.sharedContext());
     }
 
@@ -134,8 +138,11 @@ public class ExchangeDiscoveryEvents {
 
             if (evt.type()== EVT_NODE_JOINED)
                 srvJoin = true;
-            else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+            else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED
+                /* todo */)
                 srvLeft = !CU.clientNode(node);
+            else if (evt.type() == EVT_NODE_PARTITIONS_EVICTION)
+                srvEvicting = true;
         }
     }
 
@@ -151,7 +158,8 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if given event is {@link EventType#EVT_NODE_FAILED} or {@link EventType#EVT_NODE_LEFT}.
      */
     public static boolean serverLeftEvent(DiscoveryEvent evt) {
-        return  ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) && !CU.clientNode(evt.eventNode()));
+        return  ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT
+            /*todo || evt.type() == EVT_NODE_PARTITIONS_EVICTION*/) && !CU.clientNode(evt.eventNode()));
     }
 
     /**
@@ -191,10 +199,10 @@ public class ExchangeDiscoveryEvents {
     }
 
     /**
-     * @return {@code True} if has event for server leave.
+     * @return {@code True} if has event for server leave or server evicting partitions.
      */
-    public boolean hasServerLeft() {
-        return srvLeft;
+    public boolean hasServerLeftOrEvicting() {
+        return srvLeft || srvEvicting;
     }
 
     /**

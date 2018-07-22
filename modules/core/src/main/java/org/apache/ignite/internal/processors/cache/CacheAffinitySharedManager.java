@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -80,6 +79,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_PARTITIONS_EVICTION;
 
 /**
  *
@@ -131,7 +131,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         @Override public void onEvent(Event evt) {
             DiscoveryEvent e = (DiscoveryEvent)evt;
 
-            assert e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED;
+            assert e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED /*todo*/  || e.type() == EVT_NODE_PARTITIONS_EVICTION;
 
             ClusterNode n = e.eventNode();
 
@@ -144,7 +144,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        cctx.kernalContext().event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        cctx.kernalContext().event()
+            .addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED/*todo, EVT_NODE_PARTITIONS_EVICTION*/);
     }
 
     /**
@@ -168,10 +169,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 
-        if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
+        if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT
+            || type == EVT_NODE_PARTITIONS_EVICTION)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
             synchronized (mux) {
-                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
+                //todo
+                boolean b = lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+                assert b :
                     "lastAffVer=" + lastAffVer + ", topVer=" + topVer + ", customMsg=" + customMsg;
 
                 lastAffVer = topVer;
@@ -1438,7 +1442,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
         assert fut.context().mergeExchanges();
-        assert evts.hasServerJoin() && !evts.hasServerLeft();
+        //  todo
+        assert evts.hasServerJoin() && !evts.hasServerLeftOrEvicting();
 
         WaitRebalanceInfo waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
 
@@ -1465,7 +1470,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
         assert fut.context().mergeExchanges();
-        assert evts.hasServerLeft();
+        assert evts.hasServerLeftOrEvicting();
 
         return onReassignmentEnforced(fut);
     }
@@ -1740,7 +1745,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return {@code True} if affinity should be assigned by coordinator.
      */
     public boolean onCentralizedAffinityChange(final GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
-        assert (fut.events().hasServerLeft() && !fut.firstEvent().eventNode().isClient()) ||
+        assert (fut.events().hasServerLeftOrEvicting() && !fut.firstEvent().eventNode().isClient()) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(fut.firstEvent()) : fut.firstEvent();
 
         if (crd) {
@@ -2193,6 +2198,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             new WaitRebalanceInfo(fut.context().events().lastServerEventVersion());
 
         final Collection<ClusterNode> aliveNodes = fut.context().events().discoveryCache().serverNodes();
+        Set<ClusterNode> evictingNodes = fut.context().events().discoveryCache().evictingNodes();
 
         final Map<Integer, Map<Integer, List<T>>> assignment = new HashMap<>();
 
@@ -2246,7 +2252,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         curPrimary = owners.get(0);
 
                     if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
-                        if (aliveNodes.contains(curPrimary)) {
+                        if (aliveNodes.contains(curPrimary) && !evictingNodes.contains(curPrimary)) {
                             GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                             if (state != GridDhtPartitionState.OWNING) {

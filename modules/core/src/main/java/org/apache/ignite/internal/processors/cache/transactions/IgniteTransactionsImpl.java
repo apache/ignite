@@ -158,7 +158,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         int txSize,
         @Nullable GridCacheContext sysCacheCtx
     ) {
-        cctx.kernalContext().gateway().readLock();
+        cctx.kernalContext().gateway().readLockOnStarted();
 
         try {
             GridNearTxLocal tx = cctx.tm().userTx(sysCacheCtx);

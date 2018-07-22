@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -594,6 +596,64 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         for (IgniteInternalTx tx : activeTransactions()) {
             if (needWaitTransaction(tx, topVer))
                 res.add(tx.finishFuture());
+        }
+
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
+     * @return Future that will be completed when all {@link GridNearTxLocal} transactions are fully finished.
+     */
+    public IgniteInternalFuture<Boolean> finishNearLocalTxs(AffinityTopologyVersion topVer) {
+        GridCompoundFuture<IgniteInternalTx, Boolean> res =
+            new GridCompoundFuture<>(
+                new IgniteReducer<IgniteInternalTx, Boolean>() {
+                    @Override public boolean collect(IgniteInternalTx e) {
+                        return true;
+                    }
+
+                    @Override public Boolean reduce() {
+                        return true;
+                    }
+                });
+
+        for (IgniteInternalTx tx : idMap.values()) {
+            if (tx instanceof GridNearTxLocal && (topVer == null || needWaitTransaction(tx, topVer))) {
+                assert tx.nodeId().equals(cctx.localNodeId());
+
+                final GridFutureAdapter<IgniteInternalTx> resFut = new GridFutureAdapter<>();
+
+                IgniteInternalFuture<IgniteInternalTx> finishFut = tx.finishFuture();
+
+                finishFut.listen(f -> {
+                    GridNearTxLocal locTx = null;
+
+                    try {
+                        locTx = (GridNearTxLocal)f.get();
+
+                        assert locTx != null;
+
+                        NearTxFinishFuture nearFinishFut = locTx.nearFinishFut(); // Creates on commit phase.
+
+                        if (nearFinishFut == null)
+                            resFut.onDone();
+                        else
+                            nearFinishFut.listen(fut -> resFut.onDone());
+                    }
+                    catch (Throwable e) {
+                        resFut.onDone();
+
+                        U.error(log, "Failed to wait Transaction completion: " + locTx, e);
+
+                        if (e instanceof Error)
+                            throw (Error)e;
+                    }
+                });
+
+                res.add(resFut);
+            }
         }
 
         res.markInitialized();

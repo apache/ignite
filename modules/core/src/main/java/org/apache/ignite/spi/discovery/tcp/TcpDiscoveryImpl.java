@@ -246,6 +246,11 @@ abstract class TcpDiscoveryImpl {
     public abstract long getCurrentTopologyVersion();
 
     /**
+     *
+     */
+    public abstract void evictPartitions();
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */

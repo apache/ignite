@@ -111,6 +111,11 @@ public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements Disc
     }
 
     /** {@inheritDoc} */
+    @Override public void evictPartitions() {
+
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isClientMode() throws IllegalStateException {
         return false;
     }

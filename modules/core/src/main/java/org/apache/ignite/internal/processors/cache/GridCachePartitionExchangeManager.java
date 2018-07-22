@@ -123,6 +123,7 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_PARTITIONS_EVICTION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
@@ -294,6 +295,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
                 f.onNodeLeft(n);
+        }else if (evt.type() == EVT_NODE_PARTITIONS_EVICTION){
+            for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
+                f.onNodePartitionsEvicted(evt.eventNode());
         }
     }
 
@@ -318,7 +322,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         latchMgr = new ExchangeLatchManager(cctx.kernalContext());
 
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
-            EVT_DISCOVERY_CUSTOM_EVT);
+            EVT_DISCOVERY_CUSTOM_EVT, EVT_NODE_PARTITIONS_EVICTION);
 
         cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
@@ -426,7 +430,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         ClusterNode loc = cctx.localNode();
 
         assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ||
-            evt.type() == EVT_DISCOVERY_CUSTOM_EVT;
+            evt.type() == EVT_DISCOVERY_CUSTOM_EVT || evt.type() == EVT_NODE_PARTITIONS_EVICTION;
 
         final ClusterNode n = evt.eventNode();
 

@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodePartitionsEvictionMessage;
 
 /**
  * Statistics for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
@@ -321,6 +322,7 @@ public class TcpDiscoveryStatistics {
             (msg instanceof TcpDiscoveryNodeAddedMessage) ||
             (msg instanceof TcpDiscoveryNodeAddFinishedMessage) ||
             (msg instanceof TcpDiscoveryNodeLeftMessage) ||
+            (msg instanceof TcpDiscoveryNodePartitionsEvictionMessage) ||
             (msg instanceof TcpDiscoveryNodeFailedMessage)) {
             ringMsgsSndTs.put(msg.id(), U.currentTimeMillis());
 

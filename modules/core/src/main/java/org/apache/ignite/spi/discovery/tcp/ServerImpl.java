@@ -136,6 +136,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodePartitionsEvictionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
@@ -154,6 +155,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.events.EventType.EVT_NODE_PARTITIONS_EVICTION;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -178,9 +180,9 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage.STATUS_RECON;
 
 /**
- *
+ *todo
  */
-class ServerImpl extends TcpDiscoveryImpl {
+public class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
 
@@ -223,6 +225,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Leaving nodes (but still in topology). */
     private final Collection<TcpDiscoveryNode> leavingNodes = new HashSet<>();
+
+    /** Evicted nodes. */
+    private final Collection<TcpDiscoveryNode> evictedNodes = new HashSet<>();
 
     /** Collection to track joining nodes. */
     private Set<UUID> joiningNodes = new HashSet<>();
@@ -542,6 +547,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             // Clear stored data.
             leavingNodes.clear();
             failedNodes.clear();
+            evictedNodes.clear();
 
             spiState = DISCONNECTED;
         }
@@ -843,6 +849,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             msgWorker.addMessage(msg);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void evictPartitions() {
+        msgWorker.addMessage(new TcpDiscoveryNodePartitionsEvictionMessage(getLocalNodeId()));
     }
 
     /** {@inheritDoc} */
@@ -1550,12 +1561,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (log.isInfoEnabled() && spi.statsPrintFreq > 0) {
             int failedNodesSize;
             int leavingNodesSize;
+            int evictingNodesSize;
             int joiningNodesSize;
             int pendingCustomMsgsSize;
 
             synchronized (mux) {
                 failedNodesSize = failedNodes.size();
                 leavingNodesSize = leavingNodes.size();
+                evictingNodesSize = evictedNodes.size();
                 joiningNodesSize = joiningNodes.size();
                 pendingCustomMsgsSize = pendingCustomMsgs.size();
             }
@@ -1571,6 +1584,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     ", intOrder=" + (locNode != null ? locNode.internalOrder() : "N/A") +
                     ", topSize=" + ring.allNodes().size() +
                     ", leavingNodesSize=" + leavingNodesSize +
+                    ", evictedNodesSize=" + evictingNodesSize +
                     ", failedNodesSize=" + failedNodesSize +
                     ", joiningNodesSize=" + joiningNodesSize +
                     ", pendingCustomMsgs=" + pendingCustomMsgsSize +
@@ -1842,6 +1856,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             b.append("Leaving nodes: ").append(U.nl());
 
             for (TcpDiscoveryNode node : leavingNodes)
+                b.append("    ").append(node.id()).append(U.nl());
+
+            b.append(U.nl());
+
+            b.append("Evicting nodes: ").append(U.nl());
+
+            for (TcpDiscoveryNode node : evictedNodes)
                 b.append("    ").append(node.id()).append(U.nl());
 
             b.append(U.nl());
@@ -2220,7 +2241,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
-            else if (msg instanceof TcpDiscoveryNodeLeftMessage)
+            else if (msg instanceof TcpDiscoveryNodeLeftMessage || msg instanceof TcpDiscoveryNodePartitionsEvictionMessage)
                 clearClientAddFinished(msg.creatorNodeId());
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 clearClientAddFinished(((TcpDiscoveryNodeFailedMessage)msg).failedNodeId());
@@ -2383,9 +2404,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Pending messages container.
      */
-    private static class PendingMessages implements Iterable<TcpDiscoveryAbstractMessage> {
+    /*todo*/ public static class PendingMessages implements Iterable<TcpDiscoveryAbstractMessage> {
         /** */
-        private static final int MAX = 1024;
+        private static final int MAX = 1024 /* todo * 10*/;
 
         /** Pending messages. */
         private final Queue<PendingMessage> msgs = new ArrayDeque<>(MAX * 2);
@@ -2820,6 +2841,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
+
+            else if (msg instanceof TcpDiscoveryNodePartitionsEvictionMessage)
+                processNodePartitionsEvictionMessage((TcpDiscoveryNodePartitionsEvictionMessage)msg);
 
             else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
                 processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
@@ -3544,6 +3568,21 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (addMsg.node().id().equals(nodeId) && addMsg.id().compareTo(pendingMsgs.discardId) > 0)
                         return true;
                 }
+            }
+
+            return false;
+        }
+
+        /**
+         * @param msgId Message id.
+         */
+        private boolean hasPendingMessage(IgniteUuid msgId) {
+            if (pendingMsgs.msgs.isEmpty())
+                return false;
+
+            for (PendingMessage pendingMsg : pendingMsgs.msgs) {
+                if (pendingMsg.msg != null && pendingMsg.msg.id().equals(msgId))
+                    return true;
             }
 
             return false;
@@ -4695,6 +4734,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             UUID leavingNodeId = msg.creatorNodeId();
 
+            boolean locNodeCoord = isLocalNodeCoordinator();
+
             if (locNodeId.equals(leavingNodeId)) {
                 if (msg.senderNodeId() == null) {
                     synchronized (mux) {
@@ -4754,8 +4795,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return;
             }
-
-            boolean locNodeCoord = isLocalNodeCoordinator();
 
             if (locNodeCoord) {
                 if (msg.verified()) {
@@ -4847,6 +4886,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     leavingNodes.remove(leftNode);
 
                     failedNodesMsgSent.remove(leftNode.id());
+
+                    evictedNodes.remove(leftNode);
                 }
             }
 
@@ -5007,6 +5048,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     failedNodesMsgSent.remove(failedNode.id());
 
+                    evictedNodes.remove(failedNode);
+
                     if (!msg.force()) { // ClientMessageWorker will stop after sending force fail message.
                         ClientMessageWorker worker = clientMsgWorkers.remove(failedNode.id());
 
@@ -5030,6 +5073,106 @@ class ServerImpl extends TcpDiscoveryImpl {
                 notifyDiscovery(EVT_NODE_FAILED, topVer, failedNode);
 
                 spi.stats.onNodeFailed();
+            }
+
+            if (sendMessageToRemotes(msg))
+                sendMessageAcrossRing(msg);
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
+
+                U.closeQuiet(sock);
+            }
+
+            checkPendingCustomMessages();
+        }
+
+
+        /**
+         * @param msg Message.
+         */
+        private void processNodePartitionsEvictionMessage(TcpDiscoveryNodePartitionsEvictionMessage msg) {
+            assert msg != null;
+
+            assert !msg.client();
+
+            UUID locNodeId = getLocalNodeId();
+
+            UUID evictingNodeId = msg.creatorNodeId();
+            boolean locNodeCoord = isLocalNodeCoordinator();
+
+            if ((msg.senderNodeId()!= null && ring.node(msg.senderNodeId()) == null)) {
+                if (log.isDebugEnabled())
+                    log.debug("Evicting node partitions dislodge message since creator node is not in topology: "
+                        + msg);
+
+                return;
+            }
+
+            TcpDiscoveryNode evictingNode = ring.node(evictingNodeId);
+
+            if (evictingNode == null){
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node partitions evicting message since node was not found: " + msg);
+
+                return;
+            }
+
+            synchronized (mux){
+                if (evictedNodes.contains(evictingNode))
+                    return;
+            }
+
+            if (locNodeCoord) {
+                if (msg.verified()) {
+                    spi.stats.onRingMessageReceived(msg);
+
+                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
+
+                    return;
+                }
+
+                msg.verify(locNodeId);
+            }
+
+            if (msg.verified()) {
+                if (log.isDebugEnabled())
+                    log.debug("Evicted node from topology: " + evictingNode);
+
+                long topVer;
+
+                if (locNodeCoord) {
+                    topVer = ring.incrementTopologyVersion();
+
+                    msg.topologyVersion(topVer);
+                }
+                else {
+                    topVer = msg.topologyVersion();
+
+                    assert topVer > 0 : "Topology version is empty for message: " + msg;
+
+                    boolean b = ring.topologyVersion(topVer);
+
+                    //todo
+                    if (!b)
+                        return;
+
+                   /* assert b : "Topology version has not been updated: [ring=" + ring + ", msg=" + msg +
+                        ", lastMsg=" + lastMsg + ", spiState=" + spiStateCopy() + ", localNode=" + locNode.id() +']';*/
+
+                    if (log.isDebugEnabled())
+                        log.debug("Topology version has been updated: [ring=" + ring + ", msg=" + msg + ']');
+
+
+                    lastMsg = msg;
+                }
+
+
+                synchronized (mux) {
+                    evictedNodes.add(evictingNode);
+                }
+
+                notifyDiscovery(EVT_NODE_PARTITIONS_EVICTION, topVer, evictingNode);
             }
 
             if (sendMessageToRemotes(msg))

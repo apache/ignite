@@ -502,6 +502,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         impl.failNode(nodeId, warning);
     }
 
+    /** {@inheritDoc} */
+    @Override public void evictPartitions() {
+        impl.evictPartitions();
+    }
+
     /**
      * Dumps debug info using configured logger.
      */

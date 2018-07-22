@@ -38,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_PARTITIONS_EVICTION;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -89,7 +90,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         this.discoEvt = discoEvt;
 
         assert evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED || evt == EVT_NODE_JOINED ||
-            evt == EVT_DISCOVERY_CUSTOM_EVT;
+            evt == EVT_DISCOVERY_CUSTOM_EVT || evt == EVT_NODE_PARTITIONS_EVICTION;
     }
 
     /**

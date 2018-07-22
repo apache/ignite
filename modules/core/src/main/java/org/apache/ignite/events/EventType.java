@@ -179,6 +179,14 @@ public interface EventType {
      */
     public static final int EVT_CLIENT_NODE_RECONNECTED = 17;
 
+
+
+    /**
+     * TODO doc
+     * @see DiscoveryEvent
+     */
+    public static final int EVT_NODE_PARTITIONS_EVICTION = 666;
+
     /**
      * Built-in event type: task started.
      * <p>
@@ -847,7 +855,8 @@ public interface EventType {
         EVT_NODE_FAILED,
         EVT_NODE_SEGMENTED,
         EVT_CLIENT_NODE_DISCONNECTED,
-        EVT_CLIENT_NODE_RECONNECTED
+        EVT_CLIENT_NODE_RECONNECTED,
+        EVT_NODE_PARTITIONS_EVICTION
     };
 
     /**
@@ -864,7 +873,8 @@ public interface EventType {
         EVT_NODE_SEGMENTED,
         EVT_NODE_METRICS_UPDATED,
         EVT_CLIENT_NODE_DISCONNECTED,
-        EVT_CLIENT_NODE_RECONNECTED
+        EVT_CLIENT_NODE_RECONNECTED,
+        EVT_NODE_PARTITIONS_EVICTION
     };
 
     /**

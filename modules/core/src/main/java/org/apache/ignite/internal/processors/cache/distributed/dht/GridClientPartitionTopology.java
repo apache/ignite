@@ -340,7 +340,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     private void beforeExchange0(ClusterNode loc, GridDhtPartitionsExchangeFuture exchFut) {
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
-        if (exchFut.context().events().hasServerLeft()) {
+        if (exchFut.context().events().hasServerLeftOrEvicting()) {
             List<DiscoveryEvent> evts0 = exchFut.context().events().events();
 
             for (int i = 0; i < evts0.size(); i++) {

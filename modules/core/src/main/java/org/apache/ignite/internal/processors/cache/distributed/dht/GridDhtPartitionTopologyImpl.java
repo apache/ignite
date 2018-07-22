@@ -515,7 +515,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
-                    if (evts.hasServerLeft()) {
+                    if (evts.hasServerLeftOrEvicting()) {
                         List<DiscoveryEvent> evts0 = evts.events();
 
                         for (int i = 0; i < evts0.size(); i++) {

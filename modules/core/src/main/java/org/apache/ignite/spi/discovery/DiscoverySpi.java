@@ -166,6 +166,11 @@ public interface DiscoverySpi extends IgniteSpi {
     public void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     *
+     */
+    public void evictPartitions();
+
+    /**
      * Whether or not discovery is started in client mode.
      *
      * @return {@code true} if node is in client mode.

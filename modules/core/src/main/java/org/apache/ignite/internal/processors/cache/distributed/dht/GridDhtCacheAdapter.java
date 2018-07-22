@@ -120,7 +120,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             ClusterNode loc = ctx.localNode();
 
             assert e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED : e;
-
+            //todo
             final ClusterNode n = e.eventNode();
 
             assert !loc.id().equals(n.id());

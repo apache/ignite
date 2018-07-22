@@ -420,6 +420,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
+    @Override public void evictPartitions() {
+        //todo
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isClientMode() throws IllegalStateException {
         return impl.localNode().isClient();
     }

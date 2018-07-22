@@ -1706,7 +1706,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public boolean serverNodeDiscoveryEvent() {
         assert exchCtx != null;
 
-        return exchCtx.events().hasServerJoin() || exchCtx.events().hasServerLeft();
+        return exchCtx.events().hasServerJoin() || exchCtx.events().hasServerLeftOrEvicting();
     }
 
     /** {@inheritDoc} */
@@ -1843,7 +1843,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             initFut.onDone(err == null);
 
-            if (exchCtx != null && exchCtx.events().hasServerLeft()) {
+            if (exchCtx != null && exchCtx.events().hasServerLeftOrEvicting()) {
                 ExchangeDiscoveryEvents evts = exchCtx.events();
 
                 for (DiscoveryEvent evt : exchCtx.events().events()) {
@@ -1862,7 +1862,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.exchange().lastFinishedFuture(this);
 
-                if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
+                if (exchCtx != null && (exchCtx.events().hasServerLeftOrEvicting() || exchCtx.events().hasServerJoin())) {
                     ExchangeDiscoveryEvents evts = exchCtx.events();
 
                     for (DiscoveryEvent evt : exchCtx.events().events()) {
@@ -2778,11 +2778,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                assert exchCtx.events().hasServerJoin() || exchCtx.events().hasServerLeft();
+//                todo
+                assert exchCtx.events().hasServerJoin() || exchCtx.events().hasServerLeftOrEvicting();
 
                 exchCtx.events().processEvents(this);
 
-                if (exchCtx.events().hasServerLeft())
+                if (exchCtx.events().hasServerLeftOrEvicting())
                     idealAffDiff = cctx.affinity().onServerLeftWithExchangeMergeProtocol(this);
                 else
                     cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, true);
@@ -2863,7 +2864,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (exchCtx.events().hasServerJoin())
                     assignPartitionsStates();
 
-                if (exchCtx.events().hasServerLeft())
+                if (exchCtx.events().hasServerLeftOrEvicting())
                     detectLostPartitions(resTopVer);
             }
 
@@ -2890,7 +2891,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 msg.resultTopologyVersion(resTopVer);
 
-                if (exchCtx.events().hasServerLeft())
+//                log.warning("###resTopVer:" + resTopVer);
+
+                if (exchCtx.events().hasServerLeftOrEvicting())
                     msg.idealAffinityDiff(idealAffDiff);
             }
             else if (forceAffReassignment)
@@ -3420,7 +3423,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (localJoinExchange())
                     cctx.affinity().onLocalJoin(this, msg, resTopVer);
                 else {
-                    if (exchCtx.events().hasServerLeft())
+                    if (exchCtx.events().hasServerLeftOrEvicting())
                         cctx.affinity().applyAffinityFromFullMessage(this, msg);
                     else
                         cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, false);
@@ -3902,6 +3905,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             });
         }
         finally {
+            leaveBusy();
+        }
+    }
+
+
+    public void onNodePartitionsEvicted(final ClusterNode node) {
+        if (isDone() || !enterBusy())
+            return;
+//        log.info("###onNodePartitionsEvicted: locNode=" + cctx.localNodeId() + ", node=" + node.id() /*+ ", ver=" + context().events().topologyVersion()*/);
+
+        try {
+            /*try {
+                U.sleep(100);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                e.printStackTrace();
+            }*/
+            onDiscoveryEvent(() -> events().discoveryCache().updateEvictingNodes(node));
+        }finally {
             leaveBusy();
         }
     }

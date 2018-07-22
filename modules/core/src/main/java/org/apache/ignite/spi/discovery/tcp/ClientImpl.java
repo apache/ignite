@@ -107,6 +107,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodePartitionsEvictionMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
@@ -519,6 +520,11 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             msgWorker.addMessage(msg);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void evictPartitions() {
+        msgWorker.addMessage(new TcpDiscoveryNodePartitionsEvictionMessage(getLocalNodeId()));
     }
 
     /**
