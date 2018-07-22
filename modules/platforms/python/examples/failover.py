@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from pyignite.api import (
-    hashcode, cache_get, cache_put, cache_create_with_config,
+    hashcode, cache_get, cache_put, cache_get_or_create_with_config,
 )
 from pyignite.connection import Connection
 from pyignite.datatypes.cache_config import CacheMode
@@ -25,35 +25,33 @@ MAX_ERRORS = 20
 CACHE_NAME = 'failover_test'
 nodes = [
     ('127.0.0.1', 10800),
-    ('127.0.0.1', 10810),
-    ('127.0.0.1', 10820),
+    ('127.0.0.1', 10801),
+    ('127.0.0.1', 10802),
 ]
 
-node_idx = err_count = test_value = 0
+node_idx = err_count = 0
 conn = Connection(timeout=3.0)
 
 conn.connect(*nodes[node_idx])
-cache_create_with_config(conn, {
-    PROP_NAME: CACHE_NAME,
-    PROP_CACHE_MODE: CacheMode.REPLICATED,
-})
-cache_put(conn, hashcode(CACHE_NAME), 'test_value', test_value)
 
 while True:
     try:
         # reconnect
         conn.connect(*nodes[node_idx])
-        cache_put(conn, hashcode(CACHE_NAME), 'test_value', test_value)
+        print('Connected to node {}'.format(node_idx))
 
-        # proceed with modifying data
+        # proceed with initializing or modifying data
         while True:
+            cache_get_or_create_with_config(conn, {
+                PROP_NAME: CACHE_NAME,
+                PROP_CACHE_MODE: CacheMode.REPLICATED,
+            })
             result = cache_get(conn, hashcode(CACHE_NAME), 'test_value')
-            print(result.value)
             cache_put(
                 conn,
                 hashcode(CACHE_NAME),
                 'test_value',
-                result.value + 1
+                result.value + 1 if result.value else 1
             )
     except Exception as e:
         # count errors
@@ -68,3 +66,10 @@ while True:
         print(
             '“{}” just happened; switching to node {}.'.format(e, node_idx)
         )
+
+# Connected to node 0
+# “Socket connection broken.” just happened; switching to node 1.
+# Connected to node 1
+# “Socket connection broken.” just happened; switching to node 2.
+# “[Errno 111] Connection refused” just happened; switching to node 0.
+# Connected to node 0
