@@ -52,7 +52,7 @@ import static org.apache.ignite.spi.encryption.AESEncryptionSpiImpl.MASTER_KEY_N
  */
 public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** */
-    public static final String ENCRYPTED_CACHE = "encrypted";
+    static final String ENCRYPTED_CACHE = "encrypted";
 
     /** */
     public static final String KEYSTORE_PATH =
@@ -73,8 +73,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
-        encSpi.setKeyStorePath(KEYSTORE_PATH);
-        encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
+        encSpi.setKeyStorePath(keystorePath());
+        encSpi.setKeyStorePassword(keystorePassword());
 
         cfg.setEncryptionSpi(encSpi);
 
@@ -89,6 +89,16 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
+    }
+
+    /** */
+    protected char[] keystorePassword() {
+        return KEYSTORE_PASSWORD.toCharArray();
+    }
+
+    /** */
+    protected String keystorePath() {
+        return KEYSTORE_PATH;
     }
 
     /** */
@@ -131,7 +141,14 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 assertNull(grid1.context().encryption().groupKey(grpId));
         }
 
+        checkData(grid0);
+    }
+
+    /** */
+    protected void checkData(IgniteEx grid0) {
         IgniteCache<Long, String> cache = grid0.cache(cacheName());
+
+        assertNotNull(cache);
 
         for (long i=0; i<100; i++)
             assertEquals("" + i, cache.get(i));

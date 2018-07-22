@@ -102,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryEvtsDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTableTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasicSelfTest;
@@ -416,6 +417,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // User operation SQL
         suite.addTestSuite(SqlParserUserSelfTest.class);
         suite.addTestSuite(SqlUserCommandSelfTest.class);
+        suite.addTestSuite(EncryptedSqlTableTest.class);
 
         return suite;
     }

@@ -51,7 +51,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -76,7 +75,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -138,7 +136,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
-        ccfg.setEncrypted(encrypted());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -172,19 +169,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
 
         cfg.setDataStorageConfiguration(dsCfg);
-        cfg.setEncryptionSpi(encryptionSpi());
 
         return cfg;
-    }
-
-    /** */
-    protected EncryptionSpi encryptionSpi() {
-        return new NoopEncryptionSpi();
-    }
-
-    /** */
-    protected boolean encrypted() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -244,27 +230,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         // Check iteratorArchiveFiles + iteratorWorkFiles iterate over all entries.
         int[] checkKeyIterArr = new int[cacheObjectsToWrite];
 
-        final int[] recCnt = {0};
-
         fill(checkKeyIterArr, 0);
 
         iterateAndCountDataRecord(
             factory.iterator(params),
-            (o1, o2) -> {
-                recCnt[0]++;
-
-                if (o1 != null)
-                    checkKeyIterArr[(Integer)o1]++;
-            },
+            (o1, o2) -> checkKeyIterArr[(Integer)o1]++,
             null
         );
 
-        if (!encrypted()) {
-            for (int i = 0; i < cacheObjectsToWrite; i++)
-                assertTrue("Iterator didn't find key=" + i, checkKeyIterArr[i] > 0);
-        }
-        else
-            assertEquals(cacheObjectsToWrite, recCnt[0]);
+        for (int i = 0; i < cacheObjectsToWrite; i++)
+            assertTrue("Iterator didn't find key=" + i, checkKeyIterArr[i] > 0);
     }
 
     /**
@@ -1152,11 +1127,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         else {
                             final CacheObject val = entry.value();
 
-                            unwrappedValObj = val == null || val instanceof BinaryObject ? val : val.value(null, false);
+                            unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
 
                             final CacheObject key = entry.key();
 
-                            unwrappedKeyObj = key == null || key instanceof BinaryObject ? key : key.value(null, false);
+                            unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
                         }
 
                         if (DUMP_RECORDS)
@@ -1166,7 +1141,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                                 "; Key: " + unwrappedKeyObj +
                                 "; Value: " + unwrappedValObj);
 
-                        if (cacheObjHnd != null)
+                        if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
                             cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
 
                         Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);

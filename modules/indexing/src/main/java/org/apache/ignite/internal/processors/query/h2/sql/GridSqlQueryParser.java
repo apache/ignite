@@ -502,6 +502,9 @@ public class GridSqlQueryParser {
     public static final String PARAM_DATA_REGION = "DATA_REGION";
 
     /** */
+    private static final String PARAM_ENCRYPTED = "ENCRYPTED";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1487,6 +1490,11 @@ public class GridSqlQueryParser {
                 ensureNotEmpty(name, val);
 
                 res.dataRegionName(val);
+
+                break;
+
+            case PARAM_ENCRYPTED:
+                res.encrypted(F.isEmpty(val) || Boolean.parseBoolean(val));
 
                 break;
 

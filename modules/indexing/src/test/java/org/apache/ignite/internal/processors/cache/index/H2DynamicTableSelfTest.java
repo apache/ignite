@@ -880,7 +880,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setValueType("City");
 
                 queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null, null,
-                    null, CacheAtomicityMode.ATOMIC, null, 10, false);
+                    null, CacheAtomicityMode.ATOMIC, null, 10, false, false);
 
                 return null;
             }

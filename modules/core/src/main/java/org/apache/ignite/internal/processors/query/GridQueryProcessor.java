@@ -1483,13 +1483,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param writeSyncMode Write synchronization mode.
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
+     * @param encrypted Encrypted flag.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
         String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists)
-        throws IgniteCheckedException {
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists,
+        boolean encrypted) throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups == null || backups >= 0;
 
@@ -1533,6 +1534,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (backups != null)
             ccfg.setBackups(backups);
 
+        ccfg.setEncrypted(encrypted);
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
