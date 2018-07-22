@@ -465,7 +465,7 @@ public class BinaryContext {
 
                 typeCfgsTrie.register(clsName, typeCfg);
 
-                if (!clsName.endsWith(".*")) {
+                if (!clsName.endsWith(".*") && !clsName.endsWith(".**")) {
                     // Resolve mapper.
                     BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
                     BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
@@ -480,7 +480,7 @@ public class BinaryContext {
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
                 }
                 else {
-                    boolean includeSubPkgs = clsName.endsWith("**");
+                    boolean includeSubPkgs = clsName.endsWith(".**");
 
                     String pkgName = includeSubPkgs? clsName.substring(0, clsName.length() - 3):
                         clsName.substring(0, clsName.length() - 2);
@@ -1724,8 +1724,8 @@ public class BinaryContext {
                 Node n = cur.children.get(tokens[i]);
 
                 if (n == null) {
-                    Node wildcard = (cur.children.containsKey(WILDCARD))? cur.children.get(WILDCARD):
-                        cur.children.get(WILDCARD_ALL);
+                    Node wildcard = (cur.children.containsKey(WILDCARD) && (i == tokens.length -1))?
+                        cur.children.get(WILDCARD): cur.children.get(WILDCARD_ALL);
 
                     return (wildcard != null)? wildcard.cfg : lastSuccessfulWildcard.cfg;
                 }
@@ -1746,11 +1746,6 @@ public class BinaryContext {
 
             /** Children. */
             private Map<String, Node> children;
-
-            /** */
-            Node() {
-            }
         }
     }
-
 }
