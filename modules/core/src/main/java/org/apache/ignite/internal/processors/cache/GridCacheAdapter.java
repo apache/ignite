@@ -2949,12 +2949,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Override public V op(GridNearTxLocal tx) throws IgniteCheckedException {
                 K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
 
-                V ret = tx.removeAllAsync(ctx,
-                    null,
-                    Collections.singletonList(key0),
-                    /*retval*/true,
-                    null,
-                    /*singleRmv*/false).get().value();
+                IgniteInternalFuture<GridCacheReturn> fut = tx.removeAllAsync(ctx,
+                        null,
+                        Collections.singletonList(key0),
+                        /*retval*/true,
+                        null,
+                        /*singleRmv*/false);
+
+                V ret = fut.get().value();
 
                 if (ctx.config().getInterceptor() != null) {
                     K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;

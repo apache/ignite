@@ -50,7 +50,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
         VER_1_2_0,
-        VER_1_1_0, 
+        VER_1_1_0,
         VER_1_0_0
     );
 

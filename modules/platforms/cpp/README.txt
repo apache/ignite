@@ -55,7 +55,7 @@ Files list:
  * ignite.exe - executable to start standalone Ignite C++ node.
  * ignite.core.dll - Ignite C++ API library.
  * ignite.odbc.dll - Ignite ODBC driver.
- * ignite.thin-client.dll - Ignite ODBC driver.
+ * ignite.thin-client.dll - Ignite thin C++ client.
  
 Development:
 

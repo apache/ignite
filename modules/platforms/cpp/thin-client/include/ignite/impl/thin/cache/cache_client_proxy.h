@@ -44,6 +44,14 @@ namespace ignite
                 {
                 public:
                     /**
+                     * Default constructor.
+                     */
+                    CacheClientProxy()
+                    {
+                        // No-op.
+                    }
+
+                    /**
                      * Constructor.
                      */
                     CacheClientProxy(const common::concurrent::SharedPointer<void>& impl) :

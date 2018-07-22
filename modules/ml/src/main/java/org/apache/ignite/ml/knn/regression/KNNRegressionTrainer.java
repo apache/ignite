@@ -19,7 +19,7 @@ package org.apache.ignite.ml.knn.regression;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
