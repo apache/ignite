@@ -38,7 +38,7 @@ import org.apache.ignite.internal.GridVersionSelfTest;
 import org.apache.ignite.internal.IgniteConcurrentEntryProcessorAccessStopTest;
 import org.apache.ignite.internal.IgniteConnectionConcurrentReserveAndRemoveTest;
 import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
-import org.apache.ignite.internal.encryption.EncryptedCacheCreateGroupTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
@@ -170,7 +170,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(EncryptedCacheDestroyTest.class);
         suite.addTestSuite(EncryptedCacheCreateTest.class);
-        suite.addTestSuite(EncryptedCacheCreateGroupTest.class);
+        suite.addTestSuite(EncryptedCacheGroupCreateTest.class);
         suite.addTestSuite(EncryptedCacheRestartTest.class);
         suite.addTestSuite(EncryptedCachePreconfiguredRestartTest.class);
         suite.addTestSuite(EncryptedCacheNodeJoinTest.class);

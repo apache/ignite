@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -79,6 +80,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  * </ul>
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
+    /**
+     * Cache encryption introduced in this Ignite version.
+     */
+    private static final IgniteProductVersion CACHE_ENCRYPTION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Synchronization mutex. */
     private final Object mux = new Object();
@@ -349,7 +354,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Group id.
      */
-    public void remove(int grpId) {
+    public void removeGroupKey(int grpId) {
         ctx.cache().context().database().checkpointReadLock();
 
         try {
@@ -367,6 +372,29 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
+    /**
+     * Callback for cache group start event.
+     * @param grpId Group id.
+     * @param encKey Encryption key
+     */
+    public void beforeCacheGroupStart(int grpId, @Nullable byte[] encKey) {
+        if (encKey == null || ctx.clientNode())
+            return;
+
+        groupKey(grpId, encKey);
+    }
+
+    /**
+     * Callback for cache group destroy event.
+     * @param grpId Group id.
+     */
+    public void onCacheGroupDestroyed(int grpId) {
+        if (groupKey(grpId) == null)
+            return;
+
+        removeGroupKey(grpId);
+    }
+
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         try {
@@ -380,11 +408,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 byte[] encGrpKey = (byte[])encKeys.get(key);
 
-                EncryptionKey grpKey = getSpi().decryptKey(encGrpKey);
-
-                EncryptionKey old = grpEncKeys.putIfAbsent(grpId, grpKey);
-
-                assert old == null;
+                grpEncKeys.putIfAbsent(grpId, getSpi().decryptKey(encGrpKey));
             }
 
 
@@ -410,6 +434,22 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     continue;
 
                 writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
+            }
+        }
+    }
+
+    /**
+     * Checks cache encryption supported by all nodes in cluster.
+     *
+     * @throws IgniteCheckedException If check fails.
+     */
+    public void checkEncryptedCacheSupported() throws IgniteCheckedException {
+        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (CACHE_ENCRYPTION_SINCE.compareTo(node.version()) > 0) {
+                throw new IgniteCheckedException("All nodes in cluster should be 2.7.0 or greater " +
+                    "to create encrypted cache! [nodeId=" + node.id() + "]");
             }
         }
     }

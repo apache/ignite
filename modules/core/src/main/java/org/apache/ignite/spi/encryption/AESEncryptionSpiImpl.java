@@ -28,7 +28,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.crypto.BadPaddingException;
@@ -62,9 +61,9 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * @see EncryptionSpi
  * @see EncryptionKey
  * @see NoopEncryptionSpi
- * @see EncryptionKeyImpl
+ * @see AESEncryptionKeyImpl
  */
-public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi {
+public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi {
     /**
      * Key store entry name to store Encryption master key.
      */
@@ -108,7 +107,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     /**
      * Master key.
      */
-    private EncryptionKeyImpl masterKey;
+    private AESEncryptionKeyImpl masterKey;
 
     /** Logger. */
     @LoggerResource
@@ -134,7 +133,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
             if (log != null)
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
-            masterKey = new EncryptionKeyImpl(ks.getKey(MASTER_KEY_NAME, keyStorePwd));
+            masterKey = new AESEncryptionKeyImpl(ks.getKey(MASTER_KEY_NAME, keyStorePwd), null);
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
@@ -156,7 +155,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl create() throws IgniteException {
+    @Override public AESEncryptionKeyImpl create() throws IgniteException {
         ensureStarted();
 
         try {
@@ -166,7 +165,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
             SecretKey key = gen.generateKey();
 
-            return new EncryptionKeyImpl(key);
+            return new AESEncryptionKeyImpl(key, makeDigest(key.getEncoded()));
         }
         catch (NoSuchAlgorithmException e) {
             throw new IgniteException(e);
@@ -175,13 +174,13 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public byte[] encrypt(byte[] data, EncryptionKey key, int start, int length) {
-        assert key instanceof EncryptionKeyImpl;
+        assert key instanceof AESEncryptionKeyImpl;
         assert start >= 0 && length + start <= data.length;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
 
@@ -205,12 +204,12 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
-        assert key instanceof EncryptionKeyImpl;
+        assert key instanceof AESEncryptionKeyImpl;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
 
@@ -226,11 +225,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public byte[] encryptKey(EncryptionKey key) {
-        assert key instanceof EncryptionKeyImpl;
-
-        EncryptionKeyImpl key0 = (EncryptionKeyImpl)key;
-
-        key0.digest = makeDigest(key0.key().getEncoded());
+        assert key instanceof AESEncryptionKeyImpl;
 
         byte[] serKey = U.toBytes(key);
 
@@ -238,24 +233,22 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKeyImpl decryptKey(byte[] data) {
+    @Override public AESEncryptionKeyImpl decryptKey(byte[] data) {
         byte[] serKey = decrypt(data, masterKey);
 
-        EncryptionKeyImpl key = U.fromBytes(serKey);
+        AESEncryptionKeyImpl key = U.fromBytes(serKey);
 
         byte[] digest = makeDigest(key.key().getEncoded());
 
         if (!Arrays.equals(key.digest, digest))
             throw new IgniteException("Key is broken!");
 
-        key.digest = null;
-
         return key;
     }
 
     /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
-        return EncryptionSpiImpl.encryptedSize0(dataSize);
+        return AESEncryptionSpiImpl.encryptedSize0(dataSize);
     }
 
     /**
@@ -307,7 +300,7 @@ public class EncryptionSpiImpl extends IgniteSpiAdapter implements EncryptionSpi
         if (abs.exists())
             return new FileInputStream(abs);
 
-        URL clsPthRes = EncryptionSpiImpl.class.getClassLoader().getResource(keyStorePath);
+        URL clsPthRes = AESEncryptionSpiImpl.class.getClassLoader().getResource(keyStorePath);
 
         if (clsPthRes != null)
             return clsPthRes.openStream();

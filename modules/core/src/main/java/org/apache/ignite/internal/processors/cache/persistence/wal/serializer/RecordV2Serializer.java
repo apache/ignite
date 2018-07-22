@@ -171,10 +171,8 @@ public class RecordV2Serializer implements RecordSerializer {
             ByteBuffer buf
         ) throws IgniteCheckedException {
             // Write record type.
-            if (dataSerializer.needEncryption(record))
-                RecordV1Serializer.putRecordType(buf, ENCRYPTED_RECORD);
-            else
-                RecordV1Serializer.putRecordType(buf, record.type());
+            RecordV1Serializer.putRecordType(buf,
+                dataSerializer.needEncryption(record) ? ENCRYPTED_RECORD : record.type());
 
             // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (record.type() == SWITCH_SEGMENT_RECORD)

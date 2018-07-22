@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.encryption.EncryptionKey;
-import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
 
 /**
  * Encrypted data pages IO.
@@ -53,10 +53,10 @@ public class EncryptedDataPageIO extends DataPageIO {
      *
      * @param pageSize Page size.
      * @return Count of bytes that should be reserved.
-     * @see EncryptionSpiImpl#encrypt(byte[], EncryptionKey, int, int)
-     * @see EncryptionSpiImpl#encryptedSize(int)
+     * @see AESEncryptionSpiImpl#encrypt(byte[], EncryptionKey, int, int)
+     * @see AESEncryptionSpiImpl#encryptedSize(int)
      */
     private int shouldByReserved(int pageSize) {
-        return EncryptionSpiImpl.encryptedSize0(pageSize) - pageSize;
+        return AESEncryptionSpiImpl.encryptedSize0(pageSize) - pageSize;
     }
 }

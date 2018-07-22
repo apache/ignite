@@ -30,8 +30,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see EncryptionSpi
  * @see EncryptionKey
- * @see EncryptionSpiImpl
- * @see EncryptionKeyImpl
+ * @see AESEncryptionSpiImpl
+ * @see AESEncryptionKeyImpl
  */
 @IgniteSpiNoop
 public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {

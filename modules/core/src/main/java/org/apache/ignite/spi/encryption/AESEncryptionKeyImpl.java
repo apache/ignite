@@ -25,9 +25,9 @@ import org.jetbrains.annotations.Nullable;
  * {@code EncryptionKey} implementation based on java security.
  *
  * @see Key
- * @see EncryptionSpiImpl
+ * @see AESEncryptionSpiImpl
  */
-public class EncryptionKeyImpl implements EncryptionKey {
+public final class AESEncryptionKeyImpl implements EncryptionKey {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,13 +39,15 @@ public class EncryptionKeyImpl implements EncryptionKey {
     /**
      * Key digest.
      */
-    @Nullable byte[] digest;
+    @Nullable final byte[] digest;
 
     /**
      * @param k Encryption key.
+     * @param digest Message digest.
      */
-    EncryptionKeyImpl(Key k) {
+    AESEncryptionKeyImpl(Key k, byte[] digest) {
         this.k = k;
+        this.digest = digest;
     }
 
     /** {@inheritDoc} */

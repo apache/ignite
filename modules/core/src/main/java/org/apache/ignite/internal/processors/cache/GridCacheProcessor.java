@@ -190,12 +190,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
-    /**
-     * Cache encryption introduced in this Ignite version.
-     * TODO: change me before merge.
-     */
-    private static final IgniteProductVersion CACHE_ENCRYPTION_SINCE = IgniteProductVersion.fromString("2.6.0");
-
     /** Template of message of conflicts during configuration merge*/
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -4535,7 +4529,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.cacheType(cacheType);
 
         if (ccfg.isEncrypted()) {
-            checkEncryptedCacheSupported();
+            ctx.encryption().checkEncryptedCacheSupported();
 
             EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
 
@@ -4550,22 +4544,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return req;
-    }
-
-    /**
-     * Checks cache encryption supported by all nodes in cluster.
-     *
-     * @throws IgniteCheckedException If check fails.
-     */
-    private void checkEncryptedCacheSupported() throws IgniteCheckedException {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
-
-        for (ClusterNode node : nodes) {
-            if (CACHE_ENCRYPTION_SINCE.compareTo(node.version()) > 0) {
-                throw new IgniteCheckedException("All nodes in cluster should be 2.7.0 or greater " +
-                    "to create encrypted cache! [nodeId=" + node.id() + "]");
-            }
-        }
     }
 
     /**

@@ -95,6 +95,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private transient boolean locallyConfigured;
 
+    /** Encryption key. */
     @Nullable private byte[] encKey;
 
     /**

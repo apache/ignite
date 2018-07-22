@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
 import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -66,7 +66,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             grid.equals(GRID_2) ||
             grid.equals(GRID_3) ||
             grid.equals(GRID_4)) {
-            EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
+            AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
             encSpi.setKeyStorePath(grid.equals(GRID_2) ? KEYSTORE_PATH_2 : KEYSTORE_PATH);
             encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());

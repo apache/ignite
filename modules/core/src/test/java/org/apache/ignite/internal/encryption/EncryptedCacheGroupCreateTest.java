@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNotEquals;
 
 /**
  */
-public class EncryptedCacheCreateGroupTest extends AbstractEncryptionTest {
+public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
     /** */
     public static final String ENCRYPTED_GROUP = "encrypted-group";
 

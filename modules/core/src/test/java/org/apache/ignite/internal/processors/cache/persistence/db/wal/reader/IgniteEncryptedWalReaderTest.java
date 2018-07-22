@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import org.apache.ignite.encryption.EncryptionSpi;
-import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
 
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
@@ -32,7 +32,7 @@ public class IgniteEncryptedWalReaderTest extends IgniteWalReaderTest {
 
     /** {@inheritDoc} */
     protected EncryptionSpi encryptionSpi() {
-        EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
+        AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
         encSpi.setKeyStorePath(KEYSTORE_PATH);
         encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());

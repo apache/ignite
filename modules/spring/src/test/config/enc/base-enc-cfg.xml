@@ -54,7 +54,7 @@
         </property>
 
         <property name="encryptionSpi">
-            <bean class="org.apache.ignite.spi.encryption.EncryptionSpiImpl">
+            <bean class="org.apache.ignite.spi.encryption.AESEncryptionSpiImpl">
                 <property name="keyStorePath" value="tde.jks"/>
                 <property name="keyStorePassword" value="love_sex_god"/>
             </bean>

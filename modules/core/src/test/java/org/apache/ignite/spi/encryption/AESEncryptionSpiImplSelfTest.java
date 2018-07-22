@@ -27,11 +27,11 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYST
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 
 /** */
-public class EncryptionSpiImplSelfTest extends TestCase {
+public class AESEncryptionSpiImplSelfTest extends TestCase {
     /** @throws Exception If failed. */
     public void testCantStartWithEmptyParam() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
-            EncryptionSpi encSpi = new EncryptionSpiImpl();
+            EncryptionSpi encSpi = new AESEncryptionSpiImpl();
 
             encSpi.spiStart("default");
         }, IgniteException.class);
@@ -40,7 +40,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
     /** @throws Exception If failed. */
     public void testCantStartWithoutPassword() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
-            EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
+            AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
             encSpi.setKeyStorePath("/ignite/is/cool/path/doesnt/exists");
 
@@ -51,7 +51,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
     /** @throws Exception If failed. */
     public void testCantStartKeystoreDoesntExists() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
-            EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
+            AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
             encSpi.setKeyStorePath("/ignite/is/cool/path/doesnt/exists");
             encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
@@ -64,7 +64,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
     public void testEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
 
-        EncryptionKeyImpl k = GridTestUtils.getFieldValue(encSpi, "masterKey");
+        AESEncryptionKeyImpl k = GridTestUtils.getFieldValue(encSpi, "masterKey");
         
         assertNotNull(k);
         assertNotNull(k.key());
@@ -88,7 +88,7 @@ public class EncryptionSpiImplSelfTest extends TestCase {
     public void testKeyEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
         
-        EncryptionKeyImpl k = (EncryptionKeyImpl)encSpi.create();
+        AESEncryptionKeyImpl k = (AESEncryptionKeyImpl)encSpi.create();
 
         assertNotNull(k);
         assertNotNull(k.key());
@@ -98,14 +98,14 @@ public class EncryptionSpiImplSelfTest extends TestCase {
         assertNotNull(encGrpKey);
         assertTrue(encGrpKey.length > 0);
 
-        EncryptionKeyImpl k2 = (EncryptionKeyImpl)encSpi.decryptKey(encGrpKey);
+        AESEncryptionKeyImpl k2 = (AESEncryptionKeyImpl)encSpi.decryptKey(encGrpKey);
 
         assertEquals(k.key(), k2.key());
     }
 
     /** */
     @NotNull private EncryptionSpi spi() throws Exception {
-        EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
+        AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
         encSpi.setKeyStorePath(KEYSTORE_PATH);
         encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());

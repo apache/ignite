@@ -1424,8 +1424,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             pageMem.onCacheGroupDestroyed(tup.get1().groupId());
 
-            if (gctx.encrypted())
-                cctx.kernalContext().encryption().remove(gctx.groupId());
+            cctx.kernalContext().encryption().onCacheGroupDestroyed(gctx.groupId());
         }
 
         Collection<IgniteInternalFuture<Void>> clearFuts = new ArrayList<>(destroyed.size());

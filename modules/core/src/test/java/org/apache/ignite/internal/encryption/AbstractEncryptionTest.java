@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.EncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -45,8 +45,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
-import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.CIPHER_ALGO;
-import static org.apache.ignite.spi.encryption.EncryptionSpiImpl.MASTER_KEY_NAME;
+import static org.apache.ignite.spi.encryption.AESEncryptionSpiImpl.CIPHER_ALGO;
+import static org.apache.ignite.spi.encryption.AESEncryptionSpiImpl.MASTER_KEY_NAME;
 
 /**
  */
@@ -71,7 +71,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        EncryptionSpiImpl encSpi = new EncryptionSpiImpl();
+        AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
         encSpi.setKeyStorePath(KEYSTORE_PATH);
         encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
@@ -159,6 +159,9 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         if (putData) {
             for (long i = 0; i < 100; i++)
                 cache.put(i, "" + i);
+
+            for (long i = 0; i < 100; i++)
+                assertEquals("" + i, cache.get(i));
         }
     }
 
@@ -200,7 +203,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         KeyGenerator gen = KeyGenerator.getInstance(CIPHER_ALGO);
 
-        gen.init(EncryptionSpiImpl.KEY_SIZE);
+        gen.init(AESEncryptionSpiImpl.KEY_SIZE);
 
         SecretKey key = gen.generateKey();
 
