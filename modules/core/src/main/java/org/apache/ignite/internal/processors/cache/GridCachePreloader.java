@@ -73,7 +73,7 @@ public interface GridCachePreloader {
      * @param exchFut Completed exchange future.
      * @return {@code True} if checked events will trigger new rebalance.
      */
-    public boolean checkExchangeEvents(AffinityTopologyVersion rebTopVer, GridDhtPartitionsExchangeFuture exchFut);
+    public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer, GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * @param exchId Exchange ID.

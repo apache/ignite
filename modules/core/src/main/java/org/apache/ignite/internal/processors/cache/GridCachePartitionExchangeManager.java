@@ -2573,7 +2573,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
-                                if (grp.preloader().checkExchangeEvents(rebTopVer, exchFut))
+                                if (grp.preloader().rebalanceRequired(rebTopVer, exchFut))
                                     setRebalanceTopologyVersion(resVer);
 
                                 changed |= grp.topology().afterExchange(exchFut);

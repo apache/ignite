@@ -180,7 +180,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
             grp.affinity().cachedAffinity(oldTopVer) : aff;
 
-        boolean assignsChanged = prevAff == aff;
+        boolean assignsChanged = false;
 
         for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
@@ -194,7 +194,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkExchangeEvents(AffinityTopologyVersion rebTopVer,
+    @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
         GridDhtPartitionsExchangeFuture exchFut) {
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
@@ -203,9 +203,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 "[rebTopVer=" + rebTopVer +
                 ", exchTopVer=" + exchTopVer + ']';
 
-        // Rebalance for client nodes always skipped.
+        if (ctx.kernalContext().clientNode() || rebTopVer.equals(exchTopVer))
+            return false; // No-op.
+
         // Rebalance on local node JOIN event always must be scheduled.
-        if (ctx.kernalContext().clientNode() || exchFut.localJoinExchange())
+        if (exchFut.localJoinExchange())
             return true;
 
         Set<UUID> leftNodes = exchFut.context().events().events().stream()
@@ -213,7 +215,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             .map(e -> e.eventNode().id())
             .collect(Collectors.toSet());
 
-        leftNodes.retainAll(demander.remainingRequestedNodes());
+        leftNodes.retainAll(demander.remainingNodes());
 
         return isAssignsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
             !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.

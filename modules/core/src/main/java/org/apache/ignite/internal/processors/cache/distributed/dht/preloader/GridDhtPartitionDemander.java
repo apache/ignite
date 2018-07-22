@@ -266,8 +266,8 @@ public class GridDhtPartitionDemander {
      * @return Collection of nodes remaining to be requested for demanded partitions.
      *         {@code Empty} if rebalance not started or already finished.
      */
-    Collection<UUID> remainingRequestedNodes() {
-        return rebalanceFut.remainingRequestedNodes();
+    Collection<UUID> remainingNodes() {
+        return rebalanceFut.remainingNodes();
     }
 
     /**
@@ -1249,7 +1249,7 @@ public class GridDhtPartitionDemander {
          * @return Collection of nodes remaining to be requested for demanded partitions.
          *         {@code Empty} if rebalance not started or already finished.
          */
-        private synchronized Collection<UUID> remainingRequestedNodes() {
+        private synchronized Collection<UUID> remainingNodes() {
             return remaining.keySet();
         }
 
