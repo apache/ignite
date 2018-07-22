@@ -307,6 +307,34 @@ Now read the row using an SQL function.
   :language: python
   :lines: 132-210
 
+
+Failover
+--------
+
+When connection to the server is broken or timed out,
+:class:`~pyignite.connection.Connection` object raises an appropriate
+exception, but keeps its constructor's parameters intact, so user can
+reconnect, and the connection object remains valid.
+
+The following example features a simple round-robin failover mechanism.
+Launch 3 Ignite nodes on `localhost` and run:
+
+.. literalinclude:: ../examples/failover.py
+  :language: python
+  :lines: 16-65
+
+Then try shutting down and restarting nodes, and see what happens. At least
+one node should remain active.
+
+.. code-block:: python3
+
+    # Connected to node 0
+    # “Socket connection broken.” just happened; switching to node 1.
+    # Connected to node 1
+    # “Socket connection broken.” just happened; switching to node 2.
+    # “[Errno 111] Connection refused” just happened; switching to node 0.
+    # Connected to node 0
+
 SSL/TLS
 -------
 

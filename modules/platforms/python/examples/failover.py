@@ -28,10 +28,8 @@ nodes = [
     ('127.0.0.1', 10801),
     ('127.0.0.1', 10802),
 ]
-
 node_idx = err_count = 0
 conn = Connection(timeout=3.0)
-
 conn.connect(*nodes[node_idx])
 
 while True:
@@ -39,9 +37,8 @@ while True:
         # reconnect
         conn.connect(*nodes[node_idx])
         print('Connected to node {}'.format(node_idx))
-
-        # proceed with initializing or modifying data
         while True:
+            # proceed with initializing or modifying data
             cache_get_or_create_with_config(conn, {
                 PROP_NAME: CACHE_NAME,
                 PROP_CACHE_MODE: CacheMode.REPLICATED,
@@ -66,10 +63,3 @@ while True:
         print(
             '“{}” just happened; switching to node {}.'.format(e, node_idx)
         )
-
-# Connected to node 0
-# “Socket connection broken.” just happened; switching to node 1.
-# Connected to node 1
-# “Socket connection broken.” just happened; switching to node 2.
-# “[Errno 111] Connection refused” just happened; switching to node 0.
-# Connected to node 0
