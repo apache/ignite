@@ -25,6 +25,8 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
@@ -36,13 +38,13 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
+public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** The imputing strategy. */
     private ImputingStrategy imputingStgy = ImputingStrategy.MEAN;
 
     /** {@inheritDoc} */
     @Override public ImputerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> basePreprocessor) {
+        IgniteBiFunction<K, V, Vector> basePreprocessor) {
         try (Dataset<EmptyContext, ImputerPartitionData> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
@@ -52,7 +54,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
-                    double[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+                    Vector row = basePreprocessor.apply(entity.getKey(), entity.getValue());
 
                     switch (imputingStgy) {
                         case MEAN:
@@ -81,14 +83,14 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
             }
         )) {
 
-            double[] imputingValues;
+            Vector imputingValues;
 
             switch (imputingStgy) {
                 case MEAN:
-                    imputingValues = calculateImputingValuesBySumsAndCounts(dataset);
+                    imputingValues = VectorUtils.of(calculateImputingValuesBySumsAndCounts(dataset));
                     break;
                 case MOST_FREQUENT:
-                    imputingValues = calculateImputingValuesByFrequencies(dataset);
+                    imputingValues = VectorUtils.of(calculateImputingValuesByFrequencies(dataset));
                     break;
                 default: throw new UnsupportedOperationException("The chosen strategy is not supported");
             }
@@ -200,17 +202,17 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
      * @param valuesByFreq Holds the sums by values and features.
      * @return Updated sums by values and features.
      */
-    private Map<Double, Integer>[] calculateFrequencies(double[] row, Map<Double, Integer>[] valuesByFreq) {
+    private Map<Double, Integer>[] calculateFrequencies(Vector row, Map<Double, Integer>[] valuesByFreq) {
         if (valuesByFreq == null) {
-            valuesByFreq = new HashMap[row.length];
+            valuesByFreq = new HashMap[row.size()];
             for (int i = 0; i < valuesByFreq.length; i++) valuesByFreq[i] = new HashMap<>();
         }
         else
-            assert valuesByFreq.length == row.length : "Base preprocessor must return exactly " + valuesByFreq.length
+            assert valuesByFreq.length == row.size() : "Base preprocessor must return exactly " + valuesByFreq.length
                 + " features";
 
         for (int i = 0; i < valuesByFreq.length; i++) {
-            double v = row[i];
+            double v = row.get(i);
 
             if(!Double.valueOf(v).equals(Double.NaN)) {
                 Map<Double, Integer> map = valuesByFreq[i];
@@ -231,16 +233,16 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
      * @param sums Holds the sums by features.
      * @return Updated sums by features.
      */
-    private double[] calculateTheSums(double[] row, double[] sums) {
+    private double[] calculateTheSums(Vector row, double[] sums) {
         if (sums == null)
-            sums = new double[row.length];
+            sums = new double[row.size()];
         else
-            assert sums.length == row.length : "Base preprocessor must return exactly " + sums.length
+            assert sums.length == row.size() : "Base preprocessor must return exactly " + sums.length
                 + " features";
 
         for (int i = 0; i < sums.length; i++){
-            if(!Double.valueOf(row[i]).equals(Double.NaN))
-                sums[i] += row[i];
+            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
+                sums[i] += row.get(i);
         }
 
         return sums;
@@ -253,15 +255,15 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
      * @param counts Holds the counts by features.
      * @return Updated counts by features.
      */
-    private int[] calculateTheCounts(double[] row, int[] counts) {
+    private int[] calculateTheCounts(Vector row, int[] counts) {
         if (counts == null)
-            counts = new int[row.length];
+            counts = new int[row.size()];
         else
-            assert counts.length == row.length : "Base preprocessor must return exactly " + counts.length
+            assert counts.length == row.size() : "Base preprocessor must return exactly " + counts.length
                 + " features";
 
         for (int i = 0; i < counts.length; i++){
-            if(!Double.valueOf(row[i]).equals(Double.NaN))
+            if(!Double.valueOf(row.get(i)).equals(Double.NaN))
                 counts[i]++;
         }
 

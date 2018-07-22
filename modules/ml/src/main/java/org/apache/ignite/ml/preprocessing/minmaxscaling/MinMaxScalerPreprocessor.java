@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -31,7 +32,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
     private static final long serialVersionUID = 6997800576392623469L;
 
@@ -42,7 +43,7 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, do
     private final double[] max;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, double[]> basePreprocessor;
+    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
 
     /**
      * Constructs a new instance of minmaxscaling preprocessor.
@@ -51,7 +52,7 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, do
      * @param max Maximum values.
      * @param basePreprocessor Base preprocessor.
      */
-    public MinMaxScalerPreprocessor(double[] min, double[] max, IgniteBiFunction<K, V, double[]> basePreprocessor) {
+    public MinMaxScalerPreprocessor(double[] min, double[] max, IgniteBiFunction<K, V, Vector> basePreprocessor) {
         this.min = min;
         this.max = max;
         this.basePreprocessor = basePreprocessor;
@@ -64,14 +65,14 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, do
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public double[] apply(K k, V v) {
-        double[] res = basePreprocessor.apply(k, v);
+    @Override public Vector apply(K k, V v) {
+        Vector res = basePreprocessor.apply(k, v);
 
-        assert res.length == min.length;
-        assert res.length == max.length;
+        assert res.size() == min.length;
+        assert res.size() == max.length;
 
-        for (int i = 0; i < res.length; i++)
-            res[i] = (res[i] - min[i]) / (max[i] - min[i]);
+        for (int i = 0; i < res.size(); i++)
+            res.set(i, (res.get(i) - min[i]) / (max[i] - min[i]));
 
         return res;
     }

@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.logger.java.JavaLogger;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
@@ -40,12 +39,6 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD and IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT accordingly.
  */
 class LongJVMPauseDetector {
-    /** Logger. */
-    private static final IgniteLogger LOG = new JavaLogger();
-
-    /** Worker reference. */
-    private static final AtomicReference<Thread> workerRef = new AtomicReference<>();
-
     /** Precision. */
     private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
 
@@ -55,25 +48,38 @@ class LongJVMPauseDetector {
     /** Event count. */
     private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
 
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Worker reference. */
+    private final AtomicReference<Thread> workerRef = new AtomicReference<>();
+
     /** Long pause count. */
-    private static long longPausesCnt;
+    private long longPausesCnt;
 
     /** Long pause total duration. */
-    private static long longPausesTotalDuration;
+    private long longPausesTotalDuration;
 
     /** Long pauses timestamps. */
-    private static final long[] longPausesTimestamps = new long[EVT_CNT];
+    private final long[] longPausesTimestamps = new long[EVT_CNT];
 
     /** Long pauses durations. */
-    private static final long[] longPausesDurations = new long[EVT_CNT];
+    private final long[] longPausesDurations = new long[EVT_CNT];
+
+    /**
+     * @param log Logger.
+     */
+    public LongJVMPauseDetector(IgniteLogger log) {
+        this.log = log;
+    }
 
     /**
      * Starts worker if not started yet.
      */
-    public static void start() {
+    public void start() {
         if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false)) {
-            if (LOG.isDebugEnabled())
-                LOG.debug("JVM Pause Detector is disabled.");
+            if (log.isDebugEnabled())
+                log.debug("JVM Pause Detector is disabled.");
 
             return;
         }
@@ -82,8 +88,8 @@ class LongJVMPauseDetector {
             private long prev = System.currentTimeMillis();
 
             @Override public void run() {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(getName() + " has been started.");
+                if (log.isDebugEnabled())
+                    log.debug(getName() + " has been started.");
 
                 while (true) {
                     try {
@@ -95,9 +101,9 @@ class LongJVMPauseDetector {
                         prev = now;
 
                         if (pause >= THRESHOLD) {
-                            LOG.warning("Possible too long JVM pause: " + pause + " milliseconds.");
+                            log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
 
-                            synchronized (LongJVMPauseDetector.class) {
+                            synchronized (LongJVMPauseDetector.this) {
                                 final int next = (int)(longPausesCnt % EVT_CNT);
 
                                 longPausesCnt++;
@@ -111,7 +117,10 @@ class LongJVMPauseDetector {
                         }
                     }
                     catch (InterruptedException e) {
-                        LOG.error(getName() + " has been interrupted", e);
+                        if (workerRef.compareAndSet(this, null))
+                            log.error(getName() + " has been interrupted.", e);
+                        else if (log.isDebugEnabled())
+                            log.debug(getName() + " has been stopped.");
 
                         break;
                     }
@@ -120,19 +129,22 @@ class LongJVMPauseDetector {
         };
 
         if (!workerRef.compareAndSet(null, worker)) {
-            LOG.warning(LongJVMPauseDetector.class.getSimpleName() + " already started!");
+            log.warning(LongJVMPauseDetector.class.getSimpleName() + " already started!");
 
             return;
         }
 
         worker.setDaemon(true);
         worker.start();
+
+        if (log.isDebugEnabled())
+            log.debug("LongJVMPauseDetector was successfully started");
     }
 
     /**
      * Stops the worker if one is created and running.
      */
-    public static void stop() {
+    public void stop() {
         final Thread worker = workerRef.getAndSet(null);
 
         if (worker != null && worker.isAlive() && !worker.isInterrupted())
@@ -142,21 +154,21 @@ class LongJVMPauseDetector {
     /**
      * @return Long JVM pauses count.
      */
-    synchronized static long longPausesCount() {
+    synchronized long longPausesCount() {
         return longPausesCnt;
     }
 
     /**
      * @return Long JVM pauses total duration.
      */
-    synchronized static long longPausesTotalDuration() {
+    synchronized long longPausesTotalDuration() {
         return longPausesTotalDuration;
     }
 
     /**
      * @return Last long JVM pause events.
      */
-    synchronized static Map<Long, Long> longPauseEvents() {
+    synchronized Map<Long, Long> longPauseEvents() {
         final Map<Long, Long> evts = new TreeMap<>();
 
         for (int i = 0; i < longPausesTimestamps.length && longPausesTimestamps[i] != 0; i++)

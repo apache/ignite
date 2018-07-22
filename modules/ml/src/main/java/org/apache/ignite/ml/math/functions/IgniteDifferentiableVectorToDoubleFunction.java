@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for differentiable functions from vector to double.
@@ -29,5 +29,5 @@ public interface IgniteDifferentiableVectorToDoubleFunction extends IgniteFuncti
      * @param pnt Point to calculate differential at.
      * @return Function differential at a given point.
      */
-    Vector differential(Vector pnt);
+    public Vector differential(Vector pnt);
 }

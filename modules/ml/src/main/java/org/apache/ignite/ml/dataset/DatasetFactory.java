@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetD
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -132,7 +133,7 @@ public class DatasetFactory {
      */
     public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(
         DatasetBuilder<K, V> datasetBuilder, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
         return create(
             datasetBuilder,
             partCtxBuilder,
@@ -156,7 +157,7 @@ public class DatasetFactory {
      */
     public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(Ignite ignite,
         IgniteCache<K, V> upstreamCache, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             partCtxBuilder,
@@ -180,7 +181,7 @@ public class DatasetFactory {
      */
     public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(
         DatasetBuilder<K, V> datasetBuilder, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
         return create(
             datasetBuilder,
             partCtxBuilder,
@@ -205,7 +206,7 @@ public class DatasetFactory {
      */
     public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(Ignite ignite,
         IgniteCache<K, V> upstreamCache, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             partCtxBuilder,
@@ -226,7 +227,7 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
         return createSimpleDataset(
             datasetBuilder,
             new EmptyContextBuilder<>(),
@@ -247,7 +248,7 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(Ignite ignite, IgniteCache<K, V> upstreamCache,
-        IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
         return createSimpleDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             featureExtractor
@@ -267,7 +268,7 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
             datasetBuilder,
@@ -291,7 +292,7 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Ignite ignite,
-        IgniteCache<K, V> upstreamCache, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteCache<K, V> upstreamCache, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
@@ -341,7 +342,7 @@ public class DatasetFactory {
      */
     public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(Map<K, V> upstreamMap,
         int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
         return createSimpleDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             partCtxBuilder,
@@ -366,7 +367,7 @@ public class DatasetFactory {
      */
     public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(
         Map<K, V> upstreamMap, int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             partCtxBuilder,
@@ -387,7 +388,7 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(Map<K, V> upstreamMap, int partitions,
-        IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
         return createSimpleDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             featureExtractor
@@ -408,7 +409,7 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Map<K, V> upstreamMap,
-        int partitions, IgniteBiFunction<K, V, double[]> featureExtractor,
+        int partitions, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
             new LocalDatasetBuilder<>(upstreamMap, partitions),

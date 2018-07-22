@@ -593,7 +593,7 @@ export class NotebookCtrl {
                         showControls: true,
                         legend: {
                             vers: 'furious',
-                            margin: {right: -25}
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -659,9 +659,7 @@ export class NotebookCtrl {
                             donutRatio: 0.35,
                             legend: {
                                 vers: 'furious',
-                                margin: {
-                                    right: -25
-                                }
+                                margin: {right: -15}
                             }
                         },
                         title: {
@@ -701,9 +699,7 @@ export class NotebookCtrl {
                         useInteractiveGuideline: true,
                         legend: {
                             vers: 'furious',
-                            margin: {
-                                right: -25
-                            }
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -745,7 +741,7 @@ export class NotebookCtrl {
                         style,
                         legend: {
                             vers: 'furious',
-                            margin: {right: -25}
+                            margin: {right: -15}
                         }
                     }
                 };

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -31,15 +32,15 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
     private static final long serialVersionUID = 6873438115778921295L;
 
     /** Normalization in L^p space. Must be greater than 0. Default value is 2. */
-    private int p = 2;
+    private int p;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, double[]> basePreprocessor;
+    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
 
     /**
      * Constructs a new instance of Normalization preprocessor.
@@ -47,7 +48,7 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, d
      * @param p Degree of L^p space value.
      * @param basePreprocessor Base preprocessor.
      */
-    public NormalizationPreprocessor(int p, IgniteBiFunction<K, V, double[]> basePreprocessor) {
+    public NormalizationPreprocessor(int p, IgniteBiFunction<K, V, Vector> basePreprocessor) {
         this.p = p;
         this.basePreprocessor = basePreprocessor;
     }
@@ -59,13 +60,13 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, d
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public double[] apply(K k, V v) {
-        double[] res = basePreprocessor.apply(k, v);
+    @Override public Vector apply(K k, V v) {
+        Vector res = basePreprocessor.apply(k, v);
 
         double pNorm = Math.pow(foldMap(res, Functions.PLUS, Functions.pow(p), 0d), 1.0 / p);
 
-        for (int i = 0; i < res.length; i++)
-            res[i] /= pNorm;
+        for (int i = 0; i < res.size(); i++)
+            res.set(i, res.get(i) / pNorm);
 
         return res;
     }
@@ -79,9 +80,9 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, d
      * @param zero Zero value for fold operation.
      * @return Folded value of this vector.
      */
-    private double foldMap(double[] vec, IgniteBiFunction<Double,Double,Double> foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
-        for (double feature : vec)
-            zero = foldFun.apply(zero, mapFun.apply(feature));
+    private double foldMap(Vector vec, IgniteBiFunction<Double,Double,Double> foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
+        for (int i = 0;  i< vec.size(); i++)
+            zero = foldFun.apply(zero, mapFun.apply(vec.get(i)));
 
         return zero;
     }

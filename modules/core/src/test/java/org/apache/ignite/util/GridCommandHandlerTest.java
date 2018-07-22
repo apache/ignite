@@ -109,6 +109,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test. */
     protected ByteArrayOutputStream testOut;
 
+    /** Option is used for auto confirmation. */
+    private static final String CMD_AUTO_CONFIRMATION = "--yes";
+
     /**
      * @return Folder in work directory.
      * @throws IgniteCheckedException If failed to resolve folder name.
@@ -209,7 +212,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     protected int execute(ArrayList<String> args) {
         // Add force to avoid interactive confirmation
-        args.add("--force");
+        args.add(CMD_AUTO_CONFIRMATION);
 
         return new CommandHandler().execute(args);
     }
@@ -221,7 +224,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     protected int execute(CommandHandler hnd, ArrayList<String> args) {
         // Add force to avoid interactive confirmation
-        args.add("--force");
+        args.add(CMD_AUTO_CONFIRMATION);
 
         return hnd.execute(args);
     }
@@ -235,7 +238,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         ArrayList<String> args0 = new ArrayList<>(Arrays.asList(args));
 
         // Add force to avoid interactive confirmation
-        args0.add("--force");
+        args0.add(CMD_AUTO_CONFIRMATION);
 
         return hnd.execute(args0);
     }
