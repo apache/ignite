@@ -279,7 +279,7 @@
         </profile>
 
         <profile>
-            <id>release</id>
+            <id>release</id>             
             <build>
                 <plugins>
                      <plugin>
@@ -346,22 +346,6 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?" />
                                             <substitution expression="" />
-                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.bat" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
-                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;" />
-                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
-                                                <include name="**/*.sh" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
-                                            <substitution expression="ENABLE_ASSERTIONS=0" />
                                             <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.bat" />
                                             </fileset>
