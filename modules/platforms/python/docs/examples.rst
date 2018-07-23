@@ -291,22 +291,58 @@ voucher's format and data:
 - rename `date` to `expense_date`,
 - add `report_date`,
 - set `report_date` to the current date if `reported` is True, None if False,
-- delete `reported`,
-- change `sum` type from float to decimal.
+- delete `reported`.
 
-Note that we can not be certain of the other fields of the expense
-voucher's object type.
-
-The changes are incompatible with the current object's schema, so we have
-to add the new Binary object type to the system instead of adding a new schema
-to the old Binary object type.
-
-Now read the row using an SQL function.
+First obtain the binary type ID. It can be calculated as a hashcode of
+the binary type name in lower case.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 133-198
+  :lines: 134
 
+Then obtain the initial schema.
+
+.. literalinclude:: ../examples/migrate_binary.py
+  :language: python
+  :lines: 136-163
+
+The binary type `ExpenseVoucher` has 6 fields and one schema. All the fields
+are present in that one schema. Note also, that each field has an ID (which is
+also calculated as a hascode of its name in lower case) and a type ID. Field
+type ID can be either ordinal value of one of the
+:mod:`~pyignite.datatypes.type_codes` or and ID of the registered binary type.
+
+Let us modify the schema dictionary and update the type.
+
+.. literalinclude:: ../examples/migrate_binary.py
+  :language: python
+  :lines: 165-219
+
+Now our binary type have two schemes. The old scheme (ID=-231598180) remained
+unchanged, while the new scheme (ID=547629991) has only those fields specified
+in the most recent :py:func:`~pyignite.api.binary.put_binary_type` call.
+None of the binary fields were actually removed, but two newly described
+fields, `expense_date` and `report_date`, were added.
+
+Now migrate the data from the old schema to the new one.
+
+.. literalinclude:: ../examples/migrate_binary.py
+  :language: python
+  :lines: 222-279
+
+As you can see, old or new fields are available in the resulting binary object,
+depending on which schema was used when writing them using
+:py:func:`~pyignite.api.key_value.cache_put`.
+
+This versioning mechanism is quite simple and robust, but it have its
+limitations. The main thing is: you can not change the type of the existing
+field. If you try, you will be greeted with the following message:
+
+```org.apache.ignite.binary.BinaryObjectException: Wrong value has been set
+[typeName=SomeType, fieldName=f1, fieldType=String, assignedValueType=int]```
+
+As an alternative (which feels more like a workaround) you can rename
+the field or create a new schema.
 
 Failover
 --------
