@@ -30,7 +30,7 @@ import {
     reducer
 } from './reducer';
 
-suite.skip('page-configure component reducer', () => {
+suite('page-configure component reducer', () => {
     test('Default state', () => {
         assert.deepEqual(
             reducer(void 0, {}),
