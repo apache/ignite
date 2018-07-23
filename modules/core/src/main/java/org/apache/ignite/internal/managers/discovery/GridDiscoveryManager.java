@@ -65,7 +65,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.RestartProcessFailureHandler;
-import org.apache.ignite.failure.StopNodeOnSegmentaionFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -2652,7 +2652,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final RestartProcessFailureHandler restartProcHnd = new RestartProcessFailureHandler();
 
         /** Stop node handler. */
-        private final StopNodeOnSegmentaionFailureHandler stopNodeHnd = new StopNodeOnSegmentaionFailureHandler();
+        private final StopNodeFailureHandler stopNodeHnd = new StopNodeFailureHandler();
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
