@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -978,7 +979,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if (last || tx.isSystemInvalidate())
+        if ((last || tx.isSystemInvalidate()) && !isNodeStoppingException(err))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -992,6 +993,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         return false;
+    }
+
+    /**
+     * @return {@code True} if future was completed with {@link NodeStoppingException}
+     */
+    private boolean isNodeStoppingException(Throwable err) {
+        return err instanceof NodeStoppingException;
     }
 
     /**
