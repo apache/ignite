@@ -2571,7 +2571,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 refreshPartitions();
                         }
 
-                        if (!cctx.kernalContext().clientNode()) {
+                        if (!cctx.kernalContext().clientNode() &&
+                            (!rebTopVer.initialized() || exchFut == null)) { // Skip it as not marked for rebalance.
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
@@ -2660,15 +2661,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         if (assignsCancelled || hasPendingExchange()) { // Pending exchange.
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
-                                "[top=" + resVer + ", rebTopVer=" + rebTopVer +
-                                ", evt=" + exchId.discoveryEventName() +
+                                "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                         }
                         else if (r != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing started [order=" + rebList +
-                                ", top=" + resVer + ", rebTopVer=" + rebTopVer +
+                                ", top=" + resVer + ", force=" + (exchFut == null) +
                                 ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
 
@@ -2678,7 +2678,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
-                                "[top=" + resVer + ", rebTopVer=" + rebTopVer +
+                                "[top=" + resVer + ", force=" + (exchFut == null) +
                                 ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                     }
