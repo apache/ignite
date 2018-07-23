@@ -15,10 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow;
+package org.apache.ignite.tensorflow.util;
 
 import java.io.Serializable;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public interface SerializableConsumer<T> extends Consumer<T>, Serializable {
+/**
+ * Serializable supplier.
+ *
+ * @param <T> The type of results supplied by this supplier.
+ */
+public interface SerializableSupplier<T> extends Supplier<T>, Serializable {
 }

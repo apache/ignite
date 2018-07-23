@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.tensorflow.SerializableConsumer;
+import org.apache.ignite.tensorflow.util.SerializableConsumer;
 
 /**
  * TensorFlow cluster gateway that allows to subscribe on changes in cluster configuration.

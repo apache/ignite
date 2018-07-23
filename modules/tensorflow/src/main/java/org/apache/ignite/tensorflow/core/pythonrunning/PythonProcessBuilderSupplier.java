@@ -17,13 +17,12 @@
 
 package org.apache.ignite.tensorflow.core.pythonrunning;
 
-import java.io.Serializable;
-import java.util.function.Supplier;
+import org.apache.ignite.tensorflow.util.SerializableSupplier;
 
 /**
  * Python process builder supplier that is used to create Python process builder.
  */
-public class PythonProcessBuilderSupplier implements Supplier<ProcessBuilder>, Serializable {
+public class PythonProcessBuilderSupplier implements SerializableSupplier<ProcessBuilder> {
     /** */
     private static final long serialVersionUID = 7181937306294456125L;
 
