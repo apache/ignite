@@ -20,6 +20,9 @@ package org.apache.ignite.tensorflow.submitter.parser;
 import org.apache.ignite.tensorflow.submitter.command.Command;
 import org.apache.ignite.tensorflow.submitter.command.PsCommand;
 
+/**
+ * Command parser that parses "ps" command.
+ */
 public class PsCommandParser implements CommandParser {
     /** {@inheritDoc} */
     @Override public Command parse(String[] args) {

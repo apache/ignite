@@ -21,6 +21,9 @@ import java.util.UUID;
 import org.apache.ignite.tensorflow.submitter.command.Command;
 import org.apache.ignite.tensorflow.submitter.command.DescribeCommand;
 
+/**
+ * Command parser that parses "describe" command.
+ */
 public class DescribeCommandParser implements CommandParser {
     /** {@inheritDoc} */
     @Override public Command parse(String[] args) {

@@ -21,10 +21,18 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 
+/**
+ * Stop command that stops
+ */
 public class StopCommand implements Command {
-
+    /** Cluster identifier. */
     private final UUID clusterId;
 
+    /**
+     * Constructs a new instance of stop command.
+     *
+     * @param clusterId Cluster identifier.
+     */
     public StopCommand(UUID clusterId) {
         this.clusterId = clusterId;
     }

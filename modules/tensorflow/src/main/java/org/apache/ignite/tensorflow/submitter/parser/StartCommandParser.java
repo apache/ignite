@@ -21,6 +21,9 @@ import java.util.Arrays;
 import org.apache.ignite.tensorflow.submitter.command.Command;
 import org.apache.ignite.tensorflow.submitter.command.StartCommand;
 
+/**
+ * Command parser that parses "start" command.
+ */
 public class StartCommandParser implements CommandParser {
     /** {@inheritDoc} */
     @Override public Command parse(String[] args) {

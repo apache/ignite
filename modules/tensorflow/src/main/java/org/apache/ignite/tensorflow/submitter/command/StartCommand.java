@@ -36,14 +36,26 @@ import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGateway;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
 
+/**
+ * Start command that starts TensorFlow cluster for specified cache and runs specified job using this cluster.
+ */
 public class StartCommand implements Command {
-
+    /** Upstream cache name. */
     private final String upstreamCacheName;
 
+    /** Job archive path. */
     private final String jobArchivePath;
 
+    /** User command to be executed. */
     private final String[] commands;
 
+    /**
+     * Constructs a new instance of start command.
+     *
+     * @param upstreamCacheName Upstream cache name.
+     * @param jobArchivePath Job archive path.
+     * @param commands User command to be executed.
+     */
     public StartCommand(String upstreamCacheName, String jobArchivePath, String[] commands) {
         this.upstreamCacheName = upstreamCacheName;
         this.jobArchivePath = jobArchivePath;
@@ -85,6 +97,13 @@ public class StartCommand implements Command {
         }
     }
 
+    /**
+     * Archives specified folder or file into zip archive.
+     *
+     * @param jobArchivePath Path to folder to be archived.
+     * @return Byte array representing zip archive.
+     * @throws IOException In case of input/output exception.
+     */
     private byte[] zip(String jobArchivePath) throws IOException {
         Path path = Paths.get(jobArchivePath);
         File file = path.toFile();
@@ -100,16 +119,30 @@ public class StartCommand implements Command {
             return zipFile(file);
     }
 
-    private byte[] zipDirectory(File file) throws IOException {
+    /**
+     * Archives specified folder into zip archive.
+     *
+     * @param dir Directory to be archived.
+     * @return Byte array representing zip archive.
+     * @throws IOException In case of input/output exception.
+     */
+    private byte[] zipDirectory(File dir) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try (ZipOutputStream zipFile = new ZipOutputStream(baos)) {
-            compressDirectoryToZip(file.getAbsolutePath(), file.getAbsolutePath(), zipFile);
+            compressDirectoryToZip(dir.getAbsolutePath(), dir.getAbsolutePath(), zipFile);
         }
 
         return baos.toByteArray();
     }
 
+    /**
+     * Archives specified file into zip archive.
+     *
+     * @param file File to be archived.
+     * @return Byte array representing zip archive.
+     * @throws IOException In case of input/output exception.
+     */
     private byte[] zipFile(File file) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -125,12 +158,27 @@ public class StartCommand implements Command {
         return baos.toByteArray();
     }
 
+    /**
+     * Reads zip archive into byte array and returns this array.
+     *
+     * @param file Archive to be read.
+     * @return Byte array representing zip archive.
+     * @throws IOException In case of input/output exception.
+     */
     private byte[] zipArchive(File file) throws IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
             return IOUtils.toByteArray(fis);
         }
     }
 
+    /**
+     * Archives specified folder into zip output stream.
+     *
+     * @param rootDir Root directory.
+     * @param srcDir Source directory.
+     * @param out Zip output stream.
+     * @throws IOException In case of input/output exception.
+     */
     private void compressDirectoryToZip(String rootDir, String srcDir, ZipOutputStream out) throws IOException {
         File[] files = new File(srcDir).listFiles();
 
@@ -139,7 +187,8 @@ public class StartCommand implements Command {
                 if (file.isDirectory())
                     compressDirectoryToZip(rootDir, srcDir + File.separator + file.getName(), out);
                 else {
-                    ZipEntry entry = new ZipEntry(srcDir.replace(rootDir, "") + File.separator + file.getName());
+                    ZipEntry entry = new ZipEntry(srcDir.replace(rootDir, "")
+                        + File.separator + file.getName());
                     out.putNextEntry(entry);
 
                     try (FileInputStream in = new FileInputStream(srcDir + File.separator + file.getName())) {

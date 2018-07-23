@@ -64,7 +64,10 @@ public class TensorFlowClusterGatewayManager {
 
         TensorFlowClusterGateway gateway = createTensorFlowClusterGateway(topicName);
 
-        ignite.services().deployClusterSingleton(svcName, new TensorFlowClusterMaintainer(clusterId, jobArchive, topicName));
+        ignite.services().deployClusterSingleton(
+            svcName,
+            new TensorFlowClusterMaintainer(clusterId, jobArchive, topicName)
+        );
         log.info("Cluster maintainer deployed as a service [clusterId=" + clusterId + "]");
 
         return gateway;

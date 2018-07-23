@@ -22,10 +22,18 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.tensorflow.submitter.command.Command;
 
+/**
+ * General command parser that parses arguments and decides which specific command parser should be used.
+ */
 public class GeneralCommandParser implements CommandParser {
-
+    /**
+     * Map with specific command parsers.
+     */
     private final Map<String, CommandParser> parsers;
 
+    /**
+     * Constructs a new instance of general command parser.
+     */
     public GeneralCommandParser() {
         parsers = new HashMap<>();
         parsers.put("start", new StartCommandParser());

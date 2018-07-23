@@ -23,6 +23,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowCluster;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterManager;
 
+/**
+ * Ps command that prints a list of all running TensorFlow cluster identifiers.
+ */
 public class PsCommand implements Command {
     /** {@inheritDoc} */
     @Override public void runWithinIgnite(Ignite ignite) {

@@ -19,8 +19,18 @@ package org.apache.ignite.tensorflow.submitter.parser;
 
 import org.apache.ignite.tensorflow.submitter.command.Command;
 
+/**
+ * Command parser that parses user arguments of the submitter application and returns correspondent command to be
+ * executed.
+ */
 @FunctionalInterface
 public interface CommandParser {
-
+    /**
+     * Parses user arguments of the submitter application and returns correspondent command to be executed or
+     * {@code null} if the given arguments doesn't match command pattern.
+     *
+     * @param args Application arguments.
+     * @return Commands to be executed or {@code null} if the given arguments doesn't match command pattern.
+     */
     public Command parse(String[] args);
 }

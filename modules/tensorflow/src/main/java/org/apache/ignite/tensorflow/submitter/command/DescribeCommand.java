@@ -24,10 +24,18 @@ import org.apache.ignite.tensorflow.cluster.TensorFlowCluster;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterManager;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
 
+/**
+ * Describe command that prints configuration of the specified TensorFlow cluster.
+ */
 public class DescribeCommand implements Command {
-
+    /** Cluster identifier. */
     private final UUID clusterId;
 
+    /**
+     * Constructs a new instance of command "describe".
+     *
+     * @param clusterId Cluster identifier.
+     */
     public DescribeCommand(UUID clusterId) {
         this.clusterId = clusterId;
     }

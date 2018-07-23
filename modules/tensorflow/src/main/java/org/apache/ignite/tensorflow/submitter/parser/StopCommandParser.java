@@ -21,6 +21,9 @@ import java.util.UUID;
 import org.apache.ignite.tensorflow.submitter.command.Command;
 import org.apache.ignite.tensorflow.submitter.command.StopCommand;
 
+/**
+ * Command parser that parses "stop" command.
+ */
 public class StopCommandParser implements CommandParser {
     /** {@inheritDoc} */
     @Override public Command parse(String[] args) {

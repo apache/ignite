@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow.submitter.command;
-
-import org.apache.ignite.Ignite;
-
 /**
- * Command that can be executed in TensorFlow on Apache Ignite infrastructure via command line interface.
+ * <!-- Package description. -->
+ * This package contains classes that allow to parse program arguments and build a command that should be executed.
  */
-@FunctionalInterface
-public interface Command {
-    /**
-     * Runs this command using specified Ignite instance.
-     *
-     * @param ignite Ignite instance.
-     */
-    public void runWithinIgnite(Ignite ignite);
-}
+package org.apache.ignite.tensorflow.submitter.parser;
