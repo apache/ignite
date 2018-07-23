@@ -26,7 +26,7 @@ import {
     reducer
 } from './reducer';
 
-suite.skip('page-configure-basic component reducer', () => {
+suite('page-configure-basic component reducer', () => {
     test('Default state', () => {
         assert.deepEqual(reducer(void 0, {}), {
             clusterID: -1,
