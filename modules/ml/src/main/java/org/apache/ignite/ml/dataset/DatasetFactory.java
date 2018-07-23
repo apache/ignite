@@ -31,7 +31,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetD
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
