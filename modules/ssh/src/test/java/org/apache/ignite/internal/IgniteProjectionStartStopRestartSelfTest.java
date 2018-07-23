@@ -186,7 +186,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
             wasEmpty = ignite.cluster().nodes().isEmpty();
         }
 
-        G.stopAll(true);
+        G.stop(true);
 
         joinedCnt.set(0);
         leftCnt.set(0);
@@ -200,7 +200,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 120 * 1000;
+        return 90 * 1000;
     }
 
     /**
