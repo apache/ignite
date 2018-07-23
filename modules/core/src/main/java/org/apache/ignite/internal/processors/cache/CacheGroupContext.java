@@ -581,6 +581,16 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if current thread holds lock on topology.
+     */
+    public boolean isTopologyLocked() {
+        if (top == null)
+            return false;
+
+        return top.holdsLock();
+    }
+
+    /**
      * @return Offheap manager.
      */
     public IgniteCacheOffheapManager offheap() {
@@ -722,6 +732,8 @@ public class CacheGroupContext {
     void stopGroup() {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        evictor.stop();
 
         aff.cancelFutures(err);
 
@@ -1047,18 +1059,28 @@ public class CacheGroupContext {
      * @param enabled Global WAL enabled flag.
      */
     public void globalWalEnabled(boolean enabled) {
-        persistGlobalWalState(enabled);
+        if (globalWalEnabled != enabled) {
+            log.info("Global WAL state for group=" + cacheOrGroupName() +
+                " changed from " + globalWalEnabled + " to " + enabled);
 
-        this.globalWalEnabled = enabled;
+            persistGlobalWalState(enabled);
+
+            globalWalEnabled = enabled;
+        }
     }
 
     /**
      * @param enabled Local WAL enabled flag.
      */
     public void localWalEnabled(boolean enabled) {
-        persistLocalWalState(enabled);
+        if (localWalEnabled != enabled){
+            log.info("Local WAL state for group=" + cacheOrGroupName() +
+                " changed from " + localWalEnabled + " to " + enabled);
 
-        this.localWalEnabled = enabled;
+            persistLocalWalState(enabled);
+
+            localWalEnabled = enabled;
+        }
     }
 
     /**

@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -67,7 +69,7 @@ public class FilePageStore implements PageStore {
     private final FileIOFactory ioFactory;
 
     /** I/O interface for read/write operations with file */
-    private FileIO fileIO;
+    private volatile FileIO fileIO;
 
     /** */
     private final AtomicLong allocated;
@@ -159,74 +161,75 @@ public class FilePageStore implements PageStore {
      * @return Next available position in the file to store a data.
      * @throws IOException If initialization is failed.
      */
-    private long initFile() throws IOException {
-        ByteBuffer hdr = header(type, dbCfg.getPageSize());
+    private long initFile(FileIO fileIO) throws IOException {
+        try {
+            ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-        while (hdr.remaining() > 0)
-            fileIO.write(hdr);
+        fileIO.writeFully(hdr);
 
-        //there is 'super' page in every file
-        return headerSize() + dbCfg.getPageSize();
+            //there is 'super' page in every file
+            return headerSize() + dbCfg.getPageSize();
+        }
+        catch (ClosedByInterruptException e) {
+            // If thread was interrupted written header can be inconsistent.
+            Files.delete(cfgFile.toPath());
+
+            throw e;
+        }
     }
 
     /**
      * Checks that file store has correct header and size.
      *
      * @return Next available position in the file to store a data.
-     * @throws PersistentStorageIOException If check is failed.
+     * @throws IOException If check is failed.
      */
-    private long checkFile() throws PersistentStorageIOException {
-        try {
-            ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
+    private long checkFile(FileIO fileIO) throws IOException {
+        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
+        fileIO.readFully(hdr);
 
-            hdr.rewind();
+        hdr.rewind();
 
-            long signature = hdr.getLong();
+        long signature = hdr.getLong();
 
-            if (SIGNATURE != signature)
-                throw new IOException("Failed to verify store file (invalid file signature)" +
-                    " [expectedSignature=" + U.hexLong(SIGNATURE) +
-                    ", actualSignature=" + U.hexLong(signature) + ']');
+        if (SIGNATURE != signature)
+            throw new IOException("Failed to verify store file (invalid file signature)" +
+                " [expectedSignature=" + U.hexLong(SIGNATURE) +
+                ", actualSignature=" + U.hexLong(signature) + ']');
 
-            int ver = hdr.getInt();
+        int ver = hdr.getInt();
 
-            if (version() != ver)
-                throw new IOException("Failed to verify store file (invalid file version)" +
-                    " [expectedVersion=" + version() +
-                    ", fileVersion=" + ver + "]");
+        if (version() != ver)
+            throw new IOException("Failed to verify store file (invalid file version)" +
+                " [expectedVersion=" + version() +
+                ", fileVersion=" + ver + "]");
 
-            byte type = hdr.get();
+        byte type = hdr.get();
 
-            if (this.type != type)
-                throw new IOException("Failed to verify store file (invalid file type)" +
-                    " [expectedFileType=" + this.type +
-                    ", actualFileType=" + type + "]");
+        if (this.type != type)
+            throw new IOException("Failed to verify store file (invalid file type)" +
+                " [expectedFileType=" + this.type +
+                ", actualFileType=" + type + "]");
 
-            int pageSize = hdr.getInt();
+        int pageSize = hdr.getInt();
 
-            if (dbCfg.getPageSize() != pageSize)
-                throw new IOException("Failed to verify store file (invalid page size)" +
-                    " [expectedPageSize=" + dbCfg.getPageSize() +
-                    ", filePageSize=" + pageSize + "]");
+        if (dbCfg.getPageSize() != pageSize)
+            throw new IOException("Failed to verify store file (invalid page size)" +
+                " [expectedPageSize=" + dbCfg.getPageSize() +
+                ", filePageSize=" + pageSize + "]");
 
-            long fileSize = cfgFile.length();
+        long fileSize = cfgFile.length();
 
-            if (fileSize == headerSize()) // Every file has a special meta page.
-                fileSize = pageSize + headerSize();
+        if (fileSize == headerSize()) // Every file has a special meta page.
+            fileSize = pageSize + headerSize();
 
-            if ((fileSize - headerSize()) % pageSize != 0)
-                throw new IOException("Failed to verify store file (invalid file size)" +
-                    " [fileSize=" + U.hexLong(fileSize) +
-                    ", pageSize=" + U.hexLong(pageSize) + ']');
+        if ((fileSize - headerSize()) % pageSize != 0)
+            throw new IOException("Failed to verify store file (invalid file size)" +
+                " [fileSize=" + U.hexLong(fileSize) +
+                ", pageSize=" + U.hexLong(pageSize) + ']');
 
-            return fileSize;
-        }
-        catch (IOException e) {
-            throw new PersistentStorageIOException("File check failed", e);
-        }
+        return fileSize;
     }
 
     /**
@@ -243,6 +246,8 @@ public class FilePageStore implements PageStore {
             fileIO.force();
 
             fileIO.close();
+
+            fileIO = null;
 
             if (cleanFile)
                 Files.delete(cfgFile.toPath());
@@ -272,6 +277,8 @@ public class FilePageStore implements PageStore {
             fileIO.clear();
 
             fileIO.close();
+
+            fileIO = null;
 
             Files.delete(cfgFile.toPath());
         }
@@ -348,7 +355,7 @@ public class FilePageStore implements PageStore {
             int len = pageSize;
 
             do {
-                int n = fileIO.read(pageBuf, off);
+                int n = readWithFailover(pageBuf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0) {
@@ -403,7 +410,7 @@ public class FilePageStore implements PageStore {
             long off = 0;
 
             do {
-                int n = fileIO.read(buf, off);
+                int n = readWithFailover(buf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0)
@@ -433,10 +440,28 @@ public class FilePageStore implements PageStore {
 
                     PersistentStorageIOException err = null;
 
-                    try {
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+                    long newSize;
 
-                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+                    try {
+                        boolean interrupted = false;
+
+                        while (true) {
+                            try {
+                                this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+
+                                newSize = cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO);
+
+                                if (interrupted)
+                                    Thread.currentThread().interrupt();
+
+                                break;
+                            }
+                            catch (ClosedByInterruptException e) {
+                                interrupted = true;
+
+                                Thread.interrupted();
+                            }
+                        }
 
                         assert allocated.get() == 0;
 
@@ -469,59 +494,146 @@ public class FilePageStore implements PageStore {
         }
     }
 
+    /**
+     * Reinit page store after file channel was closed by thread interruption.
+     *
+     * @param fileIO Old fileIO.
+     */
+    private void reinit(FileIO fileIO) throws IOException {
+        if (!inited)
+            return;
+
+        if (fileIO != this.fileIO)
+            return;
+
+        lock.writeLock().lock();
+
+        try {
+            if (fileIO != this.fileIO)
+                return;
+
+            try {
+                boolean interrupted = false;
+
+                while (true) {
+                    try {
+                        fileIO = null;
+
+                        fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+
+                        checkFile(fileIO);
+
+                        this.fileIO = fileIO;
+
+                        if (interrupted)
+                            Thread.currentThread().interrupt();
+
+                        break;
+                    }
+                    catch (ClosedByInterruptException e) {
+                        interrupted = true;
+
+                        Thread.interrupted();
+                    }
+                }
+            }
+            catch (IOException e) {
+                try {
+                    if (fileIO != null)
+                        fileIO.close();
+                }
+                catch (IOException e0) {
+                    e.addSuppressed(e0);
+                }
+
+                throw e;
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
-        lock.readLock().lock();
+        boolean interrupted = false;
 
-        try {
-            if (tag < this.tag)
-                return;
+        while (true) {
+            FileIO fileIO = this.fileIO;
 
-            long off = pageOffset(pageId);
+            try {
+                lock.readLock().lock();
 
-            assert (off >= 0 && off + headerSize() <= allocated.get() ) || recover :
-                "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
+                try {
+                    if (tag < this.tag)
+                        return;
 
-            assert pageBuf.capacity() == pageSize;
-            assert pageBuf.position() == 0;
-            assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
-                + " should be same with " + ByteOrder.nativeOrder();
-            assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
-            assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
+                    long off = pageOffset(pageId);
 
-            if (calculateCrc && !skipCrc) {
-                assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+                    assert (off >= 0 && off + headerSize() <= allocated.get()) || recover :
+                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
-                PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+                    assert pageBuf.capacity() == pageSize;
+                    assert pageBuf.position() == 0;
+                    assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                        + " should be same with " + ByteOrder.nativeOrder();
+                    assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
+                    assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
+
+                    if (calculateCrc && !skipCrc) {
+                        assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+
+                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+                    }
+
+                    // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
+                    assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+                        "CRC hasn't been calculated, crc=0";
+
+                    assert pageBuf.position() == 0 : pageBuf.position();
+
+                    fileIO.writeFully(pageBuf, off);
+
+                    PageIO.setCrc(pageBuf, 0);
+
+                    if (interrupted)
+                        Thread.currentThread().interrupt();
+
+                    return;
+                }
+                finally {
+                    lock.readLock().unlock();
+                }
             }
+            catch (IOException e) {
+                if (e instanceof ClosedChannelException) {
+                    try {
+                        if (e instanceof ClosedByInterruptException) {
+                            interrupted = true;
 
-            // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
-            assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
-                    "CRC hasn't been calculated, crc=0";
+                            Thread.interrupted();
+                        }
 
-            assert pageBuf.position() == 0 : pageBuf.position();
+                        reinit(fileIO);
 
-            int len = pageSize;
+                        pageBuf.position(0);
 
-            do {
-                int n = fileIO.write(pageBuf, off);
+                        PageIO.setCrc(pageBuf, 0);
 
-                off += n;
+                        continue;
+                    }
+                    catch (IOException e0) {
+                        e0.addSuppressed(e);
 
-                len -= n;
+                        e = e0;
+                    }
+                }
+
+                throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId
+                    + ", file=" + cfgFile.getAbsolutePath() + ']', e);
             }
-            while (len > 0);
-
-            PageIO.setCrc(pageBuf, 0);
-        }
-        catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId +
-                ", file=" + cfgFile.getAbsolutePath() + ']', e);
-        }
-        finally {
-            lock.readLock().unlock();
         }
     }
 
@@ -552,7 +664,10 @@ public class FilePageStore implements PageStore {
         try {
             init();
 
-            fileIO.force();
+            FileIO fileIO = this.fileIO;
+
+            if (fileIO != null)
+                fileIO.force();
         }
         catch (IOException e) {
             throw new PersistentStorageIOException("Sync error", e);
@@ -602,5 +717,45 @@ public class FilePageStore implements PageStore {
             return 0;
 
         return (int)((allocated.get() - headerSize()) / pageSize);
+    }
+
+    /**
+     * @param destBuf Destination buffer.
+     * @param position Position.
+     * @return Number of read bytes.
+     */
+    private int readWithFailover(ByteBuffer destBuf, long position) throws IOException {
+        boolean interrupted = false;
+
+        int bufPos = destBuf.position();
+
+        while (true) {
+            FileIO fileIO = this.fileIO;
+
+            if (fileIO == null)
+                throw new IOException("FileIO has stopped");
+
+            try {
+                assert destBuf.remaining() > 0;
+
+                int bytesRead = fileIO.read(destBuf, position);
+
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+
+                return bytesRead;
+            }
+            catch (ClosedChannelException e) {
+                destBuf.position(bufPos);
+
+                if (e instanceof ClosedByInterruptException) {
+                    interrupted = true;
+
+                    Thread.interrupted();
+                }
+
+                reinit(fileIO);
+            }
+        }
     }
 }
