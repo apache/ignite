@@ -2029,7 +2029,7 @@ BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBoth)
 BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
-    
+
     SQLCHAR request[] = "INSERT INTO TestType(_key, i32Field) VALUES(?, ?)";
 
     SQLRETURN ret = SQLPrepare(stmt, request, SQL_NTS);
@@ -2065,12 +2065,8 @@ BOOST_AUTO_TEST_CASE(TestManyCursors)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    for (int32_t i = 0; i < 1000; ++i)
+    for (int32_t i = 0; i < 100; ++i)
     {
-        int64_t key = 0;
-        char strField[1024] = { 0 };
-        SQLLEN strFieldLen = 0;
-
         SQLCHAR req[] = "SELECT 1";
 
         SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);

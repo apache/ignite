@@ -36,8 +36,8 @@ public class OdbcQueryResults {
     /** Current result set. */
     private OdbcResultSet currentResultSet;
 
-    /** Current result set index. */
-    private int currentResultSetIdx;
+    /** Next result set index. */
+    private int nextResultSetIdx;
 
     /** Client version. */
     private ClientListenerProtocolVersion ver;
@@ -48,7 +48,7 @@ public class OdbcQueryResults {
      */
     OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors, ClientListenerProtocolVersion ver) {
         this.cursors = cursors;
-        this.currentResultSetIdx = 0;
+        this.nextResultSetIdx = 0;
         this.ver = ver;
 
         rowsAffected = new ArrayList<>(cursors.size());
@@ -74,10 +74,10 @@ public class OdbcQueryResults {
         if (currentResultSet != null && currentResultSet.hasUnfetchedRows())
             return true;
 
-        for (FieldsQueryCursor<List<?>> cursor : cursors) {
-            QueryCursorImpl<List<?>> cursor0 = (QueryCursorImpl<List<?>>)cursor;
+        for (int i = nextResultSetIdx; i < cursors.size(); ++i) {
+            QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)cursors.get(i);
 
-            if (cursor0.isQuery())
+            if (cursor.isQuery())
                 return true;
         }
         return false;
@@ -104,9 +104,12 @@ public class OdbcQueryResults {
     public void nextResultSet() {
         currentResultSet = null;
 
-        if (currentResultSetIdx != cursors.size()) {
-            currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx), ver);
-            ++currentResultSetIdx;
+        while (nextResultSetIdx != cursors.size() && rowsAffected.get(nextResultSetIdx) != -1)
+            ++nextResultSetIdx;
+
+        if (nextResultSetIdx != cursors.size()) {
+            currentResultSet = new OdbcResultSet(cursors.get(nextResultSetIdx), ver);
+            ++nextResultSetIdx;
         }
     }
 }

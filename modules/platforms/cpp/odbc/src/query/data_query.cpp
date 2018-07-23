@@ -194,7 +194,18 @@ namespace ignite
                     return SqlResult::AI_NO_DATA;
                 }
 
-                SqlResult::Type res = MakeRequestMoreResults();
+                SqlResult::Type res = SqlResult::AI_SUCCESS;
+
+                if (rowsAffected[rowsAffectedIdx + 1] == -1)
+                    res = MakeRequestMoreResults();
+                else
+                {
+                    cachedNextPage.reset(new ResultPage(true));
+
+                    int64_t qryId = cursor->GetQueryId();
+
+                    cursor.reset(new Cursor(qryId));
+                }
 
                 if (res == SqlResult::AI_SUCCESS)
                     ++rowsAffectedIdx;
