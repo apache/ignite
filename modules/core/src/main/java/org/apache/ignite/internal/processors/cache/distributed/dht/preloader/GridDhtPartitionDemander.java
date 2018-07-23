@@ -235,8 +235,8 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
-     * @return {@code True} if rebalance topology version changed by exchange manager or dummy exchage occurs
-     *         see {@link RebalanceReassignExchangeTask}.
+     * @return {@code True} if rebalance topology version changed in exchange thread or force reassing exchange
+     *         occurs, see {@link RebalanceReassignExchangeTask} for details.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
         return !ctx.exchange().rebalanceTopologyVersion().equals(fut.topVer) ||
@@ -254,7 +254,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * @return Collection of nodes remaining to be requested for demanded partitions.
-     *         {@code Empty} if rebalance not started or already finished.
+     *         Value {@code Empty} if rebalance not started or already finished.
      */
     Collection<UUID> remainingNodes() {
         return rebalanceFut.remainingNodes();
@@ -262,9 +262,8 @@ public class GridDhtPartitionDemander {
 
     /**
      * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
-     * future based on them. If previous rebalance future is not finished method will cancel it.
-     * Also, method sends current rebalance started event.
-     * In case of delayed rebalance method schedules new with configured delay based on {@code lastExchangeFut}.
+     * future based on them. Cancel previous rebalance future and send rebalance started event.
+     * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
      * @param assignments New assignments to be processed.
      * @param force {@code True} if force preload request by {@link ForceRebalanceExchangeTask}.
@@ -1228,7 +1227,7 @@ public class GridDhtPartitionDemander {
 
         /**
          * @return Collection of nodes remaining to be requested for demanded partitions.
-         *         {@code Empty} if rebalance not started or already finished.
+         *         Value {@code Empty} if rebalance not started or already finished.
          */
         private synchronized Collection<UUID> remainingNodes() {
             return remaining.keySet();

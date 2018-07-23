@@ -167,27 +167,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         demander.onTopologyChanged(lastFut);
     }
 
-    /**
-     * @param oldTopVer Previous topology version.
-     * @param newTopVer New topology version to check result.
-     * @return {@code True} if affinity assignments changed between two versions for local node.
-     */
-    private boolean isAssignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
-        final AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
-
-        // We should get assigns based on previous rebalance with successfull result to calculate difference.
-        // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
-        final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
-            grp.affinity().cachedAffinity(oldTopVer) : aff;
-
-        boolean assignsChanged = prevAff == aff;
-
-        for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
-            assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
-
-        return assignsChanged;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
         GridDhtPartitionsExchangeFuture exchFut) {
@@ -206,8 +185,29 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         leftNodes.retainAll(demander.remainingNodes());
 
-        return isAssignsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
+        return assignsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
             !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
+    }
+
+    /**
+     * @param oldTopVer Previous topology version.
+     * @param newTopVer New topology version to check result.
+     * @return {@code True} if affinity assignments changed between two versions for local node.
+     */
+    private boolean assignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
+        final AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
+
+        // We should get affinity assignments based on previous rebalance to calculate difference.
+        // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
+        final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
+            grp.affinity().cachedAffinity(oldTopVer) : aff;
+
+        boolean assignsChanged = prevAff == aff; // True, if there is no info in history.
+
+        for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
+            assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
+
+        return assignsChanged;
     }
 
     /** {@inheritDoc} */

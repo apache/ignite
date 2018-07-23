@@ -120,7 +120,7 @@ class GridDhtPartitionSupplier {
     }
 
     /**
-     * Handle topology changes and clear supply context map of outdated contexts.
+     * Handle topology change and clear supply context map of outdated contexts.
      */
     void onTopologyChanged() {
         synchronized (scMap) {

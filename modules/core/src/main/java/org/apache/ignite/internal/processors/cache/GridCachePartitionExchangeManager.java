@@ -181,8 +181,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         new AtomicReference<>(AffinityTopologyVersion.NONE);
 
     /**
-     * The last topology version to be rebalanced for all cache groups. Changed by exchange thread if calculated
-     * affinity assignments are different from the previous requested version.
+     * The latest started but possibly not finished rebalance topology version. Value {@code NONE} means that
+     * previous rebalance is undefined and the new one process should be initiated.
+     *
+     * Should not be used to determine latest rebalanced topology version.
      */
     private volatile AffinityTopologyVersion rebTopVer = AffinityTopologyVersion.NONE;
 
@@ -834,7 +836,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return Topology version of latest scheduled rebalance.
+     * @return Topology version of latest rebalance or {@code NONE} if there is no info.
      */
     public AffinityTopologyVersion rebalanceTopologyVersion() {
         return rebTopVer;
@@ -2585,7 +2587,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                // Set last topology for force rebalance or force reassign.
+                                // Schedule rebalance for force rebalance or force reassign.
                                 if (resVer == null) {
                                     resVer = grp.topology().readyTopologyVersion();
 
