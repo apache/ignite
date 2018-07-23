@@ -236,7 +236,7 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Future.
      * @return {@code True} if rebalance topology version changed in exchange thread or force reassing exchange
-     *         occurs, see {@link RebalanceReassignExchangeTask} for details.
+     * occurs, see {@link RebalanceReassignExchangeTask} for details.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
         return !ctx.exchange().rebalanceTopologyVersion().equals(fut.topVer) ||
@@ -1227,7 +1227,7 @@ public class GridDhtPartitionDemander {
 
         /**
          * @return Collection of nodes remaining to be requested for demanded partitions.
-         *         Value {@code Empty} if rebalance not started or already finished.
+         * Value {@code Empty} if rebalance not started or already finished.
          */
         private synchronized Collection<UUID> remainingNodes() {
             return remaining.keySet();

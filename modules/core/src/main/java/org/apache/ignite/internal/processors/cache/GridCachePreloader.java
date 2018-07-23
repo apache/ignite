@@ -64,7 +64,7 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param rebTopVer Previously rebalance topology version or {@code NONE} if there is no info.
+     * @param rebTopVer Previously rebalance topology version or {@code NONE} if there is no rebalance info.
      * @param exchFut Completed exchange future.
      * @return {@code True} if rebalance should be interrupted.
      */
