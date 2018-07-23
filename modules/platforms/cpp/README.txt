@@ -31,6 +31,7 @@ Files list:
  * ignite - executable to start standalone Ignite C++ node.
  * libignite.so - Ignite C++ API library.
  * libignite-odbc.so - Ignite ODBC driver.
+ * libignite-thin-client.so - Ignite C++ thin client library.
  
 Development:
 
@@ -54,6 +55,7 @@ Files list:
  * ignite.exe - executable to start standalone Ignite C++ node.
  * ignite.core.dll - Ignite C++ API library.
  * ignite.odbc.dll - Ignite ODBC driver.
+ * ignite.thin-client.dll - Ignite thin C++ client.
  
 Development:
 
@@ -64,7 +66,8 @@ Development:
    * $(IGNITE_HOME)\platforms\cpp\jni\include
    * $(IGNITE_HOME)\platforms\cpp\jni\os\win\include
    * $(IGNITE_HOME)\platforms\cpp\binary\include
-   * $(IGNITE_HOME)\platforms\cpp\core\include
+   * $(IGNITE_HOME)\platforms\cpp\core\include to use thick client
+   * $(IGNITE_HOME)\platforms\cpp\thin-client\include to use thin client
    * $(JAVA_HOME)\include
    * $(JAVA_HOME)\include\win32
  * Update Library Directories with path to the built binaries
@@ -72,9 +75,10 @@ Development:
    * ignite.common.lib
    * ignite.jni.lib
    * ignite.binary.lib
-   * ignite.core.lib
- * Make sure that your application is aware about ignite.jni.dll and ignite.core.dll
-   libraries. The easiest way to achieve this is to either make sure these files are in
-   %PATH%, or to put them into the output directory of your project with help of
-   PostBuild events.
+   * ignite.core.lib to use thick client
+   * ignite.thin-client.lib to use thin client
+ * Make sure that your application is aware about ignite.jni.dll and ignite.core.dll or
+   ignite.thin-client.dll libraries. The easiest way to achieve this is to either make
+   sure these files are in %PATH%, or to put them into the output directory of your
+   project with help of PostBuild events.
  * To start Apache Ignite as a standalone node or Windows service use ignite.exe

@@ -107,6 +107,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Node to partition map. */
     private GridDhtPartitionFullMap node2part;
 
+    /** Partitions map for left nodes. */
+    private GridDhtPartitionFullMap leftNode2Part = new GridDhtPartitionFullMap();
+
     /** */
     private final Map<Integer, Set<UUID>> diffFromAffinity = new HashMap<>();
 
@@ -229,6 +232,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void readUnlock() {
         lock.readLock().unlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean holdsLock() {
+        return lock.isWriteLockedByCurrentThread() || lock.getReadHoldCount() > 0;
     }
 
     /** {@inheritDoc} */
@@ -716,35 +724,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (grp.rebalanceEnabled()) {
                                 Collection<ClusterNode> owners = owners(p);
 
-                                // If there are no other owners, then become an owner.
-                                if (F.isEmpty(owners)) {
-                                    boolean owned = locPart.own();
+                                // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
 
-                                    assert owned : "Failed to own partition [grp=" + grp.cacheOrGroupName() +
-                                        ", locPart=" + locPart + ']';
-
-                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
-
-                                    changed = true;
-
-                                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                                        DiscoveryEvent discoEvt = exchFut.events().lastEvent();
-
-                                        grp.addRebalanceEvent(p,
-                                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                                            discoEvt.eventNode(),
-                                            discoEvt.type(),
-                                            discoEvt.timestamp());
-                                    }
-
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Owned partition [grp=" + grp.cacheOrGroupName() +
-                                            ", part=" + locPart + ']');
-                                    }
+                                if (!F.isEmpty(owners)) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Will not own partition (there are owners to rebalance from) [grp=" + grp.cacheOrGroupName() +
+                                            ", locPart=" + locPart + ", owners = " + owners + ']');
                                 }
-                                else if (log.isDebugEnabled())
-                                    log.debug("Will not own partition (there are owners to rebalance from) [grp=" + grp.cacheOrGroupName() +
-                                        ", locPart=" + locPart + ", owners = " + owners + ']');
                             }
                             else
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
@@ -1933,6 +1919,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     assert plc != null;
 
+                    Set<Integer> recentlyLost = new HashSet<>();
+
+                    for (Map.Entry<UUID, GridDhtPartitionMap> leftEntry : leftNode2Part.entrySet()) {
+                        for (Map.Entry<Integer, GridDhtPartitionState> entry : leftEntry.getValue().entrySet()) {
+                            if (entry.getValue() == OWNING)
+                                recentlyLost.add(entry.getKey());
+                        }
+                    }
+
                     // Update partition state on all nodes.
                     for (Integer part : lost) {
                         long updSeq = updateSeq.incrementAndGet();
@@ -1940,6 +1935,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         GridDhtLocalPartition locPart = localPartition(part, resTopVer, false, true);
 
                         if (locPart != null) {
+                            if (locPart.state() == LOST)
+                                continue;
+
                             boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
 
                             if (marked)
@@ -1958,7 +1956,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
 
-                        if (grp.eventRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                        if (recentlyLost.contains(part) && grp.eventRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
                             grp.addRebalanceEvent(part,
                                 EVT_CACHE_REBALANCE_PART_DATA_LOST,
                                 discoEvt.eventNode(),
@@ -1970,6 +1968,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (plc != PartitionLossPolicy.IGNORE)
                         grp.needsRecovery(true);
                 }
+
+                leftNode2Part.clear();
 
                 return changed;
             }
@@ -2392,6 +2392,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 node2part = new GridDhtPartitionFullMap(node2part, node2part.updateSequence());
 
             GridDhtPartitionMap parts = node2part.remove(nodeId);
+
+            if (parts != null)
+                leftNode2Part.put(nodeId, parts);
 
             if (!grp.isReplicated()) {
                 if (parts != null) {
