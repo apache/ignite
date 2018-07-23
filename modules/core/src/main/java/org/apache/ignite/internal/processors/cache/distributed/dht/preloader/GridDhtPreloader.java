@@ -180,7 +180,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
             grp.affinity().cachedAffinity(oldTopVer) : aff;
 
-        boolean assignsChanged = false;
+        boolean assignsChanged = prevAff == aff;
 
         for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
@@ -189,25 +189,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateRebalanceFuture(AffinityTopologyVersion topVer) {
-        demander.updateRebalanceFuture(topVer);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
         GridDhtPartitionsExchangeFuture exchFut) {
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
-        assert rebTopVer.initialized() :
-            "Exchange events cannot be checked. Rebalance topology version incorrect " +
-                "[rebTopVer=" + rebTopVer +
-                ", exchTopVer=" + exchTopVer + ']';
-
-        if (ctx.kernalContext().clientNode() || rebTopVer.equals(exchTopVer))
+        if (ctx.kernalContext().clientNode())
             return false; // No-op.
 
-        // Rebalance on local node JOIN event always must be scheduled.
-        if (exchFut.localJoinExchange())
+        if (!rebTopVer.initialized() || exchFut.localJoinExchange())
             return true;
 
         Set<UUID> leftNodes = exchFut.context().events().events().stream()
@@ -247,6 +236,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partCnt; p++) {
+            if (ctx.exchange().hasPendingExchange()) {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
+                        exchId);
+
+                assignments.cancelled(true);
+
+                return assignments;
+            }
+
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);
@@ -423,12 +422,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(
         GridDhtPreloaderAssignments assignments,
-        boolean forcePreload,
+        boolean forceRebalance,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forcePreload, rebalanceId, next, forcedRebFut);
+        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
     }
 
     /**

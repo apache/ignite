@@ -64,11 +64,6 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param topVer New rebalance topology version.
-     */
-    public void updateRebalanceFuture(AffinityTopologyVersion topVer);
-
-    /**
      * @param rebTopVer Previously rebalancing topology version.
      * @param exchFut Completed exchange future.
      * @return {@code True} if checked events will trigger new rebalance.
@@ -90,7 +85,7 @@ public interface GridCachePreloader {
      * @param forcePreload {@code True} if force preload requested by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id created by exchange thread.
      * @param next Runnable responsible for cache rebalancing chain.
-     * @param forcedRebFut Always {@code null} except is not part of {@link ForceRebalanceExchangeTask}.
+     * @param forcedRebFut Always {@code null} except it is not part of {@link ForceRebalanceExchangeTask}.
      * @return Rebalancing runnable.
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
@@ -127,8 +122,6 @@ public interface GridCachePreloader {
      * Future result is {@code false} in case rebalancing cancelled or finished with missed partitions and will be
      * restarted at current or pending topology.
      *
-     * Note that topology change creates new futures and finishes previous. Previous future
-     * does not cancel if assignments not changed, only topology version updated.
      */
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 

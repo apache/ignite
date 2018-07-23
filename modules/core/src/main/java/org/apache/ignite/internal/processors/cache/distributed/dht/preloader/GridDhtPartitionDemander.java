@@ -235,7 +235,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
-     * @return {@code True} if demanded topology version changed or dummy exchage occurs
+     * @return {@code True} if rebalance topology version changed by exchange manager or dummy exchage occurs
      *         see {@link RebalanceReassignExchangeTask}.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
@@ -250,16 +250,6 @@ public class GridDhtPartitionDemander {
      */
     void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         lastExchangeFut = lastFut;
-    }
-
-    /**
-     * @param topVer New rebalance topology version.
-     */
-    void updateRebalanceFuture(AffinityTopologyVersion topVer) {
-        assert topVer.compareTo(rebalanceFut.topVer) > 0 : "New realance version should be greater than initial [" +
-            "initTopVer=" + rebalanceFut.topVer + ", newTopVer=" + topVer + ']';
-
-        rebalanceFut.latestTopVer = topVer;
     }
 
     /**
@@ -347,14 +337,20 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
+            if (assignments.cancelled()) { // Pending exchange.
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to cancelled assignments.");
+
+                fut.onDone(false);
+
+                fut.sendRebalanceFinishedEvent();
+
+                return null;
+            }
+
             if (assignments.isEmpty()) { // Nothing to rebalance.
-                U.log(log, "Group rebalance skipped (empty assigns) " +
-                    "[grp=" + grp.cacheOrGroupName() +
-                    ", mode=" + grp.config().getRebalanceMode() +
-                    ", cache=" + grp.config().getCacheMode() +
-                    ", force=" + force +
-                    ", lastTopVer=" + fut.topologyVersion() +
-                    ", rebalanceId=" + fut.rebalanceId + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to empty assignments.");
 
                 fut.onDone(true);
 
@@ -363,14 +359,6 @@ public class GridDhtPartitionDemander {
                 fut.sendRebalanceFinishedEvent();
 
                 return null;
-            }
-
-            // Callback on success for the last rebalance future.
-            if (next == null) {
-                fut.listen(f -> {
-                    if (f.result())
-                        ctx.exchange().setRebalanceTopologyVersion(fut.latestTopVer);
-                });
             }
 
             return () -> {
@@ -978,11 +966,8 @@ public class GridDhtPartitionDemander {
         @GridToStringExclude
         private final GridDhtPartitionExchangeId exchId;
 
-        /** Initial future topology version. */
+        /** Topology version. */
         private final AffinityTopologyVersion topVer;
-
-        /** Rebalance topology version updated from exchange thread. */
-        private volatile AffinityTopologyVersion latestTopVer;
 
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;
@@ -1002,7 +987,7 @@ public class GridDhtPartitionDemander {
 
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
-            latestTopVer = topVer;
+
             this.grp = grp;
             this.log = log;
             this.rebalanceId = rebalanceId;
@@ -1015,8 +1000,7 @@ public class GridDhtPartitionDemander {
          */
         RebalanceFuture() {
             this.exchId = null;
-            topVer = AffinityTopologyVersion.ZERO;
-            latestTopVer = null;
+            this.topVer = null;
             this.ctx = null;
             this.grp = null;
             this.log = null;
@@ -1027,7 +1011,7 @@ public class GridDhtPartitionDemander {
          * @return Topology version.
          */
         public AffinityTopologyVersion topologyVersion() {
-            return latestTopVer;
+            return topVer;
         }
 
         /**
@@ -1042,7 +1026,7 @@ public class GridDhtPartitionDemander {
          * @return Is initial (created at demander creation).
          */
         private boolean isInitial() {
-            return !topVer.initialized();
+            return topVer == null;
         }
 
         /**
@@ -1055,8 +1039,7 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return true;
 
-                U.log(log, "Cancelled rebalancing from all nodes [topology=" + topologyVersion() +
-                    ", grp=" + grp.cacheOrGroupName() + "]");
+                U.log(log, "Cancelled rebalancing from all nodes [topology=" + topologyVersion() + ']');
 
                 if (!ctx.kernalContext().isStopping()) {
                     for (UUID nodeId : remaining.keySet())
@@ -1080,7 +1063,7 @@ public class GridDhtPartitionDemander {
                     return;
 
                 U.log(log, ("Cancelled rebalancing [cache=" + grp.cacheOrGroupName() +
-                    ", fromNode=" + nodeId + ", topology=" + topVer + ", latestTopVer=" + topologyVersion() +
+                    ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
                     ", time=" + (U.currentTimeMillis() - remaining.get(nodeId).get1()) + " ms]"));
 
                 cleanupRemoteContexts(nodeId);
@@ -1121,7 +1104,7 @@ public class GridDhtPartitionDemander {
                 // Negative number of id signals that supply context
                 // with the same positive id must be cleaned up at the supply node.
                 -rebalanceId,
-                topVer,
+                this.topologyVersion(),
                 grp.groupId());
 
             d.timeout(grp.config().getRebalanceTimeout());
@@ -1169,11 +1152,9 @@ public class GridDhtPartitionDemander {
 
                 if (parts.isEmpty()) {
                     U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
-                        "rebalancing [fromNode=" + nodeId +
-                        ", cacheOrGroup=" + grp.cacheOrGroupName() +
-                        ", topology=" + topVer +
-                        ", latestTopVer=" + topologyVersion() +
-                        ", remaining=" + (remaining.keySet().size() - 1) +
+                            "rebalancing [fromNode=" + nodeId +
+                            ", cacheOrGroup=" + grp.cacheOrGroupName() +
+                            ", topology=" + topologyVersion() +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
