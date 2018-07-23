@@ -22,47 +22,54 @@ import {spy} from 'sinon';
 import {TestScheduler} from 'rxjs/testing/TestScheduler';
 import {Subject} from 'rxjs/Subject';
 import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import {Observable} from 'rxjs/Observable';
 import {Subscriber} from 'rxjs/Subscriber';
 import Controller from './controller';
 
+import {Confirm} from 'app/services/Confirm.service';
+
 const mocks = () => new Map([
-    ['$scope', {
-        $applyAsync: spy((fn) => fn())
-    }],
-    ['pageService', {
-        setCluster: spy()
-    }],
-    ['Clusters', {
-        discoveries: 1,
-        minMemoryPolicySize: 1000
+    ['IgniteConfirm', {}],
+    ['$uiRouter', {
+        transitionService: {
+            onBefore: spy()
+        },
+        globals: {
+            params$: new Observable()
+        }
     }],
     ['ConfigureState', {
         state$: new Subject()
     }],
-    ['ConfigurationDownload', {
-        downloadClusterConfiguration: spy()
+    ['ConfigSelectors', {
+        selectCurrentShortCaches: spy(),
+        selectShortClustersValue: spy(),
+        selectClusterToEdit: spy()
     }],
+    ['Clusters', {
+        discoveries: 1,
+        minMemoryPolicySize: 1000,
+        getDefaultClusterMemoryPolicy: spy()
+    }],
+    ['Caches', {}],
     ['IgniteVersion', {
         currentSbj: new BehaviorSubject({ignite: '1.9.0'}),
         since: (a, b) => a === b
     }],
-    ['state$', {
-        params: {
-            clusterID: null
-        }
+    ['$element', {}],
+    ['ConfigChangesGuard', {}],
+    ['IgniteFormUtils', {}],
+    ['$scope', {
+        $applyAsync: spy((fn) => fn())
     }]
 ]);
 
+
+// TODO: Due to changes of data models some methods and properties are obsolete. Needs revision.
 suite.skip('page-configure-basic component controller', () => {
     test('$onInit method', () => {
         const c = new Controller(...mocks().values());
-        c.getObservable = spy(c.getObservable.bind(c));
         c.$onInit();
-        assert.deepEqual(
-            c.getObservable.lastCall.args,
-            [c.ConfigureState.state$, c.Version.currentSbj],
-            'calls getObservable with correct arguments'
-        );
         assert.instanceOf(c.subscription, Subscriber, 'stores subscription for later');
         assert.equal(c.discoveries, 1, 'exposes discoveries');
         assert.equal(c.minMemorySize, 1000, 'exposes minMemorySize');
