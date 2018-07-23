@@ -1132,6 +1132,15 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean segmented() {
+        FailureProcessor failureProc = failure();
+
+        return failureProc != null
+            && failureProc.failureContext() != null
+            && failureProc.failureContext().type() == FailureType.SEGMENTATION;
+    }
+
+    /** {@inheritDoc} */
     @Override public FailureProcessor failure() {
         return failureProc;
     }

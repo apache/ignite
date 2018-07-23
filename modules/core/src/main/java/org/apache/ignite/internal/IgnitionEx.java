@@ -2606,20 +2606,12 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                if (!grid0.context().invalid()) {
-                    FailureProcessor failProc = grid0.context().failure();
-
-                    if (failProc != null && failProc.failureContext() != null && failProc.failureContext().type() == SEGMENTATION)
-                        state = STOPPED_ON_SEGMENTATION;
-                    else
-                        state = STOPPED;
-                } else {
-                    FailureContext failure = grid0.context().failure().failureContext();
-
-                    state = failure.type() == FailureType.SEGMENTATION ?
-                        STOPPED_ON_SEGMENTATION :
-                        STOPPED_ON_FAILURE;
-                }
+                if (grid0.context().segmented())
+                    state = STOPPED_ON_SEGMENTATION;
+                else if (grid0.context().invalid())
+                    state = STOPPED_ON_FAILURE;
+                else
+                    state = STOPPED;
 
                 grid = null;
 

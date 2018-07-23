@@ -472,6 +472,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean segmented() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public FailureProcessor failure() {
         return null;
     }
