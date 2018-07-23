@@ -2453,8 +2453,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectSessionExpire1_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8131");
-
         clientReconnectSessionExpire(false);
     }
 
@@ -2462,8 +2460,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectSessionExpire1_2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8131");
-
         clientReconnectSessionExpire(true);
     }
 
@@ -4844,16 +4840,25 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                 ZooKeeper zk = zkClient(spi);
 
-                ZooKeeper dummyZk = new ZooKeeper(
-                    spi.getZkConnectionString(),
-                    10_000,
-                    null,
-                    zk.getSessionId(),
-                    zk.getSessionPasswd());
+                for (String s : spi.getZkConnectionString().split(",")) {
+                    try {
+                        ZooKeeper dummyZk = new ZooKeeper(
+                            s,
+                            10_000,
+                            null,
+                            zk.getSessionId(),
+                            zk.getSessionPasswd());
 
-                dummyZk.exists("/a", false);
+                        dummyZk.exists("/a", false);
 
-                dummyClients.add(dummyZk);
+                        dummyClients.add(dummyZk);
+
+                        break;
+                    }
+                    catch (Exception e) {
+                        log.warning("Can't connect to server " + s + " [err=" + e + ']');
+                    }
+                }
             }
 
             for (ZooKeeper zk : dummyClients)
