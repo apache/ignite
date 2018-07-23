@@ -20,8 +20,8 @@ package org.apache.ignite.ml.composition;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.

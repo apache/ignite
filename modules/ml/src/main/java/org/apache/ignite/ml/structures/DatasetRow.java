@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /** Class to keep one observation in dataset. This is a base class for labeled and unlabeled rows. */
 public class DatasetRow<V extends Vector> implements Serializable, Externalizable {
