@@ -1573,8 +1573,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             msg.cacheGroupsAffinityRequest(exchCtx.groupsAffinityRequestOnJoin());
 
         if (log.isInfoEnabled())
-            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId +
-                ". Local node id " + cctx.localNodeId() +
+            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + (exchId != null ? exchId : "null") +
+                ". Local node id " + cctx.localNode().id() +
                 ", msg=" + msg + ']');
 
         try {
@@ -1674,7 +1674,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.info("Sending full msg2 " +
                         ". Local node id "  + cctx.localNodeId() +
                         " to node " + node.id() +
-                            ". Initial version " + this.initialVersion() +
                             ". Current exch fut " + toString()
                 );
             }
@@ -3128,7 +3127,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.info("Full message was sent to node: " +
                         node +
                           ". Local node id "  + cctx.localNodeId() +
-                        ". Initial version " + this.initialVersion() +
                         ". Current exch fut " + toString() +
                         ", fullMsg: " + fullMsg
                     );
