@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /** Base class for multi-classification model for set of SVM classifiers. */
 public class SVMLinearMultiClassClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearMultiClassClassificationModel>, Serializable {
@@ -76,9 +76,14 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
     @Override public String toString() {
         StringBuilder wholeStr = new StringBuilder();
 
-        models.forEach((clsLb, mdl) -> {
-            wholeStr.append("The class with label ").append(clsLb).append(" has classifier: ").append(mdl.toString()).append(System.lineSeparator());
-        });
+        models.forEach((clsLb, mdl) ->
+            wholeStr
+                .append("The class with label ")
+                .append(clsLb)
+                .append(" has classifier: ")
+                .append(mdl.toString())
+                .append(System.lineSeparator())
+        );
 
         return wholeStr.toString();
     }

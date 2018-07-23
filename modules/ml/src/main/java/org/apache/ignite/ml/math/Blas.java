@@ -23,13 +23,12 @@ import java.util.Set;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseLocalOffHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
@@ -58,8 +57,8 @@ public class Blas {
 
         if (x.isArrayBased() && y.isArrayBased())
             axpy(a, x.getStorage().data(), y.getStorage().data());
-        else if (x instanceof SparseLocalVector && y.isArrayBased())
-            axpy(a, (SparseLocalVector)x, y.getStorage().data());
+        else if (x instanceof SparseVector && y.isArrayBased())
+            axpy(a, (SparseVector)x, y.getStorage().data());
         else
             throw new MathIllegalArgumentException("Operation 'axpy' doesn't support this combination of parameters [x="
                 + x.getClass().getName() + ", y=" + y.getClass().getName() + "].");
@@ -71,7 +70,7 @@ public class Blas {
     }
 
     /** */
-    private static void axpy(Double a, SparseLocalVector x, double[] y) {
+    private static void axpy(Double a, SparseVector x, double[] y) {
         int xSize = x.size();
 
         if (a == 1.0) {
@@ -121,7 +120,7 @@ public class Blas {
             if (x.isArrayBased())
                 System.arraycopy(x.getStorage().data(), 0, y.getStorage().data(), 0, n);
             else {
-                if (y instanceof SparseLocalVector) {
+                if (y instanceof SparseVector) {
                     for (int i = 0; i < n; i++)
                         yData[i] = x.getX(i);
                 }
@@ -140,8 +139,8 @@ public class Blas {
     public static void scal(Double a, Vector x) {
         if (x.isArrayBased())
             f2jBlas.dscal(x.size(), a, x.getStorage().data(), 1);
-        else if (x instanceof SparseLocalVector) {
-            Set<Integer> indexes = ((SparseLocalVector)x).indexes();
+        else if (x instanceof SparseVector) {
+            Set<Integer> indexes = ((SparseVector)x).indexes();
 
             for (Integer i : indexes)
                 x.compute(i, (ind, v) -> v * a);
@@ -155,12 +154,12 @@ public class Blas {
      *
      * @param u the upper triangular part of the matrix in a [[DenseVector]](column major)
      */
-    public static void spr(Double alpha, DenseLocalOnHeapVector v, DenseLocalOnHeapVector u) {
+    public static void spr(Double alpha, DenseVector v, DenseVector u) {
         nativeBlas.dspr("U", v.size(), alpha, v.getStorage().data(), 1, u.getStorage().data());
     }
 
     /** */
-    public static void spr(Double alpha, SparseLocalVector v, DenseLocalOnHeapVector u) {
+    public static void spr(Double alpha, SparseVector v, DenseVector u) {
         int prevNonDfltInd = 0;
         int startInd = 0;
         double av;
@@ -185,7 +184,7 @@ public class Blas {
      * @param x the vector x that contains the n elements.
      * @param a the symmetric matrix A. Size of n x n.
      */
-    void syr(Double alpha, Vector x, DenseLocalOnHeapMatrix a) {
+    void syr(Double alpha, Vector x, DenseMatrix a) {
         int mA = a.rowSize();
         int nA = a.columnSize();
 
@@ -196,9 +195,9 @@ public class Blas {
             throw new CardinalityException(x.size(), mA);
 
         // TODO: IGNITE-5535, Process DenseLocalOffHeapVector
-        if (x instanceof DenseLocalOnHeapVector)
+        if (x instanceof DenseVector)
             syr(alpha, x, a);
-        else if (x instanceof SparseLocalVector)
+        else if (x instanceof SparseVector)
             syr(alpha, x, a);
         else
             throw new IllegalArgumentException("Operation 'syr' does not support vector [class="
@@ -206,7 +205,7 @@ public class Blas {
     }
 
     /** TODO: IGNTIE-5770, add description for a */
-    static void syr(Double alpha, DenseLocalOnHeapVector x, DenseLocalOnHeapMatrix a) {
+    static void syr(Double alpha, DenseVector x, DenseMatrix a) {
         int nA = a.rowSize();
         int mA = a.columnSize();
 
@@ -226,7 +225,7 @@ public class Blas {
     }
 
     /** */
-    public static void syr(Double alpha, SparseLocalVector x, DenseLocalOnHeapMatrix a) {
+    public static void syr(Double alpha, SparseVector x, DenseMatrix a) {
         int mA = a.columnSize();
 
         for (Integer i : x.indexes()) {
@@ -246,9 +245,6 @@ public class Blas {
         else if (alpha == 0.0)
             scal(c, beta);
         else {
-            checkMatrixType(a, "gemm");
-            checkMatrixType(b, "gemm");
-            checkMatrixType(c, "gemm");
 
             double[] fA = a.getStorage().data();
             double[] fB = b.getStorage().data();
@@ -259,27 +255,9 @@ public class Blas {
             nativeBlas.dgemm("N", "N", a.rowSize(), b.columnSize(), a.columnSize(), alpha, fA,
                 a.rowSize(), fB, b.rowSize(), beta, fC, c.rowSize());
 
-            if (c instanceof SparseLocalOnHeapMatrix)
+            if (c instanceof SparseMatrix)
                 MatrixUtil.unflatten(fC, c);
         }
-    }
-
-    /**
-     * Currently we support only local onheap matrices for BLAS.
-     */
-    private static void checkMatrixType(Matrix a, String op) {
-        if (a instanceof DenseLocalOffHeapMatrix)
-            throw new IllegalArgumentException("Operation doesn't support for matrix [class="
-                + a.getClass().getName() + ", operation=" + op + "].");
-    }
-
-    /**
-     * Currently we support only local onheap vectors for BLAS.
-     */
-    private static void checkVectorType(Vector a, String op) {
-        if (a instanceof DenseLocalOffHeapVector || a instanceof SparseLocalOffHeapVector)
-            throw new IllegalArgumentException("Operation doesn't support for vector [class="
-                + a.getClass().getName() + ", operation=" + op + "].");
     }
 
     /**
@@ -297,10 +275,6 @@ public class Blas {
         if (a.rowSize() != y.size())
             throw new CardinalityException(a.columnSize(), y.size());
 
-        checkMatrixType(a, "gemv");
-        checkVectorType(x, "gemv");
-        checkVectorType(y, "gemv");
-
         if (alpha == 0.0 && beta == 1.0)
             return;
 
@@ -315,7 +289,7 @@ public class Blas {
 
         nativeBlas.dgemv("N", a.rowSize(), a.columnSize(), alpha, fA, a.rowSize(), fX, 1, beta, fY, 1);
 
-        if (y instanceof SparseLocalVector)
+        if (y instanceof SparseVector)
             y.assign(fY);
     }
 

@@ -49,7 +49,7 @@ public class FitnessJob extends ComputeJobAdapter {
     private IgniteLogger log = null;
 
     /** IFitnessFunction */
-    private IFitnessFunction fitnessFuncton = null;
+    private IFitnessFunction fitnessFuncton;
 
     /**
      * @param key Chromosome primary Key
@@ -85,9 +85,9 @@ public class FitnessJob extends ComputeJobAdapter {
             genes.add(aGene);
         }
 
-        Double value = fitnessFuncton.evaluate(genes);
+        Double val = fitnessFuncton.evaluate(genes);
 
-        chromosome.setFitnessScore(value);
+        chromosome.setFitnessScore(val);
 
         Transaction tx = ignite.transactions().txStart();
 
@@ -95,7 +95,7 @@ public class FitnessJob extends ComputeJobAdapter {
 
         tx.commit();
 
-        return value;
+        return val;
     }
 
 }
