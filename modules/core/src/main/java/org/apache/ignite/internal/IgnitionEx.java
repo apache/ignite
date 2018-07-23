@@ -78,6 +78,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -141,6 +142,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.failure.FailureType.SEGMENTATION;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -2604,9 +2606,14 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                if (!grid0.context().invalid())
-                    state = STOPPED;
-                else {
+                if (!grid0.context().invalid()) {
+                    FailureProcessor failProc = grid0.context().failure();
+
+                    if (failProc != null && failProc.failureContext() != null && failProc.failureContext().type() == SEGMENTATION)
+                        state = STOPPED_ON_SEGMENTATION;
+                    else
+                        state = STOPPED;
+                } else {
                     FailureContext failure = grid0.context().failure().failureContext();
 
                     state = failure.type() == FailureType.SEGMENTATION ?
