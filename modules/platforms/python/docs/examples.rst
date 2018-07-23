@@ -310,7 +310,7 @@ The binary type `ExpenseVoucher` has 6 fields and one schema. All the fields
 are present in that one schema. Note also, that each field has an ID (which is
 also calculated as a hascode of its name in lower case) and a type ID. Field
 type ID can be either ordinal value of one of the
-:mod:`~pyignite.datatypes.type_codes` or and ID of the registered binary type.
+:mod:`~pyignite.datatypes.type_codes` or an ID of the registered binary type.
 
 Let us modify the schema dictionary and update the type.
 
