@@ -2116,21 +2116,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Single message received from the client which didn't find original ExchangeFuture.
      */
     public void forceClientReconnect(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        Exception e = new IgniteNeedReconnectException(node, null);
+        Exception reconnectException = new IgniteNeedReconnectException(node, null);
 
-        exchangeGlobalExceptions.put(node.id(), e);
+        exchangeGlobalExceptions.put(node.id(), reconnectException);
 
-        onDone(null, e);
+        onDone(null, reconnectException);
 
         GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true, false);
 
         fullMsg.setErrorsMap(exchangeGlobalExceptions);
 
-        FinishState finishState0 = new FinishState(cctx.localNodeId(),
-            initialVersion(),
-            fullMsg);
+        try {
+            cctx.io().send(node, fullMsg, SYSTEM_POOL);
 
-        sendAllPartitionsToNode(finishState0, msg, node.id());
+            if (log.isDebugEnabled())
+                log.debug("Full message for reconnect client was sent to node: " + node + ", fullMsg: " + fullMsg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send reconnect client message [node=" + node + ']', e);
+        }
     }
 
     /**
