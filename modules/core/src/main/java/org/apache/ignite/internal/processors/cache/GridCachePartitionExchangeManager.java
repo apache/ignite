@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2493,17 +2494,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int dumpCnt = 0;
 
+                            long waitStart = U.currentTimeMillis();
+
+                            // Call rollback logic only for client node, for server nodes
+                            // rollback logic is in GridDhtPartitionsExchangeFuture.
+                            boolean txRolledBack = !cctx.localNode().isClient();
+
                             IgniteConfiguration cfg = cctx.gridConfig();
 
-                            long rollbackTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
-                            final long dumpTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
+                            final long dumpTimeout = 2 * cfg.getNetworkTimeout();
 
                             long nextDumpTime = 0;
 
                             while (true) {
+                                // Read txTimeoutOnPME from configuration after every iteration.
+                                long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+
                                 try {
-                                    resVer = exchFut.get(rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout);
+                                    resVer = exchFut.get(curTimeout > 0 && !txRolledBack ?
+                                            Math.min(curTimeout, dumpTimeout) : dumpTimeout, TimeUnit.MILLISECONDS);
 
                                     break;
                                 }
@@ -2512,7 +2521,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
-                                            (rollbackTimeout == 0 ? "Consider changing TransactionConfiguration.txTimeoutOnPartitionMapSynchronization to non default value to avoid this message. " : "") +
+                                            (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
+                                                    "TransactionConfiguration.txTimeoutOnPartitionMapSynchronization" +
+                                                    " to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 
                                         try {
@@ -2525,8 +2536,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
                                     }
 
-                                    if (rollbackTimeout > 0) {
-                                        rollbackTimeout = 0; // Try automatic rollback only once.
+                                    if (!txRolledBack && curTimeout > 0 && U.currentTimeMillis() - waitStart >= curTimeout) {
+                                        txRolledBack = true; // Try automatic rollback only once.
 
                                         cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());
                                     }
