@@ -33,9 +33,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -208,7 +208,7 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
 
         f.get();
 
-        Map<PartitionKey, List<PartitionHashRecord>> idleVerifyResult = idleVerify(igClient, DEFAULT_CACHE_NAME);
+        IdleVerifyResultV2 idleVerifyResult = idleVerify(igClient, DEFAULT_CACHE_NAME);
 
         log.info("Current counter value:" + cnt.get());
 
@@ -216,12 +216,13 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
 
         log.info("Last commited value:" + val);
 
-        if (!F.isEmpty(idleVerifyResult)) {
+        if (idleVerifyResult.hasConflicts()){
             SB sb = new SB();
 
             sb.a("\n");
 
-            buildConflicts("Conflicts:\n", sb, idleVerifyResult);
+            buildConflicts("Hash conflicts:\n", sb, idleVerifyResult.hashConflicts());
+            buildConflicts("Counters conflicts:\n", sb, idleVerifyResult.counterConflicts());
 
             System.out.println(sb);
 
@@ -234,14 +235,15 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @param conflicts Conflicts map.
      * @param sb String builder.
      */
-    private void buildConflicts(String msg, SB sb, Map<PartitionKey, List<PartitionHashRecord>> conflicts) {
+    private void buildConflicts(String msg, SB sb, Map<PartitionKeyV2, List<PartitionHashRecordV2>> conflicts) {
         sb.a(msg);
 
-        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : conflicts.entrySet()) {
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : conflicts.entrySet()) {
             sb.a(entry.getKey()).a("\n");
 
-            for (PartitionHashRecord rec : entry.getValue())
+            for (PartitionHashRecordV2 rec : entry.getValue())
                 sb.a("\t").a(rec).a("\n");
         }
+
     }
 }
