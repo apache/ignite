@@ -19,10 +19,10 @@ from decimal import Decimal
 from pyignite.api import (
     hashcode, sql_fields, cache_create, scan, cache_create_with_config,
     cache_get_configuration, put_binary_type, get_binary_type,
-    cache_put, cache_destroy,
+    cache_get, cache_put, cache_destroy,
 )
 from pyignite.datatypes import (
-    BinaryObject, BoolObject, IntObject, DecimalObject, String,
+    BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.prop_codes import *
 from pyignite.utils import unwrap_binary
@@ -244,3 +244,65 @@ def test_sql_write_as_binary(conn):
 
     result = cache_destroy(conn, scheme_hash_code)
     assert result.status == 0, result.message
+
+
+def test_nested_binary_objects(conn):
+
+    cache_create(conn, 'nested_binary')
+
+    inner_schema = OrderedDict([
+        ('inner_int', LongObject),
+        ('inner_str', String),
+    ])
+
+    outer_schema = OrderedDict([
+        ('outer_int', LongObject),
+        ('nested_binary', BinaryObject),
+        ('outer_str', String),
+    ])
+
+    result = put_binary_type(conn, 'InnerType', schema=inner_schema)
+    inner_type_id = result.value['type_id']
+    inner_schema_id = result.value['schema_id']
+
+    result = put_binary_type(conn, 'OuterType', schema=outer_schema)
+    outer_type_id = result.value['type_id']
+    outer_schema_id = result.value['schema_id']
+
+    result = cache_put(
+        conn,
+        hashcode('nested_binary'),
+        1,
+        {
+            'version': 1,
+            'type_id': outer_type_id,
+            'schema_id': outer_schema_id,
+            'fields': OrderedDict([
+                ('outer_int', 42),
+                ('nested_binary', (
+                    {
+                        'version': 1,
+                        'type_id': inner_type_id,
+                        'schema_id': inner_schema_id,
+                        'fields': OrderedDict([
+                            ('inner_int', 24),
+                            ('inner_str', 'World'),
+                        ]),
+                    }, BinaryObject)),
+                ('outer_str', 'Hello'),
+            ])
+        },
+        value_hint=BinaryObject,
+    )
+    assert result.status == 0, result.message
+
+    result = cache_get(conn, hashcode('nested_binary'), 1)
+    assert result.status == 0, result.message
+
+    data = unwrap_binary(conn, result.value, recurse=False)
+    assert data['fields']['outer_str'] == 'Hello'
+    assert data['fields']['outer_int'] == 42
+
+    inner_data = data['fields']['nested_binary']
+    assert inner_data['fields']['inner_str'] == 'World'
+    assert inner_data['fields']['inner_int'] == 24
