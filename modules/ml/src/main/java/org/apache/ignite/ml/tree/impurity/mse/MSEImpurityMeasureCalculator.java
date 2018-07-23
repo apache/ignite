@@ -45,20 +45,23 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
 
                 x[0] = Double.NEGATIVE_INFINITY;
 
+                double leftY = 0;
+                double leftY2 = 0;
+                double rightY = 0;
+                double rightY2 = 0;
+
+                for (int i = 0; i < features.length; i++) {
+                    rightY += labels[i];
+                    rightY2 += Math.pow(labels[i], 2);
+                }
+
                 for (int leftSize = 0; leftSize <= features.length; leftSize++) {
-                    double leftY = 0;
-                    double leftY2 = 0;
-                    double rightY = 0;
-                    double rightY2 = 0;
+                    if (leftSize > 0) {
+                        leftY += labels[leftSize - 1];
+                        leftY2 += Math.pow(labels[leftSize - 1], 2);
 
-                    for (int i = 0; i < leftSize; i++) {
-                        leftY += labels[i];
-                        leftY2 += Math.pow(labels[i], 2);
-                    }
-
-                    for (int i = leftSize; i < features.length; i++) {
-                        rightY += labels[i];
-                        rightY2 += Math.pow(labels[i], 2);
+                        rightY -= labels[leftSize - 1];
+                        rightY2 -= Math.pow(labels[leftSize - 1], 2);
                     }
 
                     if (leftSize < features.length)
