@@ -572,19 +572,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to inject.
      */
     private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
-        prepare(cfg, cfg.getEvictionPolicyFactory(), false);
-        prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
-
-        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
-
-        if (nearCfg != null) {
-            prepare(cfg, nearCfg.getNearEvictionPolicyFactory(), true);
-            prepare(cfg, nearCfg.getNearEvictionPolicy(), true);
-        }
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
@@ -612,8 +603,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void cleanup(GridCacheContext cctx) {
         CacheConfiguration cfg = cctx.config();
 
-        cleanup(cfg, cfg.getEvictionPolicyFactory(), false);
-        cleanup(cfg, cfg.getEvictionPolicy(), false);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cfg.getEvictionFilter(), false);
@@ -623,13 +612,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
             unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
             unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
-        }
-
-        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
-
-        if (nearCfg != null) {
-            cleanup(cfg, nearCfg.getNearEvictionPolicyFactory(), true);
-            cleanup(cfg, nearCfg.getNearEvictionPolicy(), true);
         }
 
         cctx.cleanup();
@@ -924,6 +906,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (ClusterNode n : ctx.discovery().remoteNodes()) {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
                 continue;
+
+            checkRebalanceConfiguration(n);
 
             checkTransactionConfiguration(n);
 
@@ -2092,7 +2076,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             else
                 proxy.closeProxy();
-
         }
     }
 
@@ -2132,6 +2115,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Stopped cache context.
      */
     private GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
+        assert sharedCtx.database().checkpointLockIsHeldByThread();
+
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
 
         if (cache != null) {
@@ -2237,11 +2222,106 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cctx.gate().onStopped();
 
-            prepareCacheStop(cctx.name(), destroy);
+            sharedCtx.database().checkpointReadLock();
+
+            try {
+                prepareCacheStop(cctx.name(), destroy);
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
 
             if (!cctx.group().hasCaches())
                 stopCacheGroup(cctx.group().groupId());
         }
+    }
+
+    /**
+     * Called during the rollback of the exchange partitions procedure
+     * in order to stop the given cache even if it's not fully initialized (e.g. failed on cache init stage).
+     *
+     * @param exchActions Stop requests.
+     */
+    void forceCloseCaches(ExchangeActions exchActions) {
+        assert exchActions != null && !exchActions.cacheStopRequests().isEmpty();
+
+        processCacheStopRequestOnExchangeDone(exchActions);
+    }
+
+    /**
+     * @param exchActions Change requests.
+     */
+    private void processCacheStopRequestOnExchangeDone(ExchangeActions exchActions) {
+        // Force checkpoint if there is any cache stop request
+        if (exchActions.cacheStopRequests().size() > 0) {
+            try {
+                sharedCtx.database().waitForCheckpoint("caches stop");
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
+            }
+        }
+
+        for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
+            CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
+
+            // Cancel all operations blocking gateway
+            if (gctx != null) {
+                final String msg = "Failed to wait for topology update, cache group is stopping.";
+
+                // If snapshot operation in progress we must throw CacheStoppedException
+                // for correct cache proxy restart. For more details see
+                // IgniteCacheProxy.cacheException()
+                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+            }
+
+            stopGateway(action.request());
+
+            sharedCtx.database().checkpointReadLock();
+
+            try {
+                prepareCacheStop(action.request().cacheName(), action.request().destroy());
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
+        }
+
+        sharedCtx.database().checkpointReadLock();
+
+        try {
+            // Do not invoke checkpoint listeners for groups are going to be destroyed to prevent metadata corruption.
+            for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+                Integer groupId = action.descriptor().groupId();
+                CacheGroupContext grp = cacheGrps.get(groupId);
+
+                if (grp != null && grp.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
+                    GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager) sharedCtx.database();
+                    mngr.removeCheckpointListener((DbCheckpointListener) grp.offheap());
+                }
+            }
+        }
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
+        }
+
+        List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
+
+        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+            Integer groupId = action.descriptor().groupId();
+
+            if (cacheGrps.containsKey(groupId)) {
+                stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
+
+                stopCacheGroup(groupId);
+            }
+        }
+
+        if (!sharedCtx.kernalContext().clientNode())
+            sharedCtx.database().onCacheGroupsStopped(stoppedGroups);
+
+        if (exchActions.deactivate())
+            sharedCtx.deactivate();
     }
 
     /**
@@ -2268,78 +2348,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.service().updateUtilityCache();
         }
 
-        if (err == null) {
-            // Force checkpoint if there is any cache stop request
-            if (exchActions.cacheStopRequests().size() > 0) {
-                try {
-                    sharedCtx.database().waitForCheckpoint("caches stop");
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-                }
-            }
-
-            for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
-                CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
-
-                // Cancel all operations blocking gateway
-                if (gctx != null) {
-                    final String msg = "Failed to wait for topology update, cache group is stopping.";
-
-                    // If snapshot operation in progress we must throw CacheStoppedException
-                    // for correct cache proxy restart. For more details see
-                    // IgniteCacheProxy.cacheException()
-                    gctx.affinity().cancelFutures(new CacheStoppedException(msg));
-                }
-
-                stopGateway(action.request());
-
-                sharedCtx.database().checkpointReadLock();
-
-                try {
-                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
-                }
-                finally {
-                    sharedCtx.database().checkpointReadUnlock();
-                }
-            }
-
-            sharedCtx.database().checkpointReadLock();
-
-            try {
-                // Do not invoke checkpoint listeners for groups are going to be destroyed to prevent metadata corruption.
-                for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-                    Integer groupId = action.descriptor().groupId();
-                    CacheGroupContext grp = cacheGrps.get(groupId);
-
-                    if (grp != null && grp.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
-                        GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager) sharedCtx.database();
-                        mngr.removeCheckpointListener((DbCheckpointListener) grp.offheap());
-                    }
-                }
-            }
-            finally {
-                sharedCtx.database().checkpointReadUnlock();
-            }
-
-            List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
-
-            for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-                Integer groupId = action.descriptor().groupId();
-
-                if (cacheGrps.containsKey(groupId)) {
-                    stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
-
-                    stopCacheGroup(groupId);
-                }
-            }
-
-            if (!sharedCtx.kernalContext().clientNode())
-                sharedCtx.database().onCacheGroupsStopped(stoppedGroups);
-
-            if (exchActions.deactivate())
-                sharedCtx.deactivate();
-        }
+        if (err == null)
+            processCacheStopRequestOnExchangeDone(exchActions);
     }
 
     /**
@@ -3497,6 +3507,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof DynamicCacheChangeBatch)
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
+        if (msg instanceof DynamicCacheChangeFailureMessage)
+            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage) msg, topVer);
+
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
 
@@ -3666,6 +3679,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property) [rmtNodeId=" + rmt.id() +
                     ", locPageSize = " + locDsCfg.getPageSize() + ", rmtPageSize = " + dsCfg.getPageSize() + "]");
             }
+        }
+    }
+
+    /**
+     * @param rmt Remote node to check.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkRebalanceConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+            return;
+
+        Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
+
+        if (rebalanceThreadPoolSize != null && rebalanceThreadPoolSize != ctx.config().getRebalanceThreadPoolSize()) {
+            throw new IgniteCheckedException("Rebalance configuration mismatch (fix configuration or set -D" +
+                IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)." +
+                " Different values of such parameter may lead to rebalance process instability and hanging. " +
+                " [rmtNodeId=" + rmt.id() +
+                ", locRebalanceThreadPoolSize = " + ctx.config().getRebalanceThreadPoolSize() +
+                ", rmtRebalanceThreadPoolSize = " + rebalanceThreadPoolSize + "]");
         }
     }
 
@@ -3995,6 +4030,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert name != null;
 
         IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>) jCacheProxies.get(name);
+
+        if (cache == null) {
+            GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
+
+            if (cacheAdapter != null)
+                cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
+        }
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);

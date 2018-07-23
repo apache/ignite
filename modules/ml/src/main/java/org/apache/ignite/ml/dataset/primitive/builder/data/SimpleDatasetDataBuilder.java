@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -37,14 +38,14 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      */
-    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor) {
+    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }
 
@@ -57,17 +58,17 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            double[] row = featureExtractor.apply(entry.getKey(), entry.getValue());
+            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue());
 
             if (cols < 0) {
-                cols = row.length;
+                cols = row.size();
                 features = new double[Math.toIntExact(upstreamDataSize * cols)];
             }
             else
-                assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
+                assert row.size() == cols : "Feature extractor must return exactly " + cols + " features";
 
             for (int i = 0; i < cols; i++)
-                features[Math.toIntExact(i * upstreamDataSize + ptr)] = row[i];
+                features[Math.toIntExact(i * upstreamDataSize + ptr)] = row.get(i);
 
             ptr++;
         }

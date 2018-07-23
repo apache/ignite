@@ -152,13 +152,10 @@ import igniteServices from './services';
 import uiAceJava from './directives/ui-ace-java';
 import uiAceSpring from './directives/ui-ace-spring';
 
-// Inject external modules.
-import IgniteModules from 'IgniteModules/index';
-
 import baseTemplate from 'views/base.pug';
 import * as icons from '../public/images/icons';
 
-angular.module('ignite-console', [
+export default angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
@@ -248,9 +245,7 @@ angular.module('ignite-console', [
     breadcrumbs.name,
     passwordVisibility.name,
     progressLine.name,
-    formField.name,
-    // Ignite modules.
-    IgniteModules.name
+    formField.name
 ])
 .service($exceptionHandler.name, $exceptionHandler)
 // Directives.

@@ -26,9 +26,10 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,13 +73,13 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
-        Vector vector = new DenseLocalOnHeapVector(new double[] {0, 0, 0, 5.0, 0.0});
+        Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
         System.out.println(knnMdl.apply(vector));
         Assert.assertEquals(15, knnMdl.apply(vector), 1E-12);
     }
@@ -107,13 +108,13 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
-        Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
+        Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.apply(vector));
         Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
     }
@@ -142,13 +143,13 @@ public class KNNRegressionTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
-        Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
+        Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.apply(vector));
         Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
     }

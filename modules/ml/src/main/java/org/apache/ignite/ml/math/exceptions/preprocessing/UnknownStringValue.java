@@ -27,9 +27,9 @@ public class UnknownStringValue extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param unknownString String value that caused this exception.
+     * @param unknownStr String value that caused this exception.
      */
-    public UnknownStringValue(String unknownString) {
-        super("This String value is unknown for StringEncoder: " + unknownString);
+    public UnknownStringValue(String unknownStr) {
+        super("This String value is unknown for StringEncoder: " + unknownStr);
     }
 }

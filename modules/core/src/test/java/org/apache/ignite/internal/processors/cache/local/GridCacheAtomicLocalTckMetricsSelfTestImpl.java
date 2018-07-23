@@ -163,6 +163,8 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
         boolean result = cache.putIfAbsent(1, 1);
 
         ++putCount;
+        ++missCount;
+
         assertTrue(result);
 
         assertEquals(missCount, cache.localMetrics().getCacheMisses());
@@ -170,6 +172,8 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
         assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         result = cache.putIfAbsent(1, 1);
+
+        ++hitCount;
 
         assertFalse(result);
         assertEquals(hitCount, cache.localMetrics().getCacheHits());

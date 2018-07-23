@@ -20,9 +20,9 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.Arrays;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
@@ -36,7 +36,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         LSQRResult res;
 
@@ -54,7 +54,7 @@ public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<Li
         }
 
         double[] x = res.getX();
-        Vector weights = new DenseLocalOnHeapVector(Arrays.copyOfRange(x, 0, x.length - 1));
+        Vector weights = new DenseVector(Arrays.copyOfRange(x, 0, x.length - 1));
 
         return new LinearRegressionModel(weights, x[x.length - 1]);
     }

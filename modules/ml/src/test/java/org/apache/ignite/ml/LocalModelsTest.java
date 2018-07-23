@@ -31,8 +31,9 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
@@ -69,14 +70,14 @@ public class LocalModelsTest {
     @Test
     public void importExportLinearRegressionModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            LinearRegressionModel model = new LinearRegressionModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            LinearRegressionModel mdl = new LinearRegressionModel(new DenseVector(new double[]{1, 2}), 3);
             Exporter<LinearRegressionModel, String> exporter = new FileExporter<>();
-            model.saveModel(exporter, mdlFilePath);
+            mdl.saveModel(exporter, mdlFilePath);
 
             LinearRegressionModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
-            Assert.assertEquals("", model, load);
+            Assert.assertEquals("", mdl, load);
 
             return null;
         });
@@ -86,7 +87,7 @@ public class LocalModelsTest {
     @Test
     public void importExportSVMBinaryClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
             Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
@@ -103,9 +104,9 @@ public class LocalModelsTest {
     @Test
     public void importExportSVMMulticlassClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
-            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{2, 3}), 4);
-            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{3, 4}), 5);
+            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
+            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{2, 3}), 4);
+            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{3, 4}), 5);
 
             SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
             mdl.add(1, binaryMdl1);
@@ -153,7 +154,7 @@ public class LocalModelsTest {
 
         KMeansModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 

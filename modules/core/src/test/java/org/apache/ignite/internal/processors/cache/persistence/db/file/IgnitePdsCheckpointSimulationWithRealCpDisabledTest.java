@@ -897,7 +897,16 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 for (FullPageId fullId : pageIds) {
                     long cpStart = System.nanoTime();
 
-                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+                    Integer tag;
+
+                    while (true) {
+                        tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+
+                        if (tag != null && tag == PageMemoryImpl.TRY_AGAIN_TAG)
+                            continue;
+
+                        break;
+                    }
 
                     if (tag == null)
                         continue;

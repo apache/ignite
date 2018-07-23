@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.nn;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 
 /**
