@@ -30,6 +30,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -88,6 +89,9 @@ public class SslContextFactory implements Factory<SSLContext> {
 
     /** Trust managers. */
     private TrustManager[] trustMgrs;
+
+    /** */
+    private SSLParameters sslParameters;
 
     /**
      * Gets key store type used for context creation.
@@ -280,6 +284,14 @@ public class SslContextFactory implements Factory<SSLContext> {
         return new DisabledX509TrustManager();
     }
 
+    public void setSSLParameters(SSLParameters sslParameters) {
+        this.sslParameters = sslParameters;
+    }
+
+    public SSLParameters getSSLParameters() {
+        return sslParameters;
+    }
+
     /**
      * Creates SSL context based on factory settings.
      *
@@ -310,9 +322,11 @@ public class SslContextFactory implements Factory<SSLContext> {
 
             SSLContext ctx = SSLContext.getInstance(proto);
 
-            ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+            SSLContextWrapper wrapper = new SSLContextWrapper(ctx, sslParameters);
 
-            return ctx;
+            wrapper.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+
+            return wrapper;
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize SSL context " + parameters(), e);
