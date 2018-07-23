@@ -2061,4 +2061,28 @@ BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
     }
 }
 
+BOOST_AUTO_TEST_CASE(TestManyCursors)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        int64_t key = 0;
+        char strField[1024] = { 0 };
+        SQLLEN strFieldLen = 0;
+
+        SQLCHAR req[] = "SELECT 1";
+
+        SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
