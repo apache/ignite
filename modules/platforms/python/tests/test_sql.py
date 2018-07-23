@@ -15,14 +15,12 @@
 
 from pyignite.api import (
     sql_fields, sql_fields_cursor_get_page, hashcode, cache_create,
+    cache_get_or_create, sql, sql_cursor_get_page, cache_get_configuration,
 )
+from pyignite.datatypes import BinaryObject
+from pyignite.utils import unwrap_binary
 
-
-def test_sql(conn):
-
-    cache_create(conn, 'PUBLIC')
-
-    initial_data = [
+initial_data = [
         ('John', 'Doe', 5),
         ('Jane', 'Roe', 4),
         ('Joe', 'Bloggs', 4),
@@ -30,20 +28,92 @@ def test_sql(conn):
         ('Negidius', 'Numerius', 3),
     ]
 
-    create_query = '''CREATE TABLE Student (
+create_query = '''CREATE TABLE Student (
     id INT(11) PRIMARY KEY,
     first_name CHAR(24),
     last_name CHAR(32),
     grade INT(11))'''
 
-    insert_query = '''INSERT INTO Student(id, first_name, last_name, grade)
-    VALUES (?, ?, ?, ?)'''
+insert_query = '''INSERT INTO Student(id, first_name, last_name, grade)
+VALUES (?, ?, ?, ?)'''
 
-    select_query = 'SELECT id, first_name, last_name, grade FROM Student'
+select_query = 'SELECT id, first_name, last_name, grade FROM Student'
 
-    drop_query = 'DROP TABLE Student'
+drop_query = 'DROP TABLE Student IF EXISTS'
 
-    page_size = 4
+page_size = 4
+
+
+def test_sql(conn):
+
+    cache_get_or_create(conn, 'PUBLIC')
+
+    # cleanup
+    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    assert result.status == 0
+
+    result = sql_fields(
+        conn,
+        hashcode('PUBLIC'),
+        create_query,
+        page_size,
+        include_field_names=True
+    )
+    assert result.status == 0, result.message
+
+    for i, data_line in enumerate(initial_data, start=1):
+        fname, lname, grade = data_line
+        result = sql_fields(
+            conn,
+            hashcode('PUBLIC'),
+            insert_query,
+            page_size,
+            query_args=[i, fname, lname, grade],
+            include_field_names=True
+        )
+        assert result.status == 0, result.message
+
+    result = cache_get_configuration(conn, hashcode('SQL_PUBLIC_STUDENT'))
+    assert result.status == 0, result.message
+
+    binary_type_name = result.value['query_entities'][0]['value_type_name']
+    result = sql(
+        conn,
+        hashcode('SQL_PUBLIC_STUDENT'),
+        binary_type_name,
+        'TRUE',
+        page_size
+    )
+    assert result.status == 0, result.message
+    assert len(result.value['data']) == page_size
+    assert result.value['more'] is True
+
+    for wrapped_object in result.value['data'].values():
+        data = unwrap_binary(conn, wrapped_object)
+        assert data['type_id'] == hashcode(binary_type_name.lower())
+
+    cursor = result.value['cursor']
+
+    while result.value['more']:
+        result = sql_cursor_get_page(conn, cursor)
+        assert result.status == 0, result.message
+
+        for wrapped_object in result.value['data'].values():
+            data = unwrap_binary(conn, wrapped_object)
+            assert data['type_id'] == hashcode(binary_type_name.lower())
+
+    # repeat cleanup
+    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    assert result.status == 0
+
+
+def test_sql_fields(conn):
+
+    cache_get_or_create(conn, 'PUBLIC')
+
+    # cleanup
+    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    assert result.status == 0
 
     result = sql_fields(
         conn,
@@ -84,6 +154,6 @@ def test_sql(conn):
     assert len(result.value['data']) == len(initial_data) - page_size
     assert result.value['more'] is False
 
-    # cleanup
+    # repeat cleanup
     result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
     assert result.status == 0
