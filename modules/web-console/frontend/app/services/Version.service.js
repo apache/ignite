@@ -23,54 +23,7 @@ import _ from 'lodash';
  */
 const VERSION_MATCHER = /(\d+)\.(\d+)\.(\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\d+))?(-([\da-f]+))?/i;
 
-/**
- * Tries to parse product version from it's string representation.
- *
- * @param {String} ver - String representation of version.
- * @returns {{major: Number, minor: Number, maintenance: Number, stage: String, revTs: Number, revHash: String}} - Object that contains product version fields.
- */
-const parse = (ver) => {
-    // Development or built from source ZIP.
-    ver = ver.replace(/(-DEV|-n\/a)$/i, '');
-
-    const [, major, minor, maintenance, stage, ...chunks] = ver.match(VERSION_MATCHER);
-
-    return {
-        major: parseInt(major, 10),
-        minor: parseInt(minor, 10),
-        maintenance: parseInt(maintenance, 10),
-        stage: (stage || '').substring(1),
-        revTs: chunks[2] ? parseInt(chunks[3], 10) : 0,
-        revHash: chunks[4] ? chunks[5] : null
-    };
-};
-
 const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
-
-/**
- * Compare to version.
- * @param a {Object} first compared version.
- * @param b {Object} second compared version.
- * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
- */
-const compare = (a, b) => {
-    let res = numberComparator(a.major, b.major);
-
-    if (res !== 0)
-        return res;
-
-    res = numberComparator(a.minor, b.minor);
-
-    if (res !== 0)
-        return res;
-
-    res = numberComparator(a.maintenance, b.maintenance);
-
-    if (res !== 0)
-        return res;
-
-    return numberComparator(a.stage, b.stage);
-};
 
 export default class IgniteVersion {
     constructor() {
@@ -151,17 +104,17 @@ export default class IgniteVersion {
      * @returns {Boolean} `True` if version is equal or greater than specified range.
      */
     since(target, ...ranges) {
-        const targetVer = parse(target);
+        const targetVer = this.parse(target);
 
         return !!_.find(ranges, (range) => {
             if (_.isArray(range)) {
                 const [after, before] = range;
 
-                return compare(targetVer, parse(after)) >= 0 &&
-                    (_.isNil(before) || compare(targetVer, parse(before)) < 0);
+                return this.compare(targetVer, this.parse(after)) >= 0 &&
+                    (_.isNil(before) || this.compare(targetVer, this.parse(before)) < 0);
             }
 
-            return compare(targetVer, parse(range)) >= 0;
+            return this.compare(targetVer, this.parse(range)) >= 0;
         });
     }
 
@@ -184,5 +137,52 @@ export default class IgniteVersion {
      */
     available(...ranges) {
         return this.since(this.current, ...ranges);
+    }
+
+    /**
+     * Tries to parse product version from it's string representation.
+     *
+     * @param {String} ver - String representation of version.
+     * @returns {{major: Number, minor: Number, maintenance: Number, stage: String, revTs: Number, revHash: String}} - Object that contains product version fields.
+     */
+    parse(ver) {
+        // Development or built from source ZIP.
+        ver = ver.replace(/(-DEV|-n\/a)$/i, '');
+
+        const [, major, minor, maintenance, stage, ...chunks] = ver.match(VERSION_MATCHER);
+
+        return {
+            major: parseInt(major, 10),
+            minor: parseInt(minor, 10),
+            maintenance: parseInt(maintenance, 10),
+            stage: (stage || '').substring(1),
+            revTs: chunks[2] ? parseInt(chunks[3], 10) : 0,
+            revHash: chunks[4] ? chunks[5] : null
+        };
+    }
+
+    /**
+     * Compare to version.
+     * @param a {Object} first compared version.
+     * @param b {Object} second compared version.
+     * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
+     */
+    compare(a, b) {
+        let res = numberComparator(a.major, b.major);
+
+        if (res !== 0)
+            return res;
+
+        res = numberComparator(a.minor, b.minor);
+
+        if (res !== 0)
+            return res;
+
+        res = numberComparator(a.maintenance, b.maintenance);
+
+        if (res !== 0)
+            return res;
+
+        return numberComparator(a.stage, b.stage);
     }
 }

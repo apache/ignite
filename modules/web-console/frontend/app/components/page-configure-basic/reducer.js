@@ -47,7 +47,7 @@ export const reducer = (state = defaults, action, root) => {
                 : Object.assign({}, action.cluster, {
                     _id: -1,
                     space: defaultSpace(root),
-                    name: uniqueName('Cluster', [...root.list.clusters.values()])
+                    name: uniqueName('New cluster', [...root.list.clusters.values()], ({name, i}) => `${name} (${i})`)
                 });
             const value = Object.assign({}, state, {
                 clusterID: cluster._id,
@@ -61,7 +61,7 @@ export const reducer = (state = defaults, action, root) => {
             const cache = {
                 _id: action._id,
                 space: defaultSpace(root),
-                name: uniqueName('Cache', [...root.list.caches.values(), ...state.newClusterCaches]),
+                name: uniqueName('New cache', [...root.list.caches.values(), ...state.newClusterCaches], ({name, i}) => `${name} (${i})`),
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
                 readFromBackup: true,

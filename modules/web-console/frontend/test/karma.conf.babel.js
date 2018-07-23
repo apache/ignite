@@ -80,7 +80,7 @@ export default (/** @type {import('karma').Config} */ config) => {
 
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['ChromeHeadlessNoSandbox'],
+        browsers: ['ChromeDebug'],
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
@@ -95,6 +95,8 @@ export default (/** @type {import('karma').Config} */ config) => {
                 debug: true
             }
         },
+        browserDisconnectTimeout : 210000,
+        browserNoActivityTimeout : 210000,
 
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits
