@@ -360,17 +360,20 @@ class BinaryObject:
         return ctypes.c_uint
 
     @staticmethod
-    def get_fields(conn: Connection, type_id: int) -> list:
+    def get_fields(conn: Connection, header) -> list:
         from pyignite.api import get_binary_type
         from pyignite.datatypes.internal import tc_map
 
         # get field names from outer space
         temp_conn = conn.clone()
-        result = get_binary_type(temp_conn, type_id)
+        result = get_binary_type(temp_conn, header.type_id)
         temp_conn.close()
+        schema = result.value['schema'][header.schema_id]
+
         return [
             (x['field_name'], tc_map(bytes([x['type_id']])))
             for x in result.value['binary_fields']
+            if x['field_id'] in schema
         ]
 
     @classmethod
@@ -382,7 +385,7 @@ class BinaryObject:
         header = header_class.from_buffer_copy(buffer)
 
         # TODO: valid only on compact schema approach
-        fields = cls.get_fields(conn, header.type_id)
+        fields = cls.get_fields(conn, header)
         object_fields_struct = Struct(fields)
         object_fields, object_fields_buffer = object_fields_struct.parse(conn)
         buffer += object_fields_buffer

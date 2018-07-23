@@ -90,7 +90,12 @@ def get_binary_type(
     if hasattr(response, 'enums'):
         result.value['enums'] = enum_struct.to_python(response.enums)
     if hasattr(response, 'schema'):
-        result.value['schema'] = schema_struct.to_python(response.schema)
+        result.value['schema'] = {
+            x['schema_id']: [
+                z['schema_field_id'] for z in x['schema_fields']
+            ]
+            for x in schema_struct.to_python(response.schema)
+        }
     return result
 
 
