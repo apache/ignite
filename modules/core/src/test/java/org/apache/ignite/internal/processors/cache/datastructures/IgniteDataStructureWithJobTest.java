@@ -21,11 +21,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -59,25 +58,6 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobWithRestart() throws Exception {
-        // Non-collocated IgniteSet uses cache iterator, which can fail
-        // on unstable topology when the job is logged.
-        fail("https://issues.apache.org/jira/browse/IGNITE-1666");
-
-        checkDatastructureJobWithRestart(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJobWithRestartCollocated() throws Exception {
-        checkDatastructureJobWithRestart(true);
-    }
-
-    /**
-     * @param collocated Collocated flag.
-     * @throws Exception If failed.
-     */
-    private void checkDatastructureJobWithRestart(boolean collocated) throws Exception {
         Ignite ignite = startGrid(0);
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -101,17 +81,16 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
             while (System.currentTimeMillis() < endTime) {
                 try {
-                    ignite.compute().broadcast(new IgniteClosure<IgniteSet, Integer>() {
-                        @Override public Integer apply(IgniteSet set) {
-                            assertNotNull(set);
+                    ignite.compute().broadcast(new IgniteClosure<IgniteQueue, Integer>() {
+                        @Override public Integer apply(IgniteQueue queue) {
+                            assertNotNull(queue);
 
                             return 1;
                         }
-                    }, ignite.set("set", new CollectionConfiguration().setCollocated(collocated)));
+                    }, ignite.queue("queue", 0, new CollectionConfiguration()));
                 }
-                catch (IgniteException e) {
-                    if (X.hasCause(e, AssertionError.class))
-                        throw e;
+                catch (IgniteException ignore) {
+                    // No-op.
                 }
 
                 if (iter++ % 1000 == 0)
