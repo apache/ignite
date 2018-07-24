@@ -39,8 +39,6 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
             StepFunction<MSEImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
 
             for (int col = 0; col < res.length; col++) {
-//                double[] x = new double[features.length + 1];
-//                MSEImpurityMeasure[] y = new MSEImpurityMeasure[features.length + 1];
                 ArrayList<Double> x = new ArrayList<>();
                 ArrayList<MSEImpurityMeasure> y = new ArrayList<>();
 
@@ -71,7 +69,7 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
                             continue;
                     }
 
-                    if (i > 0) {
+                    if (size > 0) {
                         leftY += index.labelInSortedOrder(lastI, col);
                         leftY2 += Math.pow(index.labelInSortedOrder(lastI, col), 2);
 
@@ -79,9 +77,8 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
                         rightY2 -= Math.pow(index.labelInSortedOrder(lastI, col), 2);
                     }
 
-                    if (i < index.rowsCount()) {
+                    if (size < rightSize)
                         x.add(index.featureInSortedOrder(i, col));
-                    }
 
                     y.add(new MSEImpurityMeasure(
                         leftY, leftY2, size, rightY, rightY2, rightSize - size

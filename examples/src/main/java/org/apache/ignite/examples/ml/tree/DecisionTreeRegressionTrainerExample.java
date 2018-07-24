@@ -49,7 +49,7 @@ public class DecisionTreeRegressionTrainerExample {
                 // Create cache with training data.
                 CacheConfiguration<Integer, Point> trainingSetCfg = new CacheConfiguration<>();
                 trainingSetCfg.setName("TRAINING_SET");
-                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 100));
 
                 IgniteCache<Integer, Point> trainingSet = ignite.createCache(trainingSetCfg);
 
