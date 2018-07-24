@@ -401,13 +401,16 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapEvicts += e.getOffHeapEvictions();
             offHeapHits += e.getOffHeapHits();
             offHeapMisses += e.getOffHeapMisses();
-            offHeapEntriesCnt += e.getOffHeapEntriesCount();
             heapEntriesCnt += e.getHeapEntriesCount();
 
-            if (!nodeToMetrics.getKey().isClient())
+            if (!nodeToMetrics.getKey().isClient()) {
+                offHeapEntriesCnt += e.getOffHeapEntriesCount();
+
                 offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
 
-            offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
+                offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
+            }
+
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
 
             if (e.getDhtEvictQueueCurrentSize() > -1)
