@@ -1,6 +1,6 @@
 {
   "name": "ignite-web-console-e2e-tests",
-  "version": "1.0.0",
+  "version": "2.7.0",
   "description": "E2E tests for Apache Ignite Web console",
   "private": true,
   "main": "index.js",

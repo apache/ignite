@@ -23,9 +23,9 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
@@ -38,7 +38,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
  */
-public class LogisticRegressionSGDTrainer<P extends Serializable> implements SingleLabelDatasetTrainer<LogisticRegressionModel> {
+public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 

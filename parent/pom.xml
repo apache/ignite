@@ -91,7 +91,7 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <log4j.version>2.8.1</log4j.version>
+        <log4j.version>2.11.0</log4j.version>
         <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
         <lucene.version>5.5.2</lucene.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
