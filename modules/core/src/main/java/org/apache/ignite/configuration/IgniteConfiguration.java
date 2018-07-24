@@ -215,7 +215,7 @@ public class IgniteConfiguration {
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
     /** Default partition map exchange hard timeout in millis. */
-    public static final long DFLT_EXCHANGE_HARD_TIMEOUT = 5 * 60 * 1000;
+    public static final long DFLT_EXCHANGE_HARD_TIMEOUT = -1;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
