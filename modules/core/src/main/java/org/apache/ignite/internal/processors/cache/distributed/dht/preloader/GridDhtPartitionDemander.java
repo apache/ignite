@@ -336,17 +336,6 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-            // Add all remaining nodes before first request sent to avoid race between
-            // add remaining node and processing response, see RebalanceFuture#checkIsDone(boolean)
-            // Should readd rebalance assignments if requested nodes left topology,
-            // see GridDhtPreloader#rebalanceRequired for details.
-            assignments.forEach((k, v) -> {
-                assert v.partitions() != null :
-                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
-
-                fut.remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
-            });
-
             if (assignments.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
@@ -370,6 +359,17 @@ public class GridDhtPartitionDemander {
 
                 return null;
             }
+
+            // Add all remaining nodes before first request sent to avoid race between
+            // add remaining node and processing response, see RebalanceFuture#checkIsDone(boolean)
+            // Should readd rebalance assignments if requested nodes left topology,
+            // see GridDhtPreloader#rebalanceRequired for details.
+            assignments.forEach((k, v) -> {
+                assert v.partitions() != null :
+                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
+
+                fut.remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
+            });
 
             return () -> {
                 if (next != null)
