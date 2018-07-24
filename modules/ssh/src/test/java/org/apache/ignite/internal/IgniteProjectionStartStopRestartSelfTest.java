@@ -200,7 +200,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90 * 1000;
+        return 120 * 1000;
     }
 
     /**
@@ -832,19 +832,26 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 <<<<<<< HEAD
 =======
      * Starts nodes and checks that nodes launched successfully.
-     * If some node could not start because of ssh connection, will try one more time.
+     * If some node could not start because of ssh connection, than will retry.
      *
      * @param hosts Hosts.
      * @param restart Restart.
      * @param timeout Timeout.
      * @param maxConn Max connection.
      * @param expNodes Count of nodes that should be started.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    private void startCheckNodes(Collection<Map<String, Object>> hosts, boolean restart, int timeout, int maxConn,
-        int expNodes) {
+    private void startCheckNodes(
+        Collection<Map<String, Object>> hosts,
+        boolean restart,
+        int timeout,
+        int maxConn,
+        int expNodes
+    )
+        throws IgniteException {
         int startNodes = 0;
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             Collection<ClusterStartNodeResult> startNodeResults = ignite.cluster().startNodesAsync(hosts, null,
                 restart, timeout, maxConn).get(WAIT_TIMEOUT);
 
@@ -856,9 +863,9 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
                 if (!res.isSuccess()) {
                     String errorMsg = res.getError();
 
-                    if (errorMsg.contains("Remote node could not start.") && i == 0) {
-                        info("Got exception because remote node could not start for 2 seconds. Reason may be" +
-                            " in ssh connection., will retry.");
+                    if (errorMsg.contains("Remote node could not start.") && i < 2) {
+                        info("Got exception because remote node could not start for 2 seconds. " +
+                            "Reason may be in ssh connection, will retry.");
                     }
                     else
                         throw new IgniteException(errorMsg);
@@ -866,6 +873,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
                 else
                     startNodes++;
             }
+
             if (expNodes == startNodes)
                 break;
         }

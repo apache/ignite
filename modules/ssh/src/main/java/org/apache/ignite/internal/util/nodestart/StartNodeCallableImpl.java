@@ -329,7 +329,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      *
      * @param ses SSH session.
      * @param cmd Command.
-     * @param regexp Regular expression to wait until it will be find in stream from node.
+     * @param regexp Regular expression to wait until it will be found in stream from node.
      * @throws JSchException In case of SSH error.
      * @throws IOException If IO error occurs.
      * @throws IgniteInterruptedCheckedException If thread was interrupted while waiting.
@@ -359,7 +359,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
                     while ((line = reader.readLine()) != null) {
                         if (ptrn.matcher(line).find()) {
-                            //wait for a while until process from regexp really will be started.
+                            // Wait for a while until process from regexp really will be started.
                             U.sleep(50);
 
                             break;
@@ -533,7 +533,6 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      */
     private GridTimeoutObject initTimer(String cmd){
         GridTimeoutObject to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
-            /**  */
             private final Thread thread = Thread.currentThread();
 
             @Override public void onTimeout() {
