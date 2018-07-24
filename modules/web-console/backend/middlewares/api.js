@@ -48,7 +48,7 @@ module.exports.factory = () => {
             },
 
             done() {
-                res.status(200).send({res: true});
+                res.sendStatus(200);
             }
         };
 
