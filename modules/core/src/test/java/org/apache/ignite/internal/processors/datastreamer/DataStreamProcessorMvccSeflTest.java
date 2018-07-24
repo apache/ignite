@@ -47,4 +47,9 @@ public class DataStreamProcessorMvccSeflTest extends DataStreamProcessorSelfTest
     public void testReplicated() throws Exception {
         // TODO "https://issues.apache.org/jira/browse/IGNITE-8149"
     }
+
+    @Override
+    public void testUpdateStore() throws Exception {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-8582
+    }
 }
