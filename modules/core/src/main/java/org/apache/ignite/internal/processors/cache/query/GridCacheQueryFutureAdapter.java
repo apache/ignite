@@ -76,6 +76,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private final Queue<Collection<R>> queue = new LinkedList<>();
 
     /** */
+    private final Collection<Object> allCol = new LinkedList<>();
+
+    /** */
     private final AtomicInteger cnt = new AtomicInteger();
 
     /** */
@@ -400,8 +403,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 synchronized (this) {
                     enqueue(data);
 
+                    if (qry.query().keepAll())
+                        allCol.addAll(maskNulls((Collection<Object>)data));
+
                     if (onPage(nodeId, finished)) {
-                        onDone(/* data */);
+                        onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
 
                         clear();
                     }
@@ -574,6 +580,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     public void printMemoryStats() {
         X.println(">>> Query future memory statistics.");
         X.println(">>>  queueSize: " + queue.size());
+        X.println(">>>  allCollSize: " + allCol.size());
         X.println(">>>  keysSize: " + keys.size());
         X.println(">>>  cnt: " + cnt);
     }
