@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
 

@@ -19,7 +19,6 @@ package org.apache.ignite.examples.ml.genetic.movie;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.IFitnessFunction;
 
