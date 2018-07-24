@@ -172,10 +172,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         GridDhtPartitionsExchangeFuture exchFut) {
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
-        if (ctx.kernalContext().clientNode())
+        if (ctx.kernalContext().clientNode() || !rebTopVer.initialized())
             return false; // No-op.
 
-        if (!rebTopVer.initialized() || exchFut.localJoinExchange())
+        if (exchFut.localJoinExchange())
             return true;
 
         Set<UUID> leftNodes = exchFut.context().events().events().stream()
