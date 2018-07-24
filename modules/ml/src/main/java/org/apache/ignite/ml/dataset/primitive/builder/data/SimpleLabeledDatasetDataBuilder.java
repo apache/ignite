@@ -22,8 +22,8 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
