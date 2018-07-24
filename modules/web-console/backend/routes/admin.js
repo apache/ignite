@@ -79,10 +79,10 @@ module.exports.factory = function(settings, mongo, spacesService, mailsService, 
                 .catch(res.api.error);
         });
 
-        // Revert to your identity.
+        // Update notifications.
         router.put('/notifications', (req, res) => {
             notificationsService.merge(req.user._id, req.body.message, req.body.isShown)
-                .then(res.api.ok)
+                .then(res.api.done)
                 .catch(res.api.error);
         });
 
