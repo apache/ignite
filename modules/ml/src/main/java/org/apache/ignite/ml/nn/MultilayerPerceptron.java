@@ -24,13 +24,13 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
@@ -93,11 +93,11 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         for (int i = 1; i < architecture.layersCount(); i++) {
             TransformationLayerArchitecture layerCfg = architecture.transformationLayerArchitecture(i);
             int neuronsCnt = layerCfg.neuronsCount();
-            DenseLocalOnHeapMatrix weights = new DenseLocalOnHeapMatrix(neuronsCnt, prevSize);
+            DenseMatrix weights = new DenseMatrix(neuronsCnt, prevSize);
             initializer.initWeights(weights);
-            DenseLocalOnHeapVector biases = null;
+            DenseVector biases = null;
             if (layerCfg.hasBias()) {
-                biases = new DenseLocalOnHeapVector(neuronsCnt);
+                biases = new DenseVector(neuronsCnt);
                 initializer.initBiases(biases);
             }
             layers.add(new MLPLayer(weights, biases));
@@ -406,7 +406,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      */
     protected Vector paramsAsVector(List<MLPLayer> layersParams) {
         int off = 0;
-        Vector res = new DenseLocalOnHeapVector(architecture().parametersCount());
+        Vector res = new DenseVector(architecture().parametersCount());
 
         for (MLPLayer layerParams : layersParams) {
             off = writeToVector(res, layerParams.weights, off);
@@ -458,7 +458,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @return New offset position which is last matrix entry position + 1.
      */
     private IgniteBiTuple<Integer, Matrix> readFromVector(Vector v, int rows, int cols, int off) {
-        Matrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
+        Matrix mtx = new DenseMatrix(rows, cols);
 
         int size = rows * cols;
         for (int i = 0; i < size; i++)
@@ -476,7 +476,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @return New offset position which is last read vector entry position + 1.
      */
     private IgniteBiTuple<Integer, Vector> readFromVector(Vector v, int size, int off) {
-        Vector vec = new DenseLocalOnHeapVector(size);
+        Vector vec = new DenseVector(size);
 
         for (int i = 0; i < size; i++)
             vec.setX(i, v.getX(off + i));

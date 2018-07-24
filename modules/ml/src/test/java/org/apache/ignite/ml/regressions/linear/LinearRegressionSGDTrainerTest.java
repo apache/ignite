@@ -20,7 +20,7 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;

@@ -55,9 +55,11 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
         A.ensure(answers.length == weights.length,
             "Composition vector must have same size as weights vector");
 
-        double result = bias;
+        double res = bias;
+
         for(int i = 0; i< answers.length; i++)
-            result += weights[i] * answers[i];
-        return result;
+            res += weights[i] * answers[i];
+
+        return res;
     }
 }
