@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestFinalizer()
         {
-            Assert.Fail("https://issues.apache.org/jira/browse/IGNITE-8983");
+            Assert.Fail("https://issues.apache.org/jira/browse/IGNITE-8731");
 
             var streamer = _grid.GetDataStreamer<int, int>(CacheName);
             var streamerRef = new WeakReference(streamer);
