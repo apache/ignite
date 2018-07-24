@@ -1252,7 +1252,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         changeWalModeIfNeeded();
 
-        cctx.time().schedule(this::onDistributedExchangeTimeout, cctx.gridConfig().getExchangeHardTimeout(), -1);
+        if (cctx.gridConfig().getExchangeHardTimeout() != -1)
+            cctx.time().schedule(this::onDistributedExchangeTimeout, cctx.gridConfig().getExchangeHardTimeout(), -1);
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
@@ -1315,18 +1316,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             "[lastFinishedVer=" + lastFinishedVer + ", pendingVer=" + pendingVer +
             ", receivedSingleMsg=" + receivedSingleMsg + ", localExchId=" + exchId + "]");
 
-        boolean failLocal;
+        boolean failLoc;
 
         if (lastFinishedVer.compareTo(exchId.topologyVersion()) >= 0)
-            failLocal = true;
+            failLoc = true;
         else if (pendingVer.equals(exchId.topologyVersion()) && !receivedSingleMsg)
-            failLocal = true;
+            failLoc = true;
         else if (pendingVer.equals(exchId.topologyVersion()) && receivedSingleMsg)
             return; // Do nothing, this case should be resolved by coordinator.
         else
-            failLocal = false;
+            failLoc = false;
 
-        if (failLocal)
+        if (failLoc)
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(
                 "Coordinator topology version is greater than local.")));
         else

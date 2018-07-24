@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * This message is used to request version of last finished partition map exchange from another node.
  */
 public class PartitionsExchangeFinishedCheckRequest implements Message {
     /** */

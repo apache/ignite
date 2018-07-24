@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * This message is used to reply for {@link PartitionsExchangeFinishedCheckRequest}.
  */
 public class PartitionsExchangeFinishedCheckResponse implements Message {
     /** */

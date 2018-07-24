@@ -3012,7 +3012,7 @@ public class IgniteConfiguration {
      * Returns hard timeout for partition map exchange process. If it doesn't finish until the specified amount of time
      * passes, all nodes that potentially could block progress will be removed from cluster.
      *
-     * @return Hard exchange timeout, in millis.
+     * @return Hard exchange timeout, in millis, or -1 if exchange timeout handling is disabled.
      */
     public long getExchangeHardTimeout() {
         return exchangeHardTimeout;
@@ -3021,7 +3021,7 @@ public class IgniteConfiguration {
     /**
      * Sets hard timeout for partition map exchange process.
      *
-     * @param timeout Hard exchange timeout, in millis.
+     * @param timeout Hard exchange timeout, in millis, or -1 to disable exchange timeout handling.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setExchangeHardTimeout(long timeout) {
