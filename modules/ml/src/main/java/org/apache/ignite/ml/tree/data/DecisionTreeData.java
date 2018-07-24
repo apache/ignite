@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.data;
 
+import org.apache.ignite.ml.tree.OnIndexTreeFilter;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
@@ -29,6 +30,7 @@ public class DecisionTreeData implements AutoCloseable {
     /** Vector with labels. */
     private final double[] labels;
 
+    private final TreeDataIndex index;
     /**
      * Constructs a new instance of decision tree data.
      *
@@ -40,6 +42,7 @@ public class DecisionTreeData implements AutoCloseable {
 
         this.features = features;
         this.labels = labels;
+        this.index = new TreeDataIndex(features, labels);
     }
 
     /**
@@ -89,8 +92,10 @@ public class DecisionTreeData implements AutoCloseable {
             int i = from, j = to;
 
             while (i <= j) {
-                while (features[i][col] < pivot) i++;
-                while (features[j][col] > pivot) j--;
+                while (features[i][col] < pivot)
+                    i++;
+                while (features[j][col] > pivot)
+                    j--;
 
                 if (i <= j) {
                     double[] tmpFeature = features[i];
@@ -124,5 +129,9 @@ public class DecisionTreeData implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         // Do nothing, GC will clean up.
+    }
+
+    public TreeDataIndex index() {
+        return index;
     }
 }

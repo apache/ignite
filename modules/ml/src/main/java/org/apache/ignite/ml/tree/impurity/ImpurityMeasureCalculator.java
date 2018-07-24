@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.tree.impurity;
 
 import java.io.Serializable;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
@@ -34,5 +35,5 @@ public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> extends
      * @param data Features and labels.
      * @return Impurity measures as an array of {@link StepFunction} (for every column).
      */
-    public StepFunction<T>[] calculate(DecisionTreeData data);
+    public StepFunction<T>[] calculate(DecisionTreeData data, IgniteBiPredicate<Integer, Double> featuresFilter);
 }
