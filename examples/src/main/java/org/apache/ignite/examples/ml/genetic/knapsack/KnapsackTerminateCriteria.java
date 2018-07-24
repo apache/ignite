@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.ml.genetic.knapsack;
 
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;

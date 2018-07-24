@@ -142,8 +142,28 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      * @throws Exception If fails.
      */
     public void testSetTxTimeoutDuringPartitionMapExchange() throws Exception {
-        IgniteEx ig = (IgniteEx)startGrids(2);
+        IgniteEx ig = (IgniteEx) startGrids(2);
 
+        checkSetTxTimeoutDuringPartitionMapExchange(ig);
+    }
+
+    /**
+     * Tests applying new txTimeoutOnPartitionMapExchange while an exchange future runs on client node.
+     *
+     * @throws Exception If fails.
+     */
+    public void testSetTxTimeoutOnClientDuringPartitionMapExchange() throws Exception {
+        IgniteEx ig = (IgniteEx) startGrids(2);
+        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+
+        checkSetTxTimeoutDuringPartitionMapExchange(client);
+    }
+
+    /**
+     * @param ig Ignite instance where deadlock tx will start.
+     * @throws Exception If fails.
+     */
+    private void checkSetTxTimeoutDuringPartitionMapExchange(IgniteEx ig) throws Exception {
         final long longTimeout = 600_000L;
         final long shortTimeout = 5_000L;
 
