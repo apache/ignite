@@ -2684,9 +2684,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                     else
                         U.log(log, "Skipping rebalancing (no affinity changes) " +
-                            "[top=" + resVer + ", rebTopVer=" + rebTopVer +
+                            "[top=" + resVer +
+                            ", rebTopVer=" + rebTopVer +
                             ", evt=" + exchId.discoveryEventName() +
-                            ", node=" + exchId.nodeId() + ']');
+                            ", evtNode=" + exchId.nodeId() +
+                            ", client=" + cctx.kernalContext().clientNode() + ']');
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
