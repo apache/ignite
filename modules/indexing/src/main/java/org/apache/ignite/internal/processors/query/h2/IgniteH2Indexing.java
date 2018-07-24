@@ -314,6 +314,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
 
+    /** */
     private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
         @Override
         protected ObjectPool<H2ConnectionWrapper> initialValue() {
@@ -352,7 +353,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return reusable;
         }
 
-        @Nullable @Override protected ObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
+        @Override protected ObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
             ObjectPool<H2ConnectionWrapper> pool = connectionPool.get();
 
             ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
