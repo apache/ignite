@@ -37,7 +37,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -379,8 +381,26 @@ class GridDhtPartitionSupplier {
                 info.cacheId(row.cacheId());
 
                 if (grp.mvccEnabled()) {
+                    byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
+                        MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
+                        row.mvccOperationCounter());
+
+                    if (txState != TxState.COMMITTED)
+                        continue;
+
                     ((MvccVersionAware)info).mvccVersion(row);
-                    ((MvccUpdateVersionAware)info).newMvccVersion(row);
+                    ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
+
+                    byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                        MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                        row.newMvccOperationCounter());
+
+                    if (newTxState != TxState.ABORTED) {
+                        ((MvccUpdateVersionAware)info).newMvccVersion(row);
+
+                        if (newTxState == TxState.COMMITTED)
+                            ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+                    }
                 }
 
                 info.value(row.value());

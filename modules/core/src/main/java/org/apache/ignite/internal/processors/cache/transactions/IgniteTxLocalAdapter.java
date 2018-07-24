@@ -30,8 +30,8 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -683,7 +683,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             resolveTaskName(),
                                             dhtVer,
                                             null,
-                                            mvccSnapshotForUpdate());
+                                            mvccSnapshot());
 
                                         if (updRes.success()) {
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -723,7 +723,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                     resolveTaskName(),
                                                     dhtVer0,
                                                     null,
-                                                    mvccSnapshotForUpdate())
+                                                    mvccSnapshot())
                                             );
                                         }
                                     }
@@ -746,7 +746,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             resolveTaskName(),
                                             dhtVer,
                                             null,
-                                            mvccSnapshotForUpdate());
+                                            mvccSnapshot());
 
                                         if (updRes.success()) {
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -781,7 +781,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                     resolveTaskName(),
                                                     dhtVer0,
                                                     null,
-                                                    mvccSnapshotForUpdate())
+                                                    mvccSnapshot())
                                             );
                                         }
                                     }

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -103,7 +104,9 @@ public class MvccDataRow extends DataRow {
         assert MvccUtils.mvccVersionIsValid(crdVer, mvccCntr, mvccOpCntr);
 
         assert rowData == RowData.LINK_ONLY
-            || this.mvccCrd == crdVer && this.mvccCntr == mvccCntr && this.mvccOpCntr == mvccOpCntr;
+            || this.mvccCrd == crdVer && this.mvccCntr == mvccCntr && this.mvccOpCntr == mvccOpCntr :
+        "mvccVer=" + new MvccVersionImpl(crdVer, mvccCntr, mvccOpCntr) +
+            ", dataMvccVer=" + new MvccVersionImpl(this.mvccCrd, this.mvccCntr, this.mvccOpCntr) ;
 
         if (rowData == RowData.LINK_ONLY) {
             this.mvccCrd = crdVer;
@@ -227,6 +230,20 @@ public class MvccDataRow extends DataRow {
 
         // reset tx state
         mvccTxState = TxState.NA;
+    }
+
+    /**
+     * @param mvccTxState Mvcc version Tx state hint.
+     */
+    public void mvccTxState(byte mvccTxState) {
+        this.mvccTxState = mvccTxState;
+    }
+
+    /**
+     * @param newMvccTxState New Mvcc version Tx state hint.
+     */
+    public void newMvccTxState(byte newMvccTxState) {
+        this.newMvccTxState = newMvccTxState;
     }
 
     /** {@inheritDoc} */

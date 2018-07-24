@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1126,8 +1127,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                 entry0.initialValue(val0,
                                     ver,
-                                    null,
-                                    null,
                                     ttl,
                                     expireTime,
                                     false,
@@ -1313,6 +1312,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     info.version(),
                                     cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
                                     cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
+                                    cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
+                                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
                                     info.ttl(),
                                     info.expireTime(),
                                     true,

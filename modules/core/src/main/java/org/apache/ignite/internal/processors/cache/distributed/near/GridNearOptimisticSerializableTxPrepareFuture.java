@@ -43,8 +43,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -421,7 +419,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         }
 
         if (mvccCrd != null)
-            initMvccVersionFuture(mvccCrd, lockCnt, remap);
+            initMvccVersionFuture(lockCnt, remap);
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
 

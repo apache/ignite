@@ -203,7 +203,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(0, acquiredPages());
         }
         finally {
-            pageMem.stop();
+            if (pageMem != null)
+                pageMem.stop();
 
             MAX_PER_PAGE = 0;
             PUT_INC = 1;
@@ -2829,16 +2830,21 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             for (Map.Entry<Object,Map<Long,Long>> entry : locks.entrySet()) {
                 Object thId = entry.getKey();
 
-                b.a(" ## " + thId);
-
                 Long z = beforeLock.get(thId);
+
+                Set<Map.Entry<Long,Long>> xx = entry.getValue().entrySet();
+
+                if (z == null && xx.isEmpty())
+                    continue;
+
+                b.a(" ## " + thId);
 
                 if (z != null)
                     b.a("   --> ").appendHex(z).a("  (").appendHex(effectivePageId(z)).a(')');
 
                 b.a('\n');
 
-                for (Map.Entry<Long,Long> x : entry.getValue().entrySet())
+                for (Map.Entry<Long,Long> x : xx)
                     b.a(" -  ").appendHex(x.getValue()).a("  (").appendHex(x.getKey()).a(")\n");
 
                 b.a('\n');

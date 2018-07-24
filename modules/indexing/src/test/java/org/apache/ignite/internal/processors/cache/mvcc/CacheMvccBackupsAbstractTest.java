@@ -23,13 +23,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -56,6 +57,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Backups tests.
  */
+@SuppressWarnings("unchecked")
 public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest {
 
     /** Test timeout. */
@@ -297,19 +299,26 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
 
         awaitPartitionMapExchange();
 
-        IgniteCache clientCache = client.cache(DEFAULT_CACHE_NAME);
-        IgniteCache cache1 = node1.cache(DEFAULT_CACHE_NAME);
-        IgniteCache cache2 = node2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?,?> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?,?> cache1 = node1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?,?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
+
+        AtomicInteger keyGen = new AtomicInteger();
+        Affinity affinity = affinity(clientCache);
+
+        ClusterNode cNode1 = ((IgniteEx)node1).localNode();
+        ClusterNode cNode2 = ((IgniteEx)node2).localNode();
 
         StringBuilder insert = new StringBuilder("INSERT INTO Integer (_key, _val) values ");
 
-        boolean first = true;
-
-        for (int key = 0; key < KEYS_CNT; key++) {
-            if (!first)
+        for (int i = 0; i < KEYS_CNT; i++) {
+            if (i > 0)
                 insert.append(',');
-            else
-                first = false;
+
+            // To make big batches in near results future.
+            Integer key = i < KEYS_CNT / 2 ? keyForNode(affinity, keyGen, cNode1) : keyForNode(affinity, keyGen, cNode2);
+
+            assert key != null;
 
             insert.append('(').append(key).append(',').append(key * 10).append(')');
         }
@@ -420,7 +429,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
         disableScheduledVacuum = true;
 
         accountsTxReadAll(srvs, clients, srvs - 1, DFLT_PARTITION_COUNT,
-            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, 5_000);
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, 5_000, null);
 
         for (int i = 0; i < srvs - 1; i++) {
             Ignite node1 = grid(i);
@@ -450,13 +459,42 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     }
 
     /**
-     * Checks if {@link GridDhtForceKeysRequest} was sent in case of absence the needed key during rebalancing.
-     *
      * @throws Exception If failed.
      */
-    public void testForceKeyRequest() throws Exception {
-        testSpi = true;
+    public void testNoForceKeyRequestDelayedRebalanceNoVacuum() throws Exception {
         disableScheduledVacuum = true;
+
+        doTestRebalanceNodeAdd(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoForceKeyRequestDelayedRebalance() throws Exception {
+        doTestRebalanceNodeAdd(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoForceKeyRequestNoVacuum() throws Exception {
+        disableScheduledVacuum = true;
+
+        doTestRebalanceNodeAdd(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoForceKeyRequest() throws Exception {
+        doTestRebalanceNodeAdd(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestRebalanceNodeAdd(boolean delayRebalance) throws Exception {
+        testSpi = true;
 
         final Ignite node1 = startGrid(0);
 
@@ -476,30 +514,31 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node1);
 
-        AtomicBoolean forceKeyRes = new AtomicBoolean();
-        AtomicReference<GridDhtForceKeysResponse> ref = new AtomicReference<>();
-
         // Check for a force key request.
         spi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
             @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtPartitionSupplyMessage)
+                if (delayRebalance && msg instanceof GridDhtPartitionSupplyMessage)
                     doSleep(500);
 
-                if (msg instanceof GridDhtForceKeysResponse) {
-                    forceKeyRes.compareAndSet(false, true);
-
-                    ref.set((GridDhtForceKeysResponse)msg);
-                }
+                if (msg instanceof GridDhtForceKeysResponse)
+                    fail("Force key request");
             }
         });
 
         final Ignite node2 = startGrid(1);
 
+        TestRecordingCommunicationSpi.spi(node2).closure(
+            new IgniteBiInClosure<ClusterNode, Message>() {
+                @Override public void apply(ClusterNode node, Message msg) {
+                    if (msg instanceof GridDhtForceKeysRequest)
+                        fail("Force key request");
+                }
+            }
+        );
+
         IgniteCache<Object, Object> cache2 = node2.cache(DEFAULT_CACHE_NAME);
 
-        // TODO Assertion error may be thrown during this Tx. It should be fixed in IGNITE-8371.
-        try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-
+        try (Transaction tx = node2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM Integer WHERE _key IN " +
                 "(1,2,3,4,5)");
 
@@ -508,13 +547,109 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
             tx.commit();
         }
 
-        doSleep(1000);
+        waitForRebalancing();
+
+        doSleep(2000);
 
         stopGrid(1);
 
-        assertTrue(forceKeyRes.get());
+        try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
 
-        assertFalse(ref.get().forcedInfos().isEmpty());
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values " +
+                "(1,1),(2,2),(3,3),(4,4),(5,5)");
+
+            cache.query(qry).getAll();
+
+            tx.commit();
+        }
+
+        doSleep(1000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRebalanceNodeLeaveClient() throws Exception {
+        doTestRebalanceNodeLeave(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRebalanceNodeLeaveServer() throws Exception {
+        doTestRebalanceNodeLeave(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void doTestRebalanceNodeLeave(boolean startClient) throws Exception {
+        testSpi = true;
+        disableScheduledVacuum = true;
+
+        startGridsMultiThreaded(4);
+
+        client = true;
+
+        final Ignite node = startClient ? startGrid(4) : grid(0);
+
+        final IgniteCache<Object, Object> cache = node.createCache(
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, 16)
+                .setIndexedTypes(Integer.class, Integer.class));
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++)
+            keys.addAll(primaryKeys(grid(i).cache(DEFAULT_CACHE_NAME), 2));
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            StringBuilder sb = new StringBuilder("INSERT INTO Integer (_key, _val) values ");
+
+            for (int i = 0; i < keys.size(); i++) {
+                if (i > 0)
+                    sb.append(", ");
+
+                sb.append("(" + keys.get(i) + ", " + keys.get(i) + ")");
+            }
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(sb.toString());
+
+            cache.query(qry).getAll();
+
+            tx.commit();
+        }
+
+        stopGrid(3);
+
+        awaitPartitionMapExchange();
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = 10*_key");
+
+            cache.query(qry).getAll();
+
+            tx.commit();
+        }
+
+        waitForRebalancing();
+
+        for (Integer key : keys) {
+            List<CacheDataRow> vers = null;
+
+            for (int i = 0; i < 3; i++) {
+                ClusterNode n = grid(i).cluster().localNode();
+
+                if (node.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(n, key)) {
+
+                    List<CacheDataRow> vers0 = allKeyVersions(grid(i).cache(DEFAULT_CACHE_NAME), key);
+
+                    if (vers != null)
+                        assertKeyVersionsEquals(vers, vers0);
+
+                    vers = vers0;
+                }
+            }
+        }
     }
 
     /**
@@ -554,6 +689,31 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     }
 
     /**
+     * @param cache Cache.
+     * @param key Key.
+     * @return Collection of versioned rows.
+     * @throws IgniteCheckedException if failed.
+     */
+    private List<CacheDataRow> allKeyVersions(IgniteCache cache, Object key) throws IgniteCheckedException {
+        IgniteCacheProxy cache0 = (IgniteCacheProxy)cache;
+        GridCacheContext cctx = cache0.context();
+
+        KeyCacheObject key0 = cctx.toCacheKeyObject(key);
+
+        GridCursor<CacheDataRow> cur = cctx.offheap().mvccAllVersionsCursor(cctx, key0, null);
+
+        List<CacheDataRow> rows = new ArrayList<>();
+
+        while (cur.next()) {
+            CacheDataRow row = cur.get();
+
+            rows.add(row);
+        }
+
+        return rows;
+    }
+
+    /**
      * Checks stored versions equality.
      *
      * @param left Keys versions to compare.
@@ -574,36 +734,48 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
             List<CacheDataRow> leftRows = left.get(key);
             List<CacheDataRow> rightRows = right.get(key);
 
-            assertNotNull(leftRows);
-            assertNotNull(rightRows);
+            assertKeyVersionsEquals(leftRows, rightRows);
+        }
+    }
 
-            assertEquals("leftRows=" + leftRows + ", rightRows=" + rightRows, leftRows.size(), rightRows.size());
+    /**
+     *
+     * @param leftRows Left rows.
+     * @param rightRows Right rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void assertKeyVersionsEquals(List<CacheDataRow> leftRows, List<CacheDataRow> rightRows)
+        throws IgniteCheckedException {
 
-            for (int i = 0; i < leftRows.size(); i++) {
-                CacheDataRow leftRow = leftRows.get(i);
-                CacheDataRow rightRow = rightRows.get(i);
+        assertNotNull(leftRows);
+        assertNotNull(rightRows);
 
-                assertNotNull(leftRow);
-                assertNotNull(rightRow);
+        assertEquals("leftRows=" + leftRows + ", rightRows=" + rightRows, leftRows.size(), rightRows.size());
 
-                assertTrue(leftRow instanceof MvccDataRow);
-                assertTrue(rightRow instanceof MvccDataRow);
+        for (int i = 0; i < leftRows.size(); i++) {
+            CacheDataRow leftRow = leftRows.get(i);
+            CacheDataRow rightRow = rightRows.get(i);
 
-                leftRow.key().valueBytes(null);
+            assertNotNull(leftRow);
+            assertNotNull(rightRow);
 
-                assertEquals(leftRow.expireTime(), rightRow.expireTime());
-                assertEquals(leftRow.partition(), rightRow.partition());
-                assertArrayEquals(leftRow.value().valueBytes(null), rightRow.value().valueBytes(null));
-                assertEquals(leftRow.version(), rightRow.version());
-                assertEquals(leftRow.cacheId(), rightRow.cacheId());
-                assertEquals(leftRow.hash(), rightRow.hash());
-                assertEquals(leftRow.key(), rightRow.key());
-                assertTrue(MvccUtils.compare(leftRow, rightRow.mvccVersion()) == 0);
-                assertTrue(MvccUtils.compareNewVersion(leftRow, rightRow.newMvccVersion()) == 0);
-                assertEquals(leftRow.newMvccCoordinatorVersion(), rightRow.newMvccCoordinatorVersion());
-                assertEquals(leftRow.newMvccCounter(), rightRow.newMvccCounter());
-                assertEquals(leftRow.newMvccOperationCounter(), rightRow.newMvccOperationCounter());
-            }
+            assertTrue(leftRow instanceof MvccDataRow);
+            assertTrue(rightRow instanceof MvccDataRow);
+
+            leftRow.key().valueBytes(null);
+
+            assertEquals(leftRow.expireTime(), rightRow.expireTime());
+            assertEquals(leftRow.partition(), rightRow.partition());
+            assertArrayEquals(leftRow.value().valueBytes(null), rightRow.value().valueBytes(null));
+            assertEquals(leftRow.version(), rightRow.version());
+            assertEquals(leftRow.cacheId(), rightRow.cacheId());
+            assertEquals(leftRow.hash(), rightRow.hash());
+            assertEquals(leftRow.key(), rightRow.key());
+            assertTrue(MvccUtils.compare(leftRow, rightRow.mvccVersion()) == 0);
+            assertTrue(MvccUtils.compareNewVersion(leftRow, rightRow.newMvccVersion()) == 0);
+            assertEquals(leftRow.newMvccCoordinatorVersion(), rightRow.newMvccCoordinatorVersion());
+            assertEquals(leftRow.newMvccCounter(), rightRow.newMvccCounter());
+            assertEquals(leftRow.newMvccOperationCounter(), rightRow.newMvccOperationCounter());
         }
     }
 

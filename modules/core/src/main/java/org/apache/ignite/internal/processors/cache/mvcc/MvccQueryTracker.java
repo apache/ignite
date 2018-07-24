@@ -17,297 +17,86 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI2;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
-
 /**
- *
+ * Mvcc tracker.
  */
-@SuppressWarnings("unchecked")
-public class MvccQueryTracker implements MvccCoordinatorChangeAware {
+public interface MvccQueryTracker {
     /** */
-    private static final IgniteBiInClosure<AffinityTopologyVersion,IgniteCheckedException> NO_OP_LSNR = new CI2<AffinityTopologyVersion, IgniteCheckedException>() {
-        @Override public void apply(AffinityTopologyVersion version, IgniteCheckedException e) {
-            // No-op
-        }
-    };
+    public static final AtomicLong ID_CNTR = new AtomicLong();
 
     /** */
-    private MvccCoordinator mvccCrd;
-
-    /** */
-    private volatile MvccSnapshot mvccSnapshot;
-
-    /** */
-    @GridToStringExclude
-    private final GridCacheContext cctx;
-
-    /** */
-    private final boolean canRemap;
-
-    /** */
-    @GridToStringExclude
-    private final IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr;
+    public static final long MVCC_TRACKER_ID_NA = -1;
 
     /**
-     * @param cctx Cache context.
-     * @param canRemap {@code True} if can wait for topology changes.
-     * @param lsnr Listener.
+     * @return Tracker id.
      */
-    public MvccQueryTracker(GridCacheContext cctx,
-        boolean canRemap,
-        IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr)
-    {
-        assert cctx.mvccEnabled() : cctx.name();
-
-        this.cctx = cctx;
-        this.canRemap = canRemap;
-        this.lsnr = lsnr;
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccSnapshot Mvcc snapshot.
-     */
-    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinator mvccCrd, MvccSnapshot mvccSnapshot) {
-        assert cctx.mvccEnabled() : cctx.name();
-
-        this.cctx = cctx;
-        this.mvccSnapshot = mvccSnapshot;
-        this.mvccCrd = mvccCrd;
-
-        canRemap = false;
-        lsnr = NO_OP_LSNR;
-    }
+    public long id();
 
     /**
      * @return Requested MVCC snapshot.
      */
-    public MvccSnapshot snapshot() {
-        assert mvccSnapshot != null : this;
-
-        return mvccSnapshot;
-    }
+    public MvccSnapshot snapshot();
 
     /**
-     *
      * @return Cache context.
      */
-    public GridCacheContext context() {
-        return cctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public synchronized MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        if (mvccSnapshot != null) {
-            assert mvccCrd != null : this;
-
-            if (!mvccCrd.equals(newCrd)) {
-                mvccCrd = newCrd; // Need notify new coordinator.
-
-                return mvccSnapshot;
-            }
-            else
-                return null;
-        }
-        else if (mvccCrd != null)
-            mvccCrd = null; // Mark for remap.
-
-        return null;
-    }
+    public GridCacheContext context();
 
     /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion();
+
+    /**
+     * Requests version on coordinator.
      *
+     * @return Future to wait for result.
      */
-    public void onQueryDone() {
-        if (lsnr == NO_OP_LSNR)
-            return;
-
-        MvccCoordinator mvccCrd0 = null;
-        MvccSnapshot mvccSnapshot0 = null;
-
-        synchronized (this) {
-            if (mvccSnapshot != null) {
-                assert mvccCrd != null;
-
-                mvccCrd0 = mvccCrd;
-                mvccSnapshot0 = mvccSnapshot;
-
-                mvccSnapshot = null; // Mark as finished.
-            }
-        }
-
-        if (mvccSnapshot0 != null)
-            cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccSnapshot0);
-    }
+    public IgniteInternalFuture<MvccSnapshot> requestSnapshot();
 
     /**
-     * @param mvccInfo Mvcc update info.
-     * @param ctx Context.
-     * @param commit If {@code true} ack commit, otherwise rollback.
-     * @return Commit ack future.
-     */
-    public IgniteInternalFuture<Void> onTxDone(@Nullable MvccTxInfo mvccInfo, GridCacheSharedContext ctx, boolean commit) {
-        MvccCoordinator mvccCrd0 = null;
-        MvccSnapshot mvccSnapshot0 = null;
-
-        synchronized (this) {
-            if (mvccSnapshot != null) {
-                assert mvccCrd != null;
-
-                mvccCrd0 = mvccCrd;
-                mvccSnapshot0 = mvccSnapshot;
-
-                mvccSnapshot = null; // Mark as finished.
-            }
-        }
-
-        assert mvccSnapshot0 == null || mvccInfo == null || mvccInfo.coordinatorNodeId().equals(mvccCrd0.nodeId());
-
-        if (mvccSnapshot0 != null || mvccInfo != null) {
-            if (mvccInfo == null) {
-                cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccSnapshot0);
-
-                return null;
-            }
-            else {
-                if (commit)
-                    return ctx.coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), mvccSnapshot0);
-                else
-                    ctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), mvccSnapshot0);
-            }
-        }
-
-        return null;
-    }
-
-    /**
+     * Requests version on coordinator.
+     *
      * @param topVer Topology version.
+     * @return Future to wait for result.
      */
-    public void requestVersion(final AffinityTopologyVersion topVer) {
-        MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
-
-        if (mvccCrd0 == null) {
-            lsnr.apply(null, noCoordinatorError(topVer));
-
-            return;
-        }
-
-        synchronized (this) {
-            mvccCrd = mvccCrd0;
-        }
-
-        MvccCoordinator curCrd = cctx.topology().mvccCoordinator();
-
-        if (!mvccCrd0.equals(curCrd)) {
-            assert cctx.topology().topologyVersionFuture().initialVersion().compareTo(topVer) > 0;
-
-            if (!canRemap) {
-                lsnr.apply(null, new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."));
-
-                return;
-            }
-            else {
-                waitNextTopology(topVer);
-
-                return;
-            }
-        }
-
-        IgniteInternalFuture<MvccSnapshot> cntrFut =
-            cctx.shared().coordinators().requestQuerySnapshot(mvccCrd0);
-
-        cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
-            @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
-                try {
-                    MvccSnapshot rcvdSnapshot = fut.get();
-
-                    assert rcvdSnapshot != null;
-
-                    boolean needRemap = false;
-
-                    synchronized (MvccQueryTracker.this) {
-                        assert mvccSnapshot == null : "[this=" + MvccQueryTracker.this +
-                            ", ver=" + mvccSnapshot +
-                            ", rcvdVer=" + rcvdSnapshot + "]";
-
-                        if (mvccCrd != null) {
-                            mvccSnapshot = rcvdSnapshot;
-                        }
-                        else
-                            needRemap = true;
-                    }
-
-                    if (!needRemap) {
-                        lsnr.apply(topVer, null);
-
-                        return;
-                    }
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    IgniteLogger log = cctx.logger(MvccQueryTracker.class);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Mvcc coordinator failed, need remap: " + e);
-                }
-                catch (IgniteCheckedException e) {
-                    lsnr.apply(null, e);
-
-                    return;
-                }
-
-                // Coordinator failed or reassigned, need remap.
-                if (canRemap)
-                    waitNextTopology(topVer);
-                else {
-                    lsnr.apply(null, new ClusterTopologyCheckedException("Failed to " +
-                        "request mvcc version, coordinator failed."));
-                }
-            }
-        });
-    }
+    public IgniteInternalFuture<MvccSnapshot> requestSnapshot(@NotNull AffinityTopologyVersion topVer);
 
     /**
-     * @param topVer Current topology version.
+     * Requests version on coordinator.
+     *
+     * @param topVer Topology version.
+     * @param lsnr Response listener.
      */
-    private void waitNextTopology(AffinityTopologyVersion topVer) {
-        assert canRemap;
+    public void requestSnapshot(@NotNull AffinityTopologyVersion topVer, @NotNull MvccSnapshotResponseListener lsnr);
 
-        IgniteInternalFuture<AffinityTopologyVersion> waitFut =
-            cctx.shared().exchange().affinityReadyFuture(topVer.nextMinorVersion());
+    /**
+     * Marks tracker as done.
+     */
+    public void onDone();
 
-        if (waitFut == null)
-            requestVersion(cctx.shared().exchange().readyAffinityVersion());
-        else {
-            waitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                    try {
-                        requestVersion(fut.get());
-                    }
-                    catch (IgniteCheckedException e) {
-                        lsnr.apply(null, e);
-                    }
-                }
-            });
-        }
-    }
+    /**
+     * Marks tracker as done.
+     *
+     * @param tx Transaction.
+     * @param commit Commit flag.
+     * @return Acknowledge future.
+     */
+    @Nullable public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit);
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccQueryTracker.class, this);
-    }
+    /**
+     * Mvcc coordinator change callback.
+     *
+     * @param newCrd New mvcc coordinator.
+     * @return Query id if exists.
+     */
+    long onMvccCoordinatorChange(MvccCoordinator newCrd);
 }

@@ -25,7 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +59,7 @@ public class ExchangeContext {
     private final boolean newMvccCrd;
 
     /** Currently running mvcc queries, initialized when mvcc coordinator is changed. */
-    private Map<UUID, Map<MvccVersion, Integer>> activeQueries;
+    private Map<UUID, GridLongList> activeQueries;
 
     /**
      * @param crd Coordinator flag.
@@ -147,7 +147,7 @@ public class ExchangeContext {
     /**
      * @return Active queries.
      */
-    public Map<UUID, Map<MvccVersion, Integer>> activeQueries() {
+    public Map<UUID, GridLongList> activeQueries() {
         return activeQueries;
     }
 
@@ -155,7 +155,7 @@ public class ExchangeContext {
      * @param nodeId Node ID.
      * @param nodeQueries Node queries.
      */
-    public void addActiveQueries(UUID nodeId, @Nullable Map<MvccVersion, Integer> nodeQueries) {
+    public void addActiveQueries(UUID nodeId, @Nullable GridLongList nodeQueries) {
         if (nodeQueries == null)
             return;
 

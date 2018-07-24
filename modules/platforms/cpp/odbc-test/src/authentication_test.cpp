@@ -77,7 +77,7 @@ struct AuthenticationTestSuiteFixture : odbc::OdbcTestSuite
      */
     virtual ~AuthenticationTestSuiteFixture()
     {
-        ClearLfs();
+        // No-op.
     }
 
     /**

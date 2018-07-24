@@ -63,7 +63,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         }
         finally {
             if (mvccTracker != null)
-                mvccTracker.onQueryDone();
+                mvccTracker.onDone();
         }
     }
 }

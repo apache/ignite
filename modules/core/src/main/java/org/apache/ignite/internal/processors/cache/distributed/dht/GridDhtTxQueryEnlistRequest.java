@@ -21,8 +21,10 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -61,8 +64,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     private List<KeyCacheObject> keys;
 
     /** */
-    @GridDirectCollection(CacheObject.class)
-    private List<CacheObject> vals;
+    @GridDirectCollection(Message.class)
+    private List<Message> vals;
 
     /**
      *
@@ -76,6 +79,9 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
      * @param lockVer Lock version.
      * @param op Operation.
      * @param batchId Batch id.
+     * @param mvccOpCnt Mvcc operation counter.
+     * @param keys Keys.
+     * @param vals Values.
      */
     GridDhtTxQueryEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
@@ -84,7 +90,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
         int batchId,
         int mvccOpCnt,
         List<KeyCacheObject> keys,
-        List<CacheObject> vals) {
+        List<Message> vals) {
         this.cacheId = cacheId;
         this.dhtFutId = dhtFutId;
         this.lockVer = lockVer;
@@ -142,7 +148,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     /**
      * @return Values.
      */
-    public List<CacheObject> values() {
+    public List<Message> values() {
         return vals;
     }
 
@@ -152,7 +158,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     public int batchId() {
         return batchId;
     }
-
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
@@ -170,14 +175,25 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
 
         CacheObjectContext objCtx = ctx.cacheContext(cacheId).cacheObjectContext();
 
-
         if (keys != null) {
             for (int i = 0; i < keys.size(); i++) {
 
                 keys.get(i).prepareMarshal(objCtx);
 
-                if (vals != null && vals.get(i) != null)
-                    vals.get(i).prepareMarshal(objCtx);
+                if (vals != null) {
+                    Message val = vals.get(i);
+
+                    if (val instanceof CacheObject)
+                        ((CacheObject)val).prepareMarshal(objCtx);
+                    else if (val instanceof CacheEntryInfoCollection) {
+                        for (GridCacheEntryInfo entry : ((CacheEntryInfoCollection)val).infos()) {
+                            CacheObject entryVal = entry.value();
+
+                            if (entryVal != null)
+                                entryVal.prepareMarshal(objCtx);
+                        }
+                    }
+                }
             }
         }
     }
@@ -192,8 +208,20 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
             for (int i = 0; i < keys.size(); i++) {
                 keys.get(i).finishUnmarshal(objCtx, ldr);
 
-                if (vals != null && vals.get(i) != null)
-                    vals.get(i).finishUnmarshal(objCtx, ldr);
+                if (vals != null) {
+                    Message val = vals.get(i);
+
+                    if (val instanceof CacheObject)
+                        ((CacheObject)val).finishUnmarshal(objCtx, ldr);
+                    else if (val instanceof CacheEntryInfoCollection) {
+                        for (GridCacheEntryInfo entry : ((CacheEntryInfoCollection)val).infos()) {
+                            CacheObject entryVal = entry.value();
+
+                            if (entryVal != null)
+                                entryVal.finishUnmarshal(objCtx, ldr);
+                        }
+                    }
+                }
             }
         }
     }

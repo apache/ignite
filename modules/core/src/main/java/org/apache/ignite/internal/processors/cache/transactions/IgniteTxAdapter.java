@@ -61,15 +61,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -259,8 +258,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
-    /** */
-    protected MvccTxInfo mvccInfo;
+    /** Mvcc tx update snapshot. */
+    protected volatile MvccSnapshot mvccSnapshot;
 
     /** Rollback finish future. */
     @GridToStringExclude
@@ -387,22 +386,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Mvcc info.
      */
-    @Nullable public MvccTxInfo mvccInfo() {
-        return mvccInfo;
-    }
-
-    /**
-     * @return Mvcc version for update operation, should be always initialized if mvcc is enabled.
-     */
-    @Nullable protected final MvccSnapshot mvccSnapshotForUpdate() {
-        assert !txState().mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
-
-        return mvccInfo != null ? mvccInfo.snapshot() : null;
+    @Override @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /** {@inheritDoc} */
-    @Override public void mvccInfo(MvccTxInfo mvccInfo) {
-        this.mvccInfo = mvccInfo;
+    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
@@ -1155,9 +1145,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     seal();
 
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    MvccSnapshot snapshot = mvccInfo() != null ? mvccInfo().snapshot() : null;
-
-                    if (snapshot != null) {
+                    if (mvccSnapshot != null) {
                         byte txState;
 
                         switch (state) {
@@ -1177,7 +1165,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         try {
                             if (!cctx.localNode().isClient()) {
                                 if (dht() && remote())
-                                    cctx.coordinators().updateState(snapshot, txState, false);
+                                    cctx.coordinators().updateState(mvccSnapshot, txState, false);
                                 else if (local()) {
                                     IgniteInternalFuture<?> rollbackFut = rollbackFuture();
 
@@ -1185,13 +1173,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                         rollbackFut == null || rollbackFut.isDone();
 
                                     if (syncUpdate)
-                                        cctx.coordinators().updateState(snapshot, txState);
+                                        cctx.coordinators().updateState(mvccSnapshot, txState);
                                     else {
                                         // If tx was aborted, we need to wait tx log is updated on all backups.
                                         rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {
                                                 try {
-                                                    cctx.coordinators().updateState(snapshot, txState);
+                                                    cctx.coordinators().updateState(mvccSnapshot, txState);
                                                 }
                                                 catch (IgniteCheckedException e) {
                                                     U.error(log, "Failed to log TxState: " + txState, e);
@@ -2006,8 +1994,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void mvccInfo(MvccTxInfo mvccInfo) {
+        @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccSnapshot mvccSnapshot() {
+            return null;
         }
 
         /** {@inheritDoc} */

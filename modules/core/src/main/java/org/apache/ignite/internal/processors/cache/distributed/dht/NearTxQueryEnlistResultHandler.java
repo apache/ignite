@@ -23,7 +23,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -121,40 +120,24 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
 
         GridNearTxQueryEnlistResponse res = createResponse(fut);
 
-        if (res.removeMapping()) {
-            tx.rollbackDhtLocalAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
-                    try {
-                        cctx.io().send(nearNodeId, res, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(fut.log, "Failed to send near enlist response [" +
-                            "tx=" + CU.txString(tx) +
-                            ", node=" + nearNodeId +
-                            ", res=" + res + ']', e);
-
-                        throw new GridClosureException(e);
-                    }
-                }
-            });
-
-            return;
-        }
+        if (res.removeMapping())
+            cctx.tm().rollbackTx(tx, true, true);
 
         try {
             cctx.io().send(nearNodeId, res, cctx.ioPolicy());
         }
         catch (IgniteCheckedException e) {
-            U.error(fut.log, "Failed to send near enlist response (will rollback transaction) [" +
-                "tx=" + CU.txString(tx) +
-                ", node=" + nearNodeId +
-                ", res=" + res + ']', e);
+            U.error(fut.log, "Failed to send near enlist response" +
+                (res.removeMapping() ? "" : " (will rollback transaction)") +
+                " [tx=" + CU.txString(tx) + ", node=" + nearNodeId + ", res=" + res + ']', e);
 
-            try {
-                tx.rollbackDhtLocalAsync();
-            }
-            catch (Throwable e1) {
-                e.addSuppressed(e1);
+            if (!res.removeMapping()) {
+                try {
+                    tx.rollbackDhtLocalAsync();
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
             }
 
             throw new GridClosureException(e);

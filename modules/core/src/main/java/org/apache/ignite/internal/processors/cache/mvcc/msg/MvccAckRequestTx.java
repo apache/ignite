@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 
 /**
  *
@@ -69,10 +69,10 @@ public class MvccAckRequestTx implements MvccMessage {
     }
 
     /**
-     * @return Query coordinator version.
+     * @return Query tracker id.
      */
-    public long queryCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
+    public long queryTrackerId() {
+        return MVCC_TRACKER_ID_NA;
     }
 
     /** {@inheritDoc} */

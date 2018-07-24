@@ -26,8 +26,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 
 /**
@@ -42,13 +43,13 @@ public class NormalizationExample {
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
+            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
                 v.getAge(),
                 v.getSalary()
-            };
+            );
 
             // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, double[]> preprocessor = new NormalizationTrainer<Integer, Person>()
+            IgniteBiFunction<Integer, Person, Vector> preprocessor = new NormalizationTrainer<Integer, Person>()
                 .withP(1)
                 .fit(ignite, persons, featureExtractor);
 

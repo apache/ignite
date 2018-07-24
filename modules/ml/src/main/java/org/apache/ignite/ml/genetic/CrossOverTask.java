@@ -51,13 +51,13 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     private Ignite ignite = null;
 
     /** GAConfiguration */
-    private GAConfiguration config = null;
+    private GAConfiguration cfg;
 
     /**
-     * @param config GAConfiguration
+     * @param cfg GAConfiguration
      */
-    public CrossOverTask(GAConfiguration config) {
-        this.config = config;
+    public CrossOverTask(GAConfiguration cfg) {
+        this.cfg = cfg;
     }
 
     /**
@@ -121,13 +121,13 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         Map<ComputeJob, ClusterNode> map) {
         // Calculate number of Jobs = keys / 2
         // as we desire pairs of Chromosomes to be swapped
-        int numberOfJobs = keys.size() / 2;
+        int numOfJobs = keys.size() / 2;
         int k = 0;
-        for (int i = 0; i < numberOfJobs; i++) {
+        for (int i = 0; i < numOfJobs; i++) {
             Long key1 = keys.get(k);
             Long key2 = keys.get(k + 1);
 
-            CrossOverJob job = new CrossOverJob(key1, key2, this.config.getCrossOverRate());
+            CrossOverJob job = new CrossOverJob(key1, key2, this.cfg.getCrossOverRate());
             map.put(job, clusterNode);
             k = k + 2;
         }

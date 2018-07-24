@@ -873,7 +873,9 @@ public class GridCacheUtils {
             ", rollbackOnly=" + tx.isRollbackOnly() +
             ", nodeId=" + tx.nodeId() +
             ", timeout=" + tx.timeout() +
-            ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
+            ", duration=" + (U.currentTimeMillis() - tx.startTime()) +
+            (tx instanceof GridNearTxLocal ? ", label=" + ((GridNearTxLocal)tx).label() : "") +
+            ']';
     }
 
     /**
@@ -1806,8 +1808,6 @@ public class GridCacheUtils {
                         entry.initialValue(
                             val,
                             ver,
-                            null,
-                            null,
                             expiryPlc == null ? 0 : expiryPlc.forCreate(),
                             expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
                             true,

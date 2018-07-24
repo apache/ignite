@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 
 /**
  *
@@ -62,12 +64,12 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
-        return newMvccOpCntr;
+        return newMvccOpCntr & ~MVCC_HINTS_MASK;
     }
 
     /** {@inheritDoc} */
     @Override public byte newMvccTxState() {
-        return TxState.NA;
+        return (byte)(newMvccOpCntr >>> MVCC_HINTS_BIT_OFF);
     }
 
     /** {@inheritDoc} */
@@ -82,12 +84,26 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return mvccOpCntr;
+        return mvccOpCntr & ~MVCC_HINTS_MASK;
     }
 
     /** {@inheritDoc} */
     @Override public byte mvccTxState() {
-        return TxState.NA;
+        return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
+    }
+
+    /**
+     * @param mvccTxState Mvcc version Tx state hint.
+     */
+    public void mvccTxState(byte mvccTxState) {
+        mvccOpCntr = (mvccOpCntr & ~MVCC_HINTS_MASK) | ((int)mvccTxState << MVCC_HINTS_BIT_OFF);
+    }
+
+    /**
+     * @param newMvccTxState New mvcc version Tx state hint.
+     */
+    public void newMvccTxState(byte newMvccTxState) {
+        newMvccOpCntr = (newMvccOpCntr & ~MVCC_HINTS_MASK) | ((int)newMvccTxState << MVCC_HINTS_BIT_OFF);
     }
 
     /** {@inheritDoc} */

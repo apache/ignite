@@ -17,10 +17,13 @@
 
 package org.apache.ignite.ml.selection;
 
-import org.apache.ignite.ml.selection.cv.CrossValidationScoreCalculatorTest;
-import org.apache.ignite.ml.selection.score.AccuracyScoreCalculatorTest;
-import org.apache.ignite.ml.selection.score.util.CacheBasedTruthWithPredictionCursorTest;
-import org.apache.ignite.ml.selection.score.util.LocalTruthWithPredictionCursorTest;
+import org.apache.ignite.ml.selection.cv.CrossValidationTest;
+import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
+import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
+import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
+import org.apache.ignite.ml.selection.scoring.metric.FmeasureTest;
+import org.apache.ignite.ml.selection.scoring.metric.PrecisionTest;
+import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapperTest;
 import org.junit.runner.RunWith;
@@ -31,10 +34,13 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CrossValidationScoreCalculatorTest.class,
-    CacheBasedTruthWithPredictionCursorTest.class,
-    LocalTruthWithPredictionCursorTest.class,
-    AccuracyScoreCalculatorTest.class,
+    CrossValidationTest.class,
+    CacheBasedLabelPairCursorTest.class,
+    LocalLabelPairCursorTest.class,
+    AccuracyTest.class,
+    PrecisionTest.class,
+    RecallTest.class,
+    FmeasureTest.class,
     SHA256UniformMapperTest.class,
     TrainTestDatasetSplitterTest.class
 })

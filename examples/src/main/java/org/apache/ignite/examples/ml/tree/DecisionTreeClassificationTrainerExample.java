@@ -17,16 +17,16 @@
 
 package org.apache.ignite.examples.ml.tree;
 
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
-
-import java.util.Random;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer}.
@@ -67,7 +67,7 @@ public class DecisionTreeClassificationTrainerExample {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[]{v.x, v.y},
+                    (k, v) -> VectorUtils.of(v.x, v.y),
                     (k, v) -> v.lb
                 );
 
@@ -76,7 +76,7 @@ public class DecisionTreeClassificationTrainerExample {
                 for (int i = 0; i < 1000; i++) {
                     LabeledPoint pnt = generatePoint(rnd);
 
-                    double prediction = mdl.apply(new double[]{pnt.x, pnt.y});
+                    double prediction = mdl.apply(VectorUtils.of(pnt.x, pnt.y));
 
                     if (prediction == pnt.lb)
                         correctPredictions++;

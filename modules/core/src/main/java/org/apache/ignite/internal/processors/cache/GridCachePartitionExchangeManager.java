@@ -46,7 +46,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -493,6 +492,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 else if (msg.exchangeId().topologyVersion().topologyVersion() >= cctx.discovery().localJoinEvent().topologyVersion())
                     exchangeFuture(msg.exchangeId(), null, null, null, null)
                         .onAffinityChangeMessage(evt.eventNode(), msg);
+            }
+            else if (customMsg instanceof DynamicCacheChangeFailureMessage) {
+                DynamicCacheChangeFailureMessage msg = (DynamicCacheChangeFailureMessage) customMsg;
+
+                if (msg.exchangeId().topologyVersion().topologyVersion() >=
+                    affinityTopologyVersion(cctx.discovery().localJoinEvent()).topologyVersion())
+                    exchangeFuture(msg.exchangeId(), null, null, null, null)
+                        .onDynamicCacheChangeFail(evt.eventNode(), msg);
             }
             else if (customMsg instanceof SnapshotDiscoveryMessage
                 && ((SnapshotDiscoveryMessage) customMsg).needExchange()) {
@@ -1121,6 +1128,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         affCache.similarAffinityKey());
                 }
 
+                m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
+
                 if (exchId != null) {
                     CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
 
@@ -1154,6 +1163,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     m.addPartitionUpdateCounters(top.groupId(), cntrsMap);
                 else
                     m.addPartitionUpdateCounters(top.groupId(), CachePartitionFullCountersMap.toCountersMap(cntrsMap));
+
+                m.addPartitionSizes(top.groupId(), top.globalPartSizes());
             }
         }
 
@@ -1264,9 +1275,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                    m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
                 }
+
+                m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
             }
         }
 
@@ -1288,9 +1299,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-
-                m.addPartitionSizes(top.groupId(), top.partitionSizes());
             }
+
+            m.addPartitionSizes(top.groupId(), top.partitionSizes());
         }
 
         return m;
@@ -1482,6 +1493,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
+                            msg.partitionSizes(grpId),
                             msg.topologyVersion());
                     }
                 }
@@ -1557,6 +1569,27 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (log.isDebugEnabled())
                     log.debug("Notifying exchange future about single message: " + exchFut);
+
+                if (msg.client()) {
+                    AffinityTopologyVersion initVer = exchFut.initialVersion();
+                    AffinityTopologyVersion readyVer = readyAffinityVersion();
+
+                    if (initVer.compareTo(readyVer) <= 0 && !exchFut.exchangeDone()) {
+                        U.warn(log, "Client node tries to connect but its exchange " +
+                            "info is cleaned up from exchange history. " +
+                            "Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
+                            "or start clients in  smaller batches. " +
+                            "Current settings and versions: " +
+                            "[IGNITE_EXCHANGE_HISTORY_SIZE=" + EXCHANGE_HISTORY_SIZE + ", " +
+                            "initVer=" + initVer + ", " +
+                            "readyVer=" + readyVer + "]."
+                        );
+
+                        exchFut.forceClientReconnect(node, msg);
+
+                        return;
+                    }
+                }
 
                 exchFut.onReceiveSingleMessage(node, msg);
             }
@@ -2511,17 +2544,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int dumpCnt = 0;
 
-                            IgniteConfiguration cfg = cctx.gridConfig();
-
-                            long rollbackTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
                             final long dumpTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
 
                             long nextDumpTime = 0;
 
                             while (true) {
                                 try {
-                                    resVer = exchFut.get(rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout);
+                                    resVer = exchFut.get(dumpTimeout);
 
                                     break;
                                 }
@@ -2530,7 +2559,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
-                                            (rollbackTimeout == 0 ? "Consider changing TransactionConfiguration.txTimeoutOnPartitionMapSynchronization to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 
                                         try {
@@ -2541,12 +2569,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         }
 
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
-                                    }
-
-                                    if (rollbackTimeout > 0) {
-                                        rollbackTimeout = 0; // Try automatic rollback only once.
-
-                                        cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());
                                     }
                                 }
                                 catch (Exception e) {
@@ -2700,14 +2722,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     throw e;
                 }
                 catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
-                    assert cctx.discovery().reconnectSupported();
+                    if (cctx.discovery().reconnectSupported()) {
+                        U.warn(log, "Local node failed to complete partition map exchange due to " +
+                            "exception, will try to reconnect to cluster: " + e.getMessage(), e);
 
-                    U.warn(log,"Local node failed to complete partition map exchange due to " +
-                        "network issues, will try to reconnect to cluster", e);
+                        cctx.discovery().reconnect();
 
-                    cctx.discovery().reconnect();
-
-                    reconnectNeeded = true;
+                        reconnectNeeded = true;
+                    }
+                    else
+                        U.warn(log, "Local node received IgniteClientDisconnectedCheckedException or " +
+                            " IgniteNeedReconnectException exception but doesn't support reconnect, stopping node: " +
+                            e.getMessage(), e);
 
                     return;
                 }

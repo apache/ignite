@@ -118,15 +118,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQu
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQuery;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryEx;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryCntr;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryId;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccNewQueryAckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
@@ -970,7 +969,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 140:
-                msg = new MvccAckRequestQuery();
+                msg = new MvccAckRequestQueryCntr();
 
                 break;
 
@@ -990,22 +989,22 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 144:
-                msg = new MvccTxInfo();
+                msg = new GridDhtTxQueryEnlistResponse();
 
                 break;
 
             case 145:
-                msg = new MvccNewQueryAckRequest();
+                msg = new MvccAckRequestQueryId();
 
                 break;
 
             case 146:
-                msg = new MvccAckRequestTxAndQuery();
+                msg = new MvccAckRequestTxAndQueryCntr();
 
                 break;
 
             case 147:
-                msg = new MvccAckRequestTxAndQueryEx();
+                msg = new MvccAckRequestTxAndQueryId();
 
                 break;
 
@@ -1051,11 +1050,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 156:
                 msg = new GridDhtTxQueryFirstEnlistRequest();
-
-                break;
-
-            case 157:
-                msg = new GridDhtTxQueryEnlistResponse();
 
                 break;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.CIX1;
 
@@ -32,22 +32,25 @@ public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteIn
     /** */
     private final GridNearTxLocal tx;
 
+    /**
+     * @param tx Transaction.
+     */
     public AckCoordinatorOnRollback(GridNearTxLocal tx) {
         this.tx = tx;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> future) throws IgniteCheckedException {
-        assert future.isDone();
+    @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
+        assert fut.isDone();
 
-        MvccQueryTracker qryTracker = tx.mvccQueryTracker();
-        MvccTxInfo mvccInfo = tx.mvccInfo();
+        MvccQueryTracker tracker = tx.mvccQueryTracker();
+        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-        assert qryTracker != null || mvccInfo != null;
+        assert tracker != null || mvccSnapshot != null;
 
-        if (qryTracker != null)
-            qryTracker.onTxDone(mvccInfo, tx.context(), false);
-        else
-            tx.context().coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), null);
+        if (tracker != null) // Optimistic tx.
+            tracker.onDone(tx, false);
+        else // Pessimistic tx.
+            tx.context().coordinators().ackTxRollback(mvccSnapshot);
     }
 }

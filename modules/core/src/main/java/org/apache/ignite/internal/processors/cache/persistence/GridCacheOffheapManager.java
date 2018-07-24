@@ -758,7 +758,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int p = partCntrs.partitionAt(i);
             long initCntr = partCntrs.initialUpdateCounterAt(i);
 
-            FileWALPointer startPtr = (FileWALPointer)database.searchPartitionCounter(grp.groupId(), p, initCntr);
+            FileWALPointer startPtr = (FileWALPointer)database.checkpointHistory().searchPartitionCounter(
+                grp.groupId(), p, initCntr);
 
             if (startPtr == null)
                 throw new IgniteCheckedException("Could not find start pointer for partition [part=" + p + ", partCntrSince=" + initCntr + "]");
@@ -785,9 +786,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries)
+        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
             return false;
 
+        // Prevent manager being stopped in the middle of pds operation.
         if (!busyLock.enterBusy())
             return false;
 
@@ -800,6 +802,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (amount != -1 && cleared >= amount)
                     return true;
             }
+
+            // Throttle if there is nothing to clean anymore.
+            if (cleared < amount)
+                nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
         }
         finally {
             busyLock.leaveBusy();
@@ -1019,7 +1025,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long from = partMap.initialUpdateCounterAt(idx);
                             long to = partMap.updateCounterAt(idx);
 
-                            if (entry.partitionCounter() >= from && entry.partitionCounter() <= to) {
+                            if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 if (entry.partitionCounter() == to)
                                     reachedPartitionEnd = true;
 
@@ -1218,6 +1224,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private volatile CacheDataStore delegate;
 
+        /** Timestamp when next clean try will be allowed for current partition.
+         * Used for fine-grained throttling on per-partition basis. */
+        private volatile long nextStoreCleanTime;
+
         /** */
         private final boolean exists;
 
@@ -1257,6 +1267,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
 
                 dbMgr.checkpointReadLock();
+
                 try {
                     Metas metas = getOrAllocatePartitionMetas();
 
@@ -1654,17 +1665,62 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public MvccUpdateResult mvccUpdate(
-                GridCacheContext cctx,
-                boolean primary,
-                KeyCacheObject key,
-                CacheObject val,
-                GridCacheVersion ver,
-                long expireTime,
-                MvccSnapshot mvccVer) throws IgniteCheckedException {
+        @Override public boolean mvccInitialValueIfAbsent(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer,
+            byte txState,
+            byte newTxState)
+            throws IgniteCheckedException
+        {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccUpdate(cctx, primary, key, val, ver, expireTime, mvccVer);
+            return delegate.mvccInitialValueIfAbsent(cctx, key, val, ver, expireTime, mvccVer, newMvccVer,
+                txState, newTxState);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean mvccUpdateRowWithPreloadInfo(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer,
+            byte mvccTxState,
+            byte newMvccTxState) throws IgniteCheckedException {
+
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccUpdateRowWithPreloadInfo(cctx,
+                key,
+                val,
+                ver,
+                expireTime,
+                mvccVer,
+                newMvccVer,
+                mvccTxState,
+                newMvccTxState);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccUpdateResult mvccUpdate(
+            GridCacheContext cctx,
+            boolean primary,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccSnapshot mvccVer,
+            boolean needHistory) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccUpdate(cctx, primary, key, val, ver, expireTime, mvccVer, needHistory);
         }
 
         /** {@inheritDoc} */
@@ -1672,10 +1728,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheContext cctx,
             boolean primary,
             KeyCacheObject key,
-            MvccSnapshot mvccVer) throws IgniteCheckedException {
+            MvccSnapshot mvccVer,
+            boolean needHistory) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, primary, key, mvccVer);
+            return delegate.mvccRemove(cctx, primary, key, mvccVer, needHistory);
         }
 
         /** {@inheritDoc} */
@@ -1949,12 +2006,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
-         * Removes expired entries from data store.
+         * Try to remove expired entries from data store.
          *
          * @param cctx Cache context.
          * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
          * @param amount Limit of processed entries by single call, {@code -1} for no limit.
-         * @return {@code True} if unprocessed expired entries remains.
+         * @return cleared entries count.
          * @throws IgniteCheckedException If failed.
          */
         public int purgeExpired(GridCacheContext cctx,
@@ -1962,13 +2019,39 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int amount) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
-            if (delegate0 == null || pendingTree == null)
+            long now = U.currentTimeMillis();
+
+            if (delegate0 == null || nextStoreCleanTime > now)
                 return 0;
+
+            assert pendingTree != null : "Partition data store was not initialized.";
+
+            int cleared = purgeExpiredInternal(cctx, c, amount);
+
+            // Throttle if there is nothing to clean anymore.
+            if (cleared < amount)
+                nextStoreCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
+
+            return cleared;
+        }
+
+        /**
+         * Removes expired entries from data store.
+         *
+         * @param cctx Cache context.
+         * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
+         * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+         * @return cleared entries count.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int purgeExpiredInternal(GridCacheContext cctx,
+            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+            int amount) throws IgniteCheckedException {
 
             GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
             // Skip non-owned partitions.
-            if (part == null || part.state() != OWNING || pendingTree.size() == 0)
+            if (part == null || part.state() != OWNING)
                 return 0;
 
             cctx.shared().database().checkpointReadLock();

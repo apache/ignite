@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.junit.Test;
 
@@ -52,8 +53,14 @@ public class StringEncoderPreprocessorTest {
                     put("B", 0);
                 }
             }},
-            (k, v) -> v
-        );
+            (k, v) -> v,
+            new HashSet() {
+                {
+                    add(0);
+                    add(1);
+                    add(2);
+                }
+            });
 
         double[][] postProcessedData = new double[][]{
             {1.0, 0.0, 1.0},
@@ -62,6 +69,6 @@ public class StringEncoderPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]), 1e-8);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
     }
 }

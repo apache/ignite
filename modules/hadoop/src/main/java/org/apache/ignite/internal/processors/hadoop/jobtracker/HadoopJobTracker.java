@@ -259,6 +259,7 @@ public class HadoopJobTracker extends HadoopComponent {
             null,
             true,
             true,
+            false,
             false
         );
 

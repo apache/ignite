@@ -33,12 +33,14 @@ import org.jetbrains.annotations.Nullable;
  */
 abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
-
     /** Bucket endpoint */
-    protected @Nullable String bucketEndpoint;
+    @Nullable protected String bucketEndpoint;
 
     /** Server-side encryption algorithm for Amazon S3-managed encryption keys. */
-    protected @Nullable String SSEAlgorithm;
+    @Nullable protected String SSEAlgorithm;
+
+    /** Key prefix of the address. */
+    @Nullable protected String keyPrefix;
 
     /**
      * Constructor.
@@ -60,6 +62,7 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
         setBucketEndpoint(finder);
         setBucketName(finder);
         setSSEAlgorithm(finder);
+        setKeyPrefix(finder);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
@@ -100,7 +103,6 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
 
     /**
      * Set server-side encryption algorithm for Amazon S3-managed encryption keys into the provided {@code finder}.
-     *
      * @param finder finder encryption algorithm to set into.
      */
     private void setSSEAlgorithm(TcpDiscoveryS3IpFinder finder) {
@@ -113,6 +115,14 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
      */
     protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
         finder.setBucketName(getBucketName());
+    }
+
+    /**
+     * Set the ip address key prefix into the provided {@code finder}.
+     * @param finder finder encryption algorithm to set into.
+     */
+    protected void setKeyPrefix(TcpDiscoveryS3IpFinder finder) {
+        finder.setKeyPrefix(keyPrefix);
     }
 
     /**

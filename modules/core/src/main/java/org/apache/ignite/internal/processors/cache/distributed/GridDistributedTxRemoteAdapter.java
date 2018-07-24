@@ -483,7 +483,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
-                        assert !txState.mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
+                        assert !txState.mvccEnabled(cctx) || mvccSnapshot != null : "Mvcc is not initialized: " + this;
 
                         Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
 
@@ -607,7 +607,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        mvccSnapshotForUpdate());
+                                                        mvccSnapshot());
                                                 else {
                                                     assert val != null : txEntry;
 
@@ -632,7 +632,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        mvccSnapshotForUpdate());
+                                                        mvccSnapshot());
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -668,7 +668,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     resolveTaskName(),
                                                     dhtVer,
                                                     txEntry.updateCounter(),
-                                                    mvccSnapshotForUpdate());
+                                                    mvccSnapshot());
 
                                                 if (updRes.loggedPointer() != null)
                                                     ptr = updRes.loggedPointer();

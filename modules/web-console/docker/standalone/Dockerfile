@@ -15,57 +15,62 @@
 # limitations under the License.
 #
 
-FROM ubuntu:14.04
+FROM node:8-slim as frontend-build
 
-ENV NPM_CONFIG_LOGLEVEL info
-ENV NODE_VERSION 8.11.1
+ENV NPM_CONFIG_LOGLEVEL error
 
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927 && \
-    echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
+WORKDIR /opt/web-console
+
+# Install node modules for frontend.
+COPY frontend/package*.json frontend/
+RUN (cd frontend && npm install --no-optional)
+
+# Copy source.
+COPY frontend frontend
+
+RUN (cd frontend && npm run build)
+
+FROM node:8-slim
+
+ENV NPM_CONFIG_LOGLEVEL error
 
 # Update package list & install.
-RUN apt-get update && \
-    apt-get install -y nginx-light mongodb-org-server curl xz-utils git
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6 \
+    && echo "deb http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.4 main" | tee /etc/apt/sources.list.d/mongodb-org-3.4.list
 
-# Install Node JS.
-RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" && \
-    curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt" && \
-    grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c - && \
-    tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 && \
-    rm -rf "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt
+# Update package list & install.
+RUN apt-get update \
+    && apt-get install -y nginx-light mongodb-org-server dos2unix \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install global node packages.
 RUN npm install -g pm2
 
-# Install frontend & backend apps.
-RUN mkdir -p /opt/web-console
-
-# Copy source.
 WORKDIR /opt/web-console
-COPY build .
 
-# Install node modules for frontend and backend modules.
-RUN cd /opt/web-console/frontend && \
-    npm install --no-optional --prod && \
-    npm run build && \
-    cd /opt/web-console/backend && \
-    npm install --no-optional --prod
+COPY docker/standalone/docker-entrypoint.sh docker-entrypoint.sh
+
+RUN chmod +x docker-entrypoint.sh \
+    && dos2unix docker-entrypoint.sh
 
 # Copy nginx config.
-COPY nginx/* /etc/nginx/
+COPY docker/standalone/nginx/* /etc/nginx/
 
-# Copy entrypoint.
-COPY entrypoint.sh .
+# Install node modules for frontend and backend modules.
+COPY backend/package*.json backend/
+RUN (cd backend && npm install --no-optional --production)
 
-# Clean up.
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Copy source.
+COPY backend backend
+
+COPY web-agent/target/ignite-web-agent-*.zip backend/agent_dists
+
+COPY --from=frontend-build /opt/web-console/frontend/build static
 
 VOLUME ["/etc/nginx"]
-VOLUME ["/var/lib/mongodb"]
+VOLUME ["/data/db"]
 VOLUME ["/opt/web-console/serve/agent_dists"]
 
 EXPOSE 80
-
-ENTRYPOINT ["/opt/web-console/entrypoint.sh"]
-
+ENTRYPOINT ["/opt/web-console/docker-entrypoint.sh"]

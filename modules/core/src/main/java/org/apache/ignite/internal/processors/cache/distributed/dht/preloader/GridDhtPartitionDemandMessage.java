@@ -136,7 +136,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /**
      * @return Partition.
      */
-    IgniteDhtDemandedPartitionsMap partitions() {
+    public IgniteDhtDemandedPartitionsMap partitions() {
         return parts;
     }
 

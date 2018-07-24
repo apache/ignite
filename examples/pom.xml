@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>2.6.0-SNAPSHOT</version>
+    <version>2.7.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -124,6 +124,8 @@
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <spark.folder>src/main/java</spark.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
+        <tensorflow.folder>src/main/java</tensorflow.folder>
+        <tensorflow.test.folder>src/test/java</tensorflow.test.folder>
     </properties>
 
     <profiles>
@@ -173,51 +175,6 @@
         </profile>
 
         <profile>
-            <id>scala-2.10</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-                <spark.test.folder>src/test/spark</spark.test.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar_2.10</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.scalatest</groupId>
-                    <artifactId>scalatest_2.10</artifactId>
-                    <version>2.2.2</version>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.scala-lang</groupId>
-                            <artifactId>scala-library</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark_2.10</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>lgpl</id>
 
             <properties>
@@ -241,6 +198,23 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-geospatial</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>tensorflow</id>
+
+            <properties>
+                <tensorflow.folder>src/main/tensorflow</tensorflow.folder>
+                <tensorflow.test.folder>src/test/tensorflow</tensorflow.test.folder>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-tensorflow</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
@@ -275,6 +249,7 @@
                             <sources>
                                 <source>${lgpl.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${tensorflow.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -289,6 +264,7 @@
                             <sources>
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
+                                <source>${tensorflow.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

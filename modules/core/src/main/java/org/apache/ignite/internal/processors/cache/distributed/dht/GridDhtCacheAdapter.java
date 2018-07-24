@@ -680,8 +680,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     entry.initialValue(cacheVal,
                         ver,
-                        null,
-                        null,
                         ttl,
                         CU.EXPIRE_TIME_CALCULATE,
                         false,

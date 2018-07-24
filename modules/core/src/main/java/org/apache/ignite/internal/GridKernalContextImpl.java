@@ -368,7 +368,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private final WorkersRegistry workersRegistry = new WorkersRegistry();
+    private WorkersRegistry workersRegistry;
 
     /** */
     private IgniteEx grid;
@@ -436,6 +436,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param schemaExecSvc Schema executor service.
      * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
+     * @param workerRegistry Worker registry.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -460,7 +461,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService schemaExecSvc,
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins,
-        IgnitePredicate<String> clsFilter
+        IgnitePredicate<String> clsFilter,
+        WorkersRegistry workerRegistry
     ) {
         assert grid != null;
         assert cfg != null;
@@ -485,6 +487,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.qryExecSvc = qryExecSvc;
         this.schemaExecSvc = schemaExecSvc;
         this.customExecSvcs = customExecSvcs;
+        this.workersRegistry = workerRegistry;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
