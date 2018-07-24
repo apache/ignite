@@ -20,13 +20,13 @@ package org.apache.ignite.ml.math.primitives.matrix.impl;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntSet;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.primitives.matrix.storage.SparseMatrixStorage;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.matrix.AbstractMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
+import org.apache.ignite.ml.math.primitives.matrix.storage.SparseMatrixStorage;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
 /**

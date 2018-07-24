@@ -19,10 +19,10 @@ package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 import org.junit.Assert;
 import org.junit.Before;

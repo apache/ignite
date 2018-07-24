@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.primitives.vector;
 
 import org.apache.ignite.ml.math.ExternalizeTest;
-import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.junit.After;
 import org.junit.Before;
