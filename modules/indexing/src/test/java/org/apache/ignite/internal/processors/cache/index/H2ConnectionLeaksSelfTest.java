@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -26,9 +28,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.

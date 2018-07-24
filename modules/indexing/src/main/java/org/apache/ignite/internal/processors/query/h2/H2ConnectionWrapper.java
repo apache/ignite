@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.Connection;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.Connection;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Wrapper to store connection with currently used schema and statement cache.
  */
 public class H2ConnectionWrapper implements AutoCloseable {
+    /** */
     private static final int STATEMENT_CACHE_SIZE = 256;
+
     /** */
     private final Connection conn;
 
@@ -43,6 +43,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     H2ConnectionWrapper(Connection conn) {
         this.conn = conn;
+
         initStatementCache();
     }
 

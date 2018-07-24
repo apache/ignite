@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
@@ -642,6 +640,7 @@ public final class UpdatePlan {
             cur.close();
 
             ObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
+
             if (conn0 != null)
                 conn0.recycle();
         }
