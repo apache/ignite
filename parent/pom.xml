@@ -84,8 +84,8 @@
         <jetty.version>9.2.11.v20150529</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
-        <jsch.bundle.version>0.1.53_1</jsch.bundle.version>
-        <jsch.version>0.1.53</jsch.version>
+        <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
+        <jsch.version>0.1.54</jsch.version>
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
