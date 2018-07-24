@@ -155,7 +155,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
 
         R res = identity;
         for (R partRes : results)
-            res = reduce.apply(res, partRes);
+            if (partRes != null)
+                res = reduce.apply(res, partRes);
 
         return res;
     }
