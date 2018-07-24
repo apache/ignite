@@ -204,6 +204,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         boolean assignsChanged = prevAff == aff; // Changed, since no history info available.
 
+        assert !assignsChanged || newTopVer.equals(grp.localStartVersion()) :
+            "Empty hisroty allowed only for newly started cache group [newTopVer=" + newTopVer +
+                ", localStartTopVer=" + grp.localStartVersion() + ']';
+
         for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
 
