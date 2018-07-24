@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalR
 /**
  *
  */
-public class IgnitePdsAtomicCacheHistoricalRebalancingTest extends IgnitePdsAtomicCacheRebalancingTest {
+public class IgnitePdsTxHistoricalRebalancingTest extends IgnitePdsTxCacheRebalancingTest {
     /** {@inheritDoc */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

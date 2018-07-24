@@ -1481,6 +1481,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
 
             KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
+
+            if (key.partition() == -1)
+                key.partition(partId);
+
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(
