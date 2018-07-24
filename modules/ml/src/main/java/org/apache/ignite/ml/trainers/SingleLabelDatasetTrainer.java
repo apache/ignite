@@ -24,5 +24,5 @@ import org.apache.ignite.ml.Model;
  *
  * @param <M> Type of a produced model.
  */
-public interface SingleLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, Double> {
+public abstract class SingleLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, Double> {
 }

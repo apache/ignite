@@ -18,8 +18,8 @@
 package org.apache.ignite.ml.nn.initializers;
 
 import java.util.Random;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Class for initialization of MLP parameters with random uniformly distributed numbers from -1 to 1.

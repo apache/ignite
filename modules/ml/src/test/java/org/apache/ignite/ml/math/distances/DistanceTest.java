@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.distances;
 
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,8 +37,8 @@ public class DistanceTest {
     /** */
     @Before
     public void setup() {
-        v1 = new DenseLocalOnHeapVector(new double[] {0.0, 0.0, 0.0});
-        v2 = new DenseLocalOnHeapVector(new double[] {2.0, 1.0, 0.0});
+        v1 = new DenseVector(new double[] {0.0, 0.0, 0.0});
+        v2 = new DenseVector(new double[] {2.0, 1.0, 0.0});
     }
 
     /** */

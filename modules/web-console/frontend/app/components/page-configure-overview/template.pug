@@ -15,6 +15,7 @@
     limitations under the License.
 
 h1.pc-page-header Configuration
+    version-picker
 
 .pco-relative-root
     .pco-table-context-buttons
@@ -32,9 +33,10 @@ h1.pc-page-header Configuration
         on-action='$ctrl.onClustersAction($event)'
         max-rows-to-show='10'
         one-way-selection='::false'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
         on-selection-change='$ctrl.selectedRows$.next($event)'
         actions-menu='$ctrl.actions$|async:this'
     )
         footer-slot(ng-hide='($ctrl.shortClusters$|async:this).length' style='font-style: italic')
             | You have no cluster configurations.
-            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})')  Create one?
+            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})') Create one?

@@ -158,6 +158,18 @@ public class DataEntry {
     }
 
     /**
+     * Sets partition update counter to entry.
+     *
+     * @param partCnt Partition update counter.
+     * @return {@code this} for chaining.
+     */
+    public DataEntry partitionCounter(long partCnt) {
+        this.partCnt = partCnt;
+
+        return this;
+    }
+
+    /**
      * @return Expire time.
      */
     public long expireTime() {
