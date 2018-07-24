@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * Model consisting of several models and prediction aggregation strategy.
@@ -74,5 +75,18 @@ public class ModelsComposition implements Model<Vector, Double> {
      */
     public List<Model<Vector, Double>> getModels() {
         return models;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return ModelTrace.builder("Models composition", pretty)
+            .addField("aggregator", predictionsAggregator.toString(pretty))
+            .addField("models", models)
+            .toString();
     }
 }

@@ -26,9 +26,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 
 /**
  * Storage for sparse, local, on-heap matrix.

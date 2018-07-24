@@ -21,9 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
 import org.junit.Test;
 
