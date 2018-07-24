@@ -244,6 +244,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         cache.clearStatistics();
 
+        cache.enableStatistics(true);
+
         assertCacheStatisticsIsClear(Collections.singleton(CACHE1));
     }
 

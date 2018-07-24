@@ -4558,7 +4558,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<String> globalCaches = new HashSet<>(U.capacity(caches.size()));
 
         for (IgniteInternalCache cache : caches) {
-            if (!cache.context().isLocal() && cache.clusterMxBean().isStatisticsEnabled())
+            if (!cache.context().isLocal())
                 globalCaches.add(cache.name());
         }
 
