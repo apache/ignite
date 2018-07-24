@@ -228,6 +228,27 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that <code>select count(*)</code> return valid result on a single-node grid.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAffinityOptimizedQuerySegmentedIndex() throws Exception {
+        final IgniteCache<Object, Object> cache = ignite(0).createCache(
+            cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
+
+        final long SIZE = 2000;
+
+        for (int i = 0; i < SIZE; i++)
+            cache.put(i, new Organization("org-" + i));
+
+        String select0 = "select name from \"org\".Organization where _key=1931";
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+        assertEquals(1, res.size());
+    }
+
+    /**
      * Run tests on multi-node grid
      *
      * @throws Exception If failed.

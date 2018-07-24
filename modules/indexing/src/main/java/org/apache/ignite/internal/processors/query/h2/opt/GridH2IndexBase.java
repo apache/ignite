@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -618,7 +619,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 throw retryException("Failed to get primary node by key for range segment.");
         }
 
-        return new SegmentKey(node, segmentForPartition(partition));
+        return new SegmentKey(node, H2Utils.segmentForPartition(partition, segmentsCount()));
     }
 
     /** */
@@ -796,14 +797,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected abstract int segmentsCount();
 
     /**
-     * @param partition Partition idx.
-     * @return Segment ID for given key
-     */
-    protected int segmentForPartition(int partition){
-        return segmentsCount() == 1 ? 0 : (partition % segmentsCount());
-    }
-
-    /**
      * @param row Table row.
      * @return Segment ID for given row.
      */
@@ -826,7 +819,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         else
             key = ctx.toCacheKeyObject(o);
 
-        return segmentForPartition(ctx.affinity().partition(key));
+        return H2Utils.segmentForPartition(ctx.affinity().partition(key), segmentsCount());
     }
 
     /**

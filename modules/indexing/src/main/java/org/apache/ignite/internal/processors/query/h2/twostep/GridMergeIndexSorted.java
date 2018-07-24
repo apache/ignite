@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -105,25 +105,25 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        super.setSources(nodes, segmentsCnt);
+    @Override public void setSources(Map<ClusterNode, Integer> nodesSegments) {
+        super.setSources(nodesSegments);
 
-        streamsMap = U.newHashMap(nodes.size());
-        RowStream[] streams = new RowStream[nodes.size() * segmentsCnt];
+        streamsMap = U.newHashMap(nodesSegments.size());
+        List<RowStream> streams = new ArrayList<>(nodesSegments.size());
 
-        int i = 0;
+        for (Map.Entry<ClusterNode, Integer> e : nodesSegments.entrySet()) {
+            int segmentsCnt = e.getValue();
 
-        for (ClusterNode node : nodes) {
             RowStream[] segments = new RowStream[segmentsCnt];
 
             for (int s = 0; s < segmentsCnt; s++)
-                streams[i++] = segments[s] = new RowStream();
+                streams.add(segments[s] = new RowStream());
 
-            if (streamsMap.put(node.id(), segments) != null)
+            if (streamsMap.put(e.getKey().id(), segments) != null)
                 throw new IllegalStateException();
         }
 
-        it = new MergeStreamIterator(streams);
+        it = new MergeStreamIterator(streams.toArray(new RowStream[streams.size()]));
     }
 
     /** {@inheritDoc} */

@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
@@ -195,17 +195,16 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * Set source nodes.
+     * Set nodes sources.
      *
-     * @param nodes Nodes.
-     * @param segmentsCnt Index segments per table.
+     * @param nodesSources Nodes source segments.
      */
-    public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
+    public void setSources(Map<ClusterNode, Integer> nodesSources) {
         assert sources == null;
 
         sources = new HashSet<>();
 
-        for (ClusterNode node : nodes) {
+        for (ClusterNode node : nodesSources.keySet()) {
             if (!sources.add(node.id()))
                 throw new IllegalStateException();
         }

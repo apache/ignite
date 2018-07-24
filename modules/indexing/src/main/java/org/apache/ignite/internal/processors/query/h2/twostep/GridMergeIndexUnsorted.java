@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -80,10 +80,13 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        super.setSources(nodes, segmentsCnt);
+    @Override public void setSources(Map<ClusterNode, Integer> nodesSegments) {
+        super.setSources(nodesSegments);
 
-        int x = nodes.size() * segmentsCnt;
+        int x = 0;
+
+        for (Integer srcs : nodesSegments.values())
+            x += srcs;
 
         assert x > 0: x;
 

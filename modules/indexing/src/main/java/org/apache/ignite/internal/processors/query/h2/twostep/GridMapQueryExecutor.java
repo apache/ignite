@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -627,84 +628,101 @@ public class GridMapQueryExecutor {
             return;
         }
 
-        AtomicInteger runCntr;
-        CompoundLockFuture lockFut;
+        final AtomicInteger runCntr;
+        final CompoundLockFuture lockFut;
 
         if (txReq != null && segments > 1) {
             runCntr = new AtomicInteger(segments);
             lockFut = new CompoundLockFuture(segments, tx);
 
             lockFut.init();
-        }
+ }
         else {
             runCntr = null;
             lockFut = null;
         }
 
-        for (int i = 1; i < segments; i++) {
-            assert !F.isEmpty(cacheIds);
+        final int firstSegment;
 
-            final int segment = i;
+        if (segments > 1) {
+            BitSet segmentSet = new BitSet(segments);
 
-            if (lazy) {
-                onQueryRequest0(node,
-                    req.requestId(),
-                    segment,
-                    req.schemaName(),
-                    req.queries(),
-                    cacheIds,
-                    req.topologyVersion(),
-                    partsMap,
-                    parts,
-                    req.pageSize(),
-                    joinMode,
-                    enforceJoinOrder,
-                    false, // Replicated is always false here (see condition above).
-                    req.timeout(),
-                    params,
-                    true,
-                    req.mvccSnapshot(),
-                    tx,
-                    txReq,
-                    lockFut,
-                    runCntr);
+            if (qryParts != null) {
+                for (int i = 0; i < qryParts.length; i++)
+                    segmentSet.set(H2Utils.segmentForPartition(qryParts[i], parallelismLvl));
             }
-            else {
-                ctx.closure().callLocal(
-                    new Callable<Void>() {
-                        @Override public Void call() {
-                            onQueryRequest0(node,
-                                req.requestId(),
-                                segment,
-                                req.schemaName(),
-                                req.queries(),
-                                cacheIds,
-                                req.topologyVersion(),
-                                partsMap,
-                                parts,
-                                req.pageSize(),
-                                joinMode,
-                                enforceJoinOrder,
-                                false,
-                                req.timeout(),
-                                params,
-                                false,
-                                req.mvccSnapshot(),
-                                tx,
-                                txReq,
-                                lockFut,
-                                runCntr);
+            else
+                segmentSet.set(0, segments);
 
-                            return null;
+            firstSegment = segmentSet.nextSetBit(0);
+
+            for (int i = segmentSet.nextSetBit(firstSegment + 1); i >= 0; i = segments.nextSetBit(i + 1)) {
+                assert !F.isEmpty(cacheIds);
+
+                final int segment = i;
+
+                if (lazy) {
+                    onQueryRequest0(node,
+                        req.requestId(),
+                        segment,
+                        req.schemaName(),
+                        req.queries(),
+                        cacheIds,
+                        req.topologyVersion(),
+                        partsMap,
+                        parts,
+                        req.pageSize(),
+                        joinMode,
+                        enforceJoinOrder,
+                        false, // Replicated is always false here (see condition above).
+                        req.timeout(),
+                        params,
+                        true,
+                        req.mvccSnapshot(),
+                        tx,
+                        txReq,
+                        lockFut,
+                        runCntr);
+                }
+                else {
+                    ctx.closure().callLocal(
+                        new Callable<Void>() {
+                            @Override public Void call() {
+                                onQueryRequest0(node,
+                                    req.requestId(),
+                                    segment,
+                                    req.schemaName(),
+                                    req.queries(),
+                                    cacheIds,
+                                    req.topologyVersion(),
+                                    partsMap,
+                                    parts,
+                                    req.pageSize(),
+                                    joinMode,
+                                    enforceJoinOrder,
+                                    false,
+                                    req.timeout(),
+                                    params,
+                                    false,
+                                    req.mvccSnapshot(),
+                                    tx,
+                                    txReq,
+                                    lockFut,
+                                    runCntr);
+
+                                return null;
+                            }
                         }
-                    }
-                    , QUERY_POOL);
+                        , QUERY_POOL);
+                }
             }
         }
+        else
+            firstSegment = 0;
 
         onQueryRequest0(node,
             req.requestId(),
-            0,
+            firstSegment,
             req.schemaName(),
             req.queries(),
             cacheIds,
