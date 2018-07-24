@@ -254,7 +254,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * @return Collection of nodes remaining to be requested for demanded partitions.
-     *         Value {@code Empty} if rebalance not started or already finished.
+     *         Value {@code Empty} if rebalance already finished.
      */
     Collection<UUID> remainingNodes() {
         return rebalanceFut.remainingNodes();
@@ -335,6 +335,15 @@ public class GridDhtPartitionDemander {
             }
 
             fut.sendRebalanceStartedEvent();
+
+            // Should start new rebalance if requested nodes left topology.
+            // See GridDhtPreloader#rebalanceRequired for details.
+            assignments.forEach((k, v) -> {
+                assert v.partitions() != null :
+                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
+
+                fut.remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
+            });
 
             if (assignments.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -448,17 +457,8 @@ public class GridDhtPartitionDemander {
             if (fut.isDone())
                 return;
 
-            // Must add all remaining node before send first request, for avoid race between add remaining node and
-            // processing response, see checkIsDone(boolean).
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
-                UUID nodeId = e.getKey().id();
-
-                IgniteDhtDemandedPartitionsMap parts = e.getValue().partitions();
-
-                assert parts != null : "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId + "]";
-
-                fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
-            }
+            // Update start rebalance time.
+            fut.remaining.forEach((key, value) -> value.set1(U.currentTimeMillis()));
         }
 
         final CacheConfiguration cfg = grp.config();
@@ -1227,7 +1227,7 @@ public class GridDhtPartitionDemander {
 
         /**
          * @return Collection of nodes remaining to be requested for demanded partitions.
-         * Value {@code Empty} if rebalance not started or already finished.
+         * Value {@code Empty} if rebalance already finished.
          */
         private synchronized Collection<UUID> remainingNodes() {
             return remaining.keySet();
