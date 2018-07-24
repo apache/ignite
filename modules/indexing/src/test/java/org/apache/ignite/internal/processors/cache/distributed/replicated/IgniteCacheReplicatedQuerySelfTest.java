@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -165,7 +166,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
-    public void testClientsLocalQuery() throws Exception {
+    public void testLocalSqlQueryFromClient() throws Exception {
         try {
             Ignite g = startGrid("client");
 
@@ -177,6 +178,30 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             assertEquals(0, c.localSize());
 
             SqlQuery<Integer, Integer> qry = new SqlQuery<>(Integer.class, "_key >= 5 order by _key");
+
+            qry.setLocal(true);
+
+            assertThrowsWithCause(() -> c.query(qry), CacheException.class);
+        }
+        finally {
+            stopGrid("client");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalSqlFieldsQueryFromClient() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
+
+            Person p = new Person("Jon", 1500);
+
+            c.put(p.id(), p);
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("select count(*) from Person");
 
             qry.setLocal(true);
 
