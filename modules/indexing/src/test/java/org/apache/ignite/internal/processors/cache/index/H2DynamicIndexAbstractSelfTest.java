@@ -88,6 +88,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         // Test that local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
+            if (ignite(i).configuration().isClientMode())
+                continue;
+
             List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
                 "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
 
@@ -158,6 +161,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         // Test that no local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
+            if (ignite(i).configuration().isClientMode())
+                continue;
+
             List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
                 "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
 
