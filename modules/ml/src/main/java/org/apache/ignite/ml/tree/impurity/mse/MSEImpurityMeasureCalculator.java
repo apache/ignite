@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.tree.impurity.mse;
 
 import java.util.ArrayList;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.ml.tree.TreeFilter;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.TreeDataIndex;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
@@ -33,16 +33,17 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data,
-        IgniteBiPredicate<Integer, Double> featuresFilter) {
-
+    @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter) {
         TreeDataIndex index = data.index();
         if (index.rowsCount() > 0) {
-            StepFunction<MSEImpurityMeasure>[] res = new StepFunction[index.featuresCount()];
+            StepFunction<MSEImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
 
             for (int col = 0; col < res.length; col++) {
+//                double[] x = new double[features.length + 1];
+//                MSEImpurityMeasure[] y = new MSEImpurityMeasure[features.length + 1];
                 ArrayList<Double> x = new ArrayList<>();
                 ArrayList<MSEImpurityMeasure> y = new ArrayList<>();
+
                 x.add(Double.NEGATIVE_INFINITY);
 
                 double leftY = 0;
@@ -50,47 +51,44 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
                 double rightY = 0;
                 double rightY2 = 0;
 
-                int rightCount = 0;
+                int rightSize = 0;
                 for (int i = 0; i < index.rowsCount(); i++) {
-                    double feature = index.featureInSortedOrder(i, col);
-                    if (!featuresFilter.apply(col, feature))
+                    double[] vec = index.featuresInSortedOrder(i, col);
+                    if (!filter.test(vec))
                         continue;
 
-                    double label = index.labelInSortedOrder(i, col);
-                    rightY += label;
-                    rightY2 += Math.pow(label, 2);
-                    rightCount++;
+                    rightY += index.labelInSortedOrder(i, col);
+                    rightY2 += Math.pow(index.labelInSortedOrder(i, col), 2);
+                    rightSize++;
                 }
 
                 int size = 0;
-                int lastIth = 0;
-                for (int leftSize = 0; leftSize <= index.rowsCount(); leftSize++) {
-                    if (leftSize < index.rowsCount()) {
-                        double feature = index.featureInSortedOrder(leftSize, col);
-                        if (!featuresFilter.apply(col, feature))
+                int lastI = 0;
+                for (int i = 0; i <= index.rowsCount(); i++) {
+                    if (i < index.rowsCount()) {
+                        double[] vec = index.featuresInSortedOrder(i, col);
+                        if (!filter.test(vec))
                             continue;
                     }
 
-                    if (leftSize > 0) {
-                        double label = index.labelInSortedOrder(lastIth, col);
-                        double label2 = Math.pow(label, 2);
+                    if (i > 0) {
+                        leftY += index.labelInSortedOrder(lastI, col);
+                        leftY2 += Math.pow(index.labelInSortedOrder(lastI, col), 2);
 
-                        leftY += label;
-                        leftY2 += label2;
-
-                        rightY -= label;
-                        rightY2 -= label2;
+                        rightY -= index.labelInSortedOrder(lastI, col);
+                        rightY2 -= Math.pow(index.labelInSortedOrder(lastI, col), 2);
                     }
 
-                    if (leftSize < index.rowsCount())
-                        x.add(index.featureInSortedOrder(leftSize, col));
+                    if (i < index.rowsCount()) {
+                        x.add(index.featureInSortedOrder(i, col));
+                    }
 
                     y.add(new MSEImpurityMeasure(
-                        leftY, leftY2, size, rightY, rightY2, rightCount - size
+                        leftY, leftY2, size, rightY, rightY2, rightSize - size
                     ));
 
+                    lastI = i;
                     size++;
-                    lastIth = leftSize;
                 }
 
                 res[col] = new StepFunction<>(x, y, MSEImpurityMeasure.class);

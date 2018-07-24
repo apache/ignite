@@ -34,8 +34,4 @@ public interface IgniteBiPredicate<E1, E2> extends Serializable {
      * @return Return value.
      */
     public boolean apply(E1 e1, E2 e2);
-
-    public default IgniteBiPredicate<E1, E2> and(IgniteBiPredicate<E1, E2> other) {
-        return (e1, e2) -> this.apply(e1, e2) && other.apply(e1, e2);
-    }
 }

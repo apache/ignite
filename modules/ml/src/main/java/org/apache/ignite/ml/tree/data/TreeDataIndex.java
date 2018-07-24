@@ -18,73 +18,60 @@
 package org.apache.ignite.ml.tree.data;
 
 public class TreeDataIndex {
-    private final double[][] features;
     private final int[][] index;
-    private final int[][] reverseIndex;
+    private final double[][] features;
     private final double[] labels;
     private final int rows;
     private final int cols;
 
     public TreeDataIndex(double[][] features, double[] labels) {
-        rows = features.length;
-        cols = rows == 0 ? 0 : features[0].length;
-
-        this.labels = labels;
         this.features = features;
-        this.index = new int[rows][cols];
-        this.reverseIndex = new int[rows][cols];
+        this.labels = labels;
 
-        double[][] sortedFeatures = new double[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for(int j = 0; j < cols; j++) {
-                sortedFeatures[i][j] = features[i][j];
-                index[i][j] = i;
+        rows = features.length;
+        cols = features.length == 0 ? 0 : features[0].length;
+
+        double[][] featuresCopy = new double[rows][cols];
+        index = new int[rows][cols];
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                index[row][col] = row;
+                featuresCopy[row][col] = features[row][col];
             }
         }
 
-        for(int i = 0; i < cols; i++)
-            sortIndex(sortedFeatures, i, 0, rows - 1);
-
-        for(int k = 0; k < rows; k++) {
-            for(int col = 0; col < cols; col++) {
-                int row = index[k][col];
-                reverseIndex[row][col] = k;
-            }
-        }
-    }
-
-    public int rowsCount() {
-        return rows;
-    }
-
-    public int featuresCount() {
-        return cols;
-    }
-
-    public double featureInSortedOrder(int k, int featureId) {
-        return features[index[k][featureId]][featureId];
+        for(int col = 0; col < cols; col++)
+            sortIndex(featuresCopy, col, 0, rows - 1);
     }
 
     public double labelInSortedOrder(int k, int featureId) {
         return labels[index[k][featureId]];
     }
 
-    private void sortIndex(double[][] sortedFeatures, int col, int from, int to) {
+    public double[] featuresInSortedOrder(int k, int featureId) {
+        return features[index[k][featureId]];
+    }
+
+    public double featureInSortedOrder(int k, int featureId) {
+        return features[index[k][featureId]][featureId];
+    }
+
+    private void sortIndex(double[][] features, int col, int from, int to) {
         if (from < to) {
-            double pivot = sortedFeatures[(from + to) / 2][col];
+            double pivot = features[(from + to) / 2][col];
 
             int i = from, j = to;
 
             while (i <= j) {
-                while (sortedFeatures[i][col] < pivot)
+                while (features[i][col] < pivot)
                     i++;
-                while (sortedFeatures[j][col] > pivot)
+                while (features[j][col] > pivot)
                     j--;
 
                 if (i <= j) {
-                    double tmpFeature = sortedFeatures[i][col];
-                    sortedFeatures[i][col] = sortedFeatures[j][col];
-                    sortedFeatures[j][col] = tmpFeature;
+                    double tmpFeature = features[i][col];
+                    features[i][col] = features[j][col];
+                    features[j][col] = tmpFeature;
 
                     int tmpLb = index[i][col];
                     index[i][col] = index[j][col];
@@ -95,8 +82,16 @@ public class TreeDataIndex {
                 }
             }
 
-            sortIndex(sortedFeatures, col, from, j);
-            sortIndex(sortedFeatures, col, i, to);
+            sortIndex(features, col, from, j);
+            sortIndex(features, col, i, to);
         }
+    }
+
+    public int rowsCount() {
+        return rows;
+    }
+
+    public int columnsCount() {
+        return cols;
     }
 }

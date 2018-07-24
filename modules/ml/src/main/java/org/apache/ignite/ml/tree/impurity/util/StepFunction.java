@@ -49,18 +49,17 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
         sort(x, y, 0, x.length - 1);
     }
 
-    public StepFunction(ArrayList<Double> xs, ArrayList<T> ys, Class<T> clazz) {
-        assert xs.size() == ys.size() : "Argument and value arrays have to be the same length";
+    @SuppressWarnings("unchecked")
+    public StepFunction(ArrayList<Double> x, ArrayList<T> y, Class<T> yClass) {
+        assert x.size() == y.size() : "Argument and value arrays have to be the same length";
 
-        this.x = new double[xs.size()];
-        this.y = (T[])Array.newInstance(clazz, ys.size());
+        this.x = new double[x.size()];
+        this.y = (T[])Array.newInstance(yClass, y.size());
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = xs.get(i);
-            y[i] = ys.get(i);
+        for(int i = 0; i < x.size(); i++) {
+            this.x[i] = x.get(i);
+            this.y[i] = y.get(i);
         }
-
-        sort(x, y, 0, x.length - 1);
     }
 
     /**
@@ -144,10 +143,8 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
 
             int i = from, j = to;
             while (i <= j) {
-                while (x[i] < pivot)
-                    i++;
-                while (x[j] > pivot)
-                    j--;
+                while (x[i] < pivot) i++;
+                while (x[j] > pivot) j--;
 
                 if (i <= j) {
                     double tmpX = x[i];

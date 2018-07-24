@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.data;
 
-import org.apache.ignite.ml.tree.OnIndexTreeFilter;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
@@ -42,7 +41,8 @@ public class DecisionTreeData implements AutoCloseable {
 
         this.features = features;
         this.labels = labels;
-        this.index = new TreeDataIndex(features, labels);
+
+        index = new TreeDataIndex(features, labels);
     }
 
     /**

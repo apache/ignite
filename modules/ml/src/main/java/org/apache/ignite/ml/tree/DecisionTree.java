@@ -19,13 +19,12 @@ package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -61,8 +60,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * @param compressor Impurity function compressor.
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
-        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor, DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
@@ -76,7 +74,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset), (x, y) -> true);
+            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -100,13 +98,12 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * @param impurityCalc Impurity measure calculator.
      * @return Decision tree node.
      */
-    private DecisionTreeNode split(Dataset<EmptyContext, DecisionTreeData> dataset,
-        TreeFilter filter, int deep,
-        ImpurityMeasureCalculator<T> impurityCalc, IgniteBiPredicate<Integer, Double> indexFilter) {
+    private DecisionTreeNode split(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter filter, int deep,
+        ImpurityMeasureCalculator<T> impurityCalc) {
         if (deep >= maxDeep)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
-        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, indexFilter, impurityCalc);
+        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
 
         if (criterionFunctions == null)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
@@ -119,8 +116,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
         return new DecisionTreeConditionalNode(
             splitPnt.col,
             splitPnt.threshold,
-            split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc, updateIndexFilterForThenNode(indexFilter, splitPnt)),
-            split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc, updateIndexFilterForElseNode(indexFilter, splitPnt))
+            split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc),
+            split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc)
         );
     }
 
@@ -128,18 +125,18 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * Calculates impurity measure functions for all columns for the node specified by the given dataset and predicate.
      *
      * @param dataset Dataset.
+     * @param filter Decision tree node predicate.
      * @param impurityCalc Impurity measure calculator.
      * @return Array of impurity measure functions for all columns.
      */
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
-        IgniteBiPredicate<Integer, Double> idxFilter, ImpurityMeasureCalculator<T> impurityCalc) {
-
+        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
         return dataset.compute(
             part -> {
                 if (compressor != null)
-                    return compressor.compress(impurityCalc.calculate(part, idxFilter));
+                    return compressor.compress(impurityCalc.calculate(part, filter));
                 else
-                    return impurityCalc.calculate(part, idxFilter);
+                    return impurityCalc.calculate(part, filter);
             }, this::reduce
         );
     }
@@ -222,18 +219,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      */
     private TreeFilter updatePredicateForElseNode(TreeFilter filter, SplitPoint splitPnt) {
         return filter.and(f -> f[splitPnt.col] <= splitPnt.threshold);
-    }
-
-    private IgniteBiPredicate<Integer, Double> updateIndexFilterForThenNode(IgniteBiPredicate<Integer, Double> filter,
-        SplitPoint splitPnt) {
-
-        return filter.and((featureId, value) -> value > splitPnt.threshold && splitPnt.col == featureId);
-    }
-
-    private IgniteBiPredicate<Integer, Double> updateIndexFilterForElseNode(IgniteBiPredicate<Integer, Double> filter,
-        SplitPoint splitPnt) {
-
-        return filter.and((featureId, value) -> value <= splitPnt.threshold && splitPnt.col == featureId);
     }
 
     /**
