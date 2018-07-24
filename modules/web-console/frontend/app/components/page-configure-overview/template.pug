@@ -15,6 +15,7 @@
     limitations under the License.
 
 h1.pc-page-header Configuration
+    version-picker
 
 .pco-relative-root
     .pco-table-context-buttons
@@ -37,4 +38,4 @@ h1.pc-page-header Configuration
     )
         footer-slot(ng-hide='($ctrl.shortClusters$|async:this).length' style='font-style: italic')
             | You have no cluster configurations.
-            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})')  Create one?
+            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})') Create one?
