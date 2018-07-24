@@ -20,6 +20,7 @@ package org.apache.ignite.tensorflow.submitter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.tensorflow.submitter.command.Command;
 import org.apache.ignite.tensorflow.submitter.parser.CommandParser;
 import org.apache.ignite.tensorflow.submitter.parser.GeneralCommandParser;
@@ -54,6 +55,7 @@ public class JobSubmitter {
      */
     private static Ignite connectToCluster() {
         IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setGridLogger(new Slf4jLogger());
         cfg.setClientMode(true);
 
         return Ignition.start(cfg);
