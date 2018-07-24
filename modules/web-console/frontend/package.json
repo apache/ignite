@@ -1,6 +1,6 @@
 {
   "name": "ignite-web-console",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
   "private": true,
   "main": "index.js",
