@@ -20,10 +20,8 @@ package org.apache.ignite.examples.ml.genetic.movie;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;

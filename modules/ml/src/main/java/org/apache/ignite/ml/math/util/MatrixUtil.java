@@ -19,14 +19,14 @@ package org.apache.ignite.ml.math.util;
 
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
-import org.apache.ignite.ml.math.primitives.matrix.impl.ViewMatrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.ViewMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
