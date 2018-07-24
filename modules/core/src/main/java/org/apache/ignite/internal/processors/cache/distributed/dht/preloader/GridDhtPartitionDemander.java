@@ -336,8 +336,10 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-            // Should start new rebalance if requested nodes left topology.
-            // See GridDhtPreloader#rebalanceRequired for details.
+            // Add all remaining nodes before first request sent to avoid race between
+            // add remaining node and processing response, see RebalanceFuture#checkIsDone(boolean)
+            // Should readd rebalance assignments if requested nodes left topology,
+            // see GridDhtPreloader#rebalanceRequired for details.
             assignments.forEach((k, v) -> {
                 assert v.partitions() != null :
                     "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
@@ -457,7 +459,6 @@ public class GridDhtPartitionDemander {
             if (fut.isDone())
                 return;
 
-            // Update start rebalance time.
             fut.remaining.forEach((key, value) -> value.set1(U.currentTimeMillis()));
         }
 
