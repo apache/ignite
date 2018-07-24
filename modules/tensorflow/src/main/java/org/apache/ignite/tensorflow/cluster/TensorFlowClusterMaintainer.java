@@ -108,17 +108,24 @@ public class TensorFlowClusterMaintainer implements Service {
                 log.debug("Affinity mapping changed, cluster will be restarted [clusterId=" + clusterId + "]");
 
             if (!restartRequired) {
-                TensorFlowCluster cluster = clusterMgr.getCluster(clusterId);
-                Map<UUID, List<LongRunningProcessStatus>> statuses = clusterMgr.getSrvProcMgr()
-                    .ping(cluster.getProcesses());
+                try {
+                    TensorFlowCluster cluster = clusterMgr.getCluster(clusterId);
+                    Map<UUID, List<LongRunningProcessStatus>> statuses = clusterMgr.getSrvProcMgr()
+                        .ping(cluster.getProcesses());
 
-                for (UUID nodeId : statuses.keySet()) {
-                    for (LongRunningProcessStatus status : statuses.get(nodeId)) {
-                        if (status.getState().equals(LongRunningProcessState.DONE)) {
-                            restartRequired = true;
-                            break;
+                    for (UUID nodeId : statuses.keySet()) {
+                        for (LongRunningProcessStatus status : statuses.get(nodeId)) {
+                            if (status.getState().equals(LongRunningProcessState.DONE)) {
+                                restartRequired = true;
+                                break;
+                            }
                         }
                     }
+
+                }
+                catch (Exception e) {
+                    log.error("Failed to check process statuses", e);
+                    restartRequired = true;
                 }
 
                 if (restartRequired)

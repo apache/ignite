@@ -62,9 +62,9 @@ public abstract class AsyncNativeProcessRunner {
                 catch (Exception e) {
                     log.error("Native process failed", e);
                 }
-
-                doAfter();
             }
+
+            doAfter();
         });
     }
 

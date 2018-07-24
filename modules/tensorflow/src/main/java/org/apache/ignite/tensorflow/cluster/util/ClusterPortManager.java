@@ -17,7 +17,13 @@
 
 package org.apache.ignite.tensorflow.cluster.util;
 
+import java.io.Serializable;
+import java.net.NetworkInterface;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -25,6 +31,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
@@ -48,7 +56,7 @@ public class ClusterPortManager {
     private final int cnt;
 
     /** Port manager cache */
-    private final IgniteCache<UUID, BitSet> cache;
+    private final IgniteCache<HostIdentifier, BitSet> cache;
 
     /**
      * Constructs a new instance of cluster port manager.
@@ -79,11 +87,16 @@ public class ClusterPortManager {
      * @return Port to be acquired.
      */
     public int acquirePort(UUID nodeId) {
-        Lock lock = cache.lock(nodeId);
+        HostIdentifier hostId = getHostIdentifier(nodeId);
+
+        if (hostId == null)
+            throw new IllegalStateException("Can't find node [nodeId=" + nodeId + "]");
+
+        Lock lock = cache.lock(hostId);
         lock.lock();
 
         try {
-            BitSet ports = cache.get(nodeId);
+            BitSet ports = cache.get(hostId);
 
             if (ports == null)
                 ports = new BitSet(cnt);
@@ -96,7 +109,7 @@ public class ClusterPortManager {
             ports.set(free);
             log.debug("Port acquired [nodeId=" + nodeId + ", port=" + (from + free) + "]");
 
-            cache.put(nodeId, ports);
+            cache.put(hostId, ports);
 
             return from + free;
         }
@@ -114,18 +127,23 @@ public class ClusterPortManager {
     public void releasePort(UUID nodeId, int port) {
         assert port - from >= 0 && port - from < cnt : "Port not in the range";
 
-        Lock lock = cache.lock(nodeId);
+        HostIdentifier hostId = getHostIdentifier(nodeId);
+
+        if (hostId == null)
+            return;
+
+        Lock lock = cache.lock(hostId);
         lock.lock();
 
         try {
-            BitSet ports = cache.get(nodeId);
+            BitSet ports = cache.get(hostId);
 
             if (ports != null) {
                 ports.clear(port - from);
                 log.debug("Port released [nodeId=" + nodeId + ", port=" + port + "]");
 
                 if (ports.isEmpty())
-                    cache.remove(nodeId);
+                    cache.remove(hostId);
             }
         }
         finally {
@@ -143,12 +161,73 @@ public class ClusterPortManager {
      *
      * @return Port pool cache.
      */
-    private IgniteCache<UUID, BitSet> getOrCreateCache() {
-        CacheConfiguration<UUID, BitSet> cacheConfiguration = new CacheConfiguration<>();
+    private IgniteCache<HostIdentifier, BitSet> getOrCreateCache() {
+        CacheConfiguration<HostIdentifier, BitSet> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName(portMgrCacheName);
         cacheConfiguration.setCacheMode(CacheMode.REPLICATED);
         cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         return ignite.getOrCreateCache(cacheConfiguration);
+    }
+
+    private HostIdentifier getHostIdentifier(UUID nodeId) {
+        try {
+            ClusterGroup grp = ignite.cluster().forNodeId(nodeId);
+
+            return ignite.compute(grp).call(() -> {
+                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+                List<byte[]> macAddrs = new ArrayList<>();
+
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface netItf = interfaces.nextElement();
+                    byte[] macAddr = netItf.getHardwareAddress();
+                    macAddrs.add(macAddr);
+                }
+
+                return new HostIdentifier(macAddrs.toArray(new byte[macAddrs.size()][]));
+            });
+        }
+        catch (ClusterGroupEmptyException e) {
+            return null;
+        }
+    }
+
+    private static class HostIdentifier implements Serializable {
+
+        private static final long serialVersionUID = -7060231325908935162L;
+
+        private final byte[][] macAddrs;
+
+        public HostIdentifier(byte[][] macAddrs) {
+            this.macAddrs = macAddrs;
+        }
+
+        public byte[][] getMacAddrs() {
+            return macAddrs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            HostIdentifier that = (HostIdentifier)o;
+            if (macAddrs.length != that.macAddrs.length)
+                return false;
+
+            for (int i = 0; i < macAddrs.length; i++)
+                if (!Arrays.equals(macAddrs[i], that.macAddrs[i]))
+                    return false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(macAddrs);
+        }
     }
 }
