@@ -17,20 +17,12 @@
 
 package org.apache.ignite.tensorflow.cluster;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerManager;
-import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 
 /**
  * Prerequisites: be aware that to successfully run this example you need to have Python and TensorFlow installed on
@@ -58,61 +50,6 @@ public class TensorFlowClusterExample {
                 cache.put(i, i);
 
             System.out.println(">>> Cache created.");
-
-            TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
-            TensorFlowClusterGateway gateway = mgr.getOrCreateCluster(UUID.randomUUID(), null);
-
-            System.out.println(">>> TensorFlow cluster gateway started.");
-
-            CountDownLatch latch = new CountDownLatch(1);
-
-            gateway.subscribe(cluster -> {
-                StringBuilder builder = new StringBuilder();
-                builder.append("------------------- TensorFlow Cluster Service Info -------------------").append('\n');
-
-                builder.append("Specification : ").append('\n');
-
-                TensorFlowServerManager srvMgr = new TensorFlowServerManager(
-                    (Supplier<Ignite> & Serializable)() -> ignite
-                );
-
-                String clusterSpec = cluster.getSpec().format(ignite);
-                builder.append(clusterSpec).append('\n');
-
-                Map<UUID, List<LongRunningProcessStatus>> statuses = srvMgr.ping(cluster.getProcesses());
-
-                builder.append("State : ").append('\n');
-
-                for (UUID nodeId : cluster.getProcesses().keySet()) {
-                    List<UUID> pr = cluster.getProcesses().get(nodeId);
-                    List<LongRunningProcessStatus> st = statuses.get(nodeId);
-
-                    builder.append("Node ").append(nodeId.toString().substring(0, 8)).append(" -> ").append('\n');
-                    for (int i = 0; i < pr.size(); i++) {
-                        builder.append("\tProcess ")
-                            .append(pr.get(i).toString().substring(0, 8))
-                            .append(" with status ")
-                            .append(st.get(i).getState());
-
-                        if (st.get(i).getException() != null)
-                            builder.append(" (").append(st.get(i).getException()).append(")");
-
-                        builder.append('\n');
-                    }
-                }
-
-                builder.append("-----------------------------------------------------------------------").append('\n');
-
-                System.out.println(builder);
-
-                latch.countDown();
-            });
-
-            latch.await();
-
-            mgr.stopClusterIfExists(UUID.randomUUID());
-
-            System.out.println(">>> TensorFlow cluster example completed.");
         }
     }
 }
