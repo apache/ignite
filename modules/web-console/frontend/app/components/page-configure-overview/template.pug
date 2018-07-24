@@ -33,6 +33,7 @@ h1.pc-page-header Configuration
         on-action='$ctrl.onClustersAction($event)'
         max-rows-to-show='10'
         one-way-selection='::false'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
         on-selection-change='$ctrl.selectedRows$.next($event)'
         actions-menu='$ctrl.actions$|async:this'
     )
