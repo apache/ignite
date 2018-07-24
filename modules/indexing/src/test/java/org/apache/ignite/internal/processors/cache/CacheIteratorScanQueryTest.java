@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.Cache;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +46,11 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
     /** */
     public CacheIteratorScanQueryTest() {
         super(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -95,6 +105,47 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
             assertNotNull(cache);
             assertNotNull(cache.iterator());
             assertFalse(cache.iterator().hasNext());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryGetAllClientSide() throws Exception {
+        Ignite server = startGrid(0);
+
+        IgniteCache<Integer, Integer> cache = server.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        client = true;
+
+        Ignite client = startGrid(1);
+
+        IgniteCache<Integer, Integer> cliCache = client.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100_000; i++)
+            cache.put(i, i);
+
+        ScanQuery<Integer, Integer> qry = new ScanQuery<>();
+
+        qry.setPageSize(100);
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cliCache.query(qry)) {
+            List<Cache.Entry<Integer, Integer>> res = cur.getAll();
+
+            assertEquals(100_000, res.size());
+
+            Collections.sort(res, (e1, e2) -> {
+                return e1.getKey().compareTo(e2.getKey());
+            });
+
+            int exp = 0;
+
+            for (Cache.Entry<Integer, Integer> e : res) {
+                assertEquals(exp, e.getKey().intValue());
+                assertEquals(exp, e.getValue().intValue());
+
+                exp++;
+            }
         }
     }
 

@@ -2736,13 +2736,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public <T, R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
         @Nullable IgniteClosure<T, R> trans,
         @Nullable Integer part, boolean keepBinary) {
-
-        return new GridCacheQueryAdapter(cctx,
+        GridCacheQueryAdapter cacheQueryAdapter = new GridCacheQueryAdapter(cctx,
             SCAN,
             filter,
             trans,
             part,
             keepBinary);
+
+        cacheQueryAdapter.keepAll(false);
+
+        return cacheQueryAdapter;
     }
 
     /**
