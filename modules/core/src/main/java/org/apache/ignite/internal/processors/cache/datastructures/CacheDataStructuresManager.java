@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,8 +71,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 
@@ -298,7 +299,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                                     for (final GridCacheQueueProxy queue : queuesMap.values()) {
                                         if (queue.name().equals(key.queueName())) {
-                                            if (hdr == null) {
+                                            if (e.getEventType() == REMOVED) {
                                                 GridCacheQueueHeader oldHdr = (GridCacheQueueHeader)e.getOldValue();
 
                                                 assert oldHdr != null;
