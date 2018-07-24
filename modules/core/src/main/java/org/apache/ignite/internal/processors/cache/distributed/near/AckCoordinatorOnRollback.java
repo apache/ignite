@@ -46,11 +46,9 @@ public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteIn
         MvccQueryTracker tracker = tx.mvccQueryTracker();
         MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
 
-        assert tracker != null || mvccSnapshot != null;
-
         if (tracker != null) // Optimistic tx.
             tracker.onDone(tx, false);
-        else // Pessimistic tx.
+        else if (mvccSnapshot != null)// Pessimistic tx.
             tx.context().coordinators().ackTxRollback(mvccSnapshot);
     }
 }

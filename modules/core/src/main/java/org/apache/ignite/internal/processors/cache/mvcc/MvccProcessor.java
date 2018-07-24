@@ -734,13 +734,23 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         }
 
         // Send request to the remote coordinator.
-        UUID nodeId = crd.nodeId(); long id = addSnapshotListener(nodeId, lsnr);
+        UUID nodeId = crd.nodeId();
+
+        long id = futIdCntr.incrementAndGet();
+
+        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId), map0;
+
+        if (map == null && (map0 = snapLsnrs.putIfAbsent(nodeId, map = new ConcurrentHashMap<>())) != null)
+            map = map0;
+
+        map.put(id, lsnr);
 
         try {
             sendMessage(nodeId, tx != null ? new MvccTxSnapshotRequest(id) : new MvccQuerySnapshotRequest(id));
         }
         catch (ClusterTopologyCheckedException e) { // Node left
-            onNodeFail(nodeId, e);
+            if (map.remove(id) != null)
+                lsnr.onError(e);
         }
         catch (IgniteCheckedException e) {
             if (removeSnapshotListener(nodeId, id) != null)
@@ -787,19 +797,6 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         res.init(futId, crdVer, ver, MVCC_START_OP_CNTR, cleanup, tracking);
 
         return res;
-    }
-
-    private long addSnapshotListener(UUID nodeId, MvccSnapshotResponseListener lsnr) {
-        long id = futIdCntr.incrementAndGet();
-
-        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId), map0;
-
-        if (map == null && (map0 = snapLsnrs.putIfAbsent(nodeId, map = new ConcurrentHashMap<>())) != null)
-            map = map0;
-
-        map.put(id, lsnr);
-
-        return id;
     }
 
     private MvccSnapshotResponseListener removeSnapshotListener(UUID nodeId, long id) {
