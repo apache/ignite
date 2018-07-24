@@ -17,57 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
@@ -77,55 +35,16 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
-import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
-import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
-import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.*;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.opt.*;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -137,18 +56,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
-import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
-import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
-import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
-import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
-import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.command.*;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -160,11 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -186,22 +90,25 @@ import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.IgniteSystemProperties.getString;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.*;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
+
+import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.*;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
+import static org.apache.ignite.internal.processors.query.QueryUtils.*;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
@@ -288,6 +195,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String dbUrl = "jdbc:h2:mem:";
 
     /** */
+    // TODO https://issues.apache.org/jira/browse/IGNITE-9062
     private final ConcurrentMap<Thread, H2ConnectionWrapper> conns = new ConcurrentHashMap<>();
 
     /** */
@@ -315,6 +223,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
 
     /** */
+    // TODO https://issues.apache.org/jira/browse/IGNITE-9062
     private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
         @Override
         protected ObjectPool<H2ConnectionWrapper> initialValue() {
@@ -331,6 +240,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
+    // TODO https://issues.apache.org/jira/browse/IGNITE-9062
     private final ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>>() {
         @Nullable @Override public ObjectPool.Reusable<H2ConnectionWrapper> get() {
             ObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
