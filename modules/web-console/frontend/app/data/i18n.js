@@ -21,7 +21,7 @@ export default {
     'base.configuration.overview': 'Cluster configurations',
     '/configuration/overview': 'Cluster configurations',
     'base.configuration.edit.basic': 'Basic cluster configuration edit',
-    '/configuration/new': 'Сluster configuration create',
+    '/configuration/new': 'Cluster configuration create',
     '/configuration/new/basic': 'Basic cluster configuration create',
     '/configuration/new/advanced/cluster': 'Advanced cluster configuration create',
     'base.configuration.edit.advanced.cluster': 'Advanced cluster configuration edit',
