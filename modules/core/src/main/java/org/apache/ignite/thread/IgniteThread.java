@@ -160,10 +160,16 @@ public class IgniteThread extends Thread {
         this.compositeRwLockIdx = compositeRwLockIdx;
     }
 
+    /**
+     * @return {@code True} if thread is currently executing entry processor.
+     */
     public boolean executingEntryProcessor() {
         return executingEntryProcessor;
     }
 
+    /**
+     * Callback before entry processor execution is started.
+     */
     public static void onEntryProcessorEntered() {
         Thread curThread = Thread.currentThread();
 
@@ -171,6 +177,9 @@ public class IgniteThread extends Thread {
             ((IgniteThread)curThread).executingEntryProcessor = true;
     }
 
+    /**
+     * Callback after entry processor execution is finished.
+     */
     public static void onEntryProcessorLeft() {
         Thread curThread = Thread.currentThread();
 
