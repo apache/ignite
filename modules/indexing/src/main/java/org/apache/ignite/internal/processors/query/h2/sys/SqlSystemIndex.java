@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
-import org.h2.index.IndexCondition;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -34,10 +30,15 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
+import java.util.HashSet;
+
 /**
  * Meta view H2 index.
  */
 public class SqlSystemIndex extends BaseIndex {
+    /** Distributed view cost multiplier. */
+    private static final int DISTRIBUTED_MUL = 100;
+
     /**
      * @param tbl Table.
      * @param col Column.
@@ -80,27 +81,14 @@ public class SqlSystemIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColsSet) {
-        double colsCost = 2d;
+        long rowCnt = getRowCountApproximation();
 
-        boolean isIdxUsed = false;
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
-        if (masks != null) {
-            double colWeight = 2d;
+        if (((SqlSystemTable)table).view.isDistributed())
+            baseCost = baseCost * DISTRIBUTED_MUL;
 
-            for (Column col : columns) {
-                colWeight /= 2d;
-
-                if ((masks[col.getColumnId()] & IndexCondition.EQUALITY) != 0) {
-                    isIdxUsed = true;
-
-                    colsCost -= colWeight;
-                }
-                else
-                    colsCost += colWeight;
-            }
-        }
-
-        return isIdxUsed ? colsCost : Constants.COST_ROW_OFFSET + getRowCountApproximation();
+        return baseCost;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +123,7 @@ public class SqlSystemIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        throw DbException.getUnsupportedException("META");
+        throw DbException.getUnsupportedException("system views cannot be used to get first or last value");
     }
 
     /** {@inheritDoc} */
@@ -151,11 +139,5 @@ public class SqlSystemIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getPlanSQL() {
-        return getTable().getName() + ((columns == null || columns.length == 0) ? " full scan"
-            : " using index " + Arrays.toString(columns));
     }
 }

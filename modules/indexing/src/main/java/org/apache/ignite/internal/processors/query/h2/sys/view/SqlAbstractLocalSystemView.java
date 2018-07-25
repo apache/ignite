@@ -101,5 +101,4 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     protected SqlSystemViewColumnCondition conditionForColumn(String colName, SearchRow first, SearchRow last) {
         return SqlSystemViewColumnCondition.forColumn(getColumnIndex(colName), first, last);
     }
-
 }

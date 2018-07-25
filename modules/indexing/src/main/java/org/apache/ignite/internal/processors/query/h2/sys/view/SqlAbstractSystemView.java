@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.table.Column;
 import org.h2.value.Value;
 
@@ -111,6 +110,7 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     @Override public String getCreateSQL() {
         StringBuilder sql = new StringBuilder();
 

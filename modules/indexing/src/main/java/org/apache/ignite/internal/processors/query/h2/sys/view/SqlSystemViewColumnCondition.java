@@ -31,22 +31,17 @@ public class SqlSystemViewColumnCondition {
     private final boolean isRange;
 
     /** Value 1. */
-    private final Value val1;
-
-    /** Value 2. */
-    private final Value val2;
+    private final Value val;
 
     /**
      * @param isEquality Is equality.
      * @param isRange Is range.
-     * @param val1 Value 1.
-     * @param val2 Value 2.
+     * @param val Value for equality.
      */
-    private SqlSystemViewColumnCondition(boolean isEquality, boolean isRange, Value val1, Value val2) {
+    private SqlSystemViewColumnCondition(boolean isEquality, boolean isRange, Value val) {
         this.isEquality = isEquality;
         this.isRange = isRange;
-        this.val1 = val1;
-        this.val2 = val2;
+        this.val = val;
     }
 
     /**
@@ -60,25 +55,25 @@ public class SqlSystemViewColumnCondition {
         boolean isEquality = false;
         boolean isRange = false;
 
-        Value val1 = null;
+        Value val = null;
         Value val2 = null;
 
         if (start != null && colIdx >= 0 && colIdx < start.getColumnCount())
-            val1 = start.getValue(colIdx);
+            val = start.getValue(colIdx);
 
         if (end != null && colIdx >= 0 && colIdx < end.getColumnCount())
             val2 = end.getValue(colIdx);
 
-        if (val1 != null && val2 != null) {
-            if (val1.equals(val2))
+        if (val != null && val2 != null) {
+            if (val.equals(val2))
                 isEquality = true;
             else
                 isRange = true;
         }
-        else if (val1 != null || val2 != null)
+        else if (val != null || val2 != null)
             isRange = true;
 
-        return new SqlSystemViewColumnCondition(isEquality, isRange, val1, val2);
+        return new SqlSystemViewColumnCondition(isEquality, isRange, val);
     }
 
     /**
@@ -98,9 +93,9 @@ public class SqlSystemViewColumnCondition {
     /**
      * Gets value, if condition is equality.
      */
-    public Value getValue() {
+    public Value valueForEquality() {
         if (isEquality)
-            return val1;
+            return val;
 
         return null;
     }

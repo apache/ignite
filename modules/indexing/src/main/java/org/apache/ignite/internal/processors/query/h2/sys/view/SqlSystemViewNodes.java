@@ -60,10 +60,10 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
         SqlSystemViewColumnCondition locCond = conditionForColumn("IS_LOCAL", first, last);
         SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
 
-        if (locCond.isEquality() && locCond.getValue().getBoolean())
+        if (locCond.isEquality() && locCond.valueForEquality().getBoolean())
             nodes = Collections.singleton(ctx.discovery().localNode());
         else if (idCond.isEquality()) {
-            UUID nodeId = uuidFromString(idCond.getValue().getString());
+            UUID nodeId = uuidFromString(idCond.valueForEquality().getString());
 
             nodes = nodeId == null ? Collections.emptySet() : Collections.singleton(ctx.discovery().node(nodeId));
         }
