@@ -3470,7 +3470,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (client == null)
-            processClientCreationError(node, addrs, errs);
+            processClientCreationError(node, addrs, errs == null ? new IgniteCheckedException("No clients found") : errs);
 
         return client;
     }
