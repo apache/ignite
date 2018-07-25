@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-page-profile {
-    max-width: 800px;
-    display: block;
 
-    panel-collapsible {
-        width: 100%;
-    }
+import angular from 'angular';
 
-    footer {
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    .btn-ignite + .btn-ignite {
-        margin-left: 10px;
-    }
-}
+angular
+    .module('ignite-console.states.settings', [
+        'ui.router'
+    ])
+    .config(['$stateProvider', function($stateProvider) {
+        // Set up the states.
+        $stateProvider
+            .state('base.settings', {
+                url: '/settings',
+                abstract: true,
+                template: '<ui-view></ui-view>'
+            });
+    }]);
