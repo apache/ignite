@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.views;
+package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,12 +33,12 @@ import org.h2.value.Value;
 /**
  * Meta view: nodes.
  */
-public class SqlMetaViewNodes extends SqlAbstractLocalMetaView {
+public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
     /**
      * @param ctx Grid context.
      */
-    public SqlMetaViewNodes(GridKernalContext ctx) {
-        super("NODES", "Nodes in topology", ctx, new String[] {"ID", "IS_LOCAL"},
+    public SqlSystemViewNodes(GridKernalContext ctx) {
+        super("NODES", "Topology nodes", ctx, new String[] {"ID", "IS_LOCAL"},
             newColumn("ID", Value.UUID),
             newColumn("CONSISTENT_ID"),
             newColumn("VERSION"),
@@ -47,7 +47,7 @@ public class SqlMetaViewNodes extends SqlAbstractLocalMetaView {
             newColumn("IS_DAEMON", Value.BOOLEAN),
             newColumn("NODE_ORDER", Value.INT),
             newColumn("ADDRESSES"),
-            newColumn("HOST_NAMES")
+            newColumn("HOSTNAMES")
         );
     }
 
@@ -57,29 +57,18 @@ public class SqlMetaViewNodes extends SqlAbstractLocalMetaView {
 
         Collection<ClusterNode> nodes;
 
-        ColumnCondition locCond = conditionForColumn("IS_LOCAL", first, last);
-        ColumnCondition idCond = conditionForColumn("ID", first, last);
+        SqlSystemViewColumnCondition locCond = conditionForColumn("IS_LOCAL", first, last);
+        SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
 
-        if (locCond.isEquality() && locCond.getValue().getBoolean()) {
-            if (log.isDebugEnabled())
-                log.debug("Get nodes: local node");
-
+        if (locCond.isEquality() && locCond.getValue().getBoolean())
             nodes = Collections.singleton(ctx.discovery().localNode());
-        }
         else if (idCond.isEquality()) {
-            if (log.isDebugEnabled())
-                log.debug("Get nodes: node id = " + idCond.getValue().getString());
-
             UUID nodeId = uuidFromString(idCond.getValue().getString());
 
             nodes = nodeId == null ? Collections.emptySet() : Collections.singleton(ctx.discovery().node(nodeId));
         }
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Get nodes: full scan");
-
+        else
             nodes = F.concat(false, ctx.discovery().allNodes(), ctx.discovery().daemonNodes());
-        }
 
         for (ClusterNode node : nodes) {
             if (node != null)
@@ -109,5 +98,19 @@ public class SqlMetaViewNodes extends SqlAbstractLocalMetaView {
     /** {@inheritDoc} */
     @Override public long getRowCount() {
         return ctx.discovery().allNodes().size() + ctx.discovery().daemonNodes().size();
+    }
+
+    /**
+     * Converts string to UUID safe (suppressing exceptions).
+     *
+     * @param val UUID in string format.
+     */
+    private static UUID uuidFromString(String val) {
+        try {
+            return UUID.fromString(val);
+        }
+        catch (RuntimeException e) {
+            return null;
+        }
     }
 }

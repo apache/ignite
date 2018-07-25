@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.views;
+package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -23,9 +23,9 @@ import org.h2.result.SearchRow;
 import org.h2.table.Column;
 
 /**
- * Meta view
+ * SQL system view.
  */
-public interface SqlMetaView {
+public interface SqlSystemView {
     /**
      * Gets table name.
      */
@@ -73,7 +73,7 @@ public interface SqlMetaView {
     public String getCreateSQL();
 
     /**
-     * Is view distributed.
+     * @return {@code True} if view is distributed.
      */
     public boolean isDistributed();
 }

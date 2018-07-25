@@ -15,31 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.views;
+package org.apache.ignite.internal.processors.query.h2.sys;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.table.Table;
 
 /**
- * Meta view H2 table engine.
+ * H2 table engine for system views.
  */
-public class SqlMetaTableEngine implements TableEngine {
-    /** */
-    private static volatile SqlMetaView view;
+public class SqlSystemTableEngine implements TableEngine {
+    /** View being created. */
+    private static volatile SqlSystemView curView;
 
     /**
      * @param conn Connection.
      * @param view View.
      */
-    public static synchronized void registerView(Connection conn, SqlMetaView view)
+    public static synchronized void registerView(Connection conn, SqlSystemView view)
         throws SQLException {
-        SqlMetaTableEngine.view = view;
+        curView = view;
 
-        String sql = view.getCreateSQL() + " ENGINE \"" + SqlMetaTableEngine.class.getName() + "\"";
+        String sql = view.getCreateSQL() + " ENGINE \"" + SqlSystemTableEngine.class.getName() + "\"";
 
         try {
             try (Statement s = conn.createStatement()) {
@@ -47,12 +49,12 @@ public class SqlMetaTableEngine implements TableEngine {
             }
         }
         finally {
-            SqlMetaTableEngine.view = null;
+            curView = null;
         }
     }
 
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
-        return new SqlMetaTable(data, view);
+        return new SqlSystemTable(data, curView);
     }
 }

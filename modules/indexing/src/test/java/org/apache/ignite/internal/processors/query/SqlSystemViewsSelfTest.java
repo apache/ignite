@@ -35,7 +35,7 @@ import org.apache.ignite.transactions.Transaction;
 /**
  * Tests for ignite SQL meta views.
  */
-public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
+public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -177,7 +177,7 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_LOCAL, IS_CLIENT, IS_DAEMON, " +
-                "NODE_ORDER, ADDRESSES, HOST_NAMES FROM IGNITE.NODES");
+                "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
             Boolean.class, Integer.class, String.class, String.class);
@@ -229,6 +229,9 @@ public class SqlMetaViewsSelfTest extends GridCommonAbstractTest {
 
         // Check index on IS_LOCAL column.
         assertEquals(1, execSql("SELECT ID FROM IGNITE.NODES WHERE IS_LOCAL = true").size());
+
+        // Check index on IS_LOCAL column with disjunction.
+        assertEquals(3, execSql("SELECT ID FROM IGNITE.NODES WHERE IS_LOCAL = true OR node_order=1 OR node_order=2 OR node_order=3").size());
 
         // Check quick-count.
         assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.NODES").get(0).get(0));

@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.views;
+package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.table.Column;
 import org.h2.value.Value;
 
 /**
  * Meta view base class.
  */
-public abstract class SqlAbstractMetaView implements SqlMetaView {
+public abstract class SqlAbstractSystemView implements SqlSystemView {
     /** Default row count approximation. */
     protected static final long DEFAULT_ROW_COUNT_APPROXIMATION = 100L;
 
@@ -54,7 +55,7 @@ public abstract class SqlAbstractMetaView implements SqlMetaView {
      * @param cols Columns.
      * @param indexes Indexes.
      */
-    public SqlAbstractMetaView(String tblName, String desc, GridKernalContext ctx, Column[] cols,
+    public SqlAbstractSystemView(String tblName, String desc, GridKernalContext ctx, Column[] cols,
         String[] indexes) {
         this.tblName = tblName;
         this.desc = desc;

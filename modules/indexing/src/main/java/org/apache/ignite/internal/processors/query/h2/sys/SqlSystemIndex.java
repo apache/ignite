@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.views;
+package org.apache.ignite.internal.processors.query.h2.sys;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -37,12 +37,12 @@ import org.h2.table.TableFilter;
 /**
  * Meta view H2 index.
  */
-public class SqlMetaIndex extends BaseIndex {
+public class SqlSystemIndex extends BaseIndex {
     /**
      * @param tbl Table.
      * @param col Column.
      */
-    SqlMetaIndex(SqlMetaTable tbl, Column... col) {
+    SqlSystemIndex(SqlSystemTable tbl, Column... col) {
         IndexColumn[] idxCols;
 
         if (col != null && col.length > 0)
@@ -60,23 +60,21 @@ public class SqlMetaIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public void add(Session ses, Row row) {
-        throw DbException.getUnsupportedException("META");
+        throw DbException.getUnsupportedException("system view is read-only");
     }
 
     /** {@inheritDoc} */
     @Override public void remove(Session ses, Row row) {
-        throw DbException.getUnsupportedException("META");
+        throw DbException.getUnsupportedException("system view is read-only");
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        if (table instanceof SqlMetaTable) {
-            Iterable<Row> rows = ((SqlMetaTable)table).getRows(ses, first, last);
+        assert table instanceof SqlSystemTable;
 
-            return new GridH2Cursor(rows.iterator());
-        }
-        else
-            throw DbException.throwInternalError("Unexpected table class: " + table.getClass().getName());
+        Iterable<Row> rows = ((SqlSystemTable)table).getRows(ses, first, last);
+
+        return new GridH2Cursor(rows.iterator());
     }
 
     /** {@inheritDoc} */
@@ -96,7 +94,8 @@ public class SqlMetaIndex extends BaseIndex {
                     isIdxUsed = true;
 
                     colsCost -= colWeight;
-                } else
+                }
+                else
                     colsCost += colWeight;
             }
         }
@@ -106,17 +105,17 @@ public class SqlMetaIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public void truncate(Session ses) {
-        throw DbException.getUnsupportedException("META");
+        throw DbException.getUnsupportedException("system view cannot be truncated");
     }
 
     /** {@inheritDoc} */
     @Override public void remove(Session ses) {
-        throw DbException.getUnsupportedException("META");
+        throw DbException.getUnsupportedException("system view cannot be removed");
     }
 
     /** {@inheritDoc} */
     @Override public void checkRename() {
-        throw DbException.getUnsupportedException("META");
+        throw DbException.getUnsupportedException("system view cannot be renamed");
     }
 
     /** {@inheritDoc} */

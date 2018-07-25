@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.views;
+package org.apache.ignite.internal.processors.query.h2.sys;
 
 import java.util.ArrayList;
+
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -31,14 +33,14 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 
 /**
- * Meta view H2 table.
+ * System H2 table over a view.
  */
-public class SqlMetaTable extends TableBase {
+public class SqlSystemTable extends TableBase {
     /** Scan index. */
-    protected final SqlMetaIndex scanIdx;
+    protected final SqlSystemIndex scanIdx;
 
     /** Meta view. */
-    protected final SqlMetaView view;
+    protected final SqlSystemView view;
 
     /**
      * Indexes.
@@ -51,7 +53,7 @@ public class SqlMetaTable extends TableBase {
      * @param data Data.
      * @param view Meta view.
      */
-    public SqlMetaTable(CreateTableData data, SqlMetaView view) {
+    public SqlSystemTable(CreateTableData data, SqlSystemView view) {
         super(data);
 
         assert view != null;
@@ -60,7 +62,7 @@ public class SqlMetaTable extends TableBase {
 
         this.setColumns(view.getColumns());
 
-        scanIdx = new SqlMetaIndex(this);
+        scanIdx = new SqlSystemIndex(this);
 
         indexes = new ArrayList<>();
         indexes.add(scanIdx);
@@ -73,20 +75,10 @@ public class SqlMetaTable extends TableBase {
             for (int i = 0; i < indexedCols.length; i++)
                 cols[i] = getColumn(indexedCols[i]);
 
-            SqlMetaIndex idx = new SqlMetaIndex(this, cols);
+            SqlSystemIndex idx = new SqlSystemIndex(this, cols);
 
             indexes.add(idx);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getDropSQL() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCreateSQL() {
-        return view.getCreateSQL();
     }
 
     /** {@inheritDoc} */
