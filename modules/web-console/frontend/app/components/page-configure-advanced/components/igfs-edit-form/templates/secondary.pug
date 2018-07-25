@@ -30,7 +30,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var secondaryFileSystem = `${model}.secondaryFileSystem`
 
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Enabled',
                     name: '"secondaryFileSystemEnabled"',
                     model: enabled
