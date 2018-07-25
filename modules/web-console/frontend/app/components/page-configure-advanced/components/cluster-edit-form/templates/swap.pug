@@ -46,7 +46,7 @@ panel-collapsible(
                     +text('Base directory:', `${fileSwapModel}.baseDirectory`, '"baseDirectory"', 'false', 'swapspace',
                         'Base directory where to write files')
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-number({
+                    +form-field__number({
                         label: 'Read stripe size:',
                         model: `${fileSwapModel}.readStripesNumber`,
                         name: '"readStripesNumber"',

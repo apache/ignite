@@ -36,8 +36,8 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +java-class('Serializer:', model + '.serializer', '"serializer"', 'true', 'false', 'Class with custom serialization logic for binary objects')
             .pc-form-grid-col-60
                 .ignite-form-field
-                    +ignite-form-field__label('Type configurations:', '"typeСonfigurations"')
-                        +tooltip(`Configuration properties for binary types`)
+                    +form-field__label({ label: 'Type configurations:', name: '"typeСonfigurations"' })
+                        +form-field__tooltip({ title: `Configuration properties for binary types`})
                     .ignite-form-field__control
                         -var items = model + '.typeConfigurations'
                         list-editable.pc-list-editable-with-form-grid(ng-model=items name='typeСonfigurations')

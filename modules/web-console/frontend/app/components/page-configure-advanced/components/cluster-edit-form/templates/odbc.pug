@@ -32,7 +32,7 @@ panel-collapsible(
     panel-content.pca-form-row(ng-if=`$ctrl.available(["1.0.0", "2.1.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Enabled',
                     model: enabled,
                     name: '"odbcEnabled"',

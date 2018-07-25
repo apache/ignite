@@ -32,7 +32,7 @@ panel-collapsible(
     panel-content.pca-form-row(ng-if=`$ctrl.available(["2.0.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Page size:',
                     model: `${model}.pageSize`,
                     name: '"MemoryConfigurationPageSize"',
@@ -69,7 +69,7 @@ panel-collapsible(
                 span Memory policies
             .pc-form-group.pc-form-grid-row
                 .pc-form-grid-col-60
-                    +sane-ignite-form-field-text({
+                    +form-field__text({
                         label: 'Default memory policy name:',
                         model: `${model}.defaultMemoryPolicyName`,
                         name: '"defaultMemoryPolicyName"',
@@ -93,8 +93,8 @@ panel-collapsible(
                 .pc-form-grid-col-60
                     mixin clusters-memory-policies
                         .ignite-form-field(ng-init='memoryPoliciesTbl={type: "memoryPolicies", model: "memoryPolicies", focusId: "name", ui: "memory-policies-table"}')
-                            +ignite-form-field__label('Configured policies:', '"configuredPolicies"')
-                                +tooltip(`List of configured policies`)
+                            +form-field__label({ label: 'Configured policies:', name: '"configuredPolicies"' })
+                                +form-field__tooltip({ title: `List of configured policies` })
                             .ignite-form-field__control
                                 -let items = memoryPolicies
 
@@ -102,7 +102,7 @@ panel-collapsible(
                                     list-editable-item-edit.pc-form-grid-row
                                         - form = '$parent.form'
                                         .pc-form-grid-col-60
-                                            +sane-ignite-form-field-text({
+                                            +form-field__text({
                                                 label: 'Name:',
                                                 model: '$item.name',
                                                 name: '"MemoryPolicyName"',
@@ -160,7 +160,7 @@ panel-collapsible(
                                             +number-min-max-step('Eviction threshold:', '$item.evictionThreshold', '"MemoryPolicyEvictionThreshold"',
                                             'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
                                         .pc-form-grid-col-30
-                                            +sane-ignite-form-field-number({
+                                            +form-field__number({
                                                 label: 'Empty pages pool size:',
                                                 model: '$item.emptyPagesPoolSize',
                                                 name: '"MemoryPolicyEmptyPagesPoolSize"',
