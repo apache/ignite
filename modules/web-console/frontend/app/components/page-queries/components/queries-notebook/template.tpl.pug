@@ -368,7 +368,7 @@ div(ng-if='notebook')
 
 div
     breadcrumbs
-        a.link-success(ui-sref='^.') Notebooks
+        a.link-success(ui-sref='base.sql.tabs') Notebooks
         span(ui-sref='.' ui-sref-active) Notebook '{{notebook.name}}'
 
     -var example = `CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));\nINSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');\nSELECT * FROM Person;`;
