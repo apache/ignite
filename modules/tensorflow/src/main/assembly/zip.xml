@@ -29,9 +29,10 @@
     <formats>
         <format>zip</format>
     </formats>
+
     <files>
         <file>
-            <source>${project.basedir}/src/main/resources/ignite-tf.sh</source>
+            <source>${project.basedir}/src/main/bin/ignite-tf.sh</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
@@ -39,6 +40,7 @@
             <outputDirectory>/lib</outputDirectory>
         </file>
     </files>
+
     <dependencySets>
         <dependencySet>
             <outputDirectory>lib</outputDirectory>
