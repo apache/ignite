@@ -18,33 +18,41 @@
 package org.apache.ignite.tensorflow.submitter.parser;
 
 import java.util.UUID;
-import java.util.function.Supplier;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.submitter.command.StopCommand;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
- * Command parser that parses "stop" command.
+ * Tests for {@link StopCommandParser}.
  */
-public class StopCommandParser implements CommandParser {
-    /** Ignite supplier. */
-    private final Supplier<Ignite> igniteSupplier;
+public class StopCommandParserTest {
+    /** Command parser. */
+    private final StopCommandParser parser = new StopCommandParser(() -> null);
 
-    /**
-     * Constructs a new instance of "stop" command parser.
-     *
-     * @param igniteSupplier Ignite supplier.
-     */
-    public StopCommandParser(Supplier<Ignite> igniteSupplier) {
-        this.igniteSupplier = igniteSupplier;
+    /** */
+    @Test
+    public void testParseCorrectArgs() {
+        UUID id = UUID.randomUUID();
+
+        Runnable cmd = parser.parse(new String[]{ id.toString() });
+
+        assertNotNull(cmd);
+        assertTrue(cmd instanceof StopCommand);
+
+        StopCommand stopCmd = (StopCommand) cmd;
+
+        assertEquals(id, stopCmd.getClusterId());
     }
 
-    /** {@inheritDoc} */
-    @Override public Runnable parse(String[] args) {
-        if (args.length == 1) {
-            UUID clusterId = UUID.fromString(args[0]);
-            return new StopCommand(igniteSupplier, clusterId);
-        }
+    /** */
+    @Test
+    public void testParseIncorrectArgs() {
+        Runnable cmd = parser.parse(new String[]{});
 
-        return null;
+        assertNull(cmd);
     }
 }

@@ -14,10 +14,16 @@
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>
-                ${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar
-            </source>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>/lib</outputDirectory>
         </file>
     </files>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <useStrictFiltering>true</useStrictFiltering>
+            <useProjectArtifact>false</useProjectArtifact>
+            <scope>runtime</scope>
+        </dependencySet>
+    </dependencySets>
 </assembly>

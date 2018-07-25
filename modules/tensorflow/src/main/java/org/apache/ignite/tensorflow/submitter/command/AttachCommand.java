@@ -15,30 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow.submitter.parser;
+package org.apache.ignite.tensorflow.submitter.command;
 
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.tensorflow.submitter.command.PsCommand;
+import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 
 /**
- * Command parser that parses "ps" command.
+ * Describe command that prints configuration of the specified TensorFlow cluster.
  */
-public class PsCommandParser implements CommandParser {
+public class AttachCommand implements Runnable {
     /** Ignite supplier. */
     private final Supplier<Ignite> igniteSupplier;
 
+    /** Cluster identifier. */
+    private final UUID clusterId;
+
     /**
-     * Constructs a new instance of "ps" command parser.
+     * Constructs a new instance of command "attach".
      *
      * @param igniteSupplier Ignite supplier.
+     * @param clusterId Cluster identifier.
      */
-    public PsCommandParser(Supplier<Ignite> igniteSupplier) {
+    public AttachCommand(Supplier<Ignite> igniteSupplier, UUID clusterId) {
         this.igniteSupplier = igniteSupplier;
+        this.clusterId = clusterId;
     }
 
     /** {@inheritDoc} */
-    @Override public Runnable parse(String[] args) {
-        return new PsCommand(igniteSupplier);
+    @Override public void run() {
+        try (Ignite ignite = igniteSupplier.get()) {
+            TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
+
+            mgr.listenToClusterUserScript(clusterId, System.out::println, System.err::println);
+        }
+    }
+
+    /** */
+    public Supplier<Ignite> getIgniteSupplier() {
+        return igniteSupplier;
+    }
+
+    /** */
+    public UUID getClusterId() {
+        return clusterId;
     }
 }

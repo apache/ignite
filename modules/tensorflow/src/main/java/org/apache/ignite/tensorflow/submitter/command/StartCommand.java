@@ -23,23 +23,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.tensorflow.cluster.TensorFlowCluster;
-import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGateway;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
 
 /**
  * Start command that starts TensorFlow cluster for specified cache and runs specified job using this cluster.
  */
-public class StartCommand implements Command {
+public class StartCommand implements Runnable {
+    /** Ignite supplier. */
+    private final Supplier<Ignite> igniteSupplier;
+
     /** Upstream cache name. */
     private final String upstreamCacheName;
 
@@ -52,47 +51,35 @@ public class StartCommand implements Command {
     /**
      * Constructs a new instance of start command.
      *
+     * @param igniteSupplier Ignite supplier.
      * @param upstreamCacheName Upstream cache name.
      * @param jobArchivePath Job archive path.
      * @param commands User command to be executed.
      */
-    public StartCommand(String upstreamCacheName, String jobArchivePath, String[] commands) {
+    public StartCommand(Supplier<Ignite> igniteSupplier, String upstreamCacheName, String jobArchivePath,
+        String[] commands) {
+        this.igniteSupplier = igniteSupplier;
         this.upstreamCacheName = upstreamCacheName;
         this.jobArchivePath = jobArchivePath;
         this.commands = commands;
     }
 
     /** {@inheritDoc} */
-    @Override public void runWithinIgnite(Ignite ignite) {
-        try {
+    @Override public void run() {
+        try (Ignite ignite = igniteSupplier.get()) {
             UUID clusterId = UUID.randomUUID();
-            TensorFlowJobArchive jobArchive = new TensorFlowJobArchive(upstreamCacheName, zip(jobArchivePath), commands);
+            TensorFlowJobArchive jobArchive = new TensorFlowJobArchive(
+                upstreamCacheName,
+                zip(jobArchivePath),
+                commands
+            );
 
             TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
-            TensorFlowClusterGateway gateway = mgr.getOrCreateCluster(clusterId, jobArchive);
+            mgr.createCluster(clusterId, jobArchive);
 
-            ignite.message().localListen("us_out_" + clusterId, (node, msg) -> {
-                System.out.println(msg);
-                return true;
-            });
-
-            ignite.message().localListen("us_err_" + clusterId, (node, msg) -> {
-                System.err.println(msg);
-                return true;
-            });
-
-            CountDownLatch latch = new CountDownLatch(1);
-
-            Consumer<Optional<TensorFlowCluster>> subscriber = cluster -> {
-                if (!cluster.isPresent())
-                    latch.countDown();
-            };
-
-            gateway.subscribe(subscriber);
-            latch.await();
-            gateway.unsubscribe(subscriber);
+            mgr.listenToClusterUserScript(clusterId, System.out::println, System.err::println);
         }
-        catch (IOException | InterruptedException e) {
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -197,5 +184,25 @@ public class StartCommand implements Command {
                 }
             }
         }
+    }
+
+    /** */
+    public Supplier<Ignite> getIgniteSupplier() {
+        return igniteSupplier;
+    }
+
+    /** */
+    public String getUpstreamCacheName() {
+        return upstreamCacheName;
+    }
+
+    /** */
+    public String getJobArchivePath() {
+        return jobArchivePath;
+    }
+
+    /** */
+    public String[] getCommands() {
+        return commands;
     }
 }

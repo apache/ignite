@@ -135,7 +135,7 @@ public class TensorFlowClusterMaintainer implements Service {
             if (restartRequired) {
                 clusterMgr.stopClusterIfExists(clusterId);
 
-                TensorFlowCluster cluster = clusterMgr.getOrCreateCluster(
+                TensorFlowCluster cluster = clusterMgr.createCluster(
                     clusterId,
                     jobArchive,
                     str -> {

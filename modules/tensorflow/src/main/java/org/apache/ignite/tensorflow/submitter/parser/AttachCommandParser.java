@@ -18,18 +18,31 @@
 package org.apache.ignite.tensorflow.submitter.parser;
 
 import java.util.UUID;
-import org.apache.ignite.tensorflow.submitter.command.Command;
-import org.apache.ignite.tensorflow.submitter.command.DescribeCommand;
+import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.tensorflow.submitter.command.AttachCommand;
 
 /**
  * Command parser that parses "describe" command.
  */
-public class DescribeCommandParser implements CommandParser {
+public class AttachCommandParser implements CommandParser {
+    /** Ignite supplier. */
+    private final Supplier<Ignite> igniteSupplier;
+
+    /**
+     * Constructs a new instance of "attach" command parser.
+     *
+     * @param igniteSupplier Ignite supplier.
+     */
+    public AttachCommandParser(Supplier<Ignite> igniteSupplier) {
+        this.igniteSupplier = igniteSupplier;
+    }
+
     /** {@inheritDoc} */
-    @Override public Command parse(String[] args) {
+    @Override public Runnable parse(String[] args) {
         if (args.length == 1) {
             UUID clusterId = UUID.fromString(args[0]);
-            return new DescribeCommand(clusterId);
+            return new AttachCommand(igniteSupplier, clusterId);
         }
 
         return null;

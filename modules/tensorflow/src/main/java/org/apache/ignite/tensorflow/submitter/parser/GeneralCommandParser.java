@@ -20,7 +20,12 @@ package org.apache.ignite.tensorflow.submitter.parser;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.tensorflow.submitter.command.Command;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
 
 /**
  * General command parser that parses arguments and decides which specific command parser should be used.
@@ -29,27 +34,64 @@ public class GeneralCommandParser implements CommandParser {
     /**
      * Map with specific command parsers.
      */
-    private final Map<String, CommandParser> parsers;
+    private final Map<String, Function<Supplier<Ignite>, CommandParser>> parsers;
 
     /**
      * Constructs a new instance of general command parser.
      */
     public GeneralCommandParser() {
         parsers = new HashMap<>();
-        parsers.put("start", new StartCommandParser());
-        parsers.put("stop", new StopCommandParser());
-        parsers.put("ps", new PsCommandParser());
-        parsers.put("describe", new DescribeCommandParser());
+        parsers.put("start", StartCommandParser::new);
+        parsers.put("stop", StopCommandParser::new);
+        parsers.put("ps", PsCommandParser::new);
+        parsers.put("attach", AttachCommandParser::new);
     }
 
     /** {@inheritDoc} */
-    @Override public Command parse(String[] args) {
+    @Override public Runnable parse(String[] args) {
         if (args.length > 0) {
-            CommandParser parser = parsers.get(args[0]);
-            if (parser != null)
-                return parser.parse(Arrays.copyOfRange(args, 1, args.length));
+            Supplier<Ignite> igniteSupplier;
+            Function<Supplier<Ignite>, CommandParser> parser;
+
+            if (args.length > 2 && "-c".equals(args[0])) {
+                igniteSupplier = getCustomIgniteSupplier(args[1]);
+                parser = parsers.get(args[2]);
+
+                if (parser != null)
+                    return parser.apply(igniteSupplier).parse(Arrays.copyOfRange(args, 3, args.length));
+            }
+            else {
+                igniteSupplier = getDefaultIgniteSupplier();
+                parser = parsers.get(args[0]);
+
+                if (parser != null)
+                    return parser.apply(igniteSupplier).parse(Arrays.copyOfRange(args, 1, args.length));
+            }
         }
 
         return null;
+    }
+
+    /**
+     * Returns Ignite supplier that uses specified configuration.
+     *
+     * @param cfg Path to configuration.
+     * @return Ignite supplier.
+     */
+    private Supplier<Ignite> getCustomIgniteSupplier(String cfg) {
+        return () -> Ignition.start(cfg);
+    }
+
+    /**
+     * Returns default Ignite supplier.
+     *
+     * @return Ignite supplier.
+     */
+    private Supplier<Ignite> getDefaultIgniteSupplier() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setGridLogger(new Slf4jLogger());
+        cfg.setClientMode(true);
+
+        return () -> Ignition.start(cfg);
     }
 }

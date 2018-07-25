@@ -17,11 +17,6 @@
 
 package org.apache.ignite.tensorflow.submitter;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.logger.slf4j.Slf4jLogger;
-import org.apache.ignite.tensorflow.submitter.command.Command;
 import org.apache.ignite.tensorflow.submitter.parser.CommandParser;
 import org.apache.ignite.tensorflow.submitter.parser.GeneralCommandParser;
 
@@ -38,27 +33,12 @@ public class JobSubmitter {
      * @param args Arguments.
      */
     public static void main(String... args) {
-        Command cmd = parser.parse(args);
+        Runnable cmd = parser.parse(args);
 
         if (cmd != null)
-            try (Ignite ignite = connectToCluster()) {
-                cmd.runWithinIgnite(ignite);
-            }
+            cmd.run();
         else
-            System.out.println(formatInfoMessage());
-    }
-
-    /**
-     * Connects to Ignite cluster and returns Ignite client instance.
-     *
-     * @return Ignite client instance.
-     */
-    private static Ignite connectToCluster() {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-        cfg.setGridLogger(new Slf4jLogger());
-        cfg.setClientMode(true);
-
-        return Ignition.start(cfg);
+            System.out.print(formatInfoMessage());
     }
 
     /**
@@ -69,17 +49,15 @@ public class JobSubmitter {
     private static String formatInfoMessage() {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("Usage: its.sh start CACHE_NAME JOB_ARCHIVE COMMAND").append("\n");
-        builder.append("       Submits the specified job into Apache Ignite cluster with TensorFlow support.").append("\n");
-        builder.append("\n");
-        builder.append("      its.sh stop CLUSTER_ID").append("\n");
-        builder.append("      Stops cluster with the specified cluster identifier.").append("\n");
-        builder.append("\n");
-        builder.append("      its.sh describe CLUSTER_ID").append("\n");
-        builder.append("      Prints the description of cluster with specified cluster identifier.").append("\n");
-        builder.append("\n");
-        builder.append("      its.sh ps").append("\n");
-        builder.append("      Prints list of running clusters.").append("\n");
+        builder.append("Usage: ignite-tf.sh COMMAND\n\n");
+        builder.append("TensorFlow on Apache Ignite\n\n");
+        builder.append("Options: \n");
+        builder.append(" -c string    Location of Ignite node configuration\n\n");
+        builder.append("Commands: \n");
+        builder.append(" start  CACHE_NAME FOLDER COMMAND ARGS    Starts a new TensorFlow cluster\n");
+        builder.append(" stop   CLUSTER_ID                        Stops a TensorFlow cluster\n");
+        builder.append(" attach CLUSTER_ID                        Attaches to a running TensorFlow cluster\n");
+        builder.append(" ps                                       Prints ids of all running TensorFlow clusters\n");
 
         return builder.toString();
     }

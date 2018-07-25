@@ -19,6 +19,7 @@ package org.apache.ignite.tensorflow.submitter.command;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowCluster;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterManager;
@@ -26,14 +27,33 @@ import org.apache.ignite.tensorflow.cluster.TensorFlowClusterManager;
 /**
  * Ps command that prints a list of all running TensorFlow cluster identifiers.
  */
-public class PsCommand implements Command {
+public class PsCommand implements Runnable {
+    /** Ignite supplier. */
+    private final Supplier<Ignite> igniteSupplier;
+
+    /**
+     * Constructs a new instance of command "ps".
+     *
+     * @param igniteSupplier Ignite supplier.
+     */
+    public PsCommand(Supplier<Ignite> igniteSupplier) {
+        this.igniteSupplier = igniteSupplier;
+    }
+
     /** {@inheritDoc} */
-    @Override public void runWithinIgnite(Ignite ignite) {
-        TensorFlowClusterManager mgr = new TensorFlowClusterManager(ignite);
+    @Override public void run() {
+        try (Ignite ignite = igniteSupplier.get()) {
+            TensorFlowClusterManager mgr = new TensorFlowClusterManager(ignite);
 
-        Map<UUID, TensorFlowCluster> clusters = mgr.getAllClusters();
+            Map<UUID, TensorFlowCluster> clusters = mgr.getAllClusters();
 
-        for (UUID clusterId : clusters.keySet())
-            System.out.println(clusterId);
+            for (UUID clusterId : clusters.keySet())
+                System.out.println(clusterId);
+        }
+    }
+
+    /** */
+    public Supplier<Ignite> getIgniteSupplier() {
+        return igniteSupplier;
     }
 }

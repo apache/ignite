@@ -86,14 +86,23 @@ public class TensorFlowClusterManager {
     }
 
     /**
-     * Creates and starts a new TensorFlow cluster for the specified cache if it doesn't exist, otherwise returns
-     * existing one.
+     * Returns cluster by identifier.
+     *
+     * @param clusterId Cluster identifier.
+     * @return TensorFlow cluster.
+     */
+    public TensorFlowCluster getCluster(UUID clusterId) {
+        return cache.get(clusterId);
+    }
+
+    /**
+     * Creates and starts a new TensorFlow cluster for the specified cache.
      *
      * @param clusterId Cluster identifier.
      * @param jobArchive Job archive.
      * @return TensorFlow cluster metadata.
      */
-    public TensorFlowCluster getOrCreateCluster(UUID clusterId, TensorFlowJobArchive jobArchive,
+    public TensorFlowCluster createCluster(UUID clusterId, TensorFlowJobArchive jobArchive,
         Consumer<String> userScriptOut, Consumer<String> userScriptErr) {
         Lock clusterMgrCacheLock = cache.lock(clusterId);
         clusterMgrCacheLock.lock();
@@ -101,11 +110,12 @@ public class TensorFlowClusterManager {
         try {
             TensorFlowCluster cluster = cache.get(clusterId);
 
-            if (cluster == null) {
-                TensorFlowClusterSpec clusterSpec = clusterRslvr.resolveAndAcquirePorts(jobArchive.getUpstreamCacheName());
-                cluster = startCluster(clusterId, clusterSpec, jobArchive, userScriptOut, userScriptErr);
-                cache.put(clusterId, cluster);
-            }
+            if (cluster != null)
+                throw new IllegalStateException("Cluster is already created [clusterId=" + clusterId + "]");
+
+            TensorFlowClusterSpec clusterSpec = clusterRslvr.resolveAndAcquirePorts(jobArchive.getUpstreamCacheName());
+            cluster = startCluster(clusterId, clusterSpec, jobArchive, userScriptOut, userScriptErr);
+            cache.put(clusterId, cluster);
 
             return cluster;
         }
@@ -256,20 +266,16 @@ public class TensorFlowClusterManager {
             runner.stop();
     }
 
+    /**
+     * Checks if user script completed and returns result.
+     *
+     * @param clusterId Cluster identifier.
+     * @return {@code true} if user script completed, otherwise {@code false}.
+     */
     public boolean isUserScriptCompleted(UUID clusterId) {
         TensorFlowUserScriptRunner runner = userScriptRunners.get(clusterId);
 
         return runner != null && runner.isCompleted();
-    }
-
-    /**
-     * Returns cluster by identifier.
-     *
-     * @param clusterId Cluster identifier.
-     * @return TensorFlow cluster.
-     */
-    public TensorFlowCluster getCluster(UUID clusterId) {
-        return cache.get(clusterId);
     }
 
     /**

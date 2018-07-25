@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow.submitter.command;
+package org.apache.ignite.tensorflow.submitter.parser;
 
-import org.apache.ignite.Ignite;
+import org.apache.ignite.tensorflow.submitter.command.PsCommand;
+import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
- * Command that can be executed in TensorFlow on Apache Ignite infrastructure via command line interface.
+ * Tests for {@link PsCommandParser}.
  */
-@FunctionalInterface
-public interface Command {
-    /**
-     * Runs this command using specified Ignite instance.
-     *
-     * @param ignite Ignite instance.
-     */
-    public void runWithinIgnite(Ignite ignite);
+public class PsCommandParserTest {
+    /** Command parser. */
+    private final PsCommandParser parser = new PsCommandParser(() -> null);
+
+    /** */
+    @Test
+    public void testParseCorrectArgs() {
+        Runnable cmd = parser.parse(new String[]{});
+
+        assertNotNull(cmd);
+        assertTrue(cmd instanceof PsCommand);
+    }
 }

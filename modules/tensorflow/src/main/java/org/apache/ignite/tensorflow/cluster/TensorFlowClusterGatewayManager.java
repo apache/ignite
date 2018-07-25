@@ -17,7 +17,10 @@
 
 package org.apache.ignite.tensorflow.cluster;
 
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 
@@ -51,14 +54,25 @@ public class TensorFlowClusterGatewayManager {
     }
 
     /**
-     * Creates and starts a new TensorFlow cluster for the specified cache if it doesn't exist, otherwise returns
-     * existing one.
+     * Subscribes on changes of the specified cluster.
+     *
+     * @param clusterId Cluster identifier.
+     * @return TensorFlow cluster gateway that allows to subscribe on cluster changes.
+     */
+    public TensorFlowClusterGateway getCluster(UUID clusterId) {
+        String topicName = String.format(SERVICE_TOPIC_NAME_TEMPLATE, clusterId);
+
+        return createTensorFlowClusterGateway(topicName);
+    }
+
+    /**
+     * Creates and starts a new TensorFlow cluster for the specified cache.
      *
      * @param clusterId Cluster identifier.
      * @param jobArchive Job archive.
      * @return TensorFlow cluster gateway that allows to subscribe on cluster changes.
      */
-    public TensorFlowClusterGateway getOrCreateCluster(UUID clusterId, TensorFlowJobArchive jobArchive) {
+    public TensorFlowClusterGateway createCluster(UUID clusterId, TensorFlowJobArchive jobArchive) {
         String svcName = String.format(SERVICE_NAME_TEMPLATE, clusterId);
         String topicName = String.format(SERVICE_TOPIC_NAME_TEMPLATE, clusterId);
 
@@ -71,6 +85,44 @@ public class TensorFlowClusterGatewayManager {
         log.info("Cluster maintainer deployed as a service [clusterId=" + clusterId + "]");
 
         return gateway;
+    }
+
+    /**
+     * Listens to TensorFlow cluster user script.
+     *
+     * @param clusterId Cluster identifier.
+     * @param out Output stream consumer.
+     * @param err Error stream consumer.
+     */
+    public void listenToClusterUserScript(UUID clusterId, Consumer<String> out, Consumer<String> err) {
+        TensorFlowClusterGateway gateway = getCluster(clusterId);
+
+        ignite.message().localListen("us_out_" + clusterId, (node, msg) -> {
+            out.accept(msg.toString());
+            return true;
+        });
+
+        ignite.message().localListen("us_err_" + clusterId, (node, msg) -> {
+            err.accept(msg.toString());
+            return true;
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Consumer<Optional<TensorFlowCluster>> subscriber = cluster -> {
+            if (!cluster.isPresent())
+                latch.countDown();
+        };
+
+        gateway.subscribe(subscriber);
+
+        try {
+            latch.await();
+            gateway.unsubscribe(subscriber);
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

@@ -18,22 +18,35 @@
 package org.apache.ignite.tensorflow.submitter.parser;
 
 import java.util.Arrays;
-import org.apache.ignite.tensorflow.submitter.command.Command;
+import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.submitter.command.StartCommand;
 
 /**
  * Command parser that parses "start" command.
  */
 public class StartCommandParser implements CommandParser {
+    /** Ignite supplier. */
+    private final Supplier<Ignite> igniteSupplier;
+
+    /**
+     * Constructs a new instance of "start" command parser.
+     *
+     * @param igniteSupplier Ignite supplier.
+     */
+    public StartCommandParser(Supplier<Ignite> igniteSupplier) {
+        this.igniteSupplier = igniteSupplier;
+    }
+
     /** {@inheritDoc} */
-    @Override public Command parse(String[] args) {
+    @Override public Runnable parse(String[] args) {
         if (args.length >= 3) {
 
             String upstreamCacheName = args[0];
             String jobArchivePath = args[1];
             String[] commands = Arrays.copyOfRange(args, 2, args.length);
 
-            return new StartCommand(upstreamCacheName, jobArchivePath, commands);
+            return new StartCommand(igniteSupplier, upstreamCacheName, jobArchivePath, commands);
         }
 
         return null;

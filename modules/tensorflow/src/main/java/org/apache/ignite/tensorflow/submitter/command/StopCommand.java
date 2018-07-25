@@ -18,28 +18,46 @@
 package org.apache.ignite.tensorflow.submitter.command;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 
 /**
  * Stop command that stops
  */
-public class StopCommand implements Command {
+public class StopCommand implements Runnable {
+    /** Ignite supplier. */
+    private final Supplier<Ignite> igniteSupplier;
+
     /** Cluster identifier. */
     private final UUID clusterId;
 
     /**
      * Constructs a new instance of stop command.
      *
+     * @param igniteSupplier Ignite supplier.
      * @param clusterId Cluster identifier.
      */
-    public StopCommand(UUID clusterId) {
+    public StopCommand(Supplier<Ignite> igniteSupplier, UUID clusterId) {
+        this.igniteSupplier = igniteSupplier;
         this.clusterId = clusterId;
     }
 
     /** {@inheritDoc} */
-    @Override public void runWithinIgnite(Ignite ignite) {
-        TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
-        mgr.stopClusterIfExists(clusterId);
+    @Override public void run() {
+        try (Ignite ignite = igniteSupplier.get()) {
+            TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
+            mgr.stopClusterIfExists(clusterId);
+        }
+    }
+
+    /** */
+    public Supplier<Ignite> getIgniteSupplier() {
+        return igniteSupplier;
+    }
+
+    /** */
+    public UUID getClusterId() {
+        return clusterId;
     }
 }
