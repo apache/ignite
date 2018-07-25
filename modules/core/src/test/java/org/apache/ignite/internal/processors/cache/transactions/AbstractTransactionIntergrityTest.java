@@ -77,6 +77,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     /** Count of transaction on cache. */
     private static final int DFLT_TRANSACTIONS_CNT = 10;
 
+    /** Completed txs. */
     private ConcurrentLinkedHashMap[] completedTxs;
 
     /**
@@ -107,6 +108,9 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         return DFLT_TX_THREADS_CNT;
     }
 
+    /**
+     *
+     */
     protected boolean indexed() {
         return false;
     }
@@ -312,30 +316,52 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         return clientConf;
     }
 
+    /**
+     *
+     */
     public static class AccountState {
+        /** */
         private final int accId;
 
+        /** */
         @QuerySqlField(index = true)
         private final IgniteUuid txId;
 
+        /** */
         private final Set<Integer> coins;
 
+        /**
+         * @param accId Acc id.
+         * @param txId Tx id.
+         * @param coins Coins.
+         */
         public AccountState(int accId, IgniteUuid txId, Set<Integer> coins) {
             this.txId = txId;
             this.coins = coins;
             this.accId = accId;
         }
 
+        /**
+         * @param random Random.
+         */
         public Set<Integer> coinsToTransfer(Random random) {
             int coinsNum = random.nextInt(coins.size());
 
             return coins.stream().limit(coinsNum).collect(Collectors.toSet());
         }
 
+        /**
+         * @param txId Tx id.
+         * @param coinsToAdd Coins to add.
+         */
         public AccountState addCoins(IgniteUuid txId, Set<Integer> coinsToAdd) {
             return new AccountState(accId, txId, Sets.union(coins, coinsToAdd).immutableCopy());
         }
 
+        /**
+         * @param txId Tx id.
+         * @param coinsToRemove Coins to remove.
+         */
         public AccountState removeCoins(IgniteUuid txId, Set<Integer> coinsToRemove) {
             return new AccountState(accId, txId, Sets.difference(coins, coinsToRemove).immutableCopy());
         }
@@ -354,8 +380,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
             return Objects.hash(txId, coins);
         }
 
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return "AccountState{" +
                 "accId=" + Objects.toString(accId) +
                 ", coins=" + Objects.toString(coins) +
@@ -375,12 +401,32 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         return res;
     }
 
+    /**
+     *
+     */
     static class TxState {
-
+        /**
+         * Account states before transaction.
+         */
         AccountState before1, before2;
+
+        /**
+         * Account states after transaction.
+         */
         AccountState after1, after2;
+
+        /**
+         * Transferred coins between accounts during this transaction.
+         */
         Set<Integer> transferredCoins;
 
+        /**
+         * @param before1 Before 1.
+         * @param before2 Before 2.
+         * @param after1 After 1.
+         * @param after2 After 2.
+         * @param transferredCoins Transferred coins.
+         */
         public TxState(AccountState before1, AccountState before2, AccountState after1, AccountState after2, Set<Integer> transferredCoins) {
             this.before1 = before1;
             this.before2 = before2;
@@ -389,8 +435,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
             this.transferredCoins = transferredCoins;
         }
 
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return "TxState{" +
                 "before1=" + before1 +
                 ", before2=" + before2 +

@@ -11,21 +11,25 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Test cases that check transaction data integrity after transaction commit failed.
  */
 public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends AbstractTransactionIntergrityTest {
+    /** Corruption enabled flag. */
     private static volatile boolean corruptionEnabled;
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         corruptionEnabled = false;
 
         super.afterTest();
     }
 
+    /**
+     * Throws a test {@link AssertionError} during tx commit from {@link BPlusTree} and checks after that data is consistent.
+     */
     public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNode1() throws Exception {
         doTestTransferAmount(new IndexCorruptionFailoverScenario(
             true,
@@ -34,6 +38,9 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         );
     }
 
+    /**
+     * Throws a test {@link RuntimeException} during tx commit from {@link BPlusTree} and checks after that data is consistent.
+     */
     public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNode2() throws Exception {
         doTestTransferAmount(new IndexCorruptionFailoverScenario(
             true,
@@ -42,7 +49,12 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         );
     }
 
+    /**
+     * Throws a test {@link IgniteCheckedException} during tx commit from {@link BPlusTree} and checks after that data is consistent.
+     */
     public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNode3() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9082");
+
         doTestTransferAmount(new IndexCorruptionFailoverScenario(
             false,
             (hnd, tree) -> hnd instanceof BPlusTree.Search,
@@ -77,17 +89,21 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         };
     }
 
+    /**
+     * Index corruption failover scenario.
+     */
     class IndexCorruptionFailoverScenario implements FailoverScenario {
         /** Failed node index. */
         static final int failedNodeIdx = 1;
 
-        /** Node stopping expected. */
+        /** Is node stopping expected after failover. */
         private final boolean nodeStoppingExpected;
 
-        /** Tree corruption predicate. */
+        /** Predicate that will choose an instance of {@link BPlusTree} and page operation
+         * to make further failover in this tree using {@link #failoverPredicate}. */
         private final BiFunction<PageHandler, BPlusTree, Boolean> treeCorruptionPredicate;
 
-        /** Failover predicate. */
+        /** Function that may return error during row insertion into {@link BPlusTree}. */
         private final BiFunction<IgniteEx, SearchRow, Throwable> failoverPredicate;
 
         /**
@@ -106,7 +122,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeNodesStarted() throws Exception {
+        @Override public void beforeNodesStarted() {
             BPlusTree.pageHndWrapper = (tree, hnd) -> {
                 final IgniteEx locIgnite = (IgniteEx) Ignition.localIgnite();
 
@@ -128,8 +144,6 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                                 Throwable res = failoverPredicate.apply(locIgnite, new SearchRow(cacheId, row.key()));
 
                                 if (res != null) {
-                                    U.sleep(3000);
-
                                     if (res instanceof Error)
                                         throw (Error) res;
                                     else if (res instanceof RuntimeException)
@@ -153,8 +167,8 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         }
 
         /** {@inheritDoc} */
-        @Override public void afterFirstTransaction() throws Exception {
-            // Enable BPlus tree corruption.
+        @Override public void afterFirstTransaction() {
+            // Enable BPlus tree corruption after first transactions have finished.
             corruptionEnabled = true;
         }
 
