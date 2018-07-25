@@ -20,7 +20,7 @@ if [ ! -z "$OPTION_LIBS" ]; then
   IFS=, LIBS_LIST=("$OPTION_LIBS")
 
   for lib in ${LIBS_LIST[@]}; do
-    cp -r $IGNITE_HOME/libs/optional/"$lib"/* \
+    cp -r $IGNITE_HOME/libs/optional/"$lib" \
         $IGNITE_HOME/libs/
   done
 fi

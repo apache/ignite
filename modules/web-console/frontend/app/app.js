@@ -29,6 +29,7 @@ import './modules/demo/Demo.module';
 import './modules/states/logout.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
+import './modules/states/settings.state';
 
 // ignite:modules
 import './core';
@@ -193,6 +194,7 @@ export default angular.module('ignite-console', [
     'ignite-console.states.logout',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
+    'ignite-console.states.settings',
     // Common modules.
     'ignite-console.dialog',
     'ignite-console.navbar',
@@ -311,11 +313,6 @@ export default angular.module('ignite-console', [
             url: '',
             abstract: true,
             template: baseTemplate
-        })
-        .state('base.settings', {
-            url: '/settings',
-            abstract: true,
-            template: '<ui-view></ui-view>'
         });
 
     $urlRouterProvider.otherwise('/404');

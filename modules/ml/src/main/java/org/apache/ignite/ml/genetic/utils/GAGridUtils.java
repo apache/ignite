@@ -19,14 +19,11 @@ package org.apache.ignite.ml.genetic.utils;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.cache.Cache.Entry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;

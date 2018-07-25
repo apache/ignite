@@ -77,4 +77,14 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
     public DecisionTreeNode getElseNode() {
         return elseNode;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return DecisionTree.printTree(this, pretty);
+    }
 }
