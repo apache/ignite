@@ -51,7 +51,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Mode:',
                     model: `${model}.memoryMode`,
                     name: '"memoryMode"',
@@ -90,7 +90,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 )
                     +form-field-feedback(null, 'offheapAndDomains', 'Query indexing could not be enabled while values are stored off-heap')
             .pc-form-grid-col-60(ng-if=`${model}.memoryMode !== 'OFFHEAP_VALUES'`)
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Off-heap memory:',
                     model: `${model}.offHeapMode`,
                     name: '"offHeapMode"',

@@ -52,7 +52,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var storeFactory = `${model}.cacheStoreFactory`;
             -var storeFactoryKind = `${storeFactory}.kind`;
             .pc-form-grid-col-60
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Store factory:',
                     model: storeFactoryKind,
                     name: '"cacheStoreFactory"',
@@ -82,7 +82,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     -var required = `${storeFactoryKind} === 'CacheJdbcPojoStoreFactory'`
 
                     .pc-form-grid-col-60
-                        +sane-ignite-form-field-text({
+                        +form-field__text({
                             label: 'Data source bean name:',
                             model: `${pojoStoreFactory}.dataSourceBean`,
                             name: '"pojoDataSourceBean"',
@@ -152,7 +152,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     -var required = `${storeFactoryKind} === 'CacheJdbcBlobStoreFactory' && ${blobStoreFactoryVia} !== 'URL'`
 
                     .pc-form-grid-col-60(ng-if-start=`${blobStoreFactoryVia} !== 'URL'`)
-                        +sane-ignite-form-field-text({
+                        +form-field__text({
                             label: 'Data source bean name:',
                             model: `${blobStoreFactory}.dataSourceBean`,
                             name: '"blobDataSourceBean"',
@@ -198,17 +198,17 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
                     .pc-form-grid-col-60
                         .ignite-form-field
-                            +ignite-form-field__label('Hibernate properties:', '"hibernateProperties"')
-                                +tooltip(`List of Hibernate properties<bt />
-                                    For example: connection.url=jdbc:h2:mem:exampleDb`)
-                            .ignite-form-field__control
-                                +list-pair-edit({
-                                    items: `${hibernateStoreFactory}.hibernateProperties`,
-                                    keyLbl: 'Property name', 
-                                    valLbl: 'Property value',
-                                    itemName: 'property',
-                                    itemsName: 'properties'
-                                })
+                            +form-field__label({ label: 'Hibernate properties:', name: '"hibernateProperties"' })
+                                +form-field__tooltip({ title: `List of Hibernate properties<bt />
+                                    For example: connection.url=jdbc:h2:mem:exampleDb` })
+
+                            +list-pair-edit({
+                                items: `${hibernateStoreFactory}.hibernateProperties`,
+                                keyLbl: 'Property name', 
+                                valLbl: 'Property value',
+                                itemName: 'property',
+                                itemsName: 'properties'
+                            })
 
             - form = 'store'
             .pc-form-grid-col-60
@@ -227,7 +227,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         <li> IgniteCache.getAndPutIfAbsent()</li>\
                     </ul>')
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Read-through',
                     model: `${model}.readThrough`,
                     name: '"readThrough"',
@@ -241,7 +241,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 )
                     +form-field-feedback(0, 'storeEnabledReadOrWriteOn', 'Read or write through should be turned on when store kind is set')
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Write-through',
                     model: `${model}.writeThrough`,
                     name: '"writeThrough"',
@@ -258,7 +258,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var enabled = `${model}.writeBehindEnabled`
 
             .pc-form-grid-col-60.pc-form-group__text-title
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Write-behind',
                     model: enabled,
                     name: '"writeBehindEnabled"',
@@ -276,7 +276,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         'Maximum batch size for write-behind cache store operations<br/>\
                          Store operations(get or remove) are combined in a batch of this size to be passed to cache store')
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-number({
+                    +form-field__number({
                         label: 'Flush size:',
                         model: `${model}.writeBehindFlushSize`,
                         name: '"writeBehindFlushSize"',
@@ -288,7 +288,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-model-options='{allowInvalid: true}'
                     )
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-number({
+                    +form-field__number({
                         label: 'Flush frequency:',
                         model: `${model}.writeBehindFlushFrequency`,
                         name: '"writeBehindFlushFrequency"',

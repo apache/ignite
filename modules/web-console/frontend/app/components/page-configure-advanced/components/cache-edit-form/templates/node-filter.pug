@@ -33,7 +33,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-60(
                 ng-if=igfsFilter
             )
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'IGFS:',
                     model: `${nodeFilter}.IGFS.igfs`,
                     name: '"igfsNodeFilter"',
