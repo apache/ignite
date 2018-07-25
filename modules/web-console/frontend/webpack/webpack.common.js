@@ -101,7 +101,7 @@ const config = {
             {
                 test: /^(?:(?!url\.svg$).)*\.svg$/,
                 include: [contentBase],
-                use: ['svg-sprite-loader']
+                loader: 'svg-sprite-loader'
             },
             {
                 test: /.*\.url\.svg$/,

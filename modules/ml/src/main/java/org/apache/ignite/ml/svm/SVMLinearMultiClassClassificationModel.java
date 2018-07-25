@@ -88,6 +88,11 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
         return wholeStr.toString();
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return toString();
+    }
+
     /**
      * Adds a specific SVM binary classifier to the bunch of same classifiers.
      *

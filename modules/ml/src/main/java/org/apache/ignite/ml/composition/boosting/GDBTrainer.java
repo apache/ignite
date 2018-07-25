@@ -28,10 +28,11 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -42,26 +43,25 @@ import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract Gradient Boosting trainer.
- * It implements gradient descent in functional space using user-selected regressor in child class.
- * Each learning iteration the trainer evaluate gradient of error-function and fit regression model
- * to it. After learning step the model is used in models composition of regressions with weight
- * equal to gradient descent step.
+ * Abstract Gradient Boosting trainer. It implements gradient descent in functional space using user-selected regressor
+ * in child class. Each learning iteration the trainer evaluate gradient of error-function and fit regression model to
+ * it. After learning step the model is used in models composition of regressions with weight equal to gradient descent
+ * step.
  *
- * These classes can be used as regressor trainers:
- * {@link DecisionTreeRegressionTrainer}, {@link KNNRegressionTrainer},
- * {@link LinearRegressionLSQRTrainer}, {@link RandomForestRegressionTrainer},
- * {@link LinearRegressionSGDTrainer}.
+ * These classes can be used as regressor trainers: {@link DecisionTreeRegressionTrainer}, {@link KNNRegressionTrainer},
+ * {@link LinearRegressionLSQRTrainer}, {@link RandomForestRegressionTrainer}, {@link LinearRegressionSGDTrainer}.
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Double> {
+abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
     private final double gradientStep;
     /** Count of iterations. */
     private final int cntOfIterations;
-    /** Gradient of loss function. First argument is sample size, second argument is valid answer,
-     * third argument is current model prediction. */
+    /**
+     * Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is
+     * current model prediction.
+     */
     private final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /**
@@ -69,9 +69,11 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
      *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
-     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer third argument is current model prediction.
+     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer
+     * third argument is current model prediction.
      */
-    public GDBTrainer(double gradStepSize, Integer cntOfIterations, IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
+    public GDBTrainer(double gradStepSize, Integer cntOfIterations,
+        IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
         gradientStep = gradStepSize;
         this.cntOfIterations = cntOfIterations;
         this.lossGradient = lossGradient;
@@ -94,6 +96,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
         Arrays.fill(compositionWeights, gradientStep);
         WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeights, mean);
 
+        long learningStartTs = System.currentTimeMillis();
         for (int i = 0; i < cntOfIterations; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, i);
             WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
@@ -105,8 +108,13 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
                 return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
             };
 
+            long startTs = System.currentTimeMillis();
             models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
+            double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+            environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
         }
+        double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
 
         return new ModelsComposition(models, resAggregator) {
             @Override public Double apply(Vector features) {
@@ -122,7 +130,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
      * @param featureExtractor Feature extractor.
      * @param lExtractor Labels extractor.
      */
-    protected abstract  <V, K> void learnLabels(DatasetBuilder<K, V> builder,
+    protected abstract <V, K> void learnLabels(DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
 
     /**

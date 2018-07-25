@@ -18,10 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.helloworld;
 
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;

@@ -27,8 +27,8 @@ import java.util.Optional;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 
 import static java.nio.file.Files.createTempFile;
