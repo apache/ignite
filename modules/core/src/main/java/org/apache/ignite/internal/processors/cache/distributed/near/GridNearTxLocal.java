@@ -4452,7 +4452,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             log.error("Failed to send unlock request during rollback to savepoint (primary node left grid) " +
                 "[receiver=" + node + ", req=" + req + ", e=" + e + ']');
 
-            fut.onNodeLeft(node.id());
+            fut.onDone(e);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to send unlock request during rollback to savepoint [receiver=" + node +

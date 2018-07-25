@@ -199,7 +199,7 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
         int key1 = generateKey(grid(0), 0);
         int key2 = generateKey(grid(0), key1 + 1);
 
-        GridTestUtils.assertThrowsAnyCause(log, (Callable<Void>)() -> {
+        GridTestUtils.assertThrowsWithCause((Callable<Void>)() -> {
                 try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.put(key1, key1);
 
@@ -214,8 +214,7 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
 
                 return null;
             },
-            ClusterTopologyCheckedException.class,
-            "Failed to unlock keys for savepoint (primary node left grid, retry transaction if possible) [node="
+            ClusterTopologyCheckedException.class
         );
     }
 
