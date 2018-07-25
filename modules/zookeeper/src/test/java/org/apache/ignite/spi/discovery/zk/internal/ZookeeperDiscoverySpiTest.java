@@ -59,6 +59,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -127,6 +129,7 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
@@ -147,6 +150,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
@@ -180,6 +186,12 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
     /** */
     private boolean testSockNio;
+
+    /** */
+    private CacheAtomicityMode atomicityMode;
+
+    /** */
+    private int backups = -1;
 
     /** */
     private boolean testCommSpi;
@@ -278,11 +290,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(zkSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(getCacheConfiguration());
 
         Boolean clientMode = clientThreadLoc.get();
 
@@ -364,6 +372,21 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
         return cfg;
+    }
+
+    /** */
+    private CacheConfiguration getCacheConfiguration() {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        if (atomicityMode != null)
+            ccfg.setAtomicityMode(atomicityMode);
+
+        if (backups > 0)
+            ccfg.setBackups(backups);
+
+        return ccfg;
     }
 
     /**
@@ -1072,6 +1095,112 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 }
             }
         );
+    }
+
+    /**
+     * Verifies correct handling of SEGMENTATION event with STOP segmentation policy: node is stopped successfully,
+     * all its threads are shut down.
+     *
+     * @throws Exception If failed.
+     *
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-9040">IGNITE-9040</a> ticket for more context of the test.
+     */
+    public void testStopNodeOnSegmentaion() throws Exception {
+        try {
+            System.setProperty("IGNITE_WAL_LOG_TX_RECORDS", "true");
+
+            sesTimeout = 2000;
+            testSockNio = true;
+            persistence = true;
+            atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+            backups = 2;
+
+            final Ignite node0 = startGrid(0);
+
+            sesTimeout = 10_000;
+            testSockNio = false;
+
+            startGrid(1);
+
+            node0.cluster().active(true);
+
+            clientMode(true);
+
+            final IgniteEx client = startGrid(2);
+
+            //first transaction
+            client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 0);
+            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+            //second transaction to create a deadlock with the first one
+            // and guarantee transaction futures will be presented on segmented node
+            // (erroneous write to WAL on segmented node stop happens
+            // on completing transaction with NodeStoppingException)
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    Transaction tx2 = client.transactions().txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+                    client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+                    tx2.commit();
+                }
+            });
+
+            //next block simulates Ignite node segmentation by closing socket of ZooKeeper client
+            {
+                final CountDownLatch l = new CountDownLatch(1);
+
+                node0.events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        l.countDown();
+
+                        return false;
+                    }
+                }, EventType.EVT_NODE_SEGMENTED);
+
+                ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
+
+                c0.closeSocket(true);
+
+                for (int i = 0; i < 10; i++) {
+                    Thread.sleep(1_000);
+
+                    if (l.getCount() == 0)
+                        break;
+                }
+
+                info("Allow connect");
+
+                c0.allowConnect();
+
+                assertTrue(l.await(10, TimeUnit.SECONDS));
+            }
+
+            waitForNodeStop(node0.name());
+
+            checkStoppedNodeThreads(node0.name());
+        }
+        finally {
+            System.clearProperty("IGNITE_WAL_LOG_TX_RECORDS");
+        }
+    }
+
+    /** */
+    private void checkStoppedNodeThreads(String nodeName) {
+        Set<Thread> threads = Thread.getAllStackTraces().keySet();
+
+        for (Thread t : threads) {
+            if (t.getName().contains(nodeName))
+                throw new AssertionError("Thread from stopped node has been found: " + t.getName());
+        }
+    }
+
+    /** */
+    private void waitForNodeStop(String name) throws Exception {
+        while (true) {
+            if (IgnitionEx.state(name).equals(IgniteState.STARTED))
+                Thread.sleep(2000);
+            else
+                break;
+        }
     }
 
     /**
