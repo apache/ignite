@@ -308,9 +308,58 @@
     }
 }
 
+.theme--ignite-errors-horizontal {
+    .form-field__errors {
+        position: relative;
+        
+        padding: 5px 10px 0px;
+
+        color: $ignite-brand-primary;
+        font-size: 12px;
+        line-height: 14px;
+
+        &:empty {
+            display: none;
+        }
+
+        [ng-message] + [ng-message] {
+            margin-top: 10px;
+        }
+    }
+
+    .form-field__error {
+        float: none;
+        width: auto;
+        height: auto;
+
+        text-align: left;
+        line-height: 14px;
+
+        &:before {
+            content: attr(message);
+
+            position: relative;
+            right: initial;
+            width: auto;
+        }
+
+        > * {
+            display: none;
+        }
+    }
+
+    .form-field__error + .form-field__error {
+        margin-top: 10px;
+    }
+}
+
 .form-field__checkbox {
     $errorSize: 16px;
     display: flex;
+
+    .form-field__control > input[type='checkbox'] {
+        border-radius: 0;
+    }
 
     .form-field {
         &__label {
@@ -381,4 +430,12 @@
         right: 0;
         height: 36px;
     }
+}
+
+.form-field__dropdown {
+    
+}
+
+.form-field.ignite-form-field label.required {
+    margin-left: 0 !important;
 }

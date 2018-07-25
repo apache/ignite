@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field__error({ error, message })
-    .form-field__error(ng-message=error)
+    .form-field__error(ng-message=error message=`${ message}`)
         div(
             bs-tooltip=''
             data-title=message
