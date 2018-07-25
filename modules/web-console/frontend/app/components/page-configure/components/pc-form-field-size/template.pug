@@ -16,35 +16,39 @@
 
 include /app/helpers/jade/mixins
 
-+ignite-form-field__label('{{ ::$ctrl.label }}', '$ctrl.id', '$ctrl.required', '$ctrl.ngDisabled')
-    span(ng-if='::$ctrl.tip')
-        +tooltip('{{::$ctrl.tip}}')
-.ignite-form-field__control(ng-form='$ctrl.innerForm')
-    .input-tip
-        input.form-control(
-            type='number'
-            id='{{::$ctrl.id}}Input'
-            ng-model='$ctrl.value'
-            ng-model-options='{allowInvalid: true}'
-            ng-change='$ctrl.onValueChange()'
-            name='numberInput'
-            placeholder='{{$ctrl.placeholder}}'
-            min='{{ $ctrl.min ? $ctrl.min / $ctrl.sizeScale.value : "" }}'
-            max='{{ $ctrl.max ? $ctrl.max / $ctrl.sizeScale.value : "" }}'
-            ng-required='$ctrl.required'
-            ng-disabled='$ctrl.ngDisabled'
-        )
-        button.btn-ignite.btn-ignite--secondary(
-            bs-select
-            bs-options='size as size.label for size in $ctrl.sizesMenu'
-            ng-model='$ctrl.sizeScale'
-            protect-from-bs-select-render
-            ng-disabled='$ctrl.ngDisabled'
-            type='button'
-        )
-            | {{ $ctrl.sizeScale.label }}
-            span.fa.fa-caret-down.icon-right
-.ignite-form-field__errors(
++form-field__label({
+    label: '{{ ::$ctrl.label }}',
+    name: '$ctrl.id',
+    required: '$ctrl.required',
+    disabled: '$ctrl.ngDisabled'
+})
+    +form-field__tooltip({ title: '{{::$ctrl.tip}}' })
+
+.form-field__control(ng-form='$ctrl.innerForm')
+    input(
+        type='number'
+        id='{{::$ctrl.id}}Input'
+        ng-model='$ctrl.value'
+        ng-model-options='{allowInvalid: true}'
+        ng-change='$ctrl.onValueChange()'
+        name='numberInput'
+        placeholder='{{$ctrl.placeholder}}'
+        min='{{ $ctrl.min ? $ctrl.min / $ctrl.sizeScale.value : "" }}'
+        max='{{ $ctrl.max ? $ctrl.max / $ctrl.sizeScale.value : "" }}'
+        ng-required='$ctrl.required'
+        ng-disabled='$ctrl.ngDisabled'
+    )
+    button.select-toggle(
+        bs-select
+        bs-options='size as size.label for size in $ctrl.sizesMenu'
+        ng-model='$ctrl.sizeScale'
+        protect-from-bs-select-render
+        ng-disabled='$ctrl.ngDisabled'
+        type='button'
+    )
+        | {{ $ctrl.sizeScale.label }}
+
+.form-field__errors(
     ng-messages='$ctrl.ngModel.$error'
     ng-show=`($ctrl.ngModel.$dirty || $ctrl.ngModel.$touched || $ctrl.ngModel.$submitted) && $ctrl.ngModel.$invalid`
 )

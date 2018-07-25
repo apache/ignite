@@ -18,22 +18,27 @@
 pc-form-field-size {
     @import "./../../../../../public/stylesheets/variables.scss";
 
-    .input-tip {
+    position: relative;
+    width: 100%;
+    font-family: Roboto;
+
+    .form-field__control {
         display: flex;
         flex-direction: row;
 
-        .form-control {
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
         input {
+            min-width: 0;
+            margin-right: -1px;
+
             border-top-right-radius: 0 !important;
             border-bottom-right-radius: 0 !important;
-            min-width: 0;
+
+            &:focus {
+                z-index: 1;
+            }
         }
 
-        .btn-ignite {
+        button {
             border-top-left-radius: 0 !important;
             border-bottom-left-radius: 0 !important;
             flex: 0 0 auto;
