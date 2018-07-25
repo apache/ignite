@@ -50,10 +50,10 @@ public class LocalPendingTransactionsTracker {
     }
 
     /** Currently pending transactions. */
-    private volatile ConcurrentHashMap<GridCacheVersion, WALPointer> currentlyPreparedTxs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<GridCacheVersion, WALPointer> currentlyPreparedTxs = new ConcurrentHashMap<>();
 
     /** +1 for prepared, -1 for committed */
-    private volatile ConcurrentHashMap<GridCacheVersion, AtomicInteger> preparedCommittedTxsCounters = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<GridCacheVersion, AtomicInteger> preparedCommittedTxsCounters = new ConcurrentHashMap<>();
 
     /**
      * Transactions that were transitioned to pending state since last {@link #startTrackingPrepared()} call.
@@ -229,6 +229,8 @@ public class LocalPendingTransactionsTracker {
             assert cnt >= 0 : cnt;
 
             if (cnt == 0) {
+                preparedCommittedTxsCounters.remove(nearXidVer);
+
                 WALPointer preparedPtr = currentlyPreparedTxs.remove(nearXidVer);
 
                 assert preparedPtr != null;
