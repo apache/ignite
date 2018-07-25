@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.tree.data;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
@@ -29,7 +31,7 @@ public class DecisionTreeData implements AutoCloseable {
     /** Vector with labels. */
     private final double[] labels;
 
-    private final TreeDataIndex index;
+    private final List<TreeDataIndex> indexCache;
     /**
      * Constructs a new instance of decision tree data.
      *
@@ -42,7 +44,8 @@ public class DecisionTreeData implements AutoCloseable {
         this.features = features;
         this.labels = labels;
 
-        index = new TreeDataIndex(features, labels);
+        indexCache = new ArrayList<>();
+        indexCache.add(new TreeDataIndex(features, labels));
     }
 
     /**
@@ -131,7 +134,19 @@ public class DecisionTreeData implements AutoCloseable {
         // Do nothing, GC will clean up.
     }
 
-    public TreeDataIndex index() {
-        return index;
+    public TreeDataIndex index(int depth, TreeFilter filter) {
+        assert depth >= 0 && depth <= indexCache.size();
+
+        if(depth > 0 && depth <= indexCache.size() - 1) {
+            for(int i = indexCache.size() - 1; i >= depth; i--)
+                indexCache.remove(i);
+        }
+
+        if(depth == indexCache.size()) {
+            TreeDataIndex lastIndex = indexCache.get(depth - 1);
+            indexCache.add(lastIndex.filter(filter));
+        }
+
+        return indexCache.get(depth);
     }
 }

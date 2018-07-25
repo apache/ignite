@@ -33,8 +33,8 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter) {
-        TreeDataIndex index = data.index();
+    @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
+        TreeDataIndex index = data.index(depth, filter);
         if (index.rowsCount() > 0) {
             StepFunction<MSEImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
 
@@ -51,10 +51,6 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
 
                 int rightSize = 0;
                 for (int i = 0; i < index.rowsCount(); i++) {
-                    double[] vec = index.featuresInSortedOrder(i, col);
-                    if (!filter.test(vec))
-                        continue;
-
                     rightY += index.labelInSortedOrder(i, col);
                     rightY2 += Math.pow(index.labelInSortedOrder(i, col), 2);
                     rightSize++;
@@ -63,12 +59,6 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
                 int size = 0;
                 int lastI = 0;
                 for (int i = 0; i <= index.rowsCount(); i++) {
-                    if (i < index.rowsCount()) {
-                        double[] vec = index.featuresInSortedOrder(i, col);
-                        if (!filter.test(vec))
-                            continue;
-                    }
-
                     if (size > 0) {
                         leftY += index.labelInSortedOrder(lastI, col);
                         leftY2 += Math.pow(index.labelInSortedOrder(lastI, col), 2);

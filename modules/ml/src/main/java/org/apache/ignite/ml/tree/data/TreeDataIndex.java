@@ -17,43 +17,59 @@
 
 package org.apache.ignite.ml.tree.data;
 
+import java.util.BitSet;
+import org.apache.ignite.ml.tree.TreeFilter;
+
 public class TreeDataIndex {
     private final int[][] index;
+    private final int[][] indexProj;
     private final double[][] features;
     private final double[] labels;
-    private final int rows;
-    private final int cols;
+    private final BitSet hasOriginalRows;
 
     public TreeDataIndex(double[][] features, double[] labels) {
         this.features = features;
         this.labels = labels;
 
-        rows = features.length;
-        cols = features.length == 0 ? 0 : features[0].length;
+        int rows = features.length;
+        int cols = features.length == 0 ? 0 : features[0].length;
 
         double[][] featuresCopy = new double[rows][cols];
         index = new int[rows][cols];
+        hasOriginalRows = new BitSet();
         for (int row = 0; row < rows; row++) {
+            hasOriginalRows.set(row);
             for (int col = 0; col < cols; col++) {
                 index[row][col] = row;
                 featuresCopy[row][col] = features[row][col];
             }
         }
 
-        for(int col = 0; col < cols; col++)
+        for (int col = 0; col < cols; col++)
             sortIndex(featuresCopy, col, 0, rows - 1);
+
+        indexProj = index;
+    }
+
+    public TreeDataIndex(int[][] index, int[][] indexProj, BitSet hasRows, double[][] features,
+        double[] labels) {
+        this.index = index;
+        this.indexProj = indexProj;
+        this.features = features;
+        this.labels = labels;
+        this.hasOriginalRows = hasRows;
     }
 
     public double labelInSortedOrder(int k, int featureId) {
-        return labels[index[k][featureId]];
+        return labels[indexProj[k][featureId]];
     }
 
     public double[] featuresInSortedOrder(int k, int featureId) {
-        return features[index[k][featureId]];
+        return features[indexProj[k][featureId]];
     }
 
     public double featureInSortedOrder(int k, int featureId) {
-        return features[index[k][featureId]][featureId];
+        return features[indexProj[k][featureId]][featureId];
     }
 
     private void sortIndex(double[][] features, int col, int from, int to) {
@@ -87,11 +103,33 @@ public class TreeDataIndex {
         }
     }
 
+    public TreeDataIndex filter(TreeFilter filter) {
+        BitSet filteredRows = new BitSet();
+        int projSize = 0;
+        for (int i = 0; i < rowsCount(); i++) {
+            if (filter.test(featuresInSortedOrder(i, 0))) {
+                filteredRows.set(indexProj[i][0]);
+                projSize++;
+            }
+        }
+
+        int[][] newIndexProj = new int[projSize][columnsCount()];
+        for(int feature = 0; feature < columnsCount(); feature++) {
+            int ptr = 0;
+            for(int row = 0; row < rowsCount(); row++) {
+                if(filteredRows.get(indexProj[row][feature]))
+                    newIndexProj[ptr++][feature] = indexProj[row][feature];
+            }
+        }
+
+        return new TreeDataIndex(index, newIndexProj, filteredRows, features, labels);
+    }
+
     public int rowsCount() {
-        return rows;
+        return indexProj.length;
     }
 
     public int columnsCount() {
-        return cols;
+        return rowsCount() == 0 ? 0 : indexProj[0].length ;
     }
 }

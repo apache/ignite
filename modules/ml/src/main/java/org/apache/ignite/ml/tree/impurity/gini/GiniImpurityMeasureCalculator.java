@@ -47,27 +47,19 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter) {
-        TreeDataIndex index = data.index();
+    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
+        TreeDataIndex index = data.index(depth, filter);
         if (index.rowsCount() > 0) {
             StepFunction<GiniImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
 
             for (int col = 0; col < res.length; col++) {
                 ArrayList<Double> x = new ArrayList<>();
                 ArrayList<GiniImpurityMeasure> y = new ArrayList<>();
-//                double[] x = new double[index.rowsCount() + 1];
-//                GiniImpurityMeasure[] y = new GiniImpurityMeasure[index.rowsCount() + 1];
-
-                int xPtr = 0, yPtr = 0;
 
                 long[] left = new long[lbEncoder.size()];
                 long[] right = new long[lbEncoder.size()];
 
                 for (int i = 0; i < index.rowsCount(); i++) {
-                    double[] featureVector = index.featuresInSortedOrder(i, col);
-                    if(!filter.test(featureVector))
-                        continue;
-
                     double label = index.labelInSortedOrder(i, col);
                     right[getLabelCode(label)]++;
                 }
@@ -77,18 +69,9 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
                     Arrays.copyOf(left, left.length),
                     Arrays.copyOf(right, right.length)
                 ));
-//                x[xPtr++] = Double.NEGATIVE_INFINITY;
-//                y[yPtr++] = new GiniImpurityMeasure(
-//                    Arrays.copyOf(left, left.length),
-//                    Arrays.copyOf(right, right.length)
-//                );
 
                 int lastRowId = 0;
                 for (int i = 0; i < index.rowsCount(); i++) {
-                    double[] featureVector = index.featuresInSortedOrder(i, col);
-                    if(!filter.test(featureVector))
-                        continue;
-
                     double label = index.labelInSortedOrder(i, col);
                     left[getLabelCode(label)]++;
                     right[getLabelCode(label)]--;

@@ -35,5 +35,5 @@ public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> extends
      * @param data Features and labels.
      * @return Impurity measures as an array of {@link StepFunction} (for every column).
      */
-    public StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter);
+    public StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter, int depth);
 }

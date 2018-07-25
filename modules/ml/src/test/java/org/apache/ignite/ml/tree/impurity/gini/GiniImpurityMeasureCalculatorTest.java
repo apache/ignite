@@ -41,7 +41,7 @@ public class GiniImpurityMeasureCalculatorTest {
         encoder.put(1.0, 1);
         GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels), fs -> true);
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 
@@ -73,7 +73,7 @@ public class GiniImpurityMeasureCalculatorTest {
         encoder.put(1.0, 1);
         GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels), fs -> true);
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels), fs -> true, 0);
 
         assertEquals(1, impurity.length);
 

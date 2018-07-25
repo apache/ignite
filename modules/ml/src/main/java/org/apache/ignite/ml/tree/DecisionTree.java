@@ -105,7 +105,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         if (deep >= maxDeep)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
-        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
+        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc, deep);
 
         if (criterionFunctions == null)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
@@ -132,14 +132,14 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @return Array of impurity measure functions for all columns.
      */
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
-        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
+        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc, int depth) {
 
         StepFunction<T>[] result = dataset.compute(
             part -> {
                 if (compressor != null)
-                    return compressor.compress(impurityCalc.calculate(part, filter));
+                    return compressor.compress(impurityCalc.calculate(part, filter, depth));
                 else
-                    return impurityCalc.calculate(part, filter);
+                    return impurityCalc.calculate(part, filter, depth);
             }, this::reduce
         );
 
