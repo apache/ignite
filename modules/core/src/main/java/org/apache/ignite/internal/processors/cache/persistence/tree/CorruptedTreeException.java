@@ -14,34 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.IOException;
+package org.apache.ignite.internal.processors.cache.persistence.tree;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.InvalidEnvironmentException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception is needed to distinguish persistent storage I/O errors.
+ * Exception to distinguish {@link BPlusTree} tree broken invariants.
  */
-public class PersistentStorageIOException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CorruptedTreeException extends IgniteCheckedException implements InvalidEnvironmentException {
     /**
-     * Create an instance of exception.
-     *
-     * @param cause Error cause.
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public PersistentStorageIOException(IOException cause) {
-        super(cause);
-    }
-
-    /**
-     * Create an instance of exception.
-     *
-     * @param msg Error message.
-     * @param cause Error cause.
-     */
-    public PersistentStorageIOException(String msg, IOException cause) {
+    public CorruptedTreeException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
