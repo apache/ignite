@@ -251,7 +251,12 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        throw new UnsupportedOperationException("Cluster metrics can't be cleared. Use local metrics clear instead.");
+        try {
+            cache.context().shared().cache().clearStatistics(Collections.singleton(cache.name()));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */
