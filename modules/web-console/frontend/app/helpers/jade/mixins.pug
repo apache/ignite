@@ -135,18 +135,37 @@ mixin uuid-feedback(name)
 -}
 
 //- Mixin for checkbox.
-mixin checkbox(lbl, model, name, tip)
-    +form-field-checkbox(lbl, model, name, false, false, tip)
+mixin checkbox(label, model, name, tip)
+    +form-field__checkbox({
+        label,
+        model,
+        name,
+        tip
+    })
 
 //- Mixin for checkbox with enabled condition.
-mixin checkbox-enabled(lbl, model, name, enabled, tip)
-    +form-field-checkbox(lbl, model, name, enabledToDisabled(enabled), false, tip)
+mixin checkbox-enabled(label, model, name, enabled, tip)
+    +form-field__checkbox({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        tip
+    })
 
 //- Mixin for Java class name field with auto focus condition.
-mixin java-class-autofocus-placholder(lbl, model, name, enabled, required, autofocus, placeholder, tip, validationActive)
-    -var errLbl = lbl.substring(0, lbl.length - 1)
+mixin java-class-autofocus-placholder(label, model, name, enabled, required, autofocus, placeholder, tip, validationActive)
+    -var errLbl = label.substring(0, label.length - 1)
 
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        tip
+    })(
         data-java-identifier='true'
         data-java-package-specified='true'
         data-java-keywords='true'
@@ -175,10 +194,19 @@ mixin java-class(lbl, model, name, enabled, required, tip, validationActive)
             block
 
 //- Mixin for text field with enabled condition with options.
-mixin java-class-typeahead(lbl, model, name, options, enabled, required, placeholder, tip, validationActive)
-    -var errLbl = lbl.substring(0, lbl.length - 1)
+mixin java-class-typeahead(label, model, name, options, enabled, required, placeholder, tip, validationActive)
+    -var errLbl = label.substring(0, label.length - 1)
 
-    +form-field-datalist(lbl, model, name, enabledToDisabled(enabled), required, placeholder, options, tip)&attributes(attributes)(
+    +form-field__typeahead({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        options,
+        tip
+    })&attributes(attributes)(
         data-java-identifier='true'
         data-java-package-specified='allow-built-in'
         data-java-keywords='true'
@@ -189,8 +217,15 @@ mixin java-class-typeahead(lbl, model, name, options, enabled, required, placeho
         +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
 
 //- Mixin for java package field with enabled condition.
-mixin java-package(lbl, model, name, enabled, required, tip)
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, 'Enter package name', tip)(
+mixin java-package(label, model, name, enabled, required, tip)
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        tip
+    })(
         data-java-keywords='true'
         data-java-package-name='package-only'
     )
@@ -198,42 +233,93 @@ mixin java-package(lbl, model, name, enabled, required, tip)
         +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved java keyword')
 
 //- Mixin for text field with IP address check.
-mixin text-ip-address(lbl, model, name, enabled, placeholder, tip)
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), false, placeholder, tip)(data-ipaddress='true')
+mixin text-ip-address(label, model, name, enabled, placeholder, tip)
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        tip
+    })(data-ipaddress='true')
         +ipaddress-feedback(name)
 
 //- Mixin for text field with IP address and port range check.
-mixin text-ip-address-with-port-range(lbl, model, name, enabled, placeholder, tip)
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), false, placeholder, tip)(data-ipaddress='true' data-ipaddress-with-port='true' data-ipaddress-with-port-range='true')
+mixin text-ip-address-with-port-range(label, model, name, enabled, placeholder, tip)
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        tip
+    })(
+        data-ipaddress='true'
+        data-ipaddress-with-port='true'
+        data-ipaddress-with-port-range='true'
+    )
         +ipaddress-feedback(name)
         +ipaddress-port-feedback(name)
         +ipaddress-port-range-feedback(name)
 
 //- Mixin for text field.
-mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)
+mixin text-enabled(label, model, name, enabled, required, placeholder, tip)
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        tip
+    })
         if  block
             block
 
 //- Mixin for text field with autofocus.
-mixin text-enabled-autofocus(lbl, model, name, enabled, required, placeholder, tip)
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(
+mixin text-enabled-autofocus(label, model, name, enabled, required, placeholder, tip)
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        tip
+    })(
         data-ignite-form-field-input-autofocus='true'
     )&attributes(attributes)
         if  block
             block
 
 //- Mixin for text field.
-mixin text(lbl, model, name, required, placeholder, tip)
-    +ignite-form-field-text(lbl, model, name, false, required, placeholder, tip)
+mixin text(label, model, name, required, placeholder, tip)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required,
+        placeholder,
+        tip
+    })
         if  block
             block
 
 //- Mixin for url field.
-mixin url(lbl, model, name, enabled, required, placeholder, tip)
-    -var errLbl = lbl.substring(0, lbl.length - 1)
+mixin url(label, model, name, enabled, required, placeholder, tip)
+    -var errLbl = label.substring(0, label.length - 1)
 
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(type='url')
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        tip
+    })(
+        type='url'
+    )
         if  block
             block
 
@@ -246,62 +332,164 @@ mixin password(lbl, model, name, required, placeholder, tip)
             block
 
 //- Mixin for text field with enabled condition with options.
-mixin text-options(lbl, model, name, options, enabled, required, placeholder, tip)
-    +form-field-datalist(lbl, model, name, enabledToDisabled(enabled), required, placeholder, options, tip)
+mixin text-options(label, model, name, options, enabled, required, placeholder, tip)
+    +form-field__typeahead({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        options,
+        tip
+    })
 
 //- Mixin for required numeric field.
-mixin number-required(lbl, model, name, enabled, required, placeholder, min, tip)
-    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), required, placeholder, min, false, false, tip)
+mixin number-required(label, model, name, enabled, required, placeholder, min, tip)
+    +form-field__number({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        min,
+        tip
+    })
 
 //- Mixin for required numeric field with maximum and minimum limit.
-mixin number-min-max(lbl, model, name, enabled, placeholder, min, max, tip)
-    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), false, placeholder, min, max, '1', tip)
+mixin number-min-max(label, model, name, enabled, placeholder, min, max, tip)
+    +form-field__number({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        min,
+        max,
+        tip
+    })
 
 //- Mixin for required numeric field with maximum and minimum limit.
-mixin number-min-max-step(lbl, model, name, enabled, placeholder, min, max, step, tip)
-    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), false, placeholder, min, max, step, tip)
+mixin number-min-max-step(label, model, name, enabled, placeholder, min, max, step, tip)
+    +form-field__number({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        min,
+        max,
+        step,
+        tip
+    })
 
 //- Mixin for numeric field.
-mixin number(lbl, model, name, enabled, placeholder, min, tip)
-    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), false, placeholder, min, false, false, tip)
+mixin number(label, model, name, enabled, placeholder, min, tip)
+    +form-field__number({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        min,
+        tip
+    })
 
 //- Mixin for required dropdown field.
-mixin dropdown-required-empty(lbl, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
-    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, placeholderEmpty, options, tip)&attributes(attributes)
+mixin dropdown-required-empty(label, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        placeholderEmpty,
+        options,
+        tip
+    })&attributes(attributes)
         if  block
             block
 
 //- Mixin for required dropdown field with autofocus.
-mixin dropdown-required-empty-autofocus(lbl, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
-    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, placeholderEmpty, options, tip)(
+mixin dropdown-required-empty-autofocus(label, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        placeholderEmpty,
+        options,
+        tip
+    })(
         data-ignite-form-field-input-autofocus='true'
     )
         if  block
             block
 
 //- Mixin for required dropdown field.
-mixin dropdown-required(lbl, model, name, enabled, required, placeholder, options, tip)
-    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, '', options, tip)&attributes(attributes)
+mixin dropdown-required(label, model, name, enabled, required, placeholder, options, tip)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        options,
+        tip
+    })&attributes(attributes)
         if  block
             block
 
 //- Mixin for required dropdown field with autofocus.
-mixin dropdown-required-autofocus(lbl, model, name, enabled, required, placeholder, options, tip)
-    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, '', options, tip)(
+mixin dropdown-required-autofocus(label, model, name, enabled, required, placeholder, options, tip)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        options,
+        tip
+    })(
         data-ignite-form-field-input-autofocus='true'
     )
         if  block
             block
 
 //- Mixin for dropdown field.
-mixin dropdown(lbl, model, name, enabled, placeholder, options, tip)
-    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), false, false, placeholder, '', options, tip)
+mixin dropdown(label, model, name, enabled, placeholder, options, tip)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        placeholder,
+        options,
+        tip
+    })&attributes(attributes)
         if  block
             block
 
 //- Mixin for dropdown-multiple field.
-mixin dropdown-multiple(lbl, model, name, enabled, placeholder, placeholderEmpty, options, tip)
-    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), false, true, placeholder, placeholderEmpty, options, tip)
+mixin dropdown-multiple(label, model, name, enabled, placeholder, placeholderEmpty, options, tip)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        disabled: enabledToDisabled(enabled),
+        required,
+        multiple: true,
+        placeholder,
+        placeholderEmpty,
+        options,
+        tip
+    })&attributes(attributes)
         if  block
             block
 
@@ -311,7 +499,13 @@ mixin list-text-field({ items, lbl, name, itemName, itemsName })
             | {{ $item }}
 
         list-editable-item-edit
-            +ignite-form-field-text(lbl, '$item', `"${name}"`, false, true, `Enter ${lbl.toLowerCase()}`)(
+            +form-field__text({
+                label: lbl,
+                model: '$item',
+                name: `"${name}"`,
+                required: true,
+                placeholder: `Enter ${lbl.toLowerCase()}`
+            })(
                 data-ignite-unique=items
                 data-ignite-form-field-input-autofocus='true'
             )
@@ -325,8 +519,14 @@ mixin list-text-field({ items, lbl, name, itemName, itemsName })
                 label-multiple=itemsName
             )
 
-mixin list-java-class-field(lbl, model, name, items)
-    +ignite-form-field-text(lbl, model, name, false, true, 'Enter fully qualified class name')(
+mixin list-java-class-field(label, model, name, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder: 'Enter fully qualified class name'
+    })(
         data-java-identifier='true'
         data-java-package-specified='true'
         data-java-keywords='true'
@@ -335,16 +535,22 @@ mixin list-java-class-field(lbl, model, name, items)
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
     )
-        +form-field-feedback(name, 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
-        +form-field-feedback(name, 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
-        +form-field-feedback(name, 'javaPackageSpecified', lbl + ' does not have package specified!')
-        +form-field-feedback(name, 'javaIdentifier', lbl + ' is invalid Java identifier!')
+        +form-field-feedback(name, 'javaBuiltInClass', label + ' should not be the Java built-in class!')
+        +form-field-feedback(name, 'javaKeywords', label + ' could not contains reserved Java keyword!')
+        +form-field-feedback(name, 'javaPackageSpecified', label + ' does not have package specified!')
+        +form-field-feedback(name, 'javaIdentifier', label + ' is invalid Java identifier!')
 
         if block
             block
 
-mixin list-java-package-field(lbl, model, name, items)
-    +ignite-form-field-text(lbl, model, name, false, true, 'Enter package name')(
+mixin list-java-package-field(label, model, name, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder: 'Enter package name'
+    })(
         data-java-keywords='true'
         data-java-package-name='package-only'
 
@@ -357,8 +563,14 @@ mixin list-java-package-field(lbl, model, name, items)
         if block
             block
 
-mixin list-url-field(lbl, model, name, items)
-    +ignite-form-field-text(lbl, model, name, false, true, 'Enter URL')(
+mixin list-url-field(label, model, name, items)
+    +form-field__text({
+        label,
+        model,
+        name,
+        required: true,
+        placeholder: 'Enter URL'
+    })(
         type='url'
 
         data-ignite-unique=items
@@ -377,7 +589,13 @@ mixin list-addresses({ items, name, tip, withPortRange = true })
     )&attributes(attributes)
         list-editable-item-view {{ $item }}
         list-editable-item-edit(item-name='address')
-            +ignite-form-field-text('Address', 'address', '"address"', false, true, 'IP address:port')(
+            +form-field__text({
+                label: 'Address',
+                model: 'address',
+                name: '"address"', 
+                required: true,
+                placeholder: 'IP address:port'
+            })(
                 data-ipaddress='true'
                 data-ipaddress-with-port='true'
                 data-ipaddress-with-port-range=withPortRange
@@ -413,13 +631,29 @@ mixin cacheMode(lbl, model, name, placeholder)
         </ul>'
     )
 
+mixin form-field__cache-modes({ label, model, name, placeholder })
+    +form-field__dropdown({
+        label, model, name, placeholder,
+        options: '[\
+            {value: "LOCAL", label: "LOCAL"},\
+            {value: "REPLICATED", label: "REPLICATED"},\
+            {value: "PARTITIONED", label: "PARTITIONED"}\
+        ]',
+        tip: 'Cache modes:\
+        <ul>\
+            <li>PARTITIONED - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
+            <li>REPLICATED - in this mode all the keys are distributed to all participating nodes</li>\
+            <li>LOCAL - in this mode caches residing on different grid nodes will not know about each other</li>\
+        </ul>'
+    })
+
 //- Mixin for eviction policy.
 mixin evictionPolicy(model, name, enabled, required, tip)
     -var kind = model + '.kind'
     -var policy = model + '[' + kind + ']'
 
     .pc-form-grid-col-60
-        +sane-ignite-form-field-dropdown({
+        +form-field__dropdown({
             label: 'Eviction policy:',
             model: kind,
             name: `${name}+"Kind"`,
@@ -448,7 +682,7 @@ mixin evictionPolicy(model, name, enabled, required, tip)
             )
                 +form-field-feedback(null, 'min', 'Either maximum memory size or maximum size should be greater than 0')
         .pc-form-grid-col-60
-            +sane-ignite-form-field-number({
+            +form-field__number({
                 label: 'Max size:',
                 model: policy + '.maxSize',
                 name: name + '+ "maxSize"',
@@ -528,14 +762,26 @@ mixin list-pair-edit({ items, keyLbl, valLbl, itemName, itemsName })
             - form = '$parent.form'
             .pc-form-grid-row
                 .pc-form-grid-col-30(divider='=')
-                    +ignite-form-field-text(keyLbl, '$item.name', '"name"', false, true, keyLbl)(
+                    +form-field__text({
+                        label: keyLbl,
+                        model: '$item.name',
+                        name: '"name"',
+                        required: true,
+                        placeholder: keyLbl
+                    })(
                         data-ignite-unique=items
                         data-ignite-unique-property='name'
                         ignite-auto-focus
                     )
                         +unique-feedback('"name"', 'Property with such name already exists!')
                 .pc-form-grid-col-30
-                    +ignite-form-field-text(valLbl, '$item.value', '"value"', false, true, valLbl)
+                    +form-field__text({
+                        label: valLbl,
+                        model: '$item.value',
+                        name: '"value"',
+                        required: true,
+                        placeholder: valLbl
+                    })
 
         list-editable-no-items
             list-editable-add-item-button(
@@ -545,8 +791,14 @@ mixin list-pair-edit({ items, keyLbl, valLbl, itemName, itemsName })
             )
 
 //- Mixin for DB dialect.
-mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placeholder)
-    +dropdown-required(lbl, model, name, 'true', required, placeholder, '[\
+mixin dialect(label, model, name, required, tip, genericDialectName, placeholder)
+    +form-field__dropdown({
+        label,
+        model,
+        name,
+        required,
+        placeholder,
+        options: '[\
                 {value: "Generic", label: "' + genericDialectName + '"},\
                 {value: "Oracle", label: "Oracle"},\
                 {value: "DB2", label: "IBM DB2"},\
@@ -555,13 +807,14 @@ mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placehol
                 {value: "PostgreSQL", label: "PostgreSQL"},\
                 {value: "H2", label: "H2 database"}\
         ]',
-        tipTitle +
-        '<ul>\
-            <li>' + genericDialectName + '</li>\
-            <li>Oracle database</li>\
-            <li>IBM DB2</li>\
-            <li>Microsoft SQL Server</li>\
-            <li>MySQL</li>\
-            <li>PostgreSQL</li>\
-            <li>H2 database</li>\
-        </ul>')
+        tip: `${ tip }
+            <ul>
+                <li>${ genericDialectName }</li>
+                <li>Oracle database</li>
+                <li>IBM DB2</li>
+                <li>Microsoft SQL Server</li>
+                <li>MySQL</li>
+                <li>PostgreSQL</li>
+                <li>H2 database</li>
+            </ul>`
+    })
