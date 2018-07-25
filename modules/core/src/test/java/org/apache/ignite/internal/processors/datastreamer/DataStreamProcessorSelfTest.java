@@ -369,13 +369,23 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
-                        GridCacheEntryEx entry = cache0.entryEx(key);
+                        GridCacheEntryEx entry;
+
+                        // lock non obsolete entry
+                        while (true) {
+                            entry = cache0.entryEx(key);
+                            entry.lockEntry();
+                            if (!entry.obsolete())
+                                break;
+                            entry.unlockEntry();
+                        }
 
                         entry.unswap();
 
-                        assertNotNull("Missing entry for key: " + key, entry);
                         assertEquals(new Integer((key < 100 ? -1 : key)),
                             CU.value(entry.rawGet(), cache0.context(), false));
+
+                        entry.unlockEntry();
                     }
                 }
             }
