@@ -22,6 +22,9 @@ import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 
+/**
+ * Asynchronous native process runner.
+ */
 public abstract class AsyncNativeProcessRunner {
     /** Ignite logger. */
     private final IgniteLogger log;
@@ -32,15 +35,32 @@ public abstract class AsyncNativeProcessRunner {
     /** Future of the async process process. */
     private Future<?> fut;
 
+    /**
+     * Constructs a new asynchronous native process runner.
+     *
+     * @param ignite Ignite instance.
+     * @param executor Executor.
+     */
     public AsyncNativeProcessRunner(Ignite ignite, ExecutorService executor) {
         this.log = ignite.log().getLogger(AsyncNativeProcessRunner.class);
         this.executor = executor;
     }
 
+    /**
+     * Method that should be called before starting the process.
+     *
+     * @return Prepared native process runner.
+     */
     public abstract NativeProcessRunner doBefore();
 
+    /**
+     * Method that should be called after starting the process.
+     */
     public abstract void doAfter();
 
+    /**
+     * Starts the process in separate thread.
+     */
     public synchronized void start() {
         if (fut != null)
             throw new IllegalStateException("Async native process has already been started");
@@ -68,11 +88,19 @@ public abstract class AsyncNativeProcessRunner {
         });
     }
 
+    /**
+     * Stops the process.
+     */
     public synchronized void stop() {
         if (fut != null && !fut.isDone())
             fut.cancel(true);
     }
 
+    /**
+     * Checks if process is already completed.
+     *
+     * @return {@code true} if process completed, otherwise {@code false}.
+     */
     public boolean isCompleted() {
         return fut != null && fut.isDone();
     }
