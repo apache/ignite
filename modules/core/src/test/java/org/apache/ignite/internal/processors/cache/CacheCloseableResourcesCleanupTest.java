@@ -32,6 +32,7 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
@@ -41,6 +42,7 @@ import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -170,6 +172,23 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testContinuousQueryRemoteFilterCleanupClient() throws Exception {
+        Ignition.setClientMode(true);
+
+        startGrid(NODES_CNT);
+
+        Ignition.setClientMode(false);
+
+        try {
+            testContinuousQueryRemoteFilterCleanup();
+        } finally {
+            stopGrid(NODES_CNT);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testContinuousQueryRemoteFilterCleanupWithCursor() throws Exception {
         checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
             ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
@@ -208,7 +227,11 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
         throws Exception {
         assertEquals(0, rsrcs.size());
 
-        Ignite node = grid(0);
+        int idx = G.allGrids().size() > NODES_CNT ? NODES_CNT : 0;
+
+        Ignite node = grid(idx);
+
+        assertTrue(idx == 0 || node.cluster().localNode().isClient());
 
         IgniteCache<K, V> cache = node.createCache(ccfg);
 

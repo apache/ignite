@@ -710,9 +710,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (ctx.kernalContext().clientNode())
-            return;
-
         Iterator<Map.Entry<UUID, LocalRoutineInfo>> locIter = locInfos.entrySet().iterator();
 
         while (locIter.hasNext()) {
