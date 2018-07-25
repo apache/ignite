@@ -90,6 +90,11 @@ $btn-content-padding-with-border: 9px 11px;
         -webkit-pointer-events: none;
         pointer-events: none;
     }
+
+    [ignite-icon='plus'] {
+        height: 12px;
+        width: 12px;
+    }
 }
 
 .btn-ignite--primary {

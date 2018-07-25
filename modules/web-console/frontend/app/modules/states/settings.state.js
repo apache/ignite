@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe';
 
-export class PageConfigurationAdvancedCluster {
-    constructor() {
-        this.saveButton = Selector('.pc-form-actions-panel .btn-ignite').withText('Save');
-    }
+import angular from 'angular';
 
-    async save() {
-        await t.click(this.saveButton);
-    }
-}
+angular
+    .module('ignite-console.states.settings', [
+        'ui.router'
+    ])
+    .config(['$stateProvider', function($stateProvider) {
+        // Set up the states.
+        $stateProvider
+            .state('base.settings', {
+                url: '/settings',
+                abstract: true,
+                template: '<ui-view></ui-view>'
+            });
+    }]);
