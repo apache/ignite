@@ -27,7 +27,7 @@ export class NotebooksListCtrl {
 
         this.rowsToShow = 8;
 
-        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
+        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
         const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
 

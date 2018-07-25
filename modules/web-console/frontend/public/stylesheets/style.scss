@@ -33,6 +33,14 @@ body {
     flex: 1 0 auto;
 }
 
+.container--responsive {
+    padding: 0 30px;
+
+    .gridster-wrapper {
+        margin: -20px !important;
+    }
+}
+
 hr {
     margin: 20px 0;
 }
@@ -62,7 +70,7 @@ hr {
 }
 
 .table.table-vertical-middle tbody > tr > td {
-  vertical-align: middle;
+    vertical-align: middle;
 }
 
 .table .ui-grid-settings {
@@ -95,7 +103,7 @@ hr {
 }
 
 .tooltip {
-  word-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .theme-line ul.dropdown-menu {
@@ -288,10 +296,6 @@ body > .wrapper > ui-view {
 
 .use-cache {
     display: flex;
-
-    input[type="checkbox"] {
-        flex: 1 0 auto;
-    }
 }
 
 .group-section {
@@ -1387,8 +1391,8 @@ th[st-sort] {
 // element a background, we're telling Safari that it *really* needs to
 // paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
 .ace_scrollbar-inner {
-	background-color: #FFF;
-	opacity: 0.01;
+    background-color: #FFF;
+    opacity: 0.01;
 
     .ace_dark & {
         background-color: #000;
@@ -1879,7 +1883,7 @@ treecontrol.tree-classic {
 .ribbon {
     position: absolute;
     top: 42px;
-    width: 200px;
+    width: 186px;
     padding: 1px 0;
     color: $btn-primary-color;
     background: $btn-primary-border;
@@ -1892,16 +1896,15 @@ treecontrol.tree-classic {
     transform: rotate(45deg);
 
     > label {
-        display: block;
         padding: 1px 0;
-        height: 24px;
-        line-height: 18px;
-
+        height: 17px;
+        line-height: 12px;
         text-align: center;
         text-decoration: none;
-        font-family: $font-family-sans-serif;
-        font-size: 20px;
-        font-weight: 500;
+        font-family: Roboto, sans-serif;
+        font-size: 16px;
+        display: block;
+        font-weight: 400;
 
         border: 1px solid rgba(255,255,255,0.3);
 
@@ -1951,10 +1954,10 @@ html, body {
 }
 
 .splash:before {
-  content: '';
-  display: inline-block;
-  height: 100%;
-  vertical-align: middle;
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
 }
 
 .spinner {
@@ -2090,15 +2093,31 @@ header.header-with-selector {
 
     div {
         display: flex;
-    }
 
-    .btn-ignite + .btn-ignite-group {
-        position: relative;
-        margin-left: 20px;
+        &:nth-child(2) {
+            .btn-ignite {
+                margin-left: 20px;
+            }
 
-        ul.dropdown-menu {
-            min-width: 100%;
-            font-family: Roboto;
+            .btn-ignite-group {
+                .btn-ignite {
+                    margin-left: 0;
+                }
+            }
+
+            .btn-ignite + .btn-ignite-group {
+                position: relative;
+                margin-left: 20px;
+
+                button {
+                    margin-left: 0;
+                }
+
+                ul.dropdown-menu {
+                    min-width: 100%;
+                    font-family: Roboto;
+                }
+            }
         }
     }
 }
