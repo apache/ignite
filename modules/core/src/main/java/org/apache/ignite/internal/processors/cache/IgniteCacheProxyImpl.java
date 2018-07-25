@@ -1810,6 +1810,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        try {
+            ctx.kernalContext().cache().clearStatistics(Collections.singleton(getName()));
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void preloadPartition(int part) {
         try {
             delegate.preloadPartition(part);

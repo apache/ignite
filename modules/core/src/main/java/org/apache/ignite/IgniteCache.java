@@ -1516,6 +1516,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void enableStatistics(boolean enabled);
 
     /**
+     * Clear cluster statistics for this cache.
+     */
+    public void clearStatistics();
+
+    /**
      * Efficiently preloads cache primary partition into page memory.
      * <p>
      * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
