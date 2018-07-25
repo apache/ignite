@@ -3442,7 +3442,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param ver Version.
      * @param keys Keys to unlock.
      */
-    public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) {
+    public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 

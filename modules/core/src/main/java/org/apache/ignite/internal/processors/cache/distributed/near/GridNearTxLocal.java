@@ -4383,12 +4383,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     public void sendRollbackToSavepointMessages(Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping)
         throws IgniteCheckedException {
         GridNearSavepointUnlockFuture fut = new GridNearSavepointUnlockFuture(this);
+        Map<GridCacheAdapter, List<KeyCacheObject>> locMap = mapping.remove(cctx.localNode());
+
+        if (locMap != null) {
+            for (Map.Entry<GridCacheAdapter, List<KeyCacheObject>> e : locMap.entrySet())
+                e.getKey().unlockAllForSavepoint(xidVer, e.getValue());
+        }
+
         Map<ClusterNode, GridRollbackToSavepointRequest> reqs = createUnlockRequests(mapping, fut);
-
-        Map<GridCacheAdapter, List<KeyCacheObject>> locMap = mapping.get(cctx.localNode());
-
-        if (locMap != null)
-            locMap.forEach((cache, keys) -> cache.unlockAllForSavepoint(xidVer, keys));
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
@@ -4411,9 +4413,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         for (Map.Entry<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> entry : mapping.entrySet()) {
             ClusterNode node = entry.getKey();
-
-            if (node.id() == cctx.localNodeId())
-                continue;
 
             LinkedHashMap<Integer, List<KeyCacheObject>> caches = new LinkedHashMap<>();
 

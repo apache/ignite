@@ -36,7 +36,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -641,7 +640,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (tx.optimistic())
             return;
 
-        Collection<IgniteTxKey> keysToUnlock = unlockLocalCacheKeys(tx, initTxMap);
+        Collection<IgniteTxKey> keysToUnlock = gatherKeysToUnlock(initTxMap);
 
         if (keysToUnlock.isEmpty())
             return;
@@ -695,52 +694,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /**
-     * @param tx Transaction.
      * @param replacedTxMap Tx state before rollback.
      * @return Keys which primary node isn't local.
      */
-    private Collection<IgniteTxKey> unlockLocalCacheKeys(
-        GridNearTxLocal tx,
-        Map<IgniteTxKey, IgniteTxEntry> replacedTxMap
-    ) {
+    private Collection<IgniteTxKey> gatherKeysToUnlock(Map<IgniteTxKey, IgniteTxEntry> replacedTxMap) {
         Collection<IgniteTxKey> keysToUnlock = new ArrayList<>(replacedTxMap.size());
 
         for (Map.Entry<IgniteTxKey, IgniteTxEntry> entry : replacedTxMap.entrySet()) {
-            if (txMap.containsKey(entry.getKey()))
-                continue;
-
-            IgniteTxEntry txEntry = entry.getValue();
-
-            if (txEntry.cached().isLocal())
-                unlockLocalEntry(tx, txEntry);
-            else
+            if (!txMap.containsKey(entry.getKey()))
                 keysToUnlock.add(entry.getKey());
         }
 
         return keysToUnlock;
-    }
-
-    /**
-     * @param tx Transaction.
-     * @param txEntry Local TxEntry to unlock.
-     */
-    private void unlockLocalEntry(GridNearTxLocal tx, IgniteTxEntry txEntry) {
-        while (true) {
-            try {
-                txEntry.cached().txUnlock(tx);
-
-                break;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                if (tx.log().isDebugEnabled()) {
-                    tx.log().debug("Got removed entry in rollbackToSavepoint(..) method (will retry): "
-                        + txEntry);
-                }
-
-                // Renew cache entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
-            }
-        }
     }
 
     /**
