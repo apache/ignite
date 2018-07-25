@@ -118,11 +118,15 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testGet() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache < Integer, Integer > cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -153,11 +157,15 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testPut() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -192,11 +200,15 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testInvoke() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -235,11 +247,15 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testRemove() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 cache.put(key1, 1);
 
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
@@ -273,6 +289,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testPutAll() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
@@ -280,6 +298,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
             int key3 = generateKey(getConfig(), nodes.primaryForKey(), key2 + 1);
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -337,6 +357,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testRemoveAll() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
@@ -344,6 +366,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
             int key3 = generateKey(getConfig(), nodes.primaryForKey(), key2 + 1);
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 cache.put(key1, 1);
                 cache.put(key2, 1);
                 cache.put(key3, 1);
@@ -407,11 +431,15 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     public void testMultipleActions() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -457,6 +485,9 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testGetCrossCacheWithLocal() throws Exception {
+        fail("Cross-cache operations don't work with LOCAL cache. See " +
+            "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+
         checkGetCrossCaches(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + LOCAL.name()).setCacheMode(LOCAL));
     }
@@ -465,6 +496,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testGetCrossCacheWithPartitioned() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL) {
+            fail("Cross-cache operations don't work with LOCAL cache. See " +
+                "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+        }
+
         checkGetCrossCaches(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + PARTITIONED.name()).setCacheMode(PARTITIONED));
     }
@@ -473,6 +509,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testGetCrossCacheWithReplicated() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL) {
+            fail("Cross-cache operations don't work with LOCAL cache. See " +
+                "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+        }
+
         checkGetCrossCaches(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + REPLICATED.name()).setCacheMode(REPLICATED));
     }
@@ -483,6 +524,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
     private void checkGetCrossCaches(CacheConfiguration<Integer, Integer> cfg1,
         CacheConfiguration<Integer, Integer> cfg2) throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache1 = nodes.txOwner().getOrCreateCache(cfg1);
             IgniteCache<Integer, Integer> cache2 = nodes.txOwner().getOrCreateCache(cfg2);
 
@@ -491,6 +534,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
 
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -528,7 +573,10 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testPutMultiCachesWithLocal() throws Exception {
+    public void testPutCrossCacheWithLocal() throws Exception {
+        fail("Cross-cache operations don't work with LOCAL cache. See " +
+            "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+
         checkPutCrossCache(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + LOCAL.name()).setCacheMode(LOCAL));
     }
@@ -537,6 +585,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testPutCrossCacheWithPartitioned() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL) {
+            fail("Cross-cache operations don't work with LOCAL cache. See " +
+                "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+        }
+
         checkPutCrossCache(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + PARTITIONED.name()).setCacheMode(PARTITIONED));
     }
@@ -545,6 +598,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testPutCrossCacheWithReplicated() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL) {
+            fail("Cross-cache operations don't work with LOCAL cache. See " +
+                "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+        }
+
         checkPutCrossCache(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + REPLICATED.name()).setCacheMode(REPLICATED));
     }
@@ -555,6 +613,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
     private void checkPutCrossCache(CacheConfiguration<Integer, Integer> cfg1,
         CacheConfiguration<Integer, Integer> cfg2) throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache1 = nodes.txOwner().getOrCreateCache(cfg1);
             IgniteCache<Integer, Integer> cache2 = nodes.txOwner().getOrCreateCache(cfg2);
 
@@ -562,6 +622,8 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
             int key2 = generateKey(cfg2, nodes.primaryForKey());
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     tx.savepoint("sp");
 
@@ -606,6 +668,9 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testRemoveCrossCacheWithLocal() throws Exception {
+        fail("Cross-cache operations don't work with LOCAL cache. See " +
+            "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+
         checkRemoveCrossCache(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + LOCAL.name()).setCacheMode(LOCAL));
     }
@@ -614,6 +679,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testRemoveCrossCacheWithPartitioned() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL) {
+            fail("Cross-cache operations don't work with LOCAL cache. See " +
+                "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+        }
+
         checkRemoveCrossCache(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + PARTITIONED.name()).setCacheMode(PARTITIONED));
     }
@@ -622,6 +692,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testRemoveCrossCacheWithReplicated() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL) {
+            fail("Cross-cache operations don't work with LOCAL cache. See " +
+                "http://apache-ignite-developers.2346864.n4.nabble.com/Deprecating-LOCAL-cache-tp32964p32977.html");
+        }
+
         checkRemoveCrossCache(getConfig(),
             getConfig().setName(cacheMode().name() + '_' + REPLICATED.name()).setCacheMode(REPLICATED));
     }
@@ -632,14 +707,16 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
     private void checkRemoveCrossCache(CacheConfiguration<Integer, Integer> cfg1,
         CacheConfiguration<Integer, Integer> cfg2) throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache1 = nodes.txOwner().getOrCreateCache(cfg1);
             IgniteCache<Integer, Integer> cache2 = nodes.txOwner().getOrCreateCache(cfg2);
 
             int key1 = generateKey(cfg1, nodes.primaryForKey());
             int key2 = generateKey(cfg2, nodes.primaryForAnotherKey());
-
-
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 cache1.put(key1, 1);
                 cache2.put(key2, 1);
 
@@ -691,12 +768,16 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      */
     private void checkPutMultipleKeys() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
             IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
 
             int key1 = generateKey(getConfig(), nodes.primaryForKey());
             int key2 = generateKey(getConfig(), nodes.primaryForAnotherKey(), key1 + 1);
 
             for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
                 try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
                     cache.put(key1, 0);
 
@@ -805,6 +886,11 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
             this.concurrency = concurrency;
             this.isolation = isolation;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return concurrency + " " + isolation;
+        }
     }
 
     /** */
@@ -848,6 +934,12 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
          */
         IgniteEx primaryForAnotherKey() {
             return grid(primaryIdForAnotherKey);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "txOwner = " + txOwnerNodeId + ", primary = " + primaryIdForKey +
+                ", anotherPrimary = " + primaryIdForAnotherKey;
         }
     }
 }
