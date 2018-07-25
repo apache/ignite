@@ -4383,9 +4383,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     public void sendRollbackToSavepointMessages(Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping)
         throws IgniteCheckedException {
         GridNearSavepointUnlockFuture fut = new GridNearSavepointUnlockFuture(this);
-        Map<GridRollbackToSavepointRequest, Integer> unlockFuts = new HashMap<>();
-
-        Map<ClusterNode, GridRollbackToSavepointRequest> reqs = createUnlockRequests(mapping, fut, unlockFuts);
+        Map<ClusterNode, GridRollbackToSavepointRequest> reqs = createUnlockRequests(mapping, fut);
 
         Map<GridCacheAdapter, List<KeyCacheObject>> locMap = mapping.get(cctx.localNode());
 
@@ -4397,19 +4395,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         for (Map.Entry<ClusterNode, GridRollbackToSavepointRequest> e : reqs.entrySet())
             sendRollbackToSavepointRequest(e.getKey(), e.getValue(), fut);
 
-        awaitSavepointUnlockFuture(fut, unlockFuts);
+        awaitSavepointUnlockFuture(fut);
     }
 
     /**
      * @param mapping Nodes with their cache keys maps.
      * @param fut Savepoint unlock future.
-     * @param unlockFuts Requests with linked mini future ids.
      * @return Nodes with requests to them.
      */
     private Map<ClusterNode, GridRollbackToSavepointRequest> createUnlockRequests(
         Map<ClusterNode, Map<GridCacheAdapter, List<KeyCacheObject>>> mapping,
-        GridNearSavepointUnlockFuture fut,
-        Map<GridRollbackToSavepointRequest, Integer> unlockFuts
+        GridNearSavepointUnlockFuture fut
     ) {
         Map<ClusterNode, GridRollbackToSavepointRequest> res = new HashMap<>();
 
@@ -4431,8 +4427,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 fut.futureId(),
                 miniId
             );
-
-            unlockFuts.put(req, miniId);
 
             res.put(node, req);
         }
@@ -4471,15 +4465,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param fut Savepoint unlock future.
-     * @param unlockFuts Map for savepoint mini future ids.
      * @throws IgniteCheckedException If failed.
      */
-    private void awaitSavepointUnlockFuture(
-        GridNearSavepointUnlockFuture fut,
-        Map<GridRollbackToSavepointRequest, Integer> unlockFuts
-    ) throws IgniteCheckedException {
+    private void awaitSavepointUnlockFuture(GridNearSavepointUnlockFuture fut) throws IgniteCheckedException {
         try {
-            if (unlockFuts.isEmpty())
+            if (fut.futures().isEmpty())
                 return;
 
             if (fut.error() != null)
