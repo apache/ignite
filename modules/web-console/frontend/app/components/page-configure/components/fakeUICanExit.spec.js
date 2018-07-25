@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe';
-import {PanelCollapsible} from '../components/PanelCollapsible';
-import {FormField} from '../components/FormField';
+import {spy} from 'sinon';
+import {assert} from 'chai';
+import {FakeUiCanExitController} from './fakeUICanExit';
 
-export class PageConfigurationAdvancedCluster {
-    constructor() {
-        this._selector = Selector('page-configure-advanced-cluster');
-
-        this.saveButton = Selector('.pc-form-actions-panel .btn-ignite').withText('Save');
-
-        this.sections = {
-            connectorConfiguration: {
-                panel: new PanelCollapsible('Connector configuration'),
-                inputs: {
-                    enable: new FormField({id: 'restEnabledInput'})
-                }
-            }
-        };
-    }
-
-    async save() {
-        await t.click(this.saveButton);
-    }
-}
+suite('Page configuration fakeUIcanExit directive', () => {
+    test('It unsubscribes from state events when destroyed', () => {
+        const $element = {data: () => [{uiCanExit: () => {}}]};
+        const off = spy();
+        const $transitions = {onBefore: () => off};
+        const i = new FakeUiCanExitController($element, $transitions);
+        i.$onInit();
+        i.$onDestroy();
+        assert.ok(off.calledOnce, 'Calls off when destroyed');
+    });
+});
