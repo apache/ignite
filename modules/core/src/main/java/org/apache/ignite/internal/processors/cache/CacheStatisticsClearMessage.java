@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -27,8 +26,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import static java.util.Collections.unmodifiableCollection;
 
 /**
  * Cache statistics clear discovery message.
@@ -59,7 +56,7 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
      */
     public CacheStatisticsClearMessage(UUID reqId, Collection<String> caches) {
         this.reqId = reqId;
-        this.caches = unmodifiableCollection(new HashSet<>(caches));
+        this.caches = caches;
         this.flags = INITIAL_MSG_MASK;
     }
 
