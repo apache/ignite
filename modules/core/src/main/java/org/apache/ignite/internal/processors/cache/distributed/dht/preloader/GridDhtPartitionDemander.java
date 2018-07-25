@@ -362,8 +362,8 @@ public class GridDhtPartitionDemander {
 
             // Add all remaining nodes before first request sent to avoid race between
             // add remaining node and processing response, see RebalanceFuture#checkIsDone(boolean)
-            // Should readd rebalance assignments if requested nodes left topology,
-            // see GridDhtPreloader#rebalanceRequired for details.
+            // Also used to restart rebalance in case affinity is the same but some supplier
+            // nodes left, see GridDhtPreloader#rebalanceRequired for details.
             assignments.forEach((k, v) -> {
                 assert v.partitions() != null :
                     "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";

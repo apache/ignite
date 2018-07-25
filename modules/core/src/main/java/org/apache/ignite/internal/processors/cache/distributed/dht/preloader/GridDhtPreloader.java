@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
@@ -170,23 +168,28 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
         GridDhtPartitionsExchangeFuture exchFut) {
-        final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
-
-        if (ctx.kernalContext().clientNode() || !rebTopVer.initialized())
+        if (ctx.kernalContext().clientNode() || rebTopVer.equals(AffinityTopologyVersion.NONE))
             return false; // No-op.
 
         if (exchFut.localJoinExchange())
-            return true;
+            return true; // Required, can have outdated updSeq partition counter if node reconnects.
 
-        Set<UUID> leftNodes = exchFut.context().events().events().stream()
-            .filter(ExchangeDiscoveryEvents::serverLeftEvent)
-            .map(e -> e.eventNode().id())
-            .collect(Collectors.toSet());
+        final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
-        leftNodes.retainAll(demander.remainingNodes());
+        if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
+            assert exchTopVer.equals(grp.localStartVersion()) :
+                "Empty hisroty allowed only for newly started cache group [exchTopVer=" + exchTopVer +
+                    ", localStartTopVer=" + grp.localStartVersion() + ']';
 
-        return assignsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
-            !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
+            return true; // Required, since no history info available.
+        }
+
+        Collection<UUID> aliveNodes = ctx.discovery().aliveServerNodes().stream()
+            .map(ClusterNode::id)
+            .collect(Collectors.toList());
+
+        return assignmentsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
+            !aliveNodes.containsAll(demander.remainingNodes()); // Some of nodes left before rabalance future compelete.
     }
 
     /**
@@ -194,19 +197,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param newTopVer New topology version to check result.
      * @return {@code True} if affinity assignments changed between two versions for local node.
      */
-    private boolean assignsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
+    private boolean assignmentsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
         final AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
 
         // We should get affinity assignments based on previous rebalance to calculate difference.
         // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
         final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
-            grp.affinity().cachedAffinity(oldTopVer) : aff;
+            grp.affinity().cachedAffinity(oldTopVer) : null;
 
-        boolean assignsChanged = prevAff == aff; // Changed, since no history info available.
+        if (prevAff == null)
+            return false;
 
-        assert !assignsChanged || newTopVer.equals(grp.localStartVersion()) :
-            "Empty hisroty allowed only for newly started cache group [newTopVer=" + newTopVer +
-                ", localStartTopVer=" + grp.localStartVersion() + ']';
+        boolean assignsChanged = false;
 
         for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
             assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());

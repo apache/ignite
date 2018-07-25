@@ -2583,8 +2583,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 refreshPartitions();
                         }
 
-                        if (!cctx.kernalContext().clientNode() &&
-                            (!rebTopVer.initialized() || exchFut == null)) { // Skip it as not marked for rebalance.
+                        // Schedule rebalance if force rebalance or force reassign occurs.
+                        if (exchFut == null)
+                            rebTopVer = AffinityTopologyVersion.NONE;
+
+                        if (!cctx.kernalContext().clientNode() && rebTopVer.equals(AffinityTopologyVersion.NONE)) {
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
@@ -2600,14 +2603,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                // Schedule rebalance for force rebalance or force reassign.
-                                if (resVer == null) {
-                                    resVer = grp.topology().readyTopologyVersion();
-
-                                    rebTopVer = AffinityTopologyVersion.NONE;
-                                }
-
                                 assignsMap.put(grp.groupId(), assigns);
+
+                                if (resVer == null)
+                                    resVer = grp.topology().readyTopologyVersion();
                             }
                         }
                     }
