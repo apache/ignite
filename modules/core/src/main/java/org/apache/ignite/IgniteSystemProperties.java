@@ -477,8 +477,8 @@ public final class IgniteSystemProperties {
     /** Force all SQL queries to be processed lazily regardless of what clients request. */
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
-    /** Disable ignite SQL meta views. */
-    public static final String IGNITE_SQL_DISABLE_META_VIEWS = "IGNITE_SQL_DISABLE_META_VIEWS";
+    /** Disable Ignite SQL meta views. */
+    public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
 
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
