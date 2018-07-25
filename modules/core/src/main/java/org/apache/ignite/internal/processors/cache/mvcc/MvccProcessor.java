@@ -748,12 +748,8 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         try {
             sendMessage(nodeId, tx != null ? new MvccTxSnapshotRequest(id) : new MvccQuerySnapshotRequest(id));
         }
-        catch (ClusterTopologyCheckedException e) { // Node left
-            if (map.remove(id) != null)
-                lsnr.onError(e);
-        }
         catch (IgniteCheckedException e) {
-            if (removeSnapshotListener(nodeId, id) != null)
+            if (map.remove(id) != null)
                 lsnr.onError(e);
         }
     }
@@ -797,24 +793,6 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         res.init(futId, crdVer, ver, MVCC_START_OP_CNTR, cleanup, tracking);
 
         return res;
-    }
-
-    private MvccSnapshotResponseListener removeSnapshotListener(UUID nodeId, long id) {
-        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId);
-
-        return map != null ? map.remove(id) : null;
-    }
-
-    private void onNodeFail(UUID nodeId, ClusterTopologyCheckedException ex) {
-        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.remove(nodeId);
-
-        if (map != null) {
-            MvccSnapshotResponseListener lsnr;
-
-            for (long id : map.keySet())
-                if ((lsnr = map.remove(id)) != null)
-                    lsnr.onError(ex);
-        }
     }
 
     /**
@@ -1416,9 +1394,9 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      * @param msg Message.
      */
     private void processCoordinatorSnapshotResponse(UUID nodeId, MvccSnapshotResponse msg) {
-        MvccSnapshotResponseListener lsnr = removeSnapshotListener(nodeId, msg.futureId());
+        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId); MvccSnapshotResponseListener lsnr;
 
-        if (lsnr != null)
+        if (map != null && (lsnr = map.remove(msg.futureId())) != null)
             lsnr.onResponse(msg);
         else {
             if (ctx.discovery().alive(nodeId))
@@ -1739,8 +1717,19 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
 
             UUID nodeId = discoEvt.eventNode().id();
 
-            onNodeFail(nodeId, new ClusterTopologyCheckedException("Failed to request mvcc " +
-                "version, coordinator failed: " + nodeId));
+            Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.remove(nodeId);
+
+            if (map != null) {
+                ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("Failed to request mvcc " +
+                    "version, coordinator failed: " + nodeId);
+
+                MvccSnapshotResponseListener lsnr;
+
+                for (Long id : map.keySet()) {
+                    if ((lsnr = map.remove(id)) != null)
+                        lsnr.onError(ex);
+                }
+            }
 
             for (WaitAckFuture fut : ackFuts.values())
                 fut.onNodeLeft(nodeId);
