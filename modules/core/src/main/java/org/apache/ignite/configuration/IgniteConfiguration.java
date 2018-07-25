@@ -217,6 +217,9 @@ public class IgniteConfiguration {
     /** Default partition map exchange hard timeout in millis. */
     public static final long DFLT_EXCHANGE_HARD_TIMEOUT = -1;
 
+    /** Default exchange timeout safe mode. */
+    public static final boolean DFLT_EXCHANGE_TIMEOUT_SAFE_MODE = false;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -502,6 +505,9 @@ public class IgniteConfiguration {
     /** Exchange hard timeout. */
     private long exchangeHardTimeout = DFLT_EXCHANGE_HARD_TIMEOUT;
 
+    /** Exchange timeout safe mode. */
+    private boolean exchangeTimeoutSafeMode = DFLT_EXCHANGE_TIMEOUT_SAFE_MODE;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -558,6 +564,7 @@ public class IgniteConfiguration {
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         exchangeHardTimeout = cfg.getExchangeHardTimeout();
+        exchangeTimeoutSafeMode = cfg.isExchangeTimeoutSafeMode();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
@@ -3026,6 +3033,22 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setExchangeHardTimeout(long timeout) {
         this.exchangeHardTimeout = timeout;
+
+        return this;
+    }
+
+    /**
+     *
+     */
+    public boolean isExchangeTimeoutSafeMode() {
+        return exchangeTimeoutSafeMode;
+    }
+
+    /**
+     * @param safeMode Safe mode.
+     */
+    public IgniteConfiguration setExchangeTimeoutSafeMode(boolean safeMode) {
+        this.exchangeTimeoutSafeMode = safeMode;
 
         return this;
     }

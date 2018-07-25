@@ -1277,10 +1277,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.warning("Exchange timeout reached on coordinator node, kicking pending nodes: " +
                         S.arrayToString(UUID.class, remaining0.toArray()));
 
-                    for (UUID remainingUuid : remaining0)
-                        cctx.discovery().failNode(remainingUuid, null);
+                    Set<UUID> failedNodes = new HashSet<>();
+
+                    for (UUID remainingUuid : remaining0) {
+                        if (!cctx.gridConfig().isExchangeTimeoutSafeMode()
+                            || isSafeToFailNode(remainingUuid, failedNodes)) {
+                            failedNodes.add(remainingUuid);
+
+                            cctx.discovery().failNode(remainingUuid, null);
+                        }
+                    }
                 }
-                else {
+                else if (!cctx.gridConfig().isExchangeTimeoutSafeMode()){
                     try {
                         log.warning("Exchange timeout reached on non-coordinator node, " +
                             "sending check request to coordinator");
@@ -1303,6 +1311,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    private boolean isSafeToFailNode(UUID nodeId, Set<UUID> alreadyFailedNodes) {
+        throw new UnsupportedOperationException("Not implemented"); //TODO
     }
 
     /**
