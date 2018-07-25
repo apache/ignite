@@ -2604,15 +2604,12 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                if (!grid0.context().invalid())
+                if (grid0.context().segmented())
+                    state = STOPPED_ON_SEGMENTATION;
+                else if (grid0.context().invalid())
+                    state = STOPPED_ON_FAILURE;
+                else
                     state = STOPPED;
-                else {
-                    FailureContext failure = grid0.context().failure().failureContext();
-
-                    state = failure.type() == FailureType.SEGMENTATION ?
-                        STOPPED_ON_SEGMENTATION :
-                        STOPPED_ON_FAILURE;
-                }
 
                 grid = null;
 
