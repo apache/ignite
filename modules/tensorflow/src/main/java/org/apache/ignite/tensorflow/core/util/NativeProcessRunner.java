@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -71,7 +72,13 @@ public class NativeProcessRunner {
             throw new RuntimeException(e);
         }
 
-        Thread shutdownHook = new Thread(proc::destroy);
+        AtomicBoolean shutdown = new AtomicBoolean();
+
+        Thread shutdownHook = new Thread(() -> {
+            shutdown.set(true);
+            proc.destroy();
+        });
+
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
         Future<?> outForward = forwardStream(proc.getInputStream(), out);
@@ -93,10 +100,12 @@ public class NativeProcessRunner {
                 throw e;
             }
 
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            if (!shutdown.get()) {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
 
-            if (status != 0)
-                throw new IllegalStateException("Native process exit [status=" + status + "]");
+                if (status != 0)
+                    throw new IllegalStateException("Native process exit [status=" + status + "]");
+            }
         }
         finally {
             outForward.cancel(true);

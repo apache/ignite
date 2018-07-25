@@ -138,14 +138,8 @@ public class TensorFlowClusterMaintainer implements Service {
                 TensorFlowCluster cluster = clusterMgr.createCluster(
                     clusterId,
                     jobArchive,
-                    str -> {
-                        System.out.println(str);
-                        ignite.message().sendOrdered("us_out_" + clusterId, str, 60 * 1000);
-                    },
-                    str -> {
-                        System.err.println(str);
-                        ignite.message().sendOrdered("us_err_" + clusterId, str, 60 * 1000);
-                    }
+                    str -> ignite.message().sendOrdered("us_out_" + clusterId, str, 60 * 1000),
+                    str -> ignite.message().sendOrdered("us_err_" + clusterId, str, 60 * 1000)
                 );
 
                 ignite.message().send(topicName, Optional.of(cluster));
