@@ -3045,9 +3045,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 openSock = true;
 
-//                                setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
-//                                    + ":" + sock.getPort());
-
                                 // Handshake.
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
