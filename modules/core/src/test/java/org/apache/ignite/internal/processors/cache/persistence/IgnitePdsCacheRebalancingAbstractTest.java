@@ -142,10 +142,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         cfg.setCacheConfiguration(asArray(cacheCfgs));
 
+        String storePath = storePath();
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
             .setCheckpointFrequency(checkpointFrequency())
             .setWalMode(WALMode.LOG_ONLY)
+            .setStoragePath(storePath)
+            .setWalPath(storePath + "/wal")
+            .setWalArchivePath(storePath + "/archive")
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
