@@ -33,20 +33,26 @@ public class DecisionTreeData implements AutoCloseable {
 
     /** Indexes cache. */
     private final List<TreeDataIndex> indexesCache;
+
+    /** Build index. */
+    private final boolean buildIndex;
+
     /**
      * Constructs a new instance of decision tree data.
      *
      * @param features Matrix with features.
      * @param labels Vector with labels.
      */
-    public DecisionTreeData(double[][] features, double[] labels) {
+    public DecisionTreeData(double[][] features, double[] labels, boolean buildIndex) {
         assert features.length == labels.length : "Features and labels have to be the same length";
 
         this.features = features;
         this.labels = labels;
+        this.buildIndex = buildIndex;
 
         indexesCache = new ArrayList<>();
-        indexesCache.add(new TreeDataIndex(features, labels));
+        if (buildIndex)
+            indexesCache.add(new TreeDataIndex(features, labels));
     }
 
     /**
@@ -76,7 +82,7 @@ public class DecisionTreeData implements AutoCloseable {
             }
         }
 
-        return new DecisionTreeData(newFeatures, newLabels);
+        return new DecisionTreeData(newFeatures, newLabels, buildIndex);
     }
 
     /**
@@ -136,8 +142,8 @@ public class DecisionTreeData implements AutoCloseable {
     }
 
     /**
-     * Builds index in according to current tree depth and cached indexes in upper levels.
-     * Uses depth as key of cached index and replaces cached index with same key.
+     * Builds index in according to current tree depth and cached indexes in upper levels. Uses depth as key of cached
+     * index and replaces cached index with same key.
      *
      * @param depth Tree Depth.
      * @param filter Filter.
@@ -145,14 +151,18 @@ public class DecisionTreeData implements AutoCloseable {
     public TreeDataIndex createIndexByFilter(int depth, TreeFilter filter) {
         assert depth >= 0 && depth <= indexesCache.size();
 
-        if(depth > 0 && depth <= indexesCache.size() - 1) {
-            for(int i = indexesCache.size() - 1; i >= depth; i--)
+        if (depth > 0 && depth <= indexesCache.size() - 1) {
+            for (int i = indexesCache.size() - 1; i >= depth; i--)
                 indexesCache.remove(i);
         }
 
-        if(depth == indexesCache.size()) {
-            TreeDataIndex lastIndex = indexesCache.get(depth - 1);
-            indexesCache.add(lastIndex.filter(filter));
+        if (depth == indexesCache.size()) {
+            if (depth == 0)
+                indexesCache.add(new TreeDataIndex(features, labels));
+            else {
+                TreeDataIndex lastIndex = indexesCache.get(depth - 1);
+                indexesCache.add(lastIndex.filter(filter));
+            }
         }
 
         return indexesCache.get(depth);

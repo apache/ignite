@@ -78,7 +78,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
         )) {
             return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset, useIndex));
         }
