@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
-import org.codehaus.jackson.map.annotate.JsonRootName;
 
 /**
  * This TCP Discovery IP Finder uses Apache ZooKeeper (ZK) to locate peer nodes when bootstrapping in order to join
