@@ -38,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.util.TestTcpCommunicationSpi;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,7 +63,7 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        BanningCommunicationSpi commSpi = new BanningCommunicationSpi();
+        TestTcpCommunicationSpi commSpi = new TestTcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
@@ -133,10 +134,14 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
         int key1 = generateKey(ignite, 0);
         int key2 = generateKey(ignite, key1 + 1);
 
-        if (failOnPrimary)
-            communication(0).bannedClasses(Collections.singletonList(GridRollbackToSavepointRequest.class));
-        else
-            communication(1).bannedClasses(Collections.singletonList(GridDhtUnlockRequest.class));
+        if (failOnPrimary) {
+            TestTcpCommunicationSpi.skipMsgs(ignite(0),
+                Collections.singletonList(GridRollbackToSavepointRequest.class));
+        }
+        else {
+            TestTcpCommunicationSpi.skipMsgs(ignite(1),
+                Collections.singletonList(GridDhtUnlockRequest.class));
+        }
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             tx.timeout(1_000);
@@ -231,13 +236,5 @@ public class TxSavepointsTransactionalCacheFailoverTest extends GridCommonAbstra
                 && aff.isBackup(ignite(2).cluster().localNode(), key))
                 return key;
         }
-    }
-
-    /**
-     * @param idx Index.
-     * @return Communication SPI.
-     */
-    private BanningCommunicationSpi communication(int idx) {
-        return (BanningCommunicationSpi)ignite(idx).configuration().getCommunicationSpi();
     }
 }

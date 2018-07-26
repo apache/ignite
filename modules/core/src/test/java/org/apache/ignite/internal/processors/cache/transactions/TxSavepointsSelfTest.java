@@ -468,8 +468,11 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
      * @param nearCache If {@code true} near cache is enabled.
      * @return Cache configuration.
      */
-    private CacheConfiguration<String, Integer> cacheConfiguration(CacheMode cacheMode, int backups,
-        boolean nearCache) {
+    private CacheConfiguration<String, Integer> cacheConfiguration(
+        CacheMode cacheMode,
+        int backups,
+        boolean nearCache
+    ) {
         CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
@@ -489,7 +492,6 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
 
     /**
      * @param c Closure.
-     * @throws Exception If failed.
      */
     private void executeTestForAllCaches(CIX2<Ignite, IgniteCache<String, Integer>> c) {
         for (CacheConfiguration<String, Integer> ccfg : cacheConfigurations()) {

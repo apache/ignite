@@ -17,29 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -48,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.util.TestTcpCommunicationSpi;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -79,7 +73,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        BanningCommunicationSpi commSpi = new BanningCommunicationSpi();
+        TestTcpCommunicationSpi commSpi = new TestTcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
@@ -220,15 +214,21 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch commitLatch = new CountDownLatch(1);
 
-            if (!commit)
-                communication(1).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareRequest.class));
+            if (!commit) {
+                TestTcpCommunicationSpi.skipMsgs(ignite(1),
+                    Collections.singletonList(GridDhtTxPrepareRequest.class));
+            }
             else {
                 if (!backup) {
-                    communication(2).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
-                    communication(3).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
+                    TestTcpCommunicationSpi.skipMsgs(ignite(2),
+                        Collections.singletonList(GridDhtTxPrepareResponse.class));
+                    TestTcpCommunicationSpi.skipMsgs(ignite(3),
+                        Collections.singletonList(GridDhtTxPrepareResponse.class));
                 }
-                else
-                    communication(0).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
+                else {
+                    TestTcpCommunicationSpi.skipMsgs(ignite(0),
+                        Collections.singletonList(GridDhtTxPrepareResponse.class));
+                }
             }
 
             IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
@@ -361,14 +361,6 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         }
 
         backupCache.context().evicts().touch(dhtEntry, null);
-    }
-
-    /**
-     * @param idx Index.
-     * @return Communication SPI.
-     */
-    private BanningCommunicationSpi communication(int idx) {
-        return (BanningCommunicationSpi)ignite(idx).configuration().getCommunicationSpi();
     }
 
     /**

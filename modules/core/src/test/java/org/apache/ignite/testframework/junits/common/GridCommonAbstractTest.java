@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
