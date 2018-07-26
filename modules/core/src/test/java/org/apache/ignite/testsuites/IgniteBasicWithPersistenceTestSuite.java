@@ -18,23 +18,34 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.failure.AccountTransferTransactionTest;
+import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 /**
- *
+ * Basic test suite.
  */
-public class IgniteBinaryObjectsComputeGridTestSuite {
+public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+        return suite(null);
+    }
 
-        TestSuite suite = IgniteComputeGridTestSuite.suite();
+    /**
+     * @param ignoredTests Tests don't include in the execution. Providing null means nothing to exclude.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) throws Exception {
+        TestSuite suite = new TestSuite("Ignite Basic With Persistence Test Suite");
 
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
+        suite.addTestSuite(IoomFailureHandlerTest.class);
+        suite.addTestSuite(AccountTransferTransactionTest.class);
 
         return suite;
     }
