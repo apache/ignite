@@ -2685,7 +2685,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             rebTopVer = resVer;
 
-                            r.run(); // Starts rebalancing routine.
+                            // Start rebalancing the chain of cache groups. Each group will be
+                            // rebalanced sequentially one by one e.g.:
+                            // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
+                            r.run();
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
@@ -184,12 +186,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
-        Collection<UUID> aliveNodes = ctx.discovery().aliveServerNodes().stream()
-            .map(ClusterNode::id)
-            .collect(Collectors.toList());
+        Set<UUID> leftNodes = exchFut.context().events().events().stream()
+            .filter(ExchangeDiscoveryEvents::serverLeftEvent)
+            .map(e -> e.eventNode().id())
+            .collect(Collectors.toSet());
+
+        leftNodes.retainAll(demander.remainingNodes());
 
         return assignmentsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
-            !aliveNodes.containsAll(demander.remainingNodes()); // Some of nodes left before rabalance future compelete.
+            !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
     }
 
     /**
