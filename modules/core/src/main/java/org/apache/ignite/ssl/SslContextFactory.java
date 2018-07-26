@@ -284,11 +284,19 @@ public class SslContextFactory implements Factory<SSLContext> {
         return new DisabledX509TrustManager();
     }
 
-    public void setSSLParameters(SSLParameters sslParameters) {
+    /**
+     * Sets {@link SSLParameters}.
+     * @param sslParameters SSLParameters instance
+     */
+    public void setSslParameters(SSLParameters sslParameters) {
         this.sslParameters = sslParameters;
     }
 
-    public SSLParameters getSSLParameters() {
+    /**
+     * Gets SSLParameters instance.
+     * @return {@link SSLParameters}
+     */
+    public SSLParameters getSslParameters() {
         return sslParameters;
     }
 
