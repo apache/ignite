@@ -169,15 +169,11 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.get(srcArr, 0, pageSize);
 
+        //see EncryptedDataPageIO#shouldByReserved(int)
+        //see EncryptedDataPageIO#setEmptyPage(long, int)
         assert srcArr[srcArr.length - encryptionOverhead - 1] == 0 &&
-            srcArr[srcArr.length - 1] == 0;
+            srcArr[srcArr.length - 1] == 0 : "Tail of srcArr should be empty";
 
-        /*
-         * Expecting that tail of {@code srcArr} will be empty.
-         *
-         * @see EncryptedDataPageIO#shouldByReserved(int)
-         * @see EncryptedDataPageIO#setEmptyPage(long, int)
-         */
         byte[] encrypted = encSpi.encrypt(srcArr, key(), 0, srcArr.length - encryptionOverhead);
 
         return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
