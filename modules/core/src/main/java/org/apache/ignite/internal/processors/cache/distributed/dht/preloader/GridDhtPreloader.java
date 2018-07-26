@@ -171,9 +171,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (ctx.kernalContext().clientNode() || rebTopVer.equals(AffinityTopologyVersion.NONE))
             return false; // No-op.
 
-        if (exchFut.localJoinExchange() || // Required, can have outdated updSeq partition counter if node reconnects.
-            !grp.affinity().cachedVersions().contains(rebTopVer)) // Required, since no history info available.
-            return true;
+        if (exchFut.localJoinExchange())
+            return true; // Required, can have outdated updSeq partition counter if node reconnects.
+
+        if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
+            assert rebTopVer.compareTo(grp.localStartVersion()) < 0 :
+                "Empty hisroty allowed only for newly started cache group [rebTopVer=" + rebTopVer +
+                    ", localStartTopVer=" + grp.localStartVersion() + ']';
+
+            return true; // Required, since no history info available.
+        }
 
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
