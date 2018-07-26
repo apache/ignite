@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Store implementation wrapping {@link CacheLoader} and {@link CacheWriter}.
  */
-class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAware, Serializable, Closeable {
+class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAware, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -86,6 +86,12 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
 
         if (writer instanceof LifecycleAware)
             ((LifecycleAware)writer).stop();
+
+        if (ldr instanceof Closeable)
+            U.closeQuiet((Closeable)ldr);
+
+        if (writer instanceof Closeable)
+            U.closeQuiet((Closeable)writer);
     }
 
     /** {@inheritDoc} */
@@ -149,14 +155,5 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLoaderWriterStore.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (ldr instanceof Closeable)
-            U.closeQuiet((Closeable)ldr);
-
-        if (writer instanceof Closeable)
-            U.closeQuiet((Closeable)writer);
     }
 }
