@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
@@ -79,6 +80,12 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
  */
 @GridToStringExclude
 public class GridCacheSharedContext<K, V> {
+    /**
+     * Transaction savepoints introduced in this Ignite version.
+     * TODO: change me before merge.
+     */
+    private static final IgniteProductVersion TX_SAVEPOINTS_SINCE = IgniteProductVersion.fromString("2.7.0");
+
     /** Kernal context. */
     private GridKernalContext kernalCtx;
 
@@ -1108,6 +1115,12 @@ public class GridCacheSharedContext<K, V> {
      */
     public void savepoint(GridNearTxLocal tx, String name, boolean overwrite) throws IgniteCheckedException {
         assert name != null;
+
+        for (ClusterNode node : kernalCtx.grid().cluster().nodes()) {
+            if (node.version().compareTo(TX_SAVEPOINTS_SINCE) < 0)
+                throw new IllegalStateException("All nodes in cluster should be " + TX_SAVEPOINTS_SINCE
+                    + " or greater to use savepoints! [nodeId=" + node.id() + "]");
+        }
 
         tx.txState().awaitLastFuture(this);
 
