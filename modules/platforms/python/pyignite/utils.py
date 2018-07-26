@@ -99,3 +99,13 @@ def cache_id(cache: Union[str, int]) -> int:
     :return: cache ID.
     """
     return cache if type(cache) is int else hashcode(cache)
+
+
+def entity_id(cache: Union[str, int]) -> int:
+    """
+    Create a type ID from type name or field ID from field name.
+
+    :param cache: entity name or ID,
+    :return: entity ID.
+    """
+    return cache if type(cache) is int else hashcode(cache.lower())

@@ -18,7 +18,7 @@ from pyignite.api import (
     cache_get_or_create, sql, sql_cursor_get_page,
     cache_get_configuration,
 )
-from pyignite.utils import hashcode, unwrap_binary
+from pyignite.utils import entity_id, unwrap_binary
 
 initial_data = [
         ('John', 'Doe', 5),
@@ -90,7 +90,7 @@ def test_sql(conn):
 
     for wrapped_object in result.value['data'].values():
         data = unwrap_binary(conn, wrapped_object)
-        assert data['type_id'] == hashcode(binary_type_name.lower())
+        assert data['type_id'] == entity_id(binary_type_name)
 
     cursor = result.value['cursor']
 
@@ -100,7 +100,7 @@ def test_sql(conn):
 
         for wrapped_object in result.value['data'].values():
             data = unwrap_binary(conn, wrapped_object)
-            assert data['type_id'] == hashcode(binary_type_name.lower())
+            assert data['type_id'] == entity_id(binary_type_name)
 
     # repeat cleanup
     result = sql_fields(conn, 'PUBLIC', drop_query, page_size)

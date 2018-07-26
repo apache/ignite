@@ -26,7 +26,7 @@ from pyignite.datatypes import (
     BinaryObject, BoolObject, DateObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.internal import tc_map
-from pyignite.utils import hashcode, unwrap_binary
+from pyignite.utils import unwrap_binary
 
 
 # prepare old data
@@ -131,9 +131,7 @@ for key, value in old_data:
         value_hint=BinaryObject,
     )
 
-type_id = hashcode('ExpenseVoucher'.lower())
-
-result = get_binary_type(conn, type_id)
+result = get_binary_type(conn, 'ExpenseVoucher')
 print(result.value)
 
 # {

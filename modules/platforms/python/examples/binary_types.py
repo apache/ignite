@@ -20,7 +20,7 @@ from pyignite.api import (
     cache_get_configuration, get_binary_type, scan,
 )
 from pyignite.connection import Connection
-from pyignite.utils import hashcode, unwrap_binary
+from pyignite.utils import entity_id, unwrap_binary
 
 PAGE_SIZE = 5
 
@@ -287,10 +287,10 @@ print(dict(result.value))
 # }
 
 key_binary_type_name = result.value['query_entities'][0]['key_type_name']
-key_binary_type_id = hashcode(key_binary_type_name.lower())
+key_binary_type_id = entity_id(key_binary_type_name)
 
 value_binary_type_name = result.value['query_entities'][0]['value_type_name']
-value_binary_type_id = hashcode(value_binary_type_name.lower())
+value_binary_type_id = entity_id(value_binary_type_name)
 
 print(key_binary_type_id, value_binary_type_id)
 
