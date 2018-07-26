@@ -79,7 +79,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     protected Boolean recovery;
 
     /** List of savepoints for this transaction, which is used to retrieve previous states. */
-    protected LinkedList<TxSavepoint> savepoints;
+    private LinkedList<TxSavepoint> savepoints;
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -545,9 +545,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (savepoints == null)
             savepoints = new LinkedList<>();
 
-        for (IgniteTxEntry entry : allEntries()) {
-            if (!isKeyAlreadySaved(entry))
-                txMapSnapshotPiece.put(entry.txKey(), entry.copy());
+        for (IgniteTxEntry txEntry : allEntries()) {
+            if (!isKeyAlreadySaved(txEntry))
+                txMapSnapshotPiece.put(txEntry.txKey(), txEntry.copy());
         }
 
         savepoints.add(new TxSavepoint(name, txMapSnapshotPiece));
@@ -556,14 +556,14 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /**
      * Checks that entry is already saved in any existing savepoint.
      *
-     * @param entry Entry.
+     * @param txEntry Entry.
      * @return {code True} if entry is saved, otherwise - {code false}.
      */
-    private boolean isKeyAlreadySaved(IgniteTxEntry entry) {
+    private boolean isKeyAlreadySaved(IgniteTxEntry txEntry) {
         for (TxSavepoint sp : savepoints) {
-            IgniteTxEntry savedEntry = sp.getTxMapSnapshotPiece().get(entry.txKey());
+            IgniteTxEntry savedEntry = sp.getTxMapSnapshotPiece().get(txEntry.txKey());
 
-            if (savedEntry != null && savedEntry.equals(entry))
+            if (savedEntry != null && savedEntry.equals(txEntry))
                 return true;
         }
 
