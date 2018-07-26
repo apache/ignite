@@ -91,7 +91,7 @@ Destroy created cache and close connection.
 SQL
 ---
 
-This examples are similar to the ones given in the Apache Ignite SQL
+These examples are similar to the ones given in the Apache Ignite SQL
 Documentation: `Getting Started`_.
 
 Setup
