@@ -17,19 +17,15 @@ from pyignite.api import (
     scan, cache_create, scan_cursor_get_page, resource_close, cache_put_all,
 )
 from pyignite.connection import Connection
-from pyignite.utils import hashcode
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_name = 'my cache'
-hash_code = hashcode(cache_name)
-
-cache_create(conn, cache_name)
+cache_create(conn, 'my cache')
 
 page_size = 10
 
-cache_put_all(conn, hash_code, {
+cache_put_all(conn, 'my cache', {
         'key_{}'.format(v): v for v in range(page_size * 2)
     })
 
@@ -42,7 +38,7 @@ cache_put_all(conn, hash_code, {
 #     'key_19': 19
 # }
 
-result = scan(conn, hash_code, page_size)
+result = scan(conn, 'my cache', page_size)
 print(dict(result.value))
 # {
 #     'cursor': 1,

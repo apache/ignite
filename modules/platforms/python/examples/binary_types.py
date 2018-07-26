@@ -213,17 +213,17 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
+    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
+    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
 
 # load data
 for row in COUNTRY_DATA:
     sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         COUNTRY_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
@@ -232,7 +232,7 @@ for row in COUNTRY_DATA:
 for row in CITY_DATA:
     sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         CITY_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
@@ -241,7 +241,7 @@ for row in CITY_DATA:
 for row in LANGUAGE_DATA:
     sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         LANGUAGE_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
@@ -258,7 +258,7 @@ print(result.value)
 #     'SQL_PUBLIC_COUNTRYLANGUAGE'
 # ]
 
-result = cache_get_configuration(conn, hashcode('SQL_PUBLIC_CITY'))
+result = cache_get_configuration(conn, 'SQL_PUBLIC_CITY')
 print(dict(result.value))
 
 # {
@@ -331,7 +331,7 @@ print(result.value)
 #     ]
 # }
 
-result = scan(conn, hashcode('SQL_PUBLIC_CITY'), 1)
+result = scan(conn, 'SQL_PUBLIC_CITY', 1)
 print(result.value['data'])
 
 # {

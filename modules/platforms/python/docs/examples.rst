@@ -12,42 +12,42 @@ Open connection
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 16-23
+  :lines: 16-22
 
 Create cache
 ============
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 25-28
+  :lines: 24
 
 Put value in cache
 ==================
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 30-31
+  :lines: 26-27
 
 Get value from cache
 ====================
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 33-37
+  :lines: 29-33
 
 List keys in cache
 ==================
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 39-40
+  :lines: 35-36
 
 Type hints usage
 ================
 
 .. literalinclude:: ../examples/type_hints.py
   :language: python
-  :lines: 30-49
+  :lines: 29-48
 
 Scan queries
 ============
@@ -56,26 +56,26 @@ Scan queries allows you to browse cache contents with pagination.
 
 .. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 30-31, 45-58
+  :lines: 24-54
 
 Subsequent scans could be made using cursor ID.
 
 .. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 60-73
+  :lines: 56-69
 
 When cursor have no more data, it gets automatically destroyed.
 
 .. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 75-77
+  :lines: 71-73
 
 If your cursor still holds some data, but you have no use of it anymore,
 you may destroy it manually.
 
 .. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 79
+  :lines: 75
 
 Do cleanup
 ==========
@@ -84,7 +84,7 @@ Destroy created cache and close connection.
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 42-43
+  :lines: 38-39
 
 .. _sql_examples:
 
@@ -108,19 +108,19 @@ tables `City` and `CountryLanguage`.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 32-49, 58-66, 74-81, 208-214
+  :lines: 32-48, 58-65, 74-80, 209-214
 
 Create indexes.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 67-69, 82-84, 216-218
+  :lines: 67-68, 82-83, 217-218
 
 Fill tables with data.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 50-57, 70-73, 85-88, 220-246
+  :lines: 50-56, 70-72, 85-87, 221-246
 
 Data samples is taken from `Ignite GitHub repository`_.
 
@@ -131,7 +131,7 @@ What are the 10 largest cities in our data sample (population-wise)?
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 24, 248-267
+  :lines: 24, 249-267
 
 We were happy with :py:func:`~pyignite.api.sql.sql_fields` so far. But this
 time we configured `PAGE_SIZE` to be 5, but requested 10 rows in the query.
@@ -160,7 +160,7 @@ Finally, delete the tables used in this example with the following queries:
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 89-90, 354-369
+  :lines: 89, 354-369
 
 Complex objects
 ---------------
@@ -357,7 +357,7 @@ Launch 3 Ignite nodes on `localhost` and run:
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 16-65
+  :lines: 16-64
 
 Then try shutting down and restarting nodes, and see what happens. At least
 one node should remain active.

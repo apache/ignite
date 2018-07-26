@@ -23,7 +23,6 @@ from pyignite.api import (
 )
 from pyignite.connection import Connection
 from pyignite.datatypes.prop_codes import *
-from pyignite.utils import hashcode
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
@@ -99,7 +98,7 @@ schema_id = result.value['schema_id']
 
 cache_put(
     conn,
-    hashcode('SQL_PUBLIC_STUDENT'),
+    'SQL_PUBLIC_STUDENT',
     key=1,
     key_hint=IntObject,
     value={
@@ -118,7 +117,7 @@ cache_put(
 
 result = sql_fields(
     conn,
-    hashcode('PUBLIC'),
+    'PUBLIC',
     'SELECT * FROM Student',
     1,
     include_field_names=True,

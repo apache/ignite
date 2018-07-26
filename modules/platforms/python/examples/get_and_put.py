@@ -17,27 +17,23 @@ from pyignite.api import (
     cache_create, cache_destroy, cache_get, cache_put, cache_get_names
 )
 from pyignite.connection import Connection
-from pyignite.utils import hashcode
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_name = 'my cache'
-hash_code = hashcode(cache_name)
+cache_create(conn, 'my cache')
 
-cache_create(conn, cache_name)
-
-result = cache_put(conn, hash_code, 'my key', 42)
+result = cache_put(conn, 'my cache', 'my key', 42)
 print(result.message)  # “Success”
 
-result = cache_get(conn, hash_code, 'my key')
+result = cache_get(conn, 'my cache', 'my key')
 print(result.value)  # “42”
 
-result = cache_get(conn, hash_code, 'non-existent key')
+result = cache_get(conn, 'my cache', 'non-existent key')
 print(result.value)  # None
 
-result = cache_get_names(conn, hash_code)
+result = cache_get_names(conn, 'my cache')
 print(result.value)  # ['my key']
 
-cache_destroy(conn, hash_code)
+cache_destroy(conn, 'my cache')
 conn.close()

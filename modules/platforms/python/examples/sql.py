@@ -19,7 +19,6 @@ from pyignite.api import (
     cache_get_or_create, sql_fields, sql_fields_cursor_get_page,
 )
 from pyignite.connection import Connection
-from pyignite.utils import hashcode
 
 
 PAGE_SIZE = 5
@@ -212,17 +211,17 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
+    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    sql_fields(conn, hashcode(SCHEMA_NAME), query, PAGE_SIZE)
+    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
 
 # load data
 for row in COUNTRY_DATA:
     sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         COUNTRY_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
@@ -231,7 +230,7 @@ for row in COUNTRY_DATA:
 for row in CITY_DATA:
     sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         CITY_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
@@ -240,7 +239,7 @@ for row in CITY_DATA:
 for row in LANGUAGE_DATA:
     sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         LANGUAGE_INSERT_QUERY,
         PAGE_SIZE,
         query_args=row,
@@ -252,7 +251,7 @@ SELECT name, population FROM City ORDER BY population DESC LIMIT 10'''
 
 result = sql_fields(
     conn,
-    hashcode(SCHEMA_NAME),
+    SCHEMA_NAME,
     MOST_POPULATED_QUERY,
     PAGE_SIZE,
 )
@@ -292,7 +291,7 @@ SELECT country.name as country_name, city.name as city_name, MAX(city.population
 
 result = sql_fields(
     conn,
-    hashcode(SCHEMA_NAME),
+    SCHEMA_NAME,
     MOST_POPULATED_IN_3_COUNTRIES_QUERY,
     PAGE_SIZE,
     include_field_names=True,
@@ -331,7 +330,7 @@ CITY_INFO_QUERY = '''SELECT * FROM City WHERE id = ?'''
 
 result = sql_fields(
     conn,
-    hashcode(SCHEMA_NAME),
+    SCHEMA_NAME,
     CITY_INFO_QUERY,
     PAGE_SIZE,
     query_args=[3802],
@@ -359,7 +358,7 @@ for table_name in [
 ]:
     result = sql_fields(
         conn,
-        hashcode(SCHEMA_NAME),
+        SCHEMA_NAME,
         DROP_TABLE_QUERY.format(table_name),
         PAGE_SIZE,
     )

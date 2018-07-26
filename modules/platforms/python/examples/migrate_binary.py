@@ -120,7 +120,7 @@ old_schema_id = result.value['schema_id']
 for key, value in old_data:
     cache_put(
         conn,
-        hashcode('accounting'),
+        'accounting',
         key,
         {
             'version': 1,
@@ -244,7 +244,7 @@ def migrate(data):
         # replace data
         cache_put(
             conn,
-            hashcode('accounting'),
+            'accounting',
             key,
             {
                 'version': 1,
@@ -256,7 +256,7 @@ def migrate(data):
         )
 
         # verify data
-        verify = cache_get(conn, hashcode('accounting'), key)
+        verify = cache_get(conn, 'accounting', key)
         print(dict(unwrap_binary(conn, verify.value)['fields']))
 
         # {
@@ -270,7 +270,7 @@ def migrate(data):
 
 
 # migrate data
-result = scan(conn, hashcode('accounting'), 2)
+result = scan(conn, 'accounting', 2)
 migrate(result.value['data'])
 
 cursor = result.value['cursor']
