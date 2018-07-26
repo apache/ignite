@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.failure.AccountTransferTransactionTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
@@ -46,6 +47,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
 
         suite.addTestSuite(IoomFailureHandlerTest.class);
         suite.addTestSuite(AccountTransferTransactionTest.class);
+        suite.addTestSuite(ClusterBaselineNodesMetricsSelfTest.class);
+
 
         return suite;
     }
