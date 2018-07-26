@@ -17,19 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
- * Atomic cache metrics test.
+ *
  */
 public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+    /**
+     *
+     */
+    public void testPutRemoveGetMetrics() {
+        IgniteEx initiator = grid(0);
 
-        return ccfg;
+        IgniteCache<Integer, Integer> cache0 = initiator.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; ; i++) {
+            if (!initiator.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(initiator.cluster().localNode(), i)) {
+                cache0.put(i, i);
+
+                cache0.remove(i);
+
+                cache0.get(i);
+
+                assertEquals(1, cache0.localMetrics().getCachePuts());
+                assertEquals(1, cache0.localMetrics().getCacheRemovals());
+                assertEquals(1, cache0.localMetrics().getCacheGets());
+
+                break;
+            }
+        }
     }
 }
