@@ -48,7 +48,12 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Test verifies that all resources managed by cache are properly closed after it was stopped
+ * (this includes calling the close method if resource implements the {@link java.io.Closeable} interface).
+ *
+ * @see Cache#close()
+ */
 public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 2;
@@ -156,17 +161,7 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testContinuousQueryRemoteFilterCleanup() throws Exception {
-        checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
-            ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
-
-            qry.setLocalListener(evts -> {});
-            qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
-            qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
-
-            assertEquals(0, rsrcs.size());
-
-            cache.query(qry);
-        });
+        doTestContinuousQueryRemoteFilterCleanup();
     }
 
     /**
@@ -180,10 +175,27 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
         Ignition.setClientMode(false);
 
         try {
-            testContinuousQueryRemoteFilterCleanup();
+            doTestContinuousQueryRemoteFilterCleanup();
         } finally {
             stopGrid(NODES_CNT);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestContinuousQueryRemoteFilterCleanup() throws Exception {
+        checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
+            ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
+
+            qry.setLocalListener(evts -> {});
+            qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
+            qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
+
+            assertEquals(0, rsrcs.size());
+
+            cache.query(qry);
+        });
     }
 
     /**
