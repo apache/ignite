@@ -23,12 +23,13 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -54,9 +55,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests savepoint.
      */
-    public void testSavepoints() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testSavepoints() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         cache.put("key", 0);
@@ -96,9 +97,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests valid and invalid rollbacks to savepoint.
      */
-    public void testFailRollbackToSavepoint() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testFailRollbackToSavepoint() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         GridTestUtils.assertThrows(
@@ -137,9 +138,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests savepoint deleting.
      */
-    public void testOverwriteSavepoints() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testOverwriteSavepoints() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         GridTestUtils.assertThrows(
@@ -175,9 +176,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests savepoint deleting.
      */
-    public void testFailOverwriteSavepoints() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testFailOverwriteSavepoints() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         GridTestUtils.assertThrows(log, () -> {
@@ -202,9 +203,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests rollbacks to the same savepoint instance.
      */
-    public void testMultipleRollbackToSavepoint() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testMultipleRollbackToSavepoint() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         cache.put("key", 0);
@@ -249,9 +250,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests savepoints in failed transaction.
      */
-    public void testTransactionRollback() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testTransactionRollback() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
@@ -286,9 +287,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * Tests two caches within one transaction.
      */
-    public void testCrossCacheRollbackToSavepoint() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    public void testCrossCacheRollbackToSavepoint() {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) {
                 IgniteCache<String, Integer> cache2 = grid(0)
                     .getOrCreateCache(new CacheConfiguration<String, Integer>(
                         cache.getConfiguration(CacheConfiguration.class)).setName("Second Cache"));
@@ -331,9 +332,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testNullNameSavepoint() throws Exception {
+    public void testNullNameSavepoint() {
         GridTestUtils.assertThrows(log, () -> {
                 try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     tx.savepoint(null);
@@ -347,9 +348,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testNullNameRollbackToSavepoint() throws Exception {
+    public void testNullNameRollbackToSavepoint() {
         GridTestUtils.assertThrows(log, () -> {
                 try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     tx.rollbackToSavepoint(null);
@@ -363,9 +364,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testNullNameReleaseSavepoint() throws Exception {
+    public void testNullNameReleaseSavepoint() {
         GridTestUtils.assertThrows(log, () -> {
                 try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     tx.releaseSavepoint(null);
@@ -379,9 +380,9 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testSetTimeoutAfterSavepoint() throws Exception {
+    public void testSetTimeoutAfterSavepoint() {
         GridTestUtils.assertThrows(log, () -> {
                 try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     tx.savepoint("name");
@@ -397,16 +398,17 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testGetAllOutTx() throws Exception {
+    public void testGetAllOutTx() {
         Set<String> keys = new HashSet<>();
 
         for (int i = 0; i < 10; i++)
             keys.add(String.valueOf(i));
 
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<String, Integer>>() {
-            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+        executeTestForAllCaches(new CIX2<Ignite, IgniteCache<String, Integer>>() {
+            @Override public void applyx(Ignite ignite, IgniteCache<String, Integer> cache)
+                throws IgniteCheckedException {
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
@@ -489,7 +491,7 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
      * @param c Closure.
      * @throws Exception If failed.
      */
-    private void executeTestForAllCaches(CI2<Ignite, IgniteCache<String, Integer>> c) throws Exception {
+    private void executeTestForAllCaches(CIX2<Ignite, IgniteCache<String, Integer>> c) {
         for (CacheConfiguration<String, Integer> ccfg : cacheConfigurations()) {
             log.info("Run test for cache [cache=" + ccfg.getCacheMode() +
                 ", backups=" + ccfg.getBackups() +

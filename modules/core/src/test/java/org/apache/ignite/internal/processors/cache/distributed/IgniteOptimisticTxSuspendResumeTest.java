@@ -750,6 +750,33 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Closure with 2 parameters that can throw any exception.
+     *
+     * @param <E1> Type of first closure parameter.
+     * @param <E2> Type of second closure parameter.
+     */
+    public static abstract class CI2Exc<E1, E2> implements CI2<E1, E2> {
+        /**
+         * Closure body.
+         *
+         * @param e1 First closure argument.
+         * @param e2 Second closure argument.
+         * @throws Exception If failed.
+         */
+        public abstract void applyx(E1 e1, E2 e2) throws Exception;
+
+        /** {@inheritdoc} */
+        @Override public void apply(E1 e1, E2 e2) {
+            try {
+                applyx(e1, e2);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
      * Closure that can throw any exception.
      *
      * @param <T> Type of closure parameter.
