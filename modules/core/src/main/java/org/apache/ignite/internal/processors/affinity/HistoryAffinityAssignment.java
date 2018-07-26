@@ -41,9 +41,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final List<List<ClusterNode>> idealAssignment;
 
-    /** */
-    private final boolean clientEvtChange;
-
     /**
      * @param assign Assignment.
      */
@@ -51,12 +48,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         this.topVer = assign.topologyVersion();
         this.assignment = assign.assignment();
         this.idealAssignment = assign.idealAssignment();
-        this.clientEvtChange = assign.clientEventChange();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clientEventChange() {
-        return clientEvtChange;
     }
 
     /** {@inheritDoc} */
