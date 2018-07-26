@@ -18,6 +18,7 @@
 import _ from 'lodash';
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/combineLatest';
 
 export default class {
     static $inject = ['AgentManager', 'IgniteConfirm'];
