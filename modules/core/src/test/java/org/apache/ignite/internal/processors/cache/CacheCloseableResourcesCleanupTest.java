@@ -32,17 +32,14 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -70,17 +67,19 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(NODES_CNT);
+
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        if (grid(0).cache(DFLT_CACHE) != null)
-            grid(0).cache(DFLT_CACHE).destroy();
+        startGrids(NODES_CNT);
 
         rsrcs.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -161,30 +160,6 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testContinuousQueryRemoteFilterCleanup() throws Exception {
-        doTestContinuousQueryRemoteFilterCleanup();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testContinuousQueryRemoteFilterCleanupClient() throws Exception {
-        Ignition.setClientMode(true);
-
-        startGrid(NODES_CNT);
-
-        Ignition.setClientMode(false);
-
-        try {
-            doTestContinuousQueryRemoteFilterCleanup();
-        } finally {
-            stopGrid(NODES_CNT);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doTestContinuousQueryRemoteFilterCleanup() throws Exception {
         checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
             ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
 
@@ -195,28 +170,6 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
             assertEquals(0, rsrcs.size());
 
             cache.query(qry);
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testContinuousQueryRemoteFilterCleanupWithCursor() throws Exception {
-        checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
-            ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
-
-            qry.setLocalListener(evts -> {});
-            qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
-            qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
-
-            assertEquals(0, rsrcs.size());
-
-            try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
-                // No-op.
-            }
-
-            for (CloseableResource obj : rsrcs)
-                assertTrue("Not closed resource: " + obj, obj.closed());
         });
     }
 
@@ -237,13 +190,7 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
      */
     private <K, V> void checkResourcesCleanup(CacheConfiguration<K, V> ccfg, CI1<IgniteCache<K, V>> c)
         throws Exception {
-        assertEquals(0, rsrcs.size());
-
-        int idx = G.allGrids().size() > NODES_CNT ? NODES_CNT : 0;
-
-        Ignite node = grid(idx);
-
-        assertTrue(idx == 0 || node.cluster().localNode().isClient());
+        Ignite node = grid(0);
 
         IgniteCache<K, V> cache = node.createCache(ccfg);
 
