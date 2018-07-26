@@ -52,7 +52,7 @@ public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAb
     /**
      * @throws Exception If failed.
      */
-    public void testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
+    public void _testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
         explicitTx = true;
 
         testTopologyChangesWithConstantLoad();
