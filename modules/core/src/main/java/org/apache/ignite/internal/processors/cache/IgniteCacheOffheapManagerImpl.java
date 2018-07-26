@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -1660,6 +1659,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             MvccVersion newMvccVer)
             throws IgniteCheckedException
         {
+            assert mvccVer != null || newMvccVer == null : newMvccVer;
+
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -1669,50 +1670,27 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // Make sure value bytes initialized.
                 key.valueBytes(coCtx);
 
-                boolean newVal = false;
-
                 // null is passed for loaded from store.
                 if (mvccVer == null) {
                     mvccVer = INITIAL_VERSION;
 
-                    newVal = true;
+                    // Clean all versions of row
+                    mvccRemoveAll(cctx, key);
                 }
-
-                if (newVal) {
-                    int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-                    GridCursor<CacheDataRow> cur = dataTree.find(
-                        new MvccMaxSearchRow(cacheId, key),
-                        new MvccMinSearchRow(cacheId, key),
-                        CacheDataRowAdapter.RowData.KEY_ONLY);
-
-                    while (cur.next()) {
-                        CacheDataRow row = cur.get();
-
-                        assert row.link() != 0;
-
-                        boolean rmvd = dataTree.removex(row);
-
-                        assert rmvd;
-
-                        rowStore.removeRow(row.link());
-                    }
-                }
-
-                if (val != null)
-                    val.valueBytes(coCtx);
-
-                MvccDataRow updateRow = new MvccDataRow(
-                    key,
-                    val,
-                    ver,
-                    partId,
-                    expireTime,
-                    cctx.cacheId(),
-                    mvccVer,
-                    newMvccVer);
 
                 if (val != null) {
+                    val.valueBytes(coCtx);
+
+                    MvccDataRow updateRow = new MvccDataRow(
+                        key,
+                        val,
+                        ver,
+                        partId,
+                        expireTime,
+                        cctx.cacheId(),
+                        mvccVer,
+                        newMvccVer);
+
                     assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                     if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
@@ -1731,13 +1709,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     if (cctx.queries().enabled())
                         cctx.queries().store(updateRow, null, true);
+
+                    return true;
                 }
             }
             finally {
                 busyLock.leaveBusy();
             }
 
-            return true;
+            return false;
         }
 
         /** {@inheritDoc} */
