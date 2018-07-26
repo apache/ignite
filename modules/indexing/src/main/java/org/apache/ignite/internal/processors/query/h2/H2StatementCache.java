@@ -23,79 +23,28 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.PreparedStatement;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Statement cache. LRU eviction policy is used. Not thread-safe.
  */
 class H2StatementCache {
-    /**
-     * Statement meta information.
-     */
-    static class StatementMeta {
-        /** */
-        private static final AtomicInteger metaIdGenerator = new AtomicInteger();
-
-        /** */
-        static final int INVOLVED_CACHES = metaIdGenerator.getAndIncrement();
-
-        /** */
-        private final PreparedStatement stmt;
-        /** */
-        private Object[] meta = null;
-
-        /**
-         * @param stmt Statement to bind with meta.
-         */
-        StatementMeta(PreparedStatement stmt) {
-            this.stmt = stmt;
-        }
-
-        /**
-         * Gets meta for given id.
-         *
-         * @param id Meta id.
-         * @param <T> Meta object type.
-         * @return Meta object.
-         */
-        @SuppressWarnings("unchecked")
-        @Nullable <T> T meta(int id) {
-            return meta != null && id < meta.length ? (T) meta[id] : null;
-        }
-
-        /**
-         * Puts meta for given id.
-         *
-         * @param id Meta id.
-         * @param metaObj Meta object.
-         */
-        void putMeta(int id, Object metaObj) {
-            if (meta == null || id >= meta.length)
-                meta = new Object[id + 1];
-
-            meta[id] = metaObj;
-        }
-    }
-
     /** Last usage. */
     private volatile long lastUsage;
 
     /** */
-    private final LinkedHashMap<H2CachedStatementKey, StatementMeta> lruStmtCache;
+    private final LinkedHashMap<H2CachedStatementKey, StatementWithMeta> lruStmtCache;
 
     /**
      * @param size Maximum number of statements this cache can store.
      */
     H2StatementCache(int size) {
-        lruStmtCache = new LinkedHashMap<H2CachedStatementKey, StatementMeta>(size, .75f, true) {
+        lruStmtCache = new LinkedHashMap<H2CachedStatementKey, StatementWithMeta>(size, .75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, StatementMeta> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, StatementWithMeta> eldest) {
                 boolean rmv = size() > size;
 
                 if (rmv) {
-                    StatementMeta stmtWithMeta = eldest.getValue();
-
-                    U.closeQuiet(stmtWithMeta.stmt);
+                    U.closeQuiet(eldest.getValue());
                 }
 
                 return rmv;
@@ -110,7 +59,7 @@ class H2StatementCache {
      * @param stmt Statement which will be cached.
      */
     void put(H2CachedStatementKey key, PreparedStatement stmt) {
-        lruStmtCache.put(key, new StatementMeta(stmt));
+        lruStmtCache.put(key, new StatementWithMeta(stmt));
     }
 
     /**
@@ -119,18 +68,7 @@ class H2StatementCache {
      * @param key Key for a statement.
      * @return Statement associated with a key.
      */
-    @Nullable PreparedStatement get(H2CachedStatementKey key) {
-        StatementMeta stmtWitMeta = lruStmtCache.get(key);
-        return stmtWitMeta != null ? stmtWitMeta.stmt : null;
-    }
-
-    /**
-     * Retrieves cached statement with meta.
-     *
-     * @param key Key for a statement.
-     * @return Statement meta associated with a key.
-     */
-    @Nullable StatementMeta getStatementMeta(H2CachedStatementKey key) {
+    @Nullable StatementWithMeta get(H2CachedStatementKey key) {
         return lruStmtCache.get(key);
     }
 
@@ -152,12 +90,11 @@ class H2StatementCache {
 
     /**
      * Remove statement for given schema and SQL.
+     *
      * @param schemaName Schema name.
      * @param sql SQL statement.
-     * @return Cached {@link PreparedStatement}, or {@code null} if none found.
      */
-    @Nullable
-    StatementMeta remove(String schemaName, String sql) {
-        return lruStmtCache.remove(new H2CachedStatementKey(schemaName, sql));
+    void remove(String schemaName, String sql) {
+        lruStmtCache.remove(new H2CachedStatementKey(schemaName, sql));
     }
 }

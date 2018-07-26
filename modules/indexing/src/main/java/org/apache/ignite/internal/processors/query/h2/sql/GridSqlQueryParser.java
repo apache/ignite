@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -538,9 +539,18 @@ public class GridSqlQueryParser {
      * @return {@code true} in case of multiple statements.
      */
     public static boolean checkMultipleStatements(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         return ORG_H2_COMMAND_COMMAND_LIST.equals(cmd.getClass().getName());
+    }
+
+    /** */
+    private static Command extractCommand(PreparedStatement stmt) {
+        try {
+            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
+        } catch (SQLException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -548,7 +558,7 @@ public class GridSqlQueryParser {
      * @return Parsed select.
      */
     public static Prepared prepared(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         assert cmd instanceof CommandContainer;
 
