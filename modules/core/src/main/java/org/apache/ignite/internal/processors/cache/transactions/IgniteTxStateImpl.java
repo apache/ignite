@@ -487,7 +487,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         if (spIter != null) {
             if (overwrite)
-                releaseSP(spIter);
+                savepoints.subList(spIter.nextIndex(), savepoints.size()).clear();
             else {
                 throw new IllegalArgumentException("Savepoint \"" + name + "\" already exists. " +
                     "Savepoints with the same name aren't available. " +
@@ -515,7 +515,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         rollbackToSavepoint(spIter.next(), tx);
 
-        releaseNextSPs(spIter);
+        savepoints.subList(spIter.nextIndex(), savepoints.size()).clear();
     }
 
     /**
@@ -531,7 +531,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (spIter == null)
             return;
 
-        releaseSP(spIter);
+        savepoints.subList(spIter.nextIndex(), savepoints.size()).clear();
     }
 
     /**
@@ -590,29 +590,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         }
 
         return null;
-    }
-
-    /**
-     * Release current savepoint in given list iterator.
-     *
-     * @param iter ListIterator for savepoints.
-     */
-    private void releaseSP(ListIterator<TxSavepoint> iter) {
-        iter.remove();
-
-        releaseNextSPs(iter);
-    }
-
-    /**
-     * Release subsequent savepoints in given list iterator.
-     *
-     * @param iter ListIterator for savepoints.
-     */
-    private void releaseNextSPs(ListIterator<TxSavepoint> iter) {
-        while (iter.hasNext()) {
-            iter.next();
-            iter.remove();
-        }
     }
 
     /**
