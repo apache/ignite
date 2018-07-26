@@ -1317,7 +1317,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     private boolean isSafeToFailNode(UUID nodeId, Set<UUID> alreadyFailedNodes) {
-        throw new UnsupportedOperationException("Not implemented"); //TODO
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal())
+                continue;
+
+            for (int p = 0; p < grp.affinity().partitions(); p++) {
+                List<ClusterNode> owners = grp.topology().owners(p);
+
+                Set<UUID> ownerIds = new HashSet<>();
+
+                for (ClusterNode owner : owners) {
+                    if (!alreadyFailedNodes.contains(owner.id()))
+                        ownerIds.add(owner.id());
+                }
+
+                if (ownerIds.size() == 1 && ownerIds.contains(nodeId))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
