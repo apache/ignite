@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Union
+
 from pyignite.connection import Connection
 from pyignite.queries.op_codes import *
 from pyignite.datatypes import (
@@ -21,18 +23,18 @@ from pyignite.datatypes import (
 from pyignite.datatypes.key_value import PeekModes
 from pyignite.queries import Query, Response
 from .result import APIResult
+from pyignite.utils import cache_id
 
 
 def cache_put(
-    conn: Connection, hash_code: int, key, value,
+    conn: Connection, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache (overwriting existing value if any).
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -59,7 +61,7 @@ def cache_put(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
@@ -79,15 +81,14 @@ def cache_put(
 
 
 def cache_get(
-    conn: Connection, hash_code: int, key,
+    conn: Connection, cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Retrieves a value from cache by key.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param key_hint: (optional) Ignite data type, for which the given key
      should be converted,
@@ -110,7 +111,7 @@ def cache_get(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
     })
@@ -131,14 +132,14 @@ def cache_get(
 
 
 def cache_get_all(
-    conn: Connection, hash_code: int, keys: list, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], keys: list, binary=False,
+    query_id=None,
 ) -> APIResult:
     """
     Retrieves multiple key-value pairs from cache.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param keys: list of keys or tuples of (key, key_hint),
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
@@ -160,7 +161,7 @@ def cache_get_all(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'keys': keys,
     })
@@ -180,15 +181,14 @@ def cache_get_all(
 
 
 def cache_put_all(
-    conn: Connection, hash_code: int, pairs: dict, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], pairs: dict, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts multiple key-value pairs to cache (overwriting existing associations
     if any).
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param pairs: dictionary type parameters, contains key-value pairs to save.
      Each key or value can be an item of representable Python type or a tuple
      of (item, hint),
@@ -211,7 +211,7 @@ def cache_put_all(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'data': pairs,
     })
@@ -226,15 +226,14 @@ def cache_put_all(
 
 
 def cache_contains_key(
-    conn: Connection, hash_code: int, key,
+    conn: Connection, cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Returns a value indicating whether given key is present in cache.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param key_hint: (optional) Ignite data type, for which the given key
      should be converted,
@@ -258,7 +257,7 @@ def cache_contains_key(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
     })
@@ -279,14 +278,13 @@ def cache_contains_key(
 
 
 def cache_contains_keys(
-    conn: Connection, hash_code: int, keys, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], keys, binary=False, query_id=None,
 ) -> APIResult:
     """
     Returns a value indicating whether all given keys are present in cache.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param keys:
     :param binary: pass True to keep the value in binary form. False
      by default,
@@ -308,7 +306,7 @@ def cache_contains_keys(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'keys': keys,
     })
@@ -328,7 +326,7 @@ def cache_contains_keys(
 
 
 def cache_get_and_put(
-    conn: Connection, hash_code: int, key, value,
+    conn: Connection, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
@@ -336,8 +334,7 @@ def cache_get_and_put(
     for that key, or null value if there was not such key.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -365,7 +362,7 @@ def cache_get_and_put(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
@@ -387,7 +384,7 @@ def cache_get_and_put(
 
 
 def cache_get_and_replace(
-    conn: Connection, hash_code: int, key, value,
+    conn: Connection, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
@@ -396,8 +393,7 @@ def cache_get_and_replace(
     for that key.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -424,7 +420,7 @@ def cache_get_and_replace(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
@@ -446,15 +442,14 @@ def cache_get_and_replace(
 
 
 def cache_get_and_remove(
-    conn: Connection, hash_code: int, key,
+    conn: Connection, cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Removes the cache entry with specified key, returning the value.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param key_hint: (optional) Ignite data type, for which the given key
      should be converted,
@@ -477,7 +472,7 @@ def cache_get_and_remove(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
     })
@@ -498,7 +493,7 @@ def cache_get_and_remove(
 
 
 def cache_put_if_absent(
-    conn: Connection, hash_code: int, key, value,
+    conn: Connection, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
@@ -506,8 +501,7 @@ def cache_put_if_absent(
     does not already exist.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -534,7 +528,7 @@ def cache_put_if_absent(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
@@ -556,7 +550,7 @@ def cache_put_if_absent(
 
 
 def cache_get_and_put_if_absent(
-    conn: Connection, hash_code: int, key, value,
+    conn: Connection, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
@@ -564,8 +558,7 @@ def cache_get_and_put_if_absent(
     already exist.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -592,7 +585,7 @@ def cache_get_and_put_if_absent(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
@@ -614,15 +607,14 @@ def cache_get_and_put_if_absent(
 
 
 def cache_replace(
-    conn: Connection, hash_code: int, key, value,
+    conn: Connection, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache only if the key already exist.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -650,7 +642,7 @@ def cache_replace(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
@@ -672,7 +664,7 @@ def cache_replace(
 
 
 def cache_replace_if_equals(
-    conn: Connection, hash_code: int, key, sample, value,
+    conn: Connection, cache: Union[str, int], key, sample, value,
     key_hint=None, sample_hint=None, value_hint=None,
     binary=False, query_id=None,
 ) -> APIResult:
@@ -681,8 +673,7 @@ def cache_replace_if_equals(
     and value equals provided sample.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param sample: a sample to compare the stored value with,
     :param value: new value for the given key,
@@ -714,7 +705,7 @@ def cache_replace_if_equals(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'sample': sample,
@@ -737,14 +728,13 @@ def cache_replace_if_equals(
 
 
 def cache_clear(
-    conn: Connection, hash_code: int, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache without notifying listeners or cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
     :param query_id: (optional) a value generated by client and returned
@@ -763,7 +753,7 @@ def cache_clear(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
     })
     conn.send(send_buffer)
@@ -777,15 +767,14 @@ def cache_clear(
 
 
 def cache_clear_key(
-    conn: Connection, hash_code: int, key,
+    conn: Connection, cache: Union[str, int], key,
     key_hint: object=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache key without notifying listeners or cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param key_hint: (optional) Ignite data type, for which the given key
      should be converted,
@@ -808,7 +797,7 @@ def cache_clear_key(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
     })
@@ -823,14 +812,13 @@ def cache_clear_key(
 
 
 def cache_clear_keys(
-    conn: Connection, hash_code: int, keys: list, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], keys: list, binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache keys without notifying listeners or cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param keys: list of keys or tuples of (key, key_hint),
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
@@ -851,7 +839,7 @@ def cache_clear_keys(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'keys': keys,
     })
@@ -866,15 +854,14 @@ def cache_clear_keys(
 
 
 def cache_remove_key(
-    conn: Connection, hash_code: int, key,
+    conn: Connection, cache: Union[str, int], key,
     key_hint: object=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache key without notifying listeners or cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param key_hint: (optional) Ignite data type, for which the given key
      should be converted,
@@ -898,7 +885,7 @@ def cache_remove_key(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
     })
@@ -918,7 +905,7 @@ def cache_remove_key(
 
 
 def cache_remove_if_equals(
-    conn: Connection, hash_code: int, key, sample,
+    conn: Connection, cache: Union[str, int], key, sample,
     key_hint=None, sample_hint=None,
     binary=False, query_id=None,
 ) -> APIResult:
@@ -927,8 +914,7 @@ def cache_remove_if_equals(
     actual value, notifying listeners and cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param sample: a sample to compare the stored value with,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -956,7 +942,7 @@ def cache_remove_if_equals(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'sample': sample,
@@ -978,14 +964,13 @@ def cache_remove_if_equals(
 
 
 def cache_remove_keys(
-    conn: Connection, hash_code: int, keys: list, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], keys: list, binary=False, query_id=None,
 ) -> APIResult:
     """
     Removes entries with given keys, notifying listeners and cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param keys: list of keys or tuples of (key, key_hint),
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
@@ -1006,7 +991,7 @@ def cache_remove_keys(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'keys': keys,
     })
@@ -1021,14 +1006,13 @@ def cache_remove_keys(
 
 
 def cache_remove_all(
-    conn: Connection, hash_code: int, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], binary=False, query_id=None,
 ) -> APIResult:
     """
     Removes all entries from cache, notifying listeners and cache writers.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
     :param query_id: (optional) a value generated by client and returned as-is
@@ -1047,7 +1031,7 @@ def cache_remove_all(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
     })
     conn.send(send_buffer)
@@ -1061,15 +1045,14 @@ def cache_remove_all(
 
 
 def cache_get_size(
-    conn: Connection, hash_code: int, peek_modes=0,
+    conn: Connection, cache: Union[str, int], peek_modes=0,
     binary=False, query_id=None,
 ) -> APIResult:
     """
     Gets the number of entries in cache.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param peek_modes: (optional) limit count to near cache partition
      (PeekModes.NEAR), primary cache (PeekModes.PRIMARY), or backup cache
      (PeekModes.BACKUP). Defaults to all cache partitions (PeekModes.ALL),
@@ -1098,7 +1081,7 @@ def cache_get_size(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'peek_modes': peek_modes,
     })

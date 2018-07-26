@@ -14,11 +14,11 @@
 # limitations under the License.
 
 from pyignite.api import (
-    sql_fields, sql_fields_cursor_get_page, hashcode, cache_create,
-    cache_get_or_create, sql, sql_cursor_get_page, cache_get_configuration,
+    sql_fields, sql_fields_cursor_get_page,
+    cache_get_or_create, sql, sql_cursor_get_page,
+    cache_get_configuration,
 )
-from pyignite.datatypes import BinaryObject
-from pyignite.utils import unwrap_binary
+from pyignite.utils import hashcode, unwrap_binary
 
 initial_data = [
         ('John', 'Doe', 5),

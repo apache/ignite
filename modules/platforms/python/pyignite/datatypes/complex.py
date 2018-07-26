@@ -20,7 +20,7 @@ from importlib import import_module
 from pyignite.connection import Connection
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import is_hinted
+from pyignite.utils import hashcode, is_hinted
 from .internal import AnyDataObject
 from .type_codes import *
 
@@ -426,8 +426,6 @@ class BinaryObject:
 
     @classmethod
     def from_python(cls, value: dict):
-        from pyignite.api import hashcode
-
         # prepare header
         header_class = cls.build_header()
         header = header_class()

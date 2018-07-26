@@ -16,11 +16,11 @@
 from decimal import Decimal
 
 from pyignite.api import (
-    hashcode, cache_get_or_create, sql_fields, cache_get_names,
+    cache_get_or_create, sql_fields, cache_get_names,
     cache_get_configuration, get_binary_type, scan,
 )
 from pyignite.connection import Connection
-from pyignite.utils import unwrap_binary
+from pyignite.utils import hashcode, unwrap_binary
 
 PAGE_SIZE = 5
 

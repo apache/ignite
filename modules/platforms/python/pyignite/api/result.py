@@ -15,25 +15,6 @@
 
 from pyignite.datatypes import String
 from pyignite.queries import Response
-from pyignite.utils import int_overflow
-
-
-def hashcode(string: str) -> int:
-    """
-    Calculate hash code used for referencing cache bucket name
-    in Ignite binary API.
-
-    :param string: bucket name (or other string identifier),
-    :return: hash code.
-    """
-    result = 0
-    for char in string:
-        try:
-            char = ord(char)
-        except TypeError:
-            pass
-        result = int_overflow(31 * result + char)
-    return result
 
 
 class APIResult:

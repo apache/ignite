@@ -18,6 +18,8 @@ Only key-value queries (scan queries) are implemented. SQL part is still
 in progress.
 """
 
+from typing import Union
+
 from pyignite.connection import Connection
 from pyignite.datatypes import (
     AnyDataArray, AnyDataObject, Bool, Byte, Int, Long, Map, Null, String,
@@ -26,19 +28,19 @@ from pyignite.datatypes import (
 from pyignite.datatypes.sql import StatementType
 from pyignite.queries import Query, Response, SQLResponse
 from pyignite.queries.op_codes import *
+from pyignite.utils import cache_id
 from .result import APIResult
 
 
 def scan(
-    conn: Connection, hash_code: int, page_size: int,
+    conn: Connection, cache: Union[str, int], page_size: int,
     partitions: int=-1, local: bool=False, binary: bool=False, query_id=None,
 ) -> APIResult:
     """
     Performs scan query.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param page_size: cursor page size,
     :param partitions: (optional) number of partitions to query
      (negative to query entire cache),
@@ -73,7 +75,7 @@ def scan(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'filter': None,
         'page_size': page_size,
@@ -149,7 +151,7 @@ def scan_cursor_get_page(
 
 
 def sql(
-    conn: Connection, hash_code: int,
+    conn: Connection, cache: Union[str, int],
     table_name: str, query_str: str, page_size: int, query_args=None,
     distributed_joins: bool=False, replicated_only: bool=False,
     local: bool=False, timeout: int=0, binary: bool=False, query_id=None
@@ -159,8 +161,7 @@ def sql(
     the whole record (key and value).
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param table_name: name of a type or SQL table,
     :param query_str: SQL query string,
     :param page_size: cursor page size,
@@ -209,7 +210,7 @@ def sql(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'table_name': table_name,
         'query_str': query_str,
@@ -288,7 +289,7 @@ def sql_cursor_get_page(
 
 
 def sql_fields(
-    conn: Connection, hash_code: int,
+    conn: Connection, cache: Union[str, int],
     query_str: str, page_size: int, query_args=None, schema: str=None,
     statement_type: int=StatementType.ANY, distributed_joins: bool=False,
     local: bool=False, replicated_only: bool=False,
@@ -300,8 +301,7 @@ def sql_fields(
     Performs SQL fields query.
 
     :param conn: connection to Ignite server,
-    :param hash_code: hash code of the cache. Can be obtained by applying
-     the `hashcode()` function to the cache name,
+    :param cache: name or ID of the cache,
     :param query_str: SQL query string,
     :param page_size: cursor page size,
     :param query_args: (optional) query arguments. List of values or
@@ -371,7 +371,7 @@ def sql_fields(
     ], query_id=query_id)
 
     _, send_buffer = query_struct.from_python({
-        'hash_code': hash_code,
+        'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'schema': schema,
         'page_size': page_size,

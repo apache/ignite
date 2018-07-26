@@ -18,7 +18,7 @@ from datetime import date
 from decimal import Decimal
 
 from pyignite.api import (
-    hashcode, get_binary_type, put_binary_type, cache_get_or_create, cache_put,
+    get_binary_type, put_binary_type, cache_get_or_create, cache_put,
     scan, scan_cursor_get_page, cache_get,
 )
 from pyignite.connection import Connection
@@ -26,7 +26,7 @@ from pyignite.datatypes import (
     BinaryObject, BoolObject, DateObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.internal import tc_map
-from pyignite.utils import unwrap_binary
+from pyignite.utils import hashcode, unwrap_binary
 
 
 # prepare old data

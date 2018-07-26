@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Union
+
 
 def is_iterable(value):
     """ Check if value is iterable. """
@@ -70,3 +72,30 @@ def unwrap_binary(conn, wrapped: tuple, recurse: bool=True):
                 result[key] = unwrap_binary(conn, value, recurse)
 
     return result
+
+
+def hashcode(string: Union[str, bytes]) -> int:
+    """
+    Calculate hash code used for identifying objects in Ignite binary API.
+
+    :param string: UTF-8-encoded string identifier of binary buffer,
+    :return: hash code.
+    """
+    result = 0
+    for char in string:
+        try:
+            char = ord(char)
+        except TypeError:
+            pass
+        result = int_overflow(31 * result + char)
+    return result
+
+
+def cache_id(cache: Union[str, int]) -> int:
+    """
+    Create a cache ID from cache name.
+
+    :param cache: cache name or ID,
+    :return: cache ID.
+    """
+    return cache if type(cache) is int else hashcode(cache)

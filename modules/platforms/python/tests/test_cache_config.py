@@ -15,6 +15,7 @@
 
 from pyignite.api import *
 from pyignite.datatypes.prop_codes import *
+from pyignite.utils import hashcode
 
 
 def test_get_configuration(conn):

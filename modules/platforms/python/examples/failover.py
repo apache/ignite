@@ -14,11 +14,12 @@
 # limitations under the License.
 
 from pyignite.api import (
-    hashcode, cache_get, cache_put, cache_get_or_create_with_config,
+    cache_get, cache_put, cache_get_or_create_with_config,
 )
 from pyignite.connection import Connection
 from pyignite.datatypes.cache_config import CacheMode
 from pyignite.datatypes.prop_codes import *
+from pyignite.utils import hashcode
 
 
 MAX_ERRORS = 20

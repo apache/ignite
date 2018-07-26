@@ -18,11 +18,12 @@ from collections import OrderedDict
 from pyignite.datatypes import BinaryObject, DoubleObject, IntObject, String
 
 from pyignite.api import (
-    hashcode, cache_get_or_create, cache_create_with_config,
+    cache_get_or_create, cache_create_with_config,
     cache_put, put_binary_type, sql_fields,
 )
-from pyignite.datatypes.prop_codes import *
 from pyignite.connection import Connection
+from pyignite.datatypes.prop_codes import *
+from pyignite.utils import hashcode
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)

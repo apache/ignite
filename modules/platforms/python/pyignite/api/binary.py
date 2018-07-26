@@ -21,8 +21,8 @@ from pyignite.datatypes.binary import (
 from pyignite.datatypes import String, Int, Bool
 from pyignite.queries import Query, Response
 from pyignite.queries.op_codes import *
-from pyignite.utils import int_overflow
-from .result import APIResult, hashcode
+from pyignite.utils import int_overflow, hashcode
+from .result import APIResult
 
 
 def get_binary_type(

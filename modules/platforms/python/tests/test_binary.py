@@ -17,7 +17,7 @@ from collections import OrderedDict
 from decimal import Decimal
 
 from pyignite.api import (
-    hashcode, sql_fields, cache_create, scan, cache_create_with_config,
+    sql_fields, cache_create, scan, cache_create_with_config,
     cache_get_configuration, put_binary_type, get_binary_type,
     cache_get, cache_put, cache_destroy,
 )
@@ -25,7 +25,7 @@ from pyignite.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.prop_codes import *
-from pyignite.utils import unwrap_binary
+from pyignite.utils import hashcode, unwrap_binary
 
 
 insert_data = [

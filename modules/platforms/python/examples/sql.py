@@ -16,9 +16,10 @@
 from decimal import Decimal
 
 from pyignite.api import (
-    hashcode, cache_get_or_create, sql_fields, sql_fields_cursor_get_page,
+    cache_get_or_create, sql_fields, sql_fields_cursor_get_page,
 )
 from pyignite.connection import Connection
+from pyignite.utils import hashcode
 
 
 PAGE_SIZE = 5

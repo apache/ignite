@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.connection import Connection
 from pyignite.api import (
-    cache_create, cache_destroy, cache_get, cache_put,
-    cache_get_names, hashcode,
+    cache_create, cache_destroy, cache_get, cache_put, cache_get_names
 )
+from pyignite.connection import Connection
+from pyignite.utils import hashcode
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)

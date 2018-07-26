@@ -80,4 +80,4 @@ from .binary import (
     get_binary_type,
     put_binary_type,
 )
-from .result import APIResult, hashcode
+from .result import APIResult
