@@ -2834,12 +2834,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Messages that change topology.
                 if (msg instanceof TcpDiscoveryNodeLeftMessage || msg instanceof TcpDiscoveryNodeFailedMessage ||
                     msg instanceof TcpDiscoveryNodeAddFinishedMessage || msg instanceof TcpDiscoveryNodeAddedMessage) {
-                    setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
+                    U.enhanceThreadName(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
                         + ":" + sock.getPort() + (isLocalNodeCoordinator() ? " crd" : ""));
                 }
             }
             else
-                setThreadNameMeta("crd");
+                U.enhanceThreadName("crd");
 
             spi.stats.onMessageProcessingFinished(msg);
         }
@@ -5812,7 +5812,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
-                setThreadNameMeta(":" + port);
+                U.enhanceThreadName(":" + port);
 
                 while (!isCancelled()) {
                     Socket sock = srvrSock.accept();
@@ -6028,7 +6028,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     this.nodeId = nodeId;
 
-                    setThreadNameMeta(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
+                    U.enhanceThreadName(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
                         + ":" + sock.getPort() + (req.client() ? " client" : ""));
 
                     TcpDiscoveryHandshakeResponse res =

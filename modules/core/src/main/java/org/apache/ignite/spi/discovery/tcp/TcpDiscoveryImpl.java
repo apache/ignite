@@ -255,38 +255,6 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
-     * @param text Text to be set in thread name between [] braces.
-     */
-    void setThreadNameMeta(String text) {
-        setThreadNameMeta(Thread.currentThread(), text);
-    }
-
-    /**
-     * @param thread Thread to be renamed, it must contain square braces in name [].
-     * @param text Text to be set in thread name between [] braces.
-     */
-    void setThreadNameMeta(@Nullable Thread thread, String text) {
-        if (thread == null)
-            return;
-
-        String threadName = thread.getName();
-
-        int idxStart = threadName.indexOf('[');
-        int idxEnd = threadName.indexOf(']');
-
-        if (idxStart < 0 || idxEnd < 0 || idxStart >= idxEnd)
-            return;
-
-        StringBuilder sb = new StringBuilder(threadName.length());
-
-        sb.append(threadName, 0, idxStart + 1);
-        sb.append(text);
-        sb.append(threadName, idxEnd, threadName.length());
-
-        thread.setName(sb.toString());
-    }
-
-    /**
      * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;

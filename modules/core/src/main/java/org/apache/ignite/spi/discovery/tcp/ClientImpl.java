@@ -1040,7 +1040,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 SocketStream sockStream;
                 UUID rmtNodeId;
 
-                setThreadNameMeta("");
+                // Disconnected from router node.
+                U.enhanceThreadName("");
 
                 synchronized (mux) {
                     if (stopReadLatch != null) {
@@ -1061,7 +1062,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 Socket sock = sockStream.socket();
 
-                setThreadNameMeta(U.id8(rmtNodeId)
+                U.enhanceThreadName(U.id8(rmtNodeId)
                     + ' ' + sockStream.sock.getInetAddress().getHostAddress()
                     + ":" + sockStream.sock.getPort());
 
