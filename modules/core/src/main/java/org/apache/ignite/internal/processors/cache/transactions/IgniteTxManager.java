@@ -289,7 +289,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         this.txDeadlockDetection = new TxDeadlockDetection(cctx);
 
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
-        cctx.gridIO().addMessageListener(TOPIC_TX_ROLLBACK_TO_SAVEPOINT, new RollbackToSavepointListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
     }
@@ -2799,6 +2798,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     throw e;
             }
         }
+    }
+
+    /**
+     * @return Listener for transactions rollback to savepoint.
+     */
+    GridMessageListener rollbackToSavepointListener() {
+        return new RollbackToSavepointListener();
     }
 
     /**

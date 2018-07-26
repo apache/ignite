@@ -82,6 +82,7 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.GridTopic.TOPIC_TX_ROLLBACK_TO_SAVEPOINT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -241,6 +242,8 @@ public class IgniteTxHandler {
                     processCheckPreparedTxResponse(nodeId, res);
                 }
             });
+
+        ctx.gridIO().addMessageListener(TOPIC_TX_ROLLBACK_TO_SAVEPOINT, ctx.tm().rollbackToSavepointListener());
     }
 
     /**
