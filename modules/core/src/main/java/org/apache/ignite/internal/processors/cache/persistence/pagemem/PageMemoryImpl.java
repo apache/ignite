@@ -1146,8 +1146,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         boolean locked = rwLock.tryWriteLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-        if (!locked)
+        if (!locked) {
+            // We release the page only once here because this page will be copied sometime later and
+            // will be released properly then.
+            if (!pageSingleAcquire)
+                PageHeader.releasePage(absPtr);
+
             return false;
+        }
 
         try {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);

@@ -48,34 +48,6 @@ mixin chart-settings
         .col-xs-2
             +result-toolbar
 
-mixin notebook-rename
-    .notebooks-top
-        breadcrumbs
-            a.link-success(ui-sref='^.') Notebooks
-            span(ui-sref='.' ui-sref-active) Notebook '{{notebook.name}}'
-        cluster-selector
-
-    .docs-header.notebook-header
-        h1.col-sm-6(ng-hide='notebook.edit')
-            label(style='max-width: calc(100% - 60px)') {{notebook.name}}
-            .btn-group(ng-if='!demo')
-                +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                +btn-toolbar('fa-trash', 'removeNotebook(notebook)', '{{$ctrl.isDemo ? "Demo notebook cannot be deleted" : "Remove notebook"}}')
-        h1.col-sm-6(ng-show='notebook.edit')
-            i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
-            .input-tip
-                input.form-control(ng-model='notebook.editName' required ignite-on-enter='renameNotebook(notebook.editName)' ignite-on-escape='notebook.edit = false;')
-        h1.pull-right
-            a.dropdown-toggle(style='margin-right: 20px' data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
-                span.caret
-            button.btn.btn-default(style='margin-top: 2px' ng-click='addQuery()' ignite-on-click-focus=focusId)
-                i.fa.fa-fw.fa-plus
-                | Add query
-
-            button.btn.btn-default(style='margin-top: 2px' ng-click='addScan()' ignite-on-click-focus=focusId)
-                i.fa.fa-fw.fa-plus
-                | Add scan
-
 mixin notebook-error
     h2 Failed to load notebook
     label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
@@ -245,7 +217,7 @@ mixin table-result-heading-scan
                         span.caret
 
 mixin table-result-body
-    .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)
+    .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter ui-grid-hovering)
 
 mixin chart-result
     div(ng-hide='paragraph.scanExplain()')
@@ -287,9 +259,9 @@ mixin paragraph-scan
                     span.tipLabelExecute Scan
 
             button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
-                    i.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
-                    i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
-                    span.tipLabelExecute Scan on selected node
+                i.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
+                i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
+                span.tipLabelExecute Scan on selected node
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error') Error: {{paragraph.error.message}}
@@ -369,54 +341,79 @@ mixin paragraph-query
                     i.fa.fa-chevron-circle-right
                     a Next
 
-.row
-    .docs-content
-        .row(ng-if='notebook' bs-affix style='margin-bottom: 20px;')
-            +notebook-rename
+div(ng-if='notebook')
+    .notebooks-top
+        h1(ng-hide='notebook.edit')
+            label {{notebook.name}}
+            .btn-group(ng-if='!demo')
+                +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
+                +btn-toolbar('fa-trash', 'removeNotebook(notebook)', '{{$ctrl.isDemo ? "Demo notebook cannot be deleted" : "Remove notebook"}}')
 
-        -var example = `CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));\nINSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');\nSELECT * FROM Person;`;
+        h1(ng-show='notebook.edit')
+            input.form-control(ng-model='notebook.editName' required ignite-on-enter='renameNotebook(notebook.editName)' ignite-on-escape='notebook.edit = false;')
+            i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
 
-        ignite-information(
-            data-title='With query notebook you can'
-            style='margin-bottom: 30px'
-            ng-init=`example = "${example}"`
-        )
-            ul
-                li Create any number of queries
-                li Execute and explain SQL queries
-                li Execute scan queries
-                li View data in tabular form and as charts
-                li
-                    a(href='https://apacheignite-sql.readme.io/docs/sql-reference-overview' target='_blank') More info
-            .example
-                .group
-                    .group-legend
-                        label Examples:
-                    .group-content
-                        .sql-editor(ignite-ace='{\
-                            onLoad: aceInit({}),\
-                            theme: "chrome",\
-                            mode: "sql",\
-                            require: ["ace/ext/language_tools"],\
-                            showGutter: false,\
-                            advanced: {\
-                                enableSnippets: false,\
-                                enableBasicAutocompletion: true,\
-                                enableLiveAutocompletion: true\
-                            }}'
-                            ng-model='example'
-                            readonly='true'
-                        )
+        cluster-selector
 
-        div(ng-if='notebookLoadFailed' style='text-align: center')
-            +notebook-error
+        .notebook-top-buttons
+            a.dropdown-toggle(style='margin-right: 20px' data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-left') Scroll to query
+                span.caret
+            button.btn-ignite.btn-ignite--primary(ng-click='addQuery()' ignite-on-click-focus=focusId)
+                svg.icon-left(ignite-icon='plus')
+                | Add query
 
-        div(ng-if='notebook' ignite-loading='sqlLoading' ignite-loading-text='{{ loadingText }}' ignite-loading-position='top')
-            .docs-body.paragraphs
-                .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
+            button.btn-ignite.btn-ignite--primary(ng-click='addScan()' ignite-on-click-focus=focusId)
+                svg.icon-left(ignite-icon='plus')
+                | Add scan
 
-                    .panel-paragraph(ng-repeat='paragraph in notebook.paragraphs' id='{{paragraph.id}}' ng-form='form_{{paragraph.id}}')
-                        .panel.panel-default(ng-if='paragraph.qryType === "scan"')
-                            +paragraph-scan
-                        .panel.panel-default(ng-if='paragraph.qryType === "query"')
-                            +paragraph-query
+div
+    breadcrumbs
+        a.link-success(ui-sref='base.sql.tabs') Notebooks
+        span(ui-sref='.' ui-sref-active) Notebook '{{notebook.name}}'
+
+    -var example = `CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));\nINSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');\nSELECT * FROM Person;`;
+
+    ignite-information(
+        data-title='With query notebook you can'
+        style='margin-bottom: 30px'
+        ng-init=`example = "${example}"`
+    )
+        ul
+            li Create any number of queries
+            li Execute and explain SQL queries
+            li Execute scan queries
+            li View data in tabular form and as charts
+            li
+                a(href='https://apacheignite-sql.readme.io/docs/sql-reference-overview' target='_blank') More info
+        .example
+            .group
+                .group-legend
+                    label Examples:
+                .group-content
+                    .sql-editor(ignite-ace='{\
+                        onLoad: aceInit({}),\
+                        theme: "chrome",\
+                        mode: "sql",\
+                        require: ["ace/ext/language_tools"],\
+                        showGutter: false,\
+                        advanced: {\
+                           enableSnippets: false,\
+                           enableBasicAutocompletion: true,\
+                           enableLiveAutocompletion: true\
+                        }}'
+                        ng-model='example'
+                        readonly='true'
+                    )
+
+    div(ng-if='notebookLoadFailed' style='text-align: center')
+        +notebook-error
+
+    div(ng-if='notebook' ignite-loading='sqlLoading' ignite-loading-text='{{ loadingText }}' ignite-loading-position='top')
+        .docs-body.paragraphs
+            .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
+
+                .panel-paragraph(ng-repeat='paragraph in notebook.paragraphs' id='{{paragraph.id}}' ng-form='form_{{paragraph.id}}')
+                    .panel.panel-default(ng-if='paragraph.qryType === "scan"')
+                        +paragraph-scan
+                    .panel.panel-default(ng-if='paragraph.qryType === "query"')
+                        +paragraph-query

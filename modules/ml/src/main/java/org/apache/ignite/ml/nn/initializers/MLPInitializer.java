@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.nn.initializers;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for classes encapsulating logic for initialization of weights and biases of MLP.
@@ -29,12 +29,12 @@ public interface MLPInitializer {
      *
      * @param weights Matrix representing weights.
      */
-    void initWeights(Matrix weights);
+    public void initWeights(Matrix weights);
 
     /**
      * In-place change values of vector representing vectors.
      *
      * @param biases Vector representing vectors.
      */
-    void initBiases(Vector biases);
+    public void initBiases(Vector biases);
 }
