@@ -26,8 +26,10 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import sun.misc.Unsafe;
@@ -310,5 +312,10 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         }
 
         U.clearClassCache(ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OptimizedMarshaller.class, this);
     }
 }
