@@ -328,7 +328,7 @@ Now migrate the data from the old schema to the new one.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 222-279
+  :lines: 220-277
 
 As you can see, old or new fields are available in the resulting binary object,
 depending on which schema was used when writing them using
