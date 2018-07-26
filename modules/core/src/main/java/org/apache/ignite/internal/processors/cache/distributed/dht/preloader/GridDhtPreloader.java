@@ -177,7 +177,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             return true; // Required, can have outdated updSeq partition counter if node reconnects.
 
         if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
-            assert rebTopVer.compareTo(grp.localStartVersion()) < 0 :
+            assert rebTopVer.compareTo(grp.localStartVersion()) <= 0 :
                 "Empty hisroty allowed only for newly started cache group [rebTopVer=" + rebTopVer +
                     ", localStartTopVer=" + grp.localStartVersion() + ']';
 
