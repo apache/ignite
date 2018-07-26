@@ -244,7 +244,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     private static final String PATH = IgniteSystemProperties.getString("SAVE_DB_FILE_PATH");
 
     /** */
-    private static final String OUT_SUB_DIR = "out";
+    private static final String OUT_SUB_DIR = "archive_db";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
