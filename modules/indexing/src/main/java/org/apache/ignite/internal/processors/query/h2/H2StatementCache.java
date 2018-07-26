@@ -17,52 +17,68 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.sql.PreparedStatement;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Statement cache.
- */
-class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, PreparedStatement> {
-    /** */
-    private int size;
+import java.sql.PreparedStatement;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
+/**
+ * Statement cache. LRU eviction policy is used.
+ */
+class H2StatementCache {
     /** Last usage. */
     private volatile long lastUsage;
 
+    /** */
+    private final LinkedHashMap<H2CachedStatementKey, PreparedStatement> lruStmtCache;
+
+    /** */
+    private final IdentityHashMap<PreparedStatement, Object> attachments = new IdentityHashMap<>();
+
     /**
-     * @param size Size.
+     * @param size Maximum number of statements this cache can store.
      */
     H2StatementCache(int size) {
-        super(size, (float)0.75, true);
+        lruStmtCache = new LinkedHashMap<H2CachedStatementKey, PreparedStatement>(size, .75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, PreparedStatement> eldest) {
+                boolean rmv = size() > size;
 
-        this.size = size;
-    }
+                if (rmv) {
+                    PreparedStatement stmt = eldest.getValue();
 
-    /** {@inheritDoc} */
-    @Override protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, PreparedStatement> eldest) {
-        boolean rmv = size() > size;
+                    U.closeQuiet(stmt);
 
-        if (rmv) {
-            PreparedStatement stmt = eldest.getValue();
+                    attachments.remove(stmt);
+                }
 
-            U.closeQuiet(stmt);
-        }
-
-        return rmv;
+                return rmv;
+            }
+        };
     }
 
     /**
-     * Get statement for given schema and SQL.
-     * @param schemaName Schema name.
-     * @param sql SQL statement.
-     * @return Cached {@link PreparedStatement}, or {@code null} if none found.
+     * Caches a statement.
+     *
+     * @param key Key associated with statement.
+     * @param stmt Statement which will be cached.
      */
-    @Nullable public PreparedStatement get(String schemaName, String sql) {
-        return get(new H2CachedStatementKey(schemaName, sql));
+    void put(H2CachedStatementKey key, PreparedStatement stmt) {
+        lruStmtCache.put(key, stmt);
+    }
+
+    /**
+     * Retrieves cached statement.
+     *
+     * @param key Key for a statement.
+     * @return Statement associated with a key.
+     */
+    @Nullable PreparedStatement get(H2CachedStatementKey key) {
+        return lruStmtCache.get(key);
     }
 
     /**
@@ -70,14 +86,14 @@ class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, PreparedState
      *
      * @return last usage timestamp
      */
-    public long lastUsage() {
+    long lastUsage() {
         return lastUsage;
     }
 
     /**
      * Updates the {@link #lastUsage} timestamp by current time.
      */
-    public void updateLastUsage() {
+    void updateLastUsage() {
         lastUsage = U.currentTimeMillis();
     }
 
@@ -87,7 +103,21 @@ class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, PreparedState
      * @param sql SQL statement.
      * @return Cached {@link PreparedStatement}, or {@code null} if none found.
      */
-    @Nullable public PreparedStatement remove(String schemaName, String sql) {
-        return remove(new H2CachedStatementKey(schemaName, sql));
+    @Nullable PreparedStatement remove(String schemaName, String sql) {
+        return lruStmtCache.remove(new H2CachedStatementKey(schemaName, sql));
+    }
+
+
+    /**
+     * Attaches lazily created object to statement if nothing is attached yet.
+     *
+     * @param preparedStatement Target statement.
+     * @param attachmentSupplier Attachment supplier.
+     * @param <T> Attachment type.
+     * @return Existed or created attachment.
+     */
+    @SuppressWarnings("unchecked")
+    <T> T attachIfAbsent(PreparedStatement preparedStatement, Supplier<T> attachmentSupplier) {
+        return (T) attachments.computeIfAbsent(preparedStatement, k -> attachmentSupplier.get());
     }
 }

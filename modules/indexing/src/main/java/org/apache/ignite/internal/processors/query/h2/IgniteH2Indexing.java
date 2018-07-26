@@ -984,14 +984,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridNearTxSelectForUpdateFuture sfuFut = null;
 
             if (mvccEnabled) {
-                GridSqlStatement stmt0 = null;
-
                 if (mvccTracker == null) {
-                    GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-                    stmt0 = parser.parse(p); // save result for possible further SFU processing;
-
-                    mvccTracker = mvccTracker(parser, startTx);
+                    mvccTracker = mvccTracker(stmt, startTx);
                 }
 
                 if (mvccTracker != null) {
@@ -1009,8 +1003,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                             "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                    if (stmt0 == null)
-                        stmt0 = new GridSqlQueryParser(false).parse(p);
+                    GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(p);
 
                     qry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(stmt0, forUpdate = tx != null);
 
@@ -1524,39 +1517,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return MVCC query tracker or {@code null} if MVCC is disabled for involved caches.
      */
     private MvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
-        Prepared p = GridSqlQueryParser.prepared(stmt);
+        List<GridCacheContext> involvedCaches = getStatementsCacheForCurrentThread().attachIfAbsent(stmt, () -> {
+            Prepared p = GridSqlQueryParser.prepared(stmt);
+            GridSqlQueryParser parser = new GridSqlQueryParser(false);
+            parser.parse(p);
 
-        assert p.isQuery() : p;
+            List<GridCacheContext> cctxs = new ArrayList<>();
+            for (Object o : parser.objectsMap().values()) {
+                if (o instanceof GridSqlAlias)
+                    o = GridSqlAlias.unwrap((GridSqlAst) o);
+                if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null)
+                    cctxs.add(((GridSqlTable) o).dataTable().cache());
+            }
+            return cctxs;
+        });
 
-        GridSqlQueryParser parser = new GridSqlQueryParser(false);
-
-        parser.parse(p);
-
-        return mvccTracker(parser, startTx);
-    }
-
-    /** */
-    private MvccQueryTracker mvccTracker(GridSqlQueryParser parser, boolean startTx) throws IgniteCheckedException {
-        assert parser != null;
-
+        GridCacheContext firstCctx = null;
         boolean mvccEnabled = false;
 
-        GridCacheContext cctx = null;
-
-        // check involved caches
-        for (Object o : parser.objectsMap().values()) {
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-
-            if (o instanceof GridSqlTable && ((GridSqlTable)o).dataTable() != null) {
-                if (cctx == null)
-                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
-                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
-                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+        for (GridCacheContext cctx : involvedCaches) {
+            if (firstCctx == null) {
+                firstCctx = cctx;
+                mvccEnabled = firstCctx.mvccEnabled();
             }
+            else if (mvccEnabled != cctx.mvccEnabled())
+                throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
         }
 
-        return cctx != null && cctx.mvccEnabled() ? MvccUtils.mvccTracker(cctx, startTx) : null;
+        return mvccEnabled ? MvccUtils.mvccTracker(firstCctx, startTx) : null;
     }
 
     /**

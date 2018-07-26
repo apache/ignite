@@ -1791,7 +1791,7 @@ public class GridSqlQueryParser {
     /**
      * @return H2 to Grid objects map.
      */
-    public Map objectsMap() {
+    public Map<Object, Object> objectsMap() {
         return h2ObjToGridObj;
     }
 
