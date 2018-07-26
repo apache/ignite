@@ -15,30 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow.submitter.parser;
+package org.apache.ignite.tensorflow.submitter.command;
 
-import java.util.function.Supplier;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.tensorflow.submitter.command.PsCommand;
+import picocli.CommandLine;
 
 /**
- * Command parser that parses "ps" command.
+ * Root command that aggregates all sub commands.
  */
-public class PsCommandParser implements CommandParser {
-    /** Ignite supplier. */
-    private final Supplier<Ignite> igniteSupplier;
-
-    /**
-     * Constructs a new instance of "ps" command parser.
-     *
-     * @param igniteSupplier Ignite supplier.
-     */
-    public PsCommandParser(Supplier<Ignite> igniteSupplier) {
-        this.igniteSupplier = igniteSupplier;
-    }
-
+@CommandLine.Command(
+    name = "ignite-tf",
+    description = "Apache Ignite and TensorFlow integration command line tool that allows to start, maintain and" +
+        " stop distributed deep learning utilizing Apache Ignite infrastructure and data.",
+    subcommands = {
+        StartCommand.class,
+        StopCommand.class,
+        AttachCommand.class,
+        PsCommand.class
+    },
+    mixinStandardHelpOptions = true
+)
+public class RootCommand extends AbstractCommand {
     /** {@inheritDoc} */
-    @Override public Runnable parse(String[] args) {
-        return new PsCommand(igniteSupplier);
+    @Override public void run() {
+        CommandLine.usage(this, System.out);
     }
 }

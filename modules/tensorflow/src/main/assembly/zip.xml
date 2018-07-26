@@ -32,7 +32,7 @@
 
     <files>
         <file>
-            <source>${project.basedir}/src/main/bin/ignite-tf.sh</source>
+            <source>${project.basedir}/src/main/sh/ignite-tf.sh</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>

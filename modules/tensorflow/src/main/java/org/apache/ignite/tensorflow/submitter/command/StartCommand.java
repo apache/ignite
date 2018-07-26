@@ -24,53 +24,50 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
+import picocli.CommandLine;
 
 /**
- * Start command that starts TensorFlow cluster for specified cache and runs specified job using this cluster.
+ * Command "start" that is used to start a new TensorFlow cluster on top of Apache Ignite.
  */
-public class StartCommand implements Runnable {
-    /** Ignite supplier. */
-    private final Supplier<Ignite> igniteSupplier;
-
+@CommandLine.Command(
+    name = "start",
+    description = "Starts a new TensorFlow cluster and attaches to user script process.",
+    mixinStandardHelpOptions = true
+)
+public class StartCommand extends AbstractCommand {
     /** Upstream cache name. */
-    private final String upstreamCacheName;
+    @CommandLine.Parameters(index = "0", paramLabel = "CACHE_NAME", description = "Upstream cache name.")
+    private String cacheName;
 
-    /** Job archive path. */
-    private final String jobArchivePath;
+    /** Job folder or archive. */
+    @CommandLine.Parameters(index = "1", paramLabel = "JOB_DIR", description = "Job folder (or zip archive).")
+    private String jobFolder;
 
-    /** User command to be executed. */
-    private final String[] commands;
+    /** Job command to be executed in cluster. */
+    @CommandLine.Parameters(index = "2", paramLabel = "JOB_CMD", description = "Job command.")
+    private String jobCmd;
 
-    /**
-     * Constructs a new instance of start command.
-     *
-     * @param igniteSupplier Ignite supplier.
-     * @param upstreamCacheName Upstream cache name.
-     * @param jobArchivePath Job archive path.
-     * @param commands User command to be executed.
-     */
-    public StartCommand(Supplier<Ignite> igniteSupplier, String upstreamCacheName, String jobArchivePath,
-        String[] commands) {
-        this.igniteSupplier = igniteSupplier;
-        this.upstreamCacheName = upstreamCacheName;
-        this.jobArchivePath = jobArchivePath;
-        this.commands = commands;
-    }
+    /** Arguments of a job command to be executed in cluster. */
+    @CommandLine.Parameters(index = "3..*", paramLabel = "JOB_ARGS", description = "Job arguments.")
+    private String[] jobArguments;
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (Ignite ignite = igniteSupplier.get()) {
+        try (Ignite ignite = getIgnite()) {
             UUID clusterId = UUID.randomUUID();
+            String[] commands = new String[jobArguments.length + 1];
+            commands[0] = jobCmd;
+            System.arraycopy(jobArguments, 0, commands, 1, commands.length - 1);
+
             TensorFlowJobArchive jobArchive = new TensorFlowJobArchive(
-                upstreamCacheName,
-                zip(jobArchivePath),
+                cacheName,
+                zip(jobFolder),
                 commands
             );
 
@@ -187,22 +184,22 @@ public class StartCommand implements Runnable {
     }
 
     /** */
-    public Supplier<Ignite> getIgniteSupplier() {
-        return igniteSupplier;
+    public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /** */
-    public String getUpstreamCacheName() {
-        return upstreamCacheName;
+    public void setJobFolder(String jobFolder) {
+        this.jobFolder = jobFolder;
     }
 
     /** */
-    public String getJobArchivePath() {
-        return jobArchivePath;
+    public void setJobCmd(String jobCmd) {
+        this.jobCmd = jobCmd;
     }
 
     /** */
-    public String[] getCommands() {
-        return commands;
+    public void setJobArguments(String[] jobArguments) {
+        this.jobArguments = jobArguments;
     }
 }

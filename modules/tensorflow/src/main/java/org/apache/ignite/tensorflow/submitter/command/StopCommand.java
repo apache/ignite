@@ -18,46 +18,33 @@
 package org.apache.ignite.tensorflow.submitter.command;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
+import picocli.CommandLine;
 
 /**
- * Stop command that stops
+ * Command "stop" that is used to stop TensorFlow cluster.
  */
-public class StopCommand implements Runnable {
-    /** Ignite supplier. */
-    private final Supplier<Ignite> igniteSupplier;
-
+@CommandLine.Command(
+    name = "stop",
+    description = "Stops a running TensorFlow cluster.",
+    mixinStandardHelpOptions = true
+)
+public class StopCommand extends AbstractCommand {
     /** Cluster identifier. */
-    private final UUID clusterId;
-
-    /**
-     * Constructs a new instance of stop command.
-     *
-     * @param igniteSupplier Ignite supplier.
-     * @param clusterId Cluster identifier.
-     */
-    public StopCommand(Supplier<Ignite> igniteSupplier, UUID clusterId) {
-        this.igniteSupplier = igniteSupplier;
-        this.clusterId = clusterId;
-    }
+    @CommandLine.Parameters(paramLabel = "CLUSTER_ID", description = "Cluster identifier.")
+    private UUID clusterId;
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (Ignite ignite = igniteSupplier.get()) {
+        try (Ignite ignite = getIgnite()) {
             TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
             mgr.stopClusterIfExists(clusterId);
         }
     }
 
     /** */
-    public Supplier<Ignite> getIgniteSupplier() {
-        return igniteSupplier;
-    }
-
-    /** */
-    public UUID getClusterId() {
-        return clusterId;
+    public void setClusterId(UUID clusterId) {
+        this.clusterId = clusterId;
     }
 }

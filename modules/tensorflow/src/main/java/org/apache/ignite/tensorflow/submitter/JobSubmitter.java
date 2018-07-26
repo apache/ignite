@@ -17,48 +17,19 @@
 
 package org.apache.ignite.tensorflow.submitter;
 
-import org.apache.ignite.tensorflow.submitter.parser.CommandParser;
-import org.apache.ignite.tensorflow.submitter.parser.GeneralCommandParser;
+import org.apache.ignite.tensorflow.submitter.command.RootCommand;
+import picocli.CommandLine;
 
 /**
  * Main class of the job submitter application that allows to submit TensorFlow jobs to be run within Ignite cluster.
  */
 public class JobSubmitter {
-    /** Command parser. */
-    private static final CommandParser parser = new GeneralCommandParser();
-
     /**
      * Main method.
      *
      * @param args Arguments.
      */
     public static void main(String... args) {
-        Runnable cmd = parser.parse(args);
-
-        if (cmd != null)
-            cmd.run();
-        else
-            System.out.print(formatInfoMessage());
-    }
-
-    /**
-     * Formats and returns info message.
-     *
-     * @return Info message.
-     */
-    private static String formatInfoMessage() {
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("Usage: ignite-tf.sh COMMAND\n\n");
-        builder.append("TensorFlow on Apache Ignite\n\n");
-        builder.append("Options: \n");
-        builder.append(" -c string    Location of Ignite node configuration\n\n");
-        builder.append("Commands: \n");
-        builder.append(" start  CACHE_NAME FOLDER COMMAND ARGS    Starts a new TensorFlow cluster\n");
-        builder.append(" stop   CLUSTER_ID                        Stops a TensorFlow cluster\n");
-        builder.append(" attach CLUSTER_ID                        Attaches to a running TensorFlow cluster\n");
-        builder.append(" ps                                       Prints ids of all running TensorFlow clusters\n");
-
-        return builder.toString();
+        CommandLine.run(new RootCommand(), System.out, args);
     }
 }

@@ -18,34 +18,26 @@
 package org.apache.ignite.tensorflow.submitter.command;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.TensorFlowClusterGatewayManager;
+import picocli.CommandLine;
 
 /**
- * Describe command that prints configuration of the specified TensorFlow cluster.
+ * Command "attach" that is used to attach to running TensorFlow cluster and receive output of the user script.
  */
-public class AttachCommand implements Runnable {
-    /** Ignite supplier. */
-    private final Supplier<Ignite> igniteSupplier;
-
-    /** Cluster identifier. */
-    private final UUID clusterId;
-
-    /**
-     * Constructs a new instance of command "attach".
-     *
-     * @param igniteSupplier Ignite supplier.
-     * @param clusterId Cluster identifier.
-     */
-    public AttachCommand(Supplier<Ignite> igniteSupplier, UUID clusterId) {
-        this.igniteSupplier = igniteSupplier;
-        this.clusterId = clusterId;
-    }
+@CommandLine.Command(
+    name = "attach",
+    description = "Attaches to running TensorFlow cluster (user script process).",
+    mixinStandardHelpOptions = true
+)
+public class AttachCommand extends AbstractCommand {
+    /** TensorFlow cluster identifier. */
+    @CommandLine.Parameters(paramLabel = "CLUSTER_ID", description = "Cluster identifier.")
+    private UUID clusterId;
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (Ignite ignite = igniteSupplier.get()) {
+        try (Ignite ignite = getIgnite()) {
             TensorFlowClusterGatewayManager mgr = new TensorFlowClusterGatewayManager(ignite);
 
             mgr.listenToClusterUserScript(clusterId, System.out::println, System.err::println);
@@ -53,12 +45,7 @@ public class AttachCommand implements Runnable {
     }
 
     /** */
-    public Supplier<Ignite> getIgniteSupplier() {
-        return igniteSupplier;
-    }
-
-    /** */
-    public UUID getClusterId() {
-        return clusterId;
+    public void setClusterId(UUID clusterId) {
+        this.clusterId = clusterId;
     }
 }
