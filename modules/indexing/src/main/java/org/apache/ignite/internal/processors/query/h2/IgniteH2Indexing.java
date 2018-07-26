@@ -116,6 +116,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.views.SqlMetaView;
+import org.apache.ignite.internal.processors.query.h2.views.SqlMetaViewProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -347,6 +349,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private DdlStatementsProcessor ddlProc;
+
+    /** */
+    private SqlMetaViewProcessor metaViewProc;
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
@@ -1793,7 +1798,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return Collections.singletonList(resCur);
             }
 
-            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
+            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         if (twoStepQry != null) {
@@ -1983,6 +1989,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qry.getArgs(), qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
         List<Integer> cacheIds = collectCacheIds(null, res);
+
+        List<SqlMetaView> metaViews = collectMetaViews(res);
+
+        if (!F.isEmpty(cacheIds) && !F.isEmpty(metaViews)) {
+            throw new IgniteSQLException("Cache tables and meta views cannot be used in the same query",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
 
         if (F.isEmpty(cacheIds))
             res.local(true);
@@ -2578,6 +2591,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
+
+            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_META_VIEWS)) {
+                if (log.isInfoEnabled())
+                    log.info("Meta views are disabled");
+            }
+            else {
+                synchronized (schemaMux) {
+                    createSchema(SqlMetaViewProcessor.SCHEMA_NAME);
+                }
+
+                metaViewProc = new SqlMetaViewProcessor();
+
+                metaViewProc.start(ctx, this);
+
+                // Caching this connection in ThreadLocal may lead to memory leaks.
+                connCache.set(null);
+            }
         }
 
         if (JdbcUtils.serializer != null)
@@ -3065,9 +3095,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (QueryTable tblKey : twoStepQry.tables()) {
                 GridH2Table tbl = dataTable(tblKey);
 
-                int cacheId = tbl.cacheId();
+                if (tbl != null) {
+                    int cacheId = tbl.cacheId();
 
-                caches0.add(cacheId);
+                    caches0.add(cacheId);
+                }
             }
         }
 
@@ -3081,6 +3113,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return cacheIds;
         }
+    }
+
+    /**
+     * Collect meta views from two-step query.
+     *
+     * @param twoStepQry Two-step query.
+     * @return Result.
+     */
+    private List<SqlMetaView> collectMetaViews(GridCacheTwoStepQuery twoStepQry) {
+        List<SqlMetaView> views = new ArrayList<>();
+
+        if (twoStepQry.tablesCount() > 0) {
+            Map<String, SqlMetaView> registeredViews = metaViewProc.getRegisteredViews();
+
+            for (QueryTable tbl : twoStepQry.tables()) {
+                if (SqlMetaViewProcessor.SCHEMA_NAME.equals(tbl.schema()) && registeredViews.containsKey(tbl.table()))
+                    views.add(registeredViews.get(tbl.table()));
+            }
+        }
+
+        return views;
     }
 
     /**
