@@ -37,8 +37,8 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease) {
-        this(maxDeep, minImpurityDecrease, null);
+    public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease, boolean useIndex) {
+        this(maxDeep, minImpurityDecrease, null, useIndex);
     }
 
     /**
@@ -48,13 +48,14 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
      * @param minImpurityDecrease Min impurity decrease.
      */
     public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease,
-        StepFunctionCompressor<MSEImpurityMeasure> compressor) {
-        super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder());
+        StepFunctionCompressor<MSEImpurityMeasure> compressor, boolean useIndex) {
+        super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder(), useIndex);
     }
 
     /** {@inheritDoc} */
     @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
-        Dataset<EmptyContext, DecisionTreeData> dataset) {
-        return new MSEImpurityMeasureCalculator();
+        Dataset<EmptyContext, DecisionTreeData> dataset, boolean useIndex) {
+
+        return new MSEImpurityMeasureCalculator(useIndex);
     }
 }

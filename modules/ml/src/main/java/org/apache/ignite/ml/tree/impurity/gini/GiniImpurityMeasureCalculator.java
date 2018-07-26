@@ -29,7 +29,7 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 /**
  * Gini impurity measure calculator.
  */
-public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<GiniImpurityMeasure> {
+public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<GiniImpurityMeasure> {
     /** */
     private static final long serialVersionUID = -522995134128519679L;
 
@@ -41,26 +41,44 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
      *
      * @param lbEncoder Label encoder which defines integer value for every label class.
      */
-    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder) {
+    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder, boolean useIndex) {
+        super(useIndex);
         this.lbEncoder = lbEncoder;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
-        TreeDataIndex index = data.createIndexByFilter(depth, filter);
-        if (index.rowsCount() > 0) {
-            StepFunction<GiniImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
+        TreeDataIndex index = null;
+        boolean canCalculate = false;
+
+        if (useIndex) {
+            index = data.createIndexByFilter(depth, filter);
+            canCalculate = index.rowsCount() > 0;
+        }
+        else {
+            data = data.filter(filter);
+            canCalculate = data.getFeatures().length > 0;
+        }
+
+        if (canCalculate) {
+            int rowsCnt = rowsCount(data, index);
+            int colsCnt = columnsCount(data, index);
+
+            StepFunction<GiniImpurityMeasure>[] res = new StepFunction[colsCnt];
 
             for (int col = 0; col < res.length; col++) {
+                if(!useIndex)
+                    data.sort(col);
+
                 ArrayList<Double> x = new ArrayList<>();
                 ArrayList<GiniImpurityMeasure> y = new ArrayList<>();
 
                 long[] left = new long[lbEncoder.size()];
                 long[] right = new long[lbEncoder.size()];
 
-                for (int i = 0; i < index.rowsCount(); i++) {
-                    double label = index.labelInSortedOrder(i, col);
+                for (int i = 0; i < rowsCnt; i++) {
+                    double label = getLabelValue(data, index, col, i);
                     right[getLabelCode(label)]++;
                 }
 
@@ -70,22 +88,20 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
                     Arrays.copyOf(right, right.length)
                 ));
 
-                int lastRowId = 0;
-                for (int i = 0; i < index.rowsCount(); i++) {
-                    double label = index.labelInSortedOrder(i, col);
-                    left[getLabelCode(label)]++;
-                    right[getLabelCode(label)]--;
+                for (int i = 0; i < rowsCnt; i++) {
+                    double lb = getLabelValue(data, index, col, i);
+                    left[getLabelCode(lb)]++;
+                    right[getLabelCode(lb)]--;
 
-                    if (i < (index.rowsCount() - 1) && index.featureInSortedOrder(lastRowId, col) == index.featureInSortedOrder(i, col))
+                    double featureVal = getFeatureValue(data, index, col, i);
+                    if (i < (rowsCnt - 1) && getFeatureValue(data, index, col, i + 1) == featureVal)
                         continue;
 
-                    x.add(index.featureInSortedOrder(i, col));
+                    x.add(featureVal);
                     y.add(new GiniImpurityMeasure(
                         Arrays.copyOf(left, left.length),
                         Arrays.copyOf(right, right.length)
                     ));
-
-                    lastRowId = i;
                 }
 
                 res[col] = new StepFunction<>(x, y, GiniImpurityMeasure.class);

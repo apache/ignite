@@ -34,7 +34,7 @@ public class MSEImpurityMeasureCalculatorTest {
         double[][] data = new double[][]{{0, 2}, {1, 1}, {2, 0}, {3, 3}};
         double[] labels = new double[]{1, 2, 2, 1};
 
-        MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator();
+        MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator(false);
 
         StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels), fs -> true, 0);
 

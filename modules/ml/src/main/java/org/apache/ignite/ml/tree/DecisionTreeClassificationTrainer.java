@@ -41,8 +41,8 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease) {
-        this(maxDeep, minImpurityDecrease, null);
+    public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease, boolean useIndex) {
+        this(maxDeep, minImpurityDecrease, null, useIndex);
     }
 
     /**
@@ -52,13 +52,13 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      * @param minImpurityDecrease Min impurity decrease.
      */
     public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease,
-        StepFunctionCompressor<GiniImpurityMeasure> compressor) {
-        super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder());
+        StepFunctionCompressor<GiniImpurityMeasure> compressor, boolean useIndex) {
+        super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder(), useIndex);
     }
 
     /** {@inheritDoc} */
     @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
-        Dataset<EmptyContext, DecisionTreeData> dataset) {
+        Dataset<EmptyContext, DecisionTreeData> dataset, boolean useIndex) {
         Set<Double> labels = dataset.compute(part -> {
 
             if (part.getLabels() != null) {
@@ -88,6 +88,6 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         for (Double lb : labels)
             encoder.put(lb, idx++);
 
-        return new GiniImpurityMeasureCalculator(encoder);
+        return new GiniImpurityMeasureCalculator(encoder, useIndex);
     }
 }

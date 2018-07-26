@@ -73,6 +73,6 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer {
 
     /** {@inheritDoc} */
     @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
-        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease);
+        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease, useIndex);
     }
 }

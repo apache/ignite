@@ -32,6 +32,8 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
     private final int maxDepth;
     /** Min impurity decrease. */
     private final double minImpurityDecrease;
+    /** Use index structure instead of using sorting while learning. */
+    private boolean useIndex = true;
 
     /**
      * Constructs instance of GDBBinaryClassifierOnTreesTrainer.
@@ -51,6 +53,11 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
 
     /** {@inheritDoc} */
     @NotNull @Override protected DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer() {
-        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease);
+        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease, useIndex);
+    }
+
+    /** */
+    public void setUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
     }
 }

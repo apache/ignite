@@ -28,6 +28,8 @@ public abstract class RandomForestTrainer extends BaggingModelTrainer {
     protected final int maxDeep;
     /** Min impurity decrease. */
     protected final double minImpurityDecrease;
+    /** Use index structure instead of using sorting while decision tree learning. */
+    protected boolean useIndex = false;
 
     /**
      * Constructs new instance of BaggingModelTrainer.
@@ -53,5 +55,10 @@ public abstract class RandomForestTrainer extends BaggingModelTrainer {
 
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
+    }
+
+    /** */
+    public void setUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
     }
 }

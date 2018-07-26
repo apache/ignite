@@ -79,7 +79,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(
             8,
             0,
-            new SimpleStepFunctionCompressor<>());
+            new SimpleStepFunctionCompressor<>(), false);
 
         DecisionTreeNode mdl = trainer.fit(
             ignite,

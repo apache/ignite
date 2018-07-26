@@ -66,7 +66,7 @@ public class DecisionTreeClassificationTrainerTest {
             data.put(i, new double[]{x, x > 0 ? 1 : 0});
         }
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0, false);
 
         DecisionTreeNode tree = trainer.fit(
             data,

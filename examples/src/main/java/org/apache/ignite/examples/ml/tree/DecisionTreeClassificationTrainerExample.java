@@ -61,7 +61,7 @@ public class DecisionTreeClassificationTrainerExample {
                     trainingSet.put(i, generatePoint(rnd));
 
                 // Create classification trainer.
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0, false);
 
                 // Train decision tree model.
                 DecisionTreeNode mdl = trainer.fit(

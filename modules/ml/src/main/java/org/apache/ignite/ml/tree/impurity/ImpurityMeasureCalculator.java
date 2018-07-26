@@ -20,6 +20,7 @@ package org.apache.ignite.ml.tree.impurity;
 import java.io.Serializable;
 import org.apache.ignite.ml.tree.TreeFilter;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.TreeDataIndex;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
 /**
@@ -27,7 +28,14 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunction;
  *
  * @param <T> Type of impurity measure.
  */
-public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> extends Serializable {
+public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> implements Serializable {
+    /** Use index structure instead of using sorting while learning. */
+    protected final boolean useIndex;
+
+    public ImpurityMeasureCalculator(boolean useIndex) {
+        this.useIndex = useIndex;
+    }
+
     /**
      * Calculates all impurity measures required required to find a best split and returns them as an array of
      * {@link StepFunction} (for every column).
@@ -35,5 +43,46 @@ public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> extends
      * @param data Features and labels.
      * @return Impurity measures as an array of {@link StepFunction} (for every column).
      */
-    public StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter, int depth);
+    public abstract StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter, int depth);
+
+
+    /**
+     * Returns columns count in current dataset.
+     *
+     * @param data Data.
+     * @param idx Index.
+     */
+    protected int columnsCount(DecisionTreeData data, TreeDataIndex idx) {
+        return useIndex ? idx.columnsCount() : data.getFeatures()[0].length;
+    }
+
+    /**
+     * Returns rows count in current dataset.
+     *
+     * @param data Data.
+     * @param idx Index.
+     */
+    protected int rowsCount(DecisionTreeData data, TreeDataIndex idx) {
+        return useIndex ? idx.rowsCount() : data.getFeatures().length;
+    }
+
+    /**
+     * Returns label value in according to kth order statistic.
+     *
+     * @param data Data.
+     * @param idx Index.
+     */
+    protected double getLabelValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
+        return useIndex ? idx.labelInSortedOrder(k, featureId) : data.getLabels()[k];
+    }
+
+    /**
+     * Returns feature value in according to kth order statistic.
+     *
+     * @param data Data.
+     * @param idx Index.
+     */
+    protected double getFeatureValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
+        return useIndex ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];
+    }
 }

@@ -49,7 +49,7 @@ public class Step_1_Read_and_Learn {
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0, true);
 
                     DecisionTreeNode mdl = trainer.fit(
                         ignite,

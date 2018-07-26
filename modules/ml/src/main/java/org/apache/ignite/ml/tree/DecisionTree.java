@@ -53,6 +53,9 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     /** Decision tree leaf builder. */
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
 
+    /** Use index structure instead of using sorting while learning. */
+    private final boolean useIndex;
+
     /**
      * Constructs a new distributed decision tree trainer.
      *
@@ -62,11 +65,12 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
     DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
-        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+        DecisionTreeLeafBuilder decisionTreeLeafBuilder, boolean useIndex) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
         this.decisionTreeLeafBuilder = decisionTreeLeafBuilder;
+        this.useIndex = useIndex;
     }
 
     /** {@inheritDoc} */
@@ -76,7 +80,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
+            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset, useIndex));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -89,7 +93,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param dataset Dataset.
      * @return Impurity measure calculator.
      */
-    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
+    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset, boolean useIndex);
 
     /**
      * Splits the node specified by the given dataset and predicate and returns decision tree node.

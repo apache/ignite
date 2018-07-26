@@ -27,18 +27,40 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 /**
  * Meas squared error (variance) impurity measure calculator.
  */
-public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<MSEImpurityMeasure> {
+public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEImpurityMeasure> {
     /** */
     private static final long serialVersionUID = 288747414953756824L;
+
+
+    public MSEImpurityMeasureCalculator(boolean useIndex) {
+        super(useIndex);
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
-        TreeDataIndex index = data.createIndexByFilter(depth, filter);
-        if (index.rowsCount() > 0) {
-            StepFunction<MSEImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
+        TreeDataIndex index = null;
+        boolean canCalculate = false;
+
+        if (useIndex) {
+            index = data.createIndexByFilter(depth, filter);
+            canCalculate = index.rowsCount() > 0;
+        }
+        else {
+            data = data.filter(filter);
+            canCalculate = data.getFeatures().length > 0;
+        }
+
+        if (canCalculate) {
+            int rowsCnt = rowsCount(data, index);
+            int colsCnt = columnsCount(data, index);
+
+            StepFunction<MSEImpurityMeasure>[] res = new StepFunction[colsCnt];
 
             for (int col = 0; col < res.length; col++) {
+                if (!useIndex)
+                    data.sort(col);
+
                 ArrayList<Double> x = new ArrayList<>();
                 ArrayList<MSEImpurityMeasure> y = new ArrayList<>();
 
@@ -50,32 +72,34 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
                 double rightY2 = 0;
 
                 int rightSize = 0;
-                for (int i = 0; i < index.rowsCount(); i++) {
-                    rightY += index.labelInSortedOrder(i, col);
-                    rightY2 += Math.pow(index.labelInSortedOrder(i, col), 2);
+                for (int i = 0; i < rowsCnt; i++) {
+                    double lbVal = getLabelValue(data, index, col, i);
+
+                    rightY += lbVal;
+                    rightY2 += Math.pow(lbVal, 2);
                     rightSize++;
                 }
 
-                int size = 0;
-                int lastI = 0;
-                for (int i = 0; i <= index.rowsCount(); i++) {
-                    if (size > 0) {
-                        leftY += index.labelInSortedOrder(lastI, col);
-                        leftY2 += Math.pow(index.labelInSortedOrder(lastI, col), 2);
+                int leftSize = 0;
+                for (int i = 0; i <= rowsCnt; i++) {
+                    if (leftSize > 0) {
+                        double lblVal = getLabelValue(data, index, col, i - 1);
 
-                        rightY -= index.labelInSortedOrder(lastI, col);
-                        rightY2 -= Math.pow(index.labelInSortedOrder(lastI, col), 2);
+                        leftY += lblVal;
+                        leftY2 += Math.pow(lblVal, 2);
+
+                        rightY -= lblVal;
+                        rightY2 -= Math.pow(lblVal, 2);
                     }
 
-                    if (size < rightSize)
-                        x.add(index.featureInSortedOrder(i, col));
+                    if (leftSize < rightSize)
+                        x.add(getFeatureValue(data, index, col, i));
 
                     y.add(new MSEImpurityMeasure(
-                        leftY, leftY2, size, rightY, rightY2, rightSize - size
+                        leftY, leftY2, leftSize, rightY, rightY2, rightSize - leftSize
                     ));
 
-                    lastI = i;
-                    size++;
+                    leftSize++;
                 }
 
                 res[col] = new StepFunction<>(x, y, MSEImpurityMeasure.class);
