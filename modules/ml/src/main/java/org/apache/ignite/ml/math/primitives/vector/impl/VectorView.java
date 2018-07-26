@@ -18,11 +18,11 @@
 package org.apache.ignite.ml.math.primitives.vector.impl;
 
 import java.io.Externalizable;
+import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.ml.math.primitives.vector.AbstractVector;
 import org.apache.ignite.ml.math.primitives.vector.storage.VectorViewStorage;
 
 /**

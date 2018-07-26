@@ -18,24 +18,24 @@
 package org.apache.ignite.ml.math;
 
 import org.apache.ignite.ml.math.distances.DistanceTest;
+import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.apache.ignite.ml.math.primitives.matrix.DenseMatrixConstructorTest;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixAttributeTest;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixStorageImplementationTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixViewConstructorTest;
 import org.apache.ignite.ml.math.primitives.matrix.SparseMatrixConstructorTest;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixArrayStorageTest;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorageImplementationTest;
-import org.apache.ignite.ml.math.primitives.vector.VectorArrayStorageTest;
 import org.apache.ignite.ml.math.primitives.vector.AbstractVectorTest;
 import org.apache.ignite.ml.math.primitives.vector.DelegatingVectorConstructorTest;
 import org.apache.ignite.ml.math.primitives.vector.DenseVectorConstructorTest;
 import org.apache.ignite.ml.math.primitives.vector.MatrixVectorViewTest;
 import org.apache.ignite.ml.math.primitives.vector.SparseVectorConstructorTest;
+import org.apache.ignite.ml.math.primitives.vector.VectorArrayStorageTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorAttributesTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorFoldMapTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorNormTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorViewTest;
-import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

@@ -19,9 +19,11 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
@@ -71,5 +73,22 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
      */
     public Model<Vector, Double> getMdl() {
         return mdl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        String mappingStr = featuresMapping.entrySet().stream()
+            .map(e -> String.format("%d -> %d", e.getKey(), e.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+
+        return ModelTrace.builder("ModelOnFeatureSubspace", pretty)
+            .addField("features mapping", mappingStr)
+            .addField("model", mdl.toString(false))
+            .toString();
     }
 }
