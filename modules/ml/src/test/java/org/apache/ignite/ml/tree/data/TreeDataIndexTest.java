@@ -6,7 +6,11 @@ import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Test for {@link TreeDataIndex}.
+ */
 public class TreeDataIndexTest {
+    /**  */
     private double[][] features = {
         {1., 2., 3., 4.},
         {2., 3., 4., 1.},
@@ -14,8 +18,10 @@ public class TreeDataIndexTest {
         {4., 1., 2., 3.}
     };
 
+    /** */
     private double[] labels = {1., 2., 3, 4.};
 
+    /** */
     private double[][] labelsInSortedOrder = {
         {1., 4., 3., 2.},
         {2., 1., 4., 3.},
@@ -23,6 +29,7 @@ public class TreeDataIndexTest {
         {4., 3., 2., 1.}
     };
 
+    /** */
     private double[][][] featuresInSortedOrder = {
         {
             {1., 2., 3., 4.},
@@ -50,8 +57,10 @@ public class TreeDataIndexTest {
         }
     };
 
+    /** */
     private TreeDataIndex index = new TreeDataIndex(features, labels);
 
+    /** */
     @Test
     public void labelInSortedOrderTest() {
         assertEquals(features.length, index.rowsCount());
@@ -63,6 +72,7 @@ public class TreeDataIndexTest {
         }
     }
 
+    /** */
     @Test
     public void featuresInSortedOrderTest() {
         assertEquals(features.length, index.rowsCount());
@@ -74,6 +84,7 @@ public class TreeDataIndexTest {
         }
     }
 
+    /** */
     @Test
     public void featureInSortedOrderTest() {
         assertEquals(features.length, index.rowsCount());
@@ -85,6 +96,7 @@ public class TreeDataIndexTest {
         }
     }
 
+    /** */
     @Test
     public void filterTest() {
         TreeFilter filter1 = features -> features[0] > 2;

@@ -48,7 +48,7 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
-        TreeDataIndex index = data.index(depth, filter);
+        TreeDataIndex index = data.createIndexByFilter(depth, filter);
         if (index.rowsCount() > 0) {
             StepFunction<GiniImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
 

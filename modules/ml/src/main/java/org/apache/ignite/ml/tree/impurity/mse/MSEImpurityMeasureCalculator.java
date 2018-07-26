@@ -34,7 +34,7 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
-        TreeDataIndex index = data.index(depth, filter);
+        TreeDataIndex index = data.createIndexByFilter(depth, filter);
         if (index.rowsCount() > 0) {
             StepFunction<MSEImpurityMeasure>[] res = new StepFunction[index.columnsCount()];
 

@@ -17,16 +17,26 @@
 
 package org.apache.ignite.ml.tree.data;
 
-import java.util.BitSet;
 import org.apache.ignite.ml.tree.TreeFilter;
 
+/**
+ * Index for representing sorted dataset rows for each features.
+ * It may be reused while decision tree learning at several levels through filter method.
+ */
 public class TreeDataIndex {
+    /** Index containing IDs of rows as if they is sorted by feature values. */
     private final int[][] index;
-    private final int[][] indexProj;
+    /** Original features table. */
     private final double[][] features;
+    /** Original labels. */
     private final double[] labels;
-    private final BitSet hasOriginalRows;
 
+    /**
+     * Constructs an instance of TreeDataIndex.
+     *
+     * @param features Features.
+     * @param labels Labels.
+     */
     public TreeDataIndex(double[][] features, double[] labels) {
         this.features = features;
         this.labels = labels;
@@ -36,9 +46,7 @@ public class TreeDataIndex {
 
         double[][] featuresCopy = new double[rows][cols];
         index = new int[rows][cols];
-        hasOriginalRows = new BitSet();
         for (int row = 0; row < rows; row++) {
-            hasOriginalRows.set(row);
             for (int col = 0; col < cols; col++) {
                 index[row][col] = row;
                 featuresCopy[row][col] = features[row][col];
@@ -47,31 +55,97 @@ public class TreeDataIndex {
 
         for (int col = 0; col < cols; col++)
             sortIndex(featuresCopy, col, 0, rows - 1);
-
-        indexProj = index;
     }
 
-    public TreeDataIndex(int[][] index, int[][] indexProj, BitSet hasRows, double[][] features,
-        double[] labels) {
-        this.index = index;
-        this.indexProj = indexProj;
+    /**
+     * Constructs an instance of TreeDataIndex
+     *
+     * @param indexProj Index projection.
+     * @param features Features.
+     * @param labels Labels.
+     */
+    private TreeDataIndex(int[][] indexProj, double[][] features, double[] labels) {
+        this.index = indexProj;
         this.features = features;
         this.labels = labels;
-        this.hasOriginalRows = hasRows;
     }
 
+    /**
+     * Returns label for kth order statistic for target feature.
+     *
+     * @param k K.
+     * @param featureId Feature id.
+     */
     public double labelInSortedOrder(int k, int featureId) {
-        return labels[indexProj[k][featureId]];
+        return labels[index[k][featureId]];
     }
 
+    /**
+     * Returns vector of original features for kth order statistic for target feature.
+     *
+     * @param k K.
+     * @param featureId Feature id.
+     */
     public double[] featuresInSortedOrder(int k, int featureId) {
-        return features[indexProj[k][featureId]];
+        return features[index[k][featureId]];
     }
 
+    /**
+     * Returns feature value for kth order statistic for target feature.
+     *
+     * @param k K.
+     * @param featureId Feature id.
+     */
     public double featureInSortedOrder(int k, int featureId) {
-        return features[indexProj[k][featureId]][featureId];
+        return featuresInSortedOrder(k, featureId)[featureId];
     }
 
+    /**
+     * Creates projection of current index in according to {@link TreeFilter}.
+     *
+     * @param filter Filter.
+     */
+    public TreeDataIndex filter(TreeFilter filter) {
+        int projSize = 0;
+        for (int i = 0; i < rowsCount(); i++) {
+            if (filter.test(featuresInSortedOrder(i, 0)))
+                projSize++;
+        }
+
+        int[][] projection = new int[projSize][columnsCount()];
+        for(int feature = 0; feature < columnsCount(); feature++) {
+            int ptr = 0;
+            for(int row = 0; row < rowsCount(); row++) {
+                if(filter.test(featuresInSortedOrder(row, feature)))
+                    projection[ptr++][feature] = index[row][feature];
+            }
+        }
+
+        return new TreeDataIndex(projection, features, labels);
+    }
+
+    /**
+     * Returns count of rows in current index.
+     */
+    public int rowsCount() {
+        return index.length;
+    }
+
+    /**
+     * Returns count of columns in current index.
+     */
+    public int columnsCount() {
+        return rowsCount() == 0 ? 0 : index[0].length ;
+    }
+
+    /**
+     * Constructs index structure in according to features table.
+     *
+     * @param features Features.
+     * @param col Column.
+     * @param from From.
+     * @param to To.
+     */
     private void sortIndex(double[][] features, int col, int from, int to) {
         if (from < to) {
             double pivot = features[(from + to) / 2][col];
@@ -101,35 +175,5 @@ public class TreeDataIndex {
             sortIndex(features, col, from, j);
             sortIndex(features, col, i, to);
         }
-    }
-
-    public TreeDataIndex filter(TreeFilter filter) {
-        BitSet filteredRows = new BitSet();
-        int projSize = 0;
-        for (int i = 0; i < rowsCount(); i++) {
-            if (filter.test(featuresInSortedOrder(i, 0))) {
-                filteredRows.set(indexProj[i][0]);
-                projSize++;
-            }
-        }
-
-        int[][] newIndexProj = new int[projSize][columnsCount()];
-        for(int feature = 0; feature < columnsCount(); feature++) {
-            int ptr = 0;
-            for(int row = 0; row < rowsCount(); row++) {
-                if(filteredRows.get(indexProj[row][feature]))
-                    newIndexProj[ptr++][feature] = indexProj[row][feature];
-            }
-        }
-
-        return new TreeDataIndex(index, newIndexProj, filteredRows, features, labels);
-    }
-
-    public int rowsCount() {
-        return indexProj.length;
-    }
-
-    public int columnsCount() {
-        return rowsCount() == 0 ? 0 : indexProj[0].length ;
     }
 }

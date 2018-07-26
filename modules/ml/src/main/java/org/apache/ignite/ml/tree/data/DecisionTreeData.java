@@ -31,7 +31,8 @@ public class DecisionTreeData implements AutoCloseable {
     /** Vector with labels. */
     private final double[] labels;
 
-    private final List<TreeDataIndex> indexCache;
+    /** Indexes cache. */
+    private final List<TreeDataIndex> indexesCache;
     /**
      * Constructs a new instance of decision tree data.
      *
@@ -44,8 +45,8 @@ public class DecisionTreeData implements AutoCloseable {
         this.features = features;
         this.labels = labels;
 
-        indexCache = new ArrayList<>();
-        indexCache.add(new TreeDataIndex(features, labels));
+        indexesCache = new ArrayList<>();
+        indexesCache.add(new TreeDataIndex(features, labels));
     }
 
     /**
@@ -134,19 +135,26 @@ public class DecisionTreeData implements AutoCloseable {
         // Do nothing, GC will clean up.
     }
 
-    public TreeDataIndex index(int depth, TreeFilter filter) {
-        assert depth >= 0 && depth <= indexCache.size();
+    /**
+     * Builds index in according to current tree depth and cached indexes in upper levels.
+     * Uses depth as key of cached index and replaces cached index with same key.
+     *
+     * @param depth Tree Depth.
+     * @param filter Filter.
+     */
+    public TreeDataIndex createIndexByFilter(int depth, TreeFilter filter) {
+        assert depth >= 0 && depth <= indexesCache.size();
 
-        if(depth > 0 && depth <= indexCache.size() - 1) {
-            for(int i = indexCache.size() - 1; i >= depth; i--)
-                indexCache.remove(i);
+        if(depth > 0 && depth <= indexesCache.size() - 1) {
+            for(int i = indexesCache.size() - 1; i >= depth; i--)
+                indexesCache.remove(i);
         }
 
-        if(depth == indexCache.size()) {
-            TreeDataIndex lastIndex = indexCache.get(depth - 1);
-            indexCache.add(lastIndex.filter(filter));
+        if(depth == indexesCache.size()) {
+            TreeDataIndex lastIndex = indexesCache.get(depth - 1);
+            indexesCache.add(lastIndex.filter(filter));
         }
 
-        return indexCache.get(depth);
+        return indexesCache.get(depth);
     }
 }
