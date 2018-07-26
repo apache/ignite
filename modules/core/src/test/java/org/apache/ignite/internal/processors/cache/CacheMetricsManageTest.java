@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,7 +56,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
+public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -209,11 +211,148 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
         assertCachesStatisticsMode(true, false);
     }
 
+    /**
+     *
+     */
+    public void testCacheApiClearStatistics() throws Exception {
+        startGrids(3);
+
+        IgniteCache<Integer, String> cache = grid(0).cache(CACHE1);
+
+        cache.enableStatistics(true);
+
+        incrementCacheStatistics(cache);
+
+        cache.clearStatistics();
+
+        assertCacheStatisticsIsClear(Collections.singleton(CACHE1));
+    }
+
+    /**
+     *
+     */
+    public void testClearStatisticsAfterDisableStatistics() throws Exception {
+        startGrids(3);
+
+        IgniteCache<Integer, String> cache = grid(0).cache(CACHE1);
+
+        cache.enableStatistics(true);
+
+        incrementCacheStatistics(cache);
+
+        cache.enableStatistics(false);
+
+        cache.clearStatistics();
+
+        cache.enableStatistics(true);
+
+        assertCacheStatisticsIsClear(Collections.singleton(CACHE1));
+    }
+
+    /**
+     *
+     */
+    public void testClusterApiClearStatistics() throws Exception {
+        startGrids(3);
+
+        IgniteCache<?, ?> cache = grid(0).cache(CACHE1);
+
+        cache.enableStatistics(true);
+
+        grid(0).getOrCreateCache(
+            new CacheConfiguration(cache.getConfiguration(CacheConfiguration.class)).setName(CACHE2)
+        ).enableStatistics(true);
+
+        Collection<String> cacheNames = Arrays.asList(CACHE1, CACHE2);
+
+        for (String cacheName : cacheNames)
+            incrementCacheStatistics(grid(0).cache(cacheName));
+
+        grid(0).cluster().clearStatistics(cacheNames);
+
+        assertCacheStatisticsIsClear(cacheNames);
+    }
+
+    /**
+     *
+     */
+    public void testJmxApiClearStatistics() throws Exception {
+        startGrids(3);
+
+        IgniteCache<Integer, String> cache = grid(0).cache(CACHE1);
+
+        cache.enableStatistics(true);
+
+        incrementCacheStatistics(cache);
+
+        mxBean(0, CACHE1, CacheClusterMetricsMXBeanImpl.class).clear();
+
+        assertCacheStatisticsIsClear(Collections.singleton(CACHE1));
+    }
+
+    /**
+     * Cache statistics is cleared on all nodes.
+     *
+     * @param cacheNames a collection of cache names.
+     */
+    private void assertCacheStatisticsIsClear(Collection<String> cacheNames) throws Exception {
+        for (String cacheName : cacheNames) {
+            for (Ignite ig : G.allGrids()) {
+                assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        boolean res = true;
+
+                        IgniteCache<?, ?> cache = ig.cache(cacheName);
+
+                        try {
+                            assertEquals("CachePuts", 0L, cache.mxBean().getCachePuts());
+                            assertEquals("CacheHits", 0L, cache.mxBean().getCacheHits());
+                            assertEquals("CacheGets", 0L, cache.mxBean().getCacheGets());
+                            assertEquals("CacheRemovals", 0L, cache.mxBean().getCacheRemovals());
+                            assertEquals("CacheMisses", 0L, cache.mxBean().getCacheMisses());
+                            assertEquals("AverageGetTime", 0f, cache.mxBean().getAveragePutTime());
+                            assertEquals("AveragePutTime", 0f, cache.mxBean().getAverageGetTime());
+                            assertEquals("AverageRemoveTime", 0f, cache.mxBean().getAverageRemoveTime());
+                        }
+                        catch (AssertionError e) {
+                            log.warning(e.toString());
+
+                            res = false;
+                        }
+
+                        return res;
+                    }
+                }, WAIT_CONDITION_TIMEOUT));
+            }
+        }
+    }
+
+    /**
+     * Increment cache statistics.
+     *
+     * @param cache cache.
+     */
+    private void incrementCacheStatistics(IgniteCache<Integer, String> cache) {
+        cache.get(1);
+        cache.put(1, "one");
+        cache.get(1);
+        cache.remove(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
 
         persistence = false;
     }
