@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * PreparedStatement with extended capability to store additional meta information.
  */
-class StatementWithMeta implements PreparedStatement {
+final class StatementWithMeta implements PreparedStatement {
     /** */
     private static final AtomicInteger metaIdGenerator = new AtomicInteger();
     /** */
