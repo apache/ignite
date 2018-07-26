@@ -19,7 +19,7 @@ package org.apache.ignite.ml.tree.boosting;
 
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.boosting.GDBRegressionTrainer;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
