@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
@@ -185,17 +183,19 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             return true; // Required, since no history info available.
         }
 
+        final IgniteInternalFuture<Boolean> rebFut = rebalanceFuture();
+
+        if (rebFut.isDone() && !rebFut.result())
+            return true; //Required, previous rebalance cancelled.
+
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 
-        Set<UUID> leftNodes = exchFut.context().events().events().stream()
-            .filter(ExchangeDiscoveryEvents::serverLeftEvent)
-            .map(e -> e.eventNode().id())
-            .collect(Collectors.toSet());
-
-        leftNodes.retainAll(demander.remainingNodes());
+        Collection<UUID> aliveNodes = ctx.discovery().aliveServerNodes().stream()
+            .map(ClusterNode::id)
+            .collect(Collectors.toList());
 
         return assignmentsChanged(rebTopVer, exchTopVer) || // Local node may have no affinity changes.
-            !leftNodes.isEmpty(); // Some of nodes left before rabalance future compelete.
+            !aliveNodes.containsAll(demander.remainingNodes()); // Some of nodes left before rabalance future compelete.
     }
 
     /**
@@ -610,7 +610,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
         final GridDhtPartitionDemander.RebalanceFuture fut =
-            (GridDhtPartitionDemander.RebalanceFuture) demander.rebalanceFuture();
+            (GridDhtPartitionDemander.RebalanceFuture) rebalanceFuture();
 
         if (!fut.isDone())
             U.warn(log, ">>> Pending rebalance future " +
