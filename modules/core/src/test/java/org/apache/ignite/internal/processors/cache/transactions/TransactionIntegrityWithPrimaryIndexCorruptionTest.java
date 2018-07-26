@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
@@ -213,11 +214,18 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             // Disable index corruption.
             BPlusTree.pageHndWrapper = (tree, hnd) -> hnd;
 
-            IgniteEx crd = grid(0);
-
             if (nodeStoppingExpected) {
-                // Wait until failed node will left cluster.
-                GridTestUtils.waitForCondition(() -> crd.cluster().nodes().size() == nodesCount() - 1, 5000);
+                // Wait until node with death worker will left cluster.
+                GridTestUtils.waitForCondition(() -> {
+                    try {
+                        grid(failedNodeIdx);
+                    }
+                    catch (IgniteIllegalStateException e) {
+                        return true;
+                    }
+
+                    return false;
+                }, 5000);
 
                 // Re-start failed node.
                 startGrid(failedNodeIdx);

@@ -21,7 +21,7 @@ import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
@@ -53,10 +53,17 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
 
             /** {@inheritDoc}. */
             @Override public void afterTransactionsFinished() throws Exception {
-                IgniteEx crd = grid(0);
-
                 // Wait until node with death worker will left cluster.
-                GridTestUtils.waitForCondition(() -> crd.cluster().nodes().size() == nodesCount() - 1, 5000);
+                GridTestUtils.waitForCondition(() -> {
+                    try {
+                        grid(failedNodeIdx);
+                    }
+                    catch (IgniteIllegalStateException e) {
+                        return true;
+                    }
+
+                    return false;
+                }, 5000);
 
                 // Re-start failed node.
                 startGrid(failedNodeIdx);
