@@ -1,14 +1,12 @@
 /*
- * File created on Feb 14, 2016
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Copyright (c) 2016 Carl Harris, Jr
- * and others as noted
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.ssl;
 
 import java.io.IOException;
@@ -25,59 +24,57 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 
-/**
- * A wrapper for an {@link SSLServerSocketFactory} that sets configured SSL
- * parameters on each socket produced by the factory delegate.
- *
- * @author Carl Harris
- */
+/** */
 class SSLServerSocketFactoryWrapper extends SSLServerSocketFactory {
 
+    /** */
     private final SSLServerSocketFactory delegate;
+    /** */
     private final SSLParameters parameters;
 
-    public SSLServerSocketFactoryWrapper(SSLServerSocketFactory delegate,
-        SSLParameters parameters) {
+    /** */
+    SSLServerSocketFactoryWrapper(SSLServerSocketFactory delegate, SSLParameters parameters) {
         this.delegate = delegate;
         this.parameters = parameters;
     }
 
-    @Override
-    public String[] getDefaultCipherSuites() {
+    /** {@inheritDoc} */
+    @Override public String[] getDefaultCipherSuites() {
         return delegate.getDefaultCipherSuites();
     }
 
-    @Override
-    public String[] getSupportedCipherSuites() {
+    /** {@inheritDoc} */
+    @Override public String[] getSupportedCipherSuites() {
         return delegate.getSupportedCipherSuites();
     }
 
-    @Override
-    public ServerSocket createServerSocket(int port) throws IOException {
-        SSLServerSocket serverSocket =
-            (SSLServerSocket)delegate.createServerSocket(port);
+    /** {@inheritDoc} */
+    @Override public ServerSocket createServerSocket(int port) throws IOException {
+        SSLServerSocket srvSock = (SSLServerSocket)delegate.createServerSocket(port);
+
         if (parameters != null)
-            serverSocket.setSSLParameters(parameters);
-        return serverSocket;
+            srvSock.setSSLParameters(parameters);
+
+        return srvSock;
     }
 
-    @Override
-    public ServerSocket createServerSocket(int port, int backlog)
-        throws IOException {
-        SSLServerSocket serverSocket =
-            (SSLServerSocket)delegate.createServerSocket(port, backlog);
-        serverSocket.setSSLParameters(parameters);
-        return serverSocket;
+    /** {@inheritDoc} */
+    @Override public ServerSocket createServerSocket(int port, int backlog) throws IOException {
+        SSLServerSocket srvSock = (SSLServerSocket)delegate.createServerSocket(port, backlog);
+
+        srvSock.setSSLParameters(parameters);
+
+        return srvSock;
     }
 
-    @Override
-    public ServerSocket createServerSocket(int port, int backlog,
-        InetAddress localAddress) throws IOException {
-        SSLServerSocket serverSocket =
-            (SSLServerSocket)delegate.createServerSocket(port, backlog, localAddress);
+    /** {@inheritDoc} */
+    @Override public ServerSocket createServerSocket(int port, int backlog, InetAddress locAddr) throws IOException {
+        SSLServerSocket srvSock = (SSLServerSocket)delegate.createServerSocket(port, backlog, locAddr);
+
         if (parameters != null)
-            serverSocket.setSSLParameters(parameters);
-        return serverSocket;
+            srvSock.setSSLParameters(parameters);
+
+        return srvSock;
     }
 
 }
