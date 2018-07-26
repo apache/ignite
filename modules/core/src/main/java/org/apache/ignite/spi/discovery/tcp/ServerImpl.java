@@ -320,27 +320,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         return msgWorker.connCheckFreq;
     }
 
-    /**
-     * @param text Text to be set in thread name between [] braces.
-     */
-    private void setThreadNameMeta(String text) {
-        String threadName = Thread.currentThread().getName();
-
-        int idxStart = threadName.indexOf('[');
-        int idxEnd = threadName.indexOf(']');
-
-        if (idxStart < 0 || idxEnd < 0 || idxStart >= idxEnd)
-            return;
-
-        StringBuilder sb = new StringBuilder(threadName.length());
-
-        sb.append(threadName, 0, idxStart + 1);
-        sb.append(text);
-        sb.append(threadName, idxEnd, threadName.length());
-
-        Thread.currentThread().setName(sb.toString());
-    }
-
     /** {@inheritDoc} */
     @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         synchronized (mux) {
@@ -2852,8 +2831,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (next != null && sock != null) {
-                setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
-                    + ":" + sock.getPort() + (isLocalNodeCoordinator() ? " crd" : ""));
+                // Messages that change topology.
+                if (msg instanceof TcpDiscoveryNodeLeftMessage || msg instanceof TcpDiscoveryNodeFailedMessage ||
+                    msg instanceof TcpDiscoveryNodeAddFinishedMessage || msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    setThreadNameMeta(U.id8(next.id()) + ' ' + sock.getInetAddress().getHostAddress()
+                        + ":" + sock.getPort() + (isLocalNodeCoordinator() ? " crd" : ""));
+                }
             }
             else
                 setThreadNameMeta("crd");
@@ -6046,7 +6029,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     this.nodeId = nodeId;
 
                     setThreadNameMeta(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
-                        + ":" + sock.getPort());
+                        + ":" + sock.getPort() + (req.client() ? " client" : ""));
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
@@ -6812,7 +6795,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker", log, 2000, null);
+            super("tcp-disco-client-message-worker-[" + U.id8(clientNodeId)
+                + ' ' + sock.getInetAddress().getHostAddress()
+                + ":" + sock.getPort() + ']', log, 2000, null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;

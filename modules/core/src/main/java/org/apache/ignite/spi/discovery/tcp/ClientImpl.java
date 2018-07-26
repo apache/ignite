@@ -992,7 +992,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          */
         SocketReader() {
-            super(spi.ignite().name(), "tcp-client-disco-sock-reader", log);
+            super(spi.ignite().name(), "tcp-client-disco-sock-reader-[]", log);
         }
 
         /**
@@ -1040,6 +1040,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 SocketStream sockStream;
                 UUID rmtNodeId;
 
+                setThreadNameMeta("");
+
                 synchronized (mux) {
                     if (stopReadLatch != null) {
                         stopReadLatch.countDown();
@@ -1058,6 +1060,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
 
                 Socket sock = sockStream.socket();
+
+                setThreadNameMeta(U.id8(rmtNodeId)
+                    + ' ' + sockStream.sock.getInetAddress().getHostAddress()
+                    + ":" + sockStream.sock.getPort());
 
                 try {
                     InputStream in = sockStream.stream();
