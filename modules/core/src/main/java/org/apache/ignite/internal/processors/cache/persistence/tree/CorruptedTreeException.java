@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
  * Exception to distinguish {@link BPlusTree} tree broken invariants.
  */
 public class CorruptedTreeException extends IgniteCheckedException implements InvalidEnvironmentException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Message.
      * @param cause Cause.
