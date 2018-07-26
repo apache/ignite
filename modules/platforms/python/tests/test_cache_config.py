@@ -15,7 +15,6 @@
 
 from pyignite.api import *
 from pyignite.datatypes.prop_codes import *
-from pyignite.utils import hashcode
 
 
 def test_get_configuration(conn):
@@ -23,7 +22,7 @@ def test_get_configuration(conn):
     result = cache_get_or_create(conn, 'my_unique_cache')
     assert result.status == 0
 
-    result = cache_get_configuration(conn, hashcode('my_unique_cache'))
+    result = cache_get_configuration(conn, 'my_unique_cache')
     assert result.status == 0
     assert result.value['name'] == 'my_unique_cache'
 

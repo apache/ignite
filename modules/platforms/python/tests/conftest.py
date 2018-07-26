@@ -21,7 +21,6 @@ import pytest
 from pyignite.connection import Connection
 from pyignite.constants import *
 from pyignite.api import cache_create, cache_get_names, cache_destroy
-from pyignite.utils import hashcode
 
 
 IGNITE_DEFAULT_HOST = 'localhost'
@@ -78,16 +77,16 @@ def conn(
     conn.connect(ignite_host, ignite_port)
     yield conn
     for cache_name in cache_get_names(conn).value:
-        cache_destroy(conn, hashcode(cache_name))
+        cache_destroy(conn, cache_name)
     conn.close()
 
 
 @pytest.fixture
-def hash_code(conn):
+def cache(conn):
     cache_name = 'my_bucket'
     cache_create(conn, cache_name)
-    yield hashcode(cache_name)
-    cache_destroy(conn, hashcode(cache_name))
+    yield cache_name
+    cache_destroy(conn, cache_name)
 
 
 def pytest_addoption(parser):

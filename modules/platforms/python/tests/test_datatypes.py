@@ -124,11 +124,11 @@ from pyignite.datatypes import *
         ((2, {'key': 4, 5: 6.0}), None),
     ]
 )
-def test_put_get_data(conn, hash_code, value, value_hint):
+def test_put_get_data(conn, cache, value, value_hint):
 
-    result = cache_put(conn, hash_code, 'my_key', value, value_hint=value_hint)
+    result = cache_put(conn, cache, 'my_key', value, value_hint=value_hint)
     assert result.status == 0
 
-    result = cache_get(conn, hash_code, 'my_key')
+    result = cache_get(conn, cache, 'my_key')
     assert result.status == 0
     assert result.value == value

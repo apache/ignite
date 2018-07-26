@@ -49,12 +49,12 @@ def test_sql(conn):
     cache_get_or_create(conn, 'PUBLIC')
 
     # cleanup
-    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
 
     result = sql_fields(
         conn,
-        hashcode('PUBLIC'),
+        'PUBLIC',
         create_query,
         page_size,
         include_field_names=True
@@ -65,7 +65,7 @@ def test_sql(conn):
         fname, lname, grade = data_line
         result = sql_fields(
             conn,
-            hashcode('PUBLIC'),
+            'PUBLIC',
             insert_query,
             page_size,
             query_args=[i, fname, lname, grade],
@@ -73,13 +73,13 @@ def test_sql(conn):
         )
         assert result.status == 0, result.message
 
-    result = cache_get_configuration(conn, hashcode('SQL_PUBLIC_STUDENT'))
+    result = cache_get_configuration(conn, 'SQL_PUBLIC_STUDENT')
     assert result.status == 0, result.message
 
     binary_type_name = result.value['query_entities'][0]['value_type_name']
     result = sql(
         conn,
-        hashcode('SQL_PUBLIC_STUDENT'),
+        'SQL_PUBLIC_STUDENT',
         binary_type_name,
         'TRUE',
         page_size
@@ -103,7 +103,7 @@ def test_sql(conn):
             assert data['type_id'] == hashcode(binary_type_name.lower())
 
     # repeat cleanup
-    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
 
 
@@ -112,12 +112,12 @@ def test_sql_fields(conn):
     cache_get_or_create(conn, 'PUBLIC')
 
     # cleanup
-    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
 
     result = sql_fields(
         conn,
-        hashcode('PUBLIC'),
+        'PUBLIC',
         create_query,
         page_size,
         include_field_names=True
@@ -128,7 +128,7 @@ def test_sql_fields(conn):
         fname, lname, grade = data_line
         result = sql_fields(
             conn,
-            hashcode('PUBLIC'),
+            'PUBLIC',
             insert_query,
             page_size,
             query_args=[i, fname, lname, grade],
@@ -138,7 +138,7 @@ def test_sql_fields(conn):
 
     result = sql_fields(
         conn,
-        hashcode('PUBLIC'),
+        'PUBLIC',
         select_query,
         page_size,
         include_field_names=True
@@ -155,5 +155,5 @@ def test_sql_fields(conn):
     assert result.value['more'] is False
 
     # repeat cleanup
-    result = sql_fields(conn, hashcode('PUBLIC'), drop_query, page_size)
+    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
     assert result.status == 0

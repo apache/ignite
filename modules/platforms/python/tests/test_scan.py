@@ -18,16 +18,16 @@ from pyignite.api import (
 )
 
 
-def test_scan(conn, hash_code):
+def test_scan(conn, cache):
 
     page_size = 10
 
-    result = cache_put_all(conn, hash_code, {
+    result = cache_put_all(conn, cache, {
         'key_{}'.format(v): v for v in range(page_size * 2)
     })
     assert result.status == 0
 
-    result = scan(conn, hash_code, page_size)
+    result = scan(conn, cache, page_size)
     assert result.status == 0
     assert len(result.value['data']) == page_size
     assert result.value['more'] is True
@@ -43,16 +43,16 @@ def test_scan(conn, hash_code):
     assert result.status != 0
 
 
-def test_close_resource(conn, hash_code):
+def test_close_resource(conn, cache):
 
     page_size = 10
 
-    result = cache_put_all(conn, hash_code, {
+    result = cache_put_all(conn, cache, {
         'key_{}'.format(v): v for v in range(page_size * 2)
     })
     assert result.status == 0
 
-    result = scan(conn, hash_code, page_size)
+    result = scan(conn, cache, page_size)
     assert result.status == 0
     assert len(result.value['data']) == page_size
     assert result.value['more'] is True

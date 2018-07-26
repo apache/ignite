@@ -25,7 +25,7 @@ from pyignite.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.prop_codes import *
-from pyignite.utils import hashcode, unwrap_binary
+from pyignite.utils import unwrap_binary
 
 
 insert_data = [
@@ -37,14 +37,12 @@ insert_data = [
 page_size = 100
 
 scheme_name = 'PUBLIC'
-scheme_hash_code = hashcode(scheme_name)
 
 table_sql_name = 'AllDataType'
 table_cache_name = 'SQL_{}_{}'.format(
     scheme_name,
     table_sql_name.upper(),
 )
-table_hash_code = hashcode(table_cache_name)
 
 create_query = '''
 CREATE TABLE {} (
@@ -75,7 +73,7 @@ def test_sql_read_as_binary(conn):
     # create table
     result = sql_fields(
         conn,
-        scheme_hash_code,
+        scheme_name,
         create_query,
         page_size
     )
@@ -85,14 +83,14 @@ def test_sql_read_as_binary(conn):
     for line in insert_data:
         result = sql_fields(
             conn,
-            scheme_hash_code,
+            scheme_name,
             insert_query,
             page_size,
             query_args=line
         )
         assert result.status == 0, result.message
 
-    result = scan(conn, table_hash_code, 100)
+    result = scan(conn, table_cache_name, 100)
     assert result.status == 0, result.message
 
     # now `data` is a dict of table rows with primary index column as a key
@@ -104,14 +102,14 @@ def test_sql_read_as_binary(conn):
         binary_obj = unwrap_binary(conn, value)
         assert len(binary_obj['fields']) == 4
 
-    result = cache_get_configuration(conn, table_hash_code)
+    result = cache_get_configuration(conn, table_cache_name)
     assert result.status == 0, result.message
 
     # cleanup
-    result = sql_fields(conn, scheme_hash_code, drop_query, page_size)
+    result = sql_fields(conn, scheme_name, drop_query, page_size)
     assert result.status == 0, result.message
 
-    result = cache_destroy(conn, scheme_hash_code)
+    result = cache_destroy(conn, scheme_name)
     assert result.status == 0, result.message
 
 
@@ -176,7 +174,7 @@ def test_sql_write_as_binary(conn):
     })
     assert result.status == 0, result.message
 
-    result = cache_get_configuration(conn, table_hash_code)
+    result = cache_get_configuration(conn, table_cache_name)
     assert result.status == 0, result.message
 
     # register binary type
@@ -206,7 +204,7 @@ def test_sql_write_as_binary(conn):
     for row in insert_data:
         result = cache_put(
             conn,
-            table_hash_code,
+            table_cache_name,
             key=row[0],
             key_hint=IntObject,
             value={
@@ -224,13 +222,13 @@ def test_sql_write_as_binary(conn):
         )
         assert result.status == 0, result.message
 
-    result = scan(conn, table_hash_code, 100)
+    result = scan(conn, table_cache_name, 100)
     assert result.status == 0, result.message
 
     # read rows as SQL
     result = sql_fields(
         conn,
-        scheme_hash_code,
+        scheme_name,
         select_query,
         100,
         include_field_names=True,
@@ -239,10 +237,10 @@ def test_sql_write_as_binary(conn):
     assert len(result.value['data']) == len(insert_data)
 
     # cleanup
-    result = cache_destroy(conn, table_hash_code)
+    result = cache_destroy(conn, table_cache_name)
     assert result.status == 0, result.message
 
-    result = cache_destroy(conn, scheme_hash_code)
+    result = cache_destroy(conn, scheme_name)
     assert result.status == 0, result.message
 
 
@@ -271,7 +269,7 @@ def test_nested_binary_objects(conn):
 
     result = cache_put(
         conn,
-        hashcode('nested_binary'),
+        'nested_binary',
         1,
         {
             'version': 1,
@@ -296,7 +294,7 @@ def test_nested_binary_objects(conn):
     )
     assert result.status == 0, result.message
 
-    result = cache_get(conn, hashcode('nested_binary'), 1)
+    result = cache_get(conn, 'nested_binary', 1)
     assert result.status == 0, result.message
 
     data = unwrap_binary(conn, result.value, recurse=False)['fields']
@@ -307,7 +305,7 @@ def test_nested_binary_objects(conn):
     assert inner_data['inner_str'] == 'World'
     assert inner_data['inner_int'] == 24
 
-    cache_destroy(conn, hashcode('nested_binary'))
+    cache_destroy(conn, 'nested_binary')
 
 
 def test_add_schema_to_binary_object(conn):
@@ -326,7 +324,7 @@ def test_add_schema_to_binary_object(conn):
 
     result = cache_put(
         conn,
-        hashcode('migrate_binary'),
+        'migrate_binary',
         1,
         {
             'version': 1,
@@ -355,7 +353,7 @@ def test_add_schema_to_binary_object(conn):
 
     result = cache_put(
         conn,
-        hashcode('migrate_binary'),
+        'migrate_binary',
         2,
         {
             'version': 1,
@@ -371,7 +369,7 @@ def test_add_schema_to_binary_object(conn):
     )
     assert result.status == 0, result.message
 
-    result = cache_get(conn, hashcode('migrate_binary'), 2)
+    result = cache_get(conn, 'migrate_binary', 2)
     assert result.status == 0, result.message
     data = unwrap_binary(conn, result.value)['fields']
     assert len(data) == 3
@@ -379,4 +377,4 @@ def test_add_schema_to_binary_object(conn):
     assert 'test_decimal' in data
     assert 'test_bool' not in data
 
-    cache_destroy(conn, hashcode('migrate_binary'))
+    cache_destroy(conn, 'migrate_binary')
