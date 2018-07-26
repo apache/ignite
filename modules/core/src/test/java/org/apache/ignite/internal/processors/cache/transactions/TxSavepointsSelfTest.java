@@ -475,6 +475,7 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
     ) {
         CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
+        ccfg.setName(cacheMode + "_" + backups + (nearCache ? "_near" : "_noNear"));
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -500,8 +501,11 @@ public class TxSavepointsSelfTest extends GridCacheAbstractSelfTest {
                 ", near=" + (ccfg.getNearConfiguration() != null) + "]");
 
             Ignite ignite = ignite(0);
+            IgniteCache<String, Integer> cache = ignite.getOrCreateCache(ccfg);
 
-            c.apply(ignite, ignite.cache(ccfg.getName()));
+            c.apply(ignite, cache);
+
+            cache.clear();
         }
     }
 }
