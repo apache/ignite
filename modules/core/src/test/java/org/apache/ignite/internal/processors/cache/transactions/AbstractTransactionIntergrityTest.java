@@ -77,7 +77,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     /** Count of transaction on cache. */
     private static final int DFLT_TRANSACTIONS_CNT = 10;
 
-    /** Completed txs. */
+    /** Completed transactions map. */
     private ConcurrentLinkedHashMap[] completedTxs;
 
     /**
@@ -109,10 +109,18 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @return Flag enables secondary index on account caches.
      */
     protected boolean indexed() {
         return false;
+    }
+
+    /**
+     * @return Flag enables cross-node transactions,
+     *         when primary partitions participating in transaction spreaded across several cluster nodes.
+     */
+    protected boolean crossNodeTransactions() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -174,6 +182,24 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * Make test cache name by prefix.
+     */
+    @NotNull private String cacheName(int cachePrefixIdx) {
+        return "cache" + cachePrefixIdx;
+    }
+
+    /**
+     * Ignite configuration for client.
+     */
+    @NotNull private IgniteConfiguration getClientConfiguration(int nodesPrefix) throws Exception {
+        IgniteConfiguration clientConf = getConfiguration(getTestIgniteInstanceName(nodesPrefix));
+
+        clientConf.setClientMode(true);
+
+        return clientConf;
     }
 
     /**
@@ -299,35 +325,17 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Make test cache name by prefix.
-     */
-    @NotNull private String cacheName(int cachePrefixIdx) {
-        return "cache" + cachePrefixIdx;
-    }
-
-    /**
-     * Ignite configuration for client.
-     */
-    @NotNull private IgniteConfiguration getClientConfiguration(int nodesPrefix) throws Exception {
-        IgniteConfiguration clientConf = getConfiguration(getTestIgniteInstanceName(nodesPrefix));
-
-        clientConf.setClientMode(true);
-
-        return clientConf;
-    }
-
-    /**
      *
      */
     public static class AccountState {
-        /** */
+        /** Account id. */
         private final int accId;
 
-        /** */
+        /** Last performed transaction id on account state. */
         @QuerySqlField(index = true)
         private final IgniteUuid txId;
 
-        /** */
+        /** Set of coins holds in account. */
         private final Set<Integer> coins;
 
         /**
@@ -337,12 +345,13 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
          */
         public AccountState(int accId, IgniteUuid txId, Set<Integer> coins) {
             this.txId = txId;
-            this.coins = coins;
+            this.coins = Collections.unmodifiableSet(coins);
             this.accId = accId;
         }
 
         /**
-         * @param random Random.
+         * @param random Randomizer.
+         * @return Set of coins need to transfer from.
          */
         public Set<Integer> coinsToTransfer(Random random) {
             int coinsNum = random.nextInt(coins.size());
@@ -351,16 +360,18 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @param txId Tx id.
-         * @param coinsToAdd Coins to add.
+         * @param txId Transaction id.
+         * @param coinsToAdd Coins to add to current account.
+         * @return Account state with added coins.
          */
         public AccountState addCoins(IgniteUuid txId, Set<Integer> coinsToAdd) {
             return new AccountState(accId, txId, Sets.union(coins, coinsToAdd).immutableCopy());
         }
 
         /**
-         * @param txId Tx id.
-         * @param coinsToRemove Coins to remove.
+         * @param txId Transaction id.
+         * @param coinsToRemove Coins to remove from current account.
+         * @return Account state with removed coins.
          */
         public AccountState removeCoins(IgniteUuid txId, Set<Integer> coinsToRemove) {
             return new AccountState(accId, txId, Sets.difference(coins, coinsToRemove).immutableCopy());
@@ -402,7 +413,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * State representing transaction between two accounts.
      */
     static class TxState {
         /**
@@ -503,9 +514,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                 ClusterNode primaryForAccFrom = ignite.cachex(cacheName).affinity().mapKeyToNode(accIdFrom);
                 ClusterNode primaryForAccTo = ignite.cachex(cacheName).affinity().mapKeyToNode(accIdTo);
 
-                // Allow transaction between accounts that primary on the same node.
-                // TODO: Comment out to reach data inconsistency.
-                if (!primaryForAccFrom.id().equals(primaryForAccTo.id()))
+                // Allows only transaction between accounts that primary on the same node if corresponding flag is enabled.
+                if (!crossNodeTransactions() && !primaryForAccFrom.id().equals(primaryForAccTo.id()))
                     continue;
 
                 break;

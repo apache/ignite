@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.function.BiFunction;
@@ -27,6 +44,13 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean crossNodeTransactions() {
+        // Commit error during cross node transactions breaks transaction integrity
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-9086
+        return false;
+    }
+
     /**
      * Throws a test {@link AssertionError} during tx commit from {@link BPlusTree} and checks after that data is consistent.
      */
@@ -46,6 +70,17 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             true,
             (hnd, tree) -> hnd instanceof BPlusTree.Search,
             failoverPredicate(true, () -> new RuntimeException("Test")))
+        );
+    }
+
+    /**
+     * Throws a test {@link AssertionError} during tx commit from {@link BPlusTree} and checks after that data is consistent.
+     */
+    public void testPrimaryIndexCorruptionDuringCommitOnBackupNode() throws Exception {
+        doTestTransferAmount(new IndexCorruptionFailoverScenario(
+            true,
+            (hnd, tree) -> hnd instanceof BPlusTree.Search,
+            failoverPredicate(false, () -> new AssertionError("Test")))
         );
     }
 
@@ -130,17 +165,18 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                     return hnd;
 
                 if (treeCorruptionPredicate.apply(hnd, tree)) {
-                    log.warning("Created corrupted tree handler for -> " + hnd + " " + tree);
+                    log.info("Created corrupted tree handler for -> " + hnd + " " + tree);
 
                     PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>) hnd;
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
                         @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc, BPlusTree.Get arg, int lvl) throws IgniteCheckedException {
-                            log.warning("Invoked " + " " + cacheId + " " + arg.toString() + " for BTree (" + corruptionEnabled + ") -> " + arg.row() + " / " + arg.row().getClass());
+                            log.info("Invoked " + " " + cacheId + " " + arg.toString() + " for BTree (" + corruptionEnabled + ") -> " + arg.row() + " / " + arg.row().getClass());
 
                             if (corruptionEnabled && (arg.row() instanceof SearchRow)) {
                                 SearchRow row = (SearchRow) arg.row();
 
+                                // Store cacheId to search row explicitly, as it can be zero if there is one cache in a group.
                                 Throwable res = failoverPredicate.apply(locIgnite, new SearchRow(cacheId, row.key()));
 
                                 if (res != null) {
@@ -180,7 +216,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             IgniteEx crd = grid(0);
 
             if (nodeStoppingExpected) {
-                // Wait until node with death worker will left cluster.
+                // Wait until failed node will left cluster.
                 GridTestUtils.waitForCondition(() -> crd.cluster().nodes().size() == nodesCount() - 1, 5000);
 
                 // Re-start failed node.

@@ -2561,6 +2561,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             lockRetriesCnt--;
         }
 
+        /**
+         * @return Operation row.
+         */
         public L row() {
             return row;
         }
@@ -2966,13 +2969,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.fwdId = fwdId;
 
             return write(pageId, page, replace, this, lvl, RETRY);
-        }
-
-        @Override
-        public String toString() {
-            return "Put{" +
-                "row=" + row +
-                '}';
         }
     }
 
@@ -4803,7 +4799,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Page handler for basic {@link Get} operation.
      */
-    public abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
+    private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,

@@ -1470,11 +1470,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 7. Clear context.
             resetContext();
 
-            if (log.isInfoEnabled())
-                log.warning("Uncommitted from TM: " + tx);
+            if (log.isDebugEnabled())
+                log.debug("Uncommitted from TM: " + tx);
         }
-        else if (log.isInfoEnabled())
-            log.warning("Did not uncommit from TM (was already committed or rolled back): " + tx);
+        else if (log.isDebugEnabled())
+            log.debug("Did not uncommit from TM (was already committed or rolled back): " + tx);
     }
 
     /**
