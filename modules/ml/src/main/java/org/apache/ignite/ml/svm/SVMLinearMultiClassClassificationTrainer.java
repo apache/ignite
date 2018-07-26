@@ -28,8 +28,8 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
@@ -41,7 +41,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * All common parameters are shared with bunch of binary classification trainers.
  */
 public class SVMLinearMultiClassClassificationTrainer
-    implements SingleLabelDatasetTrainer<SVMLinearMultiClassClassificationModel> {
+    extends SingleLabelDatasetTrainer<SVMLinearMultiClassClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 20;
 
