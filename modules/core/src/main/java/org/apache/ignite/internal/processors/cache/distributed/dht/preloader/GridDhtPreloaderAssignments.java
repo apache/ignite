@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -38,6 +37,12 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
 
     /** */
     private boolean cancelled;
+
+    /**
+     * Does this assignments need to be rebalanced. Cancelled and empty assignments will always have {code True}
+     * because they are not fully calculated.
+     */
+    private boolean changed = true;
 
     /**
      * @param exchangeId Exchange ID.
@@ -70,6 +75,22 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      */
     GridDhtPartitionExchangeId exchangeId() {
         return exchangeId;
+    }
+
+    /**
+     *
+     * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     */
+    public boolean changed() {
+        return changed;
+    }
+
+    /**
+     *
+     * @param changed {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     */
+    void changed(boolean changed) {
+        this.changed = changed;
     }
 
     /**
