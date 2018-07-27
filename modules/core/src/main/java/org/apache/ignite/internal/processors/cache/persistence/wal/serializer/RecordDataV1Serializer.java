@@ -343,7 +343,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                return 4 + dataSize(dataRec, isDataRecordEncrypted(dataRec));
+                return 4 + dataSize(dataRec);
 
             case METASTORE_DATA_RECORD:
                 MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
@@ -1892,11 +1892,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /**
      * @param dataRec Data record to serialize.
-     * @param encrypted Encrypted flag.
      * @return Full data record size.
      * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
      */
-    private int dataSize(DataRecord dataRec, boolean encrypted) throws IgniteCheckedException {
+    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+        boolean encrypted = isDataRecordEncrypted(dataRec);
+
         int sz = 0;
 
         for (DataEntry entry : dataRec.writeEntries()) {
