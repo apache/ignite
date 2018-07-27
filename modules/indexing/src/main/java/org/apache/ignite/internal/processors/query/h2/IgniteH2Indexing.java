@@ -396,7 +396,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
 
-            PreparedStatement stmt = cache.get(key);
+            StatementWithMeta stmt = cache.get(key);
 
             if (stmt != null && !stmt.isClosed() && !stmt.unwrap(JdbcStatement.class).isCancelled() &&
                 !GridSqlQueryParser.prepared(stmt).needRecompile()) {
@@ -408,9 +408,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cachedOnly)
                 return null;
 
-            stmt = prepare0(c, sql);
+            stmt = new StatementWithMeta(prepare0(c, sql));
 
-            cache.put(key, new StatementWithMeta(stmt));
+            cache.put(key, stmt);
 
             return stmt;
         }
