@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.PreparedStatement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -31,22 +33,21 @@ final class H2StatementCache {
     private volatile long lastUsage;
 
     /** */
-    private final LinkedHashMap<H2CachedStatementKey, StatementWithMeta> lruStmtCache;
+    private final LinkedHashMap<H2CachedStatementKey, PreparedStatement> lruStmtCache;
 
     /**
      * @param size Maximum number of statements this cache can store.
      */
     H2StatementCache(int size) {
-        lruStmtCache = new LinkedHashMap<H2CachedStatementKey, StatementWithMeta>(size, .75f, true) {
+        lruStmtCache = new LinkedHashMap<H2CachedStatementKey, PreparedStatement>(size, .75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, StatementWithMeta> eldest) {
-                boolean rmv = size() > size;
+            protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, PreparedStatement> eldest) {
+                if (size() <= size)
+                    return false;
 
-                if (rmv) {
-                    U.closeQuiet(eldest.getValue());
-                }
+                U.closeQuiet(eldest.getValue());
 
-                return rmv;
+                return true;
             }
         };
     }
@@ -57,7 +58,7 @@ final class H2StatementCache {
      * @param key Key associated with statement.
      * @param stmt Statement which will be cached.
      */
-    void put(H2CachedStatementKey key, StatementWithMeta stmt) {
+    void put(H2CachedStatementKey key, @NotNull PreparedStatement stmt) {
         lruStmtCache.put(key, stmt);
     }
 
@@ -67,7 +68,7 @@ final class H2StatementCache {
      * @param key Key for a statement.
      * @return Statement associated with a key.
      */
-    @Nullable StatementWithMeta get(H2CachedStatementKey key) {
+    @Nullable PreparedStatement get(H2CachedStatementKey key) {
         return lruStmtCache.get(key);
     }
 

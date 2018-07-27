@@ -20,22 +20,17 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.internal.processors.query.h2.ObjectPool.Reusable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class ObjectPoolSelfTest extends GridCommonAbstractTest {
-    private static class Obj implements AutoCloseable {
-        private boolean closed = false;
-        @Override
-        public void close() {
-            closed = true;
-        }
-
-        public boolean isClosed() {
-            return closed;
-        }
-    }
-
+    /** */
     private ObjectPool<Obj> pool = new ObjectPool<>(Obj::new, 1);
 
-    public void testObjectIsReusedAfterRecycling() {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testObjectIsReusedAfterRecycling() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         o1.recycle();
         Reusable<Obj> o2 = pool.borrow();
@@ -44,19 +39,43 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
         assertFalse(o1.object().isClosed());
     }
 
-    public void testBorrowedObjectIsNotReturnedTwice() {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBorrowedObjectIsNotReturnedTwice() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
 
         assertNotSame(o1.object(), o2.object());
     }
 
-    public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
         o1.recycle();
         o2.recycle();
 
         assertTrue(o2.object().isClosed());
+    }
+
+    /** */
+    private static class Obj implements AutoCloseable {
+        /** */
+        private boolean closed = false;
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            closed = true;
+        }
+
+        /**
+         * @return {@code True} if closed.
+         */
+        public boolean isClosed() {
+            return closed;
+        }
     }
 }

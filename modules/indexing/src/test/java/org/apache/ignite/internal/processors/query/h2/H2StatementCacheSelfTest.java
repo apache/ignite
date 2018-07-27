@@ -17,13 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.PreparedStatement;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testEviction() throws Exception {
         H2StatementCache stmtCache = new H2StatementCache(1);
         H2CachedStatementKey key1 = new H2CachedStatementKey("", "1");
-        StatementWithMeta stmt1 = stmt();
+        PreparedStatement stmt1 = stmt();
         stmtCache.put(key1, stmt1);
 
         assertSame(stmt1, stmtCache.get(key1));
@@ -33,6 +41,9 @@ public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
         assertNull(stmtCache.get(key1));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testLruEvictionInStoreOrder() throws Exception {
         H2StatementCache stmtCache = new H2StatementCache(2);
 
@@ -46,6 +57,9 @@ public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
         assertNull(stmtCache.get(key1));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testLruEvictionInAccessOrder() throws Exception {
         H2StatementCache stmtCache = new H2StatementCache(2);
 
@@ -60,7 +74,10 @@ public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
         assertNull(stmtCache.get(key2));
     }
 
-    private static StatementWithMeta stmt() {
-        return new StatementWithMeta(null);
+    /**
+     *
+     */
+    private static PreparedStatement stmt() {
+        return new PreparedStatementExImpl(null);
     }
 }

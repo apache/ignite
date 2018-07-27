@@ -17,26 +17,45 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.PreparedStatement;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class StatementWithMetaSelfTest extends GridCommonAbstractTest {
-    public void testStoringMeta() {
-        StatementWithMeta stmt = stmt();
-        stmt.putMeta(0, "0");
+/**
+ *
+ */
+public class PreparedStatementExSelfTest extends GridCommonAbstractTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoringMeta() throws Exception {
+        PreparedStatement stmt = stmt();
 
-        assertEquals("0", stmt.meta(0));
+        PreparedStatementEx wrapped = stmt.unwrap(PreparedStatementEx.class);
+
+        wrapped.putMeta(0, "0");
+
+        assertEquals("0", wrapped.meta(0));
     }
 
-    public void testStoringMoreMetaKeepsExisting() {
-        StatementWithMeta stmt = stmt();
-        stmt.putMeta(0, "0");
-        stmt.putMeta(1, "1");
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStoringMoreMetaKeepsExisting() throws Exception {
+        PreparedStatement stmt = stmt();
 
-        assertEquals("0", stmt.meta(0));
-        assertEquals("1", stmt.meta(1));
+        PreparedStatementEx wrapped = stmt.unwrap(PreparedStatementEx.class);
+
+        wrapped.putMeta(0, "0");
+        wrapped.putMeta(1, "1");
+
+        assertEquals("0", wrapped.meta(0));
+        assertEquals("1", wrapped.meta(1));
     }
 
-    private static StatementWithMeta stmt() {
-        return new StatementWithMeta(null);
+    /**
+     *
+     */
+    private static PreparedStatement stmt() {
+        return new PreparedStatementExImpl(null);
     }
 }

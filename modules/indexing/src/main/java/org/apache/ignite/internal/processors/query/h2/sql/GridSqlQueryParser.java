@@ -544,15 +544,6 @@ public class GridSqlQueryParser {
         return ORG_H2_COMMAND_COMMAND_LIST.equals(cmd.getClass().getName());
     }
 
-    /** */
-    private static Command extractCommand(PreparedStatement stmt) {
-        try {
-            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
-        } catch (SQLException e) {
-            throw new IgniteException(e);
-        }
-    }
-
     /**
      * @param stmt Prepared statement.
      * @return Parsed select.
@@ -581,6 +572,15 @@ public class GridSqlQueryParser {
                 return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
             else
                 throw new IgniteSQLException("Unexpected statement command");
+        }
+    }
+
+    /** */
+    private static Command extractCommand(PreparedStatement stmt) {
+        try {
+            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
+        } catch (SQLException e) {
+            throw new IgniteSQLException(e);
         }
     }
 
