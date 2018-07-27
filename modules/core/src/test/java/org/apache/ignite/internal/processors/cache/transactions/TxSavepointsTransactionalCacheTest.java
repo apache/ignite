@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -155,7 +154,7 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testPut() throws Exception {
+    public void testPutWithImplicitTx() throws Exception {
         for (NodeCombination nodes : nodeCombinations) {
             info("Nodes " + nodes);
 
@@ -172,6 +171,71 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
                     cache.put(key1, 0);
 
                     IgniteInternalFuture fut = GridTestUtils.runAsync(() -> assertTrue(cache.putIfAbsent(key1, 1)),
+                        "_put");
+
+                    waitForSecondCandidate(txType.concurrency, cache, key1);
+
+                    tx.rollbackToSavepoint("sp");
+
+                    fut.get(FUT_TIMEOUT);
+
+                    assertEquals("Broken multithreaded rollback to savepoint in " + txType.concurrency +
+                        ' ' + txType.isolation + " transaction.", (Integer)1, cache.get(key1));
+
+                    tx.commit();
+
+                    assertEquals("Broken rollback to savepoint in " + txType.concurrency + ' '
+                        + txType.isolation + " transaction.", (Integer)1, cache.get(key1));
+                }
+                finally {
+                    cache.remove(key1);
+                }
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutWithExplicitTxOnSameNode() throws Exception {
+        checkPutWithExplicitTx(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutWithExplicitTxOnDifferentNode() throws Exception {
+        checkPutWithExplicitTx(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkPutWithExplicitTx(boolean sameTxOwner) throws Exception {
+        for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
+            IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
+
+            int key1 = generateKey(getConfig(), nodes.primaryForKey());
+
+            IgniteEx secondTxOwner = sameTxOwner ? nodes.txOwner() : grid(0);
+
+            for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
+                try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
+                    tx.savepoint("sp");
+
+                    cache.put(key1, 0);
+
+                    IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+                        try (Transaction tx0 = secondTxOwner.transactions().txStart()) {
+                            assertTrue(cache.putIfAbsent(key1, 1));
+
+                            tx0.commit();
+                        }
+                        },
                         "_put");
 
                     waitForSecondCandidate(txType.concurrency, cache, key1);
