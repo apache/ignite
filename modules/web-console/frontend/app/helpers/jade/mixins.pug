@@ -188,10 +188,17 @@ mixin java-class-autofocus(lbl, model, name, enabled, required, autofocus, tip, 
             block
 
 //- Mixin for Java class name field.
-mixin java-class(lbl, model, name, enabled, required, tip, validationActive)
-    +java-class-autofocus(lbl, model, name, enabled, required, 'false', tip, validationActive)
+mixin form-field__java-class({ label, model, name, enabled, required, tip, validationActive })
+    +java-class-autofocus(label, model, name, enabled, required, 'false', tip, validationActive)
         if  block
             block
+
+
+mixin java-class(label, model, name, enabled, required, tip, validationActive)
+    +form-field__java-class({ label, model, name, enabled, required, tip, validationActive })
+        if  block
+            block
+
 
 //- Mixin for text field with enabled condition with options.
 mixin java-class-typeahead(label, model, name, options, enabled, required, placeholder, tip, validationActive)
@@ -218,11 +225,21 @@ mixin java-class-typeahead(label, model, name, options, enabled, required, place
 
 //- Mixin for java package field with enabled condition.
 mixin java-package(label, model, name, enabled, required, tip)
-    +form-field__text({
+    +form-field__java-package({
         label,
         model,
         name,
         disabled: enabledToDisabled(enabled),
+        required,
+        tip
+    })
+
+mixin form-field__java-package({ label, model, name, disabled, required, tip })
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled,
         required,
         tip
     })(
@@ -278,11 +295,22 @@ mixin text-enabled(label, model, name, enabled, required, placeholder, tip)
 
 //- Mixin for text field with autofocus.
 mixin text-enabled-autofocus(label, model, name, enabled, required, placeholder, tip)
-    +form-field__text({
+    +form-field__text--autofocus({
         label,
         model,
         name,
         disabled: enabledToDisabled(enabled),
+        required,
+        placeholder,
+        tip
+    })
+
+mixin form-field__text--autofocus({ label, model, name, disabled = false, required, placeholder, tip })
+    +form-field__text({
+        label,
+        model,
+        name,
+        disabled,
         required,
         placeholder,
         tip
@@ -301,7 +329,7 @@ mixin text(label, model, name, required, placeholder, tip)
         required,
         placeholder,
         tip
-    })
+    })&attributes(attributes)
         if  block
             block
 
