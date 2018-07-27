@@ -17,10 +17,18 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Metrics update message.
@@ -40,10 +48,46 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
      * @param creatorNodeId Creator node.
      * @param metrics Metrics.
      */
-    public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
+    public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics) {
         super(creatorNodeId);
 
         this.metrics = ClusterMetricsSnapshot.serialize(metrics);
+
+        ByteArrayOutputStream byteStream= new ByteArrayOutputStream();
+        ObjectOutputStream objectStream;
+
+        try {
+            objectStream = new ObjectOutputStream(byteStream);
+
+            objectStream.writeObject(cacheMetrics);
+        }
+        catch (IOException e) {
+            //No-op.
+        }
+
+        byte[] src = byteStream.toByteArray();
+
+        U.arrayCopy(src, 0, this.metrics, ClusterMetricsSnapshot.METRICS_SIZE, src.length);
+    }
+
+    public Map<Integer, CacheMetrics> cacheMetrics() {
+
+        ByteArrayInputStream s = new ByteArrayInputStream(this.metrics, 16 + ClusterMetricsSnapshot.METRICS_SIZE, 1);
+
+        Map<Integer, CacheMetrics> l = null;
+
+        try {
+            ObjectInputStream s2 = new ObjectInputStream(s);
+
+            l = (Map<Integer, CacheMetrics>)s2.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+        return l;
     }
 
     /**

@@ -1016,6 +1016,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rebalancingKeysRate = in.readLong();
 
         rebalancedKeys = in.readLong();
+
         estimatedRebalancingKeys = in.readLong();
         rebalanceStartTime = in.readLong();
         rebalanceFinishTime = in.readLong();
