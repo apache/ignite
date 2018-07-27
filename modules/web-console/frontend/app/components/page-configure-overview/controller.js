@@ -70,6 +70,9 @@ export default class PageConfigureOverviewController {
     /** @param {Array<ig.config.cluster.ShortCluster>} clusters */
     removeClusters(clusters) {
         this.ConfigureState.dispatchAction(confirmClustersRemoval(clusters.map((c) => c._id)));
+
+        // TODO: Implement storing selected rows in store to share this data between other components.
+        this.selectedRows$.next([]);
     }
 
     /** @param {ig.config.cluster.ShortCluster} cluster */
@@ -136,6 +139,8 @@ export default class PageConfigureOverviewController {
 
         /** @type {Subject<Array<ig.config.cluster.ShortCluster>>} */
         this.selectedRows$ = new Subject();
+
+        this.selectedRowsIDs$ = this.selectedRows$.map((selectedClusters) => selectedClusters.map((cluster) => cluster._id));
 
         this.actions$ = this.selectedRows$.map((selectedClusters) => [
             {

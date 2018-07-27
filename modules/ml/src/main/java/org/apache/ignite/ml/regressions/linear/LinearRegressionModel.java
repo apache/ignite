@@ -99,9 +99,14 @@ public class LinearRegressionModel implements Model<Vector, Double>, Exportable<
             return builder.toString();
         }
 
-        return "LinearRegressionModel{" +
+        return "LinearRegressionModel [" +
             "weights=" + weights +
             ", intercept=" + intercept +
-            '}';
+            ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return toString();
     }
 }
