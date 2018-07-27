@@ -31,7 +31,7 @@ import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * Meta view: nodes.
+ * System view: nodes.
  */
 public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
     /**
@@ -63,7 +63,7 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
         if (locCond.isEquality() && locCond.valueForEquality().getBoolean())
             nodes = Collections.singleton(ctx.discovery().localNode());
         else if (idCond.isEquality()) {
-            UUID nodeId = uuidFromString(idCond.valueForEquality().getString());
+            UUID nodeId = uuidFromValue(idCond.valueForEquality());
 
             nodes = nodeId == null ? Collections.emptySet() : Collections.singleton(ctx.discovery().node(nodeId));
         }
@@ -98,19 +98,5 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
     /** {@inheritDoc} */
     @Override public long getRowCount() {
         return ctx.discovery().allNodes().size() + ctx.discovery().daemonNodes().size();
-    }
-
-    /**
-     * Converts string to UUID safe (suppressing exceptions).
-     *
-     * @param val UUID in string format.
-     */
-    private static UUID uuidFromString(String val) {
-        try {
-            return UUID.fromString(val);
-        }
-        catch (RuntimeException e) {
-            return null;
-        }
     }
 }
