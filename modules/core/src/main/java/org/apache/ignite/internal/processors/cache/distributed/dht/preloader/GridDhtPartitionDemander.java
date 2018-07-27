@@ -1252,7 +1252,12 @@ public class GridDhtPartitionDemander {
 
         /** {@inheritDoc} */
         public String toString() {
-            return S.toString(RebalanceFuture.class, this);
+            return S.toString(RebalanceFuture.class,
+                this,
+                "remaining",
+                remaining.keySet(),
+                "missed",
+                missed.keySet());
         }
     }
 }

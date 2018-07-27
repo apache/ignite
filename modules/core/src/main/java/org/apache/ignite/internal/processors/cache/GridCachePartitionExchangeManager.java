@@ -1685,9 +1685,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         dumpPendingObjects(exchTopVer, diagCtx);
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups())
-            grp.preloader().dumpDebugInfo();
-
         cctx.affinity().dumpDebugInfo();
 
         StringBuilder pendingMsgs = new StringBuilder();

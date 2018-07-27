@@ -615,7 +615,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (!fut.isDone())
             U.warn(log, ">>> Pending rebalance future " +
                 "[grp=" + grp.cacheOrGroupName() +
-                ", fut=" + fut +
-                ", rebTopVer=" + ctx.exchange().rebalanceTopologyVersion() + ']');
+                ", fut=" + fut + ']');
     }
 }
