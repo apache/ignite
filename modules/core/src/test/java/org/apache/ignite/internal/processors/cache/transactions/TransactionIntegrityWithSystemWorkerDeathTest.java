@@ -31,9 +31,14 @@ import org.apache.ignite.testframework.GridTestUtils;
  *
  */
 public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTransactionIntergrityTest {
-    /** {@inheritDoc} */
+    /** {@inheritDoc}. */
     @Override protected long getTestTimeout() {
         return 60 * 1000L;
+    }
+
+    /** {@inheritDoc}. */
+    @Override protected boolean persistent() {
+        return false;
     }
 
     /**

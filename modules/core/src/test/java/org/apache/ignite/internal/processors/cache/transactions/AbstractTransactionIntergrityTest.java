@@ -116,6 +116,13 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Flag enables persistence on account caches.
+     */
+    protected boolean persistent() {
+        return true;
+    }
+
+    /**
      * @return Flag enables cross-node transactions,
      *         when primary partitions participating in transaction spreaded across several cluster nodes.
      */
@@ -139,10 +146,11 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
         cfg.setLocalHost("127.0.0.1");
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(256 * 1024 * 1024)
-                .setPersistenceEnabled(true))
+                .setPersistenceEnabled(persistent()))
         );
 
         CacheConfiguration[] cacheConfigurations = new CacheConfiguration[txThreadsCount()];
