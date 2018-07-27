@@ -23,6 +23,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -143,10 +144,10 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
         A.notNull(cacheName, "Cache name");
 
         try {
-            this.ignite = Ignition.start(igniteCfgFile);
-        } catch (IgniteException e) {
             // if an ignite instance is already started in same JVM then use it.
             this.ignite = Ignition.ignite();
+        } catch (IgniteIllegalStateException e) {
+            this.ignite = Ignition.start(igniteCfgFile);
         }
 
         this.ignite.getOrCreateCache(cacheName);
