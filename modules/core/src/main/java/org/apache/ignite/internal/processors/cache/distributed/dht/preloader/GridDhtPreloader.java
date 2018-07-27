@@ -47,7 +47,6 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -609,13 +608,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
-        final GridDhtPartitionDemander.RebalanceFuture fut =
-            (GridDhtPartitionDemander.RebalanceFuture) rebalanceFuture();
-
-        if (!fut.isDone())
-            U.warn(log, ">>> Pending rebalance future " +
-                "[grp=" + grp.cacheOrGroupName() +
-                ", fut=" + fut +
-                ", rebTopVer=" + ctx.exchange().rebalanceTopologyVersion() + ']');
+        // No-op
     }
 }
