@@ -232,12 +232,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        int waitMinorVer = ignite.configuration().isLateAffinityAssignment() ? 1 : 0;
-
-        waitForRebalancing(0, 2, waitMinorVer);
-        waitForRebalancing(1, 2, waitMinorVer);
-
-        awaitPartitionMapExchange(true, true, null, true);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -245,9 +240,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        waitForRebalancing(1, 3);
-
-        awaitPartitionMapExchange(true, true, null, true);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -255,10 +248,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        waitForRebalancing(1, 4, waitMinorVer);
-        waitForRebalancing(2, 4, waitMinorVer);
-
-        awaitPartitionMapExchange(true, true, null, true);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -266,9 +256,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(2);
 
-        waitForRebalancing(1, 5);
-
-        awaitPartitionMapExchange(true, true, null, true);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -331,12 +319,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(4);
 
-        waitForRebalancing(3, 6);
-        waitForRebalancing(4, 6);
+        awaitPartitionMapExchange(false, false, null, true, true);
 
         concurrentStartFinished = true;
 
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true, false);
 
         checkSupplyContextMapIsEmpty();
 
@@ -495,11 +482,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     while (!concurrentStartFinished2)
                         U.sleep(10);
 
-                    waitForRebalancing(0, 5, 0);
-                    waitForRebalancing(1, 5, 0);
-                    waitForRebalancing(2, 5, 0);
-                    waitForRebalancing(3, 5, 0);
-                    waitForRebalancing(4, 5, 0);
+                    awaitPartitionMapExchange(false, false, null, true, true);
 
                     //New cache should start rebalancing.
                     CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
@@ -552,13 +535,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         t2.join();
         t3.join();
 
-        waitForRebalancing(0, 5, 1);
-        waitForRebalancing(1, 5, 1);
-        waitForRebalancing(2, 5, 1);
-        waitForRebalancing(3, 5, 1);
-        waitForRebalancing(4, 5, 1);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkSupplyContextMapIsEmpty();
 
@@ -577,31 +554,19 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        waitForRebalancing(0, 6);
-        waitForRebalancing(2, 6);
-        waitForRebalancing(3, 6);
-        waitForRebalancing(4, 6);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkSupplyContextMapIsEmpty();
 
         stopGrid(0);
 
-        waitForRebalancing(2, 7);
-        waitForRebalancing(3, 7);
-        waitForRebalancing(4, 7);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkSupplyContextMapIsEmpty();
 
         stopGrid(2);
 
-        waitForRebalancing(3, 8);
-        waitForRebalancing(4, 8);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -613,7 +578,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(3);
 
-        waitForRebalancing(4, 9);
+        awaitPartitionMapExchange(false, false, null, true, true);
 
         checkSupplyContextMapIsEmpty();
 

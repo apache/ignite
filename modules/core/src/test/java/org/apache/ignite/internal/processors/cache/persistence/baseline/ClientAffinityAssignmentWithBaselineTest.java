@@ -383,7 +383,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         startGrid("flaky");
 
         System.out.println("### Starting rebalancing after flaky node join");
-        waitForRebalancing();
+        awaitPartitionMapExchange(false, false, null, true, true);
         System.out.println("### Rebalancing is finished after flaky node join");
 
         awaitProgressInAllLoaders(10_000, loadError, threadProgressTracker);
@@ -689,7 +689,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         ig0.cluster().setBaselineTopology(fullBlt.subList(0, newBaselineSize));
 
         System.out.println("### Starting rebalancing after BLT change: " + (newBaselineSize + 1) + " -> " + newBaselineSize);
-        waitForRebalancing();
+        awaitPartitionMapExchange(false, false, null, true, true);
         System.out.println("### Rebalancing is finished after BLT change: " + (newBaselineSize + 1) + " -> " + newBaselineSize);
 
         awaitProgressInAllLoaders(10_000, loadError, threadProgressTracker);
