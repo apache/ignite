@@ -116,7 +116,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 ng-if=`${model}.offHeapMode === 1 && ${model}.memoryMode !== 'OFFHEAP_VALUES'`
                 ng-if-end
             )
-                pc-form-field-size(
+                form-field-size(
                     label='Off-heap memory max size:'
                     ng-model=`${model}.offHeapMaxMemory`
                     name='offHeapMaxMemory'

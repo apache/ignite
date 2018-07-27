@@ -53,7 +53,7 @@ list-editable {
     }
 
     .le-body {
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.2);
     }
 
     .le-row-sort {
@@ -114,7 +114,7 @@ list-editable {
                 align-items: center;
             }
 
-            &-edit {
+            &-edit .form-field:not(.form-field__checkbox) {
                 margin-left: -11px;
             }
         }

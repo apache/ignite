@@ -46,27 +46,26 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +text-options('Protocol:', `${model}.protocol`, '"protocol"', '["TSL", "SSL"]', enabled, 'false', 'TSL', 'Protocol for secure transport')
             .pc-form-grid-col-60
                 .ignite-form-field
-                    .ignite-form-field__control
-                        list-editable(
-                            ng-model=trust
-                            name='trustManagers'
-                            list-editable-cols=`::[{name: "Pre-configured trust managers:"}]`
-                            ng-disabled=enabledToDisabled(enabled)
-                            ng-required=`${enabled} && !${model}.trustStoreFilePath`
-                        )
-                            list-editable-item-view {{ $item }}
+                    list-editable(
+                        ng-model=trust
+                        name='trustManagers'
+                        list-editable-cols=`::[{name: "Pre-configured trust managers:"}]`
+                        ng-disabled=enabledToDisabled(enabled)
+                        ng-required=`${enabled} && !${model}.trustStoreFilePath`
+                    )
+                        list-editable-item-view {{ $item }}
 
-                            list-editable-item-edit
-                                +list-java-class-field('Trust manager', '$item', '"trustManager"', trust)
-                                    +unique-feedback('"trustManager"', 'Such trust manager already exists!')
+                        list-editable-item-edit
+                            +list-java-class-field('Trust manager', '$item', '"trustManager"', trust)
+                                +unique-feedback('"trustManager"', 'Such trust manager already exists!')
 
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`$editLast((${trust} = ${trust} || []).push(''))`
-                                    label-single='trust manager'
-                                    label-multiple='trust managers'
-                                )
-                    .ignite-form-field__errors(
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$editLast((${trust} = ${trust} || []).push(''))`
+                                label-single='trust manager'
+                                label-multiple='trust managers'
+                            )
+                    .form-field__errors(
                         ng-messages=`sslConfiguration.trustManagers.$error`
                         ng-show=`sslConfiguration.trustManagers.$invalid`
                     )

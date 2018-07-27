@@ -45,13 +45,33 @@ ul.tabs.tabs--blue
                 options: '$ctrl.actionOptions'
             })
             grid-export(grid-api='$ctrl.gridApi')
+
             form.ui-grid-settings-dateperiod(name=form novalidate)
                 -var form = 'admin'
-                +ignite-form-field-datepicker('Period: from', '$ctrl.params.startDate', '"startDate"', null, '$ctrl.params.endDate')
-                +ignite-form-field-datepicker('to', '$ctrl.params.endDate', '"endDate"', '$ctrl.params.startDate', null)
+
+                .form-field--inline
+                    +form-field__datepicker({
+                        label: 'Period: from',
+                        model: '$ctrl.params.startDate',
+                        name: '"startDate"', 
+                        maxdate: '$ctrl.params.endDate'
+                    })
+                .form-field--inline
+                    +form-field__datepicker({
+                        label: 'to',
+                        model: '$ctrl.params.endDate',
+                        name: '"endDate"',
+                        mindate: '$ctrl.params.startDate'
+                    })
             form.ui-grid-settings-filter
                 -var form = 'admin'
-                +ignite-form-field-text('Exclude:', '$ctrl.params.companiesExclude', '"exclude"', false, false, 'Exclude by company name...')
+                .form-field--inline
+                    +form-field__text({
+                        label: 'Exclude:',
+                        model: '$ctrl.params.companiesExclude',
+                        name: '"exclude"',
+                        placeholder: 'Exclude by company name...'
+                    })
 
             .ui-grid-settings--heading(ng-hide='$ctrl.selected.length')
                 span(ng-if='$ctrl.groupBy === "user"') List of registered users

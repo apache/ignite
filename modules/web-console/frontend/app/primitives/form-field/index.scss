@@ -225,6 +225,7 @@
             box-shadow: none;
 
             color: $text-color;
+            font-size: 14px;
             text-align: left;
             line-height: 16px;
 
@@ -309,6 +310,21 @@
 }
 
 .theme--ignite-errors-horizontal {
+    .form-field__control {
+        // Reset offset to appearance of input for invalid password
+        & > input[type='email'].ng-invalid.ng-touched,
+        & > input[type='text'].ng-invalid.ng-touched,
+        & > input[type='password'].ng-invalid.ng-touched {
+            padding-right: 0;
+        }
+        // Reset offset to appearance of dropdown for invalid data
+        & > button.select-toggle.ng-invalid.ng-touched {
+            &:after {
+                right: 10px;
+            }
+        }
+    }
+
     .form-field__errors {
         position: relative;
         
@@ -365,6 +381,7 @@
         &__label {
             order: 1;
             margin: 0;
+            cursor: pointer;
         }
 
         &__control {
@@ -408,6 +425,38 @@
     }
 }
 
+.form-field--inline {
+    display: inline-block;
+    width: auto;
+
+    .form-field {
+        display: flex;
+        align-items: baseline;
+    }
+
+    .form-field__control {
+        width: auto;
+    }
+
+    .form-field__timepicker,
+    .form-field__datepicker {
+        .form-field__control {
+            input {
+                color: transparent;
+
+                text-shadow: 0 0 0 $ignite-brand-success;
+
+                border: none;
+                box-shadow: none;
+
+                &:hover, &:focus {
+                    text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
+                }
+            }
+        }
+    }
+}
+
 .form-field__password {
     // Validation error notification will overlap with visibility button if it's not moved more to the left
     input[type='password'].ng-invalid.ng-touched,
@@ -433,7 +482,33 @@
 }
 
 .form-field__dropdown {
-    
+    .form-field__control {
+        > button:not(.btn-ignite) {
+            padding-top: 10px;
+        }
+    }
+}
+
+.form-field__ace {
+    .ace_editor {
+        width: 100%;
+        min-height: 70px;
+        margin: 0;
+
+        border: solid 1px #c5c5c5;
+        border-radius: 4px;
+        background-color: #ffffff;
+        box-shadow: none;
+
+        .ace_content {
+            padding-left: 2px;
+        }
+
+        &.ace_focus {
+            border-color: $ignite-brand-success;
+            box-shadow: none;
+        }
+    }
 }
 
 .form-field.ignite-form-field label.required {
