@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -84,7 +85,12 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 60_000;
     }
 
     /** */
@@ -251,6 +257,83 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
 
                     assertEquals("Broken rollback to savepoint in " + txType.concurrency + ' '
                         + txType.isolation + " transaction.", (Integer)1, cache.get(key1));
+                }
+                finally {
+                    cache.remove(key1);
+                }
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutGet() throws Exception {
+        if (getConfig().getCacheMode() == LOCAL)
+            return;
+
+        for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
+            IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
+
+            IgniteEx secondTxOwner = grid(3);
+            IgniteEx backup = grid(0);
+
+            int key1 = generateKey(getConfig(), nodes.primaryForKey(), backup);
+
+            for (TxType txType : txTypes) {
+                info("Transaction type " + txType);
+
+                CountDownLatch latch = new CountDownLatch(3);
+
+                try (Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation)) {
+                    tx.savepoint("sp");
+
+                    cache.put(key1, 0);
+
+                    IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+                            try (Transaction tx0 = secondTxOwner.transactions().txStart()) {
+                                assertNull(cache.get(key1));
+
+                                latch.countDown();
+
+                                if (!GridTestUtils.waitForCondition(() -> latch.getCount() == 1, FUT_TIMEOUT))
+                                    fail();
+
+                                assertNull(cache.get(key1));
+
+                                tx0.commit();
+                            }
+                            catch (Exception e) {
+                                log.error("Second tx failed.", e);
+
+                                fail(e.getMessage());
+                            }
+
+                            latch.countDown();
+                        },
+                        "_put");
+
+                    if (!GridTestUtils.waitForCondition(() -> latch.getCount() == 2, FUT_TIMEOUT))
+                        fail();
+
+                    tx.rollbackToSavepoint("sp");
+
+                    latch.countDown();
+
+                    if (!GridTestUtils.waitForCondition(() -> latch.getCount() == 0, FUT_TIMEOUT))
+                        fail();
+
+                    fut.get(FUT_TIMEOUT);
+
+                    assertEquals("Broken multithreaded rollback to savepoint in " + txType.concurrency +
+                        ' ' + txType.isolation + " transaction.", null, cache.get(key1));
+
+                    tx.commit();
+
+                    assertEquals("Broken rollback to savepoint in " + txType.concurrency + ' '
+                        + txType.isolation + " transaction.", null, cache.get(key1));
                 }
                 finally {
                     cache.remove(key1);
@@ -884,27 +967,54 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
 
     /**
      * @param cfg Cache configuration.
-     * @param ignite This node will be primary for generated key.
+     * @param primary This node will be primary for generated key.
      * @return Generated key that is primary for presented node or 1 as key for local cache.
      */
-    private int generateKey(CacheConfiguration<Integer, Integer> cfg, Ignite ignite) {
-        return generateKey(cfg, ignite, 1);
+    private int generateKey(CacheConfiguration<Integer, Integer> cfg, Ignite primary) {
+        return generateKey(cfg, primary, null, 1);
     }
 
     /**
      * @param cfg Cache configuration.
-     * @param ignite This node will be primary for generated key.
+     * @param primary This node will be primary for generated key.
+     * @param backup This node will be backup for generated key.
+     * @return Generated key that is primary for presented node or 1 as key for local cache.
+     */
+    private int generateKey(CacheConfiguration<Integer, Integer> cfg, Ignite primary, Ignite backup) {
+        return generateKey(cfg, primary, backup, 1);
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     * @param primary This node will be primary for generated key.
+     * @param beginingIdx Index to start generating.
+     * @return Generated key that is primary for presented node or 1 as key for local cache.
+     */
+    private int generateKey(CacheConfiguration<Integer, Integer> cfg, Ignite primary,  int beginingIdx) {
+        return generateKey(cfg, primary, null, beginingIdx);
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     * @param primary This node will be primary for generated key.
+     * @param backup This node will be backup for generated key.
      * @param beginingIdx Index to start generating.
      * @return Generated key that is primary for presented node or beginingIdx as key for local cache.
      */
-    private int generateKey(CacheConfiguration<Integer, Integer> cfg, Ignite ignite, int beginingIdx) {
+    private int generateKey(
+        CacheConfiguration<Integer, Integer> cfg,
+        Ignite primary,
+        Ignite backup,
+        int beginingIdx
+    ) {
         if (cfg.getCacheMode() == LOCAL)
             return beginingIdx;
 
-        Affinity<Object> aff = ignite.affinity(cfg.getName());
+        Affinity<Object> aff = primary.affinity(cfg.getName());
 
         for (int key = beginingIdx;; key++) {
-            if (aff.isPrimary(ignite.cluster().localNode(), key))
+            if (aff.isPrimary(primary.cluster().localNode(), key) &&
+                (backup == null || aff.isBackup(backup.cluster().localNode(), key)))
                 return key;
         }
     }
