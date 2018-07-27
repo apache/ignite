@@ -27,114 +27,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
-
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 
 /**
  * Record data V2 serializer.
  */
-public class RecordDataV2Serializer implements RecordDataSerializer {
+public class RecordDataV2Serializer extends RecordDataV1Serializer implements RecordDataSerializer {
     /** Length of HEADER record data. */
-    static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
-
-    /** V1 data serializer delegate. */
-    private final RecordDataV1Serializer delegateSerializer;
+    private static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
     /** Serializer of {@link TxRecord} records. */
     private final TxRecordSerializer txRecordSerializer;
 
-    /** Encryption SPI. */
-    private final EncryptionSpi encryptionSpi;
-
     /**
      * Create an instance of V2 data serializer.
      *
-     * @param delegateSerializer V1 data serializer.
-     * @param encryptionSpi Encryption SPI.
+     * @param cctx Cache shared context.
      */
-    public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer, EncryptionSpi encryptionSpi) {
-        this.delegateSerializer = delegateSerializer;
+    public RecordDataV2Serializer(GridCacheSharedContext cctx) {
+        super(cctx);
+
         this.txRecordSerializer = new TxRecordSerializer();
-        this.encryptionSpi = encryptionSpi;
     }
 
     /** {@inheritDoc} */
-    @Override public int size(WALRecord rec) throws IgniteCheckedException {
-        int clSz = plainSize(rec);
-
-        if (delegateSerializer.needEncryption(rec))
-            return encryptionSpi.encryptedSize(clSz) + 4 /* group id */ + 4 /* encrypted data size */
-                + REC_TYPE_SIZE /* plain record type */;
-
-         return clSz;
-    }
-
-    /** {@inheritDoc} */
-    @Override public WALRecord readRecord(
-        RecordType type,
-        ByteBufferBackedDataInput in
-    ) throws IOException, IgniteCheckedException {
-        if (type == ENCRYPTED_RECORD) {
-            if (encryptionSpi == null) {
-                T2<Integer, RecordType> knownData = delegateSerializer.skipEncryptedRec(in, true);
-
-                return new EncryptedRecord(knownData.get1(), knownData.get2());
-            }
-
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = delegateSerializer.readEncryptedData(in, true);
-
-            if (clData.get1() == null)
-                return new EncryptedRecord(clData.get2(), clData.get3());
-
-            return readPlainRecord(clData.get3(), clData.get1());
-        }
-
-        return readPlainRecord(type, in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
-        if (delegateSerializer.needEncryption(rec)) {
-            int clSz = plainSize(rec);
-
-            ByteBuffer clData = ByteBuffer.allocate(clSz);
-
-            writePlainRecord(rec, clData);
-
-            delegateSerializer.writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), rec.type(), clData, buf);
-
-            return;
-        }
-
-        writePlainRecord(rec, buf);
-    }
-
-    /**
-     * @param rec Record to measure.
-     * @return Plain(without encryption) size of serialized record in bytes.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int plainSize(WALRecord rec) throws IgniteCheckedException {
+    @Override protected int plainSize(WALRecord rec) throws IgniteCheckedException {
         switch (rec.type()) {
             case HEADER_RECORD:
                 return HEADER_RECORD_DATA_SIZE;
@@ -152,7 +81,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
             case DATA_RECORD:
-                return delegateSerializer.plainSize(rec) + 8/*timestamp*/;
+                return super.plainSize(rec) + 8/*timestamp*/;
 
             case SNAPSHOT:
                 return 8 + 1;
@@ -164,21 +93,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return txRecordSerializer.size((TxRecord)rec);
 
             default:
-                return delegateSerializer.plainSize(rec);
+                return super.plainSize(rec);
         }
     }
 
-    /**
-     * Reads {@code WalRecord} of {@code type} from input.
-     * Input should be plain(not encrypted).
-     *
-     * @param type Record type.
-     * @param in Input
-     * @return Deserialized record.
-     * @throws IOException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    private WALRecord readPlainRecord(
+    /** {@inheritDoc} */
+    @Override protected WALRecord readPlainRecord(
         RecordType type,
         ByteBufferBackedDataInput in
     ) throws IOException, IgniteCheckedException {
@@ -210,7 +130,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(delegateSerializer.readPlainDataEntry(in));
+                    entries.add(readPlainDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
 
@@ -221,7 +141,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(delegateSerializer.readEncryptedDataEntry(in));
+                    entries.add(readEncryptedDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
 
@@ -242,18 +162,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return txRecordSerializer.read(in);
 
             default:
-                return delegateSerializer.readPlainRecord(type, in);
+                return super.readPlainRecord(type, in);
         }
     }
 
-    /**
-     * Write {@code rec} to {@code buf} without encryption.
-     *
-     * @param rec Record to serialize.
-     * @param buf Output buffer.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override protected void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec instanceof HeaderRecord)
             throw new UnsupportedOperationException("Writing header records is forbidden since version 2 of serializer");
 
@@ -290,13 +204,13 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 buf.putInt(dataRec.writeEntries().size());
                 buf.putLong(dataRec.timestamp());
 
-                boolean encrypted = delegateSerializer.isDataRecordEncrypted(dataRec);
+                boolean encrypted = isDataRecordEncrypted(dataRec);
 
                 for (DataEntry dataEntry : dataRec.writeEntries()) {
                     if (encrypted)
-                        delegateSerializer.putEncryptedDataEntry(buf, dataEntry);
+                        putEncryptedDataEntry(buf, dataEntry);
                     else
-                        delegateSerializer.putPlainDataEntry(buf, dataEntry);
+                        putPlainDataEntry(buf, dataEntry);
                 }
 
                 break;
@@ -324,16 +238,8 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 break;
 
             default:
-                delegateSerializer.writePlainRecord(rec, buf);
+                super.writePlainRecord(rec, buf);
         }
-    }
-
-    /**
-     * @param record Record.
-     * @return Real record type.
-     */
-    RecordType recordType(WALRecord record) {
-        return delegateSerializer.recordType(record);
     }
 
     /**

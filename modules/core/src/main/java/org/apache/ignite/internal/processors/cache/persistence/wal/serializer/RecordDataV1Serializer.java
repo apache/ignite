@@ -205,7 +205,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param rec Record to check.
      * @return {@code True} if this record should be encrypted.
      */
-    boolean needEncryption(WALRecord rec) {
+    private boolean needEncryption(WALRecord rec) {
         if (!(rec instanceof WalRecordCacheGroupAware))
             return false;
 
@@ -229,7 +229,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(ByteBufferBackedDataInput in, boolean readType)
+    private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(ByteBufferBackedDataInput in,
+        boolean readType)
         throws IOException, IgniteCheckedException {
         int grpId = in.readInt();
         int encRecSz = in.readInt();
@@ -260,7 +261,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param readType If {@code true} plain record type will be read from {@code in}.
      * @return Group id and type of skipped record.
      */
-    T2<Integer, RecordType> skipEncryptedRec(ByteBufferBackedDataInput in, boolean readType) throws IOException, IgniteCheckedException {
+    private T2<Integer, RecordType> skipEncryptedRec(ByteBufferBackedDataInput in, boolean readType)
+        throws IOException, IgniteCheckedException {
         int grpId = in.readInt();
         int encRecSz = in.readInt();
         RecordType plainRecType = null;
@@ -283,7 +285,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param clData Plain data.
      * @param dst Destination buffer.
      */
-    void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
+    private void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
         int dtSz = encryptionSpi.encryptedSize(clData.capacity());
 
         dst.putInt(grpId);

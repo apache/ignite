@@ -77,12 +77,8 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
                     recordDeserializeFilter);
 
             case 2:
-                RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(
-                    new RecordDataV1Serializer(cctx),
-                    cctx.gridConfig().getEncryptionSpi());
-
                 return new RecordV2Serializer(
-                    dataV2Serializer,
+                    new RecordDataV2Serializer(cctx),
                     needWritePointer,
                     marshalledMode,
                     skipPositionCheck,
