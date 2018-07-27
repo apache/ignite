@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -489,6 +490,109 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
                         + ' ' + txType.isolation + " transaction.", (Integer)2, cache.get(key2));
                     assertEquals("Broken rollback to savepoint in " + txType.concurrency
                         + ' ' + txType.isolation + " transaction.", (Integer)3, cache.get(key3));
+                }
+                finally {
+                    cache.remove(key1);
+                    cache.remove(key2);
+                    cache.remove(key3);
+                }
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllSuspendResumeInSameThread() throws Exception {
+        checkPutAllSuspendResume(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllSuspendResumeInDifferentThread() throws Exception {
+        checkPutAllSuspendResume(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkPutAllSuspendResume(boolean sameThread) throws Exception {
+        for (NodeCombination nodes : nodeCombinations) {
+            info("Nodes " + nodes);
+
+            IgniteCache<Integer, Integer> cache = nodes.txOwner().getOrCreateCache(getConfig());
+
+            int key1 = generateKey(getConfig(), nodes.primaryForKey());
+            int key2 = generateKey(getConfig(), nodes.primaryForKey(), key1 + 1);
+            int key3 = generateKey(getConfig(), nodes.primaryForKey(), key2 + 1);
+
+            for (int i = 0; i < 3; i++) {
+                TxType txType = txTypes[i];
+
+                info("Transaction type " + txType);
+
+                try {
+                    Transaction tx = nodes.txOwner().transactions().txStart(txType.concurrency, txType.isolation);
+
+                    tx.savepoint("sp");
+
+                    Map<Integer, Integer> entries = new HashMap<>(3);
+
+                    entries.put(key1, 1);
+                    entries.put(key2, 1);
+                    entries.put(key3, 1);
+
+                    cache.putAll(entries);
+
+                    tx.suspend();
+
+                    IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+                        IgniteFuture<Boolean> fut1 = cache.putIfAbsentAsync(key1, 1);
+                        IgniteFuture<Boolean> fut2 = cache.putIfAbsentAsync(key2, 2);
+                        IgniteFuture<Boolean> fut3 = cache.putIfAbsentAsync(key3, 3);
+
+                        assertTrue(fut1.get());
+                        assertTrue(fut2.get());
+                        assertTrue(fut3.get());
+                    }, "_putAll");
+
+                    Callable<Void> c = () -> {
+                        waitForSecondCandidate(txType.concurrency, cache, key1);
+
+                        tx.resume();
+
+                        tx.rollbackToSavepoint("sp");
+
+                        fut.get(FUT_TIMEOUT);
+
+                        assertEquals("Broken multithreaded rollback to savepoint in " + txType.concurrency +
+                            ' ' + txType.isolation + " transaction.", (Integer)1, cache.get(key1));
+                        assertEquals("Broken multithreaded rollback to savepoint in " + txType.concurrency +
+                            ' ' + txType.isolation + " transaction.", (Integer)2, cache.get(key2));
+                        assertEquals("Broken multithreaded rollback to savepoint in " + txType.concurrency +
+                            ' ' + txType.isolation + " transaction.", (Integer)3, cache.get(key3));
+
+                        tx.commit();
+                        tx.close();
+
+                        assertEquals("Broken rollback to savepoint in " + txType.concurrency
+                            + ' ' + txType.isolation + " transaction.", (Integer)1, cache.get(key1));
+                        assertEquals("Broken rollback to savepoint in " + txType.concurrency
+                            + ' ' + txType.isolation + " transaction.", (Integer)2, cache.get(key2));
+                        assertEquals("Broken rollback to savepoint in " + txType.concurrency
+                            + ' ' + txType.isolation + " transaction.", (Integer)3, cache.get(key3));
+
+                        return null;
+                    };
+
+                    if (sameThread)
+                        GridTestUtils.runAsync(c).get();
+                    else
+                        c.call();
+                }
+                catch (Throwable t){
+                    fail(t.getMessage());
                 }
                 finally {
                     cache.remove(key1);
