@@ -46,10 +46,8 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean crossNodeTransactions() {
-        // Commit error during cross node transactions breaks transaction integrity
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-9086
-        return false;
+    @Override protected long getTestTimeout() {
+        return 60 * 1000L;
     }
 
     /**
@@ -225,7 +223,10 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                     }
 
                     return false;
-                }, 5000);
+                }, getTestTimeout());
+
+                // Failed node should be stopped.
+                GridTestUtils.assertThrows(log, () -> grid(failedNodeIdx), IgniteIllegalStateException.class, "");
 
                 // Re-start failed node.
                 startGrid(failedNodeIdx);

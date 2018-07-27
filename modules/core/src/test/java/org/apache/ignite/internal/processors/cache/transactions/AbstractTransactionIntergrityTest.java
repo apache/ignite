@@ -120,7 +120,9 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
      *         when primary partitions participating in transaction spreaded across several cluster nodes.
      */
     protected boolean crossNodeTransactions() {
-        return true;
+        // Commit error during cross node transactions breaks transaction integrity
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-9086
+        return false;
     }
 
     /** {@inheritDoc} */
