@@ -852,22 +852,21 @@ public abstract class TxSavepointsTransactionalCacheTest extends GridCacheAbstra
      * @param cache Cache.
      * @param key Key to check.
      * @throws IgniteInterruptedCheckedException If was interrupted.
-     * @throws IgniteTxTimeoutCheckedException If lock candidate didn't appeared for 3 seconds.
      */
     private void waitForSecondCandidate(TransactionConcurrency concurrency, IgniteCache cache, int key)
-        throws IgniteInterruptedCheckedException, IgniteTxTimeoutCheckedException {
-        if (concurrency == TransactionConcurrency.PESSIMISTIC &&
-            !GridTestUtils.waitForCondition(() -> {
+        throws IgniteInterruptedCheckedException {
+        if (concurrency == TransactionConcurrency.PESSIMISTIC) {
+            assertTrue("Wait for second lock candidate was timed out.", GridTestUtils.waitForCondition(() -> {
                 try {
                     return
                         ((IgniteEx)grid(((IgniteCacheProxy)cache).context().cache().affinity().mapKeyToNode(key)))
-                        .cachex(cache.getName()).context().cache().entryEx(key).localCandidates().size() == 2;
+                            .cachex(cache.getName()).context().cache().entryEx(key).localCandidates().size() == 2;
                 }
                 catch (GridCacheEntryRemovedException e) {
                     throw new IgniteException("Wait for second lock candidate was failed", e);
                 }
-            }, FUT_TIMEOUT))
-            throw new IgniteTxTimeoutCheckedException("Wait for second lock candidate was timed out.");
+            }, FUT_TIMEOUT));
+        }
     }
 
     /** Transaction concurrency and isolation level. */
