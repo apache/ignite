@@ -807,10 +807,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         startServers(2);
 
         // Waiting for minor topology changing because of late affinity assignment.
-        waitForRebalancing(0, 2, 1);
-        waitForRebalancing(1, 2, 1);
-
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(false, false, null, true, true);
 
         Ignite srv0 = ignite(0);
         Ignite srv1 = ignite(1);

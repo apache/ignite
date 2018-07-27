@@ -235,12 +235,12 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
-     * @return {@code True} if topology changed.
+     * @return {@code True} if rebalance topology version changed by exchange thread or force
+     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
-        return
-            !grp.affinity().lastVersion().equals(fut.topologyVersion()) || // Topology already changed.
-                fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+        return !ctx.exchange().rebalanceTopologyVersion().equals(fut.topVer) ||
+            fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
@@ -253,13 +253,20 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Initiates new rebalance process from given {@code assignments}.
-     * If previous rebalance is not finished method cancels it.
-     * In case of delayed rebalance method schedules new with configured delay.
+     * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
+     */
+    Collection<UUID> remainingNodes() {
+        return rebalanceFut.remainingNodes();
+    }
+
+    /**
+     * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
+     * future based on them. Cancel previous rebalance future and send rebalance started event.
+     * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
-     * @param assignments Assignments.
-     * @param force {@code True} if dummy reassign.
-     * @param rebalanceId Rebalance id.
+     * @param assignments New assignments to be processed.
+     * @param force {@code True} if force preload request by {@link ForceRebalanceExchangeTask}.
+     * @param rebalanceId Rebalance id generated from exchange thread.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
@@ -352,6 +359,17 @@ public class GridDhtPartitionDemander {
                 return null;
             }
 
+            // Add all supplier nodes before first request send to them to avoid race between
+            // adding remaining nodes and processing response, see RebalanceFuture#checkIsDone(boolean)
+            // Also used to restart rebalance in case affinity is the same but some supplier
+            // nodes left, see GridDhtPreloader#rebalanceRequired for details.
+            assignments.forEach((k, v) -> {
+                assert v.partitions() != null :
+                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
+
+                fut.remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
+            });
+
             return () -> {
                 if (next != null)
                     fut.listen(f -> {
@@ -440,17 +458,7 @@ public class GridDhtPartitionDemander {
             if (fut.isDone())
                 return;
 
-            // Must add all remaining node before send first request, for avoid race between add remaining node and
-            // processing response, see checkIsDone(boolean).
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
-                UUID nodeId = e.getKey().id();
-
-                IgniteDhtDemandedPartitionsMap parts = e.getValue().partitions();
-
-                assert parts != null : "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId + "]";
-
-                fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
-            }
+            fut.remaining.forEach((key, value) -> value.set1(U.currentTimeMillis()));
         }
 
         final CacheConfiguration cfg = grp.config();
@@ -1215,6 +1223,13 @@ public class GridDhtPartitionDemander {
 
                 onDone(!cancelled);
             }
+        }
+
+        /**
+         * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
+         */
+        private synchronized Collection<UUID> remainingNodes() {
+            return remaining.keySet();
         }
 
         /**
