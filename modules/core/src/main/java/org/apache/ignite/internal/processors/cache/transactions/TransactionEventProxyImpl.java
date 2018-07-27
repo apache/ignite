@@ -42,6 +42,11 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Unsupported operation message. */
+    private static final String UNSUPPORTED_OPERATION_MESSAGE = "All operations changing transaction's params or " +
+        "state are restricted inside event listener. " +
+        "The only exception is setRollbackOnly(), use it in case transaction should be rolled back.";
+
     /** Xid. */
     private IgniteUuid xid;
 
@@ -119,7 +124,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
 
     /** {@inheritDoc} */
     @Override public long timeout(long timeout) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
@@ -134,37 +139,37 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
 
     /** {@inheritDoc} */
     @Override public void commit() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
     @Override public void suspend() throws IgniteException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
     }
 
     /** {@inheritDoc} */
@@ -174,17 +179,17 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
 
     /** {@inheritDoc} */
     @Override public IgniteAsyncSupport withAsync() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Operation deprecated.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Operation deprecated.");
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Operation deprecated.");
     }
 
     /**
