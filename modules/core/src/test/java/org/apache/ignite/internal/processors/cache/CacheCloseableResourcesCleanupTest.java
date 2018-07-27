@@ -167,8 +167,6 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
             qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
             qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
 
-            assertEquals(0, rsrcs.size());
-
             cache.query(qry);
         });
     }

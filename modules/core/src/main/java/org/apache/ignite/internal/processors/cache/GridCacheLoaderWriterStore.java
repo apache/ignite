@@ -83,14 +83,12 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
     @Override public void stop() {
         if (ldr instanceof LifecycleAware)
             ((LifecycleAware)ldr).stop();
+        else if (ldr instanceof Closeable)
+            U.closeQuiet((Closeable)ldr);
 
         if (writer instanceof LifecycleAware)
             ((LifecycleAware)writer).stop();
-
-        if (ldr instanceof Closeable)
-            U.closeQuiet((Closeable)ldr);
-
-        if (writer instanceof Closeable)
+        else if (writer instanceof Closeable)
             U.closeQuiet((Closeable)writer);
     }
 
