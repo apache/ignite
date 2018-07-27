@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -35,12 +36,17 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
+
 /**
  * Tracks pending transactions for purposes of consistent cut algorithm.
  */
 public class LocalPendingTransactionsTracker {
     /** Cctx. */
     private final GridCacheSharedContext<?, ?> cctx;
+
+    /** Tracker enabled. */
+    private final boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED, false);
 
     /**
      * @param cctx Cctx.
@@ -97,6 +103,9 @@ public class LocalPendingTransactionsTracker {
         return U.sealMap(currentlyPreparedTxs);
     }
 
+    /**
+     *
+     */
     public void startTrackingPrepared() {
         assert stateLock.writeLock().isHeldByCurrentThread();
 
@@ -195,6 +204,9 @@ public class LocalPendingTransactionsTracker {
      * @param preparedMarkerPtr Prepared marker ptr.
      */
     public void onTxPrepared(GridCacheVersion nearXidVer, WALPointer preparedMarkerPtr) {
+        if (!enabled)
+            return;
+
         stateLock.readLock().lock();
 
         try {
@@ -216,6 +228,9 @@ public class LocalPendingTransactionsTracker {
      * @param nearXidVer Near xid version.
      */
     public void onTxCommitted(GridCacheVersion nearXidVer) {
+        if (!enabled)
+            return;
+
         stateLock.readLock().lock();
 
         try {
@@ -244,13 +259,15 @@ public class LocalPendingTransactionsTracker {
         finally {
             stateLock.readLock().unlock();
         }
-
     }
 
     /**
      * @param nearXidVer Near xid version.
      */
     public void onTxRolledBack(GridCacheVersion nearXidVer) {
+        if (!enabled)
+            return;
+
         stateLock.readLock().lock();
 
         try {
@@ -270,6 +287,9 @@ public class LocalPendingTransactionsTracker {
      * @param keys Keys.
      */
     public void onKeysWritten(GridCacheVersion nearXidVer, List<KeyCacheObject> keys) {
+        if (!enabled)
+            return;
+
         stateLock.readLock().lock();
 
         try {
@@ -309,6 +329,9 @@ public class LocalPendingTransactionsTracker {
      * @param keys Keys.
      */
     public void onKeysRead(GridCacheVersion nearXidVer, List<KeyCacheObject> keys) {
+        if (!enabled)
+            return;
+
         stateLock.readLock().lock();
 
         try {
@@ -343,6 +366,9 @@ public class LocalPendingTransactionsTracker {
      * @param nearXidVer Near xid version.
      */
     private void checkTxFinishFutureDone(GridCacheVersion nearXidVer) {
+        if (!enabled)
+            return;
+
         GridFutureAdapter<Map<GridCacheVersion, WALPointer>> txFinishAwaitFut0 = txFinishAwaitFut;
 
         if (txFinishAwaitFut0 != null) {
