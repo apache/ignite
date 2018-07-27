@@ -98,7 +98,7 @@ form(novalidate name=form)
                 $ctrl.memorySizeInputVisible$|async:this
             `
         )
-            pc-form-field-size(
+            form-field-size(
                 ng-model='$ctrl.defaultMemoryPolicy.maxSize'
                 ng-model-options='{allowInvalid: true}'
                 id='memory'
@@ -114,7 +114,7 @@ form(novalidate name=form)
                 +form-field-feedback('"memory"', 'min', 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).')
 
         .pc-form-grid-col-60(ng-if=`$ctrl.IgniteVersion.available('2.3.0')`)
-            pc-form-field-size(
+            form-field-size(
                 ng-model=`${model}.dataStorageConfiguration.defaultDataRegionConfiguration.maxSize`
                 ng-model-options='{allowInvalid: true}'
                 id='memory'

@@ -42,6 +42,11 @@ export default class PCFormFieldSizeController {
             {label: 'ns', value: 1 / 1000},
             {label: 'ms', value: 1},
             {label: 's', value: 1000}
+        ],
+        time: [
+            {label: 'sec', value: 1},
+            {label: 'min', value: 60},
+            {label: 'hour', value: 60 * 60}
         ]
     };
 

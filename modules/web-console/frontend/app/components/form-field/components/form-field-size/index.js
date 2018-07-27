@@ -19,5 +19,5 @@ import angular from 'angular';
 import component from './component';
 
 export default angular
-    .module('ignite-console.page-configure.form-field-size', [])
-    .component('pcFormFieldSize', component);
+    .module('ignite-console.form-field.form-field-size', [])
+    .component('formFieldSize', component);

@@ -616,20 +616,15 @@ mixin list-addresses({ items, name, tip, withPortRange = true })
             )
 
 //- Mixin for cache mode.
-mixin cacheMode(lbl, model, name, placeholder)
-    +dropdown(lbl, model, name, 'true', placeholder,
-        '[\
-            {value: "LOCAL", label: "LOCAL"},\
-            {value: "REPLICATED", label: "REPLICATED"},\
-            {value: "PARTITIONED", label: "PARTITIONED"}\
-        ]',
-        'Cache modes:\
-        <ul>\
-            <li>PARTITIONED - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
-            <li>REPLICATED - in this mode all the keys are distributed to all participating nodes</li>\
-            <li>LOCAL - in this mode caches residing on different grid nodes will not know about each other</li>\
-        </ul>'
-    )
+mixin cacheMode(label, model, name, placeholder)
+    +form-field__cache-modes({
+        label,
+        model,
+        name,
+        placeholder
+    })&attributes(attributes)
+        if  block
+            block
 
 mixin form-field__cache-modes({ label, model, name, placeholder })
     +form-field__dropdown({
@@ -645,10 +640,12 @@ mixin form-field__cache-modes({ label, model, name, placeholder })
             <li>REPLICATED - in this mode all the keys are distributed to all participating nodes</li>\
             <li>LOCAL - in this mode caches residing on different grid nodes will not know about each other</li>\
         </ul>'
-    })
+    })&attributes(attributes)
+        if  block
+            block
 
 //- Mixin for eviction policy.
-mixin evictionPolicy(model, name, enabled, required, tip)
+mixin form-field__eviction-policy({ model, name, enabled, required, tip })
     -var kind = model + '.kind'
     -var policy = model + '[' + kind + ']'
 
@@ -668,7 +665,7 @@ mixin evictionPolicy(model, name, enabled, required, tip)
             +number('Batch size', policy + '.batchSize', name + '+ "batchSize"', enabled, '1', '1',
                 'Number of entries to remove on shrink')
         .pc-form-grid-col-30
-            pc-form-field-size(
+            form-field-size(
                 label='Max memory size:'
                 ng-model=`${policy}.maxMemorySize`
                 ng-model-options='{allowInvalid: true}'
@@ -694,6 +691,9 @@ mixin evictionPolicy(model, name, enabled, required, tip)
                 ng-model-options='{allowInvalid: true}'
             )
                 +form-field-feedback(null, 'min', 'Either maximum memory size or maximum size should be greater than 0')
+
+mixin evictionPolicy(model, name, enabled, required, tip)
+    +form-field__eviction-policy({ model, name, enabled, required, tip })
 
 //- Mixin for clusters dropdown.
 mixin clusters(model, tip)

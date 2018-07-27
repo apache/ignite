@@ -61,7 +61,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +number('Utility cache:', model + '.utilityCacheThreadPoolSize', '"utilityCacheThreadPoolSize"', 'true', 'max(8, availableProcessors)', '1',
                     'Default thread pool size that will be used to process utility cache messages')
             .pc-form-grid-col-30
-                pc-form-field-size(
+                form-field-size(
                     label='Utility cache keep alive time:'
                     ng-model=`${model}.utilityCacheKeepAliveTime`
                     name='utilityCacheKeepAliveTime'

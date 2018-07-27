@@ -40,7 +40,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
             +form-field-feedback(_, 'igniteUnique', 'Name should be unique')
 
     .pc-form-grid-col-30
-        pc-form-field-size(
+        form-field-size(
             label='Initial size:'
             ng-model=`${modelAt}.initialSize`
             name='initialSize'
@@ -50,7 +50,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         )
 
     .pc-form-grid-col-30
-        pc-form-field-size(
+        form-field-size(
             ng-model=`${modelAt}.maxSize`
             ng-model-options='{allowInvalid: true}'
             name='maxSize'
@@ -114,7 +114,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         })
 
     .pc-form-grid-col-30
-        pc-form-field-size(
+        form-field-size(
             ng-model=`${modelAt}.metricsRateTimeInterval`
             ng-model-options='{allowInvalid: true}'
             name='metricsRateTimeInterval'
@@ -157,7 +157,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                 span System region
             .pc-form-group.pc-form-grid-row
                 .pc-form-grid-col-30
-                    pc-form-field-size(
+                    form-field-size(
                         label='Initial size:'
                         ng-model=`${model}.systemRegionInitialSize`
                         name='DataStorageSystemRegionInitialSize'
@@ -167,7 +167,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                         on-scale-change='systemRegionInitialSizeScale = $event'
                     )
                 .pc-form-grid-col-30
-                    pc-form-field-size(
+                    form-field-size(
                         label='Max size:'
                         ng-model=`${model}.systemRegionMaxSize`
                         name='DataStorageSystemRegionMaxSize'
