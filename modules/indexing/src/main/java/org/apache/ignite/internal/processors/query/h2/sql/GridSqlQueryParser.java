@@ -570,7 +570,7 @@ public class GridSqlQueryParser {
      * @return Parsed select.
      */
     public static PreparedWithRemaining preparedWithRemaining(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         if (cmd instanceof CommandContainer)
             return new PreparedWithRemaining(PREPARED.get(cmd), null);
