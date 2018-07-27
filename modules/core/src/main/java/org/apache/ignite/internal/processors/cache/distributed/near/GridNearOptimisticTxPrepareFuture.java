@@ -843,7 +843,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * Future that completes when keys are locked.
      */
-    public KeyLockFuture keyLockFut() throws IgniteCheckedException {
+    public KeyLockFuture keyLockFut() {
         return keyLockFut;
     }
 
