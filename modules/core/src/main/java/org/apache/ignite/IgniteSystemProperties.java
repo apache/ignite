@@ -471,6 +471,9 @@ public final class IgniteSystemProperties {
     /** Force all SQL queries to be processed lazily regardless of what clients request. */
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
+    /** Disable SQL system views. */
+    public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
+
     /** SQL retry timeout. */
     public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
 

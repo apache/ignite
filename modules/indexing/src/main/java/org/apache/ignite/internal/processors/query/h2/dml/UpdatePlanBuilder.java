@@ -137,7 +137,14 @@ public final class UpdatePlanBuilder {
             target = ins.into();
 
             tbl = DmlAstUtils.gridTableForElement(target);
-            desc = tbl.dataTable().rowDescriptor();
+
+            GridH2Table h2Tbl = tbl.dataTable();
+
+            if (h2Tbl == null)
+                throw new IgniteSQLException("Operation not supported for table '" + tbl.tableName() + "'",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            desc = h2Tbl.rowDescriptor();
 
             cols = ins.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
@@ -311,6 +318,10 @@ public final class UpdatePlanBuilder {
         GridSqlTable tbl = DmlAstUtils.gridTableForElement(target);
 
         GridH2Table h2Tbl = tbl.dataTable();
+
+        if (h2Tbl == null)
+            throw new IgniteSQLException("Operation not supported for table '" + tbl.tableName() + "'",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridH2RowDescriptor desc = h2Tbl.rowDescriptor();
 
@@ -659,7 +670,7 @@ public final class UpdatePlanBuilder {
 
         GridH2Table gridTbl = tbl.dataTable();
 
-        if (updateAffectsKeyColumns(gridTbl, update.set().keySet()))
+        if (gridTbl != null && updateAffectsKeyColumns(gridTbl, update.set().keySet()))
             throw new IgniteSQLException("SQL UPDATE can't modify key or its fields directly",
                 IgniteQueryErrorCode.KEY_UPDATE);
     }
