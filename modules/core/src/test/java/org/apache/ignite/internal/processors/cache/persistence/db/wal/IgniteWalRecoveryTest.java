@@ -1155,6 +1155,92 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
     }
 
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    public void testApplyDeltaRecords2() throws Exception {
+//        try {
+//            IgniteEx ignite0 = (IgniteEx)startGrid("node0");
+//
+//            ignite0.active(true);
+//
+//            IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
+//
+//            for (int i = 0; i < 1000; i++)
+//                cache0.put(i, new IndexedObject(i));
+//
+//            GridCacheSharedContext<Object, Object> sharedCtx = ignite0.context().cache().context();
+//
+//            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
+//
+//            db.waitForCheckpoint("test");
+//            db.enableCheckpoints(false).get();
+//
+//            // Log something to know where to start.
+//            WALPointer ptr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+//
+////            info("Replay marker: " + ptr);
+////
+////            for (int i = 1000; i < 5000; i++)
+////                cache0.put(i, new IndexedObject(i));
+////
+////            info("Done puts...");
+////
+////            for (int i = 2_000; i < 3_000; i++)
+////                cache0.remove(i);
+////
+////            info("Done removes...");
+////
+////            for (int i = 5000; i < 6000; i++)
+////                cache0.put(i, new IndexedObject(i));
+////
+////            info("Done puts...");
+//
+//
+//            GridTestUtils.runAsync(
+//                new Callable<Object>() {
+//                    @Nullable @Override public Object call() throws Exception {
+//                        // Now check that deltas can be correctly applied.
+////                        Thread.sleep(10000);
+//                        try (WALIterator it = sharedCtx.wal().replay(ptr)) {
+////                            while (it.hasNext()) {
+////
+////                            }
+//
+//                            System.out.println("Start waiting ");
+//                            Thread.sleep(10000);
+//                            System.out.println("Finish waiting ");
+//                        }
+//
+//                        return null;
+//                    }
+//                }
+//            );
+//
+//            IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+//                new Callable<Object>() {
+//                    @Nullable @Override public Object call() throws Exception {
+//                        // Now check that deltas can be correctly applied.
+//                        for (int i = 0; i < 10000; i++) {
+//                            cache0.put(i, new IndexedObject(i));
+//                            if (i % 1000 == 0) {
+//                                System.out.println("Insert : " + i);
+//                            }
+//                        }
+//
+//                        return null;
+//                    }
+//                }
+//            );
+//
+//            future.get();
+//            ignite0.close();
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
+//    }
+
     /**
      * @throws Exception if failed.
      */
