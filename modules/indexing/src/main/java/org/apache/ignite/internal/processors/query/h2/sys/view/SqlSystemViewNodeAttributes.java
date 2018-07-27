@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.lang.IgniteParentChildIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
@@ -33,6 +34,7 @@ import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * System view: node attributes.
@@ -95,7 +97,7 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
             return rows;
         }
         else {
-            return new ParentChildRowIterable<ClusterNode, Map.Entry<String, Object>>(ses, nodes,
+            return new ParentChildRowIterable<>(ses, nodes,
                 new IgniteClosure<ClusterNode, Iterator<Map.Entry<String, Object>>>() {
                     @Override public Iterator<Map.Entry<String, Object>> apply(ClusterNode node) {
                         return node.attributes().entrySet().iterator();
@@ -110,6 +112,73 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
                         };
                     }
                 });
+        }
+    }
+
+    /**
+     * Parent-child Row iterable.
+     *
+     * @param <P> Parent class.
+     * @param <C> Child class
+     */
+    private class ParentChildRowIterable<P, C> implements Iterable<Row> {
+        /** Session. */
+        private final Session ses;
+
+        /** Parent iterable. */
+        private final Iterable<P> parents;
+
+        /** Child iterator closure. */
+        private final IgniteClosure<P, Iterator<C>> cloChildIter;
+
+        /** Result from parent and child closure. */
+        private final IgniteBiClosure<P, C, Object[]> cloRowFromParentChild;
+
+        /**
+         * @param ses Session.
+         * @param parents Parents.
+         * @param cloChildIter Child iterator closure.
+         * @param cloRowFromParentChild Row columns from parent and child closure.
+         */
+        ParentChildRowIterable(Session ses, Iterable<P> parents,
+            IgniteClosure<P, Iterator<C>> cloChildIter,
+            IgniteBiClosure<P, C, Object[]> cloRowFromParentChild) {
+            this.ses = ses;
+            this.parents = parents;
+            this.cloChildIter = cloChildIter;
+            this.cloRowFromParentChild = cloRowFromParentChild;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Row> iterator() {
+            return new ParentChildRowIterator<>(ses, parents.iterator(), cloChildIter, cloRowFromParentChild);
+        }
+    }
+
+    /**
+     * Parent-child Row iterator.
+     *
+     * @param <P> Parent class.
+     * @param <C> Child class
+     */
+    private class ParentChildRowIterator<P, C> extends IgniteParentChildIterator<P, C, Row> {
+        /**
+         * @param ses Session.
+         * @param parentIter Parent iterator.
+         * @param cloChildIter Child iterator closure.
+         * @param cloResFromParentChild Row columns from parent and child closure.
+         */
+        ParentChildRowIterator(final Session ses, Iterator<P> parentIter,
+            IgniteClosure<P, Iterator<C>> cloChildIter,
+            final IgniteBiClosure<P, C, Object[]> cloResFromParentChild) {
+            super(parentIter, cloChildIter, new IgniteBiClosure<P, C, Row>() {
+                /** Row count. */
+                private int rowCnt = 0;
+
+                @Override public Row apply(P p, C c) {
+                    return SqlSystemViewNodeAttributes.this.createRow(ses, ++rowCnt, cloResFromParentChild.apply(p, c));
+                }
+            });
         }
     }
 }
