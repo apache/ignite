@@ -25,15 +25,20 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 
 import java.util.Set;
 
@@ -78,6 +83,14 @@ public class IgniteCacheTestSuite7 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
+
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
+        suite.addTestSuite(CacheMetricsManageTest.class);
+        suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
+
+        suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
+
+        suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
 
         return suite;
     }
