@@ -109,6 +109,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 import static org.apache.ignite.internal.processors.query.QueryUtils.*;
+import static org.apache.ignite.internal.processors.query.h2.StatementWithMeta.INVOLVED_CACHES;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
@@ -1517,27 +1518,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return MVCC query tracker or {@code null} if MVCC is disabled for involved caches.
      */
     private MvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
-        StatementWithMeta stmtWithMeta;
+        List<GridCacheContext> involvedCaches;
         try {
-            stmtWithMeta = stmt.unwrap(StatementWithMeta.class);
+            if (stmt.isWrapperFor(StatementWithMeta.class)) {
+                StatementWithMeta stmtWithMeta = stmt.unwrap(StatementWithMeta.class);
+                involvedCaches = stmtWithMeta.meta(INVOLVED_CACHES);
+                if (involvedCaches == null)
+                    stmtWithMeta.putMeta(INVOLVED_CACHES, involvedCaches = parseInvolvedCaches(stmt));
+            }
+            else
+                involvedCaches = parseInvolvedCaches(stmt);
         } catch (SQLException e) {
             throw new IgniteException(e);
-        }
-
-        List<GridCacheContext> involvedCaches = stmtWithMeta.meta(StatementWithMeta.INVOLVED_CACHES);
-        if (involvedCaches == null) {
-            Prepared p = GridSqlQueryParser.prepared(stmt);
-            GridSqlQueryParser parser = new GridSqlQueryParser(false);
-            parser.parse(p);
-
-            involvedCaches = new ArrayList<>();
-            for (Object o : parser.objectsMap().values()) {
-                if (o instanceof GridSqlAlias)
-                    o = GridSqlAlias.unwrap((GridSqlAst) o);
-                if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null)
-                    involvedCaches.add(((GridSqlTable) o).dataTable().cache());
-            }
-            stmtWithMeta.putMeta(StatementWithMeta.INVOLVED_CACHES, involvedCaches);
         }
 
         GridCacheContext firstCctx = null;
@@ -1553,6 +1545,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return mvccEnabled ? MvccUtils.mvccTracker(firstCctx, startTx) : null;
+    }
+
+    private static List<GridCacheContext> parseInvolvedCaches(PreparedStatement stmt) {
+        Prepared p = GridSqlQueryParser.prepared(stmt);
+        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+        parser.parse(p);
+
+        List<GridCacheContext> involvedCaches = new ArrayList<>();
+        for (Object o : parser.objectsMap().values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst) o);
+            if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null)
+                involvedCaches.add(((GridSqlTable) o).dataTable().cache());
+        }
+        return involvedCaches;
     }
 
     /**
