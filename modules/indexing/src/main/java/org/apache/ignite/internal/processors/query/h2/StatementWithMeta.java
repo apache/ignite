@@ -23,7 +23,25 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLType;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,6 +59,8 @@ final class StatementWithMeta implements PreparedStatement {
     private final PreparedStatement delegate;
 
     StatementWithMeta(PreparedStatement delegate) {
+        assert !(delegate instanceof StatementWithMeta);
+
         this.delegate = delegate;
     }
 
@@ -64,8 +84,10 @@ final class StatementWithMeta implements PreparedStatement {
      * @param metaObj Meta object.
      */
     void putMeta(int id, Object metaObj) {
-        if (meta == null || id >= meta.length)
+        if (meta == null)
             meta = new Object[id + 1];
+        else if (id >= meta.length)
+            meta = Arrays.copyOf(meta, id + 1);
 
         meta[id] = metaObj;
     }

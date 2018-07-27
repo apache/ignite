@@ -409,7 +409,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             stmt = prepare0(c, sql);
 
-            cache.put(key, stmt);
+            cache.put(key, new StatementWithMeta(stmt));
 
             return stmt;
         }

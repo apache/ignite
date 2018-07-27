@@ -20,14 +20,13 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.PreparedStatement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Statement cache. LRU eviction policy is used. Not thread-safe.
  */
-class H2StatementCache {
+final class H2StatementCache {
     /** Last usage. */
     private volatile long lastUsage;
 
@@ -58,8 +57,8 @@ class H2StatementCache {
      * @param key Key associated with statement.
      * @param stmt Statement which will be cached.
      */
-    void put(H2CachedStatementKey key, PreparedStatement stmt) {
-        lruStmtCache.put(key, new StatementWithMeta(stmt));
+    void put(H2CachedStatementKey key, StatementWithMeta stmt) {
+        lruStmtCache.put(key, stmt);
     }
 
     /**
