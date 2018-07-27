@@ -31,6 +31,11 @@ import org.apache.ignite.testframework.GridTestUtils;
  *
  */
 public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTransactionIntergrityTest {
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 60 * 1000L;
+    }
+
     /**
      *
      */
@@ -63,7 +68,10 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
                     }
 
                     return false;
-                }, 5000);
+                }, getTestTimeout());
+
+                // Failed node should be stopped.
+                GridTestUtils.assertThrows(log, () -> grid(failedNodeIdx), IgniteIllegalStateException.class, "");
 
                 // Re-start failed node.
                 startGrid(failedNodeIdx);

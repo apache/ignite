@@ -213,7 +213,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             BPlusTree.pageHndWrapper = (tree, hnd) -> hnd;
 
             if (nodeStoppingExpected) {
-                // Wait until node with death worker will left cluster.
+                // Wait until node with corrupted index will left cluster.
                 GridTestUtils.waitForCondition(() -> {
                     try {
                         grid(failedNodeIdx);
