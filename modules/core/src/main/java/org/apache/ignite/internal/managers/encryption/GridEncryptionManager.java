@@ -534,6 +534,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** */
     public static class NodeEncryptionKeys implements Serializable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         NodeEncryptionKeys(Map<Integer, byte[]> knownKeys, Map<Integer, byte[]> newKeys) {
             this.knownKeys = knownKeys;
             this.newKeys = newKeys;
