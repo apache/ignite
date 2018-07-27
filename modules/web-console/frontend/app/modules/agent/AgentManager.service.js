@@ -638,7 +638,7 @@ export default class AgentManager {
      * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
-     * @param {int} pageSz Page size.
+     * @param {Number} pageSz
      * @param {Boolean} [lazy] query flag.
      * @param {Boolean} [collocated] Collocated query.
      * @returns {Promise}
