@@ -118,7 +118,7 @@
         <spring-5.0.version>5.0.5.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
-        <tomcat.version>9.0.8</tomcat.version>
+        <tomcat.version>9.0.10</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
