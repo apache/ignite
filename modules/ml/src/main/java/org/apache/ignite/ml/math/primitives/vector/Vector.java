@@ -22,7 +22,6 @@ import java.util.Spliterator;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Destroyable;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.MetaAttributes;
 import org.apache.ignite.ml.math.StorageOpsMetrics;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
@@ -31,6 +30,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 
 /**
  * A vector interface.
@@ -513,6 +513,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Returns array of doubles corresponds to vector components.
+     *
      * @return Array of doubles.
      */
     public default double[] asArray() {

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -286,35 +287,64 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
-     *
      * @param paths Paths to create.
      * @param createMode Create mode.
-     * @throws KeeperException.NodeExistsException If at least one of target node already exists.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
     void createAll(List<String> paths, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NodeExistsException
-    {
-        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8188
-        List<Op> ops = new ArrayList<>(paths.size());
+        throws ZookeeperClientFailedException, InterruptedException {
+        if (paths.isEmpty())
+            return;
 
-        for (String path : paths)
-            ops.add(Op.create(path, EMPTY_BYTES, ZK_ACL, createMode));
+        List<List<Op>> batches = new LinkedList<>();
 
-        for (;;) {
-            long connStartTime = this.connStartTime;
+        int batchSize = 0;
 
-            try {
-                zk.multi(ops);
+        List<Op> batch = new LinkedList<>();
 
-                return;
+        for (String path : paths) {
+            //TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
+            int size = requestOverhead(path) + 48 /* overhead */;
+
+            assert size <= MAX_REQ_SIZE;
+
+            if (batchSize + size > MAX_REQ_SIZE) {
+                batches.add(batch);
+
+                batch = new LinkedList<>();
+
+                batchSize = 0;
             }
-            catch (KeeperException.NodeExistsException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
+
+            batch.add(Op.create(path, EMPTY_BYTES, ZK_ACL, createMode));
+
+            batchSize += size;
+        }
+
+        batches.add(batch);
+
+        for (List<Op> ops : batches) {
+            for (;;) {
+                long connStartTime = this.connStartTime;
+
+                try {
+                    zk.multi(ops);
+
+                    break;
+                }
+                catch (KeeperException.NodeExistsException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to create nodes using bulk operation: " + e);
+
+                    for (Op op : ops)
+                        createIfNeeded(op.getPath(), null, createMode);
+
+                    break;
+                }
+                catch (Exception e) {
+                    onZookeeperError(connStartTime, e);
+                }
             }
         }
     }
@@ -560,38 +590,64 @@ public class ZookeeperClient implements Watcher {
      * @param parent Parent path.
      * @param paths Children paths.
      * @param ver Version.
-     * @throws KeeperException.NoNodeException If at least one of nodes does not exist.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
     void deleteAll(@Nullable String parent, List<String> paths, int ver)
-        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         if (paths.isEmpty())
             return;
 
-        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8188
-        List<Op> ops = new ArrayList<>(paths.size());
+        List<List<Op>> batches = new LinkedList<>();
+
+        int batchSize = 0;
+
+        List<Op> batch = new LinkedList<>();
 
         for (String path : paths) {
             String path0 = parent != null ? parent + "/" + path : path;
 
-            ops.add(Op.delete(path0, ver));
+            //TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
+            int size = requestOverhead(path0) + 17 /* overhead */;
+
+            assert size <= MAX_REQ_SIZE;
+
+            if (batchSize + size > MAX_REQ_SIZE) {
+                batches.add(batch);
+
+                batch = new LinkedList<>();
+
+                batchSize = 0;
+            }
+
+            batch.add(Op.delete(path0, ver));
+
+            batchSize += size;
         }
 
-        for (;;) {
-            long connStartTime = this.connStartTime;
+        batches.add(batch);
 
-            try {
-                zk.multi(ops);
+        for (List<Op> ops : batches) {
+            for (;;) {
+                long connStartTime = this.connStartTime;
 
-                return;
-            }
-            catch (KeeperException.NoNodeException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
+                try {
+                    zk.multi(ops);
+
+                    break;
+                }
+                catch (KeeperException.NoNodeException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to delete nodes using bulk operation: " + e);
+
+                    for (Op op : ops)
+                        deleteIfExists(op.getPath(), ver);
+
+                    break;
+                }
+                catch (Exception e) {
+                    onZookeeperError(connStartTime, e);
+                }
             }
         }
     }
