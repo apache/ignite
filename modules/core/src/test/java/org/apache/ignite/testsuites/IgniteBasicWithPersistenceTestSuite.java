@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.failure.AccountTransferTransactionTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
@@ -56,6 +57,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(ServiceDeploymentOnActivationTest.class);
         suite.addTestSuite(ServiceDeploymentOutsideBaselineTest.class);
         suite.addTestSuite(GridMarshallerMappingConsistencyTest.class);
+        suite.addTestSuite(SystemWorkersTerminationTest.class);
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
