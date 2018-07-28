@@ -20,6 +20,7 @@ import setuptools
 def is_a_requirement(line: str) -> bool:
     return not any([
         line.startswith('#'),
+        line.startswith('-r'),
         len(line) == 0,
     ])
 
@@ -44,7 +45,7 @@ with open('README.md', 'r') as readme_file:
 
 setuptools.setup(
     name='pyignite',
-    version='0.1.6',
+    version='0.1.7',
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
     description='Apache Ignite binary client Python API',
