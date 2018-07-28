@@ -18,3 +18,11 @@ def test_cache_create(conn):
     cache = conn.create_cache('my_oop_cache')
     assert cache.name == 'my_oop_cache'
     cache.destroy()
+
+
+def test_cache_get_put(conn):
+    cache = conn.create_cache('my_oop_cache')
+    cache.put('my_key', 42)
+    result = cache.get('my_key')
+    assert result, 42
+    cache.destroy()

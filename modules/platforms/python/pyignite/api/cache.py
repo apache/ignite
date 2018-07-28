@@ -28,6 +28,12 @@ from .cache_config import (
 )
 from .key_value import (
     cache_get, cache_put, cache_get_all, cache_put_all, cache_replace,
+    cache_clear, cache_clear_key, cache_clear_keys,
+    cache_contains_key, cache_contains_keys,
+    cache_get_and_put, cache_get_and_put_if_absent, cache_put_if_absent,
+    cache_get_and_remove, cache_get_and_replace,
+    cache_remove_key, cache_remove_keys, cache_remove_all,
+    cache_remove_if_equals, cache_replace_if_equals, cache_get_size,
 )
 
 
@@ -145,8 +151,23 @@ class Cache:
         return cache_put_all(self._conn, self._cache_id, pairs)
 
     @status_to_exception(CacheError)
-    def replace(self, key, value, key_hint=None, value_hint=None):
+    def replace(
+        self, key, value, key_hint: object=None, value_hint: object=None
+    ):
         return cache_replace(
             self._conn, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
+        )
+
+    @status_to_exception(CacheError)
+    def clear(self, keys: Optional[list]=None):
+        if keys:
+            return cache_clear_keys(self._conn, self._cache_id, keys)
+        else:
+            return cache_clear(self._conn, self._cache_id)
+
+    @status_to_exception(CacheError)
+    def clear_key(self, key, key_hint: object=None):
+        return cache_clear_key(
+            self._conn, self._cache_id, key, key_hint=key_hint
         )
