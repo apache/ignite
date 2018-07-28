@@ -28,3 +28,11 @@ class SocketWriteError(SocketError):
 
 class ParameterError(Exception):
     pass
+
+
+class CacheError(Exception):
+    pass
+
+
+class CacheCreationError(CacheError):
+    pass

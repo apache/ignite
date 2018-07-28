@@ -24,7 +24,7 @@ as well as Ignite protocol handshaking.
 
 The whole storage room of Ignite cluster is split up onto named structures,
 called caches. You may access the particular cache, creating the hash code
-of its name with `hashcode()` function.
+of its name with `cache_id` function.
 
 Apache Ignite binary API contains a rich set of functions to control
 the lifecycle of caches. These functions resides in the `cache_config` module.

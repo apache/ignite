@@ -44,7 +44,7 @@ class StandardObject:
 
     @classmethod
     def build_c_type(cls):
-        raise NotImplementedError('')
+        raise NotImplementedError('This object is generic')
 
     @classmethod
     def parse(cls, conn: Connection):

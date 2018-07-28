@@ -15,6 +15,7 @@
 
 import socket
 import ssl
+from typing import Union
 
 from pyignite.constants import *
 from pyignite.exceptions import ParameterError, SocketError, SocketWriteError
@@ -212,6 +213,29 @@ class Connection:
             bytes_rcvd += len(chunk)
 
         return b''.join(chunks)
+
+    def create_cache(self, settings: Union[str, dict]) -> object:
+        """
+        Creates Ignite cache by name. Raises `CacheError` if such a cache is
+        already exists.
+
+        :param settings: cache name or cache properties,
+        :return: Cache object.
+        """
+        from pyignite.api.cache import Cache
+
+        return Cache(self, settings)
+
+    def get_or_create_cache(self, settings: Union[str, dict]) -> object:
+        """
+        Creates Ignite cache, if not exist.
+
+        :param settings: cache name or cache properties,
+        :return: Cache object.
+        """
+        from pyignite.api.cache import Cache
+
+        return Cache(self, settings, with_get=True)
 
     def close(self):
         """
