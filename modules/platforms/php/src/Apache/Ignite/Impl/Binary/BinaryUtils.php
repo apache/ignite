@@ -20,7 +20,7 @@ namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
 use Ds\Set;
-use Apache\Ignite\Exception\IgniteClientException;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\ObjectType\ObjectType;
 use Apache\Ignite\ObjectType\MapObjectType;
 use Apache\Ignite\ObjectType\CollectionObjectType;
@@ -46,20 +46,15 @@ class BinaryUtils
     {
         if ($object === null) {
             return ObjectType::NULL;
-        }
-        else if (is_integer($object)) {
+        } else if (is_integer($object)) {
             return ObjectType::INTEGER;
-        }
-        else if (is_float($object)) {
+        } else if (is_float($object)) {
             return ObjectType::DOUBLE;
-        }        
-        else if (is_string($object)) {
+        } else if (is_string($object)) {
             return ObjectType::STRING;
-        }
-        else if (is_bool($object)) {
+        } else if (is_bool($object)) {
             return ObjectType::BOOLEAN;
-        }
-        else if (is_array($object)) {
+        } else if (is_array($object)) {
             if (count($object) > 0) {
                 $values = array_values($object);
                 $firstElem = $values[0];
@@ -67,24 +62,20 @@ class BinaryUtils
                     if ($values === $object) {
                         // sequential array
                         return BinaryUtils::getArrayType(BinaryUtils::calcObjectType($firstElem));
-                    }
-                    else {
+                    } else {
                         // associative array
                         return new MapObjectType();
                     }
                 }
             }
-        }
-        else if ($object instanceof DateTime) {
+        } else if ($object instanceof DateTime) {
             return ObjectType::DATE;
-        }
-        else if ($object instanceof Set) {
+        } else if ($object instanceof Set) {
             return new CollectionObjectType(CollectionObjectType::HASH_SET);
-        }
-        else if ($object instanceof Map) {
+        } else if ($object instanceof Map) {
             return new MapObjectType();
         }
-        throw IgniteClientException::unsupportedTypeException(gettype($object));
+        throw ClientException::unsupportedTypeException(gettype($object));
     }
     
     public static function getArrayType($elementType)
@@ -121,7 +112,7 @@ class BinaryUtils
             case ObjectType::TIME:
                 return ObjectType::TIME_ARRAY;
             default:
-                throw IgniteClientException::unsupportedTypeException(BinaryUtils::getTypeName($elementType));
+                throw ClientException::unsupportedTypeException(BinaryUtils::getTypeName($elementType));
         }
     }
     
@@ -129,13 +120,12 @@ class BinaryUtils
     {
 //        if ($arrayType instanceof ObjectArrayType) {
 //            return $arrayType->elementType;
-//        }
-//        else if ($arrayType === ObjectType::OBJECT_ARRAY) {
+//        } else if ($arrayType === ObjectType::OBJECT_ARRAY) {
 //            return null;
 //        }
         $info = TypeInfo::getTypeInfo($arrayType);
         if (!$info || !$info->getElementTypeCode()) {
-            throw IgniteClientException::internalError();
+            throw ClientException::internalError();
         }
         return $info->getElementTypeCode();
     }

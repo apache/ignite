@@ -85,7 +85,7 @@ class CollectionObjectType extends ObjectType
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
      * 
-     * @throws Exception::IgniteClientException if error.
+     * @throws Exception::ClientException if error.
      */
     public function __construct(int $subType, $elementType = null)
     {

@@ -18,8 +18,8 @@
 
 namespace Apache\Ignite\Tests;
 
-use Apache\Ignite\IgniteClient;
-use Apache\Ignite\IgniteClientConfiguration;
+use Apache\Ignite\Client;
+use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\OperationException;
 
 /**
@@ -28,7 +28,7 @@ use Apache\Ignite\Exception\OperationException;
  */
 class TestingHelper
 {
-    private static $igniteClient;
+    private static $client;
     
     /**
      * Initializes testing environment: creates and starts the library client, sets default jasmine test timeout.
@@ -36,9 +36,9 @@ class TestingHelper
      */
     public static function init(): void
     {
-        TestingHelper::$igniteClient = new IgniteClient();
-        TestingHelper::$igniteClient->connect(new IgniteClientConfiguration(...TestConfig::$endpoints));
-        TestingHelper::$igniteClient->setDebug(TestConfig::$debug);
+        TestingHelper::$client = new Client();
+        TestingHelper::$client->connect(new ClientConfiguration(...TestConfig::$endpoints));
+        TestingHelper::$client->setDebug(TestConfig::$debug);
     }
 
     /**
@@ -47,18 +47,18 @@ class TestingHelper
      */
     public static function cleanUp(): void
     {
-        TestingHelper::$igniteClient->disconnect();
+        TestingHelper::$client->disconnect();
     }
 
-    public static function getIgniteClient(): IgniteClient
+    public static function getClient(): Client
     {
-        return TestingHelper::$igniteClient;
+        return TestingHelper::$client;
     }
     
     public static function destroyCache(string $cacheName) : void
     {
         try {
-            TestingHelper::$igniteClient->destroyCache($cacheName);
+            TestingHelper::$client->destroyCache($cacheName);
         }
         catch (OperationException $e) {
             //expected exception

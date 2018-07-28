@@ -21,7 +21,7 @@ namespace Apache\Ignite\Exception;
 /**
  * 
  */
-class ConnectionException extends IgniteClientException
+class ConnectionException extends ClientException
 {
     /**
      * Constructs a ConnectionException with the specified detail message.

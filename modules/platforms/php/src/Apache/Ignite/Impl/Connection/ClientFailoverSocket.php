@@ -18,7 +18,7 @@
 
 namespace Apache\Ignite\Impl\Connection;
 
-use Apache\Ignite\IgniteClientConfiguration;
+use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\ConnectionException;
 use Apache\Ignite\Impl\Utils\Logger;
 
@@ -37,7 +37,7 @@ class ClientFailoverSocket
         $this->state = ClientFailoverSocket::STATE_DISCONNECTED;
     }
 
-    public function connect(IgniteClientConfiguration $config): void
+    public function connect(ClientConfiguration $config): void
     {
         if ($this->state !== ClientFailoverSocket::STATE_DISCONNECTED) {
             $this->disconnect();

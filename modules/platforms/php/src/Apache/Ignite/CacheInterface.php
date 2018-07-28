@@ -21,7 +21,7 @@ namespace Apache\Ignite;
 /**
  * 
  */
-interface CacheClientInterface
+interface CacheInterface
 {
     /**
      * Specifies a type of the cache key.
@@ -42,11 +42,11 @@ interface CacheClientInterface
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified).
      *
-     * @return CacheClientInterface the same instance of the cache client.
+     * @return CacheInterface the same instance of the cache client.
      *
-     * @throws Exception::IgniteClientException if error.
+     * @throws Exception::ClientException if error.
      */
-    public function setKeyType($type): CacheClientInterface;
+    public function setKeyType($type): CacheInterface;
     
     /**
      * Specifies a type of the cache value.
@@ -67,11 +67,11 @@ interface CacheClientInterface
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified).
      *
-     * @return CacheClientInterface the same instance of the cache client.
+     * @return CacheInterface the same instance of the cache client.
      *
-     * @throws Exception::IgniteClientException if error.
+     * @throws Exception::ClientException if error.
      */
-    public function setValueType($type): CacheClientInterface;
+    public function setValueType($type): CacheInterface;
     
     /**
      * Retrieves a value associated with the specified key from the cache.
@@ -80,7 +80,7 @@ interface CacheClientInterface
      * 
      * @return mixed value associated with the specified key, or null if it does not exist.
      * 
-     * @throws Exception::IgniteClientException if error.
+     * @throws Exception::ClientException if error.
      */
     public function get($key);
     
@@ -93,7 +93,7 @@ interface CacheClientInterface
      * @param mixed $key key
      * @param mixed $value value to be associated with the specified key.
      *
-     * @throws Exception::IgniteClientException if error.
+     * @throws Exception::ClientException if error.
      */
     public function put($key, $value);
 }

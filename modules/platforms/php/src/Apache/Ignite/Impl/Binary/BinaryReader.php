@@ -68,7 +68,7 @@ class BinaryReader
             case ObjectType::MAP:
                 return BinaryReader::readMap($buffer, $expectedType);
             default:
-                throw IgniteClientException::unsupportedTypeException($objectTypeCode);
+                throw ClientException::unsupportedTypeException($objectTypeCode);
         }
     }
     

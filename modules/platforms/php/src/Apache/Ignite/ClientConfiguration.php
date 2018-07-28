@@ -27,7 +27,7 @@ namespace Apache\Ignite;
  *   - (optional) TLS enabling
  *   - (optional) connection options
  */
-class IgniteClientConfiguration
+class ClientConfiguration
 {
     private $endpoints;
     private $userName;
@@ -42,9 +42,9 @@ class IgniteClientConfiguration
      * @param string ...$endpoints Ignite node endpoint(s). The client randomly connects/reconnects 
      * to one of the specified node.
      *
-     * @return IgniteClientConfiguration new client configuration instance.
+     * @return ClientConfiguration new client configuration instance.
      *
-     * @throws Exception::IgniteClientException if error.
+     * @throws Exception::ClientException if error.
      */
     public function __construct(string ...$endpoints)
     {
@@ -80,9 +80,9 @@ class IgniteClientConfiguration
      * 
      * @param string|null $userName username. If null, authentication is disabled.
      * 
-     * @return IgniteClientConfiguration the same instance of the IgniteClientConfiguration.
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
-    public function setUserName(?string $userName): IgniteClientConfiguration
+    public function setUserName(?string $userName): ClientConfiguration
     {
         $this->userName = $userName;
         return $this;
@@ -106,9 +106,9 @@ class IgniteClientConfiguration
      * 
      * @param string|null $password password. If null, password is empty.
      * 
-     * @return IgniteClientConfiguration the same instance of the IgniteClientConfiguration.
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
-    public function setPassword(?string $password): IgniteClientConfiguration
+    public function setPassword(?string $password): ClientConfiguration
     {
         $this->password = $password;
         return $this;

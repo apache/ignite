@@ -23,10 +23,10 @@ use Apache\Ignite\Impl\Binary\BinaryUtils;
 /**
  * Base Ignite client exception class.
  */
-class IgniteClientException extends \Exception
+class ClientException extends \Exception
 {
     /**
-     * Constructs an IgniteClientException with the specified detail message.
+     * Constructs an ClientException with the specified detail message.
      * 
      * @param string $message the detail message.
      */
@@ -40,11 +40,11 @@ class IgniteClientException extends \Exception
      * 
      * @param mixed $type unsupported data type.
      * 
-     * @return IgniteClientException
+     * @return ClientException
      */
-    public static function unsupportedTypeException($type): IgniteClientException
+    public static function unsupportedTypeException($type): ClientException
     {
-        return new IgniteClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
+        return new ClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
     }
 
     /**
@@ -52,11 +52,11 @@ class IgniteClientException extends \Exception
      * 
      * @param string|null $message the detail message.
      * 
-     * @return IgniteClientException
+     * @return ClientException
      */
-    public static function illegalArgumentException(?string $message): IgniteClientException
+    public static function illegalArgumentException(?string $message): ClientException
     {
-        return new IgniteClientException($message);
+        return new ClientException($message);
     }
 
     /**
@@ -64,10 +64,10 @@ class IgniteClientException extends \Exception
      * 
      * @param string|null $message the detail message.
      * 
-     * @return IgniteClientException
+     * @return ClientException
      */
-    public static function internalError(?string $message = null): IgniteClientException
+    public static function internalError(?string $message = null): ClientException
     {
-        return new IgniteClientException($message || 'Internal library error');
+        return new ClientException($message || 'Internal library error');
     }
 }

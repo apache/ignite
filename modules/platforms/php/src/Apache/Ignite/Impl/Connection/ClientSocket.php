@@ -18,14 +18,14 @@
 
 namespace Apache\Ignite\Impl\Connection;
 
-use Apache\Ignite\IgniteClientConfiguration;
+use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\ObjectType\ObjectType;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
 use Apache\Ignite\Impl\Binary\BinaryReader;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Binary\Request;
-use Apache\Ignite\Exception\IgniteClientException;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Exception\ConnectionException;
 use Apache\Ignite\Exception\OperationException;
 
@@ -43,7 +43,7 @@ class ClientSocket
     private $socket;
     private $protocolVersion;
 
-    public function __construct(string $endpoint, IgniteClientConfiguration $config)
+    public function __construct(string $endpoint, ClientConfiguration $config)
     {
         $this->endpoint = $endpoint;
         $this->config = $config;
@@ -54,7 +54,6 @@ class ClientSocket
     public static function init(): void
     {
         ClientSocket::$supportedVersions = [
-            ProtocolVersion::$V_1_0_0,
             ProtocolVersion::$V_1_1_0
         ];
     }
@@ -133,8 +132,7 @@ class ClientSocket
             $chunk = fread($this->socket, ClientSocket::SOCKET_READ_SIZE);
             if ($chunk === false || $chunk === '') {
                 throw new ConnectionException('Error while reading data from the server');
-            }
-            else {
+            } else {
                 $buffer->append($chunk);
             }
         }
@@ -149,12 +147,11 @@ class ClientSocket
         $this->receive($buffer, $length + BinaryUtils::getSize(ObjectType::INTEGER));
         if ($request->isHandshake()) {
             $this->processHandshake($buffer);
-        }
-        else {
+        } else {
             // Request id
             $requestId = $buffer->readLong();
             if ($requestId !== $request->getId()) {
-                throw IgniteClientException::internalError('Invalid response id: ' . $requestId);
+                throw ClientException::internalError('Invalid response id: ' . $requestId);
             }
             // Status code
             $isSuccess = ($buffer->readInteger() === ClientSocket::REQUEST_SUCCESS_STATUS_CODE);
@@ -162,8 +159,7 @@ class ClientSocket
                 // Error message
                 $errMessage = BinaryReader::readObject($buffer);
                 throw new OperationException($errMessage);
-            }
-            else {
+            } else {
                 $payloadReader = $request->getPayloadReader();
                 if ($payloadReader) {
                     call_user_func($payloadReader, $buffer);
@@ -186,25 +182,15 @@ class ClientSocket
         $errMessage = BinaryReader::readObject($buffer);
 
         if (!$this->protocolVersion->equals($serverVersion)) {
-            if (!$this->isSupportedVersions($serverVersion) ||
-                $serverVersion->compareTo(ProtocolVersion::$V_1_1_0) < 0 &&
-                $this->config->getUserName() !== null) {
-                $this->disconnect();
-                throw new OperationException(
-                    sprintf('Protocol version mismatch: client %s / server %s. Server details: %s',
-                        $this->protocolVersion.toString(), $serverVersion.toString(), $errMessage));
-            }
-            else {
-                // retry handshake with server version
-                $this->sendRequest($this->getHandshake($serverVersion));
-            }
-        }
-        else {
+            throw new OperationException(
+                sprintf('Protocol version mismatch: client %s / server %s. Server details: %s',
+                    $this->protocolVersion.toString(), $serverVersion.toString(), $errMessage));
+        } else {
             $this->disconnect();
             throw new OperationException($errMessage);
         }
     }
-
+    
     private function logMessage(int $requestId, bool $isRequest, string $message): void
     {
         if (Logger::isDebug()) {

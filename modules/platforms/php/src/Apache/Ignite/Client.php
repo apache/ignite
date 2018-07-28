@@ -24,19 +24,19 @@ use Apache\Ignite\Impl\Utils\ArgumentChecker;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\BinaryWriter;
-use Apache\Ignite\Impl\CacheClient;
+use Apache\Ignite\Impl\Cache;
 
 /**
  * Class representing Ignite client.
  */
-class IgniteClient
+class Client
 {
     private $socket;
     
     /**
      * Public constructor.
      * 
-     * @return IgniteClient new IgniteClient instance.
+     * @return Client new Client instance.
      */
     public function __construct()
     {
@@ -46,12 +46,11 @@ class IgniteClient
     /**
      * Connects the client.
      *
-     * @param IgniteClientConfiguration $config the client configuration.
+     * @param ClientConfiguration $config the client configuration.
      * 
-     * @throws Exception::IllegalStateException if the client is not in DISCONNECTED state.
-     * @throws Exception::IgniteClientException if other error.
+     * @throws Exception::ClientException if error.
      */
-    public function connect(IgniteClientConfiguration $config): void
+    public function connect(ClientConfiguration $config): void
     {
         $this->socket->connect($config);
     }
@@ -72,15 +71,15 @@ class IgniteClient
      * @param string $name cache name.
      * @param CacheConfiguration $cacheConfig optional cache configuration.
      * 
-     * @return CacheClientInterface new cache client instance for the created cache.
+     * @return CacheInterface new cache client instance for the created cache.
      * 
-     * @throws IllegalStateException if the client is not in CONNECTED state.
-     * @throws OperationException if cache with the provided name already exists.
-     * @throws IgniteClientException if other error.
+     * @throws Exception::ConnectionException if
+     * @throws Exception::OperationException if cache with the provided name already exists.
+     * @throws Exception::ClientException if other error.
      */
     public function createCache(
             string $name,
-            CacheConfiguration $cacheConfig = null): CacheClientInterface
+            CacheConfiguration $cacheConfig = null): CacheInterface
     {
         ArgumentChecker::notEmpty($name, 'name');
         $this->socket->send(
@@ -90,19 +89,25 @@ class IgniteClient
             function (MessageBuffer $payload) use ($name, $cacheConfig) {
                 $this->writeCacheNameOrConfig($payload, $name, $cacheConfig);
             });
-        return $this->getCacheClient($name, $cacheConfig);
+        return new Cache($name, $this->socket);
     }
     
     /**
+     * Gets existing cache with the provided name
+     * or creates new one with the provided name and optional configuration.
      * 
-     * @param string $name
-     * @param CacheConfiguration $cacheConfig
+     * @param string $name cache name.
+     * @param CacheConfiguration $cacheConfig cache configuration (ignored if cache
+     *   with the provided name already exists).
      * 
-     * @return CacheClientInterface
+     * @return CacheInterface new cache client instance for the existing or created cache.
+     * 
+     * @throws Exception::ConnectionException if
+     * @throws Exception::ClientException if error.
      */
     public function getOrCreateCache(
             string $name,
-            CacheConfiguration $cacheConfig = null): CacheClientInterface
+            CacheConfiguration $cacheConfig = null): CacheInterface
     {
         ArgumentChecker::notEmpty($name, 'name');
         $this->socket->send(
@@ -112,24 +117,33 @@ class IgniteClient
             function (MessageBuffer $payload) use ($name, $cacheConfig) {
                 $this->writeCacheNameOrConfig($payload, $name, $cacheConfig);
             });
-        return $this->getCacheClient($name, $cacheConfig);
+        return new Cache($name, $this->socket);
     }
     
     /**
+     * Gets cache client instance of cache with the provided name.
+     * The method does not check if the cache with the provided name exists.
      * 
-     * @param string $name
+     * @param string $name cache name.
      * 
-     * @return CacheClientInterface
+     * @return CacheInterface new cache client instance.
+     * 
+     * @throws Exception::ClientException if error.
      */
-    public function getCache(string $name): CacheClientInterface
+    public function getCache(string $name): CacheInterface
     {
         ArgumentChecker::notEmpty($name, 'name');
-        return $this->getCacheClient($name);
+        return new Cache($name, $this->socket);
     }
     
     /**
+     * Destroys cache with the provided name.
+     *
+     * @param string $name cache name.
      * 
-     * @param string $name
+     * @throws Exception::ConnectionException if
+     * @throws Exception::OperationException if cache with the provided name does not exist.
+     * @throws Exception::ClientException if other error.
      */
     public function destroyCache(string $name): void
     {
@@ -138,24 +152,47 @@ class IgniteClient
             ClientOperation::CACHE_DESTROY,
             function (MessageBuffer $payload) use ($name)
             {
-                $payload->writeInteger(CacheClient::calculateId($name));
+                $payload->writeInteger(Cache::calculateId($name));
             });
     }
     
     /**
+     * Returns configuration of cache with the provided name.
      * 
-     * @param bool $value
+     * @param string $name cache name.
+     * 
+     * @return CacheConfiguration cache configuration.
+     * 
+     * @throws Exception::ConnectionException if
+     * @throws Exception::OperationException if cache with the provided name does not exist.
+     * @throws Exception::ClientException if other error.
+     */
+    public function getCacheConfiguration(string $name): CacheConfiguration
+    {
+    }
+    
+    /**
+     * Gets existing cache names.
+     * 
+     * @return array array with the existing cache names.
+     *     The array is empty if no caches exist.
+     * 
+     * @throws Exception::ConnectionException if
+     * @throws Exception::ClientException if other error.
+     */
+    public function cacheNames(): array
+    {
+    }
+    
+    /**
+     * Enables/disables the library debug output (including errors logging).
+     * Disabled by default.
+     * 
+     * @param bool $value true to enable, false to disable.
      */
     public function setDebug(bool $value): void
     {
         Logger::setDebug($value);
-    }
-    
-    private function getCacheClient(
-            string $name,
-            CacheConfiguration $cacheConfig = null): CacheClientInterface
-    {
-        return new CacheClient($name, $cacheConfig, $this->socket);
     }
     
     private function writeCacheNameOrConfig(
@@ -165,8 +202,7 @@ class IgniteClient
     {
         if ($cacheConfig) {
             $cacheConfig->write($buffer, $name);
-        }
-        else {
+        } else {
             BinaryWriter::writeString($buffer, $name);
         }
     }

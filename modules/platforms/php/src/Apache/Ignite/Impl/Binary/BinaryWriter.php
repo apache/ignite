@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
-use Apache\Ignite\Exception\IgniteClientException;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\ObjectType\ObjectType;
 
 class BinaryWriter
@@ -86,7 +86,7 @@ class BinaryWriter
                 BinaryWriter::writeMap($buffer, $object, $objectType);
                 break;
             default:
-                throw IgniteClientException::unsupportedTypeException($objectType);
+                throw ClientException::unsupportedTypeException($objectType);
         }
     }
     
@@ -109,8 +109,7 @@ class BinaryWriter
                 BinaryWriter::writeObject($buffer, $pair->key, $mapType->getKeyType());
                 BinaryWriter::writeObject($buffer, $pair->value, $mapType->getValueType());
             }
-        }
-        else {
+        } else {
             $buffer->writeInteger(count($map));
             $buffer->writeByte($mapType->getSubType());
             foreach ($map as $key => $value) {

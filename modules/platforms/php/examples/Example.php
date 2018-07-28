@@ -2,10 +2,10 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Apache\Ignite\IgniteClient as IgniteClient;
-use Apache\Ignite\IgniteClientConfiguration as IgniteClientConfiguration;
-use Apache\Ignite\Exception\IgniteClientException as IgniteClientException;
-use Apache\Ignite\CacheClientInterface as CacheClientInterface;
+use Apache\Ignite\Client as Client;
+use Apache\Ignite\ClientConfiguration as ClientConfiguration;
+use Apache\Ignite\Exception\ClientException as ClientException;
+use Apache\Ignite\CacheInterface as CacheInterface;
 
 class Example
 {
@@ -14,25 +14,25 @@ class Example
     
     public function start()
     {
-        $igniteClient = new IgniteClient();
+        $client = new Client();
         try {
-            $igniteClient->connect(new IgniteClientConfiguration(Example::ENDPOINT));
+            $client->connect(new ClientConfiguration(Example::ENDPOINT));
 
-            $cache = $igniteClient->getOrCreateCache(Example::CACHE_NAME);
+            $cache = $client->getOrCreateCache(Example::CACHE_NAME);
 
             $this->putGetData($cache);
 
-            $igniteClient->destroyCache(Example::CACHE_NAME);
+            $client->destroyCache(Example::CACHE_NAME);
         }
-        catch (IgniteClientException $e) {
+        catch (ClientException $e) {
             echo('ERROR: ' . $e->getMessage());
         }
         finally {
-            $igniteClient->disconnect();
+            $client->disconnect();
         }
     }
     
-    private function putGetData(CacheClientInterface $cache)
+    private function putGetData(CacheInterface $cache)
     {
         $keys = [1, 2, 3];
         foreach ($keys as $key) {

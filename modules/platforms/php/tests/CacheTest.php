@@ -19,9 +19,9 @@
 namespace Apache\Ignite\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Apache\Ignite\CacheClientInterface;
+use Apache\Ignite\CacheInterface;
 use Apache\Ignite\Exception\OperationException;
-use Apache\Ignite\Exception\IgniteClientException;
+use Apache\Ignite\Exception\ClientException;
 
 final class CacheTestCase extends TestCase
 {
@@ -42,39 +42,39 @@ final class CacheTestCase extends TestCase
     
     public function testCreateCache(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
-        $cache = $igniteClient->getCache(CacheTestCase::CACHE_NAME);
+        $client = TestingHelper::getClient();
+        $cache = $client->getCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, false);
-        $cache = $igniteClient->createCache(CacheTestCase::CACHE_NAME);
+        $cache = $client->createCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, true);
-        $cache = $igniteClient->getCache(CacheTestCase::CACHE_NAME);
+        $cache = $client->getCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, true);
-        $igniteClient->destroyCache(CacheTestCase::CACHE_NAME);
+        $client->destroyCache(CacheTestCase::CACHE_NAME);
     }
     
     public function testCreateCacheTwice(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
+        $client = TestingHelper::getClient();
         try {
-            $igniteClient->getOrCreateCache(CacheTestCase::CACHE_NAME);
+            $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
             $this->expectException(OperationException::class);
-            $igniteClient->createCache(CacheTestCase::CACHE_NAME);
+            $client->createCache(CacheTestCase::CACHE_NAME);
         }
         finally {
-            $igniteClient->destroyCache(CacheTestCase::CACHE_NAME);
+            $client->destroyCache(CacheTestCase::CACHE_NAME);
         }
     }
     
     public function testGetOrCreateCache(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
-        $cache = $igniteClient->getCache(CacheTestCase::CACHE_NAME);
+        $client = TestingHelper::getClient();
+        $cache = $client->getCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, false);
-        $cache = $igniteClient->getOrCreateCache(CacheTestCase::CACHE_NAME);
+        $cache = $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, true);
-        $cache = $igniteClient->getCache(CacheTestCase::CACHE_NAME);
+        $cache = $client->getCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, true);
-        $igniteClient->destroyCache(CacheTestCase::CACHE_NAME);
+        $client->destroyCache(CacheTestCase::CACHE_NAME);
     }
 
     public function testGetCacheNames(): void
@@ -85,12 +85,12 @@ final class CacheTestCase extends TestCase
     
     public function testDestroyCache(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
-        $igniteClient->getOrCreateCache(CacheTestCase::CACHE_NAME);
-        $igniteClient->destroyCache(CacheTestCase::CACHE_NAME);
+        $client = TestingHelper::getClient();
+        $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
+        $client->destroyCache(CacheTestCase::CACHE_NAME);
         
         $this->expectException(OperationException::class);
-        $igniteClient->destroyCache(CacheTestCase::CACHE_NAME);
+        $client->destroyCache(CacheTestCase::CACHE_NAME);
     }
     
     public function testCreateCacheWithConfiguration(): void
@@ -101,26 +101,26 @@ final class CacheTestCase extends TestCase
     
     public function testCreateCacheWithWrongArgs(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
-        $this->expectException(IgniteClientException::class);
-        $igniteClient->createCache('');
+        $client = TestingHelper::getClient();
+        $this->expectException(ClientException::class);
+        $client->createCache('');
     }
 
     public function testGetOrCreateCacheWithWrongArgs(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
-        $this->expectException(IgniteClientException::class);
-        $igniteClient->getOrCreateCache('');
+        $client = TestingHelper::getClient();
+        $this->expectException(ClientException::class);
+        $client->getOrCreateCache('');
     }
     
     public function testGetCacheWithWrongArgs(): void
     {
-        $igniteClient = TestingHelper::getIgniteClient();
-        $this->expectException(IgniteClientException::class);
-        $igniteClient->getCache('');
+        $client = TestingHelper::getClient();
+        $this->expectException(ClientException::class);
+        $client->getCache('');
     }
     
-    private function checkCache(CacheClientInterface $cache, bool $cacheExists)
+    private function checkCache(CacheInterface $cache, bool $cacheExists)
     {
         if (!$cacheExists) {
             $this->expectException(OperationException::class);

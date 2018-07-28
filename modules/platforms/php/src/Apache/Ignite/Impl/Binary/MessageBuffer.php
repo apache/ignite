@@ -20,7 +20,7 @@ namespace Apache\Ignite\Impl\Binary;
 
 use Apache\Ignite\ObjectType\ObjectType;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
-use Apache\Ignite\Exception\IgniteClientException;
+use Apache\Ignite\Exception\ClientException;
 
 class MessageBuffer
 {
@@ -125,7 +125,7 @@ class MessageBuffer
                 $strValue = pack('e', $value);
                 break;
             default:
-                throw IgniteClientException::internalError();
+                throw ClientException::internalError();
         }
         // TODO: check pack errors
         $this->convertEndianness($strValue, $type);
@@ -212,7 +212,7 @@ class MessageBuffer
                 $value = unpack('e', $strValue);
                 break;
             default:
-                throw IgniteClientException::internalError();
+                throw ClientException::internalError();
         }
         $this->position += $size;
         return $value[1];
@@ -283,7 +283,7 @@ class MessageBuffer
     private function ensureSize(int $size): void
     {
         if ($this->position + $size > $this->getLength()) {
-            throw new IgniteClientException('Unexpected format of response');
+            throw new ClientException('Unexpected format of response');
         }
     }
 }

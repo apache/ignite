@@ -18,21 +18,21 @@
 
 namespace Apache\Ignite\Impl\Utils;
 
-use Apache\Ignite\Exception\IgniteClientException;
+use Apache\Ignite\Exception\ClientException;
 
 class ArgumentChecker
 {
     public static function notEmpty($arg, $argName): void
     {
         if (empty($arg)) {
-            throw IgniteClientException::illegalArgumentException(sprintf('"%s" argument should not be empty', $argName));
+            throw ClientException::illegalArgumentException(sprintf('"%s" argument should not be empty', $argName));
         }
     }
     
     public static function notNull($arg, $argName): void
     {
         if (is_null($arg)) {
-            throw IgniteClientException::illegalArgumentException(sprintf('"%s" argument should not be null', $argName));
+            throw ClientException::illegalArgumentException(sprintf('"%s" argument should not be null', $argName));
         }
     }
 }

@@ -18,7 +18,7 @@
 
 namespace Apache\Ignite\Impl;
 
-use Apache\Ignite\CacheClientInterface;
+use Apache\Ignite\CacheInterface;
 use Apache\Ignite\CacheConfiguration;
 use Apache\Ignite\ObjectType\ObjectType;
 use Apache\Ignite\Impl\Binary\ClientOperation;
@@ -29,7 +29,7 @@ use Apache\Ignite\Impl\Binary\BinaryUtils;
 use Apache\Ignite\Impl\Binary\BinaryWriter;
 use Apache\Ignite\Impl\Binary\BinaryReader;
 
-class CacheClient implements CacheClientInterface
+class Cache implements CacheInterface
 {
     private $name;
     private $cacheId;
@@ -38,11 +38,10 @@ class CacheClient implements CacheClientInterface
     private $valueType;
     private $socket;
     
-    public function __construct(string $name, ?CacheConfiguration $config, ClientFailoverSocket $socket)
+    public function __construct(string $name, ClientFailoverSocket $socket)
     {
         $this->name = $name;
-        $this->cacheId = CacheClient::calculateId($this->name);
-        $this->config = $config;
+        $this->cacheId = Cache::calculateId($this->name);
         $this->socket = $socket;
         $this->keyType = null;
         $this->valueType = null;
@@ -53,13 +52,13 @@ class CacheClient implements CacheClientInterface
         return BinaryUtils::hashCode($name);
     }
     
-    public function setKeyType($type): CacheClientInterface
+    public function setKeyType($type): CacheInterface
     {
         $this->keyType = $type;
         return $this;
     }
 
-    public function setValueType($type): CacheClientInterface
+    public function setValueType($type): CacheInterface
     {
         $this->valueType = $type;
         return $this;
