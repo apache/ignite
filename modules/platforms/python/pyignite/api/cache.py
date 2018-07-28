@@ -31,15 +31,19 @@ from .key_value import (
 )
 
 
-PROP_CODES = set([getattr(prop_codes, x) for x in dir(prop_codes)])
+PROP_CODES = set([
+    getattr(prop_codes, x)
+    for x in dir(prop_codes)
+    if x.startswith('PROP_')
+])
 CACHE_CREATE_FUNCS = {
     True: {
-        True: cache_get_or_create,
-        False: cache_create,
-    },
-    False: {
         True: cache_get_or_create_with_config,
         False: cache_create_with_config,
+    },
+    False: {
+        True: cache_get_or_create,
+        False: cache_create,
     },
 }
 
@@ -80,7 +84,10 @@ class Cache:
         ]):
             raise ParameterError('You should supply at least cache name')
 
-        if not set(settings).issubset(PROP_CODES):
+        if all([
+            type(settings) is dict,
+            not set(settings).issubset(PROP_CODES),
+        ]):
             raise ParameterError('One or more settings was not recognized')
 
     def __init__(
