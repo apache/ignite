@@ -658,8 +658,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 else
                     removeValue();
 
-            cctx.dataStructures().onEntryUpdated(key, true);
-
             // Give to GC.
             update(null, 0L, 0L, ver, true);
 

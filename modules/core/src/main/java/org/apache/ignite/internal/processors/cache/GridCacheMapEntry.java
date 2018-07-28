@@ -1514,7 +1514,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            cctx.dataStructures().onEntryUpdated(key, false);
+            cctx.dataStructures().onEntryUpdated(key, false, keepBinary);
         }
         finally {
             unlockEntry();
@@ -1725,7 +1725,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            cctx.dataStructures().onEntryUpdated(key, true);
+            cctx.dataStructures().onEntryUpdated(key, true, keepBinary);
 
             deferred = cctx.deferredDelete() && !detached() && !isInternal();
 
@@ -2116,7 +2116,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 onUpdateFinished(updateCntr);
             }
 
-            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
+            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
@@ -2408,7 +2408,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            cctx.dataStructures().onEntryUpdated(key, c.op == GridCacheOperation.DELETE);
+            cctx.dataStructures().onEntryUpdated(key, c.op == GridCacheOperation.DELETE, keepBinary);
 
             if (intercept) {
                 if (c.op == GridCacheOperation.UPDATE) {
@@ -3344,7 +3344,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 drReplicate(drType, val, ver, topVer);
 
-                if (!skipQryNtf)
+                if (!skipQryNtf) {
                     cctx.continuousQueries().onEntryUpdated(
                         key,
                         val,
@@ -3357,7 +3357,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         null,
                         topVer);
 
-                cctx.dataStructures().onEntryUpdated(key, val == null);
+                    cctx.dataStructures().onEntryUpdated(key, false, true);
+                }
 
                 onUpdateFinished(updateCntr);
 

@@ -29,11 +29,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -41,7 +39,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -66,8 +63,6 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -75,6 +70,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -130,9 +126,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
     /** Init latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
-
-    /** State of Set data recovery process. */
-    private final GridFutureAdapter<Void> recoveryState = new GridFutureAdapter<>();
 
     /** Init flag. */
     private boolean initFlag;
@@ -212,30 +205,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                 queuesMap.remove(e.getKey(), queue);
             }
-        }
-    }
-
-    /**
-     * Called after cache was started.
-     */
-    public void onAfterCacheStarted() {
-        assert !recoveryState.isDone();
-
-        try {
-            Iterable entries = cctx.cache().localEntries(new CachePeekMode[] {});
-
-            for (Object entry : entries) {
-                Object key = ((Cache.Entry)entry).getKey();
-
-                if (key instanceof SetItemKey)
-                    onSetItemUpdated((SetItemKey)key, false);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Unable to restore local set data map from cache " + cctx.name(), e);
-        }
-        finally {
-            recoveryState.onDone();
         }
     }
 
@@ -379,20 +348,18 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
+     * @param keepBinary Keep binary flag.
      */
-    public void onEntryUpdated(KeyCacheObject key, boolean rmv) {
+    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepBinary) {
         // No need to notify data structures manager for a user cache since all DS objects are stored
         // in system caches.
-        if (!cctx.dataStructuresCache())
+        if (cctx.userCache())
             return;
 
-        Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, false, false);
+        Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
-        if (key0 instanceof SetItemKey) {
-            awaitSetDataInit();
-
+        if (key0 instanceof SetItemKey)
             onSetItemUpdated((SetItemKey)key0, rmv);
-        }
     }
 
     /**
@@ -499,17 +466,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Data for given set.
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
-        awaitSetDataInit();
-
         return setDataMap.get(id);
-    }
-
-    /**
-     * Check set data items recovery state.
-     */
-    private void awaitSetDataInit() {
-        if (cctx.group().persistenceEnabled() && !recoveryState.isDone())
-            new IgniteFutureImpl<>(recoveryState).get();
     }
 
     /**

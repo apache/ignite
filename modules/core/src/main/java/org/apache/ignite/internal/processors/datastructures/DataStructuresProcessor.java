@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -49,7 +47,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -61,13 +58,11 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
@@ -92,7 +87,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
@@ -297,39 +291,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed restore data structures state", e);
-        }
-    }
-
-    /**
-     *
-     * @param exchActions Change requests.
-     */
-    public void onBeforeExchange(ExchangeActions exchActions) {
-        assert !ctx.clientNode();
-
-        List<DynamicCacheDescriptor> cacheDescs = new ArrayList<>();
-
-        if (exchActions == null)
-            return;
-
-        if (exchActions.localJoinContext() != null) {
-            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> pair : exchActions.localJoinContext().caches())
-                cacheDescs.add(pair.getKey());
-        }
-        else {
-            for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
-                cacheDescs.add(req.descriptor());
-        }
-
-        for (DynamicCacheDescriptor desc : cacheDescs) {
-            final GridCacheContext cctx = ctx.cache().context().cacheContext(desc.cacheId());
-
-            if (cctx != null && cctx.dataStructuresCache() && cctx.group().persistenceEnabled() &&
-                cctx.name().startsWith(DS_CACHE_NAME_PREFIX)) {
-                ctx.closure().runLocalSafe(() -> {
-                    cctx.dataStructures().onAfterCacheStarted();
-                });
-            }
         }
     }
 
