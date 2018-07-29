@@ -18,8 +18,6 @@
 
 namespace Apache\Ignite\Exception;
 
-use Apache\Ignite\Impl\Binary\BinaryUtils;
-
 /**
  * Base Ignite client exception class.
  */
@@ -33,41 +31,5 @@ class ClientException extends \Exception
     public function __construct(string $message)
     {
         parent::__construct($message);
-    }
-
-    /**
-     * Ignite client does not support one of the specified or received data types.
-     * 
-     * @param mixed $type unsupported data type.
-     * 
-     * @return ClientException
-     */
-    public static function unsupportedTypeException($type): ClientException
-    {
-        return new ClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
-    }
-
-    /**
-     * An illegal or inappropriate argument has been passed to the API method.
-     * 
-     * @param string|null $message the detail message.
-     * 
-     * @return ClientException
-     */
-    public static function illegalArgumentException(?string $message): ClientException
-    {
-        return new ClientException($message);
-    }
-
-    /**
-     * Ignite client internal error.
-     * 
-     * @param string|null $message the detail message.
-     * 
-     * @return ClientException
-     */
-    public static function internalError(?string $message = null): ClientException
-    {
-        return new ClientException($message || 'Internal library error');
     }
 }

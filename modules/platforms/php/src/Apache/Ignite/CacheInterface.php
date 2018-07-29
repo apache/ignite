@@ -95,6 +95,13 @@ interface CacheInterface
      *
      * @throws Exception::ClientException if error.
      */
-    public function put($key, $value);
+    public function put($key, $value): void;
+    
+    /**
+     * Removes all entries from the cache, notifying listeners and cache writers.
+     * 
+     * @throws Exception::ClientException if error.
+     */
+    public function removeAll(): void;
 }
 

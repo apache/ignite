@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Apache\Ignite\Impl\Binary\BinaryUtils;
-use Apache\Ignite\ObjectType\ObjectType;
+use Apache\Ignite\Type\ObjectType;
 
 class Request
 {

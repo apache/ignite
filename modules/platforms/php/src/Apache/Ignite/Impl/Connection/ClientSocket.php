@@ -19,13 +19,12 @@
 namespace Apache\Ignite\Impl\Connection;
 
 use Apache\Ignite\ClientConfiguration;
-use Apache\Ignite\ObjectType\ObjectType;
+use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
 use Apache\Ignite\Impl\Binary\BinaryReader;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Binary\Request;
-use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Exception\ConnectionException;
 use Apache\Ignite\Exception\OperationException;
 
@@ -151,7 +150,7 @@ class ClientSocket
             // Request id
             $requestId = $buffer->readLong();
             if ($requestId !== $request->getId()) {
-                throw ClientException::internalError('Invalid response id: ' . $requestId);
+                BinaryUtils::internalError('Invalid response id: ' . $requestId);
             }
             // Status code
             $isSuccess = ($buffer->readInteger() === ClientSocket::REQUEST_SUCCESS_STATUS_CODE);

@@ -16,28 +16,42 @@
  * limitations under the License.
  */
 
-namespace Apache\Ignite\Impl\Utils;
+namespace Apache\Ignite\Data;
 
-use Apache\Ignite\Exception\ClientException;
-
-class ArgumentChecker
+/** 
+ * Class representing an Ignite Time type.
+ */
+class Time
 {
-    public static function notEmpty($arg, $argName): void
+    private $millis;
+
+    /**
+     * Public constructor.
+     * 
+     * @param int $millis number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
+     */
+    public function __construct(int $millis)
     {
-        if (empty($arg)) {
-            ArgumentChecker::illegalArgument(sprintf('"%s" argument should not be empty', $argName));
-        }
+        $this->millis = $millis;
     }
     
-    public static function notNull($arg, $argName): void
+    /**
+     * Returns number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
+     * 
+     * @return int number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
+     */
+    public function getMillis(): int
     {
-        if (is_null($arg)) {
-            ArgumentChecker::illegalArgument(sprintf('"%s" argument should not be null', $argName));
-        }
+        return $this->millis;
     }
-    
-    private static function illegalArgument($message): void
+
+    /**
+     * Returns number of seconds elapsed since midnight, i.e. 00:00:00 UTC.
+     * 
+     * @return int elapsed since midnight, i.e. 00:00:00 UTC.
+     */
+    public function getSeconds(): int
     {
-        throw new ClientException($message);
+        return $this->millis / 1000;
     }
 }

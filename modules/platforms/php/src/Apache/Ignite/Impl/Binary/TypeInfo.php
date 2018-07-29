@@ -18,7 +18,7 @@
 
 namespace Apache\Ignite\Impl\Binary;
 
-use Apache\Ignite\ObjectType\ObjectType;
+use Apache\Ignite\Type\ObjectType;
 
 class TypeInfo
 {
@@ -53,6 +53,10 @@ class TypeInfo
             ObjectType::STRING_ARRAY => new TypeInfo('string array', 0, true, ObjectType::STRING),
             ObjectType::DATE_ARRAY => new TypeInfo('date array', 0, true, ObjectType::DATE),
             ObjectType::MAP => new TypeInfo('map', 0, true),
+            ObjectType::TIMESTAMP => new TypeInfo('timestamp', 12, true),
+            ObjectType::TIMESTAMP_ARRAY => new TypeInfo('date', 0, true, ObjectType::TIMESTAMP),
+            ObjectType::TIME => new TypeInfo('time', 8, true),
+            ObjectType::TIME_ARRAY => new TypeInfo('date', 8, true, ObjectType::TIME),
             ObjectType::NULL => new TypeInfo('null', 0, true),
         );
     }

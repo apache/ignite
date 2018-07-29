@@ -18,17 +18,15 @@
 
 namespace Apache\Ignite\Impl\Binary;
 
-use Apache\Ignite\ObjectType\ObjectType;
+use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
-use Apache\Ignite\Exception\ClientException;
 
 class MessageBuffer
 {
     const BYTE_ZERO = 0;
     const BYTE_ONE = 1;
     const BUFFER_CAPACITY_DEFAULT = 256;
-    const ENCODING_UTF_16 = 'UTF-16';
-
+    
     private $buffer;
     private $position;
     private $length;
@@ -125,7 +123,7 @@ class MessageBuffer
                 $strValue = pack('e', $value);
                 break;
             default:
-                throw ClientException::internalError();
+                BinaryUtils::internalError();
         }
         // TODO: check pack errors
         $this->convertEndianness($strValue, $type);
@@ -139,7 +137,7 @@ class MessageBuffer
     
     public function writeChar(string $value): void
     {
-        $this->writeShort(mb_ord($value, MessageBuffer::ENCODING_UTF_16));
+        $this->writeShort(mb_ord($value));
     }
 
     public function writeString(string $value): void
@@ -149,10 +147,6 @@ class MessageBuffer
         if ($length > 0) {
             $this->writeBuffer($value);
         }
-    }
-    
-    public function writeDate(DateTime $value): void {
-        $this->writeLong($value->getTimestamp());
     }
     
     public function readByte(): int
@@ -212,7 +206,7 @@ class MessageBuffer
                 $value = unpack('e', $strValue);
                 break;
             default:
-                throw ClientException::internalError();
+                BinaryUtils::internalError();
         }
         $this->position += $size;
         return $value[1];
@@ -224,7 +218,7 @@ class MessageBuffer
     }
     
     public function readChar(): string {
-        return mb_chr($this->readShort(), MessageBuffer::ENCODING_UTF_16);
+        return mb_chr($this->readShort());
     }
 
     public function readString(): string
@@ -234,12 +228,6 @@ class MessageBuffer
         $result = substr($this->buffer, $this->position, $bytesCount);
         $this->position += $bytesCount;
         return $result;
-    }
-    
-    public function readDate(): DateTime {
-        $date = new DateTime();
-        $date->setTimestamp($this->readLong());
-        return $date;
     }
     
     private function convertEndianness(string &$value, int $type): void
@@ -283,7 +271,7 @@ class MessageBuffer
     private function ensureSize(int $size): void
     {
         if ($this->position + $size > $this->getLength()) {
-            throw new ClientException('Unexpected format of response');
+            BinaryUtils::internalError('Unexpected format of response');
         }
     }
 }

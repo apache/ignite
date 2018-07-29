@@ -42,7 +42,7 @@ final class CacheTestCase extends TestCase
     
     public function testCreateCache(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         $cache = $client->getCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, false);
         $cache = $client->createCache(CacheTestCase::CACHE_NAME);
@@ -54,20 +54,19 @@ final class CacheTestCase extends TestCase
     
     public function testCreateCacheTwice(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         try {
             $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
             $this->expectException(OperationException::class);
             $client->createCache(CacheTestCase::CACHE_NAME);
-        }
-        finally {
+        } finally {
             $client->destroyCache(CacheTestCase::CACHE_NAME);
         }
     }
     
     public function testGetOrCreateCache(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         $cache = $client->getCache(CacheTestCase::CACHE_NAME);
         $this->checkCache($cache, false);
         $cache = $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
@@ -85,7 +84,7 @@ final class CacheTestCase extends TestCase
     
     public function testDestroyCache(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
         $client->destroyCache(CacheTestCase::CACHE_NAME);
         
@@ -101,21 +100,21 @@ final class CacheTestCase extends TestCase
     
     public function testCreateCacheWithWrongArgs(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         $this->expectException(ClientException::class);
         $client->createCache('');
     }
 
     public function testGetOrCreateCacheWithWrongArgs(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         $this->expectException(ClientException::class);
         $client->getOrCreateCache('');
     }
     
     public function testGetCacheWithWrongArgs(): void
     {
-        $client = TestingHelper::getClient();
+        $client = TestingHelper::$client;
         $this->expectException(ClientException::class);
         $client->getCache('');
     }

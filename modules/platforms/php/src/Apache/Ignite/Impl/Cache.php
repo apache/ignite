@@ -19,8 +19,6 @@
 namespace Apache\Ignite\Impl;
 
 use Apache\Ignite\CacheInterface;
-use Apache\Ignite\CacheConfiguration;
-use Apache\Ignite\ObjectType\ObjectType;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
@@ -33,7 +31,6 @@ class Cache implements CacheInterface
 {
     private $name;
     private $cacheId;
-    private $config;
     private $keyType;
     private $valueType;
     private $socket;
@@ -72,6 +69,15 @@ class Cache implements CacheInterface
     public function put($key, $value): void
     {
         $this->writeKeyValueOp(ClientOperation::CACHE_PUT, $key, $value);        
+    }
+    
+    public function removeAll(): void
+    {
+        $this->socket->send(
+            ClientOperation::CACHE_REMOVE_ALL,
+            function (MessageBuffer $payload) {
+                $this->writeCacheInfo($payload);
+            });
     }
     
     private function writeKeyValueOp(int $operation, $key, $value, ?callable $payloadReader = null): void

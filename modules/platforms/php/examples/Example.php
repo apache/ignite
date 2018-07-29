@@ -23,11 +23,9 @@ class Example
             $this->putGetData($cache);
 
             $client->destroyCache(Example::CACHE_NAME);
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             echo('ERROR: ' . $e->getMessage());
-        }
-        finally {
+        } finally {
             $client->disconnect();
         }
     }

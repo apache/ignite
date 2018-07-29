@@ -21,9 +21,12 @@ namespace Apache\Ignite\Impl\Binary;
 use Ds\Map;
 use Ds\Set;
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\ObjectType\ObjectType;
-use Apache\Ignite\ObjectType\MapObjectType;
-use Apache\Ignite\ObjectType\CollectionObjectType;
+use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Type\MapObjectType;
+use Apache\Ignite\Type\CollectionObjectType;
+use Apache\Ignite\Data\Date;
+use Apache\Ignite\Data\Time;
+use Apache\Ignite\Data\Timestamp;
 
 class BinaryUtils
 {
@@ -46,15 +49,15 @@ class BinaryUtils
     {
         if ($object === null) {
             return ObjectType::NULL;
-        } else if (is_integer($object)) {
+        } elseif (is_integer($object)) {
             return ObjectType::INTEGER;
-        } else if (is_float($object)) {
+        } elseif (is_float($object)) {
             return ObjectType::DOUBLE;
-        } else if (is_string($object)) {
+        } elseif (is_string($object)) {
             return ObjectType::STRING;
-        } else if (is_bool($object)) {
+        } elseif (is_bool($object)) {
             return ObjectType::BOOLEAN;
-        } else if (is_array($object)) {
+        } elseif (is_array($object)) {
             if (count($object) > 0) {
                 $values = array_values($object);
                 $firstElem = $values[0];
@@ -68,14 +71,18 @@ class BinaryUtils
                     }
                 }
             }
-        } else if ($object instanceof DateTime) {
+        } elseif ($object instanceof Time) {
+            return ObjectType::TIME;
+        } elseif ($object instanceof Timestamp) {
+            return ObjectType::TIMESTAMP;
+        } elseif ($object instanceof Date) {
             return ObjectType::DATE;
-        } else if ($object instanceof Set) {
+        } elseif ($object instanceof Set) {
             return new CollectionObjectType(CollectionObjectType::HASH_SET);
-        } else if ($object instanceof Map) {
+        } elseif ($object instanceof Map) {
             return new MapObjectType();
         }
-        throw ClientException::unsupportedTypeException(gettype($object));
+        BinaryUtils::unsupportedType(gettype($object));
     }
     
     public static function getArrayType($elementType)
@@ -112,7 +119,7 @@ class BinaryUtils
             case ObjectType::TIME:
                 return ObjectType::TIME_ARRAY;
             default:
-                throw ClientException::unsupportedTypeException(BinaryUtils::getTypeName($elementType));
+                BinaryUtils::unsupportedType(BinaryUtils::getTypeName($elementType));
         }
     }
     
@@ -120,12 +127,12 @@ class BinaryUtils
     {
 //        if ($arrayType instanceof ObjectArrayType) {
 //            return $arrayType->elementType;
-//        } else if ($arrayType === ObjectType::OBJECT_ARRAY) {
+//        } elseif ($arrayType === ObjectType::OBJECT_ARRAY) {
 //            return null;
 //        }
         $info = TypeInfo::getTypeInfo($arrayType);
         if (!$info || !$info->getElementTypeCode()) {
-            throw ClientException::internalError();
+            BinaryUtils::internalError();
         }
         return $info->getElementTypeCode();
     }
@@ -155,5 +162,15 @@ class BinaryUtils
             }
         }
         return $hash;
+    }
+    
+    public static function internalError(string $message = null): void
+    {
+        throw new ClientException($message || 'Internal library error');
+    }
+    
+    public static function unsupportedType($type): void
+    {
+        throw new ClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
     }
 }

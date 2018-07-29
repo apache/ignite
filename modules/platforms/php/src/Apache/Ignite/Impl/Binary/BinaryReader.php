@@ -19,7 +19,11 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
-use Apache\Ignite\ObjectType\ObjectType;
+use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Data\Date;
+use Apache\Ignite\Data\Time;
+use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Exception\ClientException;
 
 class BinaryReader
 {
@@ -47,7 +51,11 @@ class BinaryReader
             case ObjectType::STRING:
                 return $buffer->readString();
             case ObjectType::DATE:
-                return $buffer->readDate();
+                return BinaryReader::readDate($buffer);
+            case ObjectType::TIME:
+                return BinaryReader::readTime($buffer);
+            case ObjectType::TIMESTAMP:
+                return BinaryReader::readTimestamp($buffer);
             case ObjectType::BYTE_ARRAY:
             case ObjectType::SHORT_ARRAY:
             case ObjectType::INTEGER_ARRAY:
@@ -67,9 +75,23 @@ class BinaryReader
                 return BinaryReader::readArray($buffer, $objectTypeCode, $expectedType);
             case ObjectType::MAP:
                 return BinaryReader::readMap($buffer, $expectedType);
+            case ObjectType::NULL:
+                return null;
             default:
-                throw ClientException::unsupportedTypeException($objectTypeCode);
+                BinaryUtils::unsupportedType($objectTypeCode);
         }
+    }
+    
+    private static function readDate(MessageBuffer $buffer): Date {
+        return new Date($buffer->readLong());
+    }
+
+    private static function readTime(MessageBuffer $buffer): Time {
+        return new Time($buffer->readLong());
+    }
+
+    private static function readTimestamp(MessageBuffer $buffer): Timestamp {
+        return new Timestamp($buffer->readLong(), $buffer->readInteger());
     }
     
     private static function readArray(MessageBuffer $buffer, int $arrayTypeCode, $arrayType): array

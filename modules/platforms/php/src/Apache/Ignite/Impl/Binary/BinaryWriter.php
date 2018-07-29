@@ -20,7 +20,10 @@ namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\ObjectType\ObjectType;
+use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Data\Date;
+use Apache\Ignite\Data\Time;
+use Apache\Ignite\Data\Timestamp;
 
 class BinaryWriter
 {
@@ -62,7 +65,13 @@ class BinaryWriter
                 $buffer->writeString($object);
                 break;
             case ObjectType::DATE:
-                $buffer->writeDate($object);
+                BinaryWriter::writeDate($buffer, $object);
+                break;
+            case ObjectType::TIME:
+                BinaryWriter::writeTime($buffer, $object);
+                break;
+            case ObjectType::TIMESTAMP:
+                BinaryWriter::writeTimestamp($buffer, $object);
                 break;
             case ObjectType::BYTE_ARRAY:
             case ObjectType::SHORT_ARRAY:
@@ -86,8 +95,24 @@ class BinaryWriter
                 BinaryWriter::writeMap($buffer, $object, $objectType);
                 break;
             default:
-                throw ClientException::unsupportedTypeException($objectType);
+                BinaryUtils::unsupportedType($objectType);
         }
+    }
+    
+    private static function writeDate(MessageBuffer $buffer, Date $date): void
+    {
+        $buffer->writeLong($date->getMillis());
+    }
+
+    private static function writeTime(MessageBuffer $buffer, Time $time): void
+    {
+        $buffer->writeLong($time->getMillis());
+    }
+    
+    private static function writeTimestamp(MessageBuffer $buffer, Timestamp $timestamp): void
+    {
+        $buffer->writeLong($timestamp->getMillis());
+        $buffer->writeInteger($timestamp->getNanos());
     }
     
     private static function writeArray(MessageBuffer $buffer, array $array, $arrayType, int $arrayTypeCode): void

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-namespace Apache\Ignite\ObjectType;
+namespace Apache\Ignite\Type;
 
 /** 
  * Base class representing a type of Ignite object.
@@ -53,12 +53,16 @@ namespace Apache\Ignite\ObjectType;
  * | integer                   | INTEGER               |
  * | float                     | DOUBLE                |
  * | string                    | STRING                |
- * | DateTime                  | DATE                  |
+ * | Date                      | DATE                  |
+ * | Time                      | TIME                  |
+ * | Timestamp                 | TIMESTAMP             |
  * | array of boolean          | BOOLEAN_ARRAY / MAP   |
  * | array of integer          | INTEGER_ARRAY / MAP   |
  * | array of float            | DOUBLE_ARRAY / MAP    |
  * | array of string           | STRING_ARRAY / MAP    |
- * | array of DateTime         | DATE_ARRAY / MAP      |
+ * | array of Date             | DATE_ARRAY / MAP      |
+ * | array of Time             | TIME_ARRAY / MAP      |
+ * | array of Timestamp        | TIMESTAMP_ARRAY / MAP |
  * | Ds/Set                    | COLLECTION (HASH_SET) |
  * | Ds/Map                    | MAP (HASH_MAP)        |
  * </pre>
@@ -87,7 +91,9 @@ namespace Apache\Ignite\ObjectType;
  * | BOOLEAN                      | boolean                               |
  * | STRING                       | string                                |
  * | CHAR                         | string (one character)                |
- * | DATE                         | DateTime                              |
+ * | DATE                         | Date                                  |
+ * | TIME                         | Time                                  |
+ * | TIMESTAMP                    | Timestamp                             |
  * | BYTE_ARRAY                   | array of integer                      |
  * | SHORT_ARRAY                  | array of integer                      |
  * | INTEGER_ARRAY                | array of integer                      |
@@ -97,7 +103,9 @@ namespace Apache\Ignite\ObjectType;
  * | BOOLEAN_ARRAY                | array of boolean                      |
  * | STRING_ARRAY                 | array of string                       |
  * | CHAR_ARRAY                   | array of string (one character)       |
- * | DATE_ARRAY                   | array of DateTime                     |
+ * | DATE_ARRAY                   | array of Date                         |
+ * | TIME_ARRAY                   | array of Time                         |
+ * | TIMESTAMP_ARRAY              | array of Timestamp                    |
  * | COLLECTION (USER_COL)        | array                                 |
  * | COLLECTION (ARR_LIST)        | array                                 |
  * | COLLECTION (LINKED_LIST)     | array                                 |

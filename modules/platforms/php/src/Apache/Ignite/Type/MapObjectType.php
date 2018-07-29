@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-namespace Apache\Ignite\ObjectType;
+namespace Apache\Ignite\Type;
 
 /** 
  * Class representing a map type of Ignite object.
