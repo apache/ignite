@@ -236,7 +236,7 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Future.
      * @return {@code True} if rebalance topology version changed by exchange thread or force
-     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
+     *         reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
         return !ctx.exchange().rebalanceTopologyVersion().equals(fut.topVer) ||
@@ -264,10 +264,10 @@ public class GridDhtPartitionDemander {
      * future based on them. Cancel previous rebalance future and send rebalance started event.
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
-     * @param assignments New assignments to be processed.
-     * @param force {@code True} if force preload request by {@link ForceRebalanceExchangeTask}.
+     * @param assignments Assignments to process.
+     * @param force {@code True} if preload request by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id generated from exchange thread.
-     * @param next Runnable responsible for cache rebalancing start.
+     * @param next Runnable responsible for cache rebalancing chain.
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
      */

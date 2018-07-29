@@ -64,7 +64,7 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param rebTopVer Previously rebalance topology version or {@code NONE} if there is no info.
+     * @param rebTopVer Previous rebalance topology version or {@code NONE} if there is no info.
      * @param exchFut Completed exchange future.
      * @return {@code True} if rebalance should be started (previous will be interrupted).
      */
@@ -73,7 +73,7 @@ public interface GridCachePreloader {
     /**
      * @param exchId Exchange ID.
      * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
-     * @return Assignments which will be requested from supplier nodes.
+     * @return Partition assignments which will be requested from supplier nodes.
      */
     @Nullable public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
                                                                      @Nullable GridDhtPartitionsExchangeFuture exchFut);
@@ -82,10 +82,10 @@ public interface GridCachePreloader {
      * Adds assignments to preloader.
      *
      * @param assignments Assignments to add.
-     * @param forcePreload {@code True} if force preload requested by {@link ForceRebalanceExchangeTask}.
+     * @param forcePreload {@code True} if preload requested by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id created by exchange thread.
      * @param next Runnable responsible for cache rebalancing chain.
-     * @param forcedRebFut Always {@code null} except it is not part of {@link ForceRebalanceExchangeTask}.
+     * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
