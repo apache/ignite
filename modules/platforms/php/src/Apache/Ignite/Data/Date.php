@@ -21,7 +21,8 @@ namespace Apache\Ignite\Data;
 use \DateTime;
 
 /** 
- * Class representing an Ignite Date type.
+ * Class representing Ignite Date type
+ * (number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC).
  */
 class Date
 {
@@ -30,7 +31,9 @@ class Date
     /**
      * Public constructor.
      * 
-     * @param float $millis integer value representing number of milliseconds since January 1, 1970, 00:00:00 UTC.
+     * @param float $millis integer number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
+     *
+     * @return Date new Date instance.
      */
     public function __construct(float $millis)
     {
@@ -38,31 +41,11 @@ class Date
     }
     
     /**
-     * Returns number of milliseconds since January 1, 1970, 00:00:00 UTC.
+     * Creates Date instance from DateTime instance.
      * 
-     * @return float number of milliseconds since January 1, 1970, 00:00:00 UTC.
-     */
-    public function getMillis(): float
-    {
-        return $this->millis;
-    }
-    
-    /**
-     * Returns number of seconds since January 1, 1970, 00:00:00 UTC.
+     * @param DateTime $dateTime DateTime instance.
      * 
-     * @return float number of seconds since January 1, 1970, 00:00:00 UTC.
-     */
-    public function getSeconds(): float
-    {
-        return $this->millis / 1000;
-    }
-    
-    /**
-     * Creates an Date object from a DateTime object.
-     * 
-     * @param DateTime $dateTime a DateTime object.
-     * 
-     * @return Date created Date object.
+     * @return Date new Date instance.
      */
     public static function fromDateTime(DateTime $dateTime)
     {
@@ -70,14 +53,34 @@ class Date
     }
     
     /**
-     * Returns a DateTime object representing this Date.
+     * Returns the date value as DateTime instance.
      * 
-     * @return DateTime
+     * @return DateTime new DateTime instance.
      */
     public function toDateTime(): DateTime
     {
         $dateTime = new DateTime();
         $dateTime->setTimestamp($this->getSeconds());
         return $dateTime;
+    }
+    
+    /**
+     * Returns the date value as number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
+     * 
+     * @return float number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
+     */
+    public function getMillis(): float
+    {
+        return $this->millis;
+    }
+    
+    /**
+     * Returns the date value as number of seconds elapsed since January 1, 1970, 00:00:00 UTC.
+     * 
+     * @return float number of seconds elapsed since January 1, 1970, 00:00:00 UTC.
+     */
+    public function getSeconds(): float
+    {
+        return $this->millis / 1000;
     }
 }
