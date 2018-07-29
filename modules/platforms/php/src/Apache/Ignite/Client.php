@@ -36,7 +36,7 @@ class Client
     /**
      * Public constructor.
      * 
-     * @return Client new Client instance.
+     * @return Client new Ignite client instance.
      */
     public function __construct()
     {
@@ -73,7 +73,7 @@ class Client
      * @param string $name cache name.
      * @param CacheConfiguration $cacheConfig optional cache configuration.
      * 
-     * @return CacheInterface new cache instance for the created cache.
+     * @return CacheInterface new instance of the class with interface representing the created cache.
      * 
      * @throws Exception::ClientException if error.
      */
@@ -100,7 +100,7 @@ class Client
      * @param CacheConfiguration $cacheConfig cache configuration (ignored if cache
      *   with the provided name already exists).
      * 
-     * @return CacheInterface new cache instance for the existing or created cache.
+     * @return CacheInterface new instance of the class with interface representing the existing or created cache.
      * 
      * @throws Exception::ClientException if error.
      */
@@ -120,12 +120,12 @@ class Client
     }
     
     /**
-     * Gets cache instance of cache with the provided name.
+     * Gets instance of the class with interface representing the cache with the provided name.
      * The method does not check if the cache with the provided name exists.
      * 
      * @param string $name cache name.
      * 
-     * @return CacheInterface new cache instance.
+     * @return CacheInterface new instance of the class with interface representing the cache.
      * 
      * @throws Exception::ClientException if error.
      */
