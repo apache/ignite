@@ -19,7 +19,8 @@
 namespace Apache\Ignite\Data;
 
 /** 
- * Class representing an Ignite Time type.
+ * Class representing Ignite Time type
+ * (number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC).
  */
 class Time
 {
@@ -36,7 +37,7 @@ class Time
     }
     
     /**
-     * Returns number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
+     * Returns the time value as number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
      * 
      * @return int number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
      */
@@ -46,7 +47,7 @@ class Time
     }
 
     /**
-     * Returns number of seconds elapsed since midnight, i.e. 00:00:00 UTC.
+     * Returns the time value as number of seconds elapsed since midnight, i.e. 00:00:00 UTC.
      * 
      * @return int elapsed since midnight, i.e. 00:00:00 UTC.
      */
