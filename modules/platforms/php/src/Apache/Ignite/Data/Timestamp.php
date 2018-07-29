@@ -21,7 +21,8 @@ namespace Apache\Ignite\Data;
 use \DateTime;
 
 /** 
- * Class representing an Ignite Timestamp type.
+ * Class representing Ignite Timestamp type
+ * (Ignite Date with additional nanoseconds fraction of the last millisecond).
  */
 class Timestamp extends Date
 {
@@ -30,14 +31,27 @@ class Timestamp extends Date
     /**
      * Public constructor.
      * 
-     * @param float $millis integer value representing number of milliseconds since 
-     *                         January 1, 1970, 00:00:00 UTC.
+     * @param float $millis integer number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
      * @param int $nanos nanoseconds of the last millisecond, should be in the range from 0 to 999999.
+     *
+     * @return Timestamp new Timestamp instance.
      */
     public function __construct(float $millis, int $nanos)
     {
         parent::__construct($millis);
         $this->nanos = $nanos;
+    }
+    
+    /**
+     * Creates Timestamp instance from DateTime instance.
+     * 
+     * @param DateTime $dateTime DateTime instance.
+     * 
+     * @return Timestamp new Timestamp instance.
+     */
+    public static function fromDateTime(DateTime $dateTime)
+    {
+        return new Timestamp($dateTime->getTimestamp() * 1000, 0);
     }
     
     /**
@@ -48,17 +62,5 @@ class Timestamp extends Date
     public function getNanos(): int
     {
         return $this->nanos;
-    }
-    
-    /**
-     * Creates an Timestamp object from a DateTime object.
-     * 
-     * @param DateTime $dateTime a DateTime object.
-     * 
-     * @return Timestamp created Timestamp object.
-     */
-    public static function fromDateTime(DateTime $dateTime)
-    {
-        return new Timestamp($dateTime->getTimestamp() * 1000, 0);
     }
 }
