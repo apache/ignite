@@ -19,12 +19,12 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Base Ignite client exception class.
+ * Class representing Ignite client general exception.
  */
 class ClientException extends \Exception
 {
     /**
-     * Constructs an ClientException with the specified detail message.
+     * Constructs a ClientException with the specified detail message.
      * 
      * @param string $message the detail message.
      */
