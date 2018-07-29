@@ -21,6 +21,18 @@ import org.apache.ignite.cache.CacheMode;
 
 /** */
 public class TxSavepointsTransactionalLocalCacheTest extends TxSavepointsTransactionalCacheTest {
+    /**
+     * {@inheritDoc}
+     * <p>
+     * In the LOCAL cache all primaries and tx owners should be the same node,
+     * because of current cache mode restrictions.
+     */
+    protected NodeCombination[] nodeCombinations() {
+        return new NodeCombination[] {
+            new NodeCombination(2, 2, 1, 1),
+        };
+    }
+
     /** {@inheritDoc}*/
     @Override protected CacheMode cacheMode() {
         return CacheMode.LOCAL;
