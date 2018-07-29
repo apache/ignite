@@ -71,6 +71,11 @@ class Cache implements CacheInterface
         $this->writeKeyValueOp(ClientOperation::CACHE_PUT, $key, $value);        
     }
     
+    public function clearKey($key): void
+    {
+        $this->writeKeyOp(ClientOperation::CACHE_CLEAR_KEY, $key);
+    }
+
     public function removeAll(): void
     {
         $this->socket->send(

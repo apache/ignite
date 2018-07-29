@@ -19,8 +19,8 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
-use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
@@ -128,7 +128,7 @@ class BinaryWriter
     private static function writeMap(MessageBuffer $buffer, $map, MapObjectType $mapType): void
     {
         if ($map instanceof Map) {
-            $buffer->writeInteger($map->count);
+            $buffer->writeInteger($map->count());
             $buffer->writeByte($mapType->getSubType());
             foreach ($map->pairs() as $pair) {
                 BinaryWriter::writeObject($buffer, $pair->key, $mapType->getKeyType());

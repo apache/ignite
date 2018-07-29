@@ -20,10 +20,10 @@ namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
 use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
-use Apache\Ignite\Exception\ClientException;
 
 class BinaryReader
 {

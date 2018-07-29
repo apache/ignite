@@ -98,6 +98,15 @@ interface CacheInterface
     public function put($key, $value): void;
     
     /**
+     * Removes entry with the specified key from the cache, without notifying listeners and cache writers.
+     * 
+     * @param mixed $key key to be removed.
+     *
+     * @throws Exception::ClientException if error.
+     */
+    public function clearKey($key): void;
+    
+    /**
      * Removes all entries from the cache, notifying listeners and cache writers.
      * 
      * @throws Exception::ClientException if error.

@@ -85,7 +85,7 @@ namespace Apache\Ignite\Type;
  * | BYTE                         | integer                               |
  * | SHORT                        | integer                               |
  * | INTEGER                      | integer                               |
- * | LONG                         | integer                               |
+ * | LONG                         | integer/float                         |
  * | FLOAT                        | float                                 |
  * | DOUBLE                       | float                                 |
  * | BOOLEAN                      | boolean                               |
@@ -97,7 +97,7 @@ namespace Apache\Ignite\Type;
  * | BYTE_ARRAY                   | array of integer                      |
  * | SHORT_ARRAY                  | array of integer                      |
  * | INTEGER_ARRAY                | array of integer                      |
- * | LONG_ARRAY                   | array of integer                      |
+ * | LONG_ARRAY                   | array of integer/float                |
  * | FLOAT_ARRAY                  | array of float                        |
  * | DOUBLE_ARRAY                 | array of float                        |
  * | BOOLEAN_ARRAY                | array of boolean                      |

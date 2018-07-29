@@ -19,6 +19,7 @@
 namespace Apache\Ignite\Tests;
 
 use \DateTime;
+use Ds\Map;
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\OperationException;
@@ -35,6 +36,7 @@ class TestingHelper
 {
     public static $client;
     public static $primitiveValues;
+    public static $arrayValues;
     
     /**
      * Initializes testing environment: creates and starts the library client, sets default jasmine test timeout.
@@ -76,8 +78,23 @@ class TestingHelper
         } elseif (gettype($value1) === 'double' || gettype($value2) === 'double') {
             return TestingHelper::floatComparator($value1, $value2);
         } elseif (gettype($value1) !== gettype($value2)) {
-            TestingHelper::logDebug(sprintf('compare: value types are different: %s and %s', gettype($value1), gettype($value2)));
+            TestingHelper::logDebug(sprintf('compare: value types are different: %s and %s',
+                gettype($value1), gettype($value2)));
             return false;
+        } elseif (is_array($value1) && is_array($value2)) {
+            if (count($value1) !== count($value2)) {
+                TestingHelper::logDebug('compare: array lengths are different');
+                return false;
+            }
+            foreach ($value1 as $key => $val1) {
+                $val2 = $value2[$key];
+                if (!TestingHelper::compare($val1, $val2)) {
+                    TestingHelper::logDebug(sprintf('compare: array elements are different: %s, %s',
+                        TestingHelper::printValue($val1), TestingHelper::printValue($val2)));
+                    return false;
+                }
+            }
+            return true;
         } elseif (gettype($value1) !== 'object') {
             return TestingHelper::defaultComparator($value1, $value2);
         } elseif ($value1 instanceof Time && $value2 instanceof Time) {
@@ -87,6 +104,24 @@ class TestingHelper
                    TestingHelper::defaultComparator($value1->getNanos(), $value2->getNanos());
         } elseif ($value1 instanceof Date && $value2 instanceof Date) {
             return TestingHelper::floatComparator($value1->getMillis(), $value2->getMillis());
+        } elseif ($value1 instanceof Map && $value2 instanceof Map) {
+            if ($value1->count() !== $value2->count()) {
+                TestingHelper::logDebug('compare: map sizes are different');
+                return false;
+            }
+            foreach ($value1->pairs() as $pair1) {
+                if (!$value2->hasKey($pair1->key)) {
+                    TestingHelper::logDebug(sprintf('compare: maps are different: %s key is absent',
+                        TestingHelper::printValue($pair1->key)));
+                    return false;
+                }
+                if (!TestingHelper::compare($pair1->value, $value2->get($pair1->key))) {
+                    TestingHelper::logDebug(sprintf('compare: map values are different: %s, %s',
+                        TestingHelper::printValue($pair1->value), TestingHelper::printValue($value2->get($pair1->key))));
+                    return false;
+                }
+            }
+            return true;
         }
         return false;
     }
@@ -96,42 +131,51 @@ class TestingHelper
         TestingHelper::$primitiveValues = [
             ObjectType::BYTE => [
                 'values' => [-128, 0, 127],
-                'isMapKey' => true
+                'isMapKey' => true,
+                'isArrayKey' => true
             ],
             ObjectType::SHORT => [
                 'values' => [-32768, 0, 32767],
-                'isMapKey' => true
+                'isMapKey' => true,
+                'isArrayKey' => true
             ],
             ObjectType::INTEGER => [
                 'values' => [12345, 0, -54321],
                 'isMapKey' => true,
+                'isArrayKey' => true,
                 'typeOptional' => true
             ],
             ObjectType::LONG => [
                 'values' => [12345678912345, 0, -98765432112345],
-                'isMapKey' => true
+                'isMapKey' => true,
+                'isArrayKey' => false,
             ],
             ObjectType::FLOAT => [
                 'values' => [-1.155, 0, 123e-5],
-                'isMapKey' => false
+                'isMapKey' => false,
+                'isArrayKey' => false,
             ],
             ObjectType::DOUBLE => [
                 'values' => [-123e5, 0, 0.0001],
                 'isMapKey' => false,
+                'isArrayKey' => false,
                 'typeOptional' => true
             ],
             ObjectType::CHAR => [
                 'values' => ['a', "\xC3\xA1"],
                 'isMapKey' => true,
+                'isArrayKey' => true,
             ],
             ObjectType::BOOLEAN => [
                 'values' => [true, false],
                 'isMapKey' => true,
+                'isArrayKey' => false,
                 'typeOptional' => true
             ],
             ObjectType::STRING => [
-                'values' => ['abc', '', '123'],
+                'values' => ['abc', '', '0123'],
                 'isMapKey' => true,
+                'isArrayKey' => true,
                 'typeOptional' => true
             ],
             ObjectType::DATE => [
@@ -139,14 +183,16 @@ class TestingHelper
                     Date::fromDateTime(new DateTime('now')),
                     new Date(1234567890),
                     new Date(0)],
-                'isMapKey' => true,
+                'isMapKey' => false,
+                'isArrayKey' => false,
                 'typeOptional' => true
             ],
             ObjectType::TIME => [
                 'values' => [
                     new Time(1234567),
                     new Time(123)],
-                'isMapKey' => true,
+                'isMapKey' => false,
+                'isArrayKey' => false,
                 'typeOptional' => true
             ],
             ObjectType::TIMESTAMP => [
@@ -154,9 +200,25 @@ class TestingHelper
                     Timestamp::fromDateTime(new DateTime('now')),
                     new Timestamp(12345, 12345),
                     new Timestamp(0, 0)],
-                'isMapKey' => true,
+                'isMapKey' => false,
+                'isArrayKey' => false,
                 'typeOptional' => true
             ],
+        ];
+        
+        TestingHelper::$arrayValues = [
+            ObjectType::BYTE_ARRAY => [ 'elemType' => ObjectType::BYTE ],
+            ObjectType::SHORT_ARRAY => [ 'elemType' => ObjectType::SHORT ],
+            ObjectType::INTEGER_ARRAY => [ 'elemType' => ObjectType::INTEGER, 'typeOptional' => true ],
+            ObjectType::LONG_ARRAY => [ 'elemType' => ObjectType::LONG ],
+            ObjectType::FLOAT_ARRAY => [ 'elemType' => ObjectType::FLOAT ],
+            ObjectType::DOUBLE_ARRAY => [ 'elemType' => ObjectType::DOUBLE, 'typeOptional' => true ],
+            ObjectType::CHAR_ARRAY => [ 'elemType' => ObjectType::CHAR ],
+            ObjectType::BOOLEAN_ARRAY => [ 'elemType' => ObjectType::BOOLEAN, 'typeOptional' => true ],
+            ObjectType::STRING_ARRAY => [ 'elemType' => ObjectType::STRING, 'typeOptional' => true ],
+            ObjectType::DATE_ARRAY => [ 'elemType' => ObjectType::DATE, 'typeOptional' => true ],
+            ObjectType::TIMESTAMP_ARRAY => [ 'elemType' => ObjectType::TIMESTAMP, 'typeOptional' => true ],
+            ObjectType::TIME_ARRAY => [ 'elemType' => ObjectType::TIME, 'typeOptional' => true ],
         ];
     }
 
@@ -170,22 +232,9 @@ class TestingHelper
         return $value1 === $value2;
     }
     
-    private static function dateComparator(Date $value1, Date $value2): bool
-    {
-        return !$value1 && !$value1 || $value1->getTimestamp() === $value2->getTimestamp();
-    }
-    
     public static function printValue($value)
     {
-        if ($value instanceof Date) {
-            return $value->toDateTime()->format('Y-m-d H:i:s');
-        } elseif ($value instanceof Time) {
-            $dateTime = new DateTime();
-            $dateTime->setTimestamp($value->getSeconds());
-            return $dateTime->format('H:i:s');
-        } else {
-            return $value;
-        }
+        return print_r($value, true);
     }
     
     private static function logDebug($message): void

@@ -77,4 +77,40 @@ class MapObjectType extends ObjectType
         $this->keyType = $keyType;
         $this->valueType = $valueType;
     }
+
+    /**
+     * Returns map subtype, one of the MapObjectType constants.
+     * 
+     * @return int map subtype, one of the MapObjectType constants.
+     */
+    public function getSubType(): int
+    {
+        return $this->subType;
+    }
+    
+    /**
+     * Returns type of the keys in the map.
+     * 
+     * @return int|ObjectType|null type of the keys in the map:
+     *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     */
+    public function getKeyType()
+    {
+        return $this->keyType;
+    }
+
+    /**
+     * Returns type of the values in the map.
+     * 
+     * @return int|ObjectType|null type of the values in the map:
+     *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     */
+    public function getValueType()
+    {
+        return $this->valueType;
+    }
 }
