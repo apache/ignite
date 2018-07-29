@@ -954,7 +954,7 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
+            U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + CU.txString(tx) + ']', e);
 
             if (tx != null) {
                 tx.commitError(e);
