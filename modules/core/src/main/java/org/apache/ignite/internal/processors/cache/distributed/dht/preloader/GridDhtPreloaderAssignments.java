@@ -73,7 +73,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     }
 
     /**
-     * @return The topology version based on last {@link GridDhtPartitionTopologyImpl#readyTopVer}.
+     * @return Topology version based on last {@link GridDhtPartitionTopologyImpl#readyTopVer}.
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;

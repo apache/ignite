@@ -180,7 +180,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         new ConcurrentSkipListMap<>();
 
     /**
-     * The latest started rebalance topology version  but possibly not finished yet. Value {@code NONE}
+     * Latest started rebalance topology version but possibly not finished yet. Value {@code NONE}
      * means that previous rebalance is undefined and the new one should be initiated.
      *
      * Should not be used to determine latest rebalance topology version.
@@ -835,7 +835,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return The latest started rebalance topology version or {@code NONE} if there is no info.
+     * @return Latest rebalance topology version or {@code NONE} if there is no info.
      */
     public AffinityTopologyVersion rebalanceTopologyVersion() {
         return rebTopVer;
@@ -2670,7 +2670,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled || hasPendingExchange()) { // Pending exchange.
+                        if (assignsCancelled || hasPendingExchange()) {
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
