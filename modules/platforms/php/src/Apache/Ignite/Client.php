@@ -46,6 +46,8 @@ class Client
     /**
      * Connects the client.
      *
+     * Reconnects if the client already connected.
+     *
      * @param ClientConfiguration $config the client configuration.
      * 
      * @throws Exception::ClientException if error.
@@ -71,11 +73,9 @@ class Client
      * @param string $name cache name.
      * @param CacheConfiguration $cacheConfig optional cache configuration.
      * 
-     * @return CacheInterface new cache client instance for the created cache.
+     * @return CacheInterface new cache instance for the created cache.
      * 
-     * @throws Exception::ConnectionException if
-     * @throws Exception::OperationException if cache with the provided name already exists.
-     * @throws Exception::ClientException if other error.
+     * @throws Exception::ClientException if error.
      */
     public function createCache(
             string $name,
@@ -100,9 +100,8 @@ class Client
      * @param CacheConfiguration $cacheConfig cache configuration (ignored if cache
      *   with the provided name already exists).
      * 
-     * @return CacheInterface new cache client instance for the existing or created cache.
+     * @return CacheInterface new cache instance for the existing or created cache.
      * 
-     * @throws Exception::ConnectionException if
      * @throws Exception::ClientException if error.
      */
     public function getOrCreateCache(
@@ -121,12 +120,12 @@ class Client
     }
     
     /**
-     * Gets cache client instance of cache with the provided name.
+     * Gets cache instance of cache with the provided name.
      * The method does not check if the cache with the provided name exists.
      * 
      * @param string $name cache name.
      * 
-     * @return CacheInterface new cache client instance.
+     * @return CacheInterface new cache instance.
      * 
      * @throws Exception::ClientException if error.
      */
@@ -141,9 +140,7 @@ class Client
      *
      * @param string $name cache name.
      * 
-     * @throws Exception::ConnectionException if
-     * @throws Exception::OperationException if cache with the provided name does not exist.
-     * @throws Exception::ClientException if other error.
+     * @throws Exception::ClientException if error.
      */
     public function destroyCache(string $name): void
     {
@@ -163,9 +160,7 @@ class Client
      * 
      * @return CacheConfiguration cache configuration.
      * 
-     * @throws Exception::ConnectionException if
-     * @throws Exception::OperationException if cache with the provided name does not exist.
-     * @throws Exception::ClientException if other error.
+     * @throws Exception::ClientException if error.
      */
     public function getCacheConfiguration(string $name): CacheConfiguration
     {
@@ -177,15 +172,14 @@ class Client
      * @return array array with the existing cache names.
      *     The array is empty if no caches exist.
      * 
-     * @throws Exception::ConnectionException if
-     * @throws Exception::ClientException if other error.
+     * @throws Exception::ClientException if error.
      */
     public function cacheNames(): array
     {
     }
     
     /**
-     * Enables/disables the library debug output (including errors logging).
+     * Enables/disables the Ignite client's debug output (including errors logging).
      * Disabled by default.
      * 
      * @param bool $value true to enable, false to disable.
