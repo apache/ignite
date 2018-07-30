@@ -38,7 +38,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
-import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -2733,6 +2732,12 @@ public abstract class IgniteUtils {
         return bytes;
     }
 
+    /**
+     * @param map map.
+     * @return array of bytes.
+     * @throws IOException If failed.
+     */
+    @Nullable
     public static byte[] mapToByteArray(Map map) throws IOException {
         if (map == null || map.isEmpty())
             return null;
@@ -2744,11 +2749,18 @@ public abstract class IgniteUtils {
         return out.toByteArray();
     }
 
-    public static <K, V> Map<K, V> byteArrayToMap(byte[] byteArray, int offset, int length) throws IOException, ClassNotFoundException {
-        if (byteArray == null || byteArray.length <= offset)
-            return null;
+    /**
+     * @param byteArr Byte array.
+     * @param offset Offset.
+     * @param len Length.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If failed.
+     */
+    public static <K, V> Map<K, V> byteArrayToMap(byte[] byteArr, int offset, int len) throws IOException, ClassNotFoundException {
+        if (byteArr == null || byteArr.length <= offset)
+            return Collections.emptyMap();
 
-        return readMap(new ObjectInputStream(new ByteArrayInputStream(byteArray, offset, length)));
+        return readMap(new ObjectInputStream(new ByteArrayInputStream(byteArr, offset, len)));
     }
 
     /**

@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -178,13 +179,13 @@ public abstract class GridCacheAbstractClientTxMetricsTest extends GridCacheAbst
         TransactionIsolation transactionIsolation, boolean commit) throws IgniteInterruptedCheckedException {
         Ignite client = ignite(gridCount() - 1);
 
-        IgniteCache<Integer, String> cache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, String> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
-        IgniteTransactions transactions = client.transactions();
+        IgniteTransactions clientTxs = client.transactions();
 
         for (int i = 0; i < EXPECTED_TXS_FINISH_COUNT; i++) {
-            try (Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation)) {
-                cache.put(i, "value");
+            try (Transaction tx = clientTxs.txStart(transactionConcurrency, transactionIsolation)) {
+                clientCache.put(i, "value");
 
                 if (commit)
                     tx.commit();
@@ -194,24 +195,39 @@ public abstract class GridCacheAbstractClientTxMetricsTest extends GridCacheAbst
         }
 
         if (commit) {
-            assertTrue(GridTestUtils.waitForCondition(() -> {
-                boolean metricsUpdated =
-                    client.cache(DEFAULT_CACHE_NAME).metrics().getCacheTxCommits() == EXPECTED_TXS_FINISH_COUNT
-                        && transactions.metrics().txCommits() == EXPECTED_TXS_FINISH_COUNT;
+            for (Ignite ignite : G.allGrids())
+                assertTrue(txCommitMetricCorrect(ignite));
 
-                return metricsUpdated;
-
-            }, SECONDS.toMillis(3)));
+            assertTrue(clientTxs.metrics().txCommits() == EXPECTED_TXS_FINISH_COUNT
+                && clientCache.localMetrics().getCacheTxCommits() == EXPECTED_TXS_FINISH_COUNT);
         }
         else {
-            assertTrue(GridTestUtils.waitForCondition(() -> {
-                boolean metricsUpdated =
-                    client.cache(DEFAULT_CACHE_NAME).metrics().getCacheTxRollbacks() == EXPECTED_TXS_FINISH_COUNT
-                        && transactions.metrics().txRollbacks() == EXPECTED_TXS_FINISH_COUNT;
+            for (Ignite ignite : G.allGrids()) {
+                assertTrue(txRollbackMetricCorrect(ignite));
 
-                return metricsUpdated;
-
-            }, SECONDS.toMillis(3)));
+                assertTrue(clientTxs.metrics().txRollbacks() == EXPECTED_TXS_FINISH_COUNT
+                    && clientCache.localMetrics().getCacheTxRollbacks() == EXPECTED_TXS_FINISH_COUNT);
+            }
         }
+    }
+
+    /**
+     * @param ignite node, where metric is tested.
+     * @return True if metric is correct on the node.
+     */
+    private boolean txCommitMetricCorrect(Ignite ignite) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(() ->
+                ignite.cache(DEFAULT_CACHE_NAME).metrics().getCacheTxCommits() == EXPECTED_TXS_FINISH_COUNT,
+            SECONDS.toMillis(3));
+    }
+
+    /**
+     * @param ignite node, where metric is tested.
+     * @return True if metric is correct on the node.
+     */
+    private boolean txRollbackMetricCorrect(Ignite ignite) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(() ->
+                ignite.cache(DEFAULT_CACHE_NAME).metrics().getCacheTxRollbacks() == EXPECTED_TXS_FINISH_COUNT,
+            SECONDS.toMillis(3));
     }
 }

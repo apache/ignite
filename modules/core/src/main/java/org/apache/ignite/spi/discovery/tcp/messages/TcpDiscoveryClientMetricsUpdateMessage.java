@@ -18,13 +18,11 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -44,9 +42,10 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
 
     /**
      * Constructor.
+     *
      * @param creatorNodeId Creator node.
      * @param metrics Metrics.
-     * @param cacheMetrics
+     * @param cacheMetrics cache metrics.
      */
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics) {
@@ -56,11 +55,12 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
 
             byte[] cacheMetricsArr = U.mapToByteArray(cacheMetrics);
 
-            this.metrics = new byte[metricsArr.length + cacheMetricsArr.length];
+            this.metrics = new byte[metricsArr.length + (cacheMetricsArr != null ? cacheMetricsArr.length : 0)];
 
             U.arrayCopy(metricsArr, 0, this.metrics, 0, metricsArr.length);
 
-            U.arrayCopy(cacheMetricsArr, 0, this.metrics, metricsArr.length, cacheMetricsArr.length);
+            if (cacheMetricsArr != null)
+                U.arrayCopy(cacheMetricsArr, 0, this.metrics, metricsArr.length, cacheMetricsArr.length);
         }
         catch (IOException ignore) {
             assert false;

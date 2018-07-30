@@ -76,7 +76,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -5248,12 +5247,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tstamp);
 
-                        for (T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>> t : metricsSet.clientMetrics()) {
-                            //For compatibility reasons we must set server cache metrics if no client metrics provided
-                            Map<Integer, CacheMetrics> clientCacheMetrics = t.get3() != null ? t.get3() : cacheMetrics ;
-
-                            updateMetrics(t.get1(), t.get2(), clientCacheMetrics, tstamp);
-                        }
+                        for (T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>> t : metricsSet.clientMetrics())
+                            updateMetrics(t.get1(), t.get2(), t.get3(), tstamp);
                     }
                 }
             }
@@ -6806,6 +6801,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Current client metrics. */
         private volatile ClusterMetrics metrics;
 
+        /** Client cache metrics. */
         private Map<Integer, CacheMetrics> cacheMetrics;
 
         /** */
@@ -6847,11 +6843,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.metrics = metrics;
         }
 
+        /**
+         * @param cacheMetrics Cache metrics.
+         */
         void cacheMetrics(Map<Integer, CacheMetrics> cacheMetrics){
             this.cacheMetrics = cacheMetrics;
         }
 
-
+        /**
+         * @return cache metrics.
+         */
         public Map<Integer, CacheMetrics> cacheMetrics() {
             return cacheMetrics;
         }

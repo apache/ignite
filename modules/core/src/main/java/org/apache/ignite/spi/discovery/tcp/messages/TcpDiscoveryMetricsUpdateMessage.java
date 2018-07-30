@@ -30,7 +30,6 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,7 +37,8 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.ClusterMetricsSnapshot.*;
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.METRICS_SIZE;
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.deserialize;
 
 /**
  * Metrics update message.
@@ -110,10 +110,11 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
     /**
      * Sets metrics for a client node.
+     *
      * @param nodeId Server node ID.
      * @param clientNodeId Client node ID.
      * @param metrics Node metrics.
-     * @param cacheMetrics
+     * @param cacheMetrics cache metrics.
      */
     public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics) {
@@ -235,7 +236,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /**
      * @param nodeId Node ID.
      * @param metrics Metrics.
-     * @param cacheMetrics
+     * @param cacheMetrics cache metrics.
      * @return Serialized metrics.
      */
     private static byte[] serializeMetrics(UUID nodeId, ClusterMetrics metrics,
@@ -244,6 +245,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         assert metrics != null;
 
         int offset = 16;
+
         byte[] byteArr = new byte[0];
 
         try {
@@ -258,9 +260,9 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
-        serialize(buf, offset, metrics);
+        ClusterMetricsSnapshot.serialize(buf, offset, metrics);
 
-        if (cacheMetrics != null && byteArr != null)
+        if (cacheMetrics != null && byteArr != null && byteArr.length > 0)
             U.arrayCopy(byteArr, 0, buf, offset + METRICS_SIZE, byteArr.length);
 
         return buf;
@@ -291,14 +293,14 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         public MetricsSet(ClusterMetrics metrics) {
             assert metrics != null;
 
-            this.metrics = serialize(metrics);
+            this.metrics = ClusterMetricsSnapshot.serialize(metrics);
         }
 
         /**
          * @return Deserialized metrics.
          */
         public ClusterMetrics metrics() {
-            return deserialize(metrics, 0);
+            return ClusterMetricsSnapshot.deserialize(metrics, 0);
         }
 
         /**
@@ -327,7 +329,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         /**
          * @param nodeId Client node ID.
          * @param metrics Client metrics.
-         * @param cacheMetrics
+         * @param cacheMetrics Client cache metrics.
          */
         private void addClientMetrics(UUID nodeId, ClusterMetrics metrics,
             Map<Integer, CacheMetrics> cacheMetrics) {
