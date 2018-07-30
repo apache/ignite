@@ -394,7 +394,9 @@ class GridDeploymentCommunication {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
+
         assert nodesToSkip != null;
+
         assert(!nodeOnRecursionExclusionList(dstNode));
 
         Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
@@ -403,10 +405,12 @@ class GridDeploymentCommunication {
         
         // Receiver should not forward to nodes that originated request nor
         // nodes this node intends to send to.
+
         Set<UUID> nodeIds = new HashSet<UUID>();
         if (activeReqNodeIds.get() != null) {
            nodeIds.addAll(activeReqNodeIds.get());
         }
+      
         nodeIds.addAll(nodesToSkip);
 
         req.nodeIds(nodeIds);
