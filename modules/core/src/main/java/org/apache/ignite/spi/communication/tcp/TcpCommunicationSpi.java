@@ -368,7 +368,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private ConnectGateway connectGate;
 
     /** */
-    private ConnectionPolicy connPlc;
+    private ConnectionPolicy connPlc = new FirstConnectionPolicy();
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
@@ -2089,20 +2089,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "Specified 'unackedMsgsBufSize' is too low, it should be at least 'ackSndThreshold * 5'.");
         }
 
-        if (connectionsPerNode > 1) {
-            connPlc = new ConnectionPolicy() {
-                @Override public int connectionIndex() {
-                    return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
-                }
-            };
-        }
-        else {
-            connPlc = new ConnectionPolicy() {
-                @Override public int connectionIndex() {
-                    return 0;
-                }
-            };
-        }
+        if (connectionsPerNode > 1)
+            connPlc = new RoundRobinConnectionPolicy();
+        else
+            connPlc = new FirstConnectionPolicy();
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -3230,7 +3220,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
-                if (addr.getAddress().isLoopbackAddress() && addr.getPort() == boundTcpPort) {
+                if (isLocalNodeAddress(addr)) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping local address [addr=" + addr +
                             ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
@@ -3470,9 +3460,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (client == null)
-            processClientCreationError(node, addrs, errs);
+            processClientCreationError(node, addrs, errs == null ? new IgniteCheckedException("No clients found") : errs);
 
         return client;
+    }
+
+    /**
+     * Check is passed  socket address belong to current node. This method should return true only if the passed
+     * in address represent an address which will result in a connection to the local node.
+     *
+     * @param addr address to check.
+     * @return true if passed address belongs to local node, otherwise false.
+     */
+    private boolean isLocalNodeAddress(InetSocketAddress addr) {
+        return addr.getPort() == boundTcpPort
+            && (locHost.equals(addr.getAddress())
+                || addr.getAddress().isAnyLocalAddress()
+                || (locHost.isAnyLocalAddress() && U.isLocalAddress(addr.getAddress())));
     }
 
     /**
@@ -4751,6 +4755,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
          * @return Thread connection index.
          */
         int connectionIndex();
+    }
+
+    /** */
+    private static class FirstConnectionPolicy implements ConnectionPolicy {
+        /** {@inheritDoc} */
+        @Override public int connectionIndex() {
+            return 0;
+        }
+    }
+
+    /** */
+    private class RoundRobinConnectionPolicy implements ConnectionPolicy {
+        /** {@inheritDoc} */
+        @Override public int connectionIndex() {
+            return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+        }
     }
 
     /**

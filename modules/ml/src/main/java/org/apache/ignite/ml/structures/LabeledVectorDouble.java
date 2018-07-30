@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.structures;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Labeled vector specialized to double label.

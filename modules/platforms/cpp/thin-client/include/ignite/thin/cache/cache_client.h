@@ -76,6 +76,14 @@ namespace ignite
                 }
 
                 /**
+                 * Default constructor.
+                 */
+                CacheClient()
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
                 ~CacheClient()
@@ -107,7 +115,7 @@ namespace ignite
                 {
                     impl::thin::WritableKeyImpl<KeyType> wrKey(key);
                     impl::thin::ReadableImpl<ValueType> rdValue(value);
-                    
+
                     proxy.Get(wrKey, rdValue);
                 }
 
@@ -207,7 +215,11 @@ namespace ignite
                 /**
                  * Refresh affinity mapping.
                  *
-                 * TODO
+                 * Retrieves affinity mapping information from remote server. This information uses to send data
+                 * requests to the most appropriate nodes. This can lessen latency and improve overall performance.
+                 *
+                 * It is recommended to refresh affinity mapping after every topology change, i.e. when a node enters or
+                 * leaves cluster.
                  */
                 void RefreshAffinityMapping()
                 {

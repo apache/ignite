@@ -29,6 +29,7 @@ import './modules/demo/Demo.module';
 import './modules/states/logout.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
+import './modules/states/settings.state';
 
 // ignite:modules
 import './core';
@@ -85,6 +86,7 @@ import SqlTypes from './services/SqlTypes.service';
 import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
+import ErrorParser from './services/ErrorParser.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Caches from './services/Caches';
@@ -193,6 +195,7 @@ export default angular.module('ignite-console', [
     'ignite-console.states.logout',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
+    'ignite-console.states.settings',
     // Common modules.
     'ignite-console.dialog',
     'ignite-console.navbar',
@@ -283,6 +286,7 @@ export default angular.module('ignite-console', [
 .service(...Focus)
 .service(...InetAddress)
 .service(...Messages)
+.service('IgniteErrorParser', ErrorParser)
 .service(...ModelNormalizer)
 .service(...LegacyTable)
 .service(...FormUtils)
@@ -311,11 +315,6 @@ export default angular.module('ignite-console', [
             url: '',
             abstract: true,
             template: baseTemplate
-        })
-        .state('base.settings', {
-            url: '/settings',
-            abstract: true,
-            template: '<ui-view></ui-view>'
         });
 
     $urlRouterProvider.otherwise('/404');

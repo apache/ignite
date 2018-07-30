@@ -396,6 +396,31 @@ class ClusterCachesInfo {
     }
 
     /**
+     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped
+     * due to dynamic cache start failure.
+     *
+     * @param failMsg Dynamic change request fail message.
+     * @param topVer Topology version.
+     */
+    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
+        ExchangeActions exchangeActions = new ExchangeActions();
+
+        List<DynamicCacheChangeRequest> requests = new ArrayList<>(failMsg.cacheNames().size());
+
+        for (String cacheName : failMsg.cacheNames()) {
+            DynamicCacheDescriptor cacheDescr = registeredCaches.get(cacheName);
+
+            assert cacheDescr != null : "Dynamic cache descriptor is missing [cacheName=" + cacheName + "]";
+
+            requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
+        }
+
+        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+
+        failMsg.exchangeActions(exchangeActions);
+    }
+
+    /**
      * @param batch Cache change request.
      * @param topVer Topology version.
      * @return {@code True} if minor topology version should be increased.

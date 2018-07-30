@@ -23,9 +23,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
@@ -114,7 +114,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(1_000)) {
-            Matrix input = new DenseLocalOnHeapMatrix(new double[][]{e.getPixels()});
+            Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
             Matrix outputMatrix = mdl.apply(input);
 
             int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));

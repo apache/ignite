@@ -176,6 +176,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
+        if (context().atomic() && !opCtx.allowedAtomicOpsInTx() && context().tm().tx() != null) {
+            throw new IllegalStateException("Enabling atomic operations during active transaction is not allowed. " +
+                "Enable atomic operations before transaction start.");
+        }
+
         CacheOperationGate opGate = onEnter();
 
         try {
@@ -1468,6 +1473,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         try {
             delegate.enableStatistics(enabled);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            delegate.clearStatistics();
         }
         finally {
             onLeave(opGate);
