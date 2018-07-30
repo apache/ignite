@@ -36,6 +36,10 @@
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
+            <source>${project.basedir}/src/main/sh/logback.xml</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
             <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>/lib</outputDirectory>
         </file>

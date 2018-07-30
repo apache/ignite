@@ -16,4 +16,4 @@
 # limitations under the License.
 
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
-java -Xmx4G -DIGNITE_QUIET=false -cp "$SCRIPT_PATH/lib/*" org.apache.ignite.tensorflow.submitter.JobSubmitter "$@"
+java -Xmx4G -DIGNITE_QUIET=false -cp "$SCRIPT_PATH:$SCRIPT_PATH/lib/*" org.apache.ignite.tensorflow.submitter.JobSubmitter "$@"
