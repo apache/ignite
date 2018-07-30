@@ -21,5 +21,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
  *
  */
 public class StopException extends Exception {
+    /** */
+    private static final long serialVersionUID = 0L;
 
 }
