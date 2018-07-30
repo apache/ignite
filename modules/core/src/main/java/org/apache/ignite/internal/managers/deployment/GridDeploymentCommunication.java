@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -337,50 +338,81 @@ class GridDeploymentCommunication {
                 GridIoPolicy.P2P_POOL);
         }
     }
-
+    
+    /**
+     * Returns true if the given node was excluded by the node that sent us the
+     * request we are serving.
+     * {@linkplain GridDeploymentRequest request} (which is not an
+     * {@linkplain GridDeploymentRequest#isUndeploy undeploy}) being processed by this thread.
+     * 
+     * @param node The node to query about
+     * @return true if the node is excluded
+     * 
+     * @pre node != null
+     */
+    boolean nodeOnRecursionExclusionList(ClusterNode node) {
+       assert node != null;
+       
+       // activeReqNodeIds is thread local.
+       Collection<UUID> nodeIds = activeReqNodeIds.get();
+       
+       
+       return (nodeIds != null && nodeIds.contains(node.id()));
+    }
+    
     /**
      * Sends request to the remote node and wait for response. If there is
-     * no response until threshold time, method returns null.
+     * no response until threshold time, method returns null.  The receiver
+     * may forward the request to other nodes, but not to nodes that have been
+     * searched already, or nodes we intend to search directly. 
      *
+     * The exclusion list severely weakens the potential n-squared behavior when a 
+     * resource does not exist. If the resource does not exist, all nodes 
+     * in the graph must be touched at least once.   To avoid all multiple touches 
+     * for the resource-not-found case, the response would need to include the 
+     * nodes forwarded to, so they could be added to the exclusion list.  However
+     * that seems like overkill for the kinds of graphs peer class loading will generate.
      *
      * @param rsrcName Resource name.
      * @param clsLdrId Class loader ID.
-     * @param dstNode Remote node request should be sent to.
+     * @param dstNode Remote node request should be sent to. 
+     *        {@linkplain GridDeploymentCommunication.nodeOnRecursionExclusionList 
+     *        nodeOnRecursionExclusionList(dstNode) must be false.}
      * @param threshold Time in milliseconds when request is decided to
      *      be obsolete.
+     * @param exclusionList - Nodes to avoid recursively searching, in addition to 
+     *      the node(s) that forwarded this request initially.  These nodes will 
+     *      end up on the receiver's exclusion list, in addition to nodes on our
+     *      current exclusion list.
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
+     * 
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
+        final ClusterNode dstNode, long threshold, Collection<UUID> nodesToSkip) throws IgniteCheckedException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
 
-        Collection<UUID> nodeIds = activeReqNodeIds.get();
+        assert nodesToSkip != null;
 
-        if (nodeIds != null && nodeIds.contains(dstNode.id())) {
-            if (log.isDebugEnabled())
-                log.debug("Node attempts to load resource from one of the requesters " +
-                    "[rsrcName=" + rsrcName + ", dstNodeId=" + dstNode.id() +
-                    ", requesters=" + nodeIds + ']');
-
-            GridDeploymentResponse fake = new GridDeploymentResponse();
-
-            fake.success(false);
-            fake.errorMessage("Node attempts to load resource from one of the requesters " +
-                "[rsrcName=" + rsrcName + ", dstNodeId=" + dstNode.id() +
-                ", requesters=" + nodeIds + ']');
-
-            return fake;
-        }
+        assert(!nodeOnRecursionExclusionList(dstNode));
 
         Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
         GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName, false);
+        
+        // Receiver should not forward to nodes that originated request nor
+        // nodes this node intends to send to.
 
-        // Send node IDs chain with request.
+        Set<UUID> nodeIds = new HashSet<UUID>();
+        if (activeReqNodeIds.get() != null) {
+           nodeIds.addAll(activeReqNodeIds.get());
+        }
+      
+        nodeIds.addAll(nodesToSkip);
+
         req.nodeIds(nodeIds);
 
         final Object qryMux = new Object();

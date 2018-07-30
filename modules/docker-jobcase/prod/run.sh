@@ -41,6 +41,22 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
     fi
 fi
 
+export JVM_OPTS="$JVM_OPTS $JVM_DEBUG_OPTS"
+
+if [ ! -z "${JVM_IGNITE_GC_LOGGING_OPTS}" ] &&  [ ! -z "${JOBCASE_LOGS}" ]; then
+    export JVM_OPTS="$JVM_OPTS $JVM_IGNITE_GC_LOGGING_OPTS  -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
+fi
+
+if [ ! -z "${JVM_METASPACE_SIZE}" ]; then
+    export JVM_OPTS="$JVM_OPTS -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE}"
+fi
+
+if [ ! -z "${JVM_HEAP_SIZE}" ]; then
+    export JVM_OPTS="$JVM_OPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
+fi    
+
+
+
 QUIET=""
 
 if [ "$IGNITE_QUIET" = "false" ]; then
@@ -52,3 +68,35 @@ if [ -z $CONFIG_URI ]; then
 else
   $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
 fi
+
+# Activate or set a baseline for all current server nodes, but only after a while.
+SECONDS=0
+while [ ! -z "$IGNITE_CONSISTENT_ID" ] && [ "$IGNITE_CLIENT_MODE" == "false" ] && [ "$IGNITE_AUTO_BASELINE_DELAY" -ne 0 ]
+do 
+    sleep 5
+    $IGNITE_HOME/bin/control.sh --baseline > /tmp/baseline
+    if [ $? != 0 ]
+    then 
+        break; 
+    fi
+
+    SECONDS=$(($SECONDS + 5))
+      
+    if [ $SECONDS -gt $IGNITE_AUTO_BASELINE_DELAY ]
+    then
+        X=`egrep "Cluster state.* active" /tmp/baseline`
+        if [ "$?" != 0 ]
+        then 
+            $IGNITE_HOME/bin/control.sh --activate
+        else
+            X=`sed -n '/Other/q;p' /tmp/baseline | grep "ConsistentID=${IGNITE_CONSISTENT_ID}"` 
+            if [ "$?" != 0 ]; then
+               VERSION=`grep "Current topology version" /tmp/baseline | grep -oP '\d+'`
+               $IGNITE_HOME/bin/control.sh --baseline version $VERSION
+            fi
+        fi
+        break;
+    fi
+done
+      
+

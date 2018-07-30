@@ -27,10 +27,10 @@ ENV IGNITE_VERSION 2.5.0
 
 # Oracle JDK Linux x64 download information
 ENV JAVA_VERSION=8 \
-    JAVA_UPDATE=172 \
-    JAVA_BUILD=11 \
-    JAVA_PATH=a58eab1ec242421181065cdc37240b08
-    
+    JAVA_UPDATE=181 \
+    JAVA_BUILD=13 \
+    JAVA_PATH=96a7b8442fe848ef90c96a2fad6ed6d1
+
 # Java home    
 ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle
 
@@ -87,10 +87,19 @@ ENV JVM_METASPACE_SIZE 1g
 # Define additional JVM options for debug purpose
 # As default, it enables remote debug on port 1044.
 ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044"
+ENV JVM_DEBUG_PORT 1044
 
-# Ignite JVM settings
-ENV JVM_OPTS="-ea -XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE} -server -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE} -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
+# Ignite common JVM settings.   Run.sh will concatenate the above settings.
+ENV JVM_OPTS="-server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC"
 
+# GC logging is only for Ignite itself, not utilities like Visor or control.sh
+ENV JVM_IGNITE_GC_LOGGING_OPTS="-XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M"
+
+# Set to true for client mode.  NOTE: The config file must use this variable for it to be effective.
+ENV IGNITE_CLIENT_MODE false
+
+# If a starting server node (!IGNITE_CLIENT_MODE) is not part of the baseline, then run.sh will force a new baseline to include it after this many seconds
+ENV IGNITE_AUTO_BASELINE_DELAY 0
 
 # Do not rely on anything provided by base image(s), but be explicit, if they are installed already it is noop then
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -128,6 +137,9 @@ COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin/libs/optional/ignite-
 
 # Enable AWS support
 COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin/libs/optional/ignite-aws ${IGNITE_HOME}/libs/ignite-aws/
+
+# Enable AOP support
+COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin/libs/optional/ignite-aop ${IGNITE_HOME}/libs/ignite-aop/
 
 # Copy log4j2 configuration file
 COPY ./ignite-log4j2.xml ${JOBCASE_CONFIG}/
@@ -170,4 +182,5 @@ ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
 # Set default arguments for ENTRYPOINT
 CMD ["--debug", "--launch", "${IGNITE_HOME}/run.sh &"]
 
-EXPOSE $IGNITE_SERVER_PORT $IGNITE_COMMUNICATION_PORT $IGNITE_DISCOVERY_PORT $IGNITE_JMX_PORT $IGNITE_JDBC_PORT $IGNITE_REST_PORT
+# the expose statement is a build time operation, so runime overrides do not affect the EXPOSE statement
+EXPOSE $IGNITE_SERVER_PORT $IGNITE_COMMUNICATION_PORT $IGNITE_DISCOVERY_PORT $IGNITE_JMX_PORT $IGNITE_JDBC_PORT $IGNITE_REST_PORT $JVM_DEBUG_PORT
