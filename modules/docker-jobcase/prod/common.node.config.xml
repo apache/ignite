@@ -44,7 +44,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
         
         <!-- Set to false to set this node to be a client. -->
-        <property name="clientMode" value="#{systemEnvironment['CLIENT_MODE']}"/>
+        <property name="clientMode" value="#{systemEnvironment['IGNITE_CLIENT_MODE']}"/>
         
         <!-- Set deployment mode.
              In CONTINUOUS mode, the classes do not get un-deployed when master nodes leave the grid. 
