@@ -224,6 +224,20 @@
     }
 }
 
+.modal-footer {
+    display: flex;
+    align-items: center;
+
+    > div {
+        display: flex;
+        flex: 1;
+
+        &:last-child {
+            flex: 0;
+        }
+    }
+}
+
 .modal--wide .modal-dialog {
     width: 900px;
 }

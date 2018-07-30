@@ -22,12 +22,3 @@ $disabled-color: #c5c5c5;
 #user-notifications-dialog {
     min-height: 160px;
 }
-
-.modal-footer {
-    display: flex;
-    align-items: center;
-
-    > div {
-        display: flex;
-    }
-}
