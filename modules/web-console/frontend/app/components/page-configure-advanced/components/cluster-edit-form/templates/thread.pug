@@ -89,7 +89,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-60(ng-if-end)
                 .ignite-form-field
                     +form-field__label({ label: 'Executor configurations:', name: '"executorConfigurations"' })
-                        +tooltip(`Custom thread pool configurations for compute tasks`)
+                        +form-field__tooltip({ title: `Custom thread pool configurations for compute tasks` })
 
                     list-editable(
                         ng-model=executors
