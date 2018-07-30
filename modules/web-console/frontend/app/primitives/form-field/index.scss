@@ -385,13 +385,13 @@
     }
 }
 
+.form-field__radio,
 .form-field__checkbox {
     $errorSize: 16px;
-    display: flex;
+    display: inline-flex;
+    width: auto;
 
-    .form-field__control > input[type='checkbox'] {
-        border-radius: 0;
-    }
+    сursor: pointer;
 
     .form-field {
         &__label {
@@ -439,6 +439,34 @@
                 }
             }
         }
+    }
+}
+
+.form-field__radio {
+    .form-field__control {
+        padding: 2px 0;
+    }
+
+    .form-field__control > input[type='radio'] {
+        -webkit-appearance: none;
+
+        width: 14px;
+        height: 14px;
+        padding: 0;
+
+        background: transparent;
+        border-radius: 50%;
+
+        &:checked {
+            box-shadow: inset 0 0 0px 5px #0067b9;
+            border: none;
+        }
+    }
+}
+
+.form-field__checkbox {
+    .form-field__control > input[type='checkbox'] {
+        border-radius: 0;
     }
 }
 
@@ -526,6 +554,10 @@
             box-shadow: none;
         }
     }
+}
+
+.form-field + .form-field {
+    margin-left: 20px;
 }
 
 .form-field.ignite-form-field label.required {

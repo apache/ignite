@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__label({ label, name, required, optional, disabled })
+mixin form-field__label({ label, name, required, optional, disabled, namePostfix = '' })
     if label
         -var colon = label[label.length-1] === ':' ? ':' : '';
         - label = label[label.length-1] === ':' ? label.substring(0, label.length - 1) : label
@@ -22,7 +22,7 @@ mixin form-field__label({ label, name, required, optional, disabled })
 
         label.form-field__label(
             id=name && `{{ ${name} }}Label`
-            for=name && `{{ ${name} }}Input`
+            for=name && `{{ ${name} }}${ namePostfix }Input`
             class=`{{ ${required} ? 'required' : '' }}`
             ng-disabled=disabled && `${disabled}`
         )

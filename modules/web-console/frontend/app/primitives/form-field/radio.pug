@@ -14,24 +14,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field-radio(label, model, name, value, disabled, required, tip)
-    .radio--ignite.ignite-form-field
-        label(id=`{{ ${name} }}Label`)
-            .input-tip
-                if block
-                    block
-                else
-                    input(
-                        id=`{{ ${name} }}Input`
-                        name=`{{ ${name} }}`
-                        type='radio'
+mixin form-field__radio({ label, model, name, value, disabled, required, tip })
+    .form-field.form-field__radio(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled, namePostfix: value })
+            +form-field__tooltip({ title: tip, options: tipOpts })
 
-                        ng-model=model
-                        ng-value=value
-                        ng-required=required && `${required}`
-                        ng-disabled=disabled && `${disabled}`
-                    )
-                    div
-            span #{label}
+        .form-field__control
+            - attributes.type='radio'
+            - attributes['ng-value'] = value
+            +form-field__input({ name, model, disabled, required, placeholder, namePostfix: value })(attributes=attributes)
 
-            +tooltip(tip, tipOpts)
+        .form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
+            if block
+                block
