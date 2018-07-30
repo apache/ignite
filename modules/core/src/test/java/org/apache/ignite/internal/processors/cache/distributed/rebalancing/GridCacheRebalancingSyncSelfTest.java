@@ -319,9 +319,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(4);
 
-        concurrentStartFinished = true;
-
         awaitPartitionMapExchange(true, true, null);
+
+        concurrentStartFinished = true;
 
         checkSupplyContextMapIsEmpty();
 
