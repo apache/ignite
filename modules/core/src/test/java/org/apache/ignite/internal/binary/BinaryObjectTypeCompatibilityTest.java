@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
@@ -83,6 +84,7 @@ public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
         validateCollection(bldr, "objField", new LinkedList<>());
         validateCollection(bldr, "objField", new HashSet<>());
         validateCollection(bldr, "objField", new LinkedHashSet<>());
+        validateCollection(bldr, "objField", new TreeSet<>());
 
         validate(bldr, "objField", (byte)RANDOM.nextInt());
         validate(bldr, "objField", (short)RANDOM.nextInt());
