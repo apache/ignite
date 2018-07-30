@@ -217,8 +217,8 @@ public class IgniteConfiguration {
     /** Default partition map exchange hard timeout in millis. */
     public static final long DFLT_EXCHANGE_HARD_TIMEOUT = -1;
 
-    /** Default exchange timeout safe mode. */
-    public static final boolean DFLT_EXCHANGE_TIMEOUT_SAFE_MODE = false;
+    /** Default exchange timeout minimum owners. */
+    public static final int DFLT_EXCHANGE_TIMEOUT_MIN_OWNERS = 0;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -505,8 +505,8 @@ public class IgniteConfiguration {
     /** Exchange hard timeout. */
     private long exchangeHardTimeout = DFLT_EXCHANGE_HARD_TIMEOUT;
 
-    /** Exchange timeout safe mode. */
-    private boolean exchangeTimeoutSafeMode = DFLT_EXCHANGE_TIMEOUT_SAFE_MODE;
+    /** Exchange timeout minimum owners. */
+    private int exchangeTimeoutMinOwners = DFLT_EXCHANGE_TIMEOUT_MIN_OWNERS;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -564,7 +564,7 @@ public class IgniteConfiguration {
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         exchangeHardTimeout = cfg.getExchangeHardTimeout();
-        exchangeTimeoutSafeMode = cfg.isExchangeTimeoutSafeMode();
+        exchangeTimeoutMinOwners = cfg.getExchangeTimeoutMinOwners();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
@@ -3040,15 +3040,15 @@ public class IgniteConfiguration {
     /**
      *
      */
-    public boolean isExchangeTimeoutSafeMode() {
-        return exchangeTimeoutSafeMode;
+    public int getExchangeTimeoutMinOwners() {
+        return exchangeTimeoutMinOwners;
     }
 
     /**
-     * @param safeMode Safe mode.
+     * @param minOwners Minimum owners count.
      */
-    public IgniteConfiguration setExchangeTimeoutSafeMode(boolean safeMode) {
-        this.exchangeTimeoutSafeMode = safeMode;
+    public IgniteConfiguration setExchangeTimeoutMinOwners(int minOwners) {
+        this.exchangeTimeoutMinOwners = minOwners;
 
         return this;
     }

@@ -1280,7 +1280,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     Set<UUID> failedNodes = new HashSet<>();
 
                     for (UUID remainingUuid : remaining0) {
-                        if (!cctx.gridConfig().isExchangeTimeoutSafeMode()
+                        if (cctx.gridConfig().getExchangeTimeoutMinOwners() <= 0
                             || isSafeToFailNode(remainingUuid, failedNodes)) {
                             failedNodes.add(remainingUuid);
 
@@ -1288,7 +1288,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
                     }
                 }
-                else if (!cctx.gridConfig().isExchangeTimeoutSafeMode()){
+                else if (cctx.gridConfig().getExchangeTimeoutMinOwners() <= 0){
                     try {
                         log.warning("Exchange timeout reached on non-coordinator node, " +
                             "sending check request to coordinator");
@@ -1331,7 +1331,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ownerIds.add(owner.id());
                 }
 
-                if (ownerIds.size() == 1 && ownerIds.contains(nodeId))
+                if (ownerIds.size() <= cctx.gridConfig().getExchangeTimeoutMinOwners() && ownerIds.contains(nodeId))
                     return false;
             }
         }
