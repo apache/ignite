@@ -50,14 +50,22 @@ class SegmentCurrentStorage {
      *
      * @param absSegIdx Target WAL index.
      */
-    public void awaitSegment(long absSegIdx) throws InterruptedException {
+    public void awaitSegment(long absSegIdx) throws InterruptedException, StopException {
         synchronized (this) {
             while (curAbsWalIdx < absSegIdx && !stopped)
                 wait();
 
+            checkForStop();
+
             // If the archive directory is empty, we can be sure that there were no WAL segments archived.
             // This is ensured by the check in truncate() which will leave at least one file there
             // once it was archived.
+        }
+    }
+
+    private void checkForStop() throws StopException {
+        if (stopped) {
+            throw new StopException();
         }
     }
 
@@ -77,7 +85,7 @@ class SegmentCurrentStorage {
      *
      * @return Next absolute segment index.
      */
-    synchronized long nextAbsoluteSegmentIndex() throws InterruptedException {
+    synchronized long nextAbsoluteSegmentIndex() throws InterruptedException, StopException {
         curAbsWalIdx++;
 
         // Notify archiver thread.
@@ -85,6 +93,8 @@ class SegmentCurrentStorage {
 
         while (curAbsWalIdx - archivedMonitor.lastArchivedAbsoluteIndex() > walSegmentsCount && !stopped)
             wait();
+
+        checkForStop();
 
         return curAbsWalIdx;
     }

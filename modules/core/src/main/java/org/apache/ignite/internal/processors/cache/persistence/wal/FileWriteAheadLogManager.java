@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentAware;
+import org.apache.ignite.internal.processors.cache.persistence.wal.segment.StopException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -285,7 +286,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private volatile FileIOFactory ioFactory;
 
-    private final SegmentAware segmentAware ;
+    private SegmentAware segmentAware ;
 
     /** Updater for {@link #currHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
@@ -1608,11 +1609,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED)) {
                         evt.record(new WalSegmentArchivedEvent(
-                                cctx.discovery().localNode(),
-                                res.getAbsIdx(),
-                                res.getDstArchiveFile())
+                            cctx.discovery().localNode(),
+                            res.getAbsIdx(),
+                            res.getDstArchiveFile())
                         );
                     }
+                }
+            }
+            catch (StopException e) {
+                synchronized (this) {
+                    stopped = true;
                 }
             }
             catch (InterruptedException t) {
@@ -1656,6 +1662,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     // Wait for formatter so that we do not open an empty file in DEFAULT mode.
                     while (nextIdx % dsCfg.getWalSegments() > formatted && cleanErr == null)
                         wait();
+                }
+                catch (StopException e) {
+                    throw new StorageException(e.getMessage());
                 }
                 catch (InterruptedException ignore) {
                     interrupted.set(true);
@@ -1803,7 +1812,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
+        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException, StopException {
             long segmentToCompress = segmentAware.nextSegmentToCompressOrWait();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -1881,7 +1890,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
 //                    lastCompressedIdx++;
                 }
-                catch (InterruptedException ignore) {
+                catch (InterruptedException | StopException ignore) {
                     Thread.currentThread().interrupt();
                 }
                 finally {

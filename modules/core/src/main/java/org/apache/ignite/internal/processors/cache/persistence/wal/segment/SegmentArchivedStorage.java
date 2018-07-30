@@ -91,14 +91,22 @@ class SegmentArchivedStorage {
         }
     }
 
-    synchronized void markAsMovedToArchive(long toArchive) throws InterruptedException {
+    synchronized void markAsMovedToArchive(long toArchive) throws InterruptedException, StopException {
         while (segmentLockStorage.locked(toArchive) && !stopped)
             wait();
+
+        checkForStop();
 
         // Then increase counter to allow rollover on clean working file
         setLastArchivedAbsoluteIndex(toArchive);
     }
 
+
+    private void checkForStop() throws StopException {
+        if (stopped) {
+            throw new StopException();
+        }
+    }
     /**
      * Stop waiting.
      */

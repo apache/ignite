@@ -63,22 +63,26 @@ public class SegmentCompressStorage {
      * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
      * Waits if there's no segment to archive right now.
      */
-    public long nextSegmentToCompressOrWait() throws InterruptedException, IgniteCheckedException {
+    public long nextSegmentToCompressOrWait() throws InterruptedException, StopException {
         long segmentToCompress = lastCompressedIdx + 1;
 
         synchronized (this) {
-            if (stopped)
-                return -1;
+            checkForStop();
 
             while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archivedMonitor.lastArchivedAbsoluteIndex())) {
                 wait();
 
-                if (stopped)
-                    return -1;
+                checkForStop();
             }
         }
 
         return segmentToCompress;
+    }
+
+    private void checkForStop() throws StopException {
+        if (stopped) {
+            throw new StopException();
+        }
     }
 
     /**
