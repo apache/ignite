@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import base2 from 'views/base2.pug';
 import pageConfigureAdvancedClusterComponent from '../page-configure-advanced/components/page-configure-advanced-cluster/component';
 import pageConfigureAdvancedModelsComponent from '../page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from '../page-configure-advanced/components/page-configure-advanced-caches/component';
@@ -43,11 +42,6 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         url: '/configuration',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
-        views: {
-            '@': {
-                template: base2
-            }
-        },
         resolve: {
             _shortClusters: ['ConfigEffects', ({etp}) => {
                 return etp('LOAD_USER_CLUSTERS');

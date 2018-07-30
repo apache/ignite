@@ -2226,6 +2226,26 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Checks if the address is local.
+     *
+     * @param addr Address for check.
+     * @return true if address is local, otherwise false
+     */
+    public static boolean isLocalAddress(InetAddress addr) {
+        // Check if the address is a valid special local or loop back
+        if (addr.isAnyLocalAddress() || addr.isLoopbackAddress())
+            return true;
+
+        // Check if the address is defined on any interface
+        try {
+            return NetworkInterface.getByInetAddress(addr) != null;
+        }
+        catch (SocketException e) {
+            return false;
+        }
+    }
+
+    /**
      * Gets a list of all local enabled MACs known to this JVM. It
      * is using hardware address of the network interface that is not guaranteed to be
      * MAC addresses (but in most cases it is).
@@ -10412,6 +10432,22 @@ public abstract class IgniteUtils {
      */
     public static BaselineTopology getBaselineTopology(@NotNull GridCacheContext cctx) {
         return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
+     * Check that node Ignite product version is not less then specified.
+     *
+     * @param ver Target Ignite product version.
+     * @param nodes Cluster nodes.
+     * @return {@code True} if ignite product version of all nodes is not less then {@code ver}.
+     */
+    public static boolean isOldestNodeVersionAtLeast(IgniteProductVersion ver, Iterable<ClusterNode> nodes) {
+        for (ClusterNode node : nodes) {
+            if (node.version().compareToIgnoreTimestamp(ver) < 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**

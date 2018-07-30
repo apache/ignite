@@ -18,10 +18,10 @@
 package org.apache.ignite.ml.selection;
 
 import org.apache.ignite.ml.selection.cv.CrossValidationTest;
-import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
+import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursorTest;
-import org.apache.ignite.ml.selection.scoring.metric.Fmeasure;
+import org.apache.ignite.ml.selection.scoring.metric.AccuracyTest;
 import org.apache.ignite.ml.selection.scoring.metric.FmeasureTest;
 import org.apache.ignite.ml.selection.scoring.metric.PrecisionTest;
 import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
@@ -36,6 +36,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     CrossValidationTest.class,
+    ParameterSetGeneratorTest.class,
     CacheBasedLabelPairCursorTest.class,
     LocalLabelPairCursorTest.class,
     AccuracyTest.class,

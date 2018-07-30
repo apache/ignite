@@ -28,18 +28,23 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.logging.ConsoleLogger;
+import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on RandomForest
- * implementation for regression. It shows an initialization of {@link RandomForestTrainer},
- * +initialization of Ignite Cache, learning step and evaluation of model quality in terms of
- * Mean Squared Error (MSE) and Mean Absolute Error (MAE).
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainer}, +initialization of Ignite
+ * Cache, learning step and evaluation of model quality in terms of Mean Squared Error (MSE) and Mean Absolute Error
+ * (MAE).
  *
  * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
+ *
  * @see RandomForestRegressionTrainer
  */
 public class RandomForestRegressionExample {
@@ -54,13 +59,18 @@ public class RandomForestRegressionExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                    RandomForestRegressionExample.class.getSimpleName(), () -> {
+                RandomForestRegressionExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
+                trainer.setEnvironment(LearningEnvironment.builder()
+                    .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
+                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
+                    .build()
+                );
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
-                        (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+                        (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
                         (k, v) -> v[v.length - 1]
                 );
 
@@ -74,7 +84,7 @@ public class RandomForestRegressionExample {
                         double[] inputs = Arrays.copyOfRange(val, 0, val.length - 1);
                         double groundTruth = val[val.length - 1];
 
-                        double prediction = randomForest.apply(new DenseLocalOnHeapVector(inputs));
+                        double prediction = randomForest.apply(VectorUtils.of(inputs));
 
                         mse += Math.pow(prediction - groundTruth, 2.0);
                         mae += Math.abs(prediction - groundTruth);
