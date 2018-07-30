@@ -183,7 +183,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Latest started rebalance topology version but possibly not finished yet. Value {@code NONE}
      * means that previous rebalance is undefined and the new one should be initiated.
      *
-     * Should not be used to determine latest rebalance topology version.
+     * Should not be used to determine latest rebalanced topology.
      */
     private volatile AffinityTopologyVersion rebTopVer = AffinityTopologyVersion.NONE;
 
