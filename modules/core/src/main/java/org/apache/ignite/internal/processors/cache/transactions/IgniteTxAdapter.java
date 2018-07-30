@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
@@ -1198,9 +1197,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         }
                     }
 
-                    if (state == COMMITTED && dht() && remote())
-                        updateLocalCounters(((IgniteTxRemoteEx)this).updateCountersMap());
-
                     // Log tx state change to WAL.
                     if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
 
@@ -1251,33 +1247,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return valid;
-    }
-
-    /**
-     * Applies update counters to the local partitions.
-     *
-     * @param updCntrsMap Update counters map.
-     */
-    private void updateLocalCounters(Map<Integer, Map<Integer, Long>> updCntrsMap) {
-        if (F.isEmpty(updCntrsMap))
-            return;
-
-        for (Integer cacheId : updCntrsMap.keySet()) {
-            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-            Map<Integer, Long> cacheUpdCntrs = updCntrsMap.get(cacheId);
-
-            assert !F.isEmpty(cacheUpdCntrs);
-
-            for (Integer partId : cacheUpdCntrs.keySet()) {
-                Long updCntr = cacheUpdCntrs.get(partId);
-                GridDhtLocalPartition part = cacheCtx.topology().localPartition(partId);
-
-                assert part != null && updCntr != null && updCntr > 0;
-
-                part.updateCounter(updCntr);
-            }
-        }
     }
 
     /** {@inheritDoc} */

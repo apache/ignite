@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
@@ -30,6 +32,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -54,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -152,6 +156,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     private GridLongList mvccWaitTxs;
+
+    /** Update counters map */
+    private Map<Integer, Map<Integer, Long>> updCntrs;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -933,6 +940,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || completedBase != null;
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
+
+                updateLocalPartitionCounters();
             }
         }
     }
@@ -1012,6 +1021,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || completedBase != null : "Missing completed base for transaction: " + this;
                 assert !needsCompletedVersions || committedVers != null : "Missing committed versions for transaction: " + this;
                 assert !needsCompletedVersions || rolledbackVers != null : "Missing rolledback versions for transaction: " + this;
+
+                updateLocalPartitionCounters();
             }
         }
     }
@@ -1624,6 +1635,88 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         return 0;
+    }
+
+    /**
+     * @return Partition counters map for the given backup node.
+     */
+    public Map<Integer, Map<Integer, Long>> updateCountersForNode(ClusterNode node) {
+        if (F.isEmpty(updCntrs))
+            return null;
+
+        Map<Integer, Map<Integer, Long>> res = new HashMap<>();
+
+        for (Integer cacheId : updCntrs.keySet()) {
+            Map<Integer, Long> partsCntrs = updCntrs.get(cacheId);
+
+            assert !F.isEmpty(partsCntrs);
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            Map<Integer, Long> resBackupCntrs = new HashMap<>();
+
+            res.putIfAbsent(cacheId, resBackupCntrs);
+
+            for (Integer part : partsCntrs.keySet()) {
+                Long cntr = partsCntrs.get(part);
+
+                if (ctx0.affinity().backupByPartition(node, part, topologyVersionSnapshot())) {
+                    assert cntr != null && cntr > 0 : cntr;
+
+                    resBackupCntrs.put(part, cntr);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param part Partition id.
+     */
+    @SuppressWarnings("Java8MapApi")
+    public void addPartitionCountersMapping(Integer cacheId, Integer part) {
+        if (updCntrs == null)
+            updCntrs = new ConcurrentHashMap<>();
+
+        Map<Integer, Long> partUpdCntrs = updCntrs.get(cacheId);
+
+        if (partUpdCntrs == null)
+            updCntrs.put(cacheId, partUpdCntrs = new ConcurrentHashMap<>());
+
+        partUpdCntrs.put(part, 0L);
+    }
+
+    /**
+     * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
+     * counters only on commit phase.
+     */
+    private void updateLocalPartitionCounters() {
+        if (F.isEmpty(updCntrs))
+            return;
+
+        for (Integer cacheId : updCntrs.keySet()) {
+            Map<Integer, Long> partsCntrs = updCntrs.get(cacheId);
+
+            assert !F.isEmpty(partsCntrs);
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            for (Integer part : partsCntrs.keySet()) {
+                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(part);
+
+                assert dhtPart != null;
+
+                long cntr = dhtPart.mvccUpdateCounter();
+
+                dhtPart.updateCounter(cntr);
+
+                Long prev = partsCntrs.put(part, cntr);
+
+                assert prev == 0L : prev;
+            }
+        }
     }
 
     /**

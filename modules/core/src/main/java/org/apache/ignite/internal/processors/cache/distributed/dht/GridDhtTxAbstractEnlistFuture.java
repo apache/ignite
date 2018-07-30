@@ -594,21 +594,23 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         int cacheId) throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
+        int part = cctx.affinity().partition(key);
+
+        tx.addPartitionCountersMapping(cacheId, part);
+
         if (F.isEmpty(backups))
             return;
 
         CacheEntryInfoCollection hist0 = null;
 
-        int part = cctx.affinity().partition(key);
-
         for (ClusterNode node : backups) {
             assert !node.isLocal();
-
-            updateMappings(node, cacheId, part);
 
             boolean moving = isMoving(node, part);
 
             if (skipNearNodeUpdates && node.id().equals(nearNodeId) && !moving) {
+                updateMappings(node);
+
                 if (newRemoteTx(node))
                     tx.addLockTransactionNode(node);
 
@@ -748,6 +750,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         ClusterNode node = batch.node();
 
+        updateMappings(node);
+
         GridDhtTxQueryEnlistRequest req;
 
         if (newRemoteTx(node)) {
@@ -801,7 +805,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /** */
-    private synchronized void updateMappings(ClusterNode node, Integer cacheId, Integer part) throws IgniteCheckedException {
+    private synchronized void updateMappings(ClusterNode node) throws IgniteCheckedException {
         checkCompleted();
 
         Map<UUID, GridDistributedTxMapping> m = tx.dhtMap;
@@ -812,7 +816,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             m.put(node.id(), mapping = new GridDistributedTxMapping(node));
 
         mapping.markQueryUpdate();
-        mapping.addPartition(cacheId, part);
     }
 
     /**
