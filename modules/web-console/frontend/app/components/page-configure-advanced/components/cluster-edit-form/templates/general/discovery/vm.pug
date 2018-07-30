@@ -51,4 +51,4 @@ mixin discovery-vm(modelAt = '$ctrl.clonedCluster')
                     ng-messages=`$vmAddresses.$error`
                     ng-show=`$vmAddresses.$invalid`
                 )
-                    +form-field-feedback(_, 'required', 'Addresses should be configured')
+                    +form-field__error({ error: 'required', message: 'Addresses should be configured' })

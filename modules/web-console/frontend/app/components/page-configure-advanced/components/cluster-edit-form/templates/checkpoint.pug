@@ -58,7 +58,7 @@ panel-collapsible(ng-form=form)
                                     'Choose cache', 'No caches configured for current cluster', '$ctrl.cachesMenu', 'Cache to use for storing checkpoints')(
                                     pc-is-in-collection='$ctrl.clonedCluster.caches'
                                 )
-                                    +form-field-feedback(form, 'isInCollection', `Cluster doesn't have such a cache`)
+                                    +form-field__error({ error: 'isInCollection', message: `Cluster doesn't have such a cache` })
                             .pc-form-grid-col-60(ng-if-end)
                                 +java-class('Listener:', '$checkpointSPI.Cache.checkpointListener', '"checkpointCacheListener"', 'true', 'false',
                                     'Checkpoint listener implementation class name', CacheCheckpoint)

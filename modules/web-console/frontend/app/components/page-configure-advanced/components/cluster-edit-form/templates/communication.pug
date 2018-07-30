@@ -58,7 +58,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })(
                     pc-not-in-collection='::$ctrl.Clusters.sharedMemoryPort.invalidValues'
                 )
-                    +form-field-feedback('"sharedMemoryPort"', 'notInCollection', 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"')
+                    +form-field__error({ error: 'notInCollection', message: 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"' })
             .pc-form-grid-col-30
                 +number('Idle connection timeout:', `${communication}.idleConnectionTimeout`, '"idleConnectionTimeout"', 'true', '30000', '1',
                     'Maximum idle connection timeout upon which a connection to client will be closed')

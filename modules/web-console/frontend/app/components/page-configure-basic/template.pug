@@ -111,7 +111,7 @@ form(novalidate name=form)
                 tip='“default” cluster memory policy off-heap max memory size. Leave empty to use 80% of physical memory available on current machine. Should be at least 10Mb.'
                 on-scale-change='scale = $event'
             )
-                +form-field-feedback('"memory"', 'min', 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).')
+                +form-field__error({ error: 'min', message: 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).' })
 
         .pc-form-grid-col-60(ng-if=`$ctrl.IgniteVersion.available('2.3.0')`)
             form-field-size(
@@ -127,11 +127,7 @@ form(novalidate name=form)
                 tip='Default data region off-heap max memory size. Leave empty to use 20% of physical memory available on current machine. Should be at least 10Mb.'
                 on-scale-change='scale = $event'
             )
-                +form-field-feedback(
-                    _,
-                    'min',
-                    `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).`
-                )
+                +form-field__error({ error: 'min', message: `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).` })
         .pc-form-grid-col-120
             .ignite-form-field
                 list-editable.pcb-caches-list(

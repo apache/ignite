@@ -69,7 +69,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-messages=`sslConfiguration.trustManagers.$error`
                         ng-show=`sslConfiguration.trustManagers.$invalid`
                     )
-                        +form-field-feedback(_, 'required', 'Trust managers or trust store file should be configured')
+                        +form-field__error({ error: 'required', message: 'Trust managers or trust store file should be configured' })
 
             .pc-form-grid-col-30(ng-if-start=`!${trust}.length`)
                 +form-field__text({
@@ -81,7 +81,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     placeholder: 'Path to the trust store file',
                     tip: 'Path to the trust store file'
                 })
-                    +form-field-feedback(_, 'required', 'Trust store file or trust managers should be configured')
+                    +form-field__error({ error: 'required', message: 'Trust store file or trust managers should be configured' })
             .pc-form-grid-col-30(ng-if-end)
                 +text-options('Trust store type:', `${model}.trustStoreType`, '"trustStoreType"', '["JKS", "PCKS11", "PCKS12"]', enabled, 'false', 'JKS', 'Trust store type used in context initialization')
         .pca-form-column-6

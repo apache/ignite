@@ -84,8 +84,8 @@ panel-collapsible(
                         ui-validate-watch-object-equality='true'
                         ng-model-options='{allowInvalid: true}'
                     )
-                        +form-field-feedback('"MemoryPolicyName"', 'notInCollection', '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use')
-                        +form-field-feedback('"MemoryPolicyName"', 'defaultMemoryPolicyExists', 'Memory policy with that name should be configured')
+                        +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use' })
+                        +form-field__error({ error: 'defaultMemoryPolicyExists', message: 'Memory policy with that name should be configured' })
                 .pc-form-grid-col-60(ng-hide='(' + model + '.defaultMemoryPolicyName || "default") !== "default"')
                     +number('Default memory policy size:', model + '.defaultMemoryPolicySize', '"defaultMemoryPolicySize"',
                     'true', '0.8 * totalMemoryAvailable', '10485760',
@@ -117,8 +117,8 @@ panel-collapsible(
                                             pc-not-in-collection='::$ctrl.Clusters.memoryPolicy.name.invalidValues'
                                             ng-model-options='{allowInvalid: true}'
                                         )
-                                            +form-field-feedback('"MemoryPolicyName', 'uniqueMemoryPolicyName', 'Memory policy with that name is already configured')
-                                            +form-field-feedback('"MemoryPolicyName', 'notInCollection', '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use')
+                                            +form-field__error({ error: 'uniqueMemoryPolicyName', message: 'Memory policy with that name is already configured' })
+                                            +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use' })
                                     .pc-form-grid-col-60
                                         form-field-size(
                                             label='Initial size:'

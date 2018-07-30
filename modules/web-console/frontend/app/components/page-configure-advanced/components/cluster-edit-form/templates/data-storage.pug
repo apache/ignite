@@ -36,8 +36,8 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
             ignite-unique-property='name'
             ignite-unique-skip=`["_id", ${modelAt}]`
         )
-            +form-field-feedback(_, 'notInCollection', '{{::$ctrl.Clusters.dataRegion.name.invalidValues[0]}} is reserved for internal use')
-            +form-field-feedback(_, 'igniteUnique', 'Name should be unique')
+            +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.dataRegion.name.invalidValues[0]}} is reserved for internal use' })
+            +form-field__error({ error: 'igniteUnique', message: 'Name should be unique' })
 
     .pc-form-grid-col-30
         form-field-size(

@@ -57,7 +57,7 @@ panel-collapsible(
                             powerOfTwo: '$ctrl.Clusters.swapSpaceSpi.readStripesNumber.customValidators.powerOfTwo($value)'
                         }`
                     )
-                        +form-field-feedback('"readStripesNumber"', 'powerOfTwo', 'Read stripe size must be positive and power of two')
+                        +form-field__error({ error: 'powerOfTwo', message: 'Read stripe size must be positive and power of two' })
                 .pc-form-grid-col-30
                     +number-min-max-step('Maximum sparsity:', `${fileSwapModel}.maximumSparsity`, '"maximumSparsity"', 'true', '0.5', '0', '0.999', '0.05',
                         'This property defines maximum acceptable wasted file space to whole file size ratio<br/>\

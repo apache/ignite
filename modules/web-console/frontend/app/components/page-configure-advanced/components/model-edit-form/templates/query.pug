@@ -253,7 +253,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                             ng-messages=`$form.indexFields.$error`
                                             ng-show=`$form.indexFields.$invalid`
                                         )
-                                            +form-field-feedback(_, 'required', 'Index fields should be configured')
+                                            +form-field__error({ error: 'required', message: 'Index fields should be configured' })
 
                         list-editable-no-items
                             list-editable-add-item-button(
@@ -265,9 +265,9 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                         ng-messages=`query.queryIndexes.$error`
                         ng-show=`query.queryIndexes.$invalid`
                     )
-                        +form-field-feedback(_, 'complete', 'Some indexes are incomplete')
-                        +form-field-feedback(_, 'fieldsExist', 'Some indexes use unknown fields')
-                        +form-field-feedback(_, 'indexFieldsHaveUniqueNames', 'Each query index field name should be unique')
+                        +form-field__error({ error: 'complete', message: 'Some indexes are incomplete' })
+                        +form-field__error({ error: 'fieldsExist', message: 'Some indexes use unknown fields' })
+                        +form-field__error({ error: 'indexFieldsHaveUniqueNames', message: 'Each query index field name should be unique' })
 
         .pca-form-column-6
             +preview-xml-java(model, 'domainModelQuery')

@@ -101,7 +101,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-messages=`store.keyFields.$error`
                         ng-show=`store.keyFields.$invalid`
                     )
-                        +form-field-feedback(_, 'dbFieldUnique', 'Each key field DB name and Java name should be unique')
+                        +form-field__error({ error: 'dbFieldUnique', message: 'Each key field DB name and Java name should be unique' })
 
             .pc-form-grid-col-60
                 .ignite-form-field
@@ -118,7 +118,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-messages=`store.valueFields.$error`
                         ng-show=`store.valueFields.$invalid`
                     )
-                        +form-field-feedback(_, 'dbFieldUnique', 'Each value field DB name and Java name should be unique')
+                        +form-field__error({ error: 'dbFieldUnique', message: 'Each value field DB name and Java name should be unique' })
 
         .pca-form-column-6
             +preview-xml-java(model, 'domainStore')

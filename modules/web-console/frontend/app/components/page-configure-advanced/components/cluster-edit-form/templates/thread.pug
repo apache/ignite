@@ -56,7 +56,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     max: `{{ $ctrl.Clusters.rebalanceThreadPoolSize.max(${model}) }}`,
                     tip: 'Max count of threads can be used at rebalancing'
                 })
-                    +form-field-feedback('max', 'Rebalance thread pool size should not exceed or be equal to System thread pool size')
+                    +form-field__error({ error: 'max', message: 'Rebalance thread pool size should not exceed or be equal to System thread pool size' })
             .pc-form-grid-col-30
                 +number('Utility cache:', model + '.utilityCacheThreadPoolSize', '"utilityCacheThreadPoolSize"', 'true', 'max(8, availableProcessors)', '1',
                     'Default thread pool size that will be used to process utility cache messages')
@@ -123,7 +123,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                         ng-model-options='{allowInvalid: true}'
                                         data-ignite-form-field-input-autofocus='true'
                                     )
-                                        +form-field-feedback(null, 'uniqueName', 'Service with that name is already configured')
+                                        +form-field__error({ error: 'uniqueName', message: 'Service with that name is already configured' })
                                 .pc-form-grid-col-30
                                     +number('Pool size:', '$item.size', '"ExecutorPoolSize"', 'true', 'max(8, availableProcessors)', '1', 'Thread pool size')
 
@@ -138,8 +138,8 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-messages=`pools.executorConfigurations.$error`
                         ng-show=`pools.executorConfigurations.$invalid`
                     )
-                        +form-field-feedback(_, 'allNamesExist', 'All executor configurations should have a name')
-                        +form-field-feedback(_, 'allNamesUnique', 'All executor configurations should have a unique name')
+                        +form-field__error({ error: 'allNamesExist', message: 'All executor configurations should have a name' })
+                        +form-field__error({ error: 'allNamesUnique', message: 'All executor configurations should have a unique name' })
 
         .pca-form-column-6
             +preview-xml-java(model, 'clusterPools')

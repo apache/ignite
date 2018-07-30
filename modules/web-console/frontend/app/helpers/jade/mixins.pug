@@ -110,23 +110,23 @@ mixin error-feedback(visible, error, errorMessage, name)
 
 //- Mixin for feedback on unique violation.
 mixin unique-feedback(name, errorMessage)
-    +form-field-feedback(name, 'igniteUnique', errorMessage)
+    +form-field__error({ error: 'igniteUnique', message: errorMessage })
 
 //- Mixin for feedback on IP address violation.
 mixin ipaddress-feedback(name)
-    +form-field-feedback(name, 'ipaddress', 'Invalid address!')
+    +form-field__error({ error: 'ipaddress', message: 'Invalid address!' })
 
 //- Mixin for feedback on port of IP address violation.
 mixin ipaddress-port-feedback(name)
-    +form-field-feedback(name, 'ipaddressPort', 'Invalid port!')
+    +form-field__error({ error: 'ipaddressPort', message: 'Invalid port!' })
 
 //- Mixin for feedback on port range violation.
 mixin ipaddress-port-range-feedback(name)
-    +form-field-feedback(name, 'ipaddressPortRange', 'Invalid port range!')
+    +form-field__error({ error: 'ipaddressPortRange', message: 'Invalid port range!' })
 
 //- Mixin for feedback on UUID violation.
 mixin uuid-feedback(name)
-    +form-field-feedback(name, 'uuid', 'Invalid node ID!')
+    +form-field__error({ error: 'uuid', message: 'Invalid node ID!' })
 
 //- Function that convert enabled state to corresponding disabled state.
 -var enabledToDisabled = function (enabled) {
@@ -175,10 +175,10 @@ mixin java-class-autofocus-placholder(label, model, name, enabled, required, aut
         if  block
             block
 
-        +form-field-feedback(name, 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!')
-        +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
-        +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
-        +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
+        +form-field__error({ error: 'javaBuiltInClass', message: `${ errLbl } should not be the Java built-in class!` })
+        +form-field__error({ error: 'javaKeywords', message: `${ errLbl } could not contains reserved Java keyword!` })
+        +form-field__error({ error: 'javaPackageSpecified', message: `${ errLbl } does not have package specified!` })
+        +form-field__error({ error: 'javaIdentifier', message: `${ errLbl } is invalid Java identifier!` })
 
 //- Mixin for Java class name field with auto focus condition.
 mixin java-class-autofocus(lbl, model, name, enabled, required, autofocus, tip, validationActive)
@@ -218,9 +218,9 @@ mixin java-class-typeahead(label, model, name, options, enabled, required, place
         data-java-keywords='true'
         data-validation-active=validationActive ? `{{ ${validationActive} }}` : `'always'`
     )
-        +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
-        +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
-        +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
+        +form-field__error({ error: 'javaKeywords', message: `${ errLbl } could not contains reserved Java keyword!` })
+        +form-field__error({ error: 'javaPackageSpecified', message: `${ errLbl } does not have package specified!` })
+        +form-field__error({ error: 'javaIdentifier', message: `${ errLbl } is invalid Java identifier!` })
 
 //- Mixin for java package field with enabled condition.
 mixin java-package(label, model, name, enabled, required, tip)
@@ -245,8 +245,8 @@ mixin form-field__java-package({ label, model, name, disabled, required, tip })
         data-java-keywords='true'
         data-java-package-name='package-only'
     )
-        +form-field-feedback(name, 'javaPackageName', 'Package name is invalid')
-        +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved java keyword')
+        +form-field__error({ error: 'javaPackageName', message: 'Package name is invalid' })
+        +form-field__error({ error: 'javaKeywords', message: 'Package name could not contains reserved java keyword' })
 
 //- Mixin for text field with IP address check.
 mixin text-ip-address(label, model, name, enabled, placeholder, tip)
@@ -350,7 +350,7 @@ mixin url(label, model, name, enabled, required, placeholder, tip)
         if  block
             block
 
-        +form-field-feedback(name, 'url', errLbl + ' should be a valid URL!')
+        +form-field__error({ error: 'url', message: `${ errLbl } should be a valid URL!` })
 
 //- Mixin for password field.
 mixin password(lbl, model, name, required, placeholder, tip)
@@ -562,10 +562,10 @@ mixin list-java-class-field(label, model, name, items)
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
     )
-        +form-field-feedback(name, 'javaBuiltInClass', label + ' should not be the Java built-in class!')
-        +form-field-feedback(name, 'javaKeywords', label + ' could not contains reserved Java keyword!')
-        +form-field-feedback(name, 'javaPackageSpecified', label + ' does not have package specified!')
-        +form-field-feedback(name, 'javaIdentifier', label + ' is invalid Java identifier!')
+        +form-field__error({ error: 'javaBuiltInClass', message: `${ label } should not be the Java built-in class!` })
+        +form-field__error({ error: 'javaKeywords', message: `${ label } could not contains reserved Java keyword!` })
+        +form-field__error({ error: 'javaPackageSpecified', message: `${ label } does not have package specified!` })
+        +form-field__error({ error: 'javaIdentifier', message: `${ label } is invalid Java identifier!` })
 
         if block
             block
@@ -584,8 +584,8 @@ mixin list-java-package-field(label, model, name, items)
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
     )&attributes(attributes)
-        +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved Java keyword!')
-        +form-field-feedback(name, 'javaPackageName', 'Package name is invalid!')
+        +form-field__error({ error: 'javaKeywords', message: 'Package name could not contains reserved Java keyword!' })
+        +form-field__error({ error: 'javaPackageName', message: 'Package name is invalid!' })
 
         if block
             block
@@ -603,7 +603,7 @@ mixin list-url-field(label, model, name, items)
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
     )
-        +form-field-feedback(name, 'url', 'URL should be valid!')
+        +form-field__error({ error: 'url', message: 'URL should be valid!' })
 
         if block
             block
@@ -633,7 +633,7 @@ mixin list-addresses({ items, name, tip, withPortRange = true })
                 +ipaddress-feedback('"address"')
                 +ipaddress-port-feedback('"address"')
                 +ipaddress-port-range-feedback('"address"')
-                +form-field-feedback('"address"', 'required', 'IP address:port could not be empty!')
+                +form-field__error({ error: 'required', message: 'IP address:port could not be empty!' })
 
         list-editable-no-items
             list-editable-add-item-button(
@@ -704,7 +704,7 @@ mixin form-field__eviction-policy({ model, name, enabled, required, tip })
                 size-scale-label='mb'
                 size-type='bytes'
             )
-                +form-field-feedback(null, 'min', 'Either maximum memory size or maximum size should be greater than 0')
+                +form-field__error({ error: 'min', message: 'Either maximum memory size or maximum size should be greater than 0' })
         .pc-form-grid-col-60
             +form-field__number({
                 label: 'Max size:',
@@ -717,7 +717,7 @@ mixin form-field__eviction-policy({ model, name, enabled, required, tip })
             })(
                 ng-model-options='{allowInvalid: true}'
             )
-                +form-field-feedback(null, 'min', 'Either maximum memory size or maximum size should be greater than 0')
+                +form-field__error({ error: 'min', message: 'Either maximum memory size or maximum size should be greater than 0' })
 
 mixin evictionPolicy(model, name, enabled, required, tip)
     +form-field__eviction-policy({ model, name, enabled, required, tip })

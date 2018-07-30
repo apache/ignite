@@ -88,7 +88,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     ui-validate-watch=`"${model}.domains.length"`
                     ng-model-options='{allowInvalid: true}'
                 )
-                    +form-field-feedback(null, 'offheapAndDomains', 'Query indexing could not be enabled while values are stored off-heap')
+                    +form-field__error({ error: 'offheapAndDomains', message: 'Query indexing could not be enabled while values are stored off-heap' })
             .pc-form-grid-col-60(ng-if=`${model}.memoryMode !== 'OFFHEAP_VALUES'`)
                 +form-field__dropdown({
                     label: 'Off-heap memory:',
@@ -111,7 +111,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     ui-validate-watch=`'${model}.memoryMode'`
                     ng-model-options='{allowInvalid: true}'
                 )
-                    +form-field-feedback(null, 'offheapDisabled', 'Off-heap storage can\'t be disabled when memory mode is OFFHEAP_TIERED')
+                    +form-field__error({ error: 'offheapDisabled', message: 'Off-heap storage can\'t be disabled when memory mode is OFFHEAP_TIERED' })
             .pc-form-grid-col-60(
                 ng-if=`${model}.offHeapMode === 1 && ${model}.memoryMode !== 'OFFHEAP_VALUES'`
                 ng-if-end
