@@ -23,7 +23,7 @@
 web-console-header-extension
 
 .wch-nav-item(ignite-userbar)
-    div(
+    .user-name-wrapper(
         ng-class='{active: $state.includes("base.settings")}'
         ng-click='$event.stopPropagation()'
         bs-dropdown='userbar.items'
@@ -32,4 +32,4 @@ web-console-header-extension
         data-container='self'
     )
         span {{$root.user.firstName}} {{$root.user.lastName}}
-            span.caret
+        span.caret

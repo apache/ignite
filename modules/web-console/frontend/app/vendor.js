@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import 'babel-polyfill';
 import 'jquery';
 import 'angular';
 import 'angular-acl';

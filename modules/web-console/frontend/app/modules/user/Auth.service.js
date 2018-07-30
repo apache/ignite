@@ -15,39 +15,82 @@
  * limitations under the License.
  */
 
-export default ['Auth', ['$http', '$rootScope', '$state', '$window', 'IgniteErrorPopover', 'IgniteMessages', 'gettingStarted', 'User',
-    ($http, $root, $state, $window, ErrorPopover, Messages, gettingStarted, User) => {
-        return {
-            forgotPassword(userInfo) {
-                $http.post('/api/v1/password/forgot', userInfo)
-                    .then(() => $state.go('password.send'))
-                    .catch(({data}) => ErrorPopover.show('forgotEmailInput', Messages.errorMessage(null, data)));
-            },
-            auth(action, userInfo) {
-                $http.post('/api/v1/' + action, userInfo)
-                    .then(() => {
-                        if (action === 'password/forgot')
-                            return;
+/**
+ * @typedef {object} SignupUserInfo
+ * @prop {string} email
+ * @prop {string} password
+ * @prop {string} firstName
+ * @prop {string} lastName
+ * @prop {string} company
+ * @prop {string} country
+ */
 
-                        User.read()
-                            .then((user) => {
-                                $root.$broadcast('user', user);
+export default class AuthService {
+    static $inject = ['$http', '$rootScope', '$state', '$window', 'IgniteMessages', 'gettingStarted', 'User'];
+    /**
+     * @param {ng.IHttpService} $http
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IWindowService} $window
+     */
+    constructor($http, $root, $state, $window, Messages, gettingStarted, User) {
+        this.$http = $http;
+        this.$root = $root;
+        this.$state = $state;
+        this.$window = $window;
+        this.Messages = Messages;
+        this.gettingStarted = gettingStarted;
+        this.User = User;
+    }
+    /**
+     * @param {SignupUserInfo} userInfo
+     */
+    signnup(userInfo) {
+        return this._auth('signup', userInfo);
+    }
+    /**
+     * @param {string} email
+     * @param {string} password
+     */
+    signin(email, password) {
+        return this._auth('signin', {email, password});
+    }
+    /**
+     * @param {string} email
+     */
+    remindPassword(email) {
+        return this._auth('password/forgot', {email}).then(() => this.$state.go('password.send'));
+    }
 
-                                $state.go('default-state');
+    // TODO IGNITE-7994: Remove _auth and move API calls to corresponding methods
+    /**
+     * Performs the REST API call.
+     * @private
+     * @param {('signin'|'signup'|'password/forgot')} action
+     * @param {{email:string,password:string}|SignupUserInfo|{email:string}} userInfo
+     */
+    _auth(action, userInfo) {
+        return this.$http.post('/api/v1/' + action, userInfo)
+            .then(() => {
+                if (action === 'password/forgot')
+                    return;
 
-                                $root.gettingStarted.tryShow();
-                            });
-                    })
-                    .catch((res) => ErrorPopover.show(action + 'EmailInput', Messages.errorMessage(null, res)));
-            },
-            logout() {
-                $http.post('/api/v1/logout')
-                    .then(() => {
-                        User.clean();
+                this.User.read()
+                    .then((user) => {
+                        this.$root.$broadcast('user', user);
 
-                        $window.open($state.href('signin'), '_self');
-                    })
-                    .catch(Messages.showError);
-            }
-        };
-    }]];
+                        this.$state.go('default-state');
+
+                        this.$root.gettingStarted.tryShow();
+                    });
+            });
+    }
+    logout() {
+        return this.$http.post('/api/v1/logout')
+            .then(() => {
+                this.User.clean();
+
+                this.$window.open(this.$state.href('signin'), '_self');
+            })
+            .catch((e) => this.Messages.showError(e));
+    }
+}

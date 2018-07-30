@@ -15,10 +15,39 @@
  * limitations under the License.
  */
 
-export default class PageConfigureController {
-    static $inject = ['$scope'];
+import get from 'lodash/get';
+import {Observable} from 'rxjs/Observable';
+import 'rxjs/add/observable/merge';
+import {combineLatest} from 'rxjs/observable/combineLatest';
+import 'rxjs/add/operator/distinctUntilChanged';
+import {default as ConfigureState} from './services/ConfigureState';
+import {default as ConfigSelectors} from './store/selectors';
 
-    constructor($scope) {
-        Object.assign(this, {$scope});
+export default class PageConfigureController {
+    static $inject = ['$uiRouter', 'ConfigureState', 'ConfigSelectors'];
+
+    /**
+     * @param {uirouter.UIRouter} $uiRouter
+     * @param {ConfigureState} ConfigureState
+     * @param {ConfigSelectors} ConfigSelectors
+     */
+    constructor($uiRouter, ConfigureState, ConfigSelectors) {
+        this.$uiRouter = $uiRouter;
+        this.ConfigureState = ConfigureState;
+        this.ConfigSelectors = ConfigSelectors;
     }
+
+    $onInit() {
+        /** @type {Observable<string>} */
+        this.clusterID$ = this.$uiRouter.globals.params$.pluck('clusterID');
+        const cluster$ = this.clusterID$.switchMap((id) => this.ConfigureState.state$.let(this.ConfigSelectors.selectCluster(id)));
+        const isNew$ = this.clusterID$.map((v) => v === 'new');
+        this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
+            return `${isNew ? 'Create' : 'Edit'} cluster configuration ${isNew ? '' : `‘${get(cluster, 'name')}’`}`;
+        });
+
+        this.tooltipsVisible = true;
+    }
+
+    $onDestroy() {}
 }

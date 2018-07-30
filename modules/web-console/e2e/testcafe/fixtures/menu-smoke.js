@@ -16,8 +16,9 @@
  */
 
 import { Selector } from 'testcafe';
-import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../environment/envtools';
 import { createRegularUser } from '../roles';
+import { queriesNavButton, configureNavButton } from '../components/topNavigation';
 
 const regularUser = createRegularUser();
 
@@ -34,20 +35,14 @@ fixture('Checking Ingite main menu')
         await dropTestDB();
     });
 
-test('Ingite main menu smoke test', async(t) => {
+test('Ignite main menu smoke test', async(t) => {
     await t
-        .click(Selector('a').withAttribute('ui-sref', 'base.configuration.tabs'))
+        .click(configureNavButton)
         .expect(Selector('title').innerText)
-        .eql('Basic Configuration – Apache Ignite Web Console');
+        .eql('Configuration – Apache Ignite Web Console');
 
     await t
-        .click(Selector('a').withText('Queries'))
-        .expect(Selector('h4').withText('New query notebook').exists)
-        .ok()
-        .typeText('#create-notebook', 'Test query')
-        .click('#copy-btn-confirm');
-
-    await t
-        .expect(Selector('span').withText('Connection to Ignite Web Agent is not established').exists)
-        .ok();
+        .click(queriesNavButton)
+        .expect(Selector('title').innerText)
+        .eql('Notebooks – Apache Ignite Web Console');
 });

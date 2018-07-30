@@ -92,6 +92,7 @@ module.exports.factory = function(mongoose) {
     // Define Domain model schema.
     const DomainModel = new Schema({
         space: {type: ObjectId, ref: 'Space', index: true, required: true},
+        clusters: [{type: ObjectId, ref: 'Cluster'}],
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
@@ -125,7 +126,7 @@ module.exports.factory = function(mongoose) {
         generatePojo: Boolean
     });
 
-    DomainModel.index({valueType: 1, space: 1}, {unique: true});
+    DomainModel.index({valueType: 1, space: 1, clusters: 1}, {unique: true});
 
     // Define Cache schema.
     const Cache = new Schema({
@@ -259,7 +260,7 @@ module.exports.factory = function(mongoose) {
         writeBehindFlushThreadCount: Number,
         writeBehindCoalescing: {type: Boolean, default: true},
 
-        invalidate: Boolean,
+        isInvalidate: Boolean,
         defaultLockTimeout: Number,
         atomicWriteOrderMode: {type: String, enum: ['CLOCK', 'PRIMARY']},
         writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
@@ -328,7 +329,7 @@ module.exports.factory = function(mongoose) {
         topologyValidator: String
     });
 
-    Cache.index({name: 1, space: 1}, {unique: true});
+    Cache.index({name: 1, space: 1, clusters: 1}, {unique: true});
 
     const Igfs = new Schema({
         space: {type: ObjectId, ref: 'Space', index: true, required: true},
@@ -376,7 +377,7 @@ module.exports.factory = function(mongoose) {
         updateFileLengthOnFlush: Boolean
     });
 
-    Igfs.index({name: 1, space: 1}, {unique: true});
+    Igfs.index({name: 1, space: 1, clusters: 1}, {unique: true});
 
 
     // Define Cluster schema.
@@ -586,6 +587,7 @@ module.exports.factory = function(mongoose) {
             compactFooter: Boolean
         },
         caches: [{type: ObjectId, ref: 'Cache'}],
+        models: [{type: ObjectId, ref: 'DomainModel'}],
         clockSyncSamples: Number,
         clockSyncFrequency: Number,
         deploymentMode: {type: String, enum: ['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']},

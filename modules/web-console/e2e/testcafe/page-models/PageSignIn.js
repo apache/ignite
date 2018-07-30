@@ -16,22 +16,17 @@
  */
 
 import {Selector, t} from 'testcafe';
-import { resolveUrl } from '../envtools';
-import {AngularJSSelector} from 'testcafe-angular-selectors';
+import {CustomFormField} from '../components/FormField';
 
-export class PageSignIn {
-    async open() {
-        await t.navigateTo(resolveUrl('/signin'));
-
-        this.inputLoginEmail = AngularJSSelector.byModel('ui.email');
-        this.inputLoginPassword = AngularJSSelector.byModel('ui.password');
-        this.signinButton = Selector('#signin_submit');
-    }
-
+export const pageSignin = {
+    email: new CustomFormField({model: '$ctrl.data.email'}),
+    password: new CustomFormField({model: '$ctrl.data.password'}),
+    signinButton: Selector('button').withText('Sign In'),
+    selector: Selector('page-signin'),
     async login(email, password) {
         return await t
-            .typeText(this.inputLoginEmail, email)
-            .typeText(this.inputLoginPassword, password)
+            .typeText(this.email.control, email)
+            .typeText(this.password.control, password)
             .click(this.signinButton);
     }
-}
+};
