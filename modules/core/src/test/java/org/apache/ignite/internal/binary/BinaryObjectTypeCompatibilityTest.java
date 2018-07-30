@@ -141,7 +141,7 @@ public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
      * @param bldr {@code BinaryObjectBuilder}, that will be used for testing.
      * @param fldName Name of the field being tested.
      * @param src Value being tested.
-     * @param <T> Type of the number.
+     * @param <T> Type of the value.
      */
     private <T> void validate(BinaryObjectBuilder bldr, String fldName, T src) {
         bldr.setField(fldName, src);
