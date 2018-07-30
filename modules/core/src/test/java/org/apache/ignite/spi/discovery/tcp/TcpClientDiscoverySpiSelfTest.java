@@ -583,7 +583,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectOnRouterSuspendTopologyChange() throws Exception {
-        reconnectAfterSuspend(true);
+        long clientFailureDetectionTimeoutBackup = clientFailureDetectionTimeout;
+
+        clientFailureDetectionTimeout = 20_000;
+
+        try {
+            reconnectAfterSuspend(true);
+        }
+        finally {
+            clientFailureDetectionTimeout = clientFailureDetectionTimeoutBackup;
+        }
     }
 
     /**
