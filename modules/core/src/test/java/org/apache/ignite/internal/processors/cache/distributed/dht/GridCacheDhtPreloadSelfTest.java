@@ -511,9 +511,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 info(">>> Waiting for preload futures [leftNode=" + g.name() + ", remaining=" + U.grids2names(ignites) + ']');
 
-                awaitPartitionMapExchange(false,
-                    false,
-                    ignites.stream().map(n -> n.cluster().localNode()).collect(Collectors.toList()));
+                awaitPartitionMapExchange();
 
                 info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
