@@ -63,7 +63,7 @@ public class GridDistributedTxMapping {
     /** {@code True} if this is first mapping for optimistic tx on client node. */
     private boolean clientFirst;
 
-    /** Map of affected partitions per node. CacheId -> NodeId */
+    /** Map of affected partitions per cache. CacheId -> parts */
     private Map<Integer, Set<Integer>> parts;
 
     /**
