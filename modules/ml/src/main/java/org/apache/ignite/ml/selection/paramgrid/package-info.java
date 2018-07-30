@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
-
-import java.util.EventListener;
-
 /**
- * Metrics listener for NIO communication.
+ * <!-- Package description. -->
+ * Root package for parameter grid.
  */
-public interface GridNioMetricsListener extends EventListener {
-    /**
-     * @param bytesCnt Number of sent bytes.
-     */
-    public void onBytesSent(int bytesCnt);
-
-    /**
-     * @param bytesCnt Number of received bytes.
-     */
-    public void onBytesReceived(int bytesCnt);
-}
+package org.apache.ignite.ml.selection.paramgrid;
