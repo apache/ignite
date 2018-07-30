@@ -43,14 +43,18 @@
         <!-- Set to true to enable distributed class loading, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
         
+        <!-- Set to false to set this node to be a client. -->
+        <property name="clientMode" value="#{systemEnvironment['CLIENT_MODE']}"/>
+        
         <!-- Set deployment mode.
              In CONTINUOUS mode, the classes do not get un-deployed when master nodes leave the grid. 
              Un-deployment only happens when a class user version changes.         
          --> 
         <property name="deploymentMode" value="#{systemEnvironment['IGNITE_DEPLOYMENT_MODE']}"/>        
                 
-        <!--  Sets failure detection timeout to use in discoverySpi and communicationSpi. -->
+        <!--  Sets failure detection timeouts to use in discoverySpi and communicationSpi. -->
         <property name="failureDetectionTimeout" value="10000"/>
+        <property name="clientFailureDetectionTimeout" value="10000"/>
         
         <!-- Sets flag indicating whether the cluster is enabled to activate automatically 
              after all nodes joined of the pre-defined baseline topology.
