@@ -114,7 +114,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         itemsName: 'value fields'
                     })(name='valueFields')
 
-                    .ignite-form-field__errors(
+                    .form-field__errors(
                         ng-messages=`store.valueFields.$error`
                         ng-show=`store.valueFields.$invalid`
                     )

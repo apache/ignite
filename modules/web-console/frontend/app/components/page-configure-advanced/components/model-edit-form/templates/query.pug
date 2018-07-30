@@ -249,7 +249,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                                     label-single='field to index'
                                                     label-multiple='fields in index'
                                                 )
-                                        .ignite-form-field__errors(
+                                        .form-field__errors(
                                             ng-messages=`$form.indexFields.$error`
                                             ng-show=`$form.indexFields.$invalid`
                                         )
@@ -261,7 +261,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                 label-single='index'
                                 label-multiple='fields'
                             )
-                    .ignite-form-field__errors(
+                    .form-field__errors(
                         ng-messages=`query.queryIndexes.$error`
                         ng-show=`query.queryIndexes.$invalid`
                     )
