@@ -42,13 +42,13 @@ import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
  */
 public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends DatasetTrainer<DecisionTreeNode, Double> {
     /** Max tree deep. */
-    private final int maxDeep;
+    int maxDeep;
 
     /** Min impurity decrease. */
-    private final double minImpurityDecrease;
+    double minImpurityDecrease;
 
     /** Step function compressor. */
-    private final StepFunctionCompressor<T> compressor;
+    StepFunctionCompressor<T> compressor;
 
     /** Decision tree leaf builder. */
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;

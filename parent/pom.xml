@@ -55,7 +55,7 @@
         <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
-        <commons.beanutils.version>1.9.2</commons.beanutils.version>
+        <commons.beanutils.version>1.9.3</commons.beanutils.version>
         <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
@@ -75,7 +75,7 @@
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>1.9.13</jackson.version>
-        <jackson2.version>2.6.5</jackson2.version>
+        <jackson2.version>2.9.6</jackson2.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
@@ -84,8 +84,8 @@
         <jetty.version>9.2.11.v20150529</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
-        <jsch.bundle.version>0.1.53_1</jsch.bundle.version>
-        <jsch.version>0.1.53</jsch.version>
+        <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
+        <jsch.version>0.1.54</jsch.version>
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
@@ -118,7 +118,7 @@
         <spring-5.0.version>5.0.5.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
-        <tomcat.version>8.0.23</tomcat.version>
+        <tomcat.version>9.0.10</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
