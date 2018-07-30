@@ -76,6 +76,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -5268,10 +5269,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         UUID nodeId = e.getKey();
                         ClusterMetrics metrics = e.getValue().metrics();
 
-                        Map<Integer, CacheMetrics> cacheMetrics = e.getValue().cacheMetrics();
-
                         if (metrics != null)
-                            msg.setClientMetrics(locNodeId, nodeId, metrics, cacheMetrics);
+                            msg.setClientMetrics(locNodeId, nodeId, metrics,
+                                e.getValue().cacheMetrics());
 
                         msg.addClientNodeId(nodeId);
                     }
@@ -6665,7 +6665,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 wrk.metrics(msg.metrics());
 
                 wrk.cacheMetrics(msg.cacheMetrics());
-            } else if (log.isDebugEnabled())
+            }
+            else if (log.isDebugEnabled())
                 log.debug("Received client metrics update message from unknown client node: " + msg);
         }
 

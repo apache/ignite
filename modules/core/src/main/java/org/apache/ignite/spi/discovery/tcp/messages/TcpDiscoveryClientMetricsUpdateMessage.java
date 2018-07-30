@@ -17,18 +17,18 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.METRICS_SIZE;
 
 /**
  * Metrics update message.
@@ -40,54 +40,45 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte[] metrics;
+    private byte[] metrics;
 
     /**
      * Constructor.
-     *
      * @param creatorNodeId Creator node.
      * @param metrics Metrics.
+     * @param cacheMetrics
      */
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics) {
         super(creatorNodeId);
-
-        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
-
-        ByteArrayOutputStream byteStream= new ByteArrayOutputStream();
-        ObjectOutputStream objectStream;
-
         try {
-            objectStream = new ObjectOutputStream(byteStream);
+            byte[] metricsArr = ClusterMetricsSnapshot.serialize(metrics);
 
-            objectStream.writeObject(cacheMetrics);
+            byte[] cacheMetricsArr = U.mapToByteArray(cacheMetrics);
+
+            this.metrics = new byte[metricsArr.length + cacheMetricsArr.length];
+
+            U.arrayCopy(metricsArr, 0, this.metrics, 0, metricsArr.length);
+
+            U.arrayCopy(cacheMetricsArr, 0, this.metrics, metricsArr.length, cacheMetricsArr.length);
         }
-        catch (IOException e) {
-            //No-op.
+        catch (IOException ignore) {
+            assert false;
         }
-
-        byte[] src = byteStream.toByteArray();
-
-        U.arrayCopy(src, 0, this.metrics, ClusterMetricsSnapshot.METRICS_SIZE, src.length);
     }
 
+    /**
+     *
+     */
     public Map<Integer, CacheMetrics> cacheMetrics() {
-
-        ByteArrayInputStream s = new ByteArrayInputStream(this.metrics, 16 + ClusterMetricsSnapshot.METRICS_SIZE, 1);
-
-        Map<Integer, CacheMetrics> l = null;
-
         try {
-            ObjectInputStream s2 = new ObjectInputStream(s);
-
-            l = (Map<Integer, CacheMetrics>)s2.readObject();
+            return U.byteArrayToMap(metrics, METRICS_SIZE, metrics.length - METRICS_SIZE);
         }
-        catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        catch (IOException | ClassNotFoundException ignore) {
+            assert false;
         }
 
-
-        return l;
+        return null;
     }
 
     /**

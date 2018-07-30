@@ -17,15 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import com.sun.tools.javac.util.ArrayUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,13 +30,15 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.*;
 
 /**
  * Metrics update message.
@@ -113,7 +110,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
     /**
      * Sets metrics for a client node.
-     *  @param nodeId Server node ID.
+     * @param nodeId Server node ID.
      * @param clientNodeId Client node ID.
      * @param metrics Node metrics.
      * @param cacheMetrics
@@ -246,30 +243,25 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         assert nodeId != null;
         assert metrics != null;
 
-        byte[] buf = new byte[16 + ClusterMetricsSnapshot.METRICS_SIZE];
+        int offset = 16;
+        byte[] byteArr = new byte[0];
+
+        try {
+            byteArr = U.mapToByteArray(cacheMetrics);
+        }
+        catch (IOException ignore) {
+            assert false;
+        }
+
+        byte[] buf = new byte[offset + METRICS_SIZE + (byteArr != null ? byteArr.length : 0 )];
 
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
-        ClusterMetricsSnapshot.serialize(buf, 16, metrics);
+        serialize(buf, offset, metrics);
 
-        if (cacheMetrics != null && cacheMetrics.size() > 0) {
-            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            ObjectOutputStream objectStream;
-
-            try {
-                objectStream = new ObjectOutputStream(byteStream);
-
-                objectStream.writeObject(cacheMetrics);
-            }
-            catch (IOException e) {
-                //No-op.
-            }
-
-            byte[] src = byteStream.toByteArray();
-
-            U.arrayCopy(src, 0, buf, 16 + ClusterMetricsSnapshot.METRICS_SIZE, src.length);
-        }
+        if (cacheMetrics != null && byteArr != null)
+            U.arrayCopy(byteArr, 0, buf, offset + METRICS_SIZE, byteArr.length);
 
         return buf;
     }
@@ -299,14 +291,14 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         public MetricsSet(ClusterMetrics metrics) {
             assert metrics != null;
 
-            this.metrics = ClusterMetricsSnapshot.serialize(metrics);
+            this.metrics = serialize(metrics);
         }
 
         /**
          * @return Deserialized metrics.
          */
         public ClusterMetrics metrics() {
-            return ClusterMetricsSnapshot.deserialize(metrics, 0);
+            return deserialize(metrics, 0);
         }
 
         /**
@@ -317,25 +309,17 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
                 @Override public T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>> apply(byte[] bytes) {
                     UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
 
-                    int offset = 16 + ClusterMetricsSnapshot.METRICS_SIZE;
+                    int offset = 16;
 
-                    Map<Integer, CacheMetrics> l = null;
-
-                    if (bytes.length > offset) {
-                        ByteArrayInputStream s = new ByteArrayInputStream(bytes, offset, 1);
-
-
-                        try {
-                            ObjectInputStream s2 = new ObjectInputStream(s);
-
-                            l = (Map<Integer, CacheMetrics>)s2.readObject();
-                        }
-                        catch (IOException | ClassNotFoundException e) {
-                            e.printStackTrace();
-                        }
+                    try {
+                        return new T3<>(nodeId, deserialize(bytes, offset),
+                            U.byteArrayToMap(bytes, offset + METRICS_SIZE, bytes.length));
+                    }
+                    catch (IOException | ClassNotFoundException ignore) {
+                        assert false;
                     }
 
-                    return new T3<>(nodeId, ClusterMetricsSnapshot.deserialize(bytes, 16), l);
+                    return null;
                 }
             });
         }

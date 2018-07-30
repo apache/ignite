@@ -32,10 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -2728,6 +2731,24 @@ public abstract class IgniteUtils {
         }
 
         return bytes;
+    }
+
+    public static byte[] mapToByteArray(Map map) throws IOException {
+        if (map == null || map.isEmpty())
+            return null;
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        writeMap(new ObjectOutputStream(out), map);
+
+        return out.toByteArray();
+    }
+
+    public static <K, V> Map<K, V> byteArrayToMap(byte[] byteArray, int offset, int length) throws IOException, ClassNotFoundException {
+        if (byteArray == null || byteArray.length <= offset)
+            return null;
+
+        return readMap(new ObjectInputStream(new ByteArrayInputStream(byteArray, offset, length)));
     }
 
     /**
