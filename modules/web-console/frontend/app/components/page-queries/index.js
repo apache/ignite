@@ -21,7 +21,7 @@ import queriesNotebooksList from './components/queries-notebooks-list';
 import queriesNotebook from './components/queries-notebook';
 import pageQueriesCmp from './component';
 
-import Notebook from './notebook.service';
+import Notebook from './notebook.service1';
 
 export default angular.module('ignite-console.sql', [
     'ui.router',

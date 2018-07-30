@@ -23,7 +23,7 @@ export function registerState($uiRouter) {
     const state = {
         url: '/signin',
         name: 'signin',
-        component: 'pageSignin',
+        component: 'pageSignin1',
         unsaved: true,
         redirectTo: (trans) => {
             const skipStates = new Set(['signup', 'forgotPassword', 'landing']);

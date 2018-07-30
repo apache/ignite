@@ -22,7 +22,7 @@ export default class Notebook {
      * @param $state
      * @param confirmModal
      * @param Messages
-     * @param {NotebookData} NotebookData
+     * @param {NotebookData1} NotebookData
      */
     constructor($state, confirmModal, Messages, NotebookData) {
         this.$state = $state;

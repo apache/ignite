@@ -18,7 +18,7 @@
 import angular from 'angular';
 import templateUrl from './template.tpl.pug';
 import { NotebookCtrl } from './controller';
-import NotebookData from '../../notebook.data';
+import NotebookData1 from '../../notebook.data1';
 import './style.scss';
 
 export default angular.module('ignite-console.sql.notebook', [])
@@ -26,4 +26,4 @@ export default angular.module('ignite-console.sql.notebook', [])
         controller: NotebookCtrl,
         templateUrl
     })
-    .service('IgniteNotebookData', NotebookData);
+    .service('IgniteNotebookData', NotebookData1);
