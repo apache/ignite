@@ -1546,8 +1546,12 @@ public class GridSqlQuerySplitter {
      * @return {@code true} If the given AST has partitioned tables.
      */
     private static boolean hasPartitionedTables(GridSqlAst ast) {
-        if (ast instanceof GridSqlTable)
-            return ((GridSqlTable)ast).dataTable().isPartitioned();
+        if (ast instanceof GridSqlTable) {
+            if (((GridSqlTable)ast).dataTable() != null)
+                return ((GridSqlTable)ast).dataTable().isPartitioned();
+            else
+                return false;
+        }
 
         for (int i = 0; i < ast.size(); i++) {
             if (hasPartitionedTables(ast.child(i)))
@@ -1739,8 +1743,8 @@ public class GridSqlQuerySplitter {
         if (from instanceof GridSqlTable) {
             GridSqlTable tbl = (GridSqlTable)from;
 
-            String schemaName = tbl.dataTable().identifier().schema();
-            String tblName = tbl.dataTable().identifier().table();
+            String schemaName = tbl.dataTable() != null ? tbl.dataTable().identifier().schema() : tbl.schema();
+            String tblName = tbl.dataTable() != null ? tbl.dataTable().identifier().table() : tbl.tableName();
 
             tbls.add(new QueryTable(schemaName, tblName));
 

@@ -18,9 +18,22 @@
 queries-notebook {
     // TODO: Delete this breadcrumbs styles after template refactoring to new design.
     .notebooks-top {
-        margin-bottom: 20px;
         display: flex;
         align-items: center;
+        margin: 40px 0 30px;
+        flex-direction: row;
+
+        h1 {
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            align-content: center;
+
+            label {
+                font-size: 24px;
+                margin-right: 10px;
+            }
+        }
 
         breadcrumbs {
             padding-left: 0;
@@ -34,24 +47,6 @@ queries-notebook {
             margin-left: 30px;
             display: inline-flex;
         }
-    }
-
-    .docs-content > header {
-        margin: 0;
-        margin-bottom: 30px;
-
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-
-        h1 {
-            margin: 0;
-            margin-right: 8px;
-        }
-    }
-
-    .affix + .block-information {
-        margin-top: 90px;
     }
 
     .block-information {
@@ -106,6 +101,20 @@ queries-notebook {
         .sql-editor {
             width: 100%;
             margin: 0;
+        }
+    }
+
+    .notebook-top-buttons {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+
+        button:first-of-type {
+            margin-right: 20px;
+        }
+
+        a {
+            color: rgb(57, 57, 57);
         }
     }
 
