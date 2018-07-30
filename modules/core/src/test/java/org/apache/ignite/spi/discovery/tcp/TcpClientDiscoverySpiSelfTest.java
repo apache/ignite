@@ -583,16 +583,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectOnRouterSuspendTopologyChange() throws Exception {
-        long clientFailureDetectionTimeoutBackup = clientFailureDetectionTimeout;
-
         clientFailureDetectionTimeout = 20_000;
 
-        try {
-            reconnectAfterSuspend(true);
-        }
-        finally {
-            clientFailureDetectionTimeout = clientFailureDetectionTimeoutBackup;
-        }
+        reconnectAfterSuspend(true);
     }
 
     /**
@@ -1274,6 +1267,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     public void testTimeoutWaitingNodeAddedMessage() throws Exception {
         longSockTimeouts = true;
+
+        clientFailureDetectionTimeout = 20_000;
 
         startServerNodes(2);
 
