@@ -22,8 +22,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
-
 /**
  * Exception thrown from ignite cache API if cache is restarting.
  */
