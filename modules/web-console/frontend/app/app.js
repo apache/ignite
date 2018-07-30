@@ -86,6 +86,7 @@ import SqlTypes from './services/SqlTypes.service';
 import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
+import ErrorParser from './services/ErrorParser.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Caches from './services/Caches';
@@ -285,6 +286,7 @@ export default angular.module('ignite-console', [
 .service(...Focus)
 .service(...InetAddress)
 .service(...Messages)
+.service('IgniteErrorParser', ErrorParser)
 .service(...ModelNormalizer)
 .service(...LegacyTable)
 .service(...FormUtils)
