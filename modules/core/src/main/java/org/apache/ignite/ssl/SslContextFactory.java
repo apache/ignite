@@ -93,6 +93,9 @@ public class SslContextFactory implements Factory<SSLContext> {
     /** Enabled cipher suites. */
     private String[] cipherSuites;
 
+    /** Enabled cipher suites. */
+    private String[] protocols;
+
     /**
      * Gets key store type used for context creation.
      *
@@ -301,6 +304,22 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
+     * Gets enabled cipher suites
+     * @return enabled cipher suites
+     */
+    public String[] getProtocols() {
+        return protocols;
+    }
+
+    /**
+     * Sets enabled protocols.
+     * @param protocols enabled protocols.
+     */
+    public void setProtocols(String[] protocols) {
+        this.protocols = protocols;
+    }
+
+    /**
      * Creates SSL context based on factory settings.
      *
      * @return Initialized SSL context.
@@ -330,15 +349,19 @@ public class SslContextFactory implements Factory<SSLContext> {
 
             SSLContext ctx = SSLContext.getInstance(proto);
 
-            if(cipherSuites != null) {
-                SSLParameters sslParameters = new SSLParameters(cipherSuites);
+            if(cipherSuites != null || protocols != null) {
+                SSLParameters sslParameters = new SSLParameters();
 
-                SSLContextWrapper wrapper = new SSLContextWrapper(ctx, sslParameters);
+                if(cipherSuites != null)
+                    sslParameters.setCipherSuites(cipherSuites);
 
-                wrapper.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+                if(protocols != null)
+                    sslParameters.setProtocols(protocols);
 
-                ctx = wrapper;
+                ctx = new SSLContextWrapper(ctx, sslParameters);
             }
+
+            ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
 
             return ctx;
         }

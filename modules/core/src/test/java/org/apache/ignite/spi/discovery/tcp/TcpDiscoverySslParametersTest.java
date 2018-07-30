@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.concurrent.Callable;
-import javax.net.ssl.SSLParameters;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -28,10 +27,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
-public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
+public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
 
     /** */
     private volatile String[] cipherSuites;
+
+    /** */
+    private volatile String[] protocols;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -40,6 +42,8 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
         SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
 
         factory.setCipherSuites(cipherSuites);
+
+        factory.setProtocols(protocols);
 
         cfg.setSslContextFactory(factory);
 
@@ -54,7 +58,7 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSameCipherSuites() throws Exception {
+    public void testSameCipherSuite() throws Exception {
         checkDiscoverySuccess(
             new String[][] {
                 new String[] {
@@ -67,14 +71,15 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
                     "TLS_RSA_WITH_AES_128_GCM_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 }
-            }
+            },
+            null
         );
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOneEqualCipherSuite() throws Exception {
+    public void testOneCommonCipherSuite() throws Exception {
         checkDiscoverySuccess(
             new String[][] {
                 new String[] {
@@ -85,7 +90,8 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
                     "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 }
-            }
+            },
+            null
         );
     }
 
@@ -102,17 +108,80 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
                     "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 }
+            },
+            null
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoCommonProtocols() throws Exception {
+        checkDiscoveryFailure(
+            null,
+            new String[][] {
+                new String[] {
+                    "TLSv1.1",
+                    "SSLv3"
+                },
+                new String[] {
+                    "TLSv1",
+                    "TLSv1.2",
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSameProtocols() throws Exception {
+        checkDiscoverySuccess(null,
+            new String[][] {
+                new String[] {
+                    "TLSv1.1",
+                    "TLSv1.2",
+                },
+                new String[] {
+                    "TLSv1.1",
+                    "TLSv1.2",
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOneCommonProtocol() throws Exception {
+        checkDiscoverySuccess(null,
+            new String[][] {
+                new String[] {
+                    "TLSv1",
+                    "TLSv1.1",
+                    "TLSv1.2",
+                },
+                new String[] {
+                    "TLSv1.1",
+                    "SSLv3"
+                }
             }
         );
     }
 
     /**
      * @param cipherSuites list of cipher suites
+     * @param protocols list of protocols
      * @throws Exception If failed.
      */
-    private void checkDiscoverySuccess(String[][] cipherSuites) throws Exception {
-        for (int i = 0; i < cipherSuites.length; i++) {
-            this.cipherSuites = cipherSuites[i];
+    private void checkDiscoverySuccess(String[][] cipherSuites, String[][] protocols) throws Exception {
+        int n = Math.max(
+            cipherSuites != null ? cipherSuites.length : 0,
+            protocols != null ? protocols.length : 0);
+
+        for (int i = 0; i < n; i++) {
+            this.cipherSuites = cipherSuites != null && i < cipherSuites.length ? cipherSuites[i] : null;
+            this.protocols = protocols != null && i < protocols.length ? protocols[i] : null;
 
             startGrid(i);
         }
@@ -120,15 +189,22 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
 
     /**
      * @param cipherSuites list of cipher suites
+     * @param protocols list of protocols
      * @throws Exception If failed.
      */
-    private void checkDiscoveryFailure(String[][] cipherSuites) throws Exception {
-        this.cipherSuites = cipherSuites[0];
+    private void checkDiscoveryFailure(String[][] cipherSuites, String[][] protocols) throws Exception {
+        this.cipherSuites = cipherSuites != null ? cipherSuites[0] : null;
+        this.protocols = protocols != null ? protocols[0] : null;
 
         startGrid(0);
 
-        for (int i = 1; i < cipherSuites.length; i++) {
-            this.cipherSuites = cipherSuites[i];
+        int n = Math.max(
+            cipherSuites != null ? cipherSuites.length : 0,
+            protocols != null ? protocols.length : 0);
+
+        for (int i = 1; i < n; i++) {
+            this.cipherSuites = cipherSuites != null && i < cipherSuites.length ? cipherSuites[i] : null;
+            this.protocols = protocols != null && i < protocols.length ? protocols[i] : null;
 
             int finalI = i;
 
