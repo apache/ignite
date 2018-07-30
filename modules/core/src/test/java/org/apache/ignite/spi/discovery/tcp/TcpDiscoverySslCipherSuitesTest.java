@@ -39,7 +39,7 @@ public class TcpDiscoverySslCipherSuitesTest extends GridCommonAbstractTest {
 
         SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
 
-        factory.setSslParameters(new SSLParameters(cipherSuites));
+        factory.setCipherSuites(cipherSuites);
 
         cfg.setSslContextFactory(factory);
 

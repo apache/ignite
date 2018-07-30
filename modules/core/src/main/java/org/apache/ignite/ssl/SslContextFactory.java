@@ -90,8 +90,8 @@ public class SslContextFactory implements Factory<SSLContext> {
     /** Trust managers. */
     private TrustManager[] trustMgrs;
 
-    /** */
-    private SSLParameters sslParameters;
+    /** Enabled cipher suites. */
+    private String[] cipherSuites;
 
     /**
      * Gets key store type used for context creation.
@@ -285,19 +285,19 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets {@link SSLParameters}.
-     * @param sslParameters SSLParameters instance
+     * Sets enabled cipher suites.
+     * @param cipherSuites enabled cipher suites.
      */
-    public void setSslParameters(SSLParameters sslParameters) {
-        this.sslParameters = sslParameters;
+    public void setCipherSuites(String[] cipherSuites) {
+        this.cipherSuites = cipherSuites;
     }
 
     /**
-     * Gets SSLParameters instance.
-     * @return {@link SSLParameters}
+     * Gets enabled cipher suites
+     * @return enabled cipher suites
      */
-    public SSLParameters getSslParameters() {
-        return sslParameters;
+    public String[] getCipherSuites() {
+        return cipherSuites;
     }
 
     /**
@@ -330,11 +330,17 @@ public class SslContextFactory implements Factory<SSLContext> {
 
             SSLContext ctx = SSLContext.getInstance(proto);
 
-            SSLContextWrapper wrapper = new SSLContextWrapper(ctx, sslParameters);
+            if(cipherSuites != null) {
+                SSLParameters sslParameters = new SSLParameters(cipherSuites);
 
-            wrapper.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+                SSLContextWrapper wrapper = new SSLContextWrapper(ctx, sslParameters);
 
-            return wrapper;
+                wrapper.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+
+                ctx = wrapper;
+            }
+
+            return ctx;
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize SSL context " + parameters(), e);
