@@ -726,80 +726,86 @@ public class GridDhtPartitionDemander {
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
+            // Preload.
+            for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
+                int p = e.getKey();
 
-            grp.checkpointReadLocker().checkpointReadLock();
+                if (aff.get(p).contains(ctx.localNode())) {
+                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
-            try {
-                // Preload.
-                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
-                    int p = e.getKey();
+                    assert part != null;
 
-                    if (aff.get(p).contains(ctx.localNode())) {
-                        GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                    boolean last = supply.last().containsKey(p);
 
-                        assert part != null;
+                    if (part.state() == MOVING) {
+                        boolean reserved = part.reserve();
 
-                        boolean last = supply.last().containsKey(p);
+                        assert reserved : "Failed to reserve partition [igniteInstanceName=" +
+                            ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
-                        if (part.state() == MOVING) {
-                            boolean reserved = part.reserve();
+                        part.lock();
 
-                            assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                                ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
+                        try {
+                            Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
 
-                            part.lock();
+                            // Loop through all received entries and try to preload them.
+                            while (infos.hasNext()) {
+                                grp.checkpointReadLocker().checkpointReadLock();
 
-                            try {
-                                // Loop through all received entries and try to preload them.
-                                for (GridCacheEntryInfo entry : e.getValue().infos()) {
-                                    if (!preloadEntry(node, p, entry, topVer)) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Got entries for invalid partition during " +
-                                                "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+                                try {
+                                    for (int i = 0; i < 100; i++) {
+                                        if (!infos.hasNext())
+                                            break;
 
-                                        break;
+                                        GridCacheEntryInfo entry = infos.next();
+
+                                        if (!preloadEntry(node, p, entry, topVer)) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Got entries for invalid partition during " +
+                                                        "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+
+                                            break;
+                                        }
+
+                                        for (GridCacheContext cctx : grp.caches()) {
+                                            if (cctx.statisticsEnabled())
+                                                cctx.cache().metrics0().onRebalanceKeyReceived();
+                                        }
                                     }
-
-                                    if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
-                                        cctx = ctx.cacheContext(entry.cacheId());
-
-                                    if (cctx != null && cctx.statisticsEnabled())
-                                        cctx.cache().metrics0().onRebalanceKeyReceived();
                                 }
-
-                                // If message was last for this partition,
-                                // then we take ownership.
-                                if (last) {
-                                    fut.partitionDone(nodeId, p, true);
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Finished rebalancing partition: " + part);
+                                finally {
+                                    grp.checkpointReadLocker().checkpointReadUnlock();
                                 }
                             }
-                            finally {
-                                part.unlock();
-                                part.release();
+
+                            // If message was last for this partition,
+                            // then we take ownership.
+                            if (last) {
+                                fut.partitionDone(nodeId, p, true);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Finished rebalancing partition: " + part);
                             }
                         }
-                        else {
-                            if (last)
-                                fut.partitionDone(nodeId, p, false);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
+                        finally {
+                            part.unlock();
+                            part.release();
                         }
                     }
                     else {
-                        fut.partitionDone(nodeId, p, false);
+                        if (last)
+                            fut.partitionDone(nodeId, p, false);
 
                         if (log.isDebugEnabled())
-                            log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
+                            log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                     }
                 }
-            }
-            finally {
-                grp.checkpointReadLocker().checkpointReadUnlock();
+                else {
+                    fut.partitionDone(nodeId, p, false);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
+                }
             }
 
             // Only request partitions based on latest topology version.

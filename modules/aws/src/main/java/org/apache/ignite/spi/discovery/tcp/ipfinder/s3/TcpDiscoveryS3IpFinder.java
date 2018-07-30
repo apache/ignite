@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.StringTokenizer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -63,6 +64,7 @@ import org.jetbrains.annotations.Nullable;
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
  *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
+ *      <li>Server side encryption algorithm (see {@link #setKeyPrefix(String)})</li>
  * </ul>
  * <p>
  * The finder will create S3 bucket with configured name. The bucket will contain entries named
@@ -96,11 +98,14 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Bucket name. */
     private String bucketName;
 
-    /** Bucket endpoint */
-    private @Nullable String bucketEndpoint;
+    /** Bucket endpoint. */
+    @Nullable private String bucketEndpoint;
 
-    /** Server side encryption algorithm */
-    private @Nullable String sseAlg;
+    /** Server side encryption algorithm. */
+    @Nullable private String sseAlg;
+
+    /** Sub-folder name to write node addresses. */
+    @Nullable private String keyPrefix;
 
     /** Init guard. */
     @GridToStringExclude
@@ -135,16 +140,25 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
         Collection<InetSocketAddress> addrs = new LinkedList<>();
 
         try {
-            ObjectListing list = s3.listObjects(bucketName);
+            ObjectListing list;
+
+            if (keyPrefix == null)
+                list = s3.listObjects(bucketName);
+            else
+                list = s3.listObjects(bucketName, keyPrefix);
 
             while (true) {
                 for (S3ObjectSummary sum : list.getObjectSummaries()) {
                     String key = sum.getKey();
+                    String addr = key;
 
-                    StringTokenizer st = new StringTokenizer(key, DELIM);
+                    if (keyPrefix != null)
+                        addr = key.replaceFirst(Pattern.quote(keyPrefix), "");
+
+                    StringTokenizer st = new StringTokenizer(addr, DELIM);
 
                     if (st.countTokens() != 2)
-                        U.error(log, "Failed to parse S3 entry due to invalid format: " + key);
+                        U.error(log, "Failed to parse S3 entry due to invalid format: " + addr);
                     else {
                         String addrStr = st.nextToken();
                         String portStr = st.nextToken();
@@ -155,7 +169,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                             port = Integer.parseInt(portStr);
                         }
                         catch (NumberFormatException e) {
-                            U.error(log, "Failed to parse port for S3 entry: " + key, e);
+                            U.error(log, "Failed to parse port for S3 entry: " + addr, e);
                         }
 
                         if (port != -1)
@@ -163,7 +177,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                                 addrs.add(new InetSocketAddress(addrStr, port));
                             }
                             catch (IllegalArgumentException e) {
-                                U.error(log, "Failed to parse port for S3 entry: " + key, e);
+                                U.error(log, "Failed to parse port for S3 entry: " + addr, e);
                             }
                     }
                 }
@@ -230,7 +244,12 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
         SB sb = new SB();
 
-        sb.a(addr.getAddress().getHostAddress())
+        String addrStr = addr.getAddress().getHostAddress();
+
+        if (keyPrefix != null)
+            sb.a(keyPrefix);
+
+        sb.a(addrStr)
             .a(DELIM)
             .a(addr.getPort());
 
@@ -307,7 +326,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @return Client instance to use to connect to AWS.
      */
-    private AmazonS3Client createAmazonS3Client() {
+    AmazonS3Client createAmazonS3Client() {
         AmazonS3Client cln = cfg != null
             ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
             : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
@@ -332,9 +351,8 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets bucket endpoint for IP finder.
-     * If the endpoint is not set then IP finder will go to each region to find a corresponding bucket.
-     * For information about possible endpoint names visit
+     * Sets bucket endpoint for IP finder. If the endpoint is not set then IP finder will go to each region to find a
+     * corresponding bucket. For information about possible endpoint names visit
      * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>.
      *
      * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
@@ -348,8 +366,8 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys.
-     * For information about possible S3-managed encryption keys visit
+     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys. For information about possible
+     * S3-managed encryption keys visit
      * <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>.
      *
      * @param sseAlg Server-side encryption algorithm, for example, AES256 or SSES3.
@@ -403,6 +421,22 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     @IgniteSpiConfiguration(optional = false)
     public TcpDiscoveryS3IpFinder setAwsCredentialsProvider(AWSCredentialsProvider credProvider) {
         this.credProvider = credProvider;
+
+        return this;
+    }
+
+    /**
+     * This can be thought of as the sub-folder within the bucket that will hold the node addresses.
+     * <p>
+     * For details visit
+     * <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html"/>
+     *
+     * @param keyPrefix AWS credentials provider.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoveryS3IpFinder setKeyPrefix(String keyPrefix) {
+        this.keyPrefix = keyPrefix;
 
         return this;
     }

@@ -184,6 +184,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
 
+    /** When this interval pass connection check will be performed. */
+    private static final int CON_CHECK_INTERVAL = 500;
+
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
@@ -317,7 +320,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public long connectionCheckInterval() {
-        return msgWorker.connCheckFreq;
+        return CON_CHECK_INTERVAL;
     }
 
     /** {@inheritDoc} */
@@ -1859,6 +1862,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.quietAndInfo(log, b.toString());
     }
 
+    /** {@inheritDoc} */
+    @Override public void dumpRingStructure(IgniteLogger log) {
+        U.quietAndInfo(log, ring.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentTopologyVersion() {
+        return ring.topologyVersion();
+    }
+
     /**
      * @param msg Message.
      * @return {@code True} if recordable in debug mode.
@@ -2399,12 +2412,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             msgs.add(new PendingMessage(msg));
 
             while (msgs.size() > MAX) {
-                PendingMessage polled = msgs.poll();
+                PendingMessage queueHead = msgs.peek();
 
-                assert polled != null;
+                assert queueHead != null;
 
-                if (polled.id.equals(discardId))
+                if (queueHead.customMsg && customDiscardId != null) {
+                    if (queueHead.id.equals(customDiscardId))
+                        customDiscardId = null;
+                }
+                else if (!queueHead.customMsg && discardId != null) {
+                    if (queueHead.id.equals(discardId))
+                        discardId = null;
+                }
+                else
                     break;
+
+                msgs.poll();
             }
         }
 
@@ -2613,9 +2636,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Flag that keeps info on whether the threshold is reached or not. */
         private boolean failureThresholdReached;
 
-        /** Connection check frequency. */
-        private long connCheckFreq;
-
         /** Connection check threshold. */
         private long connCheckThreshold;
 
@@ -2629,7 +2649,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             super("tcp-disco-msg-worker", log, 10,
                 spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
 
-            initConnectionCheckFrequency();
+            initConnectionCheckThreshold();
         }
 
         /**
@@ -2721,23 +2741,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
-        private void initConnectionCheckFrequency() {
+        private void initConnectionCheckThreshold() {
             if (spi.failureDetectionTimeoutEnabled())
                 connCheckThreshold = spi.failureDetectionTimeout();
             else
                 connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.metricsUpdateFreq);
 
-            for (int i = 3; i > 0; i--) {
-                connCheckFreq = connCheckThreshold / i;
-
-                if (connCheckFreq > 10)
-                    break;
-            }
-
-            assert connCheckFreq > 0;
-
             if (log.isInfoEnabled())
-                log.info("Connection check frequency is calculated: " + connCheckFreq);
+                log.info("Connection check threshold is calculated: " + connCheckThreshold);
         }
 
         /**
@@ -4355,7 +4366,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    spi.collectExchangeData(dataPacket);
+                    if (!node.isDaemon())
+                        spi.collectExchangeData(dataPacket);
 
                     processMessageFailedNodes(msg);
                 }
@@ -5442,8 +5454,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);
-                        else
+                        else {
+                            registerPendingMessage(msg);
+
                             processCustomMessage(msg);
+                        }
                     }
 
                     msg.message(null, msg.messageBytes());
@@ -5681,7 +5696,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isInfoEnabled())
                     log.info("Local node seems to be disconnected from topology (failure detection timeout " +
                         "is reached) [failureDetectionTimeout=" + spi.failureDetectionTimeout() +
-                        ", connCheckFreq=" + connCheckFreq + ']');
+                        ", connCheckInterval=" + CON_CHECK_INTERVAL + ']');
 
                 failureThresholdReached = true;
 
@@ -5689,7 +5704,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 lastTimeConnCheckMsgSent = 0;
             }
 
-            long elapsed = (lastTimeConnCheckMsgSent + connCheckFreq) - U.currentTimeMillis();
+            long elapsed = (lastTimeConnCheckMsgSent + CON_CHECK_INTERVAL) - U.currentTimeMillis();
 
             if (elapsed > 0)
                 return;
@@ -5702,6 +5717,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 lastTimeConnCheckMsgSent = U.currentTimeMillis();
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return String.format("%s, nextNode=[%s]", super.toString(), next);
         }
     }
 
@@ -6027,7 +6047,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         long now = U.currentTimeMillis();
 
                         // We got message from previous in less than double connection check interval.
-                        boolean ok = rcvdTime + msgWorker.connCheckFreq * 2 >= now;
+                        boolean ok = rcvdTime + CON_CHECK_INTERVAL * 2 >= now;
 
                         if (ok) {
                             // Check case when previous node suddenly died. This will speed up
@@ -6071,7 +6091,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (log.isInfoEnabled()) {
                             log.info("Previous node alive: [alive=" + ok + ", lastMessageReceivedTime="
-                                + rcvdTime + ", now=" + now + ", connCheckFreq=" + msgWorker.connCheckFreq + ']');
+                                + rcvdTime + ", now=" + now + ", connCheckInterval=" + CON_CHECK_INTERVAL + ']');
                         }
                     }
 

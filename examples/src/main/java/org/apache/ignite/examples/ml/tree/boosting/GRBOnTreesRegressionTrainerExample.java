@@ -23,11 +23,12 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Example represents a solution for the task of regression learning based on
@@ -38,7 +39,7 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class GRBOnTreesRegressionTrainerExample {
     /**
-     * Executes example.
+     * Run example.
      *
      * @param args Command line arguments, none required.
      */
@@ -51,16 +52,8 @@ public class GRBOnTreesRegressionTrainerExample {
                 GRBOnTreesRegressionTrainerExample.class.getSimpleName(), () -> {
 
                 // Create cache with training data.
-                CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
-                trainingSetCfg.setName("TRAINING_SET");
-                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-                IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
-                for(int i = -50; i <= 50; i++) {
-                    double x = ((double)i) / 10.0;
-                    double y = Math.pow(x, 2);
-                    trainingSet.put(i, new double[] {x, y});
-                }
+                CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
+                IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
                 // Create regression trainer.
                 DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.);
@@ -69,7 +62,7 @@ public class GRBOnTreesRegressionTrainerExample {
                 Model<Vector, Double> mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] { v[0] },
+                    (k, v) -> VectorUtils.of(v[0]),
                     (k, v) -> v[1]
                 );
 
@@ -90,8 +83,34 @@ public class GRBOnTreesRegressionTrainerExample {
             });
 
             igniteThread.start();
-
             igniteThread.join();
         }
+    }
+
+    /**
+     * Create cache configuration.
+     */
+    @NotNull private static CacheConfiguration<Integer, double[]> createCacheConfiguration() {
+        CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
+        trainingSetCfg.setName("TRAINING_SET");
+        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+        return trainingSetCfg;
+    }
+
+    /**
+     * Fill parabola training data.
+     *
+     * @param ignite Ignite.
+     * @param trainingSetCfg Training set config.
+     */
+    @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
+        CacheConfiguration<Integer, double[]> trainingSetCfg) {
+        IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
+        for(int i = -50; i <= 50; i++) {
+            double x = ((double)i) / 10.0;
+            double y = Math.pow(x, 2);
+            trainingSet.put(i, new double[] {x, y});
+        }
+        return trainingSet;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.selection.scoring.cursor;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.junit.Test;
 
@@ -39,7 +40,7 @@ public class LocalLabelPairCursorTest {
         LabelPairCursor<Integer> cursor = new LocalLabelPairCursor<>(
             data,
             (k, v) -> v % 2 == 0,
-            (k, v) -> new double[]{v},
+            (k, v) -> VectorUtils.of(v),
             (k, v) -> v,
             vec -> (int)vec.get(0)
         );

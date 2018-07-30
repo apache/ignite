@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -65,7 +66,7 @@ public class LSQROnHeapTest {
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
-                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
             )
         );
@@ -88,7 +89,7 @@ public class LSQROnHeapTest {
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
-                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
             )
         );
@@ -119,7 +120,7 @@ public class LSQROnHeapTest {
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
-                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[4]}
             )
         )) {

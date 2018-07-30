@@ -28,6 +28,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -70,14 +71,13 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, double[]> featureExtractor,
+    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
         List<Double> uniqLabels = new ArrayList<Double>(
             builder.build(new EmptyContextBuilder<>(), new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lExtractor))
-                .compute((IgniteFunction<LabeledDataset<Double,LabeledVector>, Set<Double>>) x -> {
-                        return Arrays.stream(x.labels()).boxed().collect(Collectors.toSet());
-                    }, (a, b) -> {
+                .compute((IgniteFunction<LabeledDataset<Double,LabeledVector>, Set<Double>>) x ->
+                    Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
                         if (a == null)
                             return b;
                         if (b == null)

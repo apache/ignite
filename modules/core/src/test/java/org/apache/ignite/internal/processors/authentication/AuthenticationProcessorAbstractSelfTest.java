@@ -91,6 +91,7 @@ public abstract class AuthenticationProcessorAbstractSelfTest extends GridCommon
         if (persistenceEnabled()) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true)));
         }
 
