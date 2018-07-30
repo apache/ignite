@@ -77,7 +77,7 @@ const DEMO_NOTEBOOK = {
     expandedParagraphs: [0, 1, 2]
 };
 
-export default class NotebookData1 {
+export default class NotebookData {
     static $inject = ['$rootScope', '$http', '$q'];
 
     constructor($root, $http, $q) {
