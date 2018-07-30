@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from '../../envtools';
+import {dropTestDB, resolveUrl, insertTestUser} from '../../environment/envtools';
 import {pageSignup as page} from '../../page-models/pageSignup';
 import {errorNotification} from '../../components/notifications';
 import {userMenu} from '../../components/userMenu';
@@ -31,8 +31,6 @@ fixture('Signup')
     });
 
 test('Local validation', async(t) => {
-    const isButtonDisabled = page.signupButton.hasAttribute('disabled');
-    await t.expect(isButtonDisabled).ok('Button disabled by default');
     await page.fillSignupForm({
         email: 'foobar',
         password: '1',
@@ -45,18 +43,7 @@ test('Local validation', async(t) => {
     await t
         .expect(page.email.getError('email').exists).ok()
         .expect(page.passwordConfirm.getError('mismatch').exists).ok()
-        .expect(page.firstName.getError('required').exists).ok()
-        .expect(isButtonDisabled).ok('Button disabled with invalid fields');
-    await page.fillSignupForm({
-        email: 'foobar@bar.baz',
-        password: '1',
-        passwordConfirm: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        company: 'FooBar',
-        country: 'Brazil'
-    });
-    await t.expect(isButtonDisabled).notOk('Button enabled with valid fields');
+        .expect(page.firstName.getError('required').exists).ok();
 });
 test('Server validation', async(t) => {
     await page.fillSignupForm({

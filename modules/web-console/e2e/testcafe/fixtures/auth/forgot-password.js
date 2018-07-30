@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { dropTestDB, resolveUrl, insertTestUser } from '../../envtools';
+import { dropTestDB, resolveUrl, insertTestUser } from '../../environment/envtools';
 import {PageSignIn} from '../../page-models/pageSignin';
 import {errorNotification} from '../../components/notifications';
 import {pageForgotPassword as page} from '../../page-models/pageForgotPassword';
@@ -33,8 +33,7 @@ fixture('Password reset')
 test('Incorrect email', async(t) => {
     await t
         .typeText(page.email.control, 'aa')
-        .expect(page.email.getError('email').exists).ok('Marks field as invalid')
-        .expect(page.remindPasswordButton.getAttribute('disabled')).ok('Disables submit button');
+        .expect(page.email.getError('email').exists).ok('Marks field as invalid');
 });
 
 test('Unknown email', async(t) => {

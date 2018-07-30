@@ -36,7 +36,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +number('Client failure detection timeout:', model + '.clientFailureDetectionTimeout', '"clientFailureDetectionTimeout"', 'true',
                     '30000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
 
-            .pc-form-grid-col-60(ng-init='failoverSpiTbl={type: "failoverSpi", model: "failoverSpi", focusId: "kind", ui: "failover-table"}')
+            .pc-form-grid-col-60
                 mixin clusters-failover-spi
                     .ignite-form-field
                         +ignite-form-field__label('Failover SPI configurations:', '"failoverSpi"')
@@ -44,10 +44,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         .ignite-form-field__control
                             -let items = failoverSpi
 
-                            list-editable(ng-model=items name='failoverSpi')
-                                list-editable-item-edit
-                                    - form = '$parent.form'
-                                    .settings-row
+                            list-editable.pc-list-editable-with-form-grid(ng-model=items name='failoverSpi')
+                                list-editable-item-edit.pc-form-grid-row
+                                    .pc-form-grid-col-60
                                         +sane-ignite-form-field-dropdown({
                                             required: true,
                                             label: 'Failover SPI:',
@@ -66,13 +65,13 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                             </ul>`
                                         })
 
-                                    .settings-row(ng-show='$item.kind === "JobStealing"')
+                                    .pc-form-grid-col-60(ng-show='$item.kind === "JobStealing"')
                                         +number('Maximum failover attempts:', '$item.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts"', 'true', '5', '0',
                                             'Maximum number of attempts to execute a failed job on another node')
-                                    .settings-row(ng-show='$item.kind === "Always"')
+                                    .pc-form-grid-col-60(ng-show='$item.kind === "Always"')
                                         +number('Maximum failover attempts:', '$item.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts"', 'true', '5', '0',
                                             'Maximum number of attempts to execute a failed job on another node')
-                                    .settings-row(ng-show=failoverCustom)
+                                    .pc-form-grid-col-60(ng-show=failoverCustom)
                                         +java-class('SPI implementation', '$item.Custom.class', '"failoverSpiClass"', 'true', failoverCustom,
                                             'Custom FailoverSpi implementation class name.', failoverCustom)
 

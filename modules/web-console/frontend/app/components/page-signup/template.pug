@@ -20,7 +20,7 @@ web-console-header
     web-console-header-left
         ignite-header-title
 
-.container.body-container
+.container--responsive.body-container
     section
         -var form = '$ctrl.form'
         h3 Don't Have An Account?
@@ -114,7 +114,6 @@ web-console-header
             footer.full-width.form-footer
                 button.btn-ignite.btn-ignite--primary(
                     type='submit'
-                    ng-disabled=`!$ctrl.canSubmitForm(${form})`
                 ) Sign Up
         footer.page-signup__has-account-message
             | Already have an account? #[a(ui-sref='signin') Sign in here]

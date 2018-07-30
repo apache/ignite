@@ -20,11 +20,11 @@ web-console-header
     web-console-header-left
         ignite-header-title
 
-.container.body-container
+.container--responsive.body-container
     section
         - const form = '$ctrl.form'
         h3 Forgot password?
-        p That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
+        p Enter the email address for your account & we'll email you a link to reset your password.
         form(name=form novalidate ng-submit='$ctrl.remindPassword()')
             +form-field__email({
                 label: 'Email:',
@@ -44,7 +44,6 @@ web-console-header
                 button.btn-ignite.btn-ignite--primary(
                     tabindex='1'
                     type='submit'
-                    ng-disabled=`!$ctrl.canSubmitForm(${form})`
                 ) Send it to me
 
 web-console-footer

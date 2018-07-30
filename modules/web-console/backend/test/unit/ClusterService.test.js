@@ -153,17 +153,17 @@ suite('ClusterServiceTestsSuite', () => {
             .then((clusters) => {
                 assert.equal(clusters.length, 2);
 
-                assert.equal(clusters[0].name, 'cluster-caches');
+                assert.equal(clusters[0].name, 'cluster-igfs');
                 assert.isNotNull(clusters[0].discovery);
-                assert.equal(clusters[0].cachesCount, 5);
-                assert.equal(clusters[0].modelsCount, 5);
-                assert.equal(clusters[0].igfsCount, 0);
+                assert.equal(clusters[0].cachesCount, 2);
+                assert.equal(clusters[0].modelsCount, 2);
+                assert.equal(clusters[0].igfsCount, 1);
 
-                assert.equal(clusters[1].name, 'cluster-igfs');
+                assert.equal(clusters[1].name, 'cluster-caches');
                 assert.isNotNull(clusters[1].discovery);
-                assert.equal(clusters[1].cachesCount, 2);
-                assert.equal(clusters[1].modelsCount, 5);
-                assert.equal(clusters[1].igfsCount, 1);
+                assert.equal(clusters[1].cachesCount, 5);
+                assert.equal(clusters[1].modelsCount, 3);
+                assert.equal(clusters[1].igfsCount, 0);
             })
             .then(done)
             .catch(done);
@@ -179,7 +179,7 @@ suite('ClusterServiceTestsSuite', () => {
             .then((output) => {
                 assert.isNotNull(output);
 
-                assert.equal(output.n, 1);
+                assert.equal(output.rowsAffected, 1);
             })
             .then(() => clusterService.get(testAccounts[0]._id, false, cluster._id))
             .then((savedCluster) => {
@@ -277,9 +277,7 @@ suite('ClusterServiceTestsSuite', () => {
             })
             .then(() => cacheService.get(testAccounts[0]._id, false, _.head(testClusters).caches[1]))
             .then((c2) => {
-                assert.isNotNull(c2);
-                assert.equal(c2.cacheMode, 'PARTITIONED');
-                assert.isTrue(c2.readThrough);
+                assert.isNull(c2);
             })
             .then(done)
             .catch(done);

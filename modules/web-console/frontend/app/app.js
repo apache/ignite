@@ -29,6 +29,7 @@ import './modules/demo/Demo.module';
 import './modules/states/logout.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
+import './modules/states/settings.state';
 
 // ignite:modules
 import './core';
@@ -85,6 +86,7 @@ import SqlTypes from './services/SqlTypes.service';
 import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
+import ErrorParser from './services/ErrorParser.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Caches from './services/Caches';
@@ -104,9 +106,6 @@ import duration from './filters/duration.filter';
 import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 import id8 from './filters/id8.filter';
-
-// Controllers
-import resetPassword from './controllers/reset-password.controller';
 
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
@@ -131,14 +130,17 @@ import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
+import uiGridColumnResizer from './components/ui-grid-column-resizer';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
-import connectedClusters from './components/connected-clusters';
+import connectedClusters from './components/connected-clusters-badge';
+import connectedClustersDialog from './components/connected-clusters-dialog';
 import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
 import progressLine from './components/progress-line';
+import formField from './components/form-field';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -152,13 +154,10 @@ import igniteServices from './services';
 import uiAceJava from './directives/ui-ace-java';
 import uiAceSpring from './directives/ui-ace-spring';
 
-// Inject external modules.
-import IgniteModules from 'IgniteModules/index';
-
 import baseTemplate from 'views/base.pug';
 import * as icons from '../public/images/icons';
 
-angular.module('ignite-console', [
+export default angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
@@ -196,6 +195,7 @@ angular.module('ignite-console', [
     'ignite-console.states.logout',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
+    'ignite-console.states.settings',
     // Common modules.
     'ignite-console.dialog',
     'ignite-console.navbar',
@@ -224,6 +224,7 @@ angular.module('ignite-console', [
     bsSelectMenu.name,
     uiGridHovering.name,
     uiGridFilters.name,
+    uiGridColumnResizer.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
@@ -232,6 +233,7 @@ angular.module('ignite-console', [
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,
+    connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
     exposeInput.name,
@@ -246,8 +248,7 @@ angular.module('ignite-console', [
     breadcrumbs.name,
     passwordVisibility.name,
     progressLine.name,
-    // Ignite modules.
-    IgniteModules.name
+    formField.name
 ])
 .service($exceptionHandler.name, $exceptionHandler)
 // Directives.
@@ -285,6 +286,7 @@ angular.module('ignite-console', [
 .service(...Focus)
 .service(...InetAddress)
 .service(...Messages)
+.service('IgniteErrorParser', ErrorParser)
 .service(...ModelNormalizer)
 .service(...LegacyTable)
 .service(...FormUtils)
@@ -295,8 +297,6 @@ angular.module('ignite-console', [
 .service(CSV.name, CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
-// Controllers.
-.controller(...resetPassword)
 // Filters.
 .filter('byName', byName)
 .filter('defaultName', defaultName)
@@ -315,11 +315,6 @@ angular.module('ignite-console', [
             url: '',
             abstract: true,
             template: baseTemplate
-        })
-        .state('base.settings', {
-            url: '/settings',
-            abstract: true,
-            template: '<ui-view></ui-view>'
         });
 
     $urlRouterProvider.otherwise('/404');

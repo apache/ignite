@@ -20,7 +20,7 @@ web-console-header
     web-console-header-left
         ignite-header-title
 
-.container.body-container
+.container--responsive.body-container
     section
         -var form = '$ctrl.form'
         h3 Sign In
@@ -36,7 +36,7 @@ web-console-header
                 autocomplete='email'
                 ignite-auto-focus
             )
-                +form-field__error({error: 'server', message: `{{$ctrl.serverErrors.}`})
+                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
             +form-field__password({
                 label: 'Password:',
                 model: '$ctrl.data.password',
@@ -47,12 +47,11 @@ web-console-header
                 ng-model-options='{allowInvalid: true}'
                 autocomplete='current-password'
             )
-                +form-field__error({error: 'server', message: `{{$ctrl.serverErrors}}`})
+                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
             footer.form-footer
                 a(ui-sref='forgotPassword({email: $ctrl.data.email})') Forgot password?
                 button.btn-ignite.btn-ignite--primary(
                     type='submit'
-                    ng-disabled=`!$ctrl.canSubmitForm(${form})`
                 ) Sign In
         footer.page-signin__no-account-message
             | Don't have an account? #[a(ui-sref='signup') Get started]
