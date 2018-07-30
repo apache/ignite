@@ -1748,7 +1748,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param startMissing If {@code true}, not started public caches will be started, otherwise they are not returned
      * @return Collection of public cache names
      */
-    public Collection<String> publicCacheNames(boolean startMissing) {
+    public Collection<String> publicCacheNames(final boolean startMissing) {
         return F.viewReadOnly(cacheDescriptors().values(),
             new IgniteClosure<DynamicCacheDescriptor, String>() {
                 @Override public String apply(DynamicCacheDescriptor desc) {
