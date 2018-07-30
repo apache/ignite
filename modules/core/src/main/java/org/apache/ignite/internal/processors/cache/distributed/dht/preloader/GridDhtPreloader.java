@@ -185,7 +185,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         final IgniteInternalFuture<Boolean> rebFut = rebalanceFuture();
 
         if (rebFut.isDone() && !rebFut.result())
-            return true; //Required, previous rebalance cancelled.
+            return true; // Required, previous rebalance cancelled.
 
         final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
 

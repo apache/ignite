@@ -548,7 +548,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         boolean waitNode2PartUpdate,
         @Nullable Collection<ClusterNode> nodes
     ) throws InterruptedException {
-        awaitPartitionMapExchange(waitEvicts, waitNode2PartUpdate, nodes, false, false);
+        awaitPartitionMapExchange(waitEvicts, waitNode2PartUpdate, nodes, false);
     }
 
     /**
@@ -572,26 +572,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         boolean waitNode2PartUpdate,
         @Nullable Collection<ClusterNode> nodes,
         boolean printPartState
-    ) throws InterruptedException {
-        awaitPartitionMapExchange(waitEvicts, waitNode2PartUpdate, nodes, false, false);
-    }
-
-    /**
-     * @param waitEvicts If {@code true} will wait for evictions finished.
-     * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
-     * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
-     *      be filtered
-     * @param printPartState If {@code true} will print partition state if evictions not happened.
-     * @param silent If {@code true} will not show warn output on waiting for map updates.
-     * @throws InterruptedException If interrupted.
-     */
-    @SuppressWarnings("BusyWait")
-    protected void awaitPartitionMapExchange(
-        boolean waitEvicts,
-        boolean waitNode2PartUpdate,
-        @Nullable Collection<ClusterNode> nodes,
-        boolean printPartState,
-        boolean silent
     ) throws InterruptedException {
         long timeout = getPartitionMapExchangeTimeout();
 
@@ -708,7 +688,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
-                                    if (!silent)
+                                    if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
                                             "igniteInstanceName=" + g.name() +
                                             ", cache=" + cfg.getName() +
@@ -726,7 +706,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     match = true;
                             }
                             else {
-                                if (!silent)
+                                if (i % 50 == 0)
                                     LT.warn(log(), "Waiting for topology map update [" +
                                         "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
@@ -758,7 +738,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
 
-                                Thread.sleep(100); // Busy wait.
+                                Thread.sleep(20); // Busy wait.
 
                                 continue;
                             }

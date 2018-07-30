@@ -232,7 +232,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -240,7 +240,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -248,7 +248,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -256,7 +256,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(2);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
@@ -319,11 +319,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(4);
 
-        awaitPartitionMapExchange(false, false, null, true, true);
-
         concurrentStartFinished = true;
 
-        awaitPartitionMapExchange(true, true, null, true, false);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -482,7 +480,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     while (!concurrentStartFinished2)
                         U.sleep(10);
 
-                    awaitPartitionMapExchange(false, false, null, true, true);
+                    awaitPartitionMapExchange();
 
                     //New cache should start rebalancing.
                     CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
@@ -535,7 +533,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         t2.join();
         t3.join();
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -554,19 +552,19 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
         stopGrid(0);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
         stopGrid(2);
 
-        awaitPartitionMapExchange(true, true, null, true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
@@ -578,7 +576,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(3);
 
-        awaitPartitionMapExchange(false, false, null, true, true);
+        awaitPartitionMapExchange();
 
         checkSupplyContextMapIsEmpty();
 

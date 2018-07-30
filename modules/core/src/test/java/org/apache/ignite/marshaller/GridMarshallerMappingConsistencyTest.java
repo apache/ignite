@@ -121,7 +121,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
 
         startGrid(2);
 
-        awaitPartitionMapExchange(false, false, null, true, true);
+        awaitPartitionMapExchange();
 
         stopAllGrids();
 

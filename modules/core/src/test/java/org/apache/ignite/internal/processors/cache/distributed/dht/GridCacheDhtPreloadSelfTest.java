@@ -272,11 +272,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 // Check all left nodes.
                 checkActiveState(ignites);
 
-                awaitPartitionMapExchange(false,
-                    false,
-                    null,
-                    true,
-                    true);
+                awaitPartitionMapExchange(); // Need wait, otherwise test logic is broken if EVT_NODE_FAILED exchanges are merged.
             }
 
             info("Finished waiting for preload futures.");
@@ -517,9 +513,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 awaitPartitionMapExchange(false,
                     false,
-                    ignites.stream().map(n -> n.cluster().localNode()).collect(Collectors.toList()),
-                    true,
-                    true);
+                    ignites.stream().map(n -> n.cluster().localNode()).collect(Collectors.toList()));
 
                 info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 

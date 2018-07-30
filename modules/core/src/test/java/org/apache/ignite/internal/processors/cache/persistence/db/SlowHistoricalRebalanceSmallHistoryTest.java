@@ -158,7 +158,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
         SUPPLY_MESSAGE_LATCH.get().countDown();
 
         // Partition is OWNING on grid(0) and grid(1)
-        awaitPartitionMapExchange(false, false, null, true, true);
+        awaitPartitionMapExchange();
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; i < 500; i++)
@@ -179,7 +179,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         startGrid(0);
 
-        awaitPartitionMapExchange(false, false, null, true, true);
+        awaitPartitionMapExchange();
 
         assertEquals(2, grid(1).context().discovery().aliveServerNodes().size());
     }
