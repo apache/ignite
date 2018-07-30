@@ -54,6 +54,7 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         System.setProperty("zookeeper.forceSync", "false");
+        System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
