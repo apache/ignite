@@ -282,7 +282,6 @@ public abstract class AuthenticationProcessorNodeRestartAbstractTest extends Gri
                     while (usrCnt.get() < 200) {
                         String user = "test" + usrCnt.getAndIncrement();
 
-                        System.out.println("+++ CREATE  " + user);
                         grid(0).context().authentication().addUser(user, "init");
                     }
                 }
@@ -303,8 +302,6 @@ public abstract class AuthenticationProcessorNodeRestartAbstractTest extends Gri
                     while (usrCnt.get() < 200) {
                         String user = "test" + usrCnt.getAndIncrement();
 
-                        System.out.println("+++ ALTER " + user);
-
                         grid(0).context().authentication().updateUser(user, "passwd_" + user);
                     }
                 }
@@ -315,12 +312,10 @@ public abstract class AuthenticationProcessorNodeRestartAbstractTest extends Gri
             }
         }, 3, "user-op");
 
-        System.out.println("+++ STOP");
         stopGrid(0, true);
 
         U.sleep(1000);
 
-        System.out.println("+++ START");
         startGrid(0);
 
         AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
