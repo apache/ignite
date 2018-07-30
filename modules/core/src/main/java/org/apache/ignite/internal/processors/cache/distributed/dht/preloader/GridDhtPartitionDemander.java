@@ -236,7 +236,7 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Future.
      * @return {@code True} if rebalance topology version changed by exchange thread or force
-     *         reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
+     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
         return !ctx.exchange().rebalanceTopologyVersion().equals(fut.topVer) ||
@@ -261,7 +261,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
-     * future based on them. Cancel previous rebalance future and send rebalance started event.
+     * future based on them. Cancels previous rebalance future and sends rebalance started event.
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
      * @param assignments Assignments to process.
@@ -358,17 +358,6 @@ public class GridDhtPartitionDemander {
 
                 return null;
             }
-
-            // Add all supplier nodes before first request send to them to avoid race between
-            // adding remaining nodes and processing response, see RebalanceFuture#checkIsDone(boolean)
-            // Also used to restart rebalance in case affinity is the same but some supplier
-            // nodes left, see GridDhtPreloader#rebalanceRequired for details.
-            assignments.forEach((k, v) -> {
-                assert v.partitions() != null :
-                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
-
-                fut.remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
-            });
 
             return () -> {
                 if (next != null)
@@ -986,6 +975,17 @@ public class GridDhtPartitionDemander {
 
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
+
+            // Add all supplier nodes before first request send to them to avoid race between
+            // adding remaining nodes and processing response, see RebalanceFuture#checkIsDone(boolean)
+            // Also used to restart rebalance in case affinity is the same but some supplier
+            // nodes left, see GridDhtPreloader#rebalanceRequired for details.
+            assignments.forEach((k, v) -> {
+                assert v.partitions() != null :
+                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
+
+                remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
+            });
 
             this.grp = grp;
             this.log = log;

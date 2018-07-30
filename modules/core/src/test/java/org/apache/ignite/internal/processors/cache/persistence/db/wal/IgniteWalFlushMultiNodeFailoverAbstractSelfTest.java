@@ -194,7 +194,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
 
-                    awaitPartitionMapExchange(false, false, null, true, true);
+                    awaitPartitionMapExchange();
                 }
                 catch (Throwable expected) {
                     // There can be any exception. Do nothing.

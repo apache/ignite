@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.Collections;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -62,11 +61,7 @@ public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncS
 
         ((TestTcpDiscoverySpi)grid(1).configuration().getDiscoverySpi()).simulateNodeFailure();
 
-        awaitPartitionMapExchange(false,
-            false,
-            Collections.singletonList(ignite.localNode()),
-            true,
-            true);
+        awaitPartitionMapExchange(false, false, Collections.singletonList(ignite.localNode()));
 
         checkSupplyContextMapIsEmpty();
     }

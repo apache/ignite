@@ -142,7 +142,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
 
         ignite.cluster().active(true);
 
-        awaitPartitionMapExchange(false, false, null, true, true);
+        awaitPartitionMapExchange();
 
         List<String> issues = new ArrayList<>();
         HashMap<Integer, Long> partMap = new HashMap<>();
