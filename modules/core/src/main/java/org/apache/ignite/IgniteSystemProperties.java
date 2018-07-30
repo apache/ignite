@@ -480,6 +480,9 @@ public final class IgniteSystemProperties {
     /** Disable SQL system views. */
     public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
 
+    /** SQL reducer retry timeout. */
+    public static final String IGNITE_SQL_REDUCER_RETRY_TIMEOUT = "IGNITE_SQL_REDUCER_RETRY_TIMEOUT";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 

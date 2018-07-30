@@ -319,7 +319,7 @@ public class GridMapQueryExecutor {
 
             // Cache was not found, probably was not deployed yet.
             if (cctx == null) {
-                logFailedReservation("Failed to reserve partitions for query (cache is not found on local node) [" +
+                logRetry("Failed to reserve partitions for query (cache is not found on local node) [" +
                     "rmtNodeId=" + nodeId + ", reqId=" + reqId + ", affTopVer=" + topVer + ", cacheId=" +
                     cacheIds.get(i) + "]");
 
@@ -337,7 +337,7 @@ public class GridMapQueryExecutor {
             if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
                 if (r != MapReplicatedReservation.INSTANCE) {
                     if (!r.reserve()) {
-                        logFailedReservation("Failed to reserve partitions for query (group reservation failed) [" +
+                        logRetry("Failed to reserve partitions for query (group reservation failed) [" +
                             "rmtNodeId=" + nodeId + ", reqId=" + reqId + ", affTopVer=" + topVer +
                             ", cacheId=" + cacheIds.get(i) + ", cacheName=" + cctx.name() + "]");
 
@@ -359,7 +359,7 @@ public class GridMapQueryExecutor {
                             GridDhtPartitionState partState = part != null ? part.state() : null;
 
                             if (partState != OWNING) {
-                                logFailedReservation("Failed to reserve partitions for query (partition of " +
+                                logRetry("Failed to reserve partitions for query (partition of " +
                                     "REPLICATED cache is not in OWNING state) [rmtNodeId=" + nodeId +
                                     ", reqId=" + reqId + ", affTopVer=" + topVer + ", cacheId=" + cacheIds.get(i) +
                                     ", cacheName=" + cctx.name() + ", part=" + p + ", partFound=" + (part != null) +
@@ -383,7 +383,7 @@ public class GridMapQueryExecutor {
                         GridDhtPartitionState partState = part != null ? part.state() : null;
 
                         if (partState != OWNING || !part.reserve()) {
-                            logFailedReservation("Failed to reserve partitions for query (partition of " +
+                            logRetry("Failed to reserve partitions for query (partition of " +
                                 "PARTITIONED cache cannot be reserved) [rmtNodeId=" + nodeId + ", reqId=" + reqId +
                                 ", affTopVer=" + topVer + ", cacheId=" + cacheIds.get(i) +
                                 ", cacheName=" + cctx.name() + ", part=" + partId + ", partFound=" + (part != null) +
@@ -398,7 +398,7 @@ public class GridMapQueryExecutor {
                         partState = part.state();
 
                         if (part.state() != OWNING) {
-                            logFailedReservation("Failed to reserve partitions for query (partition of " +
+                            logRetry("Failed to reserve partitions for query (partition of " +
                                 "PARTITIONED cache is not in OWNING state after reservation) [rmtNodeId=" + nodeId +
                                 ", reqId=" + reqId + ", affTopVer=" + topVer + ", cacheId=" + cacheIds.get(i) +
                                 ", cacheName=" + cctx.name() + ", part=" + partId + ", partState=" + partState + "]");
@@ -434,7 +434,7 @@ public class GridMapQueryExecutor {
      *
      * @param msg Message.
      */
-    private void logFailedReservation(String msg) {
+    private void logRetry(String msg) {
         U.warn(log, msg);
     }
 
@@ -793,7 +793,7 @@ public class GridMapQueryExecutor {
             GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
             if (retryErr != null) {
-                logFailedReservation("Failed to execute non-collocated query (will retry) [nodeId=" + node.id() +
+                logRetry("Failed to execute non-collocated query (will retry) [nodeId=" + node.id() +
                     ", reqId=" + reqId + ", errMsg=" + retryErr.getMessage() + ']');
 
                 sendRetry(node, reqId, segmentId);
