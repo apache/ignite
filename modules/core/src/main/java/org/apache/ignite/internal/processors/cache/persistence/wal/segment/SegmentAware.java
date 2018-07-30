@@ -57,7 +57,7 @@ public class SegmentAware {
         reservationStorage.release(absIdx);
     }
 
-    public void awaitSegment(long absSegIdx) throws InterruptedException, StopException {
+    public void awaitSegment(long absSegIdx) throws InterruptedException, IgniteInterruptedCheckedException {
         segmentCurrentStorage.awaitSegment(absSegIdx);
     }
 
@@ -68,18 +68,18 @@ public class SegmentAware {
     /**
      * @param lastAbsArchivedIdx new value of last archived segment index
      */
-    public void markAsMovedToArchive(long toArchive) throws InterruptedException, StopException {
+    public void markAsMovedToArchive(long toArchive) throws InterruptedException, IgniteInterruptedCheckedException {
         archivedMonitor.markAsMovedToArchive(toArchive);
     }
 
     /**
      * @param lastAbsArchivedIdx new value of last archived segment index
      */
-    public long nextAbsoluteSegmentIndex() throws InterruptedException, StopException {
+    public long nextAbsoluteSegmentIndex() throws InterruptedException, IgniteInterruptedCheckedException {
         return segmentCurrentStorage.nextAbsoluteSegmentIndex();
     }
 
-    public long waitNextArchiveSegment() throws InterruptedException, StopException {
+    public long waitNextArchiveSegment() throws InterruptedException, IgniteInterruptedCheckedException {
 //            assert lastAbsArchivedIdx() <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx() +
 //                ", current=" + curAbsWalIdx;
 
@@ -120,7 +120,7 @@ public class SegmentAware {
      * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
      * Waits if there's no segment to archive right now.
      */
-    public long nextSegmentToCompressOrWait() throws InterruptedException, IgniteCheckedException, StopException {
+    public long nextSegmentToCompressOrWait() throws InterruptedException, IgniteCheckedException, IgniteInterruptedCheckedException {
         return Math.max(segmentCompressStorage.nextSegmentToCompressOrWait(), lastTruncatedArchiveIdx + 1);
     }
 

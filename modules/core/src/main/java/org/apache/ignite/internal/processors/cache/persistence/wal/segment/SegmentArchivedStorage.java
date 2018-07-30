@@ -91,7 +91,7 @@ class SegmentArchivedStorage {
         }
     }
 
-    synchronized void markAsMovedToArchive(long toArchive) throws InterruptedException, StopException {
+    synchronized void markAsMovedToArchive(long toArchive) throws InterruptedException, IgniteInterruptedCheckedException {
         while (segmentLockStorage.locked(toArchive) && !stopped)
             wait();
 
@@ -102,9 +102,9 @@ class SegmentArchivedStorage {
     }
 
 
-    private void checkForStop() throws StopException {
+    private void checkForStop() throws IgniteInterruptedCheckedException {
         if (stopped) {
-            throw new StopException();
+            throw new IgniteInterruptedCheckedException("");
         }
     }
     /**

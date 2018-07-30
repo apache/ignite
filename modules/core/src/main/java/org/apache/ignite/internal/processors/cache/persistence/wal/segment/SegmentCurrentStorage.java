@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+
 /**
  * Storage for state of absolute current segment index.
  */
@@ -50,7 +52,7 @@ class SegmentCurrentStorage {
      *
      * @param absSegIdx Target WAL index.
      */
-    public void awaitSegment(long absSegIdx) throws InterruptedException, StopException {
+    public void awaitSegment(long absSegIdx) throws InterruptedException, IgniteInterruptedCheckedException {
         synchronized (this) {
             while (curAbsWalIdx < absSegIdx && !stopped)
                 wait();
@@ -63,9 +65,9 @@ class SegmentCurrentStorage {
         }
     }
 
-    private void checkForStop() throws StopException {
+    private void checkForStop() throws IgniteInterruptedCheckedException {
         if (stopped) {
-            throw new StopException();
+            throw new IgniteInterruptedCheckedException("");
         }
     }
 
@@ -85,7 +87,7 @@ class SegmentCurrentStorage {
      *
      * @return Next absolute segment index.
      */
-    synchronized long nextAbsoluteSegmentIndex() throws InterruptedException, StopException {
+    synchronized long nextAbsoluteSegmentIndex() throws InterruptedException, IgniteInterruptedCheckedException {
         curAbsWalIdx++;
 
         // Notify archiver thread.

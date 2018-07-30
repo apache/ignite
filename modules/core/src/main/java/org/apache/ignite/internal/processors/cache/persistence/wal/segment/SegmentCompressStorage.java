@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
  *
@@ -63,7 +63,7 @@ public class SegmentCompressStorage {
      * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
      * Waits if there's no segment to archive right now.
      */
-    public long nextSegmentToCompressOrWait() throws InterruptedException, StopException {
+    public long nextSegmentToCompressOrWait() throws InterruptedException, IgniteInterruptedCheckedException {
         long segmentToCompress = lastCompressedIdx + 1;
 
         synchronized (this) {
@@ -79,9 +79,9 @@ public class SegmentCompressStorage {
         return segmentToCompress;
     }
 
-    private void checkForStop() throws StopException {
+    private void checkForStop() throws IgniteInterruptedCheckedException {
         if (stopped) {
-            throw new StopException();
+            throw new IgniteInterruptedCheckedException("");
         }
     }
 

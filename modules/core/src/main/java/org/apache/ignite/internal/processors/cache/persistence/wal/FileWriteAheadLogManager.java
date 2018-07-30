@@ -96,7 +96,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentAware;
-import org.apache.ignite.internal.processors.cache.persistence.wal.segment.StopException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -1616,7 +1615,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
             }
-            catch (StopException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 synchronized (this) {
                     stopped = true;
                 }
@@ -1663,10 +1662,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     while (nextIdx % dsCfg.getWalSegments() > formatted && cleanErr == null)
                         wait();
                 }
-                catch (StopException e) {
-                    throw new StorageException(e.getMessage());
-                }
-                catch (InterruptedException ignore) {
+                catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
                     interrupted.set(true);
                 }
 
@@ -1812,7 +1808,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException, StopException {
+        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException, IgniteInterruptedCheckedException {
             long segmentToCompress = segmentAware.nextSegmentToCompressOrWait();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -1884,15 +1880,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     segmentAware.lastCompressedIdx(currReservedSegment);
                 }
+                catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
+                    Thread.currentThread().interrupt();
+                }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Compression of WAL segment [idx=" + currReservedSegment +
                         "] was skipped due to unexpected error", e);
 
 //                    lastCompressedIdx++;
                 }
-                catch (InterruptedException | StopException ignore) {
-                    Thread.currentThread().interrupt();
-                }
+
                 finally {
                     if (currReservedSegment != -1)
                         release(new FileWALPointer(currReservedSegment, 0, 0));
