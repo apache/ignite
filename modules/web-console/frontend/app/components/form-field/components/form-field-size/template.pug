@@ -53,13 +53,23 @@ include /app/helpers/jade/mixins
     ng-show=`($ctrl.ngModel.$dirty || $ctrl.ngModel.$touched || $ctrl.ngModel.$submitted) && $ctrl.ngModel.$invalid`
 )
     div(ng-transclude)
-    div(ng-message='required')
-        | This field could not be empty
-    div(ng-message='min')
-        | Value is less than allowable minimum: {{ $ctrl.min/$ctrl.sizeScale.value }} {{$ctrl.sizeScale.label}}
-    div(ng-message='max')
-        | Value is more than allowable maximum: {{ $ctrl.max/$ctrl.sizeScale.value }} {{$ctrl.sizeScale.label}}
-    div(ng-message='number')
-        | Only numbers allowed
-    div(ng-message='step')
-        | Invalid step
+    +form-field__error({
+        error: 'required',
+        message: 'This field could not be empty'
+    })
+    +form-field__error({
+        error: 'min',
+        message: 'Value is less than allowable minimum: {{ $ctrl.min/$ctrl.sizeScale.value }} {{$ctrl.sizeScale.label}}'
+    })
+    +form-field__error({
+        error: 'max',
+        message: 'Value is more than allowable maximum: {{ $ctrl.max/$ctrl.sizeScale.value }} {{$ctrl.sizeScale.label}}'
+    })
+    +form-field__error({
+        error: 'number',
+        message: 'Only numbers allowed'
+    })
+    +form-field__error({
+        error: 'required',
+        message: 'Invalid step'
+    })

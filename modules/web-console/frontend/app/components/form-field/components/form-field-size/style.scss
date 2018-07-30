@@ -19,6 +19,7 @@ form-field-size {
     @import "./../../../../../public/stylesheets/variables.scss";
 
     position: relative;
+    display: block;
     width: 100%;
     font-family: Roboto;
 
@@ -44,14 +45,6 @@ form-field-size {
             flex: 0 0 auto;
             width: 60px !important;
             line-height: initial !important;
-        }
-    }
-
-    &.ng-invalid:not(.ng-pristine),
-    &.ng-invalid.ng-touched {
-        input, .btn-ignite {
-            border-color: $ignite-brand-primary !important;
-            box-shadow: inset 0 1px 3px 0 rgba($ignite-brand-primary, .5) !important;
         }
     }
 }
