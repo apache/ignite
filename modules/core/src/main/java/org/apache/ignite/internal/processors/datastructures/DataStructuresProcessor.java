@@ -278,21 +278,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * Handle cache stop.
-     *
-     * @param ctx Cache context.
-     */
-    public void onCacheStop(GridCacheContext ctx) {
-        if (ctx.userCache())
-            return;
-
-        UUID routineId = qryIdMap.remove(ctx.cacheId());
-
-        if (routineId != null)
-            ctx.continuousQueries().cancelInternalQuery(routineId);
-    }
-
-    /**
      * @param ctx Context.
      */
     public void restoreStructuresState(GridKernalContext ctx) {

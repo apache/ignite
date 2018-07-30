@@ -34,7 +34,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -145,7 +144,7 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testJCacheQueryListenerCleanup() throws Exception {
+    public void testJCacheEntryListenerCleanup() throws Exception {
         CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DFLT_CACHE);
 
         MutableCacheEntryListenerConfiguration<Integer, String> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
@@ -154,21 +153,6 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
         ccfg.addCacheEntryListenerConfiguration(lsnrCfg);
 
         checkResourcesCleanup(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testContinuousQueryRemoteFilterCleanup() throws Exception {
-        checkResourcesCleanup(new CacheConfiguration<>(DFLT_CACHE), cache -> {
-            ContinuousQueryWithTransformer<Integer, String, ?> qry = new ContinuousQueryWithTransformer<>();
-
-            qry.setLocalListener(evts -> {});
-            qry.setRemoteFilterFactory(factoryOf(new CloseableRemoteFilter<>()));
-            qry.setRemoteTransformerFactory(factoryOf(new CloseableTransformer<>()));
-
-            cache.query(qry);
-        });
     }
 
     /**
