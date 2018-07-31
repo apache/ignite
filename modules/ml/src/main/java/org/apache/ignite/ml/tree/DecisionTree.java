@@ -79,7 +79,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
         )) {
-            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset, useIndex));
+            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -92,7 +92,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param dataset Dataset.
      * @return Impurity measure calculator.
      */
-    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset, boolean useIndex);
+    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
 
     /**
      * Splits the node specified by the given dataset and predicate and returns decision tree node.

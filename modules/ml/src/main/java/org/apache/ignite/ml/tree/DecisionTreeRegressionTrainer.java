@@ -56,7 +56,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
      * Sets useIndex parameter and returns trainer instance.
      *
      * @param useIndex Use index.
-     * @return Decision tree trainer
+     * @return Decision tree trainer.
      */
     public DecisionTreeRegressionTrainer withUseIndex(boolean useIndex) {
         this.useIndex = useIndex;
@@ -65,7 +65,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
 
     /** {@inheritDoc} */
     @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
-        Dataset<EmptyContext, DecisionTreeData> dataset, boolean useIndex) {
+        Dataset<EmptyContext, DecisionTreeData> dataset) {
 
         return new MSEImpurityMeasureCalculator(useIndex);
     }

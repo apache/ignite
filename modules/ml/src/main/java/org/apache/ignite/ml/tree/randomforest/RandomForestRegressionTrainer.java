@@ -80,7 +80,7 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer {
      * Sets useIndex parameter and returns trainer instance.
      *
      * @param useIndex Use index.
-     * @return Decision tree trainer
+     * @return Decision tree trainer.
      */
     public RandomForestRegressionTrainer withUseIndex(boolean useIndex) {
         this.useIndex = useIndex;

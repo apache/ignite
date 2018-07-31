@@ -88,7 +88,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      * Sets useIndex parameter and returns trainer instance.
      *
      * @param useIndex Use index.
-     * @return Decision tree trainer
+     * @return Decision tree trainer.
      */
     public DecisionTreeClassificationTrainer withUseIndex(boolean useIndex) {
         this.useIndex = useIndex;
@@ -97,7 +97,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
 
     /** {@inheritDoc} */
     @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
-        Dataset<EmptyContext, DecisionTreeData> dataset, boolean useIndex) {
+        Dataset<EmptyContext, DecisionTreeData> dataset) {
         Set<Double> labels = dataset.compute(part -> {
 
             if (part.getLabels() != null) {

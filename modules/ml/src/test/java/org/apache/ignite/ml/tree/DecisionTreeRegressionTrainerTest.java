@@ -47,6 +47,7 @@ public class DecisionTreeRegressionTrainerTest {
     @Parameterized.Parameter(1)
     public int useIndex;
 
+    /** Test parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions. Use index = {1}.")
     public static Iterable<Integer[]> data() {
         List<Integer[]> res = new ArrayList<>();
