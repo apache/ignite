@@ -20,7 +20,9 @@ from pyignite.datatypes import prop_codes
 from pyignite.exceptions import (
     CacheCreationError, CacheError, ParameterError,
 )
-from pyignite.utils import cache_id, status_to_exception, unwrap_binary
+from pyignite.utils import (
+    cache_id, is_wrapped, status_to_exception, unwrap_binary,
+)
 from .cache_config import (
     cache_create, cache_create_with_config,
     cache_get_or_create, cache_get_or_create_with_config,
@@ -117,12 +119,7 @@ class Cache:
         :return: the result of the Binary Object unwrapping with all other data
          left intact.
         """
-        if (
-            type(value) is tuple
-            and len(value) == 2
-            and type(value[0]) is bytes
-            and type(value[1]) is int
-        ):
+        if is_wrapped(value):
             return unwrap_binary(self._conn, value)
         return value
 

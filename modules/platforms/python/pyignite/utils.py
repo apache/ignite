@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Type, Union
+from typing import Any, Type, Union
 
 
 def is_iterable(value):
@@ -33,6 +33,15 @@ def is_hinted(value):
         isinstance(value, tuple)
         and len(value) == 2
         and isinstance(value[1], object)
+    )
+
+
+def is_wrapped(value: Any) -> bool:
+    return (
+        type(value) is tuple
+        and len(value) == 2
+        and type(value[0]) is bytes
+        and type(value[1]) is int
     )
 
 
@@ -63,12 +72,7 @@ def unwrap_binary(conn, wrapped: tuple, recurse: bool=True):
 
     if recurse:
         for key, value in result['fields'].items():
-            if (
-                type(value) is tuple
-                and len(value) == 2
-                and type(value[0]) is bytes
-                and type(value[1]) is int
-            ):
+            if is_wrapped(value):
                 result[key] = unwrap_binary(conn, value, recurse)
 
     return result
