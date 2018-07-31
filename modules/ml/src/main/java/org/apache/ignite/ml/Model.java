@@ -32,4 +32,11 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
         return v -> combiner.apply(apply(v), other.apply(v));
     }
+
+    /**
+     * @param pretty Use pretty mode.
+     */
+    default public String toString(boolean pretty) {
+        return getClass().getSimpleName();
+    }
 }

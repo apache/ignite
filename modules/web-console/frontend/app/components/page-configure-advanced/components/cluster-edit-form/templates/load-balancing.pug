@@ -35,7 +35,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         +form-field__tooltip(`Load balancing component balances job distribution among cluster nodes`)
 
                     -let items = loadBalancingSpi
-
                     list-editable.pc-list-editable-with-legacy-settings-rows(
                         ng-model=items
                         name='loadBalancingConfigurations'

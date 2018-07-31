@@ -1797,6 +1797,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        try {
+            ctx.kernalContext().cache().clearStatistics(Collections.singleton(getName()));
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
 

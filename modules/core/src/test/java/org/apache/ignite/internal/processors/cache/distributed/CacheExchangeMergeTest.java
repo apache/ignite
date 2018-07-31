@@ -1426,8 +1426,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 tx.commit();
             }
         }
-        catch (ClusterTopologyException ignore) {
-            // No-op.
+        catch (ClusterTopologyException e) {
+            info("Tx failed, ignore: " + e);
+
+            return;
         }
 
         for (Map.Entry<Object, Object> e : map.entrySet())

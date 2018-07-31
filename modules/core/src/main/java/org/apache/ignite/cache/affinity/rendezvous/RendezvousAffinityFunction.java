@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -587,5 +588,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
                 throw new UnsupportedOperationException("Remove doesn't supported");
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RendezvousAffinityFunction.class, this);
     }
 }

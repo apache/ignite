@@ -117,7 +117,22 @@ public class Tracer {
     public static void showAscii(Vector vec, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        System.out.println(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+        System.out.println(asAscii(vec, fmt, true));
+    }
+
+    /**
+     * @param vec Vector to show as plain text.
+     * @param fmt Format string for vector elements.
+     * @param showMeta Show vector type and size.
+     */
+    public static String asAscii(Vector vec, String fmt, boolean showMeta) {
+        String cls = vec.getClass().getSimpleName();
+        String vectorStr = mkString(vec, fmt);
+
+        if(showMeta)
+            return String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), vectorStr);
+        else
+            return String.format(LOCALE, "[%s]", vectorStr);
     }
 
     /**
@@ -159,15 +174,26 @@ public class Tracer {
      * @param fmt Format string for matrix rows.
      */
     public static void showAscii(Matrix mtx, String fmt) {
+        System.out.println(asAscii(mtx, fmt));
+    }
+
+
+    /**
+     * @param mtx {@link Matrix} object to show as a plain text.
+     * @param fmt Format string for matrix rows.
+     */
+    public static String asAscii(Matrix mtx, String fmt) {
+        StringBuilder builder = new StringBuilder();
         String cls = mtx.getClass().getSimpleName();
 
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        System.out.println(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
+        builder.append(String.format(LOCALE, "%s(%dx%d)\n", cls, rows, cols));
 
         for (int row = 0; row < rows; row++)
-            System.out.println(rowStr(mtx, row, fmt));
+            builder.append(rowStr(mtx, row, fmt)).append(row != rows - 1 ? "\n" : "");
+        return builder.toString();
     }
 
     /**
