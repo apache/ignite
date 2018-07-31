@@ -232,6 +232,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private String zkRootPath;
 
+    /** Restart zk. */
+    private boolean restartZk = false;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         if (testSockNio)
@@ -480,6 +483,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+
+            if(restartZk)
+                stopZkCluster();
 
             reset();
         }
@@ -2072,28 +2078,18 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
-        try {
-            topologyChangeWithRestarts(true, false);
-        }
-        finally {
-            zkCluster.close();
+        restartZk = true;
 
-            zkCluster = null;
-        }
+        topologyChangeWithRestarts(true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
-        try {
-            topologyChangeWithRestarts(true, true);
-        }
-        finally {
-            zkCluster.close();
+        restartZk = true;
 
-            zkCluster = null;
-        }
+        topologyChangeWithRestarts(true, true);
     }
 
     /**
