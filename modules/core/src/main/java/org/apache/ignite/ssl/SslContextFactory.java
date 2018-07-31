@@ -291,7 +291,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      * Sets enabled cipher suites.
      * @param cipherSuites enabled cipher suites.
      */
-    public void setCipherSuites(String[] cipherSuites) {
+    public void setCipherSuites(String... cipherSuites) {
         this.cipherSuites = cipherSuites;
     }
 
@@ -315,7 +315,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      * Sets enabled protocols.
      * @param protocols enabled protocols.
      */
-    public void setProtocols(String[] protocols) {
+    public void setProtocols(String... protocols) {
         this.protocols = protocols;
     }
 
