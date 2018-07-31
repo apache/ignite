@@ -142,6 +142,8 @@ import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
 import progressLine from './components/progress-line';
 import formField from './components/form-field';
+import igniteChart from './components/ignite-chart';
+import igniteChartSelector from './components/ignite-chart-series-selector';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -249,6 +251,8 @@ export default angular.module('ignite-console', [
     uiAceSpring.name,
     breadcrumbs.name,
     passwordVisibility.name,
+    igniteChart.name,
+    igniteChartSelector.name,
     progressLine.name,
     formField.name
 ])
