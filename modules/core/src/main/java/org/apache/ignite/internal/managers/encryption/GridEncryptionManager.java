@@ -31,7 +31,6 @@ import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -43,6 +42,8 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
@@ -526,9 +527,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return {@code true} if local node is coordinator.
      */
     private boolean notCoordinator() {
-        ClusterNode oldest = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+        DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
 
-        return oldest == null || !F.eq(ctx.localNodeId(), oldest.id());
+        if (spi instanceof TcpDiscoverySpi)
+            return !((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
+        else {
+            ClusterNode crd = null;
+
+            for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+                if (crd == null || crd.order() > node.order())
+                    crd = node;
+            }
+
+            return crd == null || !F.eq(ctx.localNodeId(), crd.id());
+        }
     }
 
     /** */
