@@ -89,8 +89,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -121,11 +119,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_START_CNTR;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_OP_CNTR;
 
 /**
  * Data streamer implementation.
@@ -146,14 +139,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
-
-    /** Version which is less then any version generated on coordinator. */
-    private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT =
-        new MvccSnapshotWithoutTxs(MVCC_CRD_START_CNTR, MVCC_START_CNTR, MVCC_START_OP_CNTR, MVCC_COUNTER_NA);
-
-    /** Version which is less then any version generated on coordinator (for remove). */
-    private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT_RMV =
-        new MvccSnapshotWithoutTxs(MVCC_CRD_COUNTER_NA, MVCC_START_CNTR, MVCC_START_OP_CNTR, MVCC_COUNTER_NA);
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;

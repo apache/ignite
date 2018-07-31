@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -538,7 +539,7 @@ public class GridSqlQueryParser {
      * @return {@code true} in case of multiple statements.
      */
     public static boolean checkMultipleStatements(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         return ORG_H2_COMMAND_COMMAND_LIST.equals(cmd.getClass().getName());
     }
@@ -548,7 +549,7 @@ public class GridSqlQueryParser {
      * @return Parsed select.
      */
     public static Prepared prepared(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         assert cmd instanceof CommandContainer;
 
@@ -560,7 +561,7 @@ public class GridSqlQueryParser {
      * @return Parsed select.
      */
     public static PreparedWithRemaining preparedWithRemaining(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         if (cmd instanceof CommandContainer)
             return new PreparedWithRemaining(PREPARED.get(cmd), null);
@@ -571,6 +572,15 @@ public class GridSqlQueryParser {
                 return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
             else
                 throw new IgniteSQLException("Unexpected statement command");
+        }
+    }
+
+    /** */
+    private static Command extractCommand(PreparedStatement stmt) {
+        try {
+            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
+        } catch (SQLException e) {
+            throw new IgniteSQLException(e);
         }
     }
 
@@ -1791,7 +1801,7 @@ public class GridSqlQueryParser {
     /**
      * @return H2 to Grid objects map.
      */
-    public Map objectsMap() {
+    public Map<Object, Object> objectsMap() {
         return h2ObjToGridObj;
     }
 
