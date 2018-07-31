@@ -1314,9 +1314,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuorumRestore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8180");
-
-        sesTimeout = 15_000;
+        sesTimeout = 60_000;
 
         startGrids(3);
 
