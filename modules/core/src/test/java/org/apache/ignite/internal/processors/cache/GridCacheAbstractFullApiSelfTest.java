@@ -130,9 +130,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
-    /** Test timeout */
-    private static final long TEST_TIMEOUT = 60 * 1000;
-
     /** Service name. */
     private static final String SERVICE_NAME1 = "testService1";
 
