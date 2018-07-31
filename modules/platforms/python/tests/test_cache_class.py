@@ -17,7 +17,7 @@ from collections import OrderedDict
 from decimal import Decimal
 
 from pyignite.datatypes import (
-    BinaryObject, BoolObject, DecimalObject, IntObject, String,
+    BinaryObject, BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
 
 
@@ -68,3 +68,36 @@ def test_cache_binary_get_put(conn):
     assert value['fields']['TEST_DECIMAL'] == Decimal('34.56')
 
     cache.destroy()
+
+
+def test_get_binary_type(conn):
+    conn.put_binary_type(
+        'TestBinaryType',
+        schema=OrderedDict([
+            ('TEST_BOOL', BoolObject),
+            ('TEST_STR', String),
+            ('TEST_INT', IntObject),
+        ])
+    )
+    conn.put_binary_type(
+        'TestBinaryType',
+        schema=OrderedDict([
+            ('TEST_BOOL', BoolObject),
+            ('TEST_STR', String),
+            ('TEST_INT', IntObject),
+            ('TEST_FLOAT', FloatObject),
+        ])
+    )
+    conn.put_binary_type(
+        'TestBinaryType',
+        schema=OrderedDict([
+            ('TEST_BOOL', BoolObject),
+            ('TEST_STR', String),
+            ('TEST_INT', IntObject),
+            ('TEST_DECIMAL', DecimalObject),
+        ])
+    )
+
+    binary_type_info = conn.get_binary_type('TestBinaryType')
+    assert len(binary_type_info['binary_fields']) == 5
+    assert len(binary_type_info['schema']) == 3
