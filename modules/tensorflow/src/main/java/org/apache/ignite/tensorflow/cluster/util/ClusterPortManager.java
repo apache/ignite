@@ -170,6 +170,12 @@ public class ClusterPortManager {
         return ignite.getOrCreateCache(cacheConfiguration);
     }
 
+    /**
+     * Returns host identifier by node identifier.
+     *
+     * @param nodeId Node identifier.
+     * @return Host identifier.
+     */
     private HostIdentifier getHostIdentifier(UUID nodeId) {
         try {
             ClusterGroup grp = ignite.cluster().forNodeId(nodeId);
@@ -193,16 +199,26 @@ public class ClusterPortManager {
         }
     }
 
+    /**
+     * Host identifier based on arrays of mac addresses of the host machine.
+     */
     private static class HostIdentifier implements Serializable {
-
+        /** */
         private static final long serialVersionUID = -7060231325908935162L;
 
+        /** Mac addresses. */
         private final byte[][] macAddrs;
 
+        /**
+         * Constructs a new instance of host identifier.
+         *
+         * @param macAddrs Mac addresses.
+         */
         public HostIdentifier(byte[][] macAddrs) {
             this.macAddrs = macAddrs;
         }
 
+        /** */
         public byte[][] getMacAddrs() {
             return macAddrs;
         }

@@ -49,6 +49,12 @@ public class TensorFlowServerAddressSpec implements Serializable {
         this.port = port;
     }
 
+    /**
+     * Formats Server Address specification so that TensorFlow accepts it.
+     *
+     * @param ignite Ignite instance.
+     * @return Formatted server address specification.
+     */
     public String format(Ignite ignite) {
         Collection<String> names = ignite.cluster().forNodeId(nodeId).hostNames();
 

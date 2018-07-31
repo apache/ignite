@@ -53,6 +53,12 @@ public class TensorFlowClusterSpec implements Serializable {
         return this;
     }
 
+    /**
+     * Formats cluster specification so that TensorFlow accepts it.
+     *
+     * @param ignite Ignite instance.
+     * @return Formatted cluster specification.
+     */
     public String format(Ignite ignite) {
         StringBuilder builder = new StringBuilder();
 
