@@ -30,13 +30,16 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
     /** */
     private static final long serialVersionUID = 288747414953756824L;
 
-
+    /**
+     * Constructs an instance of MSEImpurityMeasureCalculator.
+     *
+     * @param useIndex Use index while calculate.
+     */
     public MSEImpurityMeasureCalculator(boolean useIndex) {
         super(useIndex);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
         TreeDataIndex index = null;
         boolean canCalculate = false;
@@ -54,6 +57,7 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
             int rowsCnt = rowsCount(data, index);
             int colsCnt = columnsCount(data, index);
 
+            @SuppressWarnings("unchecked")
             StepFunction<MSEImpurityMeasure>[] res = new StepFunction[colsCnt];
 
             for (int col = 0; col < res.length; col++) {

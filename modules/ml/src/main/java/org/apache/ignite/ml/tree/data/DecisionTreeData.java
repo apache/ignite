@@ -42,16 +42,17 @@ public class DecisionTreeData implements AutoCloseable {
      *
      * @param features Matrix with features.
      * @param labels Vector with labels.
+     * @param buildIdx Build index.
      */
-    public DecisionTreeData(double[][] features, double[] labels, boolean buildIndex) {
+    public DecisionTreeData(double[][] features, double[] labels, boolean buildIdx) {
         assert features.length == labels.length : "Features and labels have to be the same length";
 
         this.features = features;
         this.labels = labels;
-        this.buildIndex = buildIndex;
+        this.buildIndex = buildIdx;
 
         indexesCache = new ArrayList<>();
-        if (buildIndex)
+        if (buildIdx)
             indexesCache.add(new TreeDataIndex(features, labels));
     }
 

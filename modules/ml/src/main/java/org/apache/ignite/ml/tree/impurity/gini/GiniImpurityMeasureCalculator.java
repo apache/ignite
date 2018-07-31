@@ -39,6 +39,7 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
      * Constructs a new instance of Gini impurity measure calculator.
      *
      * @param lbEncoder Label encoder which defines integer value for every label class.
+     * @param useIndex Use index while calculate.
      */
     public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder, boolean useIndex) {
         super(useIndex);

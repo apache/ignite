@@ -32,6 +32,11 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
     /** Use index structure instead of using sorting while learning. */
     protected final boolean useIndex;
 
+    /**
+     * Constructs an instance of ImpurityMeasureCalculator.
+     *
+     * @param useIndex Use index.
+     */
     public ImpurityMeasureCalculator(boolean useIndex) {
         this.useIndex = useIndex;
     }
@@ -51,6 +56,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      *
      * @param data Data.
      * @param idx Index.
+     * @return Columns count in current dataset.
      */
     protected int columnsCount(DecisionTreeData data, TreeDataIndex idx) {
         return useIndex ? idx.columnsCount() : data.getFeatures()[0].length;
@@ -61,6 +67,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      *
      * @param data Data.
      * @param idx Index.
+     * @return rows count in current dataset
      */
     protected int rowsCount(DecisionTreeData data, TreeDataIndex idx) {
         return useIndex ? idx.rowsCount() : data.getFeatures().length;
@@ -71,6 +78,9 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      *
      * @param data Data.
      * @param idx Index.
+     * @param featureId Feature id.
+     * @param k-value.
+     * @return label value in according to kth order statistic
      */
     protected double getLabelValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
         return useIndex ? idx.labelInSortedOrder(k, featureId) : data.getLabels()[k];
@@ -81,6 +91,9 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      *
      * @param data Data.
      * @param idx Index.
+     * @param featureId Feature id.
+     * @param k-value.
+     * @return feature value in according to kth order statistic.
      */
     protected double getFeatureValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
         return useIndex ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];

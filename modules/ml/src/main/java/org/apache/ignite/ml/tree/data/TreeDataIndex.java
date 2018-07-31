@@ -130,14 +130,14 @@ public class TreeDataIndex {
     }
 
     /**
-     * Returns count of rows in current index.
+     * @return count of rows in current index.
      */
     public int rowsCount() {
         return index.length;
     }
 
     /**
-     * Returns count of columns in current index.
+     * @return count of columns in current index.
      */
     public int columnsCount() {
         return rowsCount() == 0 ? 0 : index[0].length ;

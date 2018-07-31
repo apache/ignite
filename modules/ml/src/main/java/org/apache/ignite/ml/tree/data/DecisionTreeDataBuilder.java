@@ -50,12 +50,13 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
+     * @param buildIdx Build index.
      */
     public DecisionTreeDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, boolean buildIndex) {
+        IgniteBiFunction<K, V, Double> lbExtractor, boolean buildIdx) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
-        this.buildIndex = buildIndex;
+        this.buildIndex = buildIdx;
     }
 
     /** {@inheritDoc} */
