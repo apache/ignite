@@ -19,12 +19,13 @@ package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -39,15 +40,15 @@ import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
  *
  * @param <T> Type of impurity measure.
  */
-public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrainer<DecisionTreeNode, Double> {
+public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends DatasetTrainer<DecisionTreeNode, Double> {
     /** Max tree deep. */
-    private final int maxDeep;
+    int maxDeep;
 
     /** Min impurity decrease. */
-    private final double minImpurityDecrease;
+    double minImpurityDecrease;
 
     /** Step function compressor. */
-    private final StepFunctionCompressor<T> compressor;
+    StepFunctionCompressor<T> compressor;
 
     /** Decision tree leaf builder. */
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
@@ -60,7 +61,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * @param compressor Impurity function compressor.
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor, DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
+        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
@@ -131,7 +133,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      */
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
-        return dataset.compute(
+
+        StepFunction<T>[] result = dataset.compute(
             part -> {
                 if (compressor != null)
                     return compressor.compress(impurityCalc.calculate(part.filter(filter)));
@@ -139,6 +142,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
                     return impurityCalc.calculate(part.filter(filter));
             }, this::reduce
         );
+
+        return result;
     }
 
     /**
@@ -249,5 +254,48 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
             this.col = col;
             this.threshold = threshold;
         }
+    }
+
+    /**
+     * Represents DecisionTree as String.
+     *
+     * @param node Decision tree.
+     * @param pretty Use pretty mode.
+     */
+    public static String printTree(DecisionTreeNode node, boolean pretty) {
+        StringBuilder builder = new StringBuilder();
+        printTree(node, 0, builder, pretty, false);
+        return builder.toString();
+    }
+
+    /**
+     * Recursive realisation of DectisionTree to String converting.
+     *
+     * @param node Decision tree.
+     * @param depth Current depth.
+     * @param builder String builder.
+     * @param pretty Use pretty mode.
+     */
+    private static void printTree(DecisionTreeNode node, int depth, StringBuilder builder, boolean pretty, boolean isThen) {
+        builder.append(pretty ? String.join("", Collections.nCopies(depth, "\t")) : "");
+        if (node instanceof DecisionTreeLeafNode) {
+            DecisionTreeLeafNode leaf = (DecisionTreeLeafNode)node;
+            builder.append(String.format("%s return ", isThen ? "then" : "else"))
+                .append(String.format("%.4f", leaf.getVal()));
+        }
+        else if (node instanceof DecisionTreeConditionalNode) {
+            DecisionTreeConditionalNode condition = (DecisionTreeConditionalNode)node;
+            String prefix = depth == 0 ? "" : (isThen ? "then " : "else ");
+            builder.append(String.format("%sif (x", prefix))
+                .append(condition.getCol())
+                .append(" > ")
+                .append(String.format("%.4f", condition.getThreshold()))
+                .append(pretty ? ")\n" : ") ");
+            printTree(condition.getThenNode(), depth + 1, builder, pretty, true);
+            builder.append(pretty ? "\n" : " ");
+            printTree(condition.getElseNode(), depth + 1, builder, pretty, false);
+        }
+        else
+            throw new IllegalArgumentException();
     }
 }

@@ -14,13 +14,23 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-web-console-header
-    web-console-header-left
-        include ./includes/header-left
-    web-console-header-right
-        include ./includes/header-right
+header
+    div
+        h5 {{ $ctrl.chartTitle }}
+        ignite-chart-series-selector(chart-api='$ctrl.chart')
 
-.container.body-container.flex-full-height
-    div(ui-view='').flex-full-height
+    div
+        span Range:
+            button.btn-ignite.btn-ignite--link-success.link-primary(
+                ng-model='$ctrl.currentRange'
+                ng-change='$ctrl.changeXRange($ctrl.currentRange)'
+                bs-options='item as item.label for item in $ctrl.ranges'
+                bs-select
+            )
 
-web-console-footer
+.ignite-chart-placeholder
+    canvas
+
+.no-data(ng-if='!$ctrl.config.data.datasets')
+    | No Data #[br]
+    | Make sure you are connected to the right grid.

@@ -20,10 +20,11 @@ import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * This class provides kNN Multiple Linear Regression or Locally [weighted] regression (Simple and Weighted versions).
@@ -85,5 +86,19 @@ public class KNNRegressionModel extends KNNClassificationModel {
         for (LabeledVector<Vector, Double> neighbor : neighbors)
             sum += neighbor.label();
         return sum / (double)k;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return ModelTrace.builder("KNNClassificationModel", pretty)
+            .addField("k", String.valueOf(k))
+            .addField("measure", distanceMeasure.getClass().getSimpleName())
+            .addField("strategy", stgy.name())
+            .toString();
     }
 }

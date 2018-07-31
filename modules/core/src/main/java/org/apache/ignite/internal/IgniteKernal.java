@@ -4104,7 +4104,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // No-op.
                 }
             }
+        }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReconnectState.class, this);
         }
     }
 
