@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field__text({ label, model, name, disabled, required, placeholder, tip })
-    -var errLbl = label.substring(0, label.length - 1)
+    -let errLbl = label[label.length - 1] === ':' ? label.substring(0, label.length - 1) : label
 
     .form-field.ignite-form-field(id=`{{ ${name} }}Field`)
         +form-field__label({ label, name, required, disabled })
