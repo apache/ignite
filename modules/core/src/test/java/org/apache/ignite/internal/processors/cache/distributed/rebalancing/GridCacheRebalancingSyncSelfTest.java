@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -602,14 +604,23 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class CollectingCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
         /** {@inheritDoc} */
         @Override public void sendMessage(final ClusterNode node, final Message msg,
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
 
             if (msg0 instanceof GridDhtPartitionsSingleMessage ||
-                msg0 instanceof GridDhtPartitionsFullMessage)
+                msg0 instanceof GridDhtPartitionsFullMessage) {
                 lastPartMsgTime = U.currentTimeMillis();
+
+                log.info("Last seen time of GridDhtPartitionsSingleMessage or GridDhtPartitionsFullMessage updated " +
+                    "[lastPartMsgTime=" + lastPartMsgTime +
+                    ", node=" + node.id() + ']');
+            }
 
             super.sendMessage(node, msg, ackC);
         }
