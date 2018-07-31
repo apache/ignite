@@ -100,6 +100,7 @@ import AngularStrapSelect from './services/AngularStrapSelect.decorator';
 
 // Filters.
 import byName from './filters/byName.filter';
+import bytes from './filters/bytes.filter';
 import defaultName from './filters/default-name.filter';
 import domainsValidation from './filters/domainsValidation.filter';
 import duration from './filters/duration.filter';
@@ -126,6 +127,7 @@ import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import gridNoData from './components/grid-no-data';
 import gridExport from './components/grid-export';
+import gridShowingRows from './components/grid-showing-rows';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
@@ -141,6 +143,8 @@ import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
 import progressLine from './components/progress-line';
 import formField from './components/form-field';
+import igniteChart from './components/ignite-chart';
+import igniteChartSelector from './components/ignite-chart-series-selector';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -221,6 +225,7 @@ export default angular.module('ignite-console', [
     gridItemSelected.name,
     gridNoData.name,
     gridExport.name,
+    gridShowingRows.name,
     bsSelectMenu.name,
     uiGridHovering.name,
     uiGridFilters.name,
@@ -247,6 +252,8 @@ export default angular.module('ignite-console', [
     uiAceSpring.name,
     breadcrumbs.name,
     passwordVisibility.name,
+    igniteChart.name,
+    igniteChartSelector.name,
     progressLine.name,
     formField.name
 ])
@@ -299,6 +306,7 @@ export default angular.module('ignite-console', [
 .service('Models', Models)
 // Filters.
 .filter('byName', byName)
+.filter('bytes', bytes)
 .filter('defaultName', defaultName)
 .filter('domainsValidation', domainsValidation)
 .filter('duration', duration)

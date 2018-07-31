@@ -14,9 +14,23 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-button.btn-ignite.btn-ignite--primary-outline(ng-click='$ctrl.export()' bs-tooltip='' data-title='Export filtered rows to CSV' data-placement='top')
-    svg(ignite-icon='csv')
+header
+    div
+        h5 {{ $ctrl.chartTitle }}
+        ignite-chart-series-selector(chart-api='$ctrl.chart')
 
-button.btn-ignite.btn-ignite--link-success.link-success(ng-click='$ctrl.export()' bs-tooltip='' data-title='Export filtered rows to CSV' data-placement='top')
-    svg(ignite-icon='download')
-    i Export to .csv
+    div
+        span Range:
+            button.btn-ignite.btn-ignite--link-success.link-primary(
+                ng-model='$ctrl.currentRange'
+                ng-change='$ctrl.changeXRange($ctrl.currentRange)'
+                bs-options='item as item.label for item in $ctrl.ranges'
+                bs-select
+            )
+
+.ignite-chart-placeholder
+    canvas
+
+.no-data(ng-if='!$ctrl.config.data.datasets')
+    | No Data #[br]
+    | Make sure you are connected to the right grid.
