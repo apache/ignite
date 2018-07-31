@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNode
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheTxNearEnabledRandomOperationsTest;
@@ -144,6 +143,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleT
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -154,6 +154,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 2");
 
         // Local cache.
@@ -266,7 +268,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CacheConfigurationLeakTest.class));
         suite.addTest(new TestSuite(MemoryPolicyConfigValidationTest.class));
         suite.addTest(new TestSuite(MemoryPolicyInitializationTest.class));
-        suite.addTest(new TestSuite(CacheDataRegionConfigurationTest.class));
         suite.addTest(new TestSuite(CacheGroupLocalConfigurationSelfTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
