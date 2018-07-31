@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2ByteOrderSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
@@ -33,6 +32,8 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTes
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import java.util.Set;
 
 /**
  * Test suite for all marshallers.

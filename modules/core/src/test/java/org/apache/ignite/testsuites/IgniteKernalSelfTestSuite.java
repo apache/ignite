@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.ComputeJobCancelWithServiceSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
@@ -75,6 +74,8 @@ import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTes
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import java.util.Set;
 
 /**
  * Kernal self test suite.
