@@ -28,7 +28,7 @@
                         label Cache Nodes: {{ $ctrl.nodes.length }}
 
                     .panel-body.panel-body_collapse
-                        .grid(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-pinning)
+                        .grid(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-pinning ui-grid-hovering)
 
             .modal-footer
                 button.btn.btn-primary(id='confirm-btn-confirm' ng-click='$ok($ctrl.selected)' ng-disabled='$ctrl.selected.length === 0') Select node

@@ -18,10 +18,14 @@
 package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * This class encapsulates result of clusterization by KMeans algorithm.
@@ -109,4 +113,20 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         return distanceMeasure.equals(that.distanceMeasure) && Arrays.deepEquals(centers, that.centers);
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        String measureName = distanceMeasure.getClass().getSimpleName();
+        List<String> centersList = Arrays.stream(centers).map(x -> Tracer.asAscii(x, "%.4f", false))
+            .collect(Collectors.toList());
+
+        return ModelTrace.builder("KMeansModel", pretty)
+            .addField("distance measure", measureName)
+            .addField("centroids", centersList)
+            .toString();
+    }
 }

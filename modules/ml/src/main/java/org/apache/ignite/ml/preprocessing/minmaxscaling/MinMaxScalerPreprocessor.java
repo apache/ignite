@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Preprocessing function that makes minmaxscaling. From mathematical point of view it's the following function which

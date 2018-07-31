@@ -25,9 +25,11 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -65,6 +67,38 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         super(cctx, tx);
 
         assert tx.optimistic() : tx;
+
+        if (tx.timeout() > 0) {
+            // Init keyLockFut to make sure it is created when {@link #onNearTxLocalTimeout} is called.
+            for (IgniteTxEntry e : tx.writeEntries()) {
+                if (e.context().isNear() || e.context().isLocal()) {
+                    keyLockFut = new KeyLockFuture();
+                    break;
+                }
+            }
+
+            if (tx.serializable() && keyLockFut == null) {
+                for (IgniteTxEntry e : tx.readEntries()) {
+                    if (e.context().isNear() || e.context().isLocal()) {
+                        keyLockFut = new KeyLockFuture();
+                        break;
+                    }
+                }
+            }
+
+            if (keyLockFut != null)
+                add(keyLockFut);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public final void onNearTxLocalTimeout() {
+        if (keyLockFut != null && !keyLockFut.isDone()) {
+            ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
+                    "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+
+            keyLockFut.onDone();
+        }
     }
 
     /** {@inheritDoc} */
