@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
@@ -42,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,11 +54,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
 /**
  *
@@ -69,11 +65,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected static final long WAIT_RESEND_PARTS_MS =
-        Math.min(2 * getLong(IGNITE_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT), 30_000L);
+    private static final int TEST_SIZE = 100_000;
 
     /** */
-    private static final int TEST_SIZE = 100_000;
+    private static final long TOPOLOGY_STILLNESS_TIME = 30_000L;
 
     /** partitioned cache name. */
     protected static final String CACHE_NAME_DHT_PARTITIONED = "cacheP";
@@ -96,11 +91,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean concurrentStartFinished3;
 
-    /** */
-    private volatile boolean record;
-
-    /** */
-    private final ConcurrentHashMap<Class, AtomicInteger> map = new ConcurrentHashMap<>();
+    /**
+     * Time in milliseconds of last received {@link GridDhtPartitionsSingleMessage}
+     * or {@link GridDhtPartitionsFullMessage} using {@link CollectingCommunicationSpi}.
+     */
+    private static volatile long lastPartMsgTime;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -109,7 +104,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
 
-        TcpCommunicationSpi commSpi = new CountingCommunicationSpi();
+        TcpCommunicationSpi commSpi = new CollectingCommunicationSpi();
 
         commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         commSpi.setTcpNoDelay(true);
@@ -243,7 +238,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         stopGrid(0);
 
@@ -251,7 +246,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         startGrid(2);
 
@@ -259,7 +254,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         stopGrid(2);
 
@@ -267,7 +262,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         long spend = (System.currentTimeMillis() - start) / 1000;
 
@@ -434,28 +429,36 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Method checks for {@link GridDhtPartitionsSingleMessage} or {@link GridDhtPartitionsFullMessage}
+     * not received within {@code TOPOLOGY_STILLNESS_TIME} bound.
+     *
      * @throws Exception If failed.
      */
-    protected void checkPartitionMapMessagesAbsent() throws Exception {
-        map.clear();
+    protected void awaitPartitionMessagesAbsent() throws Exception {
+        log.info("Checking GridDhtPartitions*Message absent (it will take " +
+            TOPOLOGY_STILLNESS_TIME + " ms) ... ");
 
-        record = true;
+        // Start waiting new messages from current point of time.
+        lastPartMsgTime = U.currentTimeMillis();
 
-        log.info("Checking GridDhtPartitions*Message absent (it will take " + WAIT_RESEND_PARTS_MS + " ms) ... ");
+        assertTrue("Should not have partition Single or Full messages within bound " +
+                TOPOLOGY_STILLNESS_TIME + " ms.",
+            GridTestUtils.waitForCondition(
+                new GridAbsPredicateX() {
+                    @Override public boolean applyx() {
+                        long curTime = U.currentTimeMillis();
 
-        U.sleep(WAIT_RESEND_PARTS_MS);
+                        boolean hasNoMsgs = true;
 
-        record = false;
+                        if (lastPartMsgTime + TOPOLOGY_STILLNESS_TIME > curTime)
+                            hasNoMsgs = false;
 
-        AtomicInteger iF = map.get(GridDhtPartitionsFullMessage.class);
-        AtomicInteger iS = map.get(GridDhtPartitionsSingleMessage.class);
-
-        Integer fullMap = iF != null ? iF.get() : null;
-        Integer singleMap = iS != null ? iS.get() : null;
-
-        // No more than one refreshPartitions() method called (only on timeout).
-        assertTrue("Unexpected full map messages: " + fullMap, fullMap == null || fullMap <= G.allGrids().size());
-        assertTrue("Unexpected single map messages: " + singleMap, singleMap == null || singleMap <= G.allGrids().size());
+                        return hasNoMsgs;
+                    }
+                },
+                2 * TOPOLOGY_STILLNESS_TIME
+            )
+        );
     }
 
     /** {@inheritDoc} */
@@ -576,7 +579,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         checkSupplyContextMapIsEmpty();
 
@@ -605,36 +608,17 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class CountingCommunicationSpi extends TcpCommunicationSpi {
+    private static class CollectingCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(final ClusterNode node, final Message msg,
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
 
-            recordMessage(msg0);
+            if (msg0 instanceof GridDhtPartitionsSingleMessage ||
+                msg0 instanceof GridDhtPartitionsFullMessage)
+                lastPartMsgTime = U.currentTimeMillis();
 
             super.sendMessage(node, msg, ackC);
-        }
-
-        /**
-         * @param msg Message.
-         */
-        private void recordMessage(Object msg) {
-            if (record) {
-                Class id = msg.getClass();
-
-                AtomicInteger ai = map.get(id);
-
-                if (ai == null) {
-                    ai = new AtomicInteger();
-
-                    AtomicInteger oldAi = map.putIfAbsent(id, ai);
-
-                    (oldAi != null ? oldAi : ai).incrementAndGet();
-                }
-                else
-                    ai.incrementAndGet();
-            }
         }
     }
 }
