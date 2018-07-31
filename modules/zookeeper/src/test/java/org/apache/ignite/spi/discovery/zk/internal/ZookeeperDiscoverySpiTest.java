@@ -2399,7 +2399,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     public void testLargeUserAttribute3() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        long stopTime = System.currentTimeMillis() + 60_000;
+        int maxAttrMemory = 750; // MB
+
+        int attrSize = 0;
 
         int nodes = 0;
 
@@ -2407,27 +2409,27 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             info("Iteration: " + i);
 
             if (rnd.nextBoolean())
-                initLargeAttribute();
+                attrSize += initLargeAttribute();
             else
                 userAttrs = null;
+
+            if (attrSize * ((nodes + 1) << 1) > maxAttrMemory)
+                break;
 
             clientMode(i > 5);
 
             startGrid(i);
 
             nodes++;
-
-            if (System.currentTimeMillis() >= stopTime)
-                break;
         }
 
         waitForTopology(nodes);
     }
 
     /**
-     *
+     * @return approximate attribute size in MB.
      */
-    private void initLargeAttribute() {
+    private int initLargeAttribute() {
         userAttrs = new HashMap<>();
 
         int[] attr = new int[1024 * 1024 + ThreadLocalRandom.current().nextInt(1024)];
@@ -2436,6 +2438,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             attr[i] = i;
 
         userAttrs.put("testAttr", attr);
+
+        return (attr.length * 4) / (1 << 20);
     }
 
     /**
