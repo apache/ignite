@@ -1,6 +1,6 @@
 {
   "name": "ignite-web-console-e2e-tests",
-  "version": "1.0.0",
+  "version": "2.7.0",
   "description": "E2E tests for Apache Ignite Web console",
   "private": true,
   "main": "index.js",
@@ -33,7 +33,7 @@
     "objectid": "3.2.1",
     "path": "0.12.7",
     "sinon": "2.3.8",
-    "testcafe": "0.19.0",
+    "testcafe": "0.20.5",
     "testcafe-angular-selectors": "0.3.0",
     "testcafe-reporter-teamcity": "1.0.9",
     "type-detect": "4.0.3",
