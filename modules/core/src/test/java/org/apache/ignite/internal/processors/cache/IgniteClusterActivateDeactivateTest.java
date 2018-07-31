@@ -1128,6 +1128,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void stateChangeFailover3(boolean activate) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8220");
+
         testReconnectSpi = true;
 
         startNodesAndBlockStatusChange(4, 0, 0, !activate);

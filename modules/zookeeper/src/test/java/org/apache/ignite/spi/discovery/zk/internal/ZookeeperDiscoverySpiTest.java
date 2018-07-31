@@ -479,9 +479,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 //            checkZkNodesCleanup();
         }
         finally {
-            reset();
-
             stopAllGrids();
+
+            reset();
         }
     }
 
@@ -505,7 +505,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkInternalStructuresCleanup() throws Exception {
-        for (Ignite node : G.allGrids()) {
+        for (Ignite node : IgnitionEx.allGridsx()) {
             final AtomicReference<?> res = GridTestUtils.getFieldValue(spi(node), "impl", "commErrProcFut");
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
