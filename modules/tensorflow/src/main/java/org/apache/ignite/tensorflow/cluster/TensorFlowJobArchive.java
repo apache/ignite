@@ -19,31 +19,46 @@ package org.apache.ignite.tensorflow.cluster;
 
 import java.io.Serializable;
 
+/**
+ * TensorFlow job archive that keeps archived working directory and command to be executed.
+ */
 public class TensorFlowJobArchive implements Serializable {
-
+    /** */
     private static final long serialVersionUID = -5977231383594482459L;
 
+    /** Upstream cache name. */
     private final String upstreamCacheName;
 
+    /** Archived working directory. */
     private final byte[] data;
 
+    /** Command to be executed with arguments. */
     private final String[] commands;
 
-    public TensorFlowJobArchive(String upstreamCacheName,
-        byte[] data, String[] commands) {
+    /**
+     * Constructs a new instance of TensorFlow job archive.
+     *
+     * @param upstreamCacheName Upstream cache name.
+     * @param data Archived working directory.
+     * @param commands Command to be executed with arguments.
+     */
+    public TensorFlowJobArchive(String upstreamCacheName, byte[] data, String[] commands) {
         this.upstreamCacheName = upstreamCacheName;
         this.data = data;
         this.commands = commands;
     }
 
+    /** */
     public String getUpstreamCacheName() {
         return upstreamCacheName;
     }
 
+    /** */
     public byte[] getData() {
         return data;
     }
 
+    /** */
     public String[] getCommands() {
         return commands;
     }
