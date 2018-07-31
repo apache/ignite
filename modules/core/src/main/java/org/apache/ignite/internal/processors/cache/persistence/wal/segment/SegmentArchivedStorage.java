@@ -16,44 +16,39 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
- * Next WAL segment archived monitor. Manages last archived index, allows to emulate archivation in no-archiver mode.
- * Monitor which is notified each time WAL segment is archived.
+ * Manages last archived index, allows to emulate archivation in no-archiver mode. Monitor which is notified each time
+ * WAL segment is archived. Class for inner usage.
  */
-class SegmentArchivedStorage {
+class SegmentArchivedStorage extends SegmentObservable {
+    /** Segment lock storage: Protects WAL work segments from moving. */
     private final SegmentLockStorage segmentLockStorage;
-
-    /** current thread stopping advice */
-    private volatile boolean stopped;
+    /** Flag of interrupt waiting on this object. */
+    private volatile boolean interrupted;
     /**
      * Last archived file absolute index, 0-based. Write is quarded by {@code this}. Negative value indicates there are
      * no segments archived.
      */
     private volatile long lastAbsArchivedIdx = -1;
 
-    List<Consumer<Long>> observers = new ArrayList<>();
-
-    synchronized void addObserver(Consumer<Long> observer) {
-        observers.add(observer);
-    }
-
-    public SegmentArchivedStorage(
-        SegmentLockStorage segmentLockStorage) {
+    /**
+     * @param segmentLockStorage Protects WAL work segments from moving.
+     */
+    private SegmentArchivedStorage(SegmentLockStorage segmentLockStorage) {
         this.segmentLockStorage = segmentLockStorage;
-
-        segmentLockStorage.addObserver(this::onSegmentUnlocked);
     }
 
     /**
-     * Callback for waking up compressor when new segment is archived.
+     * @param segmentLockStorage Protects WAL work segments from moving.
      */
-    synchronized void onSegmentUnlocked(long segmentId) {
-        notifyAll();
+    static SegmentArchivedStorage buildArchivedStorage(SegmentLockStorage segmentLockStorage) {
+        SegmentArchivedStorage archivedStorage = new SegmentArchivedStorage(segmentLockStorage);
+
+        archivedStorage.addObserver(archivedStorage::onSegmentUnlocked);
+
+        return archivedStorage;
     }
 
     /**
@@ -64,14 +59,14 @@ class SegmentArchivedStorage {
     }
 
     /**
-     * @param lastAbsArchivedIdx new value of last archived segment index
+     * @param lastAbsArchivedIdx New value of last archived segment index.
      */
     synchronized void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
         this.lastAbsArchivedIdx = lastAbsArchivedIdx;
 
         notifyAll();
 
-        observers.forEach(observer -> observer.accept(lastAbsArchivedIdx));
+        notifyObservers(lastAbsArchivedIdx);
     }
 
     /**
@@ -91,28 +86,48 @@ class SegmentArchivedStorage {
         }
     }
 
-    synchronized void markAsMovedToArchive(long toArchive) throws InterruptedException, IgniteInterruptedCheckedException {
-        while (segmentLockStorage.locked(toArchive) && !stopped)
-            wait();
+    /**
+     * Mark segment as moved to archive under lock.
+     *
+     * @param toArchive Segment which was should be moved to archive.
+     * @throws IgniteInterruptedCheckedException
+     */
+    synchronized void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
+        try {
+            while (segmentLockStorage.locked(toArchive) && !interrupted)
+                wait();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedCheckedException(e);
+        }
 
-        checkForStop();
+        checkInterrupted();
 
         // Then increase counter to allow rollover on clean working file
         setLastArchivedAbsoluteIndex(toArchive);
     }
 
-
-    private void checkForStop() throws IgniteInterruptedCheckedException {
-        if (stopped) {
-            throw new IgniteInterruptedCheckedException("");
-        }
-    }
     /**
-     * Stop waiting.
+     * Interrupt waiting on this object.
      */
-    synchronized void stop() {
-        stopped = true;
+    synchronized void interrupt() {
+        interrupted = true;
 
+        notifyAll();
+    }
+
+    /**
+     * Check for interrupt flag was set.
+     */
+    private void checkInterrupted() throws IgniteInterruptedCheckedException {
+        if (interrupted)
+            throw new IgniteInterruptedCheckedException("");
+    }
+
+    /**
+     * Callback for waking up waiters of this object when unlocked happened.
+     */
+    private synchronized void onSegmentUnlocked(long segmentId) {
         notifyAll();
     }
 }

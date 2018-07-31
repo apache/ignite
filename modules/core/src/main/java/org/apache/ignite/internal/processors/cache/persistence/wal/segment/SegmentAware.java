@@ -17,133 +17,69 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentArchivedStorage.buildArchivedStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentCompressStorage.buildCompressStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentCurrentStateStorage.buildCurrentStateStorage;
 
 /**
- *
+ * Holder of actual information of latest manipulation on WAL segments.
  */
 public class SegmentAware {
-    /** Latest segment cleared by {@link #truncate(WALPointer, WALPointer)}. */
+    /** Latest truncated segment. */
     private volatile long lastTruncatedArchiveIdx = -1L;
-
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
     private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
-
-    /** Manages last archived index, emulates archivation in no-archiver mode. */
+    /** Lock on segment protects from archiving segment. */
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
-
     /** Manages last archived index, emulates archivation in no-archiver mode. */
-    private final SegmentArchivedStorage archivedMonitor = new SegmentArchivedStorage(segmentLockStorage);
+    private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
+    /** Storage of actual information about current index of compressed segments. */
+    private final SegmentCompressStorage segmentCompressStorage = buildCompressStorage(segmentArchivedStorage);
+    /** Storage of absolute current segment index. */
+    private final SegmentCurrentStateStorage segmentCurrentStateStorage;
 
-    private final SegmentCompressStorage segmentCompressStorage = new SegmentCompressStorage(archivedMonitor);
-
-    private final SegmentCurrentStorage segmentCurrentStorage;
-
-    public SegmentAware(int count) {
-        segmentCurrentStorage = new SegmentCurrentStorage(count, archivedMonitor);
-    }
-
-    public void reserve(long absIdx) {
-        reservationStorage.reserve(absIdx);
-    }
-
-    public boolean reserved(long absIdx) {
-        return reservationStorage.reserved(absIdx);
-    }
-
-    public void release(long absIdx) {
-        reservationStorage.release(absIdx);
-    }
-
-    public void awaitSegment(long absSegIdx) throws InterruptedException, IgniteInterruptedCheckedException {
-        segmentCurrentStorage.awaitSegment(absSegIdx);
-    }
-
-    public void curAbsWalIdx(long curAbsWalIdx) {
-        segmentCurrentStorage.curAbsWalIdx(curAbsWalIdx);
+    /**
+     * @param walSegmentsCount Total WAL segments count.
+     */
+    public SegmentAware(int walSegmentsCount) {
+        segmentCurrentStateStorage = buildCurrentStateStorage(walSegmentsCount, segmentArchivedStorage);
     }
 
     /**
-     * @param lastAbsArchivedIdx new value of last archived segment index
+     * Waiting until current WAL index will be greater or equal than given one.
+     *
+     * @param absSegIdx Target WAL index.
      */
-    public void markAsMovedToArchive(long toArchive) throws InterruptedException, IgniteInterruptedCheckedException {
-        archivedMonitor.markAsMovedToArchive(toArchive);
+    public void awaitSegment(long absSegIdx) throws IgniteInterruptedCheckedException {
+        segmentCurrentStateStorage.awaitSegment(absSegIdx);
     }
 
     /**
-     * @param lastAbsArchivedIdx new value of last archived segment index
+     * Calculate next segment index or wait if needed.
+     *
+     * @return Next absolute segment index.
      */
-    public long nextAbsoluteSegmentIndex() throws InterruptedException, IgniteInterruptedCheckedException {
-        return segmentCurrentStorage.nextAbsoluteSegmentIndex();
-    }
-
-    public long waitNextArchiveSegment() throws InterruptedException, IgniteInterruptedCheckedException {
-//            assert lastAbsArchivedIdx() <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx() +
-//                ", current=" + curAbsWalIdx;
-
-            long nextArchivedIdx = lastArchivedAbsoluteIndex();
-
-            awaitSegment(nextArchivedIdx + 2);
-
-            return nextArchivedIdx + 1;
-    }
-
-    public void allowCompressionUntil(long lastCpStartIdx) {
-         segmentCompressStorage.allowCompressionUntil(lastCpStartIdx);
-    }
-
-    public void lastCompressedIdx(long lastCompressedIdx) {
-        segmentCompressStorage.lastCompressedIdx(lastCompressedIdx);
-    }
-
-    public long lastCompressedIdx() {
-        return segmentCompressStorage.lastCompressedIdx();
-    }
-
-    public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
-    }
-
-    public long lastTruncatedArchiveIdx() {
-        return lastTruncatedArchiveIdx;
-    }
-
-
-
-    public long curAbsWalIdx() {
-        return segmentCurrentStorage.curAbsWalIdx();
+    public long nextAbsoluteSegmentIndex() throws IgniteInterruptedCheckedException {
+        return segmentCurrentStateStorage.nextAbsoluteSegmentIndex();
     }
 
     /**
-     * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
-     * Waits if there's no segment to archive right now.
+     * Waiting until archivation of next segment will be allowed.
      */
-    public long nextSegmentToCompressOrWait() throws InterruptedException, IgniteCheckedException, IgniteInterruptedCheckedException {
-        return Math.max(segmentCompressStorage.nextSegmentToCompressOrWait(), lastTruncatedArchiveIdx + 1);
+    public long waitNextSegmentForArchivation() throws IgniteInterruptedCheckedException {
+        return segmentCurrentStateStorage.waitNextSegmentForArchivation();
     }
 
     /**
-     * @return Last archived segment absolute index.
+     * Mark segment as moved to archive under lock.
+     *
+     * @param toArchive Segment which was should be moved to archive.
+     * @throws IgniteInterruptedCheckedException
      */
-    public long lastArchivedAbsoluteIndex() {
-        return archivedMonitor.lastArchivedAbsoluteIndex();
-    }
-
-    /**
-     * @param lastAbsArchivedIdx new value of last archived segment index
-     */
-    public void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
-        archivedMonitor.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
-    }
-
-    public void stop() {
-        archivedMonitor.stop();
-
-        segmentCompressStorage.stop();
-
-        segmentCurrentStorage.stop();
+    public void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
+        segmentArchivedStorage.markAsMovedToArchive(toArchive);
     }
 
     /**
@@ -153,20 +89,111 @@ public class SegmentAware {
      * @throws IgniteInterruptedCheckedException if interrupted.
      */
     public void awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
-        archivedMonitor.awaitSegmentArchived(awaitIdx);
-    }
-
-    public boolean locked(long absIdx) {
-        return segmentLockStorage.locked(absIdx);
+        segmentArchivedStorage.awaitSegmentArchived(awaitIdx);
     }
 
     /**
-     * @param absIdx Segment absolute index.
-     * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need
-     * release segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation. Waits if
+     * there's no segment to archive right now.
      */
-    public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
-        return lastArchivedAbsoluteIndex() >= absIdx || lockWorkSegment(absIdx);
+    public long waitNextSegmentToCompress() throws IgniteInterruptedCheckedException {
+        return Math.max(segmentCompressStorage.nextSegmentToCompressOrWait(), lastTruncatedArchiveIdx + 1);
+    }
+
+    /**
+     * Update to new segment to compress.
+     *
+     * @param allowedSegmentUntilCompress Segment until which segments can be compress.
+     */
+    public void allowCompressionUntil(long allowedSegmentUntilCompress) {
+        segmentCompressStorage.allowCompressionUntil(allowedSegmentUntilCompress);
+    }
+
+    /**
+     * Force set last compressed segment.
+     *
+     * @param lastCompressedIdx Segment which was last compressed.
+     */
+    public void lastCompressedIdx(long lastCompressedIdx) {
+        segmentCompressStorage.lastCompressedIdx(lastCompressedIdx);
+    }
+
+    /**
+     * @return Last compressed segment.
+     */
+    public long lastCompressedIdx() {
+        return segmentCompressStorage.lastCompressedIdx();
+    }
+
+    /**
+     * Update current WAL index.
+     *
+     * @param curAbsWalIdx New current WAL index.
+     */
+    public void curAbsWalIdx(long curAbsWalIdx) {
+        segmentCurrentStateStorage.curAbsWalIdx(curAbsWalIdx);
+    }
+
+    /**
+     * @param lastTruncatedArchiveIdx Last truncated segment;
+     */
+    public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
+        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
+    }
+
+    /**
+     * @return Last truncated segment.
+     */
+    public long lastTruncatedArchiveIdx() {
+        return lastTruncatedArchiveIdx;
+    }
+
+    /**
+     * @param lastAbsArchivedIdx New value of last archived segment index.
+     */
+    public void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
+        segmentArchivedStorage.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+    }
+
+    /**
+     * @return Last archived segment absolute index.
+     */
+    public long lastArchivedAbsoluteIndex() {
+        return segmentArchivedStorage.lastArchivedAbsoluteIndex();
+    }
+
+    /**
+     * @param absIdx Index for reservation.
+     */
+    public void reserve(long absIdx) {
+        reservationStorage.reserve(absIdx);
+    }
+
+    /**
+     * Checks if segment is currently reserved (protected from deletion during WAL cleanup).
+     *
+     * @param absIdx Index for check reservation.
+     * @return {@code True} if index is reserved.
+     */
+    public boolean reserved(long absIdx) {
+        return reservationStorage.reserved(absIdx);
+    }
+
+    /**
+     * @param absIdx Reserved index.
+     */
+    public void release(long absIdx) {
+        reservationStorage.release(absIdx);
+    }
+
+    /**
+     * Check if WAL segment locked (protected from move to archive)
+     *
+     * @param absIdx Index for check reservation.
+     * @return {@code True} if index is locked.
+     */
+    public boolean locked(long absIdx) {
+        return segmentLockStorage.locked(absIdx);
     }
 
     /**
@@ -174,8 +201,8 @@ public class SegmentAware {
      * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need release
      * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
      */
-    public boolean lockWorkSegment(long absIdx) {
-        return segmentLockStorage.lockWorkSegment(absIdx);
+    public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
+        return lastArchivedAbsoluteIndex() >= absIdx || segmentLockStorage.lockWorkSegment(absIdx);
     }
 
     /**
@@ -185,4 +212,14 @@ public class SegmentAware {
         segmentLockStorage.releaseWorkSegment(absIdx);
     }
 
+    /**
+     * Interrupt waiting on related objects.
+     */
+    public void interrupt() {
+        segmentArchivedStorage.interrupt();
+
+        segmentCompressStorage.interrupt();
+
+        segmentCurrentStateStorage.interrupt();
+    }
 }

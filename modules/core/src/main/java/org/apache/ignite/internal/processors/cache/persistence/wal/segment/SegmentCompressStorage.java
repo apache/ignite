@@ -20,83 +20,108 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
- *
+ * Storage of actual information about current index of compressed segments.
  */
 public class SegmentCompressStorage {
-    /** current thread stopping advice */
-    private volatile boolean stopped;
-    private final SegmentArchivedStorage archivedMonitor;
+    /** Flag of interrupt waiting on this object. */
+    private volatile boolean interrupted;
+    /** Manages last archived index, emulates archivation in no-archiver mode. */
+    private final SegmentArchivedStorage segmentArchivedStorage;
     /** Last successfully compressed segment. */
     private volatile long lastCompressedIdx = -1L;
-
     /** All segments prior to this (inclusive) can be compressed. */
     private volatile long lastAllowedToCompressIdx = -1L;
 
-    public SegmentCompressStorage(SegmentArchivedStorage monitor) {
-        archivedMonitor = monitor;
+    /**
+     * @param segmentArchivedStorage Storage of last archived segment.
+     */
+    private SegmentCompressStorage(SegmentArchivedStorage segmentArchivedStorage) {
+        this.segmentArchivedStorage = segmentArchivedStorage;
 
-        archivedMonitor.addObserver(this::onSegmentArchived);
+        this.segmentArchivedStorage.addObserver(this::onSegmentArchived);
     }
 
-    synchronized void allowCompressionUntil(long lastCpStartIdx) {
-        lastAllowedToCompressIdx = lastCpStartIdx - 1;
+    /**
+     * @param segmentArchivedStorage Storage of last archived segment.
+     */
+    static SegmentCompressStorage buildCompressStorage(SegmentArchivedStorage segmentArchivedStorage) {
+        SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage);
+
+        segmentArchivedStorage.addObserver(storage::onSegmentArchived);
+
+        return storage;
+    }
+
+    /**
+     * Update to new segment to compress.
+     *
+     * @param allowedSegmentUntilCompress Segment until which segments can be compress.
+     */
+    synchronized void allowCompressionUntil(long allowedSegmentUntilCompress) {
+        lastAllowedToCompressIdx = allowedSegmentUntilCompress - 1;
 
         notify();
     }
 
+    /**
+     * Force set last compressed segment.
+     *
+     * @param lastCompressedIdx Segment which was last compressed.
+     */
     void lastCompressedIdx(long lastCompressedIdx) {
         this.lastCompressedIdx = lastCompressedIdx;
     }
 
+    /**
+     * @return Last compressed segment.
+     */
     long lastCompressedIdx() {
         return lastCompressedIdx;
     }
 
     /**
-     * Callback for waking up compressor when new segment is archived.
+     * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation. Waits if
+     * there's no segment to archive right now.
      */
-    synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        notifyAll();
-    }
-
-    /**
-     * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
-     * Waits if there's no segment to archive right now.
-     */
-    public long nextSegmentToCompressOrWait() throws InterruptedException, IgniteInterruptedCheckedException {
+    synchronized long nextSegmentToCompressOrWait() throws IgniteInterruptedCheckedException {
         long segmentToCompress = lastCompressedIdx + 1;
 
-        synchronized (this) {
-            checkForStop();
-
-            while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archivedMonitor.lastArchivedAbsoluteIndex())) {
+        try {
+            while (
+                segmentToCompress > Math.min(lastAllowedToCompressIdx, segmentArchivedStorage.lastArchivedAbsoluteIndex())
+                    && !interrupted
+                )
                 wait();
-
-                checkForStop();
-            }
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedCheckedException(e);
         }
 
         return segmentToCompress;
     }
 
-    private void checkForStop() throws IgniteInterruptedCheckedException {
-        if (stopped) {
-            throw new IgniteInterruptedCheckedException("");
-        }
+    /**
+     * Interrupt waiting on this object.
+     */
+    synchronized void interrupt() {
+        interrupted = true;
+
+        notifyAll();
     }
 
     /**
-     * Stop waiting.
+     * Check for interrupt flag was set.
      */
-    synchronized void stop() {
-        stopped = true;
+    private void checkInterrupted() throws IgniteInterruptedCheckedException {
+        if (interrupted)
+            throw new IgniteInterruptedCheckedException("");
+    }
 
+    /**
+     * Callback for waking up compressor when new segment is archived.
+     */
+    private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
         notifyAll();
-
-
-
-
-
     }
 
 }

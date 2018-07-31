@@ -285,7 +285,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private volatile FileIOFactory ioFactory;
 
-    private SegmentAware segmentAware ;
+    /** Holder of actual information of latest manipulation on WAL segments. */
+    private final SegmentAware segmentAware;
 
     /** Updater for {@link #currHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
@@ -543,7 +544,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     currHnd.flush(null);
             }
 
-            segmentAware.stop();
+            segmentAware.interrupt();
 
             if (currHnd != null)
                 currHnd.close(false);
@@ -931,9 +932,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private boolean segmentReservedOrLocked(long absIdx) {
         FileArchiver archiver0 = archiver;
 
-        return ((archiver0 != null) && archiver0.locked(absIdx))
-            || (segmentAware.reserved(absIdx));
-
+        return ((archiver0 != null) && segmentAware.locked(absIdx)) || (segmentAware.reserved(absIdx));
     }
 
     /** {@inheritDoc} */
@@ -1454,7 +1453,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return File ready for use as new WAL segment.
      * @throws StorageException If exception occurred in the archiver thread.
      */
-    private File pollNextFile(long curIdx) throws StorageException {
+    private File pollNextFile(long curIdx) throws StorageException, IgniteInterruptedCheckedException {
         FileArchiver archiver0 = archiver;
 
         if (archiver0 == null) {
@@ -1464,7 +1463,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         // Signal to archiver that we are done with the segment and it can be archived.
-        long absNextIdx = archiver0.nextAbsoluteSegmentIndex(curIdx);
+        long absNextIdx = archiver0.nextAbsoluteSegmentIndex();
 
         long segmentIdx = absNextIdx % dsCfg.getWalSegments();
 
@@ -1524,8 +1523,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      * Monitor of current object is used for notify on: <ul> <li>exception occurred ({@link
      * FileArchiver#cleanErr}!=null)</li> <li>stopping thread ({@link FileArchiver#stopped}==true)</li> <li>current file
-     * index changed ({@link FileArchiver#curAbsWalIdx})</li> <li>last archived file index was changed ({@link
-     * FileArchiver#lastAbsArchivedIdx})</li> <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
+     * index changed </li> <li>last archived file index was changed ({@link
+     * </li> <li>some WAL index was removed from map</li>
      * </ul>
      */
     public class FileArchiver extends GridWorker {
@@ -1561,16 +1560,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             U.join(runner());
         }
 
-        /**
-         * Check if WAL segment locked (protected from move to archive)
-         *
-         * @param absIdx Index for check reservation.
-         * @return {@code True} if index is locked.
-         */
-        private boolean locked(long absIdx) {
-            return segmentAware.locked(absIdx);
-        }
-
         /** {@inheritDoc} */
         @Override protected void body() {
             try {
@@ -1580,8 +1569,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 synchronized (this) {
                     // Stop the thread and report to starter.
                     cleanErr = e;
-
-                    segmentAware.stop();
 
                     notifyAll();
                 }
@@ -1594,10 +1581,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             Throwable err = null;
 
             try {
-                segmentAware.awaitSegment(0);
+                segmentAware.awaitSegment(0);//wait for init at least one work segments.
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
-                    long toArchive = segmentAware.waitNextArchiveSegment();
+                    long toArchive = segmentAware.waitNextSegmentForArchivation();
 
                     if (stopped)
                         break;
@@ -1616,15 +1603,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
-                synchronized (this) {
-                    stopped = true;
-                }
-            }
-            catch (InterruptedException t) {
                 Thread.currentThread().interrupt();
-
-                if (!stopped)
-                    err = t;
             }
             catch (Throwable t) {
                 err = t;
@@ -1644,32 +1623,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Gets the absolute index of the next WAL segment available to write. Blocks till there are available file to
          * write
          *
-         * @param curIdx Current absolute index that we want to increment.
          * @return Next index (curWalSegmIdx+1) when it is ready to be written.
          * @throws StorageException If exception occurred in the archiver thread.
          */
-        private long nextAbsoluteSegmentIndex(long curIdx) throws StorageException {
+        private long nextAbsoluteSegmentIndex() throws StorageException, IgniteInterruptedCheckedException {
             synchronized (this) {
                 if (cleanErr != null)
                     throw cleanErr;
 
-                long nextIdx = segmentAware.curAbsWalIdx() + 1;
-
                 try {
-                    nextIdx = segmentAware.nextAbsoluteSegmentIndex();
+                    long nextIdx = segmentAware.nextAbsoluteSegmentIndex();
 
                     // Wait for formatter so that we do not open an empty file in DEFAULT mode.
                     while (nextIdx % dsCfg.getWalSegments() > formatted && cleanErr == null)
                         wait();
+
+                    if (cleanErr != null)
+                        throw cleanErr;
+
+                    return nextIdx;
                 }
-                catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
+                catch (InterruptedException e) {
                     interrupted.set(true);
+
+                    throw new IgniteInterruptedCheckedException(e);
                 }
-
-                if (cleanErr != null)
-                    throw cleanErr;
-
-                return nextIdx;
             }
         }
 
@@ -1808,8 +1786,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException, IgniteInterruptedCheckedException {
-            long segmentToCompress = segmentAware.nextSegmentToCompressOrWait();
+        private long tryReserveNextSegmentOrWait() throws IgniteCheckedException {
+            long segmentToCompress = segmentAware.waitNextSegmentToCompress();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
 
@@ -1880,7 +1858,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     segmentAware.lastCompressedIdx(currReservedSegment);
                 }
-                catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     Thread.currentThread().interrupt();
                 }
                 catch (IgniteCheckedException | IOException e) {
@@ -1888,7 +1866,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "] was skipped due to unexpected error", e);
 
                     segmentAware.lastCompressedIdx(currReservedSegment);
-//                    lastCompressedIdx++;
                 }
 
                 finally {

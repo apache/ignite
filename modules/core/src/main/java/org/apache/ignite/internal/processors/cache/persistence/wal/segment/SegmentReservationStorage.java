@@ -24,8 +24,8 @@ import java.util.TreeMap;
  */
 class SegmentReservationStorage {
     /**
-     * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments
-     * which has index >= reserved segment index. Guarded by {@code this}.
+     * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments which has
+     * index >= reserved segment index. Guarded by {@code this}.
      */
     private NavigableMap<Long, Integer> reserved = new TreeMap<>();
 
@@ -38,6 +38,7 @@ class SegmentReservationStorage {
 
     /**
      * Checks if segment is currently reserved (protected from deletion during WAL cleanup).
+     *
      * @param absIdx Index for check reservation.
      * @return {@code True} if index is reserved.
      */

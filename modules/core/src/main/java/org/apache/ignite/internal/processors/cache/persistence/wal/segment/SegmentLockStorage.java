@@ -17,27 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Lock on segment protects from archiving segment.
  */
-public class SegmentLockStorage {
-
-    List<Consumer<Long>> observers = new ArrayList<>();
-
-    synchronized void addObserver(Consumer<Long> observer) {
-        observers.add(observer);
-    }
-
+public class SegmentLockStorage extends SegmentObservable {
     /**
      * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come from
      * {@link FileWriteAheadLogManager.RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
@@ -60,7 +47,7 @@ public class SegmentLockStorage {
      * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    public synchronized boolean lockWorkSegment(long absIdx) {
+    synchronized boolean lockWorkSegment(long absIdx) {
         Integer cur = locked.get(absIdx);
 
         cur = cur == null ? 1 : cur + 1;
@@ -74,25 +61,14 @@ public class SegmentLockStorage {
      * @param absIdx Segment absolute index.
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    public void releaseWorkSegment(long absIdx) {
-        synchronized (this) {
-            Integer cur = locked.get(absIdx);
+    synchronized void releaseWorkSegment(long absIdx) {
+        Integer cur = locked.get(absIdx);
 
-            if (cur == 1) {
-                locked.remove(absIdx);
+        if (cur == 1)
+            locked.remove(absIdx);
+        else
+            locked.put(absIdx, cur - 1);
 
-//                if (log.isDebugEnabled())
-//                    log.debug("Fully released work segment (ready to archive) [absIdx=" + absIdx + ']');
-            }
-            else {
-                locked.put(absIdx, cur - 1);
-
-//                if (log.isDebugEnabled())
-//                    log.debug("Partially released work segment [absIdx=" + absIdx + ", pins=" + (cur - 1) + ']');
-            }
-
-            observers.forEach(observer -> observer.accept(absIdx));
-        }
+        notifyObservers(absIdx);
     }
-
 }
