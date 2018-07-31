@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -222,7 +221,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private String zkRootPath;
 
-    /** */
+    /** The number of clusters started in one test (increments when the first node in the cluster starts). */
     private final AtomicInteger clusterNum = new AtomicInteger(0);
 
     /** {@inheritDoc} */
@@ -305,12 +304,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             UUID currNodeId = cfg.getNodeId();
 
             lsnrs.put(new IgnitePredicate<Event>() {
-                /** */
+                /** Last remembered uuid before node reconnected. */
                 private UUID nodeId = currNodeId;
 
                 @Override public boolean apply(Event evt) {
                     if(evt.type() == EVT_CLIENT_NODE_RECONNECTED){
-
                         evts.remove(nodeId);
 
                         nodeId = evt.node().id();
@@ -2919,7 +2917,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                     srvCnt--;
             }
 
-            assert srvCnt >= 0;
+            assert srvCnt >= 0 : "incorrect server nodes counting";
 
             boolean clientMode = srvCnt != 0 && ThreadLocalRandom.current().nextBoolean();
 
@@ -4539,14 +4537,13 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         if(nodes1.size() != nodes2.size())
             return false;
 
-        Iterator<ClusterNode> iter1 = nodes1.iterator();
+        Set<Object> consistentIds1 = nodes1.stream()
+            .map(ClusterNode::consistentId)
+            .collect(Collectors.toSet());
 
-        for (ClusterNode node : nodes2) {
-            if(!node.consistentId().equals(iter1.next().consistentId()))
-                return false;
-        }
-
-        return true;
+        return nodes2.stream()
+            .map(ClusterNode::consistentId)
+            .allMatch(consistentIds1::contains);
     }
 
     /**
