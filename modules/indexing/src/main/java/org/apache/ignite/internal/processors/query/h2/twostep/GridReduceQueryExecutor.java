@@ -102,7 +102,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_REDUCER_RETRY_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -113,6 +113,9 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySpl
  * Reduce query executor.
  */
 public class GridReduceQueryExecutor {
+    /** Fail query after 10 seconds of unsuccessful attempts to reserve partitions. */
+    public static final long DFLT_RETRY_TIMEOUT = 10_000L;
+
     /** */
     private static final String MERGE_INDEX_UNSORTED = "merge_scan";
 
@@ -121,9 +124,6 @@ public class GridReduceQueryExecutor {
 
     /** */
     private static final Set<ClusterNode> UNMAPPED_PARTS = Collections.emptySet();
-
-    /** Retry timeout. */
-    private static final long RETRY_TIMEOUT = IgniteSystemProperties.getLong(IGNITE_SQL_REDUCER_RETRY_TIMEOUT, 10_000L);
 
     /** */
     private GridKernalContext ctx;
@@ -568,12 +568,14 @@ public class GridReduceQueryExecutor {
 
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
+        long retryTimeout = retryTimeout();
+
         final long startTime = U.currentTimeMillis();
 
         long qryReqId = 0;
 
         for (int attempt = 0;; attempt++) {
-            if (attempt > 0 && RETRY_TIMEOUT > 0 && (U.currentTimeMillis() - startTime > RETRY_TIMEOUT))
+            if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout))
                 throw new CacheException("Failed to execute SQL query (cannot reserve partitions) [" +
                     "qryId=" + qryReqId + ']');
 
@@ -1754,6 +1756,13 @@ public class GridReduceQueryExecutor {
         }
 
         return cp.isEmpty() ? null : cp;
+    }
+
+    /**
+     * @return Query retry timeout.
+     */
+    private static long retryTimeout() {
+        return IgniteSystemProperties.getLong(IGNITE_SQL_RETRY_TIMEOUT, DFLT_RETRY_TIMEOUT);
     }
 
     /** */
