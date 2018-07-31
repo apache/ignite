@@ -435,7 +435,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void awaitPartitionMessagesAbsent() throws Exception {
-        log.info("Checking GridDhtPartitions*Message absent (it will take " +
+        log.info("Checking GridDhtPartitions*Message absent (it will take up to " +
             TOPOLOGY_STILLNESS_TIME + " ms) ... ");
 
         // Start waiting new messages from current point of time.
@@ -449,7 +449,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                         return lastPartMsgTime + TOPOLOGY_STILLNESS_TIME < U.currentTimeMillis();
                     }
                 },
-                2 * TOPOLOGY_STILLNESS_TIME
+                2 * TOPOLOGY_STILLNESS_TIME // 30 sec to gain stable topology and 30 sec of silence.
             )
         );
     }
