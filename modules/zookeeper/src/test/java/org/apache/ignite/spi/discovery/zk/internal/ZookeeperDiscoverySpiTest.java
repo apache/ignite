@@ -2399,7 +2399,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     public void testLargeUserAttribute3() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        int maxAttrMemory = 750; // MB
+        int maxAttrMemory = 450; // MB
 
         int attrSize = 0;
 
