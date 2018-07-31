@@ -293,7 +293,7 @@ mixin paragraph-query
             .col-xs-4.col-sm-3
                 div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
                     lable.labelField.labelFormField Caches:
-                    i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom' data-trigger='click' data-container='#{{ paragraph.id }}')
+                    i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom-right' data-trigger='click' data-container='#{{ paragraph.id }}')
                     .input-tip
                         input.form-control(type='text' st-search='label' placeholder='Filter caches...')
                     table.links
