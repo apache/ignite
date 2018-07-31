@@ -414,10 +414,6 @@ public class DmlStatementsProcessor {
 
         assert plan.isLocalSubquery();
 
-        if (plan.cacheContext().mvccEnabled())
-            throw new IgniteSQLException("Streaming to cache with enabled MVCC is unsupported at the moment.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
         final GridCacheContext cctx = plan.cacheContext();
 
         QueryCursorImpl<List<?>> cur;
