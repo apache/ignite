@@ -31,9 +31,6 @@ import java.util.UUID;
  * @param <R> Type of accepted process specifications.
  */
 public abstract class ProcessManagerWrapper<T, R> implements ProcessManager<R> {
-    /** */
-    private static final long serialVersionUID = -6397225095261457524L;
-
     /** Delegate. */
     private final ProcessManager<T> delegate;
 
