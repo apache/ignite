@@ -1546,6 +1546,10 @@ export class NotebookCtrl {
         };
 
         $scope.explain = (paragraph) => {
+            const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
+            const enforceJoinOrder = !!paragraph.enforceJoinOrder;
+            const collocated = !!paragraph.collocated;
+
             if (!$scope.queryAvailable(paragraph))
                 return;
 
@@ -1568,7 +1572,7 @@ export class NotebookCtrl {
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false, args.collocated);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
