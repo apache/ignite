@@ -481,23 +481,25 @@
 
     .form-field__control {
         width: auto;
+
+        input,
+        button {
+            color: transparent;
+
+            text-shadow: 0 0 0 $ignite-brand-success;
+
+            border: none;
+            box-shadow: none;
+
+            &:hover, &:focus {
+                text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
+            }
+        }
     }
 
-    .form-field__timepicker,
-    .form-field__datepicker {
-        .form-field__control {
-            input {
-                color: transparent;
-
-                text-shadow: 0 0 0 $ignite-brand-success;
-
-                border: none;
-                box-shadow: none;
-
-                &:hover, &:focus {
-                    text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
-                }
-            }
+    .form-field__dropdown {
+        button::after {
+            display: none;
         }
     }
 }
