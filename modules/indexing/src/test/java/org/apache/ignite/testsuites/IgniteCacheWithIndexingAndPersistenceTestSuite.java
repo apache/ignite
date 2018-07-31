@@ -18,23 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 
 /**
- *
+ * Cache tests using indexing.
  */
-public class IgniteBinaryObjectsComputeGridTestSuite {
+public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+        TestSuite suite = new TestSuite("Ignite Cache With Indexing And Persistence Test Suite");
 
-        TestSuite suite = IgniteComputeGridTestSuite.suite();
-
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
+        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
 
         return suite;
     }
