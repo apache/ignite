@@ -446,14 +446,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
             GridTestUtils.waitForCondition(
                 new GridAbsPredicateX() {
                     @Override public boolean applyx() {
-                        long curTime = U.currentTimeMillis();
-
-                        boolean hasNoMsgs = true;
-
-                        if (lastPartMsgTime + TOPOLOGY_STILLNESS_TIME > curTime)
-                            hasNoMsgs = false;
-
-                        return hasNoMsgs;
+                        return lastPartMsgTime + TOPOLOGY_STILLNESS_TIME < U.currentTimeMillis();
                     }
                 },
                 2 * TOPOLOGY_STILLNESS_TIME
