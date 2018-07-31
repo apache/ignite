@@ -246,23 +246,16 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
         int offset = 16;
 
-        byte[] byteArr = new byte[0];
+        byte[] byteArr = U.mapToByteArray(cacheMetrics);
 
-        try {
-            byteArr = U.mapToByteArray(cacheMetrics);
-        }
-        catch (IOException ignore) {
-            assert false;
-        }
-
-        byte[] buf = new byte[offset + METRICS_SIZE + (byteArr != null ? byteArr.length : 0 )];
+        byte[] buf = new byte[offset + METRICS_SIZE + byteArr.length];
 
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
         ClusterMetricsSnapshot.serialize(buf, offset, metrics);
 
-        if (cacheMetrics != null && byteArr != null && byteArr.length > 0)
+        if (byteArr.length > 0)
             U.arrayCopy(byteArr, 0, buf, offset + METRICS_SIZE, byteArr.length);
 
         return buf;
@@ -313,15 +306,8 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
                     int offset = 16;
 
-                    try {
-                        return new T3<>(nodeId, deserialize(bytes, offset),
-                            U.byteArrayToMap(bytes, offset + METRICS_SIZE, bytes.length));
-                    }
-                    catch (IOException | ClassNotFoundException ignore) {
-                        assert false;
-                    }
-
-                    return null;
+                    return new T3<>(nodeId, deserialize(bytes, offset),
+                        U.byteArrayToMap(bytes, offset + METRICS_SIZE, bytes.length));
                 }
             });
         }

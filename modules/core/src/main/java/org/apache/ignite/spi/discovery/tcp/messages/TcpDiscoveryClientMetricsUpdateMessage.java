@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.ClusterMetricsSnapshot.METRICS_SIZE;
 
@@ -48,37 +49,26 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
      * @param cacheMetrics cache metrics.
      */
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics,
-        Map<Integer, CacheMetrics> cacheMetrics) {
+        @NotNull Map<Integer, CacheMetrics> cacheMetrics) {
         super(creatorNodeId);
-        try {
-            byte[] metricsArr = ClusterMetricsSnapshot.serialize(metrics);
 
-            byte[] cacheMetricsArr = U.mapToByteArray(cacheMetrics);
+        byte[] metricsArr = ClusterMetricsSnapshot.serialize(metrics);
 
-            this.metrics = new byte[metricsArr.length + (cacheMetricsArr != null ? cacheMetricsArr.length : 0)];
+        byte[] cacheMetricsArr = U.mapToByteArray(cacheMetrics);
 
-            U.arrayCopy(metricsArr, 0, this.metrics, 0, metricsArr.length);
+        this.metrics = new byte[METRICS_SIZE + cacheMetricsArr.length];
 
-            if (cacheMetricsArr != null)
-                U.arrayCopy(cacheMetricsArr, 0, this.metrics, metricsArr.length, cacheMetricsArr.length);
-        }
-        catch (IOException ignore) {
-            assert false;
-        }
+        U.arrayCopy(metricsArr, 0, this.metrics, 0, metricsArr.length);
+
+        if (cacheMetricsArr.length > 0)
+            U.arrayCopy(cacheMetricsArr, 0, this.metrics, metricsArr.length, cacheMetricsArr.length);
     }
 
     /**
      *
      */
     public Map<Integer, CacheMetrics> cacheMetrics() {
-        try {
-            return U.byteArrayToMap(metrics, METRICS_SIZE, metrics.length - METRICS_SIZE);
-        }
-        catch (IOException | ClassNotFoundException ignore) {
-            assert false;
-        }
-
-        return null;
+        return U.byteArrayToMap(metrics, METRICS_SIZE, metrics.length - METRICS_SIZE);
     }
 
     /**

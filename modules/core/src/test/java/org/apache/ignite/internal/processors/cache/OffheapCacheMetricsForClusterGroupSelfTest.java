@@ -145,7 +145,6 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
             assertEquals(count * 2, cache.metrics().getOffHeapEntriesCount());
             assertEquals(count * 2, cache.mxBean().getOffHeapEntriesCount());
-
             assertEquals(0L, cache.localMxBean().getOffHeapPrimaryEntriesCount());
             assertEquals(0L, cache.localMxBean().getOffHeapBackupEntriesCount());
             assertEquals(0L, cache.localMxBean().getOffHeapEntriesCount());

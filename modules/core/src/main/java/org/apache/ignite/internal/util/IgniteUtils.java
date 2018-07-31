@@ -2735,16 +2735,19 @@ public abstract class IgniteUtils {
     /**
      * @param map map.
      * @return array of bytes.
-     * @throws IOException If failed.
      */
-    @Nullable
-    public static byte[] mapToByteArray(Map map) throws IOException {
+    public static byte[] mapToByteArray(Map map) {
         if (map == null || map.isEmpty())
-            return null;
+            return new byte[0];
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        writeMap(new ObjectOutputStream(out), map);
+        try {
+            writeMap(new ObjectOutputStream(out), map);
+        }
+        catch (IOException ignore) {
+            assert false;
+        }
 
         return out.toByteArray();
     }
@@ -2753,14 +2756,19 @@ public abstract class IgniteUtils {
      * @param byteArr Byte array.
      * @param offset Offset.
      * @param len Length.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If failed.
      */
-    public static <K, V> Map<K, V> byteArrayToMap(byte[] byteArr, int offset, int len) throws IOException, ClassNotFoundException {
+    public static <K, V> Map<K, V> byteArrayToMap(byte[] byteArr, int offset, int len) {
         if (byteArr == null || byteArr.length <= offset)
             return Collections.emptyMap();
 
-        return readMap(new ObjectInputStream(new ByteArrayInputStream(byteArr, offset, len)));
+        try {
+            return readMap(new ObjectInputStream(new ByteArrayInputStream(byteArr, offset, len)));
+        }
+        catch (IOException | ClassNotFoundException e) {
+            assert false;
+        }
+
+        return Collections.emptyMap();
     }
 
     /**
