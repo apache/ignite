@@ -37,6 +37,7 @@ from .key_value import (
     cache_remove_key, cache_remove_keys, cache_remove_all,
     cache_remove_if_equals, cache_replace_if_equals, cache_get_size,
 )
+from .sql import scan, scan_cursor_get_page
 
 
 PROP_CODES = set([
@@ -176,23 +177,23 @@ class Cache:
             self._conn, self._cache_id, key, key_hint=key_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def contains_key(self, key, key_hint=None):
         return cache_contains_key(
             self._conn, self._cache_id, key, key_hint=key_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def contains_keys(self, keys: Iterable):
         return cache_contains_keys(self._conn, self._cache_id, keys)
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def get_and_put(self, key, value, key_hint=None, value_hint=None):
         return cache_get_and_put(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def get_and_put_if_absent(
         self, key, value, key_hint=None, value_hint=None
     ):
@@ -200,41 +201,41 @@ class Cache:
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def put_if_absent(self, key, value, key_hint=None, value_hint=None):
         return cache_put_if_absent(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def get_and_remove(self, key, key_hint=None):
         return cache_get_and_remove(self._conn, self._cache_id, key, key_hint)
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def get_and_replace(self, key, value, key_hint=None, value_hint=None):
         return cache_get_and_replace(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def remove_key(self, key, key_hint=None):
         return cache_remove_key(self._conn, self._cache_id, key, key_hint)
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def remove_keys(self, keys):
         return cache_remove_keys(self._conn, self._cache_id, keys)
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def remove_all(self):
         return cache_remove_all(self._conn, self._cache_id)
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def remove_if_equals(self, key, sample, key_hint=None, sample_hint=None):
         return cache_remove_if_equals(
             self._conn, self._cache_id, key, sample, key_hint, sample_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def replace_if_equals(
         self, key, sample, value,
         key_hint=None, sample_hint=None, value_hint=None
@@ -244,6 +245,14 @@ class Cache:
             key_hint, sample_hint, value_hint
         )
 
-    @status_to_exception
+    @status_to_exception(CacheError)
     def get_size(self, peek_modes=0):
         return cache_get_size(self._conn, self._cache_id, peek_modes)
+
+    @status_to_exception(CacheError)
+    def scan(self, page_size: int, partitions: int=-1, local: bool=False):
+        return scan(self._conn, self._cache_id, page_size, partitions, local)
+
+    @status_to_exception(CacheError)
+    def scan_cursor_get_page(self, cursor: int):
+        return scan_cursor_get_page(self._conn, cursor)
