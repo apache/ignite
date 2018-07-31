@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridEvictionPolicyMBeansTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedTckMetricsSelfTestImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearAtomicMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedHitsAndMissesSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMetricsSelfTest;
@@ -54,6 +55,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class);
         suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheNearAtomicMetricsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
