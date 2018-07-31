@@ -41,8 +41,8 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease, boolean useIndex) {
-        this(maxDeep, minImpurityDecrease, null, useIndex);
+    public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease) {
+        this(maxDeep, minImpurityDecrease, null);
     }
 
     /**
@@ -60,8 +60,8 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      * @param minImpurityDecrease Min impurity decrease.
      */
     public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease,
-        StepFunctionCompressor<GiniImpurityMeasure> compressor, boolean useIndex) {
-        super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder(), useIndex);
+        StepFunctionCompressor<GiniImpurityMeasure> compressor) {
+        super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder());
     }
 
     /**
@@ -85,12 +85,13 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     }
 
     /**
-     * Set up the step function compressor of decision tree.
-     * @param compressor The parameter value.
-     * @return Trainer with new compressor parameter value.
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer
      */
-    public DecisionTreeClassificationTrainer withCompressor(StepFunctionCompressor compressor){
-        this.compressor = compressor;
+    public DecisionTreeClassificationTrainer withUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
         return this;
     }
 

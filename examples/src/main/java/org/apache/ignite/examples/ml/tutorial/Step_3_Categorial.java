@@ -65,7 +65,7 @@ public class Step_3_Categorial {
                             strEncoderPreprocessor
                         );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0, true);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                     // Train decision tree model.
                     DecisionTreeNode mdl = trainer.fit(

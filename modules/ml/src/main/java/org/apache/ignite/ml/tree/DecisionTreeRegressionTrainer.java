@@ -37,8 +37,8 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease, boolean useIndex) {
-        this(maxDeep, minImpurityDecrease, null, useIndex);
+    public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease) {
+        this(maxDeep, minImpurityDecrease, null);
     }
 
     /**
@@ -48,8 +48,19 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
      * @param minImpurityDecrease Min impurity decrease.
      */
     public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease,
-        StepFunctionCompressor<MSEImpurityMeasure> compressor, boolean useIndex) {
-        super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder(), useIndex);
+        StepFunctionCompressor<MSEImpurityMeasure> compressor) {
+        super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder());
+    }
+
+    /**
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer
+     */
+    public DecisionTreeRegressionTrainer withUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
+        return this;
     }
 
     /** {@inheritDoc} */

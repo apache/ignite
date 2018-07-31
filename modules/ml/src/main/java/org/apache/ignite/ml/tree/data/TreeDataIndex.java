@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.data;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
@@ -26,8 +27,10 @@ import org.apache.ignite.ml.tree.TreeFilter;
 public class TreeDataIndex {
     /** Index containing IDs of rows as if they is sorted by feature values. */
     private final int[][] index;
+
     /** Original features table. */
     private final double[][] features;
+
     /** Original labels. */
     private final double[] labels;
 
@@ -44,17 +47,15 @@ public class TreeDataIndex {
         int rows = features.length;
         int cols = features.length == 0 ? 0 : features[0].length;
 
-        double[][] featuresCopy = new double[rows][cols];
+        double[][] featuresCp = new double[rows][cols];
         index = new int[rows][cols];
         for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                index[row][col] = row;
-                featuresCopy[row][col] = features[row][col];
-            }
+            Arrays.fill(index[row], row);
+            featuresCp[row] = Arrays.copyOf(features[row], cols);
         }
 
         for (int col = 0; col < cols; col++)
-            sortIndex(featuresCopy, col, 0, rows - 1);
+            sortIndex(featuresCp, col, 0, rows - 1);
     }
 
     /**
@@ -75,6 +76,7 @@ public class TreeDataIndex {
      *
      * @param k K.
      * @param featureId Feature id.
+     * @return Label value.
      */
     public double labelInSortedOrder(int k, int featureId) {
         return labels[index[k][featureId]];
@@ -85,6 +87,7 @@ public class TreeDataIndex {
      *
      * @param k K.
      * @param featureId Feature id.
+     * @return Features vector.
      */
     public double[] featuresInSortedOrder(int k, int featureId) {
         return features[index[k][featureId]];
@@ -95,6 +98,7 @@ public class TreeDataIndex {
      *
      * @param k K.
      * @param featureId Feature id.
+     * @return Feature value.
      */
     public double featureInSortedOrder(int k, int featureId) {
         return featuresInSortedOrder(k, featureId)[featureId];
@@ -104,6 +108,7 @@ public class TreeDataIndex {
      * Creates projection of current index in according to {@link TreeFilter}.
      *
      * @param filter Filter.
+     * @return Projection of current index onto smaller index in according to rows filter.
      */
     public TreeDataIndex filter(TreeFilter filter) {
         int projSize = 0;

@@ -74,7 +74,7 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
             data.put(i, new double[]{x, x > 0 ? 1 : 0});
         }
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0, true);
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
         DecisionTreeNode tree = trainer.fit(
             ignite,

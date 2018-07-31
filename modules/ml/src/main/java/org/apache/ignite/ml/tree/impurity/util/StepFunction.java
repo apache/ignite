@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.tree.impurity.util;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
 
@@ -47,19 +45,6 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
         this.y = y;
 
         sort(x, y, 0, x.length - 1);
-    }
-
-    @SuppressWarnings("unchecked")
-    public StepFunction(ArrayList<Double> x, ArrayList<T> y, Class<T> yClass) {
-        assert x.size() == y.size() : "Argument and value arrays have to be the same length";
-
-        this.x = new double[x.size()];
-        this.y = (T[])Array.newInstance(yClass, y.size());
-
-        for(int i = 0; i < x.size(); i++) {
-            this.x[i] = x.get(i);
-            this.y[i] = y.get(i);
-        }
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.impurity.mse;
 
-import java.util.ArrayList;
 import org.apache.ignite.ml.tree.TreeFilter;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.TreeDataIndex;
@@ -61,10 +60,10 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
                 if (!useIndex)
                     data.sort(col);
 
-                ArrayList<Double> x = new ArrayList<>();
-                ArrayList<MSEImpurityMeasure> y = new ArrayList<>();
+                double[] x = new double[rowsCnt + 1];
+                MSEImpurityMeasure[] y = new MSEImpurityMeasure[rowsCnt + 1];
 
-                x.add(Double.NEGATIVE_INFINITY);
+                x[0] = Double.NEGATIVE_INFINITY;
 
                 double leftY = 0;
                 double leftY2 = 0;
@@ -93,16 +92,16 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
                     }
 
                     if (leftSize < rightSize)
-                        x.add(getFeatureValue(data, index, col, i));
+                        x[leftSize + 1] = getFeatureValue(data, index, col, i);
 
-                    y.add(new MSEImpurityMeasure(
+                    y[leftSize] = new MSEImpurityMeasure(
                         leftY, leftY2, leftSize, rightY, rightY2, rightSize - leftSize
-                    ));
+                    );
 
                     leftSize++;
                 }
 
-                res[col] = new StepFunction<>(x, y, MSEImpurityMeasure.class);
+                res[col] = new StepFunction<>(x, y);
             }
 
             return res;

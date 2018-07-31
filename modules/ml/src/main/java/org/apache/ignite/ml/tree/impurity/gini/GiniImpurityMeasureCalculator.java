@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.impurity.gini;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.ml.tree.TreeFilter;
@@ -71,8 +70,8 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
                 if(!useIndex)
                     data.sort(col);
 
-                ArrayList<Double> x = new ArrayList<>();
-                ArrayList<GiniImpurityMeasure> y = new ArrayList<>();
+                double[] x = new double[rowsCnt + 1];
+                GiniImpurityMeasure[] y = new GiniImpurityMeasure[rowsCnt + 1];
 
                 long[] left = new long[lbEncoder.size()];
                 long[] right = new long[lbEncoder.size()];
@@ -82,11 +81,12 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
                     right[getLabelCode(label)]++;
                 }
 
-                x.add(Double.NEGATIVE_INFINITY);
-                y.add(new GiniImpurityMeasure(
+                int xPtr = 0, yPtr = 0;
+                x[xPtr++] = Double.NEGATIVE_INFINITY;
+                y[yPtr++] = new GiniImpurityMeasure(
                     Arrays.copyOf(left, left.length),
                     Arrays.copyOf(right, right.length)
-                ));
+                );
 
                 for (int i = 0; i < rowsCnt; i++) {
                     double lb = getLabelValue(data, index, col, i);
@@ -97,14 +97,14 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
                     if (i < (rowsCnt - 1) && getFeatureValue(data, index, col, i + 1) == featureVal)
                         continue;
 
-                    x.add(featureVal);
-                    y.add(new GiniImpurityMeasure(
+                    x[xPtr++] = featureVal;
+                    y[yPtr++] = new GiniImpurityMeasure(
                         Arrays.copyOf(left, left.length),
                         Arrays.copyOf(right, right.length)
-                    ));
+                    );
                 }
 
-                res[col] = new StepFunction<>(x, y, GiniImpurityMeasure.class);
+                res[col] = new StepFunction<>(Arrays.copyOf(x, xPtr), Arrays.copyOf(y, yPtr));
             }
 
             return res;

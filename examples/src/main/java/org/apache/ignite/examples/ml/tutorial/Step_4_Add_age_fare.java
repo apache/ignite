@@ -64,7 +64,7 @@ public class Step_4_Add_age_fare {
                             strEncoderPreprocessor
                         );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0, true);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                     // Train decision tree model.
                     DecisionTreeNode mdl = trainer.fit(

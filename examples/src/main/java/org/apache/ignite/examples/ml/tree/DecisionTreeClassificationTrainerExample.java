@@ -50,7 +50,7 @@ public class DecisionTreeClassificationTrainerExample {
                 // Create cache with training data.
                 CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
                 trainingSetCfg.setName("TRAINING_SET");
-                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
                 IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
 
@@ -61,7 +61,7 @@ public class DecisionTreeClassificationTrainerExample {
                     trainingSet.put(i, generatePoint(rnd));
 
                 // Create classification trainer.
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0, false);
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 // Train decision tree model.
                 DecisionTreeNode mdl = trainer.fit(

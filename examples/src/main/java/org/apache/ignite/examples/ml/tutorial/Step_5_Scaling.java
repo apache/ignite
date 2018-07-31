@@ -82,7 +82,7 @@ public class Step_5_Scaling {
                         minMaxScalerPreprocessor
                     );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0, true);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                     // Train decision tree model.
                     DecisionTreeNode mdl = trainer.fit(

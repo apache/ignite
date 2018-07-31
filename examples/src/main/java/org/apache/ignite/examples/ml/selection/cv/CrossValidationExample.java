@@ -67,7 +67,7 @@ public class CrossValidationExample {
                     trainingSet.put(i, generatePoint(rnd));
 
                 // Create classification trainer.
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0, true);
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 CrossValidation<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
                     = new CrossValidation<>();

@@ -53,7 +53,7 @@ public class Step_2_Imputing {
                             featureExtractor // "pclass", "sibsp", "parch"
                         );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0, true);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                     // Train decision tree model.
                     DecisionTreeNode mdl = trainer.fit(

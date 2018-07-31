@@ -56,9 +56,4 @@ public abstract class RandomForestTrainer extends BaggingModelTrainer {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
     }
-
-    /** */
-    public void setUseIndex(boolean useIndex) {
-        this.useIndex = useIndex;
-    }
 }

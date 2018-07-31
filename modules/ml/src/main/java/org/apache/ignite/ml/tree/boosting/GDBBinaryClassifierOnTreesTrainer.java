@@ -53,11 +53,17 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
 
     /** {@inheritDoc} */
     @NotNull @Override protected DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer() {
-        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease, useIndex);
+        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUseIndex(useIndex);
     }
 
-    /** */
-    public void setUseIndex(boolean useIndex) {
+    /**
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer
+     */
+    public GDBBinaryClassifierOnTreesTrainer withUseIndex(boolean useIndex) {
         this.useIndex = useIndex;
+        return this;
     }
 }

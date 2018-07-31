@@ -108,7 +108,7 @@ public class Step_8_CV {
                                     minMaxScalerPreprocessor
                                 );
 
-                            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(maxDeep, 0, true);
+                            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(maxDeep, 0);
 
                             CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
                                 = new CrossValidation<>();
@@ -148,7 +148,7 @@ public class Step_8_CV {
                             minMaxScalerPreprocessor
                         );
 
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0, true);
+                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
 
                     // Train decision tree model.
                     DecisionTreeNode bestMdl = trainer.fit(

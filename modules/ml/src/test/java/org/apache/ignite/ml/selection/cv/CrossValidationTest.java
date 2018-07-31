@@ -40,7 +40,7 @@ public class CrossValidationTest {
         for (int i = 0; i < 1000; i++)
             data.put(i, i > 500 ? 1.0 : 0.0);
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0, false);
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
         CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
             new CrossValidation<>();
@@ -71,7 +71,7 @@ public class CrossValidationTest {
         for (int i = 0; i < 1000; i++)
             data.put(i, i % 2 == 0 ? 1.0 : 0.0);
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0, true);
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
         CrossValidation<DecisionTreeNode, Double, Integer, Double> scoreCalculator =
             new CrossValidation<>();

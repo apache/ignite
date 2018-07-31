@@ -48,7 +48,7 @@ public class DecisionTreeMNISTTest {
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(
             8,
             0,
-            new SimpleStepFunctionCompressor<>(), false);
+            new SimpleStepFunctionCompressor<>());
 
         DecisionTreeNode mdl = trainer.fit(
             trainingSet,

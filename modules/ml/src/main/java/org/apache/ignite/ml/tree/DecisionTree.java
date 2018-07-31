@@ -54,7 +54,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
 
     /** Use index structure instead of using sorting while learning. */
-    private final boolean useIndex;
+    protected boolean useIndex = true;
 
     /**
      * Constructs a new distributed decision tree trainer.
@@ -65,12 +65,11 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
     DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
-        DecisionTreeLeafBuilder decisionTreeLeafBuilder, boolean useIndex) {
+        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
         this.decisionTreeLeafBuilder = decisionTreeLeafBuilder;
-        this.useIndex = useIndex;
     }
 
     /** {@inheritDoc} */
