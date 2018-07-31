@@ -38,9 +38,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,13 +59,6 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
      * List of resources created by factories.
      */
     private static final Collection<CloseableResource> rsrcs = new ConcurrentLinkedDeque<>();
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -159,24 +150,10 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
-    private void checkResourcesCleanup(CacheConfiguration<Integer, String> ccfg) throws Exception {
-        checkResourcesCleanup(ccfg, cache -> {
-            cache.put(1, "1");
-            cache.put(2, "2");
-        });
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @throws Exception If failed.
-     */
-    private <K, V> void checkResourcesCleanup(CacheConfiguration<K, V> ccfg, CI1<IgniteCache<K, V>> c)
-        throws Exception {
+    private <K, V> void checkResourcesCleanup(CacheConfiguration<K, V> ccfg) throws Exception {
         Ignite node = grid(0);
 
         IgniteCache<K, V> cache = node.createCache(ccfg);
-
-        c.apply(cache);
 
         cache.destroy();
 
@@ -340,15 +317,6 @@ public class CacheCloseableResourcesCleanupTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent ignore) {
             return true;
-        }
-    }
-
-    /** */
-    private static class CloseableTransformer<K, V, T> extends CloseableResource
-        implements IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, T> {
-        /** {@inheritDoc} */
-        @Override public T apply(CacheEntryEvent<? extends K, ? extends V> evt) {
-            return null;
         }
     }
 
