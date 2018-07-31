@@ -126,6 +126,7 @@ import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import gridNoData from './components/grid-no-data';
 import gridExport from './components/grid-export';
+import gridShowingRows from './components/grid-showing-rows';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
@@ -221,6 +222,7 @@ export default angular.module('ignite-console', [
     gridItemSelected.name,
     gridNoData.name,
     gridExport.name,
+    gridShowingRows.name,
     bsSelectMenu.name,
     uiGridHovering.name,
     uiGridFilters.name,
