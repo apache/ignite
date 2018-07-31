@@ -66,7 +66,7 @@ const _fullColName = (col) => {
 let paragraphId = 0;
 
 class Paragraph {
-    constructor($animate, $timeout, JavaTypes, paragraph, errorParser) {
+    constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
         const self = this;
 
         self.id = 'paragraph-' + paragraphId++;
@@ -957,6 +957,10 @@ export class NotebookCtrl {
                 .subscribe();
         };
 
+        const _newParagraph = (paragraph) => {
+            return new Paragraph($animate, $timeout, JavaTypes, errorParser, paragraph);
+        };
+
         Notebook.find($state.params.noteId)
             .then((notebook) => {
                 $scope.notebook = _.cloneDeep(notebook);
@@ -969,8 +973,7 @@ export class NotebookCtrl {
                 if (!$scope.notebook.paragraphs)
                     $scope.notebook.paragraphs = [];
 
-                $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs,
-                    (paragraph) => new Paragraph($animate, $timeout, JavaTypes, paragraph, this.errorParser));
+                $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs, (p) => _newParagraph(p));
 
                 if (_.isEmpty($scope.notebook.paragraphs))
                     $scope.addQuery();
@@ -1042,7 +1045,7 @@ export class NotebookCtrl {
 
             ActivitiesData.post({ action: '/queries/add/query' });
 
-            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
+            const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[1],
@@ -1071,7 +1074,7 @@ export class NotebookCtrl {
 
             ActivitiesData.post({ action: '/queries/add/scan' });
 
-            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
+            const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[1],
