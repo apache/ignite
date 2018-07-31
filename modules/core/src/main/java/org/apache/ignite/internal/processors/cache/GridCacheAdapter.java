@@ -49,6 +49,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -6293,7 +6294,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!waitAffinityReadyFuture())
                 return null;
 
-            IgniteInternalCache cache = ((IgniteEx)ignite).context().cache().cache(cacheName);
+            IgniteInternalCache cache;
+
+            try {
+                cache = ((IgniteEx) ignite).context().cache().cache(cacheName);
+            } catch (IgniteCacheRestartingException e) {
+                e.setTopologyVersion(((IgniteEx)ignite).context().cache().context().exchange().lastTopologyFuture().initialVersion());
+
+                throw e;
+            }
 
             return localExecute(cache);
         }

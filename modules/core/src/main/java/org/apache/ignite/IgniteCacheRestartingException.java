@@ -18,6 +18,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,26 +30,28 @@ public class IgniteCacheRestartingException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteFuture<?> restartFut;
+    private transient final IgniteFuture<?> restartFut;
+
+    private AffinityTopologyVersion topologyVersion;
 
     /**
      * @param restartFut Restart future.
-     * @param msg Error message.
+     * @param cacheName Error message.
      */
-    public IgniteCacheRestartingException(IgniteFuture<?> restartFut, String msg) {
-        this(restartFut, msg, null);
+    public IgniteCacheRestartingException(IgniteFuture<?> restartFut, String cacheName) {
+        this(restartFut, cacheName, null);
     }
 
     /**
      * @param restartFut Restart future.
-     * @param msg Error message.
+     * @param cacheName Cache name what is restarting.
      * @param cause Optional nested exception (can be {@code null}).
      */
     public IgniteCacheRestartingException(
         IgniteFuture<?> restartFut,
-        String msg,
+        String cacheName,
         @Nullable Throwable cause) {
-        super(msg, cause);
+        super("Cache is restarting:" + cacheName + ", you could wait restart completion with restartFuture", cause);
 
         this.restartFut = restartFut;
     }
@@ -58,5 +61,13 @@ public class IgniteCacheRestartingException extends IgniteException {
      */
     public IgniteFuture<?> restartFuture() {
         return restartFut;
+    }
+
+    public void setTopologyVersion(AffinityTopologyVersion topologyVersion) {
+        this.topologyVersion = topologyVersion;
+    }
+
+    public AffinityTopologyVersion getTopologyVersion() {
+        return topologyVersion;
     }
 }

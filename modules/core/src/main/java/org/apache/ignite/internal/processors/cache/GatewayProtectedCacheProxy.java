@@ -50,9 +50,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -85,7 +87,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /**
-     *
      * @param delegate Cache proxy delegate.
      * @param opCtx Cache operation context.
      * @param lock True if cache proxy should be protected with gateway lock, false in other case.
@@ -266,73 +267,107 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.loadCache(p, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.loadCache(p, args);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.loadCacheAsync(p, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.loadCacheAsync(p, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.localLoadCache(p, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.localLoadCache(p, args);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localLoadCacheAsync(p, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localLoadCacheAsync(p, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public V getAndPutIfAbsent(K key, V val) throws CacheException, TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndPutIfAbsent(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndPutIfAbsent(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException, TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndPutIfAbsentAsync(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndPutIfAbsentAsync(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
@@ -355,937 +390,1353 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.isLocalLocked(key, byCurrThread);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.isLocalLocked(key, byCurrThread);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.query(qry);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.query(qry);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.query(qry);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.query(qry);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.queryMultipleStatements(qry);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.queryMultipleStatements(qry);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.query(qry, transformer);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.query(qry, transformer);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localEntries(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localEntries(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public QueryMetrics queryMetrics() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.queryMetrics();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.queryMetrics();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void resetQueryMetrics() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.resetQueryMetrics();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.resetQueryMetrics();
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<? extends QueryDetailMetrics> queryDetailMetrics() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.queryDetailMetrics();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.queryDetailMetrics();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void resetQueryDetailMetrics() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.resetQueryDetailMetrics();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.resetQueryDetailMetrics();
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.localEvict(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.localEvict(keys);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public V localPeek(K key, CachePeekMode... peekModes) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localPeek(key, peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localPeek(key, peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.size(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.size(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.sizeAsync(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.sizeAsync(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.sizeLong(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.sizeLong(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.sizeLongAsync(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.sizeLongAsync(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.sizeLong(partition, peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.sizeLong(partition, peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.sizeLongAsync(partition, peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.sizeLongAsync(partition, peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localSize(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localSize(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public long localSizeLong(CachePeekMode... peekModes) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localSizeLong(peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localSizeLong(peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public long localSizeLong(int partition, CachePeekMode... peekModes) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localSizeLong(partition, peekModes);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localSizeLong(partition, peekModes);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAll(map, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAll(map, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAllAsync(map, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAllAsync(map, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public V get(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.get(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.get(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(K key) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAsync(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAsync(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheEntry<K, V> getEntry(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getEntry(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getEntry(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getEntryAsync(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getEntryAsync(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAll(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAll(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAllAsync(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAllAsync(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getEntries(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getEntries(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getEntriesAsync(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getEntriesAsync(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAllOutTx(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAllOutTx(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAllOutTxAsync(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAllOutTxAsync(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.containsKey(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.containsKey(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void loadAll(Set<? extends K> keys, boolean replaceExisting, CompletionListener completionListener) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.loadAll(keys, replaceExisting, completionListener);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.loadAll(keys, replaceExisting, completionListener);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeyAsync(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.containsKeyAsync(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.containsKeyAsync(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKeys(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.containsKeys(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.containsKeys(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeysAsync(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.containsKeysAsync(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.containsKeysAsync(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.put(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.put(key, val);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> putAsync(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.putAsync(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.putAsync(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public V getAndPut(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndPut(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndPut(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndPutAsync(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndPutAsync(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndPutAsync(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.putAll(map);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.putAll(map);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.putAllAsync(map);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.putAllAsync(map);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.putIfAbsent(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.putIfAbsent(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putIfAbsentAsync(K key, V val) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.putIfAbsentAsync(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.putIfAbsentAsync(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.remove(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.remove(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.removeAsync(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.removeAsync(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V oldVal) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.remove(key, oldVal);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.remove(key, oldVal);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key, V oldVal) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.removeAsync(key, oldVal);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.removeAsync(key, oldVal);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public V getAndRemove(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndRemove(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndRemove(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndRemoveAsync(K key) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndRemoveAsync(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndRemoveAsync(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.replace(key, oldVal, newVal);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.replace(key, oldVal, newVal);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.replaceAsync(key, oldVal, newVal);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.replaceAsync(key, oldVal, newVal);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.replace(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.replace(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.replaceAsync(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.replaceAsync(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndReplace(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndReplace(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndReplaceAsync(K key, V val) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.getAndReplaceAsync(key, val);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.getAndReplaceAsync(key, val);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.removeAll(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.removeAll(keys);
+                    
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> removeAllAsync(Set<? extends K> keys) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.removeAllAsync(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.removeAllAsync(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.removeAll();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.removeAll();
+                    
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> removeAllAsync() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.removeAllAsync();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.removeAllAsync();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.clear();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.clear();
+                    
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.clearAsync();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.clearAsync();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clear(K key) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.clear(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.clear(key);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync(K key) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.clearAsync(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.clearAsync(key);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.clearAll(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.clearAll(keys);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.clearAllAsync(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.clearAllAsync(keys);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localClear(K key) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.localClear(key);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.localClear(key);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.localClearAll(keys);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.localClearAll(keys);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invoke(key, entryProcessor, arguments);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invoke(key, entryProcessor, arguments);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> invokeAsync(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAsync(key, entryProcessor, arguments);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAsync(key, entryProcessor, arguments);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invoke(key, entryProcessor, arguments);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invoke(key, entryProcessor, arguments);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAsync(key, entryProcessor, arguments);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAsync(key, entryProcessor, arguments);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAll(keys, entryProcessor, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAll(keys, entryProcessor, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAllAsync(keys, entryProcessor, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAllAsync(keys, entryProcessor, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAll(keys, entryProcessor, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAll(keys, entryProcessor, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.invokeAllAsync(keys, entryProcessor, args);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.invokeAllAsync(keys, entryProcessor, args);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
@@ -1296,37 +1747,56 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.registerCacheEntryListener(cacheEntryListenerConfiguration);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.registerCacheEntryListener(cacheEntryListenerConfiguration);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.deregisterCacheEntryListener(cacheEntryListenerConfiguration);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.deregisterCacheEntryListener(cacheEntryListenerConfiguration);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Entry<K, V>> iterator() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.iterator();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.iterator();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
@@ -1397,85 +1867,122 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.metrics();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.metrics();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics(ClusterGroup grp) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.metrics(grp);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.metrics(grp);
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localMetrics();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localMetrics();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.mxBean();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.mxBean();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean localMxBean() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.localMxBean();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.localMxBean();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            return delegate.lostPartitions();
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    return delegate.lostPartitions();
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(boolean enabled) {
-        CacheOperationGate opGate = onEnter();
+        while (true) {
+            try {
+                CacheOperationGate opGate = onEnter();
 
-        try {
-            delegate.enableStatistics(enabled);
-        }
-        finally {
-            onLeave(opGate);
+                try {
+                    delegate.enableStatistics(enabled);
+
+                    return;
+                } finally {
+                    onLeave(opGate);
+                }
+            } catch (WaitTopologyException e) {
+                handleWaitException(e);
+            }
         }
     }
 
@@ -1585,6 +2092,24 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             gate.leave();
         else
             gate.leaveNoLock();
+    }
+
+    /**
+     * Would wait until given topology version is not ready.
+     *
+     * @param e Exception.
+     */
+    private void handleWaitException(WaitTopologyException e) {
+        try {
+            IgniteInternalFuture<?> fut = delegate.context().kernalContext()
+                    .cache().context().exchange().affinityReadyFuture(e.topologyVersion());
+
+            if (fut != null)
+                fut.get();
+        } catch (IgniteCheckedException e1) {
+            U.error(delegate.context().logger(getClass()), "Error while waiting for affinity ready future, ver="
+                    + e.topologyVersion(), e);
+        }
     }
 
     /** {@inheritDoc} */
