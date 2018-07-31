@@ -55,8 +55,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
 /**
  *
@@ -64,6 +67,10 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static final long WAIT_RESEND_PARTS_MS =
+        Math.min(2 * getLong(IGNITE_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT), 30_000L);
 
     /** */
     private static final int TEST_SIZE = 100_000;
@@ -434,9 +441,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         record = true;
 
-        log.info("Checking GridDhtPartitions*Message absent (it will take 30 SECONDS) ... ");
+        log.info("Checking GridDhtPartitions*Message absent (it will take " + WAIT_RESEND_PARTS_MS + " ms) ... ");
 
-        U.sleep(30_000);
+        U.sleep(WAIT_RESEND_PARTS_MS);
 
         record = false;
 
@@ -446,8 +453,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         Integer fullMap = iF != null ? iF.get() : null;
         Integer singleMap = iS != null ? iS.get() : null;
 
-        assertTrue("Unexpected full map messages: " + fullMap, fullMap == null || fullMap.equals(1)); // 1 message can be sent right after all checks passed.
-        assertNull("Unexpected single map messages", singleMap);
+        // No more than one refreshPartitions() method called (only on timeout).
+        assertTrue("Unexpected full map messages: " + fullMap, fullMap == null || fullMap <= G.allGrids().size());
+        assertTrue("Unexpected single map messages: " + singleMap, singleMap == null || singleMap <= G.allGrids().size());
     }
 
     /** {@inheritDoc} */
