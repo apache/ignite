@@ -479,20 +479,24 @@
         align-items: baseline;
     }
 
-    .form-field__control {
-        width: auto;
+    .form-field__dropdown,
+    .form-field__datepicker,
+    .form-field__timepicker {
+        .form-field__control {
+            width: auto;
 
-        input,
-        button {
-            color: transparent;
+            input,
+            button {
+                color: transparent;
 
-            text-shadow: 0 0 0 $ignite-brand-success;
+                text-shadow: 0 0 0 $ignite-brand-success;
 
-            border: none;
-            box-shadow: none;
+                border: none;
+                box-shadow: none;
 
-            &:hover, &:focus {
-                text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
+                &:hover, &:focus {
+                    text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
+                }
             }
         }
     }
