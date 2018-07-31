@@ -976,10 +976,6 @@ public class GridDhtPartitionDemander {
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
 
-            // Add all supplier nodes before first request send to them to avoid race between
-            // adding remaining nodes and processing response, see RebalanceFuture#checkIsDone(boolean)
-            // Also used to restart rebalance in case affinity is the same but some supplier
-            // nodes left, see GridDhtPreloader#rebalanceRequired for details.
             assignments.forEach((k, v) -> {
                 assert v.partitions() != null :
                     "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
