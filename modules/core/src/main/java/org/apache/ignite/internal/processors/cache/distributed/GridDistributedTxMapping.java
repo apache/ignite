@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -62,9 +60,6 @@ public class GridDistributedTxMapping {
 
     /** {@code True} if this is first mapping for optimistic tx on client node. */
     private boolean clientFirst;
-
-    /** Map of affected partitions per cache. CacheId -> parts */
-    private Map<Integer, Set<Integer>> parts;
 
     /**
      * @param primary Primary node.

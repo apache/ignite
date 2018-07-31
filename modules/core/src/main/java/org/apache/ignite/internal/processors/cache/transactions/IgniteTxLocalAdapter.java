@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1640,30 +1641,30 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /**
      * @return Partition counters map for the given backup node.
      */
-    public Map<Integer, Map<Integer, Long>> updateCountersForNode(ClusterNode node) {
+    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersForNode(ClusterNode node) {
         if (F.isEmpty(updCntrs))
             return null;
 
-        Map<Integer, Map<Integer, Long>> res = new HashMap<>();
+        Map<Integer, GridDhtPartitionsUpdateCountersMap> res = new HashMap<>();
 
-        for (Integer cacheId : updCntrs.keySet()) {
-            Map<Integer, Long> partsCntrs = updCntrs.get(cacheId);
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+            Map<Integer, Long> partsCntrs = entry.getValue();
 
             assert !F.isEmpty(partsCntrs);
 
-            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
 
-            Map<Integer, Long> resBackupCntrs = new HashMap<>();
+            GridDhtPartitionsUpdateCountersMap resBackupCntrs = new GridDhtPartitionsUpdateCountersMap();
 
-            res.putIfAbsent(cacheId, resBackupCntrs);
+            res.putIfAbsent(entry.getKey(), resBackupCntrs);
 
-            for (Integer part : partsCntrs.keySet()) {
-                Long cntr = partsCntrs.get(part);
+            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
+                Long cntr = partsCntrs.get(e.getKey());
 
-                if (ctx0.affinity().backupByPartition(node, part, topologyVersionSnapshot())) {
+                if (ctx0.affinity().backupByPartition(node, e.getKey(), topologyVersionSnapshot())) {
                     assert cntr != null && cntr > 0 : cntr;
 
-                    resBackupCntrs.put(part, cntr);
+                    resBackupCntrs.updateCounters().put(e.getKey(), cntr);
                 }
             }
         }
@@ -1696,15 +1697,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (F.isEmpty(updCntrs))
             return;
 
-        for (Integer cacheId : updCntrs.keySet()) {
-            Map<Integer, Long> partsCntrs = updCntrs.get(cacheId);
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+            Map<Integer, Long> partsCntrs = entry.getValue();
 
             assert !F.isEmpty(partsCntrs);
 
-            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
 
-            for (Integer part : partsCntrs.keySet()) {
-                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(part);
+            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
+                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(e.getKey());
 
                 assert dhtPart != null;
 
@@ -1712,7 +1713,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 dhtPart.updateCounter(cntr);
 
-                Long prev = partsCntrs.put(part, cntr);
+                Long prev = partsCntrs.put(e.getKey(), cntr);
 
                 assert prev == 0L : prev;
             }

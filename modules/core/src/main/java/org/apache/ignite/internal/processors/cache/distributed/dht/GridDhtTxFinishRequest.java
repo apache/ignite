@@ -22,18 +22,15 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -77,11 +74,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private MvccSnapshot mvccSnapshot;
 
     /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
-    @GridDirectTransient
-    private Map<Integer, Map<Integer, Long>> updCntrs;
-
-    /** */
-    private byte[] updCntrsBytes;
+    @GridDirectMap(keyType = Integer.class, valueType = GridDhtPartitionsUpdateCountersMap.class)
+    private Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs;
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -226,7 +220,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean retVal,
         boolean waitRemoteTxs,
         MvccSnapshot mvccSnapshot,
-        Map<Integer, Map<Integer, Long>> updCntrs
+        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs
     ) {
         this(nearNodeId,
             futId,
@@ -371,24 +365,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Update counters deltas.
      */
-    public Map<Integer, Map<Integer, Long>> updateCountersMap() {
+    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
         return updCntrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (!F.isEmpty(updCntrs) && updCntrsBytes == null)
-            updCntrsBytes = U.marshal(ctx, updCntrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (updCntrsBytes != null && updCntrs == null)
-            updCntrs = U.unmarshal(ctx, updCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -443,13 +421,13 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeByteArray("updCntrsBytes", updCntrsBytes))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
@@ -523,7 +501,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 27:
-                writeVer = reader.readMessage("writeVer");
+                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -531,7 +509,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 28:
-                updCntrsBytes = reader.readByteArray("updCntrsBytes");
+                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;

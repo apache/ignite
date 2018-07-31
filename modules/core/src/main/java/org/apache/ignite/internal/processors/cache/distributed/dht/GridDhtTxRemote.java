@@ -80,7 +80,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     private boolean storeWriteThrough;
 
     /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
-    private Map<Integer, Map<Integer, Long>> updCntrs;
+    private Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs;
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -496,12 +496,12 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCountersMap(Map<Integer, Map<Integer, Long>> updCntrsMap) {
+    @Override public void updateCountersMap(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap) {
        this.updCntrs = updCntrsMap;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Map<Integer, Long>> updateCountersMap() {
+    @Override public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
         return updCntrs;
     }
 

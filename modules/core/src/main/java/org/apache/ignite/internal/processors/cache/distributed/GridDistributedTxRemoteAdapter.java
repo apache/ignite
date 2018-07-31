@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -801,20 +802,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      *
      * @param updCntrsMap Update counters map.
      */
-    private void updateLocalCounters(Map<Integer, Map<Integer, Long>> updCntrsMap) {
+    private void updateLocalCounters(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap) {
         if (F.isEmpty(updCntrsMap))
             return;
 
-        for (Integer cacheId : updCntrsMap.keySet()) {
-            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+        for (Map.Entry<Integer, GridDhtPartitionsUpdateCountersMap> entry : updCntrsMap.entrySet()) {
+            GridCacheContext cacheCtx = cctx.cacheContext(entry.getKey());
 
-            Map<Integer, Long> cacheUpdCntrs = updCntrsMap.get(cacheId);
+            GridDhtPartitionsUpdateCountersMap cacheUpdCntrs = entry.getValue();
 
-            assert !F.isEmpty(cacheUpdCntrs);
+            assert cacheUpdCntrs != null && !F.isEmpty(cacheUpdCntrs.updateCounters());
 
-            for (Integer partId : cacheUpdCntrs.keySet()) {
-                Long updCntr = cacheUpdCntrs.get(partId);
-                GridDhtLocalPartition part = cacheCtx.topology().localPartition(partId);
+            for (Map.Entry<Integer, Long> e : cacheUpdCntrs.updateCounters().entrySet()) {
+                Long updCntr = e.getValue();
+                GridDhtLocalPartition part = cacheCtx.topology().localPartition(e.getKey());
 
                 assert part != null && updCntr != null && updCntr > 0;
 
@@ -972,12 +973,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCountersMap(Map<Integer, Map<Integer, Long>> updCntrsMap) {
+    @Override public void updateCountersMap(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Map<Integer, Long>> updateCountersMap() {
+    @Override public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
         return null;
     }
 

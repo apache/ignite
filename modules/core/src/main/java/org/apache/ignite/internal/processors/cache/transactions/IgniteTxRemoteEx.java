@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -55,10 +56,10 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
     /**
      * @param updCntrsMap Partition update counters map: cacheId -> partId -> updateCntr.
      */
-    public void updateCountersMap(Map<Integer, Map<Integer, Long>> updCntrsMap);
+    public void updateCountersMap(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap);
 
     /**
      * @return Partition update counters map: cacheId -> partId -> updateCntr.
      */
-    public Map<Integer, Map<Integer, Long>> updateCountersMap();
+    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap();
 }
