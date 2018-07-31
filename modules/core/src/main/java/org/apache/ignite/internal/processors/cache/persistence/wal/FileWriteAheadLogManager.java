@@ -1887,6 +1887,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     U.error(log, "Compression of WAL segment [idx=" + currReservedSegment +
                         "] was skipped due to unexpected error", e);
 
+                    segmentAware.lastCompressedIdx(currReservedSegment);
 //                    lastCompressedIdx++;
                 }
 
