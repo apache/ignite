@@ -452,7 +452,7 @@ public class GridReduceQueryExecutor {
      * @param msg Message.
      */
     private void logRetry(String msg) {
-        U.warn(log, msg);
+        log.info(msg);
     }
 
     /**

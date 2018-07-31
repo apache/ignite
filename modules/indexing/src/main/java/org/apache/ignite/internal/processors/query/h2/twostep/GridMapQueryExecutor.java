@@ -435,7 +435,7 @@ public class GridMapQueryExecutor {
      * @param msg Message.
      */
     private void logRetry(String msg) {
-        U.warn(log, msg);
+        log.info(msg);
     }
 
     /**
