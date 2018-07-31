@@ -136,6 +136,8 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
 
     /** */
     public void testServerJoinWithP2PClassDeployedInCluster() throws Exception {
+        startGrids(2);
+
         ClassLoader extLdr = getExternalClassLoader();
 
         clientMode = true;
