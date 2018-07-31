@@ -54,7 +54,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private static final long serialVersionUID = 0L;
 
     /** Time formatter for dump file name. */
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
 
     /** Visible for testing. */
     public static final String IDLE_DUMP_FILE_PREMIX = "idle-dump-";
@@ -92,7 +92,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             }
         }
 
-        Comparator<PartitionHashRecordV2> recordComparator = buildRecordComparator().reversed();
+        Comparator<PartitionHashRecordV2> recordComp = buildRecordComparator().reversed();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions = new LinkedHashMap<>();
 
@@ -100,7 +100,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : clusterHashes.entrySet()) {
             if (needToAdd(entry.getValue())) {
-                entry.getValue().sort(recordComparator);
+                entry.getValue().sort(recordComp);
 
                 partitions.put(entry.getKey(), entry.getValue());
             }

@@ -42,23 +42,23 @@ class VisorIdleVerifyJob<ResultT> extends VisorJob<VisorIdleVerifyTaskArg, Resul
     protected transient ComputeJobContext jobCtx;
 
     /** Task class for execution */
-    private final Class<? extends ComputeTask<VisorIdleVerifyTaskArg, ResultT>> taskClass;
+    private final Class<? extends ComputeTask<VisorIdleVerifyTaskArg, ResultT>> taskCls;
 
     /**
      * @param arg Argument.
      * @param debug Debug.
-     * @param taskClass Task class for execution.
+     * @param taskCls Task class for execution.
      */
     VisorIdleVerifyJob(VisorIdleVerifyTaskArg arg, boolean debug,
-        Class<? extends ComputeTask<VisorIdleVerifyTaskArg, ResultT>> taskClass) {
+        Class<? extends ComputeTask<VisorIdleVerifyTaskArg, ResultT>> taskCls) {
         super(arg, debug);
-        this.taskClass = taskClass;
+        this.taskCls = taskCls;
     }
 
     /** {@inheritDoc} */
     @Override protected ResultT run(VisorIdleVerifyTaskArg arg) throws IgniteException {
         if (fut == null) {
-            fut = ignite.compute().executeAsync(taskClass, arg);
+            fut = ignite.compute().executeAsync(taskCls, arg);
 
             if (!fut.isDone()) {
                 jobCtx.holdcc();
