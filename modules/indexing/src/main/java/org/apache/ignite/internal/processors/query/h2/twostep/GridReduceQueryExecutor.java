@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySpl
  */
 public class GridReduceQueryExecutor {
     /** Fail query after 10 seconds of unsuccessful attempts to reserve partitions. */
-    public static final long DFLT_RETRY_TIMEOUT = 10_000L;
+    public static final long DFLT_RETRY_TIMEOUT = 30_000L;
 
     /** */
     private static final String MERGE_INDEX_UNSORTED = "merge_scan";
@@ -568,7 +568,7 @@ public class GridReduceQueryExecutor {
 
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
-        long retryTimeout = retryTimeout();
+        long retryTimeout = retryTimeout(timeoutMillis);
 
         final long startTime = U.currentTimeMillis();
 
@@ -1756,9 +1756,13 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param qryTimeout Query timeout.
      * @return Query retry timeout.
      */
-    private static long retryTimeout() {
+    private static long retryTimeout(long qryTimeout) {
+        if (qryTimeout > 0)
+            return qryTimeout;
+
         return IgniteSystemProperties.getLong(IGNITE_SQL_RETRY_TIMEOUT, DFLT_RETRY_TIMEOUT);
     }
 
