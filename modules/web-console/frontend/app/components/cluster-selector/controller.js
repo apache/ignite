@@ -21,15 +21,18 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/combineLatest';
 
 export default class {
-    static $inject = ['AgentManager', 'IgniteConfirm'];
+    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion'];
 
     /**
      * @param agentMgr Agent manager.
-     * @param Confirm  Confirmation service.
+     * @param Confirm Confirmation service.
+     * @param Version Version check service.
      */
-    constructor(agentMgr, Confirm) {
+    constructor(agentMgr, Confirm, Version) {
         this.agentMgr = agentMgr;
         this.Confirm = Confirm;
+        this.Version = Version;
+
         this.clusters = [];
         this.isDemo = agentMgr.isDemoMode();
         this._inProgressSubject = new BehaviorSubject(false);
@@ -59,6 +62,10 @@ export default class {
 
     change() {
         this.agentMgr.switchCluster(this.cluster);
+    }
+
+    isChangeStateAvailable() {
+        return !this.isDemo && this.cluster && this.Version.since(this.cluster.clusterVersion, '2.0.0');
     }
 
     toggle($event) {

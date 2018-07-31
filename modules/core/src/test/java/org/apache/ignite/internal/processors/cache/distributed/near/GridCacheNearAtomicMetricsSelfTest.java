@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- *
+ * Atomic cache metrics test.
  */
-public class IgniteBinaryObjectsComputeGridTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
-        TestSuite suite = IgniteComputeGridTestSuite.suite();
+        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
-
-        return suite;
+        return ccfg;
     }
 }
