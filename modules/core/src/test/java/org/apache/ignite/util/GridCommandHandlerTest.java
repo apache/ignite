@@ -23,6 +23,10 @@ import javax.cache.processor.MutableEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +40,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -88,12 +94,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jetbrains.annotations.NotNull;
 
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREMIX;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -137,6 +147,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        //delete idle-verify dump files.
+        try (DirectoryStream<Path> files = newDirectoryStream(
+            Paths.get(U.defaultWorkDirectory()),
+            entry -> entry.toFile().getName().startsWith(IDLE_DUMP_FILE_PREMIX)
+        )) {
+            for (Path path : files)
+                delete(path);
+        }
 
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -504,14 +523,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            assertTrue(res.getInfos().get(0).getSize() >=  res.getInfos().get(1).getSize());
+            assertTrue(res.getInfos().get(0).getSize() >= res.getInfos().get(1).getSize());
         }, "--tx", "order", "SIZE");
 
         // test order by duration.
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
-            assertTrue(res.getInfos().get(0).getDuration() >=  res.getInfos().get(1).getDuration());
+            assertTrue(res.getInfos().get(0).getDuration() >= res.getInfos().get(1).getDuration());
         }, "--tx", "order", "DURATION");
 
         // test order by start_time.
@@ -584,7 +603,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         GridNearTxLocal clientTx = null;
 
-        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 2000, 1)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 2000, 1)) {
             clientTx = ((TransactionProxyImpl)tx).tx();
 
             client.cache(DEFAULT_CACHE_NAME).put(0L, 0L);
@@ -715,7 +734,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         primSpi.waitForBlocked(clients.length);
 
         // Unblock only finish messages from clients from 2 to 4.
-        primSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode,GridIoMessage>>() {
+        primSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
             @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
                 GridIoMessage iom = objects.get2();
 
@@ -917,6 +936,141 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertTrue(testOut.toString().contains("found 2 conflict partitions"));
+    }
+
+    /**
+     * Tests that idle verify print partitions info.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDump() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "other"));
+
+        injectTestSystemOut();
+
+        int keysCount = 20;//less than parts number for ability to check skipZeros flag.
+
+        for (int i = 0; i < keysCount; i++)
+            cache.put(i, i);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skipZeros", DEFAULT_CACHE_NAME));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithZeros.contains("idle_verify check has finished, found " + parts + " partitions"));
+            assertTrue(dumpWithZeros.contains("Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]"));
+            assertTrue(dumpWithZeros.contains("updateCntr=0, size=0, partHash=0"));
+            assertTrue(dumpWithZeros.contains("no conflicts have been found"));
+
+            assertSort(parts, dumpWithZeros);
+        }
+
+        if (fileNameMatcher.find()) {
+            String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithoutZeros.contains("idle_verify check has finished, found " + keysCount + " partitions"));
+            assertTrue(dumpWithoutZeros.contains((parts - keysCount) + " partitions was skipped"));
+            assertTrue(dumpWithoutZeros.contains("Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId="));
+
+            assertFalse(dumpWithoutZeros.contains("updateCntr=0, size=0, partHash=0"));
+
+            assertTrue(dumpWithoutZeros.contains("no conflicts have been found"));
+
+            assertSort(keysCount, dumpWithoutZeros);
+        }
+        else
+            fail("Should be found both files");
+    }
+
+    /**
+     * Checking sorting of partitions.
+     *
+     * @param expectedPartsCount Expected parts count.
+     * @param output Output.
+     */
+    private void assertSort(int expectedPartsCount, String output) {
+        Pattern partIdPattern = Pattern.compile(".*partId=([0-9]*)");
+        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecordV2 \\[isPrimary=true");
+
+        Matcher partIdMatcher = partIdPattern.matcher(output);
+        Matcher primaryMatcher = primaryPattern.matcher(output);
+
+        int i = 0;
+
+        while (partIdMatcher.find()) {
+            assertEquals(i++, Integer.parseInt(partIdMatcher.group(1)));
+            assertTrue(primaryMatcher.find());//primary node should be first in every line
+        }
+
+        assertEquals(expectedPartsCount, i);
+    }
+
+    /**
+     * Tests that idle verify print partitions info.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDumpForCorruptedData() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        injectTestSystemOut();
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
+
+        corruptDataEntry(cacheCtx, 0, true, false);
+
+        corruptDataEntry(cacheCtx, 0 + parts / 2, false, true);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithConflicts.contains("found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]"));
+        }else
+            fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * @return Build matcher for dump file name.
+     */
+    @NotNull private Matcher dumpFileNameMatcher() {
+        Pattern fileNamePattern = Pattern.compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
+
+        return fileNamePattern.matcher(testOut.toString());
     }
 
     /**
@@ -1296,7 +1450,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** */
     private static class IncrementClosure implements EntryProcessor<Long, Long, Void> {
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<Long, Long> entry, Object... arguments) throws EntryProcessorException {
+        @Override public Void process(MutableEntry<Long, Long> entry,
+            Object... arguments) throws EntryProcessorException {
             entry.setValue(entry.exists() ? entry.getValue() + 1 : 0);
 
             return null;
