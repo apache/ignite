@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from pyignite.connection import Connection
 from pyignite.datatypes import prop_codes
@@ -175,3 +175,75 @@ class Cache:
         return cache_clear_key(
             self._conn, self._cache_id, key, key_hint=key_hint
         )
+
+    @status_to_exception
+    def contains_key(self, key, key_hint=None):
+        return cache_contains_key(
+            self._conn, self._cache_id, key, key_hint=key_hint
+        )
+
+    @status_to_exception
+    def contains_keys(self, keys: Iterable):
+        return cache_contains_keys(self._conn, self._cache_id, keys)
+
+    @status_to_exception
+    def get_and_put(self, key, value, key_hint=None, value_hint=None):
+        return cache_get_and_put(
+            self._conn, self._cache_id, key, value, key_hint, value_hint
+        )
+
+    @status_to_exception
+    def get_and_put_if_absent(
+        self, key, value, key_hint=None, value_hint=None
+    ):
+        return cache_get_and_put_if_absent(
+            self._conn, self._cache_id, key, value, key_hint, value_hint
+        )
+
+    @status_to_exception
+    def put_if_absent(self, key, value, key_hint=None, value_hint=None):
+        return cache_put_if_absent(
+            self._conn, self._cache_id, key, value, key_hint, value_hint
+        )
+
+    @status_to_exception
+    def get_and_remove(self, key, key_hint=None):
+        return cache_get_and_remove(self._conn, self._cache_id, key, key_hint)
+
+    @status_to_exception
+    def get_and_replace(self, key, value, key_hint=None, value_hint=None):
+        return cache_get_and_replace(
+            self._conn, self._cache_id, key, value, key_hint, value_hint
+        )
+
+    @status_to_exception
+    def remove_key(self, key, key_hint=None):
+        return cache_remove_key(self._conn, self._cache_id, key, key_hint)
+
+    @status_to_exception
+    def remove_keys(self, keys):
+        return cache_remove_keys(self._conn, self._cache_id, keys)
+
+    @status_to_exception
+    def remove_all(self):
+        return cache_remove_all(self._conn, self._cache_id)
+
+    @status_to_exception
+    def remove_if_equals(self, key, sample, key_hint=None, sample_hint=None):
+        return cache_remove_if_equals(
+            self._conn, self._cache_id, key, sample, key_hint, sample_hint
+        )
+
+    @status_to_exception
+    def replace_if_equals(
+        self, key, sample, value,
+        key_hint=None, sample_hint=None, value_hint=None
+    ):
+        return cache_replace_if_equals(
+            self._conn, self._cache_id, key, sample, value,
+            key_hint, sample_hint, value_hint
+        )
+
+    @status_to_exception
+    def get_size(self, peek_modes=0):
+        return cache_get_size(self._conn, self._cache_id, peek_modes)
