@@ -87,7 +87,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
 
             if (keyLockFut != null)
-                add(keyLockFut);
+                add((IgniteInternalFuture)keyLockFut);
         }
     }
 

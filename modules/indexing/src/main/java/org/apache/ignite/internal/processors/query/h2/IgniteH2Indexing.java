@@ -1697,8 +1697,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (qry.forUpdate())
                 qry.forUpdate(checkActive(tx(ctx)) != null);
 
-            @SuppressWarnings("NullableProblems")
             return new Iterable<List<?>>() {
+                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis,
                         cancel, params, parts, lazy, tracker);
