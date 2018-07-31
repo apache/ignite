@@ -15,10 +15,15 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
 import './style.scss';
-import component from './component';
+import controller from './controller.js';
 
-export default angular
-    .module('ignite-console.grid-export', [])
-    .component('gridExport', component);
+export default {
+    template: `
+        <i>Showing: {{ $ctrl.count }} rows</i>
+    `,
+    controller,
+    bindings: {
+        gridApi: '<'
+    }
+};

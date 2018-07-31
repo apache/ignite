@@ -15,10 +15,33 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import './style.scss';
-import component from './component';
+import _ from 'lodash';
 
-export default angular
-    .module('ignite-console.grid-export', [])
-    .component('gridExport', component);
+export default class {
+    static $inject = ['$scope', 'uiGridConstants'];
+
+    constructor($scope, uiGridConstants) {
+        Object.assign(this, {$scope, uiGridConstants});
+
+        this.count = 0;
+    }
+
+    $onChanges(changes) {
+        if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+            this.applyValues();
+
+            this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
+                this.applyValues();
+            });
+        }
+    }
+
+    applyValues() {
+        if (!this.gridApi.grid.rows.length) {
+            this.count = 0;
+            return;
+        }
+
+        this.count = _.sumBy(this.gridApi.grid.rows, 'visible');
+    }
+}
