@@ -1166,7 +1166,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /**
      * For handler version 2.0 this filter should not be serialized.
      */
-    protected static class JCacheQueryRemoteFilter implements CacheEntryEventSerializableFilter, Externalizable, Closeable {
+    protected static class JCacheQueryRemoteFilter implements CacheEntryEventSerializableFilter, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1251,12 +1251,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 default:
                     throw new IllegalStateException("Unknown type: " + evtType);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            if (impl instanceof Closeable)
-                U.closeQuiet((Closeable)impl);
         }
     }
 

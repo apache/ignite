@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -170,13 +169,5 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
             rmtFilterFactory = (Factory)in.readObject();
 
         types = in.readByte();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unregister(UUID routineId, GridKernalContext ctx) {
-        super.unregister(routineId, ctx);
-
-        if (filter instanceof Closeable)
-            U.closeQuiet((Closeable)filter);
     }
 }
