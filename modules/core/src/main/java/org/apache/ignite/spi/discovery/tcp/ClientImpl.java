@@ -981,7 +981,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (!spi.getSpiContext().isStopping() && sockWriter.isOnline()) {
                 TcpDiscoveryClientMetricsUpdateMessage msg = new TcpDiscoveryClientMetricsUpdateMessage(
                     getLocalNodeId(),
-                    spi.metricsProvider.metrics());
+                    spi.metricsProvider.metrics(),
+                    spi.metricsProvider.cacheMetrics()
+                );
 
                 msg.client(true);
 
@@ -2330,8 +2332,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tstamp);
 
-                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                            updateMetrics(t.get1(), t.get2(), cacheMetrics, tstamp);
+                        for (T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>> t : metricsSet.clientMetrics())
+                            updateMetrics(t.get1(), t.get2(), t.get3(), tstamp);
                     }
                 }
             }

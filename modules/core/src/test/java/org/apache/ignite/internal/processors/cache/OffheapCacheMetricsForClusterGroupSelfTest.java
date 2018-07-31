@@ -95,7 +95,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
      * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
      */
     private void awaitMetricsUpdate() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 2);
+        final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 4);
 
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event ignore) {
@@ -108,12 +108,16 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         for (int i = 0; i < GRID_CNT; i++)
             grid("server-" + i).events().localListen(lsnr, EVT_NODE_METRICS_UPDATED);
 
+        for (int i = 0; i < CLIENT_CNT; i++)
+            grid("client-" + i).events().localListen(lsnr, EVT_NODE_METRICS_UPDATED);
+
         latch.await();
     }
 
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {
         long localPrimary = 0L;
         long localBackups = 0L;
+        long localOverall = 0L;
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("server-" + i).cache(cacheName);
@@ -121,13 +125,17 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
             assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
             assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
+            assertEquals(count * 2, cache.metrics().getOffHeapEntriesCount());
+            assertEquals(count * 2, cache.mxBean().getOffHeapEntriesCount());
 
             localPrimary += cache.localMxBean().getOffHeapPrimaryEntriesCount();
-            localBackups += cache.localMxBean().getOffHeapPrimaryEntriesCount();
+            localBackups += cache.localMxBean().getOffHeapBackupEntriesCount();
+            localOverall += cache.localMxBean().getOffHeapEntriesCount();
         }
 
         assertEquals(count, localPrimary);
         assertEquals(count, localBackups);
+        assertEquals(count * 2, localOverall);
 
         for (int i = 0; i < CLIENT_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("client-" + i).cache(cacheName);
@@ -135,8 +143,11 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
             assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
             assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
+            assertEquals(count * 2, cache.metrics().getOffHeapEntriesCount());
+            assertEquals(count * 2, cache.mxBean().getOffHeapEntriesCount());
             assertEquals(0L, cache.localMxBean().getOffHeapPrimaryEntriesCount());
             assertEquals(0L, cache.localMxBean().getOffHeapBackupEntriesCount());
+            assertEquals(0L, cache.localMxBean().getOffHeapEntriesCount());
         }
     }
 

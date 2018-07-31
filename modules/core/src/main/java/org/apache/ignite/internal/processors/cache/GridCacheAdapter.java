@@ -3287,7 +3287,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final CacheMetrics clusterMetrics() {
-        return clusterMetrics(ctx.grid().cluster().forDataNodes(ctx.name()));
+        return clusterMetrics(ctx.grid().cluster().forCacheNodes(ctx.name()));
     }
 
     /** {@inheritDoc} */

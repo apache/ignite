@@ -17,10 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.METRICS_SIZE;
 
 /**
  * Metrics update message.
@@ -32,18 +39,36 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte[] metrics;
+    private byte[] metrics;
 
     /**
      * Constructor.
      *
      * @param creatorNodeId Creator node.
      * @param metrics Metrics.
+     * @param cacheMetrics cache metrics.
      */
-    public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
+    public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics,
+        @NotNull Map<Integer, CacheMetrics> cacheMetrics) {
         super(creatorNodeId);
 
-        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
+        byte[] metricsArr = ClusterMetricsSnapshot.serialize(metrics);
+
+        byte[] cacheMetricsArr = U.mapToByteArray(cacheMetrics);
+
+        this.metrics = new byte[METRICS_SIZE + cacheMetricsArr.length];
+
+        U.arrayCopy(metricsArr, 0, this.metrics, 0, metricsArr.length);
+
+        if (cacheMetricsArr.length > 0)
+            U.arrayCopy(cacheMetricsArr, 0, this.metrics, metricsArr.length, cacheMetricsArr.length);
+    }
+
+    /**
+     *
+     */
+    public Map<Integer, CacheMetrics> cacheMetrics() {
+        return U.byteArrayToMap(metrics, METRICS_SIZE, metrics.length - METRICS_SIZE);
     }
 
     /**

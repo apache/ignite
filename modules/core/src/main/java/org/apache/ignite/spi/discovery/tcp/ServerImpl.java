@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -5237,8 +5238,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tstamp);
 
-                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                            updateMetrics(t.get1(), t.get2(), cacheMetrics, tstamp);
+                        for (T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>> t : metricsSet.clientMetrics())
+                            updateMetrics(t.get1(), t.get2(), t.get3(), tstamp);
                     }
                 }
             }
@@ -5255,7 +5256,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ClusterMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
-                            msg.setClientMetrics(locNodeId, nodeId, metrics);
+                            msg.setClientMetrics(locNodeId, nodeId, metrics,
+                                e.getValue().cacheMetrics());
 
                         msg.addClientNodeId(nodeId);
                     }
@@ -6645,8 +6647,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
-            if (wrk != null)
+            if (wrk != null) {
                 wrk.metrics(msg.metrics());
+
+                wrk.cacheMetrics(msg.cacheMetrics());
+            }
             else if (log.isDebugEnabled())
                 log.debug("Received client metrics update message from unknown client node: " + msg);
         }
@@ -6787,6 +6792,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Current client metrics. */
         private volatile ClusterMetrics metrics;
 
+        /** Client cache metrics. */
+        private Map<Integer, CacheMetrics> cacheMetrics;
+
         /** */
         private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
@@ -6824,6 +6832,20 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         void metrics(ClusterMetrics metrics) {
             this.metrics = metrics;
+        }
+
+        /**
+         * @param cacheMetrics Cache metrics.
+         */
+        void cacheMetrics(Map<Integer, CacheMetrics> cacheMetrics){
+            this.cacheMetrics = cacheMetrics;
+        }
+
+        /**
+         * @return cache metrics.
+         */
+        public Map<Integer, CacheMetrics> cacheMetrics() {
+            return cacheMetrics;
         }
 
         /**

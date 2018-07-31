@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTe
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsEntitiesCountTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionedClientTxMetricsTest;
+import org.apache.ignite.internal.processors.cache.GridCacheReplicatedClientTxMetricsTest;
 import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
 import org.apache.ignite.internal.processors.cache.GridEvictionPolicyMBeansTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
@@ -57,6 +59,8 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedClientTxMetricsTest.class);
+        suite.addTestSuite(GridCacheReplicatedClientTxMetricsTest.class);
 
         // Atomic cache.
         suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);

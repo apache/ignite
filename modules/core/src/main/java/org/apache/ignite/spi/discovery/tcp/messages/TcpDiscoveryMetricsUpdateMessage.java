@@ -33,9 +33,12 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.METRICS_SIZE;
+import static org.apache.ignite.internal.ClusterMetricsSnapshot.deserialize;
 
 /**
  * Metrics update message.
@@ -111,14 +114,16 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
      * @param nodeId Server node ID.
      * @param clientNodeId Client node ID.
      * @param metrics Node metrics.
+     * @param cacheMetrics cache metrics.
      */
-    public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterMetrics metrics) {
+    public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics) {
         assert nodeId != null;
         assert clientNodeId != null;
         assert metrics != null;
         assert this.metrics.containsKey(nodeId);
 
-        this.metrics.get(nodeId).addClientMetrics(clientNodeId, metrics);
+        this.metrics.get(nodeId).addClientMetrics(clientNodeId, metrics, cacheMetrics);
     }
 
     /**
@@ -231,18 +236,27 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /**
      * @param nodeId Node ID.
      * @param metrics Metrics.
+     * @param cacheMetrics cache metrics.
      * @return Serialized metrics.
      */
-    private static byte[] serializeMetrics(UUID nodeId, ClusterMetrics metrics) {
+    private static byte[] serializeMetrics(UUID nodeId, ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics) {
         assert nodeId != null;
         assert metrics != null;
 
-        byte[] buf = new byte[16 + ClusterMetricsSnapshot.METRICS_SIZE];
+        int offset = 16;
+
+        byte[] byteArr = U.mapToByteArray(cacheMetrics);
+
+        byte[] buf = new byte[offset + METRICS_SIZE + byteArr.length];
 
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
-        ClusterMetricsSnapshot.serialize(buf, 16, metrics);
+        ClusterMetricsSnapshot.serialize(buf, offset, metrics);
+
+        if (byteArr.length > 0)
+            U.arrayCopy(byteArr, 0, buf, offset + METRICS_SIZE, byteArr.length);
 
         return buf;
     }
@@ -285,12 +299,15 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         /**
          * @return Client metrics.
          */
-        public Collection<T2<UUID, ClusterMetrics>> clientMetrics() {
-            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, ClusterMetrics>>() {
-                @Override public T2<UUID, ClusterMetrics> apply(byte[] bytes) {
+        public Collection<T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>>> clientMetrics() {
+            return F.viewReadOnly(clientMetrics, new C1<byte[], T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>>>() {
+                @Override public T3<UUID, ClusterMetrics, Map<Integer, CacheMetrics>> apply(byte[] bytes) {
                     UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
 
-                    return new T2<>(nodeId, ClusterMetricsSnapshot.deserialize(bytes, 16));
+                    int offset = 16;
+
+                    return new T3<>(nodeId, deserialize(bytes, offset),
+                        U.byteArrayToMap(bytes, offset + METRICS_SIZE, bytes.length));
                 }
             });
         }
@@ -298,15 +315,17 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         /**
          * @param nodeId Client node ID.
          * @param metrics Client metrics.
+         * @param cacheMetrics Client cache metrics.
          */
-        private void addClientMetrics(UUID nodeId, ClusterMetrics metrics) {
+        private void addClientMetrics(UUID nodeId, ClusterMetrics metrics,
+            Map<Integer, CacheMetrics> cacheMetrics) {
             assert nodeId != null;
             assert metrics != null;
 
             if (clientMetrics == null)
                 clientMetrics = new ArrayList<>();
 
-            clientMetrics.add(serializeMetrics(nodeId, metrics));
+            clientMetrics.add(serializeMetrics(nodeId, metrics, cacheMetrics));
         }
 
         /** {@inheritDoc} */
