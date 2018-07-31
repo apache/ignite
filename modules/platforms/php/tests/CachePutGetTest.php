@@ -31,14 +31,14 @@ final class CachePutGetTestCase extends TestCase
     
     private static $cache;
 
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         TestingHelper::init();
         CachePutGetTestCase::cleanUp();
         CachePutGetTestCase::$cache = TestingHelper::$client->getOrCreateCache(CachePutGetTestCase::CACHE_NAME);
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         CachePutGetTestCase::cleanUp();
         TestingHelper::cleanUp();

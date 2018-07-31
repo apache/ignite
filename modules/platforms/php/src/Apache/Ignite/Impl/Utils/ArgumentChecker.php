@@ -22,17 +22,51 @@ use Apache\Ignite\Exception\ClientException;
 
 class ArgumentChecker
 {
-    public static function notEmpty($arg, $argName): void
+    public static function notEmpty($arg, string $argName): void
     {
         if (empty($arg)) {
             ArgumentChecker::illegalArgument(sprintf('"%s" argument should not be empty', $argName));
         }
     }
     
-    public static function notNull($arg, $argName): void
+    public static function notNull($arg, string $argName): void
     {
         if (is_null($arg)) {
             ArgumentChecker::illegalArgument(sprintf('"%s" argument should not be null', $argName));
+        }
+    }
+    
+    public static function hasType($arg, string $argName, bool $isArray, ...$types): void
+    {
+        if ($arg === null) {
+            return;
+        }
+        if ($isArray && is_array($arg)) {
+            foreach ($arg as $a) {
+                ArgumentChecker::hasType($a, $argName, false, ...$types);
+            }
+        }
+        else {
+            foreach ($types as $type) {
+                if ($arg instanceof $type) {
+                    return;
+                }
+            }
+            ArgumentChecker::illegalArgument(sprintf('"%s" argument has incorrect type', $argName));
+        }
+    }
+
+    public static function hasValueFrom($arg, string $argName, bool $isArray, array $values): void
+    {
+        if ($isArray && is_array($arg)) {
+            foreach ($arg as $a) {
+                ArgumentChecker::hasValueFrom($a, $argName, false, $values);
+            }
+        }
+        else {
+            if (!in_array($arg, $values)) {
+                ArgumentChecker::illegalArgument(sprintf('"%s" argument has incorrect value', $argName));
+            }
         }
     }
     

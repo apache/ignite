@@ -75,9 +75,9 @@ namespace Apache\Ignite\Type;
  * | ???                           | ENUM                  |
  * | ???                           | DECIMAL               |
  * | BinaryObject ???              | COMPLEX_OBJECT        |
- * | any other PHP Class ???       | COMPLEX_OBJECT        |
+ * | any other PHP Object          | COMPLEX_OBJECT        |
  * | associative array of          |                       |
- * |    any PHP supported type ??? | MAP (HASH_MAP)        |
+ * |    any PHP supported type     | MAP (HASH_MAP)        |
  * | indexed array of boolean      | BOOLEAN_ARRAY         |
  * | indexed array of integer      | INTEGER_ARRAY         |
  * | indexed array of float        | DOUBLE_ARRAY          |
@@ -89,7 +89,7 @@ namespace Apache\Ignite\Type;
  * | indexed array of ???          | DECIMAL_ARRAY         |
  * | indexed array of BinaryObject | OBJECT_ARRAY          |
  * | indexed array of              |                       |
- * |       any other PHP Class ??? | OBJECT_ARRAY          |
+ * |       any other PHP Object    | OBJECT_ARRAY          |
  * | Ds/Set                        | COLLECTION (HASH_SET) |
  * | Ds/Map                        | MAP (HASH_MAP)        |
  * </pre>
@@ -132,7 +132,7 @@ namespace Apache\Ignite\Type;
  * | BYTE_ARRAY                   | array of integer                      |
  * | SHORT_ARRAY                  | array of integer                      |
  * | INTEGER_ARRAY                | array of integer                      |
- * | LONG_ARRAY                   | array of integer/float ???            |
+ * | LONG_ARRAY                   | array of integer/float                |
  * | FLOAT_ARRAY                  | array of float                        |
  * | DOUBLE_ARRAY                 | array of float                        |
  * | DECIMAL_ARRAY                | ???                                   |
@@ -168,16 +168,16 @@ namespace Apache\Ignite\Type;
  *
  * TO UPDATE ???
  *
- * - for COMPLEX_OBJECT the Ignite Client returns a JavaScript Object
- * which is defined by the specified {@link ComplexObjectType}.
+ * - for COMPLEX_OBJECT the Ignite Client returns a PHP Object
+ * which is defined by the specified ComplexObjectType.
  *
- * - the returned Map for MAP is defined by the specified {@link MapObjectType}.
+ * - the returned Map for MAP is defined by the specified MapObjectType.
  *
- * - the returned Set or Array for COLLECTION is defined by the specified {@link CollectionObjectType}.
+ * - the returned Set or Array for COLLECTION is defined by the specified CollectionObjectType.
  *
- * - the returned Array for OBJECT_ARRAY is defined by the specified {@link ObjectArrayType}.
+ * - the returned Array for OBJECT_ARRAY is defined by the specified ObjectArrayType.
  *
- * - NULL cannot be specified as a type of a field but JavaScript null may be returned
+ * - NULL cannot be specified as a type of a field but PHP null may be returned
  * as a value of a field.
  *
  * ----------------------------------------------------------------------------
@@ -191,20 +191,20 @@ namespace Apache\Ignite\Type;
  *
  * TO UPDATE ???
  *
- * - for COMPLEX_OBJECT the Ignite Client allows a JavaScript Object
- * which is defined by the specified {@link ComplexObjectType}.
+ * - for COMPLEX_OBJECT the Ignite Client allows a PHP Object
+ * which is defined by the specified ComplexObjectType.
  *
- * - the allowed Map for MAP is defined by the specified {@link MapObjectType}.
+ * - the allowed Map for MAP is defined by the specified MapObjectType.
  *
- * - the allowed Set or Array for COLLECTION is defined by the specified {@link CollectionObjectType}.
+ * - the allowed Set or Array for COLLECTION is defined by the specified CollectionObjectType.
  *
- * - the allowed Array for OBJECT_ARRAY is defined by the specified {@link ObjectArrayType}.
+ * - the allowed Array for OBJECT_ARRAY is defined by the specified ObjectArrayType.
  *
- * - NULL cannot be specified as a type of a field but JavaScript null is allowed
+ * - NULL cannot be specified as a type of a field but PHP null is allowed
  * as value of a field (but not as a key/value in a cache) or as a value of Array/Set/Map element
  * for all Ignite types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
  *
- * - for all *_ARRAY Ignite types an empty JavaScript Array is allowed.
+ * - for all *_ARRAY Ignite types an empty PHP Array is allowed.
  * ----------------------------------------------------------------------------
  * 
  */
@@ -410,6 +410,9 @@ abstract class ObjectType
     private $typeCode;
     
     /**
+     * @cond INTERNAL
+     */    
+    /**
      * The class is abstract and has no public constructor. Only subclasses may be instantiated.
      * 
      * @param int $typeCode
@@ -418,6 +421,9 @@ abstract class ObjectType
     {
         $this->typeCode = $typeCode;
     }
+    /**
+     * @endcond INTERNAL
+     */
     
     /**
      * Gets Ignite type code of this Ignite object type.

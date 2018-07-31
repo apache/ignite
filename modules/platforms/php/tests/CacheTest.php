@@ -28,13 +28,13 @@ final class CacheTestCase extends TestCase
     const CACHE_NAME = '__php_test_cache';
     const CACHE_NAME2 = '__php_test_cache2';
 
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         TestingHelper::init();
         CacheTestCase::cleanUp();
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         CacheTestCase::cleanUp();
         TestingHelper::cleanUp();
@@ -119,7 +119,7 @@ final class CacheTestCase extends TestCase
         $client->getCache('');
     }
     
-    private function checkCache(CacheInterface $cache, bool $cacheExists)
+    private function checkCache(CacheInterface $cache, bool $cacheExists): void
     {
         if (!$cacheExists) {
             $this->expectException(OperationException::class);
