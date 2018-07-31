@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -221,8 +222,11 @@ class GridDhtPartitionSupplier {
         if (node == null)
             return;
 
+        IgniteRebalanceIterator iter = null;
+
+        SupplyContext sctx = null;
+
         try {
-            SupplyContext sctx;
 
             synchronized (scMap) {
                 sctx = scMap.remove(contextId);
@@ -274,8 +278,6 @@ class GridDhtPartitionSupplier {
                     grp.groupId(),
                     d.topologyVersion(),
                     grp.deploymentEnabled());
-
-            IgniteRebalanceIterator iter;
 
             Set<Integer> remainingParts;
 
@@ -430,13 +432,55 @@ class GridDhtPartitionSupplier {
                     ", topology=" + demTop + ", rebalanceId=" + d.rebalanceId() +
                     ", topicId=" + topicId + "]");
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send partition supply message to node: " + nodeId, e);
-        }
-        catch (IgniteSpiException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
-                    ", msg=" + e.getMessage() + ']');
+        catch (IgniteCheckedException | IgniteException e) {
+            boolean sendErrMsg = true;
+
+            if (e instanceof IgniteSpiException) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
+                        ", msg=" + e.getMessage() + ']');
+
+                sendErrMsg = false;
+            }
+            else
+                U.error(log, "Failed to continue supplying process for " +
+                    "[node=" + nodeId + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", e);
+
+            try {
+                if (sctx != null)
+                    clearContext(sctx, log);
+                else if (iter != null)
+                    iter.close();
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to cleanup supplying context.", t);
+            }
+
+            if (!sendErrMsg)
+                return;
+
+            try {
+                // Error to response to demander.
+                IgniteCheckedException supplyErr;
+
+                if (e instanceof IgniteCheckedException)
+                    supplyErr = (IgniteCheckedException) e;
+                else
+                    supplyErr = new IgniteCheckedException(e);
+
+                GridDhtPartitionSupplyMessage errMsg = new GridDhtPartitionSupplyMessage(d.rebalanceId(),
+                    grp.groupId(),
+                    d.topologyVersion(),
+                    grp.deploymentEnabled());
+
+                errMsg.onClassError(supplyErr);
+
+                reply(node, d, errMsg, contextId);
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to send supply error message for " +
+                    "[node=" + nodeId + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t);
+            }
         }
     }
 
