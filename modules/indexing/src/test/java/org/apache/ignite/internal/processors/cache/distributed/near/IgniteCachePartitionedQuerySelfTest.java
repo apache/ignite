@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
-import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
@@ -45,7 +43,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests for partitioned cache queries.
@@ -103,55 +100,6 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
             cnt += (Long)row.get(0);
 
         assertEquals(4, cnt);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalSqlQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
-            IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
-
-            for (int i = 0; i < 10; i++)
-                c.put(i, i);
-
-            assertEquals(0, c.localSize());
-
-            SqlQuery<Integer, Integer> qry = new SqlQuery<>(Integer.class, "_key >= 5 order by _key");
-
-            qry.setLocal(true);
-
-            assertThrowsWithCause(() -> c.query(qry), CacheException.class);
-        }
-        finally {
-            stopGrid("client");
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalSqlFieldsQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
-            IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
-
-            Person p = new Person("Jon", 1500);
-
-            c.put(p.id(), p);
-
-            SqlFieldsQuery qry = new SqlFieldsQuery("select count(*) from Person");
-
-            qry.setLocal(true);
-
-            assertThrowsWithCause(() -> c.query(qry), CacheException.class);
-        }
-        finally {
-            stopGrid("client");
-        }
     }
 
     /**
