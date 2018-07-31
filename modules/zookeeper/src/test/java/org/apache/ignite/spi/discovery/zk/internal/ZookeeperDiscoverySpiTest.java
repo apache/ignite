@@ -2554,10 +2554,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 }
             }, IgniteCheckedException.class, null);
 
-            IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
+            assertTrue(err instanceof IgniteCheckedException);
 
-            assertNotNull(spiErr);
-            assertTrue(spiErr.getMessage().contains("Node with the same ID already exists"));
+            assertTrue(err.getMessage().contains("Failed to start processor:")
+                || err.getMessage().contains("Failed to start manager:"));
 
             nodeId = null;
 
