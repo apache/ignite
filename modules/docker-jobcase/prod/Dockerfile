@@ -161,8 +161,10 @@ COPY ./multicast.discovery.node.config.xml ${JOBCASE_CONFIG}/
 
 # Copy sh files and set permission
 COPY ./run.sh ${IGNITE_HOME}/
+COPY ./autobaseline.sh ${IGNITE_HOME}/
 
 RUN chmod +x ${IGNITE_HOME}/run.sh
+RUN chmod +x ${IGNITE_HOME}/autobaseline.sh
 
 # The entrypoint.sh script is always executed at container startup.
 # It includes the logic for further runtime configuration and/or operations.

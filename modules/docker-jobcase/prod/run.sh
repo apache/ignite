@@ -63,40 +63,17 @@ if [ "$IGNITE_QUIET" = "false" ]; then
   QUIET="-v"
 fi
 
+# If IGNITE_AUTO_BASELINE_DELAY is specifed, spawn a separate background task to force activate 
+# the cluster if the current node is not part of the baseline after the delay.   The delay
+# needs to be shorter than the health check startup time.
+if [ ! -z "$IGNITE_CONSISTENT_ID" ]  && [ "$IGNITE_AUTO_BASELINE_DELAY" -ne 0 ]
+    $IGNITE_HOME/autobaseline.sh $IGNITE_CONSISTENT_ID $IGNITE_AUTO_BASELINE_DELAY &
+FI
+
 if [ -z $CONFIG_URI ]; then
   $IGNITE_HOME/bin/ignite.sh $QUIET
 else
   $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
 fi
 
-# Activate or set a baseline for all current server nodes, but only after a while.
-SECONDS=0
-while [ ! -z "$IGNITE_CONSISTENT_ID" ] && [ "$IGNITE_CLIENT_MODE" == "false" ] && [ "$IGNITE_AUTO_BASELINE_DELAY" -ne 0 ]
-do 
-    sleep 5
-    $IGNITE_HOME/bin/control.sh --baseline > /tmp/baseline
-    if [ $? != 0 ]
-    then 
-        break; 
-    fi
-
-    SECONDS=$(($SECONDS + 5))
-      
-    if [ $SECONDS -gt $IGNITE_AUTO_BASELINE_DELAY ]
-    then
-        X=`egrep "Cluster state.* active" /tmp/baseline`
-        if [ "$?" != 0 ]
-        then 
-            $IGNITE_HOME/bin/control.sh --activate
-        else
-            X=`sed -n '/Other/q;p' /tmp/baseline | grep "ConsistentID=${IGNITE_CONSISTENT_ID}"` 
-            if [ "$?" != 0 ]; then
-               VERSION=`grep "Current topology version" /tmp/baseline | grep -oP '\d+'`
-               $IGNITE_HOME/bin/control.sh --baseline version $VERSION
-            fi
-        fi
-        break;
-    fi
-done
-      
 
