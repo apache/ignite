@@ -233,7 +233,8 @@
         flex: 1;
 
         &:last-child {
-            flex: 0;
+            flex: 1;
+            justify-content: flex-end;
         }
     }
 }
