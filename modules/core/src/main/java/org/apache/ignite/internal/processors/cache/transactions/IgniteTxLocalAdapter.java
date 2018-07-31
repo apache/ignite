@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -160,6 +161,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** Update counters map */
     private Map<Integer, Map<Integer, Long>> updCntrs;
+
+    /** */
+    private volatile boolean qryEnlisted;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -507,7 +511,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
 
-        boolean empty = F.isEmpty(commitEntries);
+        boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
 
         // Register this transaction as completed prior to write-phase to
         // ensure proper lock ordering for removed entries.
@@ -916,6 +920,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
+                updateLocalPartitionCounters();
+
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
             }
@@ -941,8 +947,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || completedBase != null;
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
-
-                updateLocalPartitionCounters();
             }
         }
     }
@@ -1022,8 +1026,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || completedBase != null : "Missing completed base for transaction: " + this;
                 assert !needsCompletedVersions || committedVers != null : "Missing committed versions for transaction: " + this;
                 assert !needsCompletedVersions || rolledbackVers != null : "Missing rolledback versions for transaction: " + this;
-
-                updateLocalPartitionCounters();
             }
         }
     }
@@ -1717,6 +1719,27 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 assert prev == 0L : prev;
             }
+        }
+    }
+
+    /**
+     * @return {@code True} if there are entries, enlisted by query.
+     */
+    public boolean queryEnlisted() {
+        return qryEnlisted;
+    }
+
+    /**
+     * @param ver Mvcc version.
+     */
+    public void markQueryEnlisted(MvccSnapshot ver) {
+        if (!qryEnlisted) {
+            if (mvccSnapshot == null)
+                mvccSnapshot = ver;
+
+            cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
+
+            qryEnlisted = true;
         }
     }
 

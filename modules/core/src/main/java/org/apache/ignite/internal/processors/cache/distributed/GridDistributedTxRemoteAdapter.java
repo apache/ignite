@@ -457,7 +457,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 GridCacheReturnCompletableWrapper wrapper = null;
 
-                if (!F.isEmpty(writeMap)) {
+                if (!F.isEmpty(writeMap) || mvccSnapshot != null) {
                     GridCacheReturn ret = null;
 
                     if (!near() && !local() && onePhaseCommit()) {
@@ -764,6 +764,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
+                            updateLocalCounters();
+
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null)
                                 cctx.wal().log(new DataRecord(dataEntries));
 
@@ -791,18 +793,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 cctx.tm().commitTx(this);
 
-                if (state(COMMITTED) && dht())
-                    updateLocalCounters(updateCountersMap());
+                state(COMMITTED);
             }
         }
     }
 
     /**
      * Applies update counters to the local partitions.
-     *
-     * @param updCntrsMap Update counters map.
      */
-    private void updateLocalCounters(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap) {
+    private void updateLocalCounters() {
+        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap = updateCountersMap();
+
         if (F.isEmpty(updCntrsMap))
             return;
 

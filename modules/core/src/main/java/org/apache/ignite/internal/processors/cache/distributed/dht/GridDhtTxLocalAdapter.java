@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -96,9 +95,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** */
     protected boolean explicitLock;
-
-    /** */
-    private volatile boolean queryEnlisted;
 
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
@@ -218,27 +214,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public void explicitLock(boolean explicitLock) {
         this.explicitLock = explicitLock;
-    }
-
-    /**
-     * @return {@code True} if there are entries, enlisted by query.
-     */
-    public boolean queryEnlisted() {
-        return queryEnlisted;
-    }
-
-    /**
-     * @param ver Mvcc version.
-     */
-    public void markQueryEnlisted(MvccSnapshot ver) {
-        if (!queryEnlisted) {
-            if (mvccSnapshot == null)
-                mvccSnapshot = ver;
-
-            cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
-
-            queryEnlisted = true;
-        }
     }
 
     /**
