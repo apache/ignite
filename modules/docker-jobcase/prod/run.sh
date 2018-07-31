@@ -55,8 +55,6 @@ if [ ! -z "${JVM_HEAP_SIZE}" ]; then
     export JVM_OPTS="$JVM_OPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
 fi    
 
-
-
 QUIET=""
 
 if [ "$IGNITE_QUIET" = "false" ]; then
@@ -68,12 +66,10 @@ fi
 # needs to be shorter than the health check startup time.
 if [ ! -z "$IGNITE_CONSISTENT_ID" ]  && [ "$IGNITE_AUTO_BASELINE_DELAY" -ne 0 ]
     $IGNITE_HOME/autobaseline.sh $IGNITE_CONSISTENT_ID $IGNITE_AUTO_BASELINE_DELAY &
-FI
+fi
 
 if [ -z $CONFIG_URI ]; then
   $IGNITE_HOME/bin/ignite.sh $QUIET
 else
   $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
 fi
-
-
