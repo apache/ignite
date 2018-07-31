@@ -14,7 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ./form
 include ../../primitives/btn-group/index
 include ../../primitives/datepicker/index
 include ../../primitives/timepicker/index
@@ -351,12 +350,6 @@ mixin url(label, model, name, enabled, required, placeholder, tip)
             block
 
         +form-field__error({ error: 'url', message: `${ errLbl } should be a valid URL!` })
-
-//- Mixin for password field.
-mixin password(lbl, model, name, required, placeholder, tip)
-    +ignite-form-field-password(lbl, model, name, false, required, placeholder, tip)
-        if  block
-            block
 
 //- Mixin for text field with enabled condition with options.
 mixin text-options(label, model, name, options, enabled, required, placeholder, tip)
