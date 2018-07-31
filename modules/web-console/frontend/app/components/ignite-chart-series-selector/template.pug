@@ -14,9 +14,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-button.btn-ignite.btn-ignite--primary-outline(ng-click='$ctrl.export()' bs-tooltip='' data-title='Export filtered rows to CSV' data-placement='top')
-    svg(ignite-icon='csv')
-
-button.btn-ignite.btn-ignite--link-success.link-success(ng-click='$ctrl.export()' bs-tooltip='' data-title='Export filtered rows to CSV' data-placement='top')
-    svg(ignite-icon='download')
-    i Export to .csv
+button.btn-ignite.btn-ignite--link-dashed-secondary(
+    protect-from-bs-select-render
+    bs-select
+    ng-model='$ctrl.selectedCharts'
+    ng-change='$ctrl.setSelectedCharts()'
+    ng-model-options='{debounce: {default: 5}}',
+    bs-options='chart.key as chart.label for chart in $ctrl.charts'
+    bs-on-before-show='$ctrl.onShow'
+    data-multiple='true'
+    ng-transclude
+    ng-show='$ctrl.charts.length'
+)
+    svg(ignite-icon='gear').icon

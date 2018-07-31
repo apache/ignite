@@ -15,10 +15,20 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import './style.scss';
-import component from './component';
+grid-export {
+	&:not(.link-success) {
+		button:nth-child(2) {
+			display: none;
+		}
+	}
 
-export default angular
-    .module('ignite-console.grid-export', [])
-    .component('gridExport', component);
+	&.link-success {
+		button:nth-child(1) {
+			display: none;
+		}
+	}
+
+	[ignite-icon='download'] {
+		margin-right: 5px;
+	}
+}
