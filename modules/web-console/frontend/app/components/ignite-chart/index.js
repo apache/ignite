@@ -16,9 +16,23 @@
  */
 
 import angular from 'angular';
+
+import { IgniteChartController } from './controller';
+import template from './template.pug';
 import './style.scss';
-import component from './component';
 
 export default angular
-    .module('ignite-console.grid-export', [])
-    .component('gridExport', component);
+    .module('ignite-console.ignite-chart', [])
+    .component('igniteChart', {
+        controller: IgniteChartController,
+        template,
+        bindings: {
+            chartOptions: '<',
+            chartDataPoint: '<',
+            chartHistory: '<',
+            chartTitle: '<',
+            chartColors: '<',
+            maxPointsNumber: '<',
+            refreshRate: '<'
+        }
+    });

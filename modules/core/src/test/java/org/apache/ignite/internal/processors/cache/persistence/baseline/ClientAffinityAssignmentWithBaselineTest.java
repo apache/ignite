@@ -156,9 +156,9 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cleanPersistenceDir();
-
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

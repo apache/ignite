@@ -15,10 +15,55 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import './style.scss';
-import component from './component';
+ignite-chart {
+  display: flex;
+  flex-direction: column;
 
-export default angular
-    .module('ignite-console.grid-export', [])
-    .component('gridExport', component);
+  height: 100%;
+
+  header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    box-sizing: content-box;
+
+    height: 36px;
+    min-height: 36px;
+    padding: 7px 21px;
+
+    border-bottom: 1px solid #d4d4d4;
+
+    h5 {
+      margin: 0;
+
+      font-size: 16px;
+      font-weight: normal;
+      line-height: 36px;
+    }
+
+    > div {
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  .ignite-chart-placeholder {
+    display: block;
+    height: calc(100% - 71px);
+    margin-top: 20px;
+  }
+
+  .no-data {
+    position: absolute;
+    top: 50%;
+
+    width: 100%;
+    padding: 0 20px;
+
+    border-radius: 0 0 4px 4px;
+
+    font-style: italic;
+    line-height: 16px;
+    text-align: center;
+  }
+}
