@@ -389,6 +389,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param keys Keys.
      * @param vals Values.
      * @param snapshot Mvcc snapshot.
+     * @param updCntrs Update counters.
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,

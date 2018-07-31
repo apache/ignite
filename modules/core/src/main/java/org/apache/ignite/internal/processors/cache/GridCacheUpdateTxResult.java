@@ -33,7 +33,7 @@ public class GridCacheUpdateTxResult {
     /** Success flag.*/
     private final boolean success;
 
-    /** Partition idx. */
+    /** Partition update counter. */
     private long updateCntr;
 
     /** */
@@ -108,9 +108,9 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     * @return Partition idx.
+     * @return Partition update counter.
      */
-    public long updatePartitionCounter() {
+    public long updateCounter() {
         return updateCntr;
     }
 

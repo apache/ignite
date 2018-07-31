@@ -694,7 +694,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             mvccSnapshot());
 
                                         if (updRes.success()) {
-                                            txEntry.updateCounter(updRes.updatePartitionCounter());
+                                            txEntry.updateCounter(updRes.updateCounter());
 
                                             GridLongList waitTxs = updRes.mvccWaitTransactions();
 
@@ -757,7 +757,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             mvccSnapshot());
 
                                         if (updRes.success()) {
-                                            txEntry.updateCounter(updRes.updatePartitionCounter());
+                                            txEntry.updateCounter(updRes.updateCounter());
 
                                             GridLongList waitTxs = updRes.mvccWaitTransactions();
 

@@ -578,7 +578,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         cnt++;
 
         if (op != READ)
-            addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updatePartitionCounter(), entry.context().cacheId());
+            addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updateCounter(), entry.context().cacheId());
     }
 
     /**

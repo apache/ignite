@@ -127,6 +127,7 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
         GridNearTxQueryEnlistResponse res = createResponse(fut);
 
         if (res.removeMapping()) {
+            // TODO IGNITE-9133
             tx.rollbackDhtLocalAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
                     try {

@@ -363,7 +363,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
     }
     /**
-     * @return Update counters deltas.
+     * @return Partition update counters map.
      */
     public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
         return updCntrs;
