@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
+from decimal import Decimal
+
+from pyignite.datatypes import (
+    BinaryObject, BoolObject, DecimalObject, IntObject, String,
+)
+
 
 def test_cache_create(conn):
     cache = conn.create_cache('my_oop_cache')
@@ -25,4 +32,39 @@ def test_cache_get_put(conn):
     cache.put('my_key', 42)
     result = cache.get('my_key')
     assert result, 42
+    cache.destroy()
+
+
+def test_cache_binary_get_put(conn):
+    binary_type = conn.put_binary_type(
+        'TestBinaryType',
+        schema=OrderedDict([
+            ('TEST_BOOL', BoolObject),
+            ('TEST_STR', String),
+            ('TEST_INT', IntObject),
+            ('TEST_DECIMAL', DecimalObject),
+        ])
+    )
+    cache = conn.create_cache('my_oop_cache')
+    cache.put(
+        'my_key',
+        {
+            'version': 1,
+            'type_id': binary_type['type_id'],
+            'schema_id': binary_type['schema_id'],
+            'fields': OrderedDict([
+                ('TEST_BOOL', True),
+                ('TEST_STR', 'This is a test'),
+                ('TEST_INT', (42, IntObject)),
+                ('TEST_DECIMAL', Decimal('34.56')),
+            ]),
+        },
+        value_hint=BinaryObject
+    )
+    value = cache.get('my_key')
+    assert value['fields']['TEST_BOOL'] is True
+    assert value['fields']['TEST_STR'] == 'This is a test'
+    assert value['fields']['TEST_INT'] == 42
+    assert value['fields']['TEST_DECIMAL'] == Decimal('34.56')
+
     cache.destroy()

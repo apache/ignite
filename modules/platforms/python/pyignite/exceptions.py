@@ -34,5 +34,9 @@ class CacheError(Exception):
     pass
 
 
+class BinaryTypeError(CacheError):
+    pass
+
+
 class CacheCreationError(CacheError):
     pass

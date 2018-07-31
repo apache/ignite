@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Type, Optional, Union
+from typing import Any, Optional, Union
 
 from pyignite.connection import Connection
 from pyignite.datatypes import prop_codes
 from pyignite.exceptions import (
     CacheCreationError, CacheError, ParameterError,
 )
-from pyignite.utils import cache_id
+from pyignite.utils import cache_id, status_to_exception, unwrap_binary
 from .cache_config import (
     cache_create, cache_create_with_config,
     cache_get_or_create, cache_get_or_create_with_config,
@@ -52,24 +52,6 @@ CACHE_CREATE_FUNCS = {
         False: cache_create,
     },
 }
-
-
-def status_to_exception(exc: Type[Exception]):
-    """
-    Converts erroneous status code with error message to an exception
-    of the given class.
-
-    :param exc: the class of exception to raise,
-    :return: decorator.
-    """
-    def ste_decorator(fn):
-        def ste_wrapper(*args, **kwargs):
-            result = fn(*args, **kwargs)
-            if result.status != 0:
-                raise exc(result.message)
-            return result.value
-        return ste_wrapper
-    return ste_decorator
 
 
 class Cache:
@@ -127,13 +109,32 @@ class Cache:
     def cache_id(self) -> int:
         return self._cache_id
 
+    def process_binary(self, value: Any) -> Any:
+        """
+        Detects and recursively unwraps Binary Object.
+
+        :param value: anything that could be a Binary Object,
+        :return: the result of the Binary Object unwrapping with all other data
+         left intact.
+        """
+        if (
+            type(value) is tuple
+            and len(value) == 2
+            and type(value[0]) is bytes
+            and type(value[1]) is int
+        ):
+            return unwrap_binary(self._conn, value)
+        return value
+
     @status_to_exception(CacheError)
     def destroy(self):
         return cache_destroy(self._conn, self._cache_id)
 
+    @status_to_exception(CacheError)
     def get(self, key, key_hint: object=None) -> Any:
         result = cache_get(self._conn, self._cache_id, key, key_hint=key_hint)
-        return result.value
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def put(self, key, value, key_hint: object=None, value_hint: object=None):
@@ -144,7 +145,11 @@ class Cache:
 
     @status_to_exception(CacheError)
     def get_all(self, keys: list):
-        return cache_get_all(self._conn, self._cache_id, keys)
+        result = cache_get_all(self._conn, self._cache_id, keys)
+        if result.value:
+            for key, value in result.value.items():
+                result.value[key] = self.process_binary(value)
+        return result
 
     @status_to_exception(CacheError)
     def put_all(self, pairs: dict):
@@ -154,10 +159,12 @@ class Cache:
     def replace(
         self, key, value, key_hint: object=None, value_hint: object=None
     ):
-        return cache_replace(
+        result = cache_replace(
             self._conn, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
         )
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def clear(self, keys: Optional[list]=None):

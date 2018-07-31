@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
+from typing import Type, Union
 
 
 def is_iterable(value):
@@ -109,3 +109,21 @@ def entity_id(cache: Union[str, int]) -> int:
     :return: entity ID.
     """
     return cache if type(cache) is int else hashcode(cache.lower())
+
+
+def status_to_exception(exc: Type[Exception]):
+    """
+    Converts erroneous status code with error message to an exception
+    of the given class.
+
+    :param exc: the class of exception to raise,
+    :return: decorator.
+    """
+    def ste_decorator(fn):
+        def ste_wrapper(*args, **kwargs):
+            result = fn(*args, **kwargs)
+            if result.status != 0:
+                raise exc(result.message)
+            return result.value
+        return ste_wrapper
+    return ste_decorator
