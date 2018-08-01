@@ -38,6 +38,7 @@ import org.apache.ignite.internal.GridVersionSelfTest;
 import org.apache.ignite.internal.IgniteConcurrentEntryProcessorAccessStopTest;
 import org.apache.ignite.internal.IgniteConnectionConcurrentReserveAndRemoveTest;
 import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
+import org.apache.ignite.internal.GridDiscoveryManagerChangeCoordinatorTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
@@ -113,6 +114,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAliveCacheSelfTest.class);
+        suite.addTestSuite(GridDiscoveryManagerChangeCoordinatorTest.class);
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
