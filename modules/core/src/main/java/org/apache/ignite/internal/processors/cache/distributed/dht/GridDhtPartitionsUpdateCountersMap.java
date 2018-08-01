@@ -30,6 +30,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Partitions update counters message.
  */
 public class GridDhtPartitionsUpdateCountersMap implements Message {
+    /** */
+    private static final long serialVersionUID = -4599730112233297219L;
+
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
     private  Map<Integer, Long> updCntrs;
