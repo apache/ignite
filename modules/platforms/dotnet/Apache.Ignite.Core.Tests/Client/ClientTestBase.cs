@@ -130,7 +130,6 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         protected IIgniteClient GetClient()
         {
-            Console.WriteLine("GetClient");
             return Ignition.StartClient(GetClientConfiguration());
         }
 

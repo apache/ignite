@@ -133,7 +133,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestCreateFromConfiguration()
         {
-            Console.Write("TestCreateFromConfiguration");
             // Default config.
             var cfg = new CacheClientConfiguration("a");
             var cache = Client.CreateCache<int, int>(cfg);

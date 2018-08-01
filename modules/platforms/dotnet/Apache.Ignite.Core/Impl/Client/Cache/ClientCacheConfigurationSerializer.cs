@@ -195,7 +195,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the specified config.
         /// </summary>
-        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer, bool skipCodes = false)
+        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer,
+            bool skipCodes = false)
         {
             Debug.Assert(stream != null);
             Debug.Assert(cfg != null);
