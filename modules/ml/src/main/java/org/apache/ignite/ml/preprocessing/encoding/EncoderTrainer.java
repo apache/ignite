@@ -51,8 +51,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
 
     /** {@inheritDoc} */
     @Override public EncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-                                                         IgniteBiFunction<K, V, Object[]> basePreprocessor) {
-        if(handledIndices.isEmpty())
+                                                   IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+        if (handledIndices.isEmpty())
             throw new RuntimeException("Add indices of handled features");
 
         try (Dataset<EmptyContext, EncoderPartitionData> dataset = datasetBuilder.build(
@@ -81,8 +81,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
                     throw new IllegalStateException("Define the type of the resulting prerocessor.");
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -107,7 +106,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
                 assert a.length == b.length;
 
                 for (int i = 0; i < a.length; i++) {
-                    if(handledIndices.contains(i)){
+                    if (handledIndices.contains(i)) {
                         int finalI = i;
                         a[i].forEach((k, v) -> b[finalI].merge(k, v, (f1, f2) -> f1 + f2));
                     }
@@ -119,7 +118,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
         Map<String, Integer>[] res = new HashMap[frequencies.length];
 
         for (int i = 0; i < frequencies.length; i++)
-            if(handledIndices.contains(i))
+            if (handledIndices.contains(i))
                 res[i] = transformFrequenciesToEncodingValues(frequencies[i]);
 
         return res;
@@ -149,7 +148,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
     /**
      * Updates frequencies by values and features.
      *
-     * @param row Feature vector.
+     * @param row                 Feature vector.
      * @param categoryFrequencies Holds the frequencies of categories by values and features.
      * @return Updated frequencies by values and features.
      */
@@ -161,16 +160,15 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
                 + categoryFrequencies.length + " features";
 
         for (int i = 0; i < categoryFrequencies.length; i++) {
-            if(handledIndices.contains(i)){
+            if (handledIndices.contains(i)) {
                 String strVal;
                 Object featureVal = row[i];
 
-                if(featureVal.equals(Double.NaN)) {
+                if (featureVal.equals(Double.NaN)) {
                     strVal = "";
                     row[i] = strVal;
-                }
-                else if (featureVal instanceof String)
-                    strVal = (String)featureVal;
+                } else if (featureVal instanceof String)
+                    strVal = (String) featureVal;
                 else if (featureVal instanceof Double)
                     strVal = String.valueOf(featureVal);
                 else
@@ -189,6 +187,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
 
     /**
      * Initialize frequencies for handled indices only.
+     *
      * @param row Feature vector.
      * @return The array contains not null values for handled indices.
      */
@@ -196,7 +195,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
         Map<String, Integer>[] categoryFrequencies = new HashMap[row.length];
 
         for (int i = 0; i < categoryFrequencies.length; i++)
-            if(handledIndices.contains(i))
+            if (handledIndices.contains(i))
                 categoryFrequencies[i] = new HashMap<>();
 
         return categoryFrequencies;
@@ -204,20 +203,22 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
 
     /**
      * Add the index of encoded feature.
+     *
      * @param idx The index of encoded feature.
      * @return The changed trainer.
      */
-    public EncoderTrainer<K, V> encodeFeature(int idx){
+    public EncoderTrainer<K, V> encodeFeature(int idx) {
         handledIndices.add(idx);
         return this;
     }
 
     /**
      * Sets the encoder preprocessor type.
+     *
      * @param type The encoder preprocessor type.
      * @return The changed trainer.
      */
-    public EncoderTrainer<K,V> withEncoderType(EncoderType type){
+    public EncoderTrainer<K, V> withEncoderType(EncoderType type) {
         this.encoderType = type;
         return this;
     }

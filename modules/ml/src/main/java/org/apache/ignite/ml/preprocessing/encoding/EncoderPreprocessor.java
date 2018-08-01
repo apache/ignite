@@ -38,14 +38,14 @@ public abstract class EncoderPreprocessor<K, V> implements IgniteBiFunction<K, V
     /** Base preprocessor. */
     protected final IgniteBiFunction<K, V, Object[]> basePreprocessor;
 
-    /** Feature indices to apply encoder.*/
+    /** Feature indices to apply encoder. */
     protected final Set<Integer> handledIndices;
 
     /**
      * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
-     * @param handledIndices Handled indices.
+     * @param handledIndices   Handled indices.
      */
     public EncoderPreprocessor(Map<String, Integer>[] encodingValues,
                                IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {

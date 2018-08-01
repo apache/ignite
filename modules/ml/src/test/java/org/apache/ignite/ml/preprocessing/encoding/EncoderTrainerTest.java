@@ -39,13 +39,13 @@ public class EncoderTrainerTest {
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
         return Arrays.asList(
-            new Integer[] {1},
-            new Integer[] {2},
-            new Integer[] {3},
-            new Integer[] {5},
-            new Integer[] {7},
-            new Integer[] {100},
-            new Integer[] {1000}
+            new Integer[]{1},
+            new Integer[]{2},
+            new Integer[]{3},
+            new Integer[]{5},
+            new Integer[]{7},
+            new Integer[]{100},
+            new Integer[]{1000}
         );
     }
 
@@ -57,12 +57,12 @@ public class EncoderTrainerTest {
     @Test
     public void testFitOnStringCategorialFeatures() {
         Map<Integer, String[]> data = new HashMap<>();
-        data.put(1, new String[] {"Monday", "September"});
-        data.put(2, new String[] {"Monday", "August"});
-        data.put(3, new String[] {"Monday", "August"});
-        data.put(4, new String[] {"Friday", "June"});
-        data.put(5, new String[] {"Friday", "June"});
-        data.put(6, new String[] {"Sunday", "August"});
+        data.put(1, new String[]{"Monday", "September"});
+        data.put(2, new String[]{"Monday", "August"});
+        data.put(3, new String[]{"Monday", "August"});
+        data.put(4, new String[]{"Friday", "June"});
+        data.put(5, new String[]{"Friday", "June"});
+        data.put(6, new String[]{"Sunday", "August"});
 
         DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
@@ -76,19 +76,19 @@ public class EncoderTrainerTest {
             (k, v) -> v
         );
 
-        assertArrayEquals(new double[] {0.0, 2.0}, preprocessor.apply(7, new String[] {"Monday", "September"}).asArray(), 1e-8);
+        assertArrayEquals(new double[]{0.0, 2.0}, preprocessor.apply(7, new String[]{"Monday", "September"}).asArray(), 1e-8);
     }
 
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnIntegerCategorialFeatures() {
         Map<Integer, Object[]> data = new HashMap<>();
-        data.put(1, new Object[] {3.0, 0.0});
-        data.put(2, new Object[] {3.0, 12.0});
-        data.put(3, new Object[] {3.0, 12.0});
-        data.put(4, new Object[] {2.0, 45.0});
-        data.put(5, new Object[] {2.0, 45.0});
-        data.put(6, new Object[] {14.0, 12.0});
+        data.put(1, new Object[]{3.0, 0.0});
+        data.put(2, new Object[]{3.0, 12.0});
+        data.put(3, new Object[]{3.0, 12.0});
+        data.put(4, new Object[]{2.0, 45.0});
+        data.put(5, new Object[]{2.0, 45.0});
+        data.put(6, new Object[]{14.0, 12.0});
 
         DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
@@ -101,20 +101,20 @@ public class EncoderTrainerTest {
             datasetBuilder,
             (k, v) -> v
         );
-        assertArrayEquals(new double[] {0.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, preprocessor.apply(7, new Double[] {3.0, 0.0}).asArray(), 1e-8);
-        assertArrayEquals(new double[] {1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0}, preprocessor.apply(8, new Double[] {2.0, 12.0}).asArray(), 1e-8);
+        assertArrayEquals(new double[]{0.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, preprocessor.apply(7, new Double[]{3.0, 0.0}).asArray(), 1e-8);
+        assertArrayEquals(new double[]{1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0}, preprocessor.apply(8, new Double[]{2.0, 12.0}).asArray(), 1e-8);
     }
 
     /** Tests {@code fit()} method. */
     @Test
-    public void testFitWithUnknownStringValueInTheGivenData () {
+    public void testFitWithUnknownStringValueInTheGivenData() {
         Map<Integer, Object[]> data = new HashMap<>();
-        data.put(1, new Object[] {3.0, 0.0});
-        data.put(2, new Object[] {3.0, 12.0});
-        data.put(3, new Object[] {3.0, 12.0});
-        data.put(4, new Object[] {2.0, 45.0});
-        data.put(5, new Object[] {2.0, 45.0});
-        data.put(6, new Object[] {14.0, 12.0});
+        data.put(1, new Object[]{3.0, 0.0});
+        data.put(2, new Object[]{3.0, 12.0});
+        data.put(3, new Object[]{3.0, 12.0});
+        data.put(4, new Object[]{2.0, 45.0});
+        data.put(5, new Object[]{2.0, 45.0});
+        data.put(6, new Object[]{14.0, 12.0});
 
         DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
@@ -129,10 +129,9 @@ public class EncoderTrainerTest {
         );
 
         try {
-            preprocessor.apply(7, new String[] {"Monday", "September"}).asArray();
+            preprocessor.apply(7, new String[]{"Monday", "September"}).asArray();
             fail("UnknownCategorialFeatureValue");
-        }
-        catch (UnknownCategorialFeatureValue e) {
+        } catch (UnknownCategorialFeatureValue e) {
             return;
         }
         fail("UnknownCategorialFeatureValue");

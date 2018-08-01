@@ -34,15 +34,16 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
 public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
     /** */
     protected static final long serialVersionUID = 6237712226382623488L;
+
     /**
      * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
-     * @param handledIndices Handled indices.
+     * @param handledIndices   Handled indices.
      */
     public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
-        IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
-       super(encodingValues, basePreprocessor, handledIndices);
+                                     IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+        super(encodingValues, basePreprocessor, handledIndices);
     }
 
     /**
@@ -58,15 +59,15 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
 
         for (int i = 0; i < res.length; i++) {
             Object tmpObj = tmp[i];
-            if(handledIndices.contains(i)){
-                if(tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
+            if (handledIndices.contains(i)) {
+                if (tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
                     res[i] = encodingValues[i].get(KEY_FOR_NULL_VALUES);
                 else if (encodingValues[i].containsKey(tmpObj))
                     res[i] = encodingValues[i].get(tmpObj);
                 else
                     throw new UnknownCategorialFeatureValue(tmpObj.toString());
             } else
-                res[i] = (double)tmpObj;
+                res[i] = (double) tmpObj;
         }
         return VectorUtils.of(res);
     }

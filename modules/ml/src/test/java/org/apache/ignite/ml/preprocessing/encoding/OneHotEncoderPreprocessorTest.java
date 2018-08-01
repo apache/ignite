@@ -72,8 +72,8 @@ public class OneHotEncoderPreprocessorTest {
             {0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0},
         };
 
-       for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
     }
 
 
@@ -127,8 +127,7 @@ public class OneHotEncoderPreprocessorTest {
                 assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
 
             fail("UnknownCategorialFeatureValue");
-        }
-        catch (UnknownCategorialFeatureValue e) {
+        } catch (UnknownCategorialFeatureValue e) {
             return;
         }
         fail("UnknownCategorialFeatureValue");

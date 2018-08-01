@@ -38,14 +38,13 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
  *
  * Each one-hot encoded binary vector adds its cells to the end of the current feature vector.
  *
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
  * @see EncoderTrainer
  *
  * This prerpocessor always creates separate column for the NULL values.
  *
  * NOTE: the index value associated with NULL will located in binary vector according the frequency of NULL values.
- *
- * @param <K> Type of a key in {@code upstream} data.
- * @param <V> Type of a value in {@code upstream} data.
  */
 public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
     /** */
@@ -127,8 +126,8 @@ public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * Calculates the offset in feature vector to set up 1.0 accordingly the index value.
      *
      * @param categorialFeatureCntr The actual order number for the current categorial feature.
-     * @param indexedVal The indexed value, converted from the raw value.
-     * @param encodingValues The trainer's stats about category frequencies.
+     * @param indexedVal            The indexed value, converted from the raw value.
+     * @param encodingValues        The trainer's stats about category frequencies.
      * @return The offset.
      */
     private int getIdxOffset(int categorialFeatureCntr, int indexedVal, Map<String, Integer>[] encodingValues) {
