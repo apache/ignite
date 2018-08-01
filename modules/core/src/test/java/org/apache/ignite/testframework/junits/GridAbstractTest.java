@@ -865,11 +865,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (!isRemoteJvm(igniteInstanceName)) {
             startingIgniteInstanceName.set(igniteInstanceName);
 
-            checkDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
-
-            for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
-                checkDataRegion(reg);
-
             try {
                 String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
 
@@ -888,6 +883,15 @@ public abstract class GridAbstractTest extends TestCase {
                         log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
 
                         throw new IgniteException(e);
+                    }
+                }
+
+                if (cfg.getDataStorageConfiguration() != null) {
+                    checkDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
+
+                    if (cfg.getDataStorageConfiguration().getDataRegionConfigurations() != null) {
+                        for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
+                            checkDataRegion(reg);
                     }
                 }
 
