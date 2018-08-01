@@ -98,14 +98,14 @@ class SegmentCurrentStateStorage {
         notifyAll();
 
         try {
-            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCount && !interrupted)
+            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCount)
                 wait();
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedCheckedException(e);
         }
 
-        checkInterrupted();
+//        checkInterrupted();
 
         return curAbsWalIdx;
     }

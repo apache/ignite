@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator.AbstractFileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -544,13 +545,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     currHnd.flush(null);
             }
 
-            segmentAware.interrupt();
-
             if (currHnd != null)
                 currHnd.close(false);
 
             if (walWriter != null)
                 walWriter.shutdown();
+
+            segmentAware.interrupt();
 
             if (archiver != null)
                 archiver.shutdown();
@@ -1604,6 +1605,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             catch (IgniteInterruptedCheckedException e) {
                 Thread.currentThread().interrupt();
+
+                synchronized (this) {
+                    stopped = true;
+                }
             }
             catch (Throwable t) {
                 err = t;
@@ -2175,6 +2180,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Absolute WAL segment file index */
         protected final long idx;
 
+        private FileIOFactory ioFactory = new RandomAccessFileIOFactory();
+
         /**
          * Creates file descriptor. Index is restored from file name
          *
@@ -2196,6 +2203,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert fileName.contains(WAL_SEGMENT_FILE_EXT);
 
             this.idx = idx == null ? Long.parseLong(fileName.substring(0, 16)) : idx;
+        }
+
+        public void setIoFactory(FileIOFactory ioFactory) {
+            this.ioFactory = ioFactory;
         }
 
         /**
@@ -2253,6 +2264,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public long idx() {
             return idx;
+        }
+
+        public FileInput toInput(ByteBufferExpander buf) throws IOException {
+            FileIO io = isCompressed() ? new UnzipFileIO(file()) : ioFactory.create(file());
+
+            return new FileInput(io, buf);
         }
     }
 
