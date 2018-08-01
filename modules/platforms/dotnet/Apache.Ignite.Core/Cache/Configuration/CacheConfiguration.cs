@@ -377,6 +377,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
+        /// <param name="srvVer">Server version.</param>
         internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
         {
             // Make sure system marshaller is used.

@@ -684,7 +684,8 @@ namespace Apache.Ignite.Core.Impl
         public IgniteConfiguration GetConfiguration()
         {
             return DoInOp((int) Op.GetIgniteConfiguration,
-                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg, ClientSocket.CurrentProtocolVersion));
+                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg,
+                    ClientSocket.CurrentProtocolVersion));
         }
 
         /** <inheritdoc /> */
