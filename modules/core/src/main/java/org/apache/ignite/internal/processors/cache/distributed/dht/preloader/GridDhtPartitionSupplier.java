@@ -227,7 +227,6 @@ class GridDhtPartitionSupplier {
         SupplyContext sctx = null;
 
         try {
-
             synchronized (scMap) {
                 sctx = scMap.remove(contextId);
 

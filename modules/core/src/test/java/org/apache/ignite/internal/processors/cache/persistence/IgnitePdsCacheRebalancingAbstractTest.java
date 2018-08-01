@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,12 +34,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.collect.Lists;
-import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -142,15 +138,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         cfg.setCacheConfiguration(asArray(cacheCfgs));
 
-        String storePath = storePath();
-
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
             .setCheckpointFrequency(checkpointFrequency())
             .setWalMode(WALMode.LOG_ONLY)
-            .setStoragePath(storePath)
-            .setWalPath(storePath + "/wal")
-            .setWalArchivePath(storePath + "/archive")
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
@@ -208,86 +199,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         cleanPersistenceDir();
     }
 
-    @Override
-    protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        testName = getClass().getSimpleName();
-
-        File testDir = testDir();
-
-        log.warning("Test directory:" + testDir.getPath());
-
-        FileUtils.deleteDirectory(testDir);
-    }
-
-    /**
-     * @return {@link File} File test directory.
-     */
-    protected File testDir() throws IgniteCheckedException {
-        return new File(U.defaultWorkDirectory(), storePath());
-    }
-
-
-    /**
-     * @return Path for store.
-     */
-    protected String storePath() {
-        return testName.toLowerCase() + "/" + getName();
-    }
-
-    /** */
-    private volatile String testName;
-
-
-    /** */
-    private static final String PATH = IgniteSystemProperties.getString("SAVE_DB_FILE_PATH");
-
-    /** */
-    private static final String OUT_SUB_DIR = "archive_db";
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        String relatedPath = storePath();
-
-        String igHome = U.defaultWorkDirectory();
-
-        File sourcePath = testDir();
-
-        if (true) {
-            File target = new File(igHome + "/" + OUT_SUB_DIR + "/" + relatedPath);
-
-            if (target.exists())
-                if (target.delete())
-                    log.warning("fail to delete " + target.getAbsolutePath());
-
-            if (PATH != null) {
-                File storePath = new File(PATH + "/" + OUT_SUB_DIR + "/");
-
-                log.warning("SAVE_DB_FILE_PATH:=" + storePath.getAbsolutePath());
-
-                if (!storePath.exists())
-                    sourcePath.mkdirs();
-
-                target = new File(storePath, relatedPath);
-
-                if (target.exists())
-                    if (target.delete())
-                        log.warning("fail to delete " + target.getAbsolutePath());
-            }
-
-            log.warning("coping files " +
-                "\nsource:" + sourcePath.getAbsolutePath() +
-                "\ntarget:" + target.getAbsolutePath());
-
-            FileUtils.copyDirectory(sourcePath, target);
-        }
-
-        U.delete(sourcePath);
-
-        sourcePath.getParentFile().delete();
 
         cleanPersistenceDir();
     }
@@ -297,7 +211,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    public void _testRebalancingOnRestart() throws Exception {
+    public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
         startGrid(1);
@@ -348,7 +262,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    public void _testRebalancingOnRestartAfterCheckpoint() throws Exception {
+    public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
         IgniteEx ignite1 = startGrid(1);
@@ -606,14 +520,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void _testForceRebalance() throws Exception {
+    public void testForceRebalance() throws Exception {
         testForceRebalance(CACHE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testForceRebalanceClientTopology() throws Exception {
+    public void testForceRebalanceClientTopology() throws Exception {
         filteredCacheEnabled = true;
 
         try {
@@ -668,7 +582,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed
      */
-    public void _testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
+    public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         final Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
