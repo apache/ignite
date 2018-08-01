@@ -98,7 +98,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion currentVersion() {
-        return VER_1_2_0;
+        return CURRENT_VER;
     }
 
     /** {@inheritDoc} */
