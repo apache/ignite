@@ -150,6 +150,7 @@ public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
         }
     }
 
+    /** Polling task. */
     class ConsumerTask implements Callable<Void> {
         /** Kafka consumer. */
         private final KafkaConsumer<?, ?> consumer;
@@ -157,10 +158,12 @@ public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
         /** Stopped. */
         private volatile boolean stopped;
 
+        /** Constructor. */
         public ConsumerTask(Properties consumerCfg) {
             this.consumer = new KafkaConsumer<>(consumerCfg);
         }
 
+        /** {@inheritDoc} */
         @Override public Void call() {
             consumer.subscribe(topics);
 
@@ -186,6 +189,7 @@ public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
             return null;
         }
 
+        /** Stops the polling task. */
         public void stop() {
             stopped = true;
 
