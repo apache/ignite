@@ -17,6 +17,9 @@
 
 package org.apache.ignite.util;
 
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -33,9 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -59,18 +59,17 @@ import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -884,6 +883,77 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that both update counter and hash conflicts are detected.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyTwoConflictTypes() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertTrue(testOut.toString().contains("no conflicts have been found"));
+
+        GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
+
+        corruptDataEntry(cacheCtx, 1, true, false);
+
+        corruptDataEntry(cacheCtx, 1 + parts / 2, false, true);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertTrue(testOut.toString().contains("found 2 conflict partitions"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyMovingParts() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME)
+            .setRebalanceDelay(10_000));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertTrue(testOut.toString().contains("no conflicts have been found"));
+
+        startGrid(2);
+
+        resetBaselineTopology();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertTrue(testOut.toString().contains("MOVING partitions"));
+    }
+
+    /**
      *
      */
     public void testCacheContention() throws Exception {
@@ -1230,6 +1300,62 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             entry.setValue(entry.exists() ? entry.getValue() + 1 : 0);
 
             return null;
+        }
+    }
+
+    /**
+     * Corrupts data entry.
+     *
+     * @param ctx Context.
+     * @param key Key.
+     * @param breakCntr Break counter.
+     * @param breakData Break data.
+     */
+    private void corruptDataEntry(
+        GridCacheContext<Object, Object> ctx,
+        int key,
+        boolean breakCntr,
+        boolean breakData
+    ) {
+        int partId = ctx.affinity().partition(key);
+
+        try {
+            long updateCntr = ctx.topology().localPartition(partId).updateCounter();
+
+            Object valToPut = ctx.cache().keepBinary().get(key);
+
+            if (breakCntr)
+                updateCntr++;
+
+            if (breakData)
+                valToPut = valToPut.toString() + " broken";
+
+            // Create data entry
+            DataEntry dataEntry = new DataEntry(
+                ctx.cacheId(),
+                new KeyCacheObjectImpl(key, null, partId),
+                new CacheObjectImpl(valToPut, null),
+                GridCacheOperation.UPDATE,
+                new GridCacheVersion(),
+                new GridCacheVersion(),
+                0L,
+                partId,
+                updateCntr
+            );
+
+            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.shared().database();
+
+            db.checkpointReadLock();
+
+            try {
+                U.invoke(GridCacheDatabaseSharedManager.class, db, "applyUpdate", ctx, dataEntry);
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            e.printStackTrace();
         }
     }
 }
