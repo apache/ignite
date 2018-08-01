@@ -642,7 +642,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         txEntry.updateCounter(),
                                                         mvccSnapshot());
 
-                                                    txEntry.updateCounter(updRes.updatePartitionCounter());
+                                                    txEntry.updateCounter(updRes.updateCounter());
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -680,7 +680,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     txEntry.updateCounter(),
                                                     mvccSnapshot());
 
-                                                txEntry.updateCounter(updRes.updatePartitionCounter());
+                                                txEntry.updateCounter(updRes.updateCounter());
 
                                                 if (updRes.loggedPointer() != null)
                                                     ptr = updRes.loggedPointer();
