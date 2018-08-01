@@ -119,7 +119,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         c1.put(k, new DummyObject(k));
 
         startGrid(2);
-        waitForRebalancing();
+
+        awaitPartitionMapExchange();
 
         stopAllGrids();
 
