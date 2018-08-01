@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.WakeupException;
 
 /**
@@ -181,6 +182,9 @@ public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
             }
             catch (WakeupException we) {
                 log.info("Consumer is being stopped.");
+            }
+            catch (KafkaException ke) {
+                log.error("Kafka error", ke);
             }
             finally {
                 consumer.close();
