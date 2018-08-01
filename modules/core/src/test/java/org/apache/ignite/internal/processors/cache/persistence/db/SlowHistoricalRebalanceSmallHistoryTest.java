@@ -67,6 +67,8 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
+        cfg.setConsistentId(name);
+
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(
@@ -74,6 +76,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
                 .setWalHistorySize(WAL_HISTORY_SIZE)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        .setMaxSize(200 * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
                 .setWalSegmentSize(512 * 1024)
