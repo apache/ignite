@@ -2888,8 +2888,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         waitForTopology(nodesCnt);
 
-        int srvCnt = 10;
-
         int nodeIdx = 15;
 
         for (int i = 0; i < 10; i++) {
@@ -2912,17 +2910,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 // No-op.
             }
 
-            for (ClusterNode node : KillRandomCommunicationFailureResolver.LAST_KILLED_NODES) {
-                if (!node.isClient())
-                    srvCnt--;
-            }
-
-            assert srvCnt >= 0 : "incorrect server nodes counting";
-
-            boolean clientMode = srvCnt != 0 && ThreadLocalRandom.current().nextBoolean();
-
-            if (!clientMode)
-                srvCnt++;
+            boolean clientMode = ThreadLocalRandom.current().nextBoolean();
 
             clientMode(clientMode);
 
@@ -5154,10 +5142,18 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             log.info("Resolver kills nodes [total=" + nodes.size() + ", kill=" + killNodes + ']');
 
+            long srvCnt = nodes.stream().filter(node -> !node.isClient()).count();
+
             Set<Integer> idxs = new HashSet<>();
 
-            while (idxs.size() < killNodes)
-                idxs.add(rnd.nextInt(nodes.size()));
+            while (idxs.size() < killNodes) {
+                int idx = rnd.nextInt(nodes.size());
+
+                if(!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
+                    continue;
+
+                idxs.add(idx);
+            }
 
             for (int idx : idxs) {
                 ClusterNode node = nodes.get(idx);
