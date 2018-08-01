@@ -19,6 +19,16 @@
 namespace Apache\Ignite;
 
 /**
+ * Interface representing and providing access to Ignite cache.
+ *
+ * An instance of the class with this interface should be obtained via the methods of Ignite Client.
+ * One instance of such a class provides access to one Ignite cache which is specified
+ * during the instance obtaining and cannot be changed after that.
+ *
+ * There are three groups of methods in the cache interface:
+ *   - methods to configure the interface itself (optionally specify Ignite type for cache key and/or value)
+ *   - methods to operate with the cache using Key-Value Queries
+ *   - methods to operate with the cache using SQL and Scan Queries
  * 
  */
 interface CacheInterface
@@ -48,18 +58,20 @@ interface CacheInterface
      */
     const PEEK_MODE_BACKUP = 3;
     /** @} */ // end of PeekMode
-    
+
+    /* Methods to configure the cache interface */
+
     /**
      * Specifies a type of the cache key.
      *
-     * The cache client assumes that keys in all further operations with the cache
-     * will have the specified type.
-     * Eg. the cache client will convert keys provided as input parameters of the methods
-     * to the specified object type before sending them to a server.
+     * Ignite client assumes that keys in all further operations with the cache
+     * will have the Ignite type specified by this method.
+     * Eg. the client will convert keys provided as input parameters of the Key-Value or SQL operations
+     * to the specified Ignite object type before sending the keys to a server.
      *
-     * After the cache client creation a type of the cache key is not specified (null).
+     * By default a type of the cache key is not specified (null).
      *
-     * If the type is not specified then during operations the cache client
+     * If the type is not specified then during operations Ignite client
      * will do automatic mapping between some of the PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      *
@@ -68,7 +80,7 @@ interface CacheInterface
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified).
      *
-     * @return CacheInterface the same instance of the cache client.
+     * @return CacheInterface the same instance of the class.
      *
      * @throws Exception::ClientException if error.
      */
@@ -77,15 +89,15 @@ interface CacheInterface
     /**
      * Specifies a type of the cache value.
      *
-     * The cache client assumes that values in all further operations with the cache
-     * will have the specified type.
-     * Eg. the cache client will convert values provided as input parameters of the methods
-     * to the specified object type before sending them to a server.
+     * Ignite client assumes that values in all further operations with the cache
+     * will have the Ignite type specified by this method.
+     * Eg. the client will convert values provided as input parameters of the Key-Value or SQL operations
+     * to the specified Ignite object type before sending the values to a server.
      *
-     * After the cache client creation a type of the cache value is not specified (null).
+     * By default a type of the cache value is not specified (null).
      *
-     * If the type is not specified then during operations the cache client
-     * will do automatic mapping between some of the PHP types and object types -
+     * If the type is not specified then during operations Ignite client
+     * will do automatic mapping between some of the PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      *
      * @param int|ObjectType|null $type type of the values in the cache:
@@ -93,11 +105,13 @@ interface CacheInterface
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified).
      *
-     * @return CacheInterface the same instance of the cache client.
+     * @return CacheInterface the same instance of the class.
      *
      * @throws Exception::ClientException if error.
      */
     public function setValueType($type): CacheInterface;
+
+    /* Methods to operate with the cache using Key-Value Queries */
     
     /**
      * Retrieves a value associated with the specified key from the cache.
@@ -341,4 +355,7 @@ interface CacheInterface
      * @throws Exception::ClientException if error.
      */
     public function getSize(int ...$peekModes): int;
+
+    /* Methods to operate with the cache using SQL and Scan Queries */
+
 }
