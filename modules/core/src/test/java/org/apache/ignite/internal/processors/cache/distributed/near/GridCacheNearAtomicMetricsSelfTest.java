@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 
 /**
  * Atomic cache metrics test.
@@ -31,5 +34,38 @@ public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelf
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
         return ccfg;
+    }
+
+    /**
+     * Checks that enabled near cache does not affect metrics.
+     */
+    public void testNearCachePutRemoveGetMetrics() {
+        IgniteEx initiator = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = initiator.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; ; i++) {
+            if (!initiator.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(initiator.cluster().localNode(), i)) {
+                cache0.put(i, i);
+
+                GridCacheEntryEx nearEntry = near(cache0).peekEx(i);
+
+                assertTrue("Near cache doesn't contain the key", nearEntry.hasValue());
+
+                cache0.remove(i);
+
+                nearEntry = near(cache0).peekEx(i);
+
+                assertFalse("Near cache contains key which was deleted", nearEntry.hasValue());
+
+                cache0.get(i);
+
+                assertEquals(1, cache0.localMetrics().getCachePuts());
+                assertEquals(1, cache0.localMetrics().getCacheRemovals());
+                assertEquals(1, cache0.localMetrics().getCacheGets());
+
+                break;
+            }
+        }
     }
 }
