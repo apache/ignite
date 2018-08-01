@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractD
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * FreeList implementation for cache.
@@ -50,6 +52,15 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
     /** {@inheritDoc} */
     @Override public IOVersions<? extends AbstractDataPageIO<CacheDataRow>> ioVersions() {
         return DataPageIO.VERSIONS;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
+        super.insertDataRow(row);
+
+        assert row.key().partition() == PageIdUtils.partId(row.link()) :
+            "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
+            ", link=" + U.hexLong(row.link()) + ']';
     }
 
     /** {@inheritDoc} */
