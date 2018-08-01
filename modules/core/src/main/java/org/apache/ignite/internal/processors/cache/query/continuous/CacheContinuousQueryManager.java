@@ -953,10 +953,10 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private final boolean keepBinary;
 
         /** */
-        private final CacheEntryListener locLsnrImpl;
+        private volatile UUID routineId;
 
         /** */
-        private volatile UUID routineId;
+        private volatile JCacheQueryLocalListener locLsnr;
 
         /**
          * @param cfg Listener configuration.
@@ -966,8 +966,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             this.cfg = cfg;
             this.onStart = onStart;
             this.keepBinary = keepBinary;
-            this.locLsnrImpl = cfg != null && cfg.getCacheEntryListenerFactory() != null ?
-                (CacheEntryListener)cfg.getCacheEntryListenerFactory().create() : null;
         }
 
         /**
@@ -977,6 +975,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         void execute() throws IgniteCheckedException {
             if (!onStart)
                 cctx.config().addCacheEntryListenerConfiguration(cfg);
+
+            CacheEntryListener locLsnrImpl = (CacheEntryListener)cfg.getCacheEntryListenerFactory().create();
 
             if (locLsnrImpl == null)
                 throw new IgniteCheckedException("Local CacheEntryListener is mandatory and can't be null.");
@@ -993,7 +993,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             final byte types0 = types;
 
-            final CacheEntryUpdatedListener locLsnr = new JCacheQueryLocalListener(
+            locLsnr = new JCacheQueryLocalListener(
                 locLsnrImpl,
                 log);
 
@@ -1068,15 +1068,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             cctx.config().removeCacheEntryListenerConfiguration(cfg);
 
-            if (locLsnrImpl instanceof Closeable)
-                U.closeQuiet((Closeable)locLsnrImpl);
+            U.closeQuiet(locLsnr);
         }
     }
 
     /**
      *
      */
-    static class JCacheQueryLocalListener<K, V> implements CacheEntryUpdatedListener<K, V> {
+    static class JCacheQueryLocalListener<K, V> implements CacheEntryUpdatedListener<K, V>, Closeable {
         /** */
         final CacheEntryListener<K, V> impl;
 
@@ -1160,6 +1159,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
          */
         protected boolean async() {
             return U.hasAnnotation(impl, IgniteAsyncCallback.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            if (impl instanceof Closeable)
+                ((Closeable)impl).close();
         }
     }
 
