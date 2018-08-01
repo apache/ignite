@@ -81,8 +81,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setMaxSize(200 * 1024 * 1024)
-                        .setInitialSize(200 * 1024 * 1024)
+                        .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
                 // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)

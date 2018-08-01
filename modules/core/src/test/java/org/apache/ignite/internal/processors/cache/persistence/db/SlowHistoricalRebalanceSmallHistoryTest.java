@@ -76,7 +76,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
                 .setWalHistorySize(WAL_HISTORY_SIZE)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                         .setPersistenceEnabled(true)
                 )
                 .setWalSegmentSize(512 * 1024)

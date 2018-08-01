@@ -55,6 +55,7 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
@@ -846,6 +847,11 @@ public abstract class GridAbstractTest extends TestCase {
         return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
     }
 
+    private void checkDataRegion(DataRegionConfiguration dataRegionConfiguration) {
+        if (dataRegionConfiguration.isPersistenceEnabled() && !dataRegionConfiguration.isSetMaxSizeInvoked())
+            throw new AssertionError("Max size of data region should be set explicitly");
+    }
+
     /**
      * Starts new grid with given name.
      *
@@ -858,6 +864,11 @@ public abstract class GridAbstractTest extends TestCase {
         throws Exception {
         if (!isRemoteJvm(igniteInstanceName)) {
             startingIgniteInstanceName.set(igniteInstanceName);
+
+            checkDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
+
+            for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
+                checkDataRegion(reg);
 
             try {
                 String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
