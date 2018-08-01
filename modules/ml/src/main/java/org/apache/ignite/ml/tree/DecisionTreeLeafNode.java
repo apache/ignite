@@ -47,4 +47,14 @@ public class DecisionTreeLeafNode implements DecisionTreeNode {
     public double getVal() {
         return val;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return DecisionTree.printTree(this, pretty);
+    }
 }

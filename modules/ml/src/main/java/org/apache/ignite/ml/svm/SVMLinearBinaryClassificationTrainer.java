@@ -22,8 +22,8 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetTrainer<SVMLinearBinaryClassificationModel> {
+public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearBinaryClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 200;
 

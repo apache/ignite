@@ -3563,6 +3563,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
 
+        IgniteInternalFuture<?> prepFut = this.prepFut;
+
+        if (onTimeout && prepFut instanceof GridNearTxPrepareFutureAdapter && !prepFut.isDone())
+            ((GridNearTxPrepareFutureAdapter) prepFut).onNearTxLocalTimeout();
+
         final NearTxFinishFuture fut, fut0 = finishFut; boolean fastFinish;
 
         if (fut0 != null)
@@ -3574,8 +3579,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         rollbackFuture(fut);
 
         if (!fastFinish) {
-            IgniteInternalFuture<?> prepFut = this.prepFut;
-
             if (prepFut == null || prepFut.isDone()) {
                 try {
                     // Check for errors in prepare future.
@@ -4425,30 +4428,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * @return {@code True} if need register callback which cancels tx on timeout.
-     */
-    public boolean trackTimeout() {
-        return trackTimeout;
-    }
-
-    /**
      * Removes timeout handler.
      *
      * @return {@code True} if handler was removed.
      */
-    public boolean removeTimeoutHandler() {
+    private boolean removeTimeoutHandler() {
         assert trackTimeout;
 
         return cctx.time().removeTimeoutObject(this);
-    }
-
-    /**
-     * @return {@code True} if handler was added.
-     */
-    public boolean addTimeoutHandler() {
-        assert trackTimeout;
-
-        return cctx.time().addTimeoutObject(this);
     }
 
     /** {@inheritDoc} */

@@ -483,5 +483,60 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getEstimatedRebalancingKeys() {
             return 67;
         }
+
+        /** {@inheritDoc} */
+        @Override public long getEntryProcessorPuts() {
+            return 68;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEntryProcessorReadOnlyInvocations() {
+            return 69;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEntryProcessorInvocations() {
+            return 70;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEntryProcessorHits() {
+            return 71;
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getEntryProcessorHitPercentage() {
+            return 72;
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getEntryProcessorMissPercentage() {
+            return 73;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEntryProcessorMisses() {
+            return 74;
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getEntryProcessorAverageInvocationTime() {
+            return 75;
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getEntryProcessorMinInvocationTime() {
+            return 76;
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getEntryProcessorMaxInvocationTime() {
+            return 77;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getEntryProcessorRemovals() {
+            return 78;
+        }
     }
 }

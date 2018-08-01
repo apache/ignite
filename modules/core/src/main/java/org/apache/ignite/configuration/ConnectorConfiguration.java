@@ -22,6 +22,8 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,6 +71,7 @@ public class ConnectorConfiguration {
     private String jettyPath;
 
     /** REST secret key. */
+    @GridToStringExclude
     private String secretKey;
 
     /** TCP host. */
@@ -667,5 +670,10 @@ public class ConnectorConfiguration {
      */
     public long getIdleQueryCursorCheckFrequency() {
         return idleQryCurCheckFreq;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ConnectorConfiguration.class, this);
     }
 }

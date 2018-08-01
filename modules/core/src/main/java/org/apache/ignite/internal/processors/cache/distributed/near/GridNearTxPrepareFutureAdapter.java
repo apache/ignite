@@ -136,6 +136,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /**
+     * Called when related {@link GridNearTxLocal} is completed asynchronously on timeout,
+     */
+    public abstract void onNearTxLocalTimeout();
+
+    /**
      * @return Transaction.
      */
     public IgniteInternalTx tx() {
