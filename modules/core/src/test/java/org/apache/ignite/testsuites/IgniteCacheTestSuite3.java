@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.CacheStartupInDeploymentModes
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReferenceCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedSynchronousCommitTest;
@@ -51,12 +50,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePutArrayValueSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxReentryNearSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingAsyncSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingCancelTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncCheckDataTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheDaemonNodeReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicApiTest;
@@ -147,14 +140,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteTxReentryNearSelfTest.class);
         suite.addTestSuite(IgniteTxReentryColocatedSelfTest.class);
 
-        suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingSyncCheckDataTest.class);
-        suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
-        suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingCancelTest.class);
-
         // Test for byte array value special case.
         suite.addTestSuite(GridCacheLocalByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest.class);
@@ -187,18 +172,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReloadSelfTest.class);
 
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
-
-        // Cache metrics.
-        suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
-
-        // Topology validator.
-        suite.addTest(IgniteTopologyValidatorTestSuite.suite());
-
-        // Eviction.
-        suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
-
-        // Iterators.
-        suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());
 
         // Cache interceptor tests.
         suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite());
