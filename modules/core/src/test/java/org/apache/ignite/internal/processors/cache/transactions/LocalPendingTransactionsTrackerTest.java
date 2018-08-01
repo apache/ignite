@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -60,6 +61,8 @@ public class LocalPendingTransactionsTrackerTest {
         timeoutExecutor = new ScheduledThreadPoolExecutor(1);
 
         U.onGridStart();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED, "true");
     }
 
     /**
@@ -68,6 +71,8 @@ public class LocalPendingTransactionsTrackerTest {
     @AfterClass
     public static void tearDownClass() {
         timeoutExecutor.shutdown();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED);
     }
 
     /**
