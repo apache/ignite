@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -75,7 +76,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
-        void IBinaryRawWriteAware<IBinaryRawWriter>.Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAware<IBinaryRawWriter>.Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
         {
             writer.WriteString(TypeName);
             writer.WriteString(AffinityKeyFieldName);

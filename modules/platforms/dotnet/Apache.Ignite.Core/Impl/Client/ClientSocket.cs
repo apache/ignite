@@ -46,10 +46,10 @@ namespace Apache.Ignite.Core.Impl.Client
         private static readonly ClientProtocolVersion Ver110 = new ClientProtocolVersion(1, 1, 0);
 
         /** Version 1.2.0. */
-        private static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
+        public static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
 
         /** Current version. */
-        private static readonly ClientProtocolVersion CurrentProtocolVersion = Ver120;
+        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver120;
 
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
@@ -71,6 +71,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
+
+        /** Server protocol version. */
+        public ClientProtocolVersion ServerVersion { get; private set; }
 
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
@@ -306,10 +309,18 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
+                    if (stream.Remaining > 0)
+                    {
+                        ServerVersion =
+                            new ClientProtocolVersion(stream.ReadShort(), stream.ReadShort(), stream.ReadShort());
+                    }
+                    else
+                        ServerVersion = Ver110;
+
                     return;
                 }
 
-                var serverVersion =
+                ServerVersion =
                     new ClientProtocolVersion(stream.ReadShort(), stream.ReadShort(), stream.ReadShort());
 
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
@@ -328,17 +339,17 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
 
                 // Re-try if possible.
-                bool retry = serverVersion.CompareTo(version) < 0 && serverVersion.Equals(Ver100);
+                bool retry = ServerVersion.CompareTo(version) < 0 && ServerVersion.Equals(Ver100);
 
                 if (retry)
                 {
-                    Handshake(clientConfiguration, serverVersion);
+                    Handshake(clientConfiguration, ServerVersion);
                 }
                 else
                 {
                     throw new IgniteClientException(string.Format(
                         "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
-                        errMsg, version, serverVersion), null, errCode);
+                        errMsg, version, ServerVersion), null, errCode);
                 }
             }
         }

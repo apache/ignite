@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration));
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, _socket.ServerVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration));
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, _socket.ServerVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -214,6 +214,10 @@ namespace Apache.Ignite.Core.Impl.Client
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
         {
             throw GetClientNotSupportedException();
+        }
+
+        public ClientProtocolVersion serverVersion() {
+            return _socket.ServerVersion;
         }
 
         /// <summary>

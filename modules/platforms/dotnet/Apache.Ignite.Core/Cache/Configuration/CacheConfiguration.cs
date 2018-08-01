@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin.Cache;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -252,12 +253,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
+                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
                 }
 
                 CopyLocalProperties(other);
@@ -268,16 +269,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal CacheConfiguration(BinaryReader reader)
+        /// <param name="srvVer">Server version.</param>
+        internal CacheConfiguration(BinaryReader reader, ClientProtocolVersion srvVer)
         {
-            Read(reader);
+            Read(reader, srvVer);
         }
 
         /// <summary>
         /// Reads data into this instance from the specified reader.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        private void Read(BinaryReader reader)
+        /// <param name="srvVer">Server version.</param>
+        private void Read(BinaryReader reader, ClientProtocolVersion srvVer)
         {
             // Make sure system marshaller is used.
             Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
@@ -327,7 +330,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             QueryParallelism = reader.ReadInt();
             SqlSchema = reader.ReadString();
 
-            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -364,16 +367,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer, ClientProtocolVersion srvVer)
         {
-            Write(writer);
+            Write(writer, srvVer);
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(BinaryWriter writer)
+        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
         {
             // Make sure system marshaller is used.
             Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
@@ -423,7 +426,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(QueryParallelism);
             writer.WriteString(SqlSchema);
 
-            writer.WriteCollectionRaw(QueryEntities);
+            writer.WriteCollectionRaw(QueryEntities, srvVer);
 
             if (NearConfiguration != null)
             {
@@ -437,7 +440,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
 
-            writer.WriteCollectionRaw(KeyConfiguration);
+            writer.WriteCollectionRaw(KeyConfiguration, srvVer);
 
             if (PluginConfigurations != null)
             {

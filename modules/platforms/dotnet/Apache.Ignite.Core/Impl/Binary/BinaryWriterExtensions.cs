@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Writer extensions.
@@ -187,7 +188,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the collection of write-aware items.
         /// </summary>
-        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection)
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection, ClientProtocolVersion srvVer)
             where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
         {
             Debug.Assert(writer != null);
@@ -203,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
                     }
 
-                    x.Write(writer);
+                    x.Write(writer, srvVer);
                 }
             }
             else
