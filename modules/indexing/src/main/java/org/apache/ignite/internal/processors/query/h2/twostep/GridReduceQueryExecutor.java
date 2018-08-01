@@ -113,7 +113,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySpl
  * Reduce query executor.
  */
 public class GridReduceQueryExecutor {
-    /** Fail query after 10 seconds of unsuccessful attempts to reserve partitions. */
+    /** Default retry timeout. */
     public static final long DFLT_RETRY_TIMEOUT = 30_000L;
 
     /** */
