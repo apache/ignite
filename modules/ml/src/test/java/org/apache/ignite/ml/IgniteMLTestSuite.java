@@ -18,6 +18,7 @@
 package org.apache.ignite.ml;
 
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
+import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.genetic.GAGridTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
@@ -32,7 +33,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all module tests.
+ * Test suite for all module tests. IMPL NOTE tests in {@code org.apache.ignite.ml.tree.performance} are not
+ * included here because these are intended only for manual execution.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -47,7 +49,8 @@ import org.junit.runners.Suite;
     DatasetTestSuite.class,
     PreprocessingTestSuite.class,
     GAGridTestSuite.class,
-    SelectionTestSuite.class
+    SelectionTestSuite.class,
+    CompositionTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.
