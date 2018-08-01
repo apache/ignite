@@ -149,7 +149,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     private void resetBlt() throws Exception {
         resetBaselineTopology();
 
-        waitForRebalancing();
         awaitPartitionMapExchange();
     }
 
