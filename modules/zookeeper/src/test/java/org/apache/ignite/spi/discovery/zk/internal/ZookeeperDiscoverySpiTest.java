@@ -479,9 +479,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 //            checkZkNodesCleanup();
         }
         finally {
-            reset();
-
             stopAllGrids();
+
+            reset();
         }
     }
 
@@ -505,7 +505,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkInternalStructuresCleanup() throws Exception {
-        for (Ignite node : G.allGrids()) {
+        for (Ignite node : IgnitionEx.allGridsx()) {
             final AtomicReference<?> res = GridTestUtils.getFieldValue(spi(node), "impl", "commErrProcFut");
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -1314,9 +1314,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuorumRestore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8180");
-
-        sesTimeout = 15_000;
+        sesTimeout = 60_000;
 
         startGrids(3);
 
@@ -2554,10 +2552,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 }
             }, IgniteCheckedException.class, null);
 
-            IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
+            assertTrue(err instanceof IgniteCheckedException);
 
-            assertNotNull(spiErr);
-            assertTrue(spiErr.getMessage().contains("Node with the same ID already exists"));
+            assertTrue(err.getMessage().contains("Failed to start processor:")
+                || err.getMessage().contains("Failed to start manager:"));
 
             nodeId = null;
 
