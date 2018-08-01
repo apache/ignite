@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
+package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +30,8 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
+import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,17 +42,20 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[], Vector> {
+public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[], Vector> {
     /** Indices of features which should be encoded. */
     private Set<Integer> handledIndices = new HashSet<>();
 
+    /** Encoder preprocessor type. */
+    private EncoderType encoderType = EncoderType.ONE_HOT_ENCODER;
+
     /** {@inheritDoc} */
-    @Override public StringEncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+    @Override public EncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
+                                                         IgniteBiFunction<K, V, Object[]> basePreprocessor) {
         if(handledIndices.isEmpty())
             throw new RuntimeException("Add indices of handled features");
 
-        try (Dataset<EmptyContext, StringEncoderPartitionData> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, EncoderPartitionData> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
                 // This array will contain not null values for handled indices
@@ -61,13 +66,21 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
                     Object[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
                     categoryFrequencies = calculateFrequencies(row, categoryFrequencies);
                 }
-                return new StringEncoderPartitionData()
+                return new EncoderPartitionData()
                     .withCategoryFrequencies(categoryFrequencies);
             }
         )) {
             Map<String, Integer>[] encodingValues = calculateEncodingValuesByFrequencies(dataset);
 
-            return new StringEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
+            switch (encoderType) {
+                case ONE_HOT_ENCODER:
+                    return new OneHotEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
+                case STRING_ENCODER:
+                    return new StringEncoderPreprocessor<>(encodingValues, basePreprocessor, handledIndices);
+                default:
+                    throw new IllegalStateException("Define the type of the resulting prerocessor.");
+            }
+
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -81,9 +94,9 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
      * @return Encoding values for each feature.
      */
     private Map<String, Integer>[] calculateEncodingValuesByFrequencies(
-        Dataset<EmptyContext, StringEncoderPartitionData> dataset) {
+        Dataset<EmptyContext, EncoderPartitionData> dataset) {
         Map<String, Integer>[] frequencies = dataset.compute(
-            StringEncoderPartitionData::categoryFrequencies,
+            EncoderPartitionData::categoryFrequencies,
             (a, b) -> {
                 if (a == null)
                     return b;
@@ -156,7 +169,12 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
                     strVal = "";
                     row[i] = strVal;
                 }
-                else strVal = (String)featureVal;
+                else if (featureVal instanceof String)
+                    strVal = (String)featureVal;
+                else if (featureVal instanceof Double)
+                    strVal = String.valueOf(featureVal);
+                else
+                    throw new RuntimeException("The type " + featureVal.getClass() + " is not supported for the feature values.");
 
                 Map<String, Integer> map = categoryFrequencies[i];
 
@@ -189,8 +207,18 @@ public class StringEncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Ob
      * @param idx The index of encoded feature.
      * @return The changed trainer.
      */
-    public StringEncoderTrainer<K, V> encodeFeature(int idx){
+    public EncoderTrainer<K, V> encodeFeature(int idx){
         handledIndices.add(idx);
+        return this;
+    }
+
+    /**
+     * Sets the encoder preprocessor type.
+     * @param type The encoder preprocessor type.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K,V> withEncoderType(EncoderType type){
+        this.encoderType = type;
         return this;
     }
 }
