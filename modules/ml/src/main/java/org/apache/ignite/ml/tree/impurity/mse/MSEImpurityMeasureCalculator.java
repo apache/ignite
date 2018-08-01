@@ -60,6 +60,15 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
             @SuppressWarnings("unchecked")
             StepFunction<MSEImpurityMeasure>[] res = new StepFunction[colsCnt];
 
+            double rightYOriginal = 0;
+            double rightY2Original = 0;
+            for (int i = 0; i < rowsCnt; i++) {
+                double lbVal = getLabelValue(data, index, 0, i);
+
+                rightYOriginal += lbVal;
+                rightY2Original += Math.pow(lbVal, 2);
+            }
+
             for (int col = 0; col < res.length; col++) {
                 if (!useIndex)
                     data.sort(col);
@@ -71,17 +80,8 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
 
                 double leftY = 0;
                 double leftY2 = 0;
-                double rightY = 0;
-                double rightY2 = 0;
-
-                int rightSize = 0;
-                for (int i = 0; i < rowsCnt; i++) {
-                    double lbVal = getLabelValue(data, index, col, i);
-
-                    rightY += lbVal;
-                    rightY2 += Math.pow(lbVal, 2);
-                    rightSize++;
-                }
+                double rightY = rightYOriginal;
+                double rightY2 = rightY2Original;
 
                 int leftSize = 0;
                 for (int i = 0; i <= rowsCnt; i++) {
@@ -95,11 +95,11 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
                         rightY2 -= Math.pow(lblVal, 2);
                     }
 
-                    if (leftSize < rightSize)
+                    if (leftSize < rowsCnt)
                         x[leftSize + 1] = getFeatureValue(data, index, col, i);
 
                     y[leftSize] = new MSEImpurityMeasure(
-                        leftY, leftY2, leftSize, rightY, rightY2, rightSize - leftSize
+                        leftY, leftY2, leftSize, rightY, rightY2, rowsCnt - leftSize
                     );
 
                     leftSize++;
