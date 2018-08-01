@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.visor.verify;
 
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeTaskFuture;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -37,26 +34,24 @@ import org.apache.ignite.resources.JobContextResource;
  * Task to verify checksums of backup partitions.
  */
 @GridInternal
-@Deprecated
-public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg, VisorIdleVerifyTaskResult> {
+public class VisorIdleVerifyTaskV2 extends VisorOneNodeTask<VisorIdleVerifyTaskArg, IdleVerifyResultV2> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorIdleVerifyTaskArg, VisorIdleVerifyTaskResult> job(VisorIdleVerifyTaskArg arg) {
-        return new VisorIdleVerifyJob(arg, debug);
+    @Override protected VisorJob<VisorIdleVerifyTaskArg, IdleVerifyResultV2> job(VisorIdleVerifyTaskArg arg) {
+        return new VisorIdleVerifyJobV2(arg, debug);
     }
 
     /**
      *
      */
-    @Deprecated
-    private static class VisorIdleVerifyJob extends VisorJob<VisorIdleVerifyTaskArg, VisorIdleVerifyTaskResult> {
+    private static class VisorIdleVerifyJobV2 extends VisorJob<VisorIdleVerifyTaskArg, IdleVerifyResultV2> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private ComputeTaskFuture<Map<PartitionKey, List<PartitionHashRecord>>> fut;
+        private ComputeTaskFuture<IdleVerifyResultV2> fut;
 
         /** Auto-inject job context. */
         @JobContextResource
@@ -66,20 +61,20 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
          * @param arg Argument.
          * @param debug Debug.
          */
-        private VisorIdleVerifyJob(VisorIdleVerifyTaskArg arg, boolean debug) {
+        private VisorIdleVerifyJobV2(VisorIdleVerifyTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorIdleVerifyTaskResult run(VisorIdleVerifyTaskArg arg) throws IgniteException {
+        @Override protected IdleVerifyResultV2 run(VisorIdleVerifyTaskArg arg) throws IgniteException {
             if (fut == null) {
-                fut = ignite.compute().executeAsync(VerifyBackupPartitionsTask.class, arg.getCaches());
+                fut = ignite.compute().executeAsync(VerifyBackupPartitionsTaskV2.class, arg);
 
                 if (!fut.isDone()) {
                     jobCtx.holdcc();
 
-                    fut.listen(new IgniteInClosure<IgniteFuture<Map<PartitionKey, List<PartitionHashRecord>>>>() {
-                        @Override public void apply(IgniteFuture<Map<PartitionKey, List<PartitionHashRecord>>> f) {
+                    fut.listen(new IgniteInClosure<IgniteFuture<IdleVerifyResultV2>>() {
+                        @Override public void apply(IgniteFuture<IdleVerifyResultV2> f) {
                             jobCtx.callcc();
                         }
                     });
@@ -88,12 +83,12 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
                 }
             }
 
-            return new VisorIdleVerifyTaskResult(fut.get());
+            return fut.get();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorIdleVerifyJob.class, this);
+            return S.toString(VisorIdleVerifyJobV2.class, this);
         }
     }
 }

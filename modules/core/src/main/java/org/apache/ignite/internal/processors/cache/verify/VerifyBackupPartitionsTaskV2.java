@@ -40,7 +40,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -51,6 +50,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
@@ -60,107 +61,87 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
  * <br>
- * Result: If there are any update counter conflicts (which signals about concurrent updates in
- * cluster), map with all counter conflicts is returned. Otherwise, map with all hash conflicts is returned.
- * Each conflict is represented by list of {@link PartitionHashRecord} with data from different nodes.
- * Successful verification always returns empty map.
+ * Result: {@link IdleVerifyResultV2} with conflict partitions.
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
- *
- * @deprecated Legacy version of {@link VerifyBackupPartitionsTaskV2}.
  */
 @GridInternal
-@Deprecated
-public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
-    Map<PartitionKey, List<PartitionHashRecord>>> {
+public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVerifyTaskArg, IdleVerifyResultV2> {
+    /** First version of Ignite that is capable of executing Idle Verify V2. */
+    public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
+
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Injected logger. */
-    @LoggerResource
-    private IgniteLogger log;
-
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
-        List<ClusterNode> subgrid, Set<String> cacheNames) throws IgniteException {
+        List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
         for (ClusterNode node : subgrid)
-            jobs.put(new VerifyBackupPartitionsJob(cacheNames), node);
+            jobs.put(new VerifyBackupPartitionsJobV2(arg), node);
 
         return jobs;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<PartitionKey, List<PartitionHashRecord>> reduce(List<ComputeJobResult> results)
+    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results)
         throws IgniteException {
-        Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
         for (ComputeJobResult res : results) {
-            Map<PartitionKey, PartitionHashRecord> nodeHashes = res.getData();
+            Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
 
-            for (Map.Entry<PartitionKey, PartitionHashRecord> e : nodeHashes.entrySet()) {
-                if (!clusterHashes.containsKey(e.getKey()))
-                    clusterHashes.put(e.getKey(), new ArrayList<PartitionHashRecord>());
+            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
+                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
 
-                clusterHashes.get(e.getKey()).add(e.getValue());
+                records.add(e.getValue());
             }
         }
 
-        Map<PartitionKey, List<PartitionHashRecord>> hashConflicts = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts = new HashMap<>();
 
-        Map<PartitionKey, List<PartitionHashRecord>> updateCntrConflicts = new HashMap<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> updateCntrConflicts = new HashMap<>();
 
-        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> e : clusterHashes.entrySet()) {
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingParts = new HashMap<>();
+
+        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
             Long updateCntr = null;
 
-            for (PartitionHashRecord record : e.getValue()) {
+            for (PartitionHashRecordV2 record : e.getValue()) {
+                if (record.size() == PartitionHashRecordV2.MOVING_PARTITION_SIZE) {
+                    List<PartitionHashRecordV2> records = movingParts.computeIfAbsent(
+                        e.getKey(), k -> new ArrayList<>());
+
+                    records.add(record);
+
+                    continue;
+                }
+
                 if (partHash == null) {
                     partHash = record.partitionHash();
 
                     updateCntr = record.updateCounter();
                 }
                 else {
-                    if (record.updateCounter() != updateCntr) {
-                        updateCntrConflicts.put(e.getKey(), e.getValue());
+                    if (record.updateCounter() != updateCntr)
+                        updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
-                        break;
-                    }
-
-                    if (record.partitionHash() != partHash) {
-                        hashConflicts.put(e.getKey(), e.getValue());
-
-                        break;
-                    }
+                    if (record.partitionHash() != partHash)
+                        hashConflicts.putIfAbsent(e.getKey(), e.getValue());
                 }
             }
         }
 
-        return updateCntrConflicts.isEmpty() ? hashConflicts : updateCntrConflicts;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-        ComputeJobResultPolicy superRes = super.result(res, rcvd);
-
-        // Deny failover.
-        if (superRes == ComputeJobResultPolicy.FAILOVER) {
-            superRes = ComputeJobResultPolicy.WAIT;
-
-            log.warning("VerifyBackupPartitionsJob failed on node " +
-                "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
-        }
-
-        return superRes;
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts);
     }
 
     /**
-     * Legacy version of {@link VerifyBackupPartitionsTaskV2} internal job, kept for compatibility.
+     * Job that collects update counters and hashes of local partitions.
      */
-    @Deprecated
-    private static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
+    private static class VerifyBackupPartitionsJobV2 extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -172,27 +153,27 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
         @LoggerResource
         private IgniteLogger log;
 
-        /** Cache names. */
-        private Set<String> cacheNames;
+        /** Idle verify arguments. */
+        private VisorIdleVerifyTaskArg arg;
 
         /** Counter of processed partitions. */
         private final AtomicInteger completionCntr = new AtomicInteger(0);
 
         /**
-         * @param names Names.
+         * @param arg Argument.
          */
-        public VerifyBackupPartitionsJob(Set<String> names) {
-            cacheNames = names;
+        public VerifyBackupPartitionsJobV2(VisorIdleVerifyTaskArg arg) {
+            this.arg = arg;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<PartitionKey, PartitionHashRecord> execute() throws IgniteException {
+        @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
             Set<Integer> grpIds = new HashSet<>();
 
             Set<String> missingCaches = new HashSet<>();
 
-            if (cacheNames != null) {
-                for (String cacheName : cacheNames) {
+            if (arg.getCaches() != null) {
+                for (String cacheName : arg.getCaches()) {
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
                     if (desc == null) {
@@ -224,7 +205,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 }
             }
 
-            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFutures = new ArrayList<>();
+            List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFutures = new ArrayList<>();
 
             completionCntr.set(0);
 
@@ -240,15 +221,15 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                     partHashCalcFutures.add(calculatePartitionHashAsync(grpCtx, part));
             }
 
-            Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new HashMap<>();
 
             long lastProgressLogTs = U.currentTimeMillis();
 
             for (int i = 0; i < partHashCalcFutures.size(); ) {
-                Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFutures.get(i);
+                Future<Map<PartitionKeyV2, PartitionHashRecordV2>> fut = partHashCalcFutures.get(i);
 
                 try {
-                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
+                    Map<PartitionKeyV2, PartitionHashRecordV2> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
                     res.putAll(partHash);
 
@@ -282,22 +263,23 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
          * @param grpCtx Group context.
          * @param part Local partition.
          */
-        private Future<Map<PartitionKey, PartitionHashRecord>> calculatePartitionHashAsync(
+        private Future<Map<PartitionKeyV2, PartitionHashRecordV2>> calculatePartitionHashAsync(
             final CacheGroupContext grpCtx,
             final GridDhtLocalPartition part
         ) {
-            return ForkJoinPool.commonPool().submit(new Callable<Map<PartitionKey, PartitionHashRecord>>() {
-                @Override public Map<PartitionKey, PartitionHashRecord> call() throws Exception {
+            return ForkJoinPool.commonPool().submit(new Callable<Map<PartitionKeyV2, PartitionHashRecordV2>>() {
+                @Override public Map<PartitionKeyV2, PartitionHashRecordV2> call() throws Exception {
                     return calculatePartitionHash(grpCtx, part);
                 }
             });
         }
 
+
         /**
          * @param grpCtx Group context.
          * @param part Local partition.
          */
-        private Map<PartitionKey, PartitionHashRecord> calculatePartitionHash(
+        private Map<PartitionKeyV2, PartitionHashRecordV2> calculatePartitionHash(
             CacheGroupContext grpCtx,
             GridDhtLocalPartition part
         ) {
@@ -306,13 +288,23 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
             int partHash = 0;
             long partSize;
-            long updateCntrBefore;
+            long updateCntrBefore = part.updateCounter();
+
+            PartitionKeyV2 partKey = new PartitionKeyV2(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
+
+            Object consId = ignite.context().discovery().localNode().consistentId();
+
+            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
             try {
-                if (part.state() != GridDhtPartitionState.OWNING)
-                    return Collections.emptyMap();
+                if (part.state() == GridDhtPartitionState.MOVING) {
+                    PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(partKey, isPrimary, consId,
+                        partHash, updateCntrBefore, PartitionHashRecordV2.MOVING_PARTITION_SIZE);
 
-                updateCntrBefore = part.updateCounter();
+                    return Collections.singletonMap(partKey, movingHashRecord);
+                }
+                else if (part.state() != GridDhtPartitionState.OWNING)
+                    return Collections.emptyMap();
 
                 partSize = part.dataStore().fullSize();
 
@@ -344,13 +336,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 part.release();
             }
 
-            Object consId = ignite.context().discovery().localNode().consistentId();
-
-            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
-
-            PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
-
-            PartitionHashRecord partRec = new PartitionHashRecord(
+            PartitionHashRecordV2 partRec = new PartitionHashRecordV2(
                 partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);
 
             completionCntr.incrementAndGet();
