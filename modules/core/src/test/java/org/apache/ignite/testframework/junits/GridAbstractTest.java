@@ -56,6 +56,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
@@ -847,9 +848,26 @@ public abstract class GridAbstractTest extends TestCase {
         return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
     }
 
-    private void checkDataRegion(DataRegionConfiguration dataRegionConfiguration) {
-        if (dataRegionConfiguration.isPersistenceEnabled() && !dataRegionConfiguration.isSetMaxSizeInvoked())
-            throw new AssertionError("Max size of data region should be set explicitly");
+    /**
+     * @param regionCfg Region config.
+     */
+    private void validateDataRegion(DataRegionConfiguration regionCfg) {
+        if (regionCfg.isPersistenceEnabled() && regionCfg.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE)
+            throw new AssertionError("Max size of data region should be set explicitly to avoid memory over usage");
+    }
+
+    /**
+     * @param cfg Config.
+     */
+    private void validateConfiguration(IgniteConfiguration cfg) {
+        if (cfg.getDataStorageConfiguration() != null) {
+            validateDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
+
+            if (cfg.getDataStorageConfiguration().getDataRegionConfigurations() != null) {
+                for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
+                    validateDataRegion(reg);
+            }
+        }
     }
 
     /**
@@ -883,15 +901,6 @@ public abstract class GridAbstractTest extends TestCase {
                         log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
 
                         throw new IgniteException(e);
-                    }
-                }
-
-                if (cfg.getDataStorageConfiguration() != null) {
-                    checkDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
-
-                    if (cfg.getDataStorageConfiguration().getDataRegionConfigurations() != null) {
-                        for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
-                            checkDataRegion(reg);
                     }
                 }
 

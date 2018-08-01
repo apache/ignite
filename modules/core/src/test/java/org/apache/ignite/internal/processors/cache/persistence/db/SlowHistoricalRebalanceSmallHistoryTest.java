@@ -110,6 +110,8 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
