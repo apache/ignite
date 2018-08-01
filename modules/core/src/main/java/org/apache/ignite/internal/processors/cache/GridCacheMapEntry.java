@@ -1866,7 +1866,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     key,
                     evtNodeId,
                     null,
-                    newVer,
+                    updateVer,
                     EVT_CACHE_OBJECT_READ,
                     evtOld, evtOld != null,
                     evtOld, evtOld != null,
@@ -1893,7 +1893,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         key,
                         evtNodeId,
                         null,
-                        newVer,
+                        updateVer,
                         EVT_CACHE_OBJECT_PUT,
                         updateVal,
                         true,
@@ -1910,7 +1910,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 clearReaders();
 
-                drReplicate(drType, null, newVer, topVer);
+                drReplicate(drType, null, updateVer, topVer);
 
                 recordNodeId(affNodeId, topVer);
 
@@ -1921,7 +1921,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.events().addEvent(partition(),
                         key,
                         evtNodeId,
-                        null, newVer,
+                        null,
+                        updateVer,
                         EVT_CACHE_OBJECT_REMOVED,
                         null, false,
                         evtOld, evtOld != null,
@@ -5011,7 +5012,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
             else {
-                newSysTtl = newTtl = conflictCtx.ttl();
+               newSysTtl = newTtl = conflictCtx.ttl();
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
