@@ -158,7 +158,7 @@ panel-collapsible(
                                             </ul>')
                                         .pc-form-grid-col-30
                                             +number-min-max-step('Eviction threshold:', '$item.evictionThreshold', '"MemoryPolicyEvictionThreshold"',
-                                            'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
+                                            'true', '0.9', '0.5', '0.999', '0.001', 'A threshold for memory pages eviction initiation')
                                         .pc-form-grid-col-30
                                             +sane-ignite-form-field-number({
                                                 label: 'Empty pages pool size:',
