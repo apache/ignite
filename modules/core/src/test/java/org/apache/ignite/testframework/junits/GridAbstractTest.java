@@ -1738,14 +1738,10 @@ public abstract class GridAbstractTest extends TestCase {
 
             cleanReferences();
 
-            if (isLastTest()) {
-                if (err != null)
-                    throw err;
-                else if (isSafeTopology() && stopGridErr)
-                    throw new RuntimeException("Not all Ignite instances has been stopped. Please, see log for details.");
-           }
+            if (isLastTest() && ((isSafeTopology() && stopGridErr) || err != null))
+                throw new RuntimeException("Please, see log for details.", err);
+            }
 
-        }
     }
 
     /**
