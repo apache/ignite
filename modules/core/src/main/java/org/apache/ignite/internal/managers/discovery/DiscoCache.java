@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Optional;
+import java.util.Comparator;
+import java.util.stream.Stream;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -313,10 +316,10 @@ public class DiscoCache {
      * @return Oldest server node.
      */
     @Nullable public ClusterNode oldestServerNode(){
-        if (srvNodes.size() > 0)
-            return srvNodes.get(0);
-
-        return null;
+        Optional<ClusterNode> minOrderClusterNode =
+                Stream.concat(srvNodes.stream(), daemonNodes.stream())
+                        .min(Comparator.comparingLong(ClusterNode::order));
+        return minOrderClusterNode.orElse(null);
     }
 
     /**
