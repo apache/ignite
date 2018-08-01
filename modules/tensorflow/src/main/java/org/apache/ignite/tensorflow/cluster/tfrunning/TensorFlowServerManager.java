@@ -17,36 +17,32 @@
 
 package org.apache.ignite.tensorflow.cluster.tfrunning;
 
-import java.io.Serializable;
-import java.util.function.Supplier;
-import org.apache.ignite.tensorflow.core.ProcessManager;
-import org.apache.ignite.tensorflow.core.ProcessManagerWrapper;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcess;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessManager;
-import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
-import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
+import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
+import org.apache.ignite.tensorflow.core.ProcessManager;
+import org.apache.ignite.tensorflow.core.ProcessManagerWrapper;
+import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcess;
+import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessManager;
 
 /**
  * TensorFlow server manager that allows to start, stop and make other actions with TensorFlow servers.
  */
 public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess, TensorFlowServer> {
-    /** */
-    private static final long serialVersionUID = 8355019934723445973L;
+    /** TensorFlow server script formatter. */
+    private static final TensorFlowServerScriptFormatter scriptFormatter = new TensorFlowServerScriptFormatter();
 
     /**
      * Constructs a new instance of TensorFlow server manager.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> TensorFlowServerManager(T igniteSupplier) {
-        this(new PythonProcessManager(igniteSupplier));
+    public TensorFlowServerManager(Ignite ignite) {
+        this(new PythonProcessManager(ignite));
     }
 
     /**
@@ -61,7 +57,7 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
     /** {@inheritDoc} */
     @Override protected PythonProcess transformSpecification(TensorFlowServer spec) {
         return new PythonProcess(
-            formatPythonScript(spec),
+            scriptFormatter.format(spec, true, Ignition.ignite()),
             getNode(spec)
         );
     }
@@ -79,89 +75,5 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
         TensorFlowServerAddressSpec addr = tasks.get(spec.getTaskIdx());
 
         return addr.getNodeId();
-    }
-
-    /**
-     * Formats TensorFlow server specification so that it's available to be passed into а python script.
-     *
-     * @param spec TensorFlow server specification.
-     * @return Formatted TensorFlow server specification.
-     */
-    private String formatPythonScript(TensorFlowServer spec) {
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("import tensorflow as tf").append('\n');
-        builder.append("cluster = tf.train.ClusterSpec(")
-            .append(formatClusterSpec(spec.getClusterSpec()))
-            .append(')')
-            .append('\n');
-        builder.append("server = tf.train.Server(cluster");
-
-        if (spec.getJobName() != null)
-            builder.append(", job_name=\"").append(spec.getJobName()).append('"');
-
-        if (spec.getTaskIdx() != null)
-            builder.append(", task_index=").append(spec.getTaskIdx());
-
-        if (spec.getProto() != null)
-            builder.append(", protocol=\"").append(spec.getProto()).append('"');
-
-        builder.append(')').append('\n');
-        builder.append("server.join()").append('\n');
-
-        return builder.toString();
-    }
-
-    /**
-     * Formats TensorFlow cluster specification so that it's available to be passed into а python script.
-     *
-     * @param spec TensorFlow cluster specification.
-     * @return Formatted TensorFlow cluster specification.
-     */
-    public String formatClusterSpec(TensorFlowClusterSpec spec) {
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("{\n");
-
-        for (Map.Entry<String, List<TensorFlowServerAddressSpec>> entry : spec.getJobs().entrySet()) {
-            builder
-                .append("\t\"")
-                .append(entry.getKey())
-                .append("\" : [ ");
-
-            for (TensorFlowServerAddressSpec address : entry.getValue()) {
-                builder
-                    .append("\n\t\t\"")
-                    .append(formatAddressSpec(address))
-                    .append("\", ");
-            }
-
-            if (!entry.getValue().isEmpty())
-                builder.delete(builder.length() - 2, builder.length());
-
-            builder.append("\n\t],\n");
-        }
-
-        if (!spec.getJobs().isEmpty())
-            builder.delete(builder.length() - 2, builder.length() - 1);
-
-        builder.append('}');
-
-        return builder.toString();
-    }
-
-    /**
-     * Formats TensorFlow server address specification so that it's available to be passed into а python script.
-     *
-     * @param spec TensorFlow server address specification.
-     * @return Formatted TensorFlow server address specification.
-     */
-    private String formatAddressSpec(TensorFlowServerAddressSpec spec) {
-        UUID nodeId = spec.getNodeId();
-
-        Ignite ignite = Ignition.localIgnite();
-        Collection<String> names = ignite.cluster().forNodeId(nodeId).hostNames();
-
-        return names.iterator().next() + ":" + spec.getPort();
     }
 }
