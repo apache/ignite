@@ -533,6 +533,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkInternalStructuresCleanup() throws Exception {
+        long endTime = U.currentTimeMillis() + 30_000 + sesTimeout;
+
         for (Ignite node : IgnitionEx.allGridsx()) {
             final AtomicReference<?> res = GridTestUtils.getFieldValue(spi(node), "impl", "commErrProcFut");
 
@@ -540,7 +542,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return res.get() == null;
                 }
-            }, 30_000);
+            }, endTime - U.currentTimeMillis());
 
             assertNull(res.get());
         }
@@ -4534,6 +4536,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                     zkCluster.getServers().get(idx).restart();
 
                     waitForZkClusterReady(zkCluster);
+
+//                    System.gc();
                 }
 
                 return null;
