@@ -1394,7 +1394,8 @@ export default class IgniteConfigurationGenerator {
                     .longProperty('rateTimeInterval');
             }
 
-            if (plcBean.isEmpty()) return;
+            if (plcBean.isEmpty())
+                return;
 
             policies.push(plcBean);
         });
