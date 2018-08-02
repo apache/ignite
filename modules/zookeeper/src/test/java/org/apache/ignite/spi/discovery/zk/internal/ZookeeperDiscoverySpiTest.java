@@ -4536,8 +4536,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                     zkCluster.getServers().get(idx).restart();
 
                     waitForZkClusterReady(zkCluster);
-
-//                    System.gc();
                 }
 
                 return null;
