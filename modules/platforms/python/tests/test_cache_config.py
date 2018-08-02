@@ -24,7 +24,7 @@ def test_get_configuration(conn):
 
     result = cache_get_configuration(conn, 'my_unique_cache')
     assert result.status == 0
-    assert result.value['name'] == 'my_unique_cache'
+    assert result.value[PROP_NAME] == 'my_unique_cache'
 
 
 def test_create_with_config(conn):

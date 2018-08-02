@@ -18,6 +18,7 @@ from pyignite.api import (
     cache_get_or_create, sql, sql_cursor_get_page,
     cache_get_configuration,
 )
+from pyignite.datatypes.prop_codes import *
 from pyignite.utils import entity_id, unwrap_binary
 
 initial_data = [
@@ -76,7 +77,7 @@ def test_sql(conn):
     result = cache_get_configuration(conn, 'SQL_PUBLIC_STUDENT')
     assert result.status == 0, result.message
 
-    binary_type_name = result.value['query_entities'][0]['value_type_name']
+    binary_type_name = result.value[PROP_QUERY_ENTITIES][0]['value_type_name']
     result = sql(
         conn,
         'SQL_PUBLIC_STUDENT',
