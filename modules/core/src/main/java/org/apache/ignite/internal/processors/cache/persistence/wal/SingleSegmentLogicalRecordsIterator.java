@@ -71,7 +71,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         File archiveDir,
         CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
-        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new DefaultFileInpupFactory() );
+        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleFileInputFactory() );
 
         curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
@@ -100,8 +100,8 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         else {
             segmentInitialized = true;
 
-            FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
-                new File(archiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx)));
+            FileDescriptor fd = new FileDescriptor(
+                new File(archiveDir, FileDescriptor.fileName(curWalSegmIdx)));
 
             try {
                 return initReadHandle(fd, null);

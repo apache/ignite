@@ -101,9 +101,9 @@ class SegmentArchivedStorage extends SegmentObservable {
             throw new IgniteInterruptedCheckedException(e);
         }
 
-//        checkInterrupted();
+        //Ignore interrupted flag and force set new value. - legacy logic.
+        //checkInterrupted();
 
-        // Then increase counter to allow rollover on clean working file
         setLastArchivedAbsoluteIndex(toArchive);
     }
 

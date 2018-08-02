@@ -10,7 +10,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentAware;
@@ -43,7 +42,7 @@ public class LockedFileInputFactory implements FileInputFactory {
             segmentId,
             segmentAware,
             id -> {
-                FileWriteAheadLogManager.FileDescriptor segment = segmentRouter.findSegment(id);
+                FileDescriptor segment = segmentRouter.findSegment(id);
 
                 return segment.toIO(fileIOFactory);
             }

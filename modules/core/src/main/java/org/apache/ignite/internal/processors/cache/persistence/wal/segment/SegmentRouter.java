@@ -11,21 +11,17 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Class for manage of segment location.
  */
 public class SegmentRouter {
+    private static final String ZIP_SUFFIX = ".zip";
     /** */
     private File walWorkDir;
 
@@ -38,41 +34,35 @@ public class SegmentRouter {
     /** */
     private DataStorageConfiguration dsCfg;
 
-    /** */
-    private FileWriteAheadLogManager.FileDecompressor decompressor;
-
     protected final FileIOFactory ioFactory;
 
     public SegmentRouter(File walWorkDir, File walArchiveDir,
         SegmentAware segmentAware, DataStorageConfiguration dsCfg,
-        FileWriteAheadLogManager.FileDecompressor decompressor,
         FileIOFactory ioFactory) {
         this.walWorkDir = walWorkDir;
         this.walArchiveDir = walArchiveDir;
         this.segmentAware = segmentAware;
         this.dsCfg = dsCfg;
-        this.decompressor = decompressor;
         this.ioFactory = ioFactory;
     }
 
-    public FileWriteAheadLogManager.FileDescriptor findSegment(long segmentId) throws FileNotFoundException {
-        FileWriteAheadLogManager.FileDescriptor fd;
+    /**
+     * Find file which represent given segment.
+     *
+     * @param segmentId Segment for searching.
+     * @return Actual file description.
+     * @throws FileNotFoundException If file does not exist.
+     */
+    public FileDescriptor findSegment(long segmentId) throws FileNotFoundException {
+        FileDescriptor fd;
 
-        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId) {
-            fd = new FileWriteAheadLogManager.FileDescriptor(new File(walArchiveDir,
-                FileWriteAheadLogManager.FileDescriptor.fileName(segmentId)));
-        }
-        else {
-            long workIdx = segmentId % dsCfg.getWalSegments();
-
-            fd = new FileWriteAheadLogManager.FileDescriptor(
-                new File(walWorkDir, FileWriteAheadLogManager.FileDescriptor.fileName(workIdx)),
-                segmentId);
-        }
+        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId)
+            fd = new FileDescriptor(new File(walArchiveDir, fileName(segmentId)));
+        else
+            fd = new FileDescriptor(new File(walWorkDir, fileName(segmentId % dsCfg.getWalSegments())), segmentId);
 
         if (!fd.file().exists()) {
-            FileWriteAheadLogManager.FileDescriptor zipFile = new FileWriteAheadLogManager.FileDescriptor(
-                new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(fd.idx()) + ".zip"));
+            FileDescriptor zipFile = new FileDescriptor(new File(walArchiveDir, fileName(fd.idx()) + ZIP_SUFFIX));
 
             if (!zipFile.file().exists()) {
                 throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +
@@ -84,5 +74,4 @@ public class SegmentRouter {
 
         return fd;
     }
-
 }

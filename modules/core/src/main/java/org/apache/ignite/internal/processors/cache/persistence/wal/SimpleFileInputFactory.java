@@ -13,15 +13,13 @@ import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Simple implementation of {@link FileInputFactory}.
  */
-public class DefaultFileInpupFactory implements FileInputFactory {
+public class SimpleFileInputFactory implements FileInputFactory {
 
-
-    @Override public FileInput createFileInput(long segmentId, FileIO fileIO, ByteBufferExpander buf) throws IOException {
+    /** {@inheritDoc} */
+    @Override public FileInput createFileInput(long segmentId, FileIO fileIO,
+        ByteBufferExpander buf) throws IOException {
         return new SimpleFileInput(fileIO, buf);
     }
 }

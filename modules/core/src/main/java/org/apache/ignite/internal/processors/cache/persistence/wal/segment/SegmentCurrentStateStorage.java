@@ -25,6 +25,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 class SegmentCurrentStateStorage {
     /** Flag of interrupt of waiting on this object. */
     private volatile boolean interrupted;
+    /** Flag of force interrupt of waiting on this object. Needed for uninterrupted waiters. */
+    private volatile boolean forceInterrupted;
     /** Total WAL segments count. */
     private final int walSegmentsCount;
     /** Manages last archived index, emulates archivation in no-archiver mode. */
@@ -50,7 +52,8 @@ class SegmentCurrentStateStorage {
      */
     static SegmentCurrentStateStorage buildCurrentStateStorage(
         int walSegmentsCount,
-        SegmentArchivedStorage segmentArchivedStorage) {
+        SegmentArchivedStorage segmentArchivedStorage
+    ) {
 
         SegmentCurrentStateStorage currentStorage = new SegmentCurrentStateStorage(walSegmentsCount, segmentArchivedStorage);
 
@@ -88,7 +91,8 @@ class SegmentCurrentStateStorage {
     }
 
     /**
-     * Calculate next segment index or wait if needed.
+     * Calculate next segment index or wait if needed. Uninterrupted waiting. - for force interrupt used
+     * forceInterrupted flag.
      *
      * @return Next absolute segment index.
      */
@@ -98,14 +102,15 @@ class SegmentCurrentStateStorage {
         notifyAll();
 
         try {
-            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCount)
+            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCount && !forceInterrupted)
                 wait();
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedCheckedException(e);
         }
 
-//        checkInterrupted();
+        if (forceInterrupted)
+            throw new IgniteInterruptedCheckedException("");
 
         return curAbsWalIdx;
     }
@@ -122,17 +127,20 @@ class SegmentCurrentStateStorage {
     }
 
     /**
-     * @return Current WAL index.
+     * Interrupt waiting on this object.
      */
-    long curAbsWalIdx() {
-        return curAbsWalIdx;
+    synchronized void interrupt() {
+        interrupted = true;
+
+        notifyAll();
     }
 
     /**
      * Interrupt waiting on this object.
      */
-    synchronized void interrupt() {
+    synchronized void forceInterrupt() {
         interrupted = true;
+        forceInterrupted = true;
 
         notifyAll();
     }

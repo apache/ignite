@@ -13,11 +13,15 @@ import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Factory for {@link FileInput}.
  */
 public interface FileInputFactory {
+    /**
+     * @param segmentId Segment represented by fileIO.
+     * @param fileIO FileIO of segment for reading.
+     * @param buf ByteBuffer wrapper for dynamically expand buffer size.
+     * @return Instance of {@link FileInput}.
+     * @throws IOException
+     */
     FileInput createFileInput(long segmentId, FileIO fileIO, ByteBufferExpander buf) throws IOException;
 }

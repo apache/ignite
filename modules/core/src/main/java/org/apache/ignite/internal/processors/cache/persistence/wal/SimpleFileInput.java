@@ -60,9 +60,7 @@ public final class SimpleFileInput implements FileInput {
         clearBuffer();
     }
 
-    /**
-     * File I/O.
-     */
+    /** {@inheritDoc} */
     @Override public FileIO io() {
         return io;
     }
@@ -77,9 +75,7 @@ public final class SimpleFileInput implements FileInput {
         assert buf.remaining() == 0; // Buffer is empty.
     }
 
-    /**
-     * @param pos Position in bytes from file begin.
-     */
+    /** {@inheritDoc} */
     @Override public void seek(long pos) throws IOException {
         if (pos > io.size())
             throw new EOFException();
@@ -260,9 +256,7 @@ public final class SimpleFileInput implements FileInput {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String readUTF() throws IOException {
         throw new UnsupportedOperationException();
     }

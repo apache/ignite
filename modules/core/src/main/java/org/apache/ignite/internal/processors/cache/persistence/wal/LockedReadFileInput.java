@@ -27,18 +27,18 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * File input, backed by byte buffer file input. This class allows to read data by chunks from file and then read
- * primitives
+ * primitives.
+ *
+ * This implementation locks segment only for reading to buffer and also can switch reading segment from work directory
+ * to archive directory if needed.
  */
 public final class LockedReadFileInput implements FileInput {
-    interface FileIoResolver {
-        FileIO resolve(long segmentId) throws IOException;
-    }
 
     private FileInput input;
-    long segmentId;
-    SegmentAware segmentAware;
-    FileIoResolver fileIOFactory;
-    boolean readFromArchive;
+    private final long segmentId;
+    private final SegmentAware segmentAware;
+    private final FileIoResolver fileIOFactory;
+    private boolean readFromArchive;
     /** */
     private ByteBufferExpander expBuf;
 
@@ -160,8 +160,19 @@ public final class LockedReadFileInput implements FileInput {
     }
 
     @NotNull
-    public Crc32CheckingFileInput startRead(
-        boolean skipCheck) {
+    public Crc32CheckingFileInput startRead(boolean skipCheck) {
         return input.startRead(skipCheck);
+    }
+
+    /**
+     * Resolving fileIo for segment.
+     */
+    interface FileIoResolver {
+        /**
+         * @param segmentId Segment for IO action.
+         * @return {@link FileIO}.
+         * @throws IOException
+         */
+        FileIO resolve(long segmentId) throws IOException;
     }
 }

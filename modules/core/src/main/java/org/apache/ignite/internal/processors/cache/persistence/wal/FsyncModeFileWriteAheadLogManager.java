@@ -588,7 +588,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         List<File> res = new ArrayList<>();
 
         for (long i = low.index(); i < high.index(); i++) {
-            String segmentName = FileWriteAheadLogManager.FileDescriptor.fileName(i);
+            String segmentName = org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName(i);
 
             File file = new File(walArchiveDir, segmentName);
             File fileZip = new File(walArchiveDir, segmentName + ".zip");
@@ -1092,7 +1092,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, new DefaultFileInpupFactory(), absIdx).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, new SimpleFileInputFactory(), absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
@@ -1733,7 +1733,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends Thread {
-        private final FileInputFactory FILE_INPUT_FACTORY = new DefaultFileInpupFactory();
+        private final FileInputFactory FILE_INPUT_FACTORY = new SimpleFileInputFactory();
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1857,11 +1857,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     if (currReservedSegment == -1)
                         continue;
 
-                    File tmpZip = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment) + ".zip" + ".tmp");
+                    File tmpZip = new File(walArchiveDir, org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName(currReservedSegment) + ".zip" + ".tmp");
 
-                    File zip = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment) + ".zip");
+                    File zip = new File(walArchiveDir, org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName(currReservedSegment) + ".zip");
 
-                    File raw = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment));
+                    File raw = new File(walArchiveDir, org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName(currReservedSegment));
                     if (!Files.exists(raw.toPath()))
                         throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 
@@ -3163,7 +3163,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 serializerFactory,
                 ioFactory,
                 psCfg.getWalRecordIteratorBufferSize(),
-                new DefaultFileInpupFactory());
+                new SimpleFileInputFactory());
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;

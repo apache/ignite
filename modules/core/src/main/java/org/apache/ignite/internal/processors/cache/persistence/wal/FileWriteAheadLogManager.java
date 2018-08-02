@@ -58,7 +58,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -92,9 +91,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator.AbstractFileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentAware;
@@ -113,7 +110,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -167,9 +163,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** */
     private static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
-
-    /** WAL segment file extension. */
-    private static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
@@ -452,7 +445,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
 
-            segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg, decompressor, ioFactory);
+            segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg, ioFactory);
 
             walDisableContext = cctx.walState().walDisableContext();
 
@@ -821,7 +814,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         return new RecordsIterator(
             cctx,
-            walWorkDir,
             walArchiveDir,
             (FileWALPointer)start,
             end,
@@ -1168,7 +1160,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, new DefaultFileInpupFactory() , absIdx).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, new SimpleFileInputFactory() , absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVer;
@@ -1768,7 +1760,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
-        private final FileInputFactory FILE_INPUT_FACTORY = new DefaultFileInpupFactory();
+        private final FileInputFactory FILE_INPUT_FACTORY = new SimpleFileInputFactory();
 
         /**
          *
@@ -2176,102 +2168,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         buf.position(0);
 
         return buf;
-    }
-
-    /**
-     * WAL file descriptor.
-     */
-    public static class FileDescriptor implements
-        Comparable<FileDescriptor>, AbstractFileDescriptor {
-        /** */
-        protected final File file;
-
-        /** Absolute WAL segment file index */
-        protected final long idx;
-
-        /**
-         * Creates file descriptor. Index is restored from file name
-         *
-         * @param file WAL segment file.
-         */
-        public FileDescriptor(@NotNull File file) {
-            this(file, null);
-        }
-
-        /**
-         * @param file WAL segment file.
-         * @param idx Absolute WAL segment file index. For null value index is restored from file name
-         */
-        public FileDescriptor(@NotNull File file, @Nullable Long idx) {
-            this.file = file;
-
-            String fileName = file.getName();
-
-            assert fileName.contains(WAL_SEGMENT_FILE_EXT);
-
-            this.idx = idx == null ? Long.parseLong(fileName.substring(0, 16)) : idx;
-        }
-
-        /**
-         * @param segment Segment index.
-         * @return Segment file name.
-         */
-        public static String fileName(long segment) {
-            SB b = new SB();
-
-            String segmentStr = Long.toString(segment);
-
-            for (int i = segmentStr.length(); i < 16; i++)
-                b.a('0');
-
-            b.a(segmentStr).a(WAL_SEGMENT_FILE_EXT);
-
-            return b.toString();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull FileDescriptor o) {
-            return Long.compare(idx, o.idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof FileDescriptor))
-                return false;
-
-            FileDescriptor that = (FileDescriptor)o;
-
-            return idx == that.idx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return (int)(idx ^ (idx >>> 32));
-        }
-
-        /**
-         * @return True if segment is ZIP compressed.
-         */
-        @Override public boolean isCompressed() {
-            return file.getName().endsWith(".zip");
-        }
-
-        /** {@inheritDoc} */
-        @Override public File file() {
-            return file;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long idx() {
-            return idx;
-        }
-
-        @Override public FileIO toIO(FileIOFactory fileIOFactory) throws IOException {
-            return isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
-        }
     }
 
     /**
@@ -2823,8 +2719,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static class RecordsIterator extends AbstractWalRecordsIterator {
         /** */
         private static final long serialVersionUID = 0L;
-        /** */
-        private final File walWorkDir;
 
         /** */
         private final File walArchiveDir;
@@ -2834,9 +2728,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** */
         private final FileDecompressor decompressor;
-
-        /** */
-        private final DataStorageConfiguration dsCfg;
 
         /** Optional start pointer. */
         @Nullable
@@ -2850,7 +2741,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param cctx Shared context.
-         * @param walWorkDir WAL work dir.
          * @param walArchiveDir WAL archive dir.
          * @param start Optional start pointer.
          * @param end Optional end pointer.
@@ -2864,7 +2754,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private RecordsIterator(
             GridCacheSharedContext cctx,
-            File walWorkDir,
             File walArchiveDir,
             @Nullable FileWALPointer start,
             @Nullable FileWALPointer end,
@@ -2887,9 +2776,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ioFactory
                 )
             );
-            this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
-            this.dsCfg = dsCfg;
             this.archiver = archiver;
             this.start = start;
             this.end = end;
@@ -2908,19 +2795,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ) throws IgniteCheckedException, FileNotFoundException {
             AbstractFileDescriptor currDesc = desc;
 
-            if (!desc.file().exists()) {
-                FileDescriptor zipFile = new FileDescriptor(
-                    new File(walArchiveDir, FileDescriptor.fileName(desc.idx()) + ".zip"));
+            if (currDesc.isCompressed() && decompressor != null) {
+                decompressor.decompressFile(desc.idx()).get();
 
-                if (!zipFile.file.exists()) {
-                    throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +
-                        "[segmentIdx=" + desc.idx() + "]");
-                }
-
-                if (decompressor != null)
-                    decompressor.decompressFile(desc.idx()).get();
-                else
-                    currDesc = zipFile;
+                currDesc = segmentRouter.findSegment(currDesc.idx());
             }
 
             return (ReadFileHandle) super.initReadHandle(currDesc, start);
@@ -2932,10 +2810,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             curRec = null;
 
-            final AbstractReadFileHandle handle = closeCurrentWalSegment();
-
-            if (handle != null && handle.workDir())
-                releaseWorkSegment(curWalSegmIdx);
+            closeCurrentWalSegment();
 
             curWalSegmIdx = Integer.MAX_VALUE;
         }
@@ -2990,13 +2865,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected AbstractReadFileHandle advanceSegment(
             @Nullable final AbstractReadFileHandle curWalSegment
         ) throws IgniteCheckedException {
-            if (curWalSegment != null) {
+            if (curWalSegment != null)
                 curWalSegment.close();
-
-//                if (curWalSegment.workDir())
-//                    releaseWorkSegment(curWalSegment.idx());
-
-            }
 
             // We are past the end marker.
             if (end != null && curWalSegmIdx + 1 > end.index())
@@ -3004,9 +2874,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             curWalSegmIdx++;
 
-            ReadFileHandle nextHandle;
-            boolean readArchive = canReadArchiveOrReserveWork(curWalSegmIdx);
+            boolean readArchive = canReadArchiveOrReserveWork(curWalSegmIdx); //lock during creation handle.
 
+            ReadFileHandle nextHandle;
             try {
                 FileDescriptor fd = segmentRouter.findSegment(curWalSegmIdx);
 
@@ -3024,10 +2894,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (!readArchive)
                 releaseWorkSegment(curWalSegmIdx);
-
-//            if (nextHandle != null)
-//                nextHandle.workDir = !readArchive;
-
 
             curRec = null;
 

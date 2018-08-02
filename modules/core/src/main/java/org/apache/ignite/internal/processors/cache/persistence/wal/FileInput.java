@@ -17,19 +17,29 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaC
 import org.jetbrains.annotations.NotNull;
 
 /**
- * TODO: Add interface description.
- *
- * @author @java.author
- * @version @java.version
+ * File input, backed by byte buffer file input.
+ * This class allows to read data by chunks from file and then read primitives.
  */
 public interface FileInput extends ByteBufferBackedDataInput {
-
+    /**
+     * File I/O.
+     */
     FileIO io();
 
+    /**
+     * @param pos Position in bytes from file begin.
+     */
     void seek(long pos) throws IOException;
 
+    /**
+     * @return Position in the stream.
+     */
     long position();
 
+    /**
+     * @param skipCheck If CRC check should be skipped.
+     * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
+     */
     SimpleFileInput.Crc32CheckingFileInput startRead(boolean skipCheck);
 
     /**
@@ -45,6 +55,7 @@ public interface FileInput extends ByteBufferBackedDataInput {
         /** Skip crc check. */
         private boolean skipCheck;
 
+        /** */
         private FileInput delegate;
 
         /**
