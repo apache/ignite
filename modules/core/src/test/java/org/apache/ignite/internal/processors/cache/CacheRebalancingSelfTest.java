@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -35,8 +36,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Random;
 
 /**
  * Test for rebalancing.
@@ -74,7 +73,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
             getTestIgniteInstanceName(0),
             getConfiguration(getTestIgniteInstanceName(0))
                 .setCacheConfiguration(
-                    new CacheConfiguration(DEFAULT_CACHE_NAME),
+                    new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME),
                     new CacheConfiguration<Integer, Integer>(REBALANCE_TEST_CACHE_NAME)
                         .setCacheMode(CacheMode.LOCAL))
         );
