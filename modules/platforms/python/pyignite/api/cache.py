@@ -26,7 +26,7 @@ from pyignite.utils import (
 from .cache_config import (
     cache_create, cache_create_with_config,
     cache_get_or_create, cache_get_or_create_with_config,
-    cache_destroy,
+    cache_destroy, cache_get_configuration,
 )
 from .key_value import (
     cache_get, cache_put, cache_get_all, cache_put_all, cache_replace,
@@ -65,6 +65,7 @@ class Cache:
     _cache_id = None
     _name = None
     _conn = None
+    _settings = None
 
     @staticmethod
     def validate_settings(settings: Union[str, dict]=None):
@@ -91,7 +92,6 @@ class Cache:
             self._name = settings
         else:
             self._name = settings[prop_codes.PROP_NAME]
-            self._settings = settings
 
         func = CACHE_CREATE_FUNCS[type(settings) is dict][with_get]
         result = func(conn, settings)
@@ -102,6 +102,10 @@ class Cache:
 
     @property
     def settings(self) -> Optional[dict]:
+        if self._settings is None:
+            config_result = cache_get_configuration(self._conn, self._cache_id)
+            self._settings = config_result.value
+
         return self._settings
 
     @property

@@ -26,7 +26,7 @@ from .standard import *
 
 
 __all__ = [
-    'PropName', 'PropCacheMode', 'PropCacheAtomicityMode', 'PropBackups',
+    'PropName', 'PropCacheMode', 'PropCacheAtomicityMode', 'PropBackupsNumber',
     'PropWriteSynchronizationMode', 'PropCopyOnRead', 'PropReadFromBackup',
     'PropDataRegionName', 'PropIsOnheapcacheEnabled', 'PropQueryEntities',
     'PropQueryParallelism', 'PropQueryDetailMetricsSize', 'PropSQLSchema',
@@ -45,7 +45,7 @@ def prop_map(code: int):
         PROP_NAME: PropName,
         PROP_CACHE_MODE: PropCacheMode,
         PROP_CACHE_ATOMICITY_MODE: PropCacheAtomicityMode,
-        PROP_BACKUPS: PropBackups,
+        PROP_BACKUPS_NUMBER: PropBackupsNumber,
         PROP_WRITE_SYNCHRONIZATION_MODE: PropWriteSynchronizationMode,
         PROP_COPY_ON_READ: PropCopyOnRead,
         PROP_READ_FROM_BACKUP: PropReadFromBackup,
@@ -136,8 +136,8 @@ class PropCacheAtomicityMode(PropBase):
     prop_data_class = CacheAtomicityMode
 
 
-class PropBackups(PropBase):
-    prop_code = PROP_BACKUPS
+class PropBackupsNumber(PropBase):
+    prop_code = PROP_BACKUPS_NUMBER
     prop_data_class = Int
 
 

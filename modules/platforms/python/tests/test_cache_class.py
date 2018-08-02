@@ -21,11 +21,34 @@ import pytest
 from pyignite.datatypes import (
     BinaryObject, BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
+from pyignite.datatypes.prop_codes import *
 
 
 def test_cache_create(conn):
     cache = conn.create_cache('my_oop_cache')
-    assert cache.name == 'my_oop_cache'
+    assert cache.name == cache.settings[PROP_NAME] == 'my_oop_cache'
+    cache.destroy()
+
+
+def test_cache_config(conn):
+    cache_config = {
+        PROP_NAME: 'my_oop_cache',
+        PROP_CACHE_KEY_CONFIGURATION: [
+            {
+                'type_name': 'blah',
+                'affinity_key_field_name': 'abc1234',
+            },
+        ],
+    }
+    conn.create_cache(cache_config)
+
+    cache = conn.get_or_create_cache('my_oop_cache')
+    assert cache.name == cache_config[PROP_NAME]
+    assert (
+        cache.settings[PROP_CACHE_KEY_CONFIGURATION]
+        == cache_config[PROP_CACHE_KEY_CONFIGURATION]
+    )
+
     cache.destroy()
 
 

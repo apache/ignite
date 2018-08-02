@@ -35,6 +35,26 @@ from pyignite.utils import cache_id
 from .result import APIResult
 
 
+def compact_cache_config(cache_config: dict) -> dict:
+    """
+    This is to make cache config read/write-symmetrical.
+
+    :param cache_config: dict of cache config properties,
+     like {'is_onheapcache_enabled': 1},
+    :return: the same dict, but with property codes as keys,
+     like {PROP_IS_ONHEAPCACHE_ENABLED: 1}.
+    """
+    from pyignite.datatypes import prop_codes
+
+    result = {}
+    for k, v in cache_config.items():
+        if k == 'length':
+            continue
+        prop_code = getattr(prop_codes, 'PROP_{}'.format(k.upper()))
+        result[prop_code] = v
+    return result
+
+
 def cache_get_configuration(
     conn: Connection, cache: Union[str, int], flags: int=0, query_id=None,
 ) -> APIResult:
@@ -73,7 +93,9 @@ def cache_get_configuration(
     result = APIResult(response)
     if result.status != 0:
         return result
-    result.value = response_struct.to_python(response)['cache_config']
+    result.value = compact_cache_config(
+        response_struct.to_python(response)['cache_config']
+    )
     return result
 
 
