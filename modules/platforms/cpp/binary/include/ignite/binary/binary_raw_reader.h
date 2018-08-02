@@ -313,8 +313,6 @@ namespace ignite
              */
             std::string ReadString()
             {
-                int32_t len = ReadString(NULL, 0);
-
                 std::string res;
 
                 ReadString(res);
