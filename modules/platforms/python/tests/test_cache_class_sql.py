@@ -39,7 +39,7 @@ drop_query = 'DROP TABLE Student IF EXISTS'
 
 
 @pytest.mark.parametrize('page_size', range(1, 6, 2))
-def test_sql(conn, page_size):
+def test_sql_fields(conn, page_size):
 
     conn.sql(drop_query, page_size)
 
@@ -67,5 +67,37 @@ def test_sql(conn, page_size):
     assert len(data) == 5
     for row in data:
         assert len(row) == 4
+
+    conn.sql(drop_query, page_size)
+
+
+@pytest.mark.parametrize('page_size', range(1, 6, 2))
+def test_sql(conn, page_size):
+
+    conn.sql(drop_query, page_size)
+
+    result = conn.sql(create_query, page_size)
+    assert next(result)[0] == 0
+
+    for i, data_line in enumerate(initial_data, start=1):
+        fname, lname, grade = data_line
+        result = conn.sql(
+            insert_query,
+            page_size,
+            query_args=[i, fname, lname, grade]
+        )
+        assert next(result)[0] == 1
+
+    student = conn.get_or_create_cache('SQL_PUBLIC_STUDENT')
+    result = student.sql('TRUE', page_size)
+    for k, v in result:
+        assert k in range(1, 6)
+        assert v['fields']['FIRST_NAME'] in [
+            'John',
+            'Jane',
+            'Joe',
+            'Richard',
+            'Negidius',
+        ]
 
     conn.sql(drop_query, page_size)

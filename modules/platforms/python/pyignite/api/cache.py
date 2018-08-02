@@ -18,7 +18,7 @@ from typing import Any, Iterable, Optional, Union
 from pyignite.connection import Connection
 from pyignite.datatypes import prop_codes
 from pyignite.exceptions import (
-    CacheCreationError, CacheError, ParameterError,
+    CacheCreationError, CacheError, ParameterError, SQLError,
 )
 from pyignite.utils import (
     cache_id, is_wrapped, status_to_exception, unwrap_binary,
@@ -37,7 +37,7 @@ from .key_value import (
     cache_remove_key, cache_remove_keys, cache_remove_all,
     cache_remove_if_equals, cache_replace_if_equals, cache_get_size,
 )
-from .sql import scan, scan_cursor_get_page
+from .sql import scan, scan_cursor_get_page, sql, sql_cursor_get_page
 
 
 PROP_CODES = set([
@@ -114,6 +114,10 @@ class Cache:
             self._name = self.settings[prop_codes.PROP_NAME]
 
         return self._name
+
+    @property
+    def conn(self) -> Connection:
+        return self._conn
 
     @property
     def cache_id(self) -> int:
@@ -294,3 +298,65 @@ class Cache:
 
             for k, v in result.value['data'].items():
                 yield k, v
+
+    def sql(
+        self, query_str: str, page_size: int=1,
+        query_args: Optional[list]=None, distributed_joins: bool=False,
+        replicated_only: bool=False, local: bool=False, timeout: int=0
+    ):
+        """
+        Executes a simplified SQL SELECT query over data stored in the cache.
+        The query returns the whole record (key and value).
+
+        :param query_str: SQL query string,
+        :param page_size: cursor page size,
+        :param query_args: (optional) query arguments,
+        :param distributed_joins: (optional) distributed joins. Defaults
+         to False,
+        :param replicated_only: (optional) whether query contains only
+         replicated tables or not. Defaults to False,
+        :param local: (optional) pass True if this query should be executed
+         on local node only. Defaults to False,
+        :param timeout: (optional) non-negative timeout value in ms. Zero
+         disables timeout (default),
+        :return: generator with key-value pairs.
+        """
+        def generate_result(value):
+            cursor = value['cursor']
+            more = value['more']
+            for k, v in value['data'].items():
+                k = self.process_binary(k)
+                v = self.process_binary(v)
+                yield k, v
+
+            while more:
+                inner_result = sql_cursor_get_page(self._conn, cursor)
+                if result.status != 0:
+                    raise SQLError(result.message)
+                more = inner_result.value['more']
+                for k, v in inner_result.value['data'].items():
+                    k = self.process_binary(k)
+                    v = self.process_binary(v)
+                    yield k, v
+
+        type_name = self.settings[
+            prop_codes.PROP_QUERY_ENTITIES
+        ][0]['value_type_name']
+        if not type_name:
+            raise SQLError('Value type is unknown')
+        result = sql(
+            self._conn,
+            self._cache_id,
+            type_name,
+            query_str,
+            page_size,
+            query_args,
+            distributed_joins,
+            replicated_only,
+            local,
+            timeout
+        )
+        if result.status != 0:
+            raise SQLError(result.message)
+
+        return generate_result(result.value)
