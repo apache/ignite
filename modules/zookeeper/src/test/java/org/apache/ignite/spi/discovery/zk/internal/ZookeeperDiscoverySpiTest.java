@@ -2360,6 +2360,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test with large user attribute on coordinator node.
+     *
      * @throws Exception If failed.
      */
     public void testLargeUserAttribute1() throws Exception {
@@ -2379,6 +2381,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test with large user attribute on non-coordinator node.
+     *
      * @throws Exception If failed.
      */
     public void testLargeUserAttribute2() throws Exception {
@@ -2394,6 +2398,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test with large user attributes on random nodes.
+     * Almost tests that big messages (more than 1MB) properly separated and processed by zk.
+     *
      * @throws Exception If failed.
      */
     public void testLargeUserAttribute3() throws Exception {
