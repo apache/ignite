@@ -79,7 +79,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param data Data.
      * @param idx Index.
      * @param featureId Feature id.
-     * @param k-value.
+     * @param k K-th statistic.
      * @return label value in according to kth order statistic
      */
     protected double getLabelValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
@@ -92,7 +92,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param data Data.
      * @param idx Index.
      * @param featureId Feature id.
-     * @param k-value.
+     * @param k K-th statistic.
      * @return feature value in according to kth order statistic.
      */
     protected double getFeatureValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
