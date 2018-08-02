@@ -2605,7 +2605,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 assignsMap.put(grp.groupId(), assigns);
 
-                                if (resVer == null)
+                                if (resVer == null && !grp.isLocal())
                                     resVer = grp.topology().readyTopologyVersion();
                             }
                         }
@@ -2683,7 +2683,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
 
-                            rebTopVer = resVer;
+                            rebTopVer = resVer == null ? exchId.topologyVersion() : resVer;
 
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:

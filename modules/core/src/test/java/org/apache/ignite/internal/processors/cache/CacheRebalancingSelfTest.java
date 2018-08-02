@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -41,7 +42,6 @@ import java.util.Random;
  * Test for rebalancing.
  */
 public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
-
     /** Cache name with one backups */
     private static final String REBALANCE_TEST_CACHE_NAME = "rebalanceCache";
 
@@ -64,6 +64,24 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testRebalanceLocalCacheFuture() throws Exception {
+        startGrid(
+            getTestIgniteInstanceName(0),
+            getConfiguration(getTestIgniteInstanceName(0))
+                .setCacheConfiguration(
+                    new CacheConfiguration(DEFAULT_CACHE_NAME),
+                    new CacheConfiguration<Integer, Integer>(REBALANCE_TEST_CACHE_NAME)
+                        .setCacheMode(CacheMode.LOCAL))
+        );
+
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+        assertTrue(cache.rebalance().get());
     }
 
     /**
