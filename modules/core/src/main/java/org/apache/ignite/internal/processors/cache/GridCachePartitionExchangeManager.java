@@ -2609,6 +2609,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     resVer = grp.topology().readyTopologyVersion();
                             }
                         }
+
+                        if (resVer == null)
+                            resVer = exchId.topologyVersion();
                     }
                     finally {
                         // Must flip busy flag before assignments are given to demand workers.
@@ -2683,7 +2686,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
 
-                            rebTopVer = resVer == null ? exchId.topologyVersion() : resVer;
+                            rebTopVer = resVer;
 
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
