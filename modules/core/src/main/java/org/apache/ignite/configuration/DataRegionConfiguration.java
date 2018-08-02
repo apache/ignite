@@ -133,8 +133,6 @@ public final class DataRegionConfiguration implements Serializable {
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
 
-    private boolean setMaxSizeInvoked = false;
-
     /**
      * Gets data region name.
      *
@@ -178,13 +176,7 @@ public final class DataRegionConfiguration implements Serializable {
     public DataRegionConfiguration setMaxSize(long maxSize) {
         this.maxSize = maxSize;
 
-        setMaxSizeInvoked = true;
-
         return this;
-    }
-
-    public boolean isSetMaxSizeInvoked() {
-        return setMaxSizeInvoked;
     }
 
     /**
