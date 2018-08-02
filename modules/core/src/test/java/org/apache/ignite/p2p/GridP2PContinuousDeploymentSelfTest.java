@@ -134,9 +134,13 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
         stopGrid(IGNITE_INSTANCE_NAME);
     }
 
-    /** */
+    /**
+     * Tests that server node joins correctly to existing cluster if it has deployed user class with enabled P2P.
+     *
+     * @throws Exception If failed.
+     */
     public void testServerJoinWithP2PClassDeployedInCluster() throws Exception {
-        startGrids(2);
+        startGrids(GRID_CNT);
 
         ClassLoader extLdr = getExternalClassLoader();
 
