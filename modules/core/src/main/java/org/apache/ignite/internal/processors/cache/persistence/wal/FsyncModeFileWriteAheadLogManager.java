@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetric
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -1091,7 +1092,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, absIdx).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, new DefaultFileInpupFactory(), absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
@@ -1732,6 +1733,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends Thread {
+        private final FileInputFactory FILE_INPUT_FACTORY = new DefaultFileInpupFactory();
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1907,7 +1909,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                segmentSerializerVer = readSegmentHeader(fileIO, nextSegment).getSerializerVersion();
+                segmentSerializerVer = readSegmentHeader(fileIO, FILE_INPUT_FACTORY  , nextSegment).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -2295,6 +2297,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** {@inheritDoc} */
         @Override public long idx() {
             return idx;
+        }
+
+        @Override public FileIO toIO(FileIOFactory fileIOFactory) throws IOException {
+            return isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
         }
     }
 
@@ -3156,7 +3162,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 cctx,
                 serializerFactory,
                 ioFactory,
-                psCfg.getWalRecordIteratorBufferSize());
+                psCfg.getWalRecordIteratorBufferSize(),
+                new DefaultFileInpupFactory());
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;

@@ -46,7 +46,7 @@ class SegmentArchivedStorage extends SegmentObservable {
     static SegmentArchivedStorage buildArchivedStorage(SegmentLockStorage segmentLockStorage) {
         SegmentArchivedStorage archivedStorage = new SegmentArchivedStorage(segmentLockStorage);
 
-        archivedStorage.addObserver(archivedStorage::onSegmentUnlocked);
+        segmentLockStorage.addObserver(archivedStorage::onSegmentUnlocked);
 
         return archivedStorage;
     }

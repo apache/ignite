@@ -30,7 +30,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -86,24 +85,28 @@ public abstract class AbstractWalRecordsIterator
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
 
+    private final FileInputFactory fileInputFactory;
+
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param initialReadBufferSize buffer for reading records size.
+     * @param fileInputFactory
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
-        final int initialReadBufferSize
-    ) {
+        final int initialReadBufferSize,
+        FileInputFactory fileInputFactory) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
+        this.fileInputFactory = fileInputFactory;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
@@ -275,17 +278,17 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
+            FileIO fileIO = desc.toIO(ioFactory);
 
             try {
-                SegmentHeader segmentHeader = readSegmentHeader(fileIO, curWalSegmIdx);
+                SegmentHeader segmentHeader = readSegmentHeader(fileIO, fileInputFactory, curWalSegmIdx);
 
                 boolean isCompacted = segmentHeader.isCompacted();
 
                 if (isCompacted)
                     serializerFactory.skipPositionCheck(true);
 
-                FileInput in = new FileInput(fileIO, buf);
+                FileInput in = fileInputFactory.createFileInput(curWalSegmIdx, fileIO, buf);
 
                 if (start != null && desc.idx() == start.index()) {
                     if (isCompacted) {
@@ -305,6 +308,7 @@ public abstract class AbstractWalRecordsIterator
                 return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
+                log.error("io exception " , ignore);
                 try {
                     fileIO.close();
                 }
@@ -399,5 +403,7 @@ public abstract class AbstractWalRecordsIterator
 
         /** */
         long idx();
+
+        FileIO toIO(FileIOFactory fileIOFactory) throws IOException;
     }
 }

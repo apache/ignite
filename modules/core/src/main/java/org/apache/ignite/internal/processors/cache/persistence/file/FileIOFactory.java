@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 
 /**
  * {@link FileIO} factory definition.
@@ -45,4 +46,7 @@ public interface FileIOFactory extends Serializable {
      */
     public FileIO create(File file, OpenOption... modes) throws IOException;
 
+    default FileIO create(FileWriteAheadLogManager.FileDescriptor desc) throws IOException {
+        return desc.isCompressed() ? new UnzipFileIO(desc.file()) : create(desc.file());
+    }
 }

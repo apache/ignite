@@ -40,7 +40,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.DefaultFileInpupFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
@@ -76,6 +79,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
 
+    private static final FileInputFactory fileInputFactory  = new DefaultFileInpupFactory();
+
     /**
      * Creates iterator in file-by-file iteration mode. Directory
      * @param log Logger.
@@ -100,7 +105,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
-            initialReadBufferSize
+            initialReadBufferSize,
+            fileInputFactory
         );
 
         this.keepBinary = keepBinary;
@@ -175,7 +181,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             try {
                 FileIO fileIO = fd.isCompressed() ? new UnzipFileIO(fd.file()) : ioFactory.create(fd.file());
 
-                readSegmentHeader(fileIO, curWalSegmIdx);
+                readSegmentHeader(fileIO, fileInputFactory, curWalSegmIdx);
 
                 break;
             }

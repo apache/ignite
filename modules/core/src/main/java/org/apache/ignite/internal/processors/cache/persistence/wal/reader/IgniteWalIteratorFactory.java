@@ -43,9 +43,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SimpleFileInput;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -285,7 +285,7 @@ public class IgniteWalIteratorFactory {
             FileIO fileIO = ds.isCompressed() ? new UnzipFileIO(file) : ioFactory.create(file);
             ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
         ) {
-            final DataInput in = new FileInput(fileIO, buf);
+            final DataInput in = new SimpleFileInput(fileIO, buf);
 
             // Header record must be agnostic to the serializer version.
             final int type = in.readUnsignedByte();

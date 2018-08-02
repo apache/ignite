@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 
@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaC
  */
 public class IgniteDataIntegrityTests extends TestCase {
     /** File input. */
-    private FileInput fileInput;
+    private SimpleFileInput fileInput;
 
     /** Buffer expander. */
     private ByteBufferExpander expBuf;
@@ -52,7 +52,7 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         FileIOFactory factory = new RandomAccessFileIOFactory();
 
-        fileInput = new FileInput(
+        fileInput = new SimpleFileInput(
                 factory.create(file),
                 expBuf
         );
@@ -196,7 +196,7 @@ public class IgniteDataIntegrityTests extends TestCase {
         fileInput.io().position(0);
 
         for (int i = 0; i < 1024 / 16; i++) {
-            try(FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
+            try(SimpleFileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
                 in.readInt();
                 in.readInt();
                 in.readInt();
