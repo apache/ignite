@@ -109,6 +109,7 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
@@ -1631,7 +1632,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (dep != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(dep.configuration().getName());
 
             // Ignore other utility cache events.
@@ -1978,7 +1979,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (assigns != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(assigns.name());
 
             Throwable t = null;
