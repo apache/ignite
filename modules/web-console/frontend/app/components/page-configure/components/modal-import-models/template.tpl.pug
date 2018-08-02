@@ -16,9 +16,6 @@
 
 include /app/helpers/jade/mixins
 
-mixin chk(mdl, change, tip)
-    input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-trigger='hover' data-placement='top')
-
 mixin td-ellipses-lbl(w, lbl)
     td.td-ellipsis(width=`${w}` style=`min-width: ${w}; max-width: ${w}`)
         label #{lbl}
