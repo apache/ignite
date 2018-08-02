@@ -189,6 +189,11 @@ class TcpClientChannel implements ClientChannel {
         return payloadReader.apply(payload);
     }
 
+    /** {@inheritDoc} */
+    public ProtocolVersion serverVersion() {
+        return ver;
+    }
+
     /** Validate {@link ClientConfiguration}. */
     private static void validateConfiguration(ClientChannelConfiguration cfg) {
         String error = null;
@@ -273,7 +278,12 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(read(resSize));
 
-        if (!res.readBoolean()) { // success flag
+        boolean success = res.readBoolean();
+
+        if (success) {
+            ver = res.remaining() == 0 ? V1_1_0 :
+                new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
+        } else {
             ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
             try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
