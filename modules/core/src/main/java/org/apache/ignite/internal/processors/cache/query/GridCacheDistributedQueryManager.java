@@ -887,6 +887,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             if (obj == this)
                 return true;
 
+            if (!(obj instanceof CancelMessageId))
+                return false;
+
             CancelMessageId other = (CancelMessageId)obj;
 
             return reqId == other.reqId && nodeId.equals(other.nodeId);

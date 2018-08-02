@@ -182,6 +182,12 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof TestObject2))
+                return false;
+
             return i == ((TestObject2)o).i;
         }
 

@@ -160,14 +160,11 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-//            if (this == obj)
-//                return true;
-//
-//            if (obj == null)
-//                return false;
-//
-//            if (getClass() != obj.getClass())
-//                return false;
+            if (this == obj)
+                return true;
+
+            if (!(obj instanceof MyStringKey))
+                return false;
 //
 //            MyStringKey other = (MyStringKey) obj;
 //
