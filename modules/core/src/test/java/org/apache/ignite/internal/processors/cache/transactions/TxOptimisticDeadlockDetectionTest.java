@@ -471,14 +471,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                     if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
                         GridTestUtils.runAsync(new Callable<Void>() {
                             @Override public Void call() throws Exception {
-                                while (TX_IDS.size() < TX_CNT) {
-                                    try {
-                                        U.sleep(50);
-                                    }
-                                    catch (IgniteInterruptedCheckedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
+                                while (TX_IDS.size() < TX_CNT)
+                                    U.sleep(50);
 
                                 TestCommunicationSpi.super.sendMessage(node, msg, ackC);
 
