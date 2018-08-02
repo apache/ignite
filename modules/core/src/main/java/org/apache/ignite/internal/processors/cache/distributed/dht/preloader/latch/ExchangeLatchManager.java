@@ -30,7 +30,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -225,6 +228,28 @@ public class ExchangeLatchManager {
         }
         finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * Gets alive server nodes from disco cache for provided AffinityTopologyVersion.
+     *
+     * @param topVer Topology version.
+     * @return Collection of nodes with at least one cache configured.
+     */
+    private Collection<ClusterNode> aliveNodesForTopologyVer(AffinityTopologyVersion topVer) {
+        if (topVer == AffinityTopologyVersion.NONE)
+            return discovery.aliveServerNodes();
+        else {
+            Collection<ClusterNode> histNodes = discovery.topology(topVer.topologyVersion());
+
+            if (histNodes != null)
+                return histNodes.stream().filter(n -> !CU.clientNode(n) && !n.isDaemon() && discovery.alive(n))
+                        .collect(Collectors.toList());
+            else
+                throw new IgniteException("Topology " + topVer + " not found in discovery history "
+                        + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
+                        + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
         }
     }
 
