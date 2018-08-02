@@ -85,14 +85,19 @@ export default class Models {
      * @param {ig.config.model.DomainModel} model
      */
     addIndex(model) {
-        if (!model) return;
-        if (!model.indexes) model.indexes = [];
+        if (!model)
+            return;
+
+        if (!model.indexes)
+            model.indexes = [];
+
         model.indexes.push({
             _id: ObjectID.generate(),
             name: '',
             indexType: 'SORTED',
             fields: []
         });
+
         return model.indexes[model.indexes.length - 1];
     }
 
@@ -142,7 +147,9 @@ export default class Models {
          */
         indexFieldsHaveUniqueNames: ($value = []) => {
             return $value.every((index) => {
-                if (!index.fields) return true;
+                if (!index.fields)
+                    return true;
+
                 const uniqueNames = new Set(index.fields.map((ec) => ec.name));
                 return uniqueNames.size === index.fields.length;
             });
@@ -156,7 +163,9 @@ export default class Models {
      * @returns {ig.config.model.DomainModel}
      */
     removeInvalidFields(model) {
-        if (!model) return model;
+        if (!model)
+            return model;
+
         const fieldNames = new Set((model.fields || []).map((f) => f.name));
         return {
             ...model,
