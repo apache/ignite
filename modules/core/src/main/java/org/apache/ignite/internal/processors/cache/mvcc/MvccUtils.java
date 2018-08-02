@@ -102,6 +102,14 @@ public class MvccUtils {
     }
 
     /**
+     * @param ctx Kernal context.
+     * @return Newly created Mvcc processor.
+     */
+    public static MvccProcessor createProcessor(GridKernalContext ctx) {
+        return mvccEnabled(ctx) ? new MvccProcessorImpl(ctx) : new NoOpMvccProcessor(ctx);
+    }
+
+    /**
      * @param cctx Cache context.
      * @param mvccCrd Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.

@@ -431,6 +431,17 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
+     * @return Partition data iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part)
+        throws IgniteCheckedException {
+        return cachePartitionIterator(cacheId, part, null);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param part Partition.
      * @param mvccSnapshot MVCC snapshot.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.

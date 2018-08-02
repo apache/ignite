@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -653,7 +652,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 (initialVersion().equals(mvccCrd.topologyVersion()) || activateCluster());
 
             // Mvcc coordinator should has been initialized before exchange context is created.
-            cctx.kernalContext().coordinators().currentCoordinator(mvccCrd);
+            cctx.kernalContext().coordinators().updateCoordinator(mvccCrd);
 
             exchCtx = new ExchangeContext(crdNode, mvccCrdChange, this);
 
