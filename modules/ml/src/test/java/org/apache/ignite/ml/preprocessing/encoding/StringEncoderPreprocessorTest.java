@@ -19,6 +19,9 @@ package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownStringValue;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.junit.Test;
 
@@ -31,44 +34,71 @@ public class StringEncoderPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
-        String[][] data = new String[][]{
+        String[][] data = new String[][] {
             {"1", "Moscow", "A"},
             {"2", "Moscow", "B"},
             {"2", "Moscow", "B"},
         };
 
-        StringEncoderPreprocessor<Integer, String[]> preprocessor = new StringEncoderPreprocessor<Integer, String[]>(
-            new HashMap[]{new HashMap() {
-                {
-                    put("1", 1);
-                    put("2", 0);
-                }
-            }, new HashMap() {
-                {
-                    put("Moscow", 0);
-                }
-            }, new HashMap() {
-                {
-                    put("A", 1);
-                    put("B", 0);
-                }
-            }},
+        StringEncoderPreprocessor<Integer, String[]> preprocessor = new StringEncoderPreprocessor<>(
+            encodingValues(),
             (k, v) -> v,
-            new HashSet() {
-                {
-                    add(0);
-                    add(1);
-                    add(2);
-                }
-            });
+            handledIndices());
 
-        double[][] postProcessedData = new double[][]{
+        double[][] postProcessedData = new double[][] {
             {1.0, 0.0, 1.0},
             {0.0, 0.0, 0.0},
             {0.0, 0.0, 0.0},
         };
 
-       for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
+    }
+
+    /** Tests {@code apply()} method throwing expected exception. */
+    @Test(expected = UnknownStringValue.class)
+    public void testUnknownStringValue() {
+        String[][] data = new String[][] {
+            {"3", "Moscow", "A"},
+            {"2", "Moscow", "B"},
+            {"2", "Moscow", "B"},
+        };
+
+        new StringEncoderPreprocessor<Integer, String[]>(
+            encodingValues(),
+            (k, v) -> v,
+            handledIndices()).apply(0, data[0]);
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private Map<String, Integer>[] encodingValues() {
+        return new HashMap[] {
+            new HashMap<String, Integer>() {
+                {
+                    put("1", 1);
+                    put("2", 0);
+                }
+            }, new HashMap<String, Integer>() {
+            {
+                put("Moscow", 0);
+            }
+        }, new HashMap<String, Integer>() {
+            {
+                put("A", 1);
+                put("B", 0);
+            }
+        }};
+    }
+
+    /** */
+    private Set<Integer> handledIndices() {
+        return new HashSet<Integer>() {
+            {
+                add(0);
+                add(1);
+                add(2);
+            }
+        };
     }
 }
