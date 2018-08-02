@@ -62,6 +62,9 @@ class GridServiceMethodReflectKey {
         if (this == o)
             return true;
 
+        if (!(o instanceof GridServiceMethodReflectKey))
+            return false;
+
         GridServiceMethodReflectKey key = (GridServiceMethodReflectKey)o;
 
         return mtdName.equals(key.mtdName) && Arrays.equals(argTypes, key.argTypes);

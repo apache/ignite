@@ -202,6 +202,9 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> 
         if (this == o)
             return true;
 
+        if (!(o instanceof GridDhtPartitionFullMap))
+            return false;
+
         GridDhtPartitionFullMap other = (GridDhtPartitionFullMap)o;
 
         return other.nodeId.equals(nodeId) && other.updateSeq == updateSeq;
