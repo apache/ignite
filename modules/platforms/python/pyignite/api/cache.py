@@ -189,17 +189,21 @@ class Cache:
 
     @status_to_exception(CacheError)
     def get_and_put(self, key, value, key_hint=None, value_hint=None):
-        return cache_get_and_put(
+        result = cache_get_and_put(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def get_and_put_if_absent(
         self, key, value, key_hint=None, value_hint=None
     ):
-        return cache_get_and_put_if_absent(
+        result = cache_get_and_put_if_absent(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def put_if_absent(self, key, value, key_hint=None, value_hint=None):
@@ -209,13 +213,19 @@ class Cache:
 
     @status_to_exception(CacheError)
     def get_and_remove(self, key, key_hint=None):
-        return cache_get_and_remove(self._conn, self._cache_id, key, key_hint)
+        result = cache_get_and_remove(
+            self._conn, self._cache_id, key, key_hint
+        )
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def get_and_replace(self, key, value, key_hint=None, value_hint=None):
-        return cache_get_and_replace(
+        result = cache_get_and_replace(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def remove_key(self, key, key_hint=None):
