@@ -249,10 +249,31 @@ class Cache:
     def get_size(self, peek_modes=0):
         return cache_get_size(self._conn, self._cache_id, peek_modes)
 
-    @status_to_exception(CacheError)
-    def scan(self, page_size: int, partitions: int=-1, local: bool=False):
-        return scan(self._conn, self._cache_id, page_size, partitions, local)
+    def scan(self, page_size: int=1, partitions: int=-1, local: bool=False):
+        """
+        Returns all key-value pairs from the cache, similar to `get_all`, but
+        with internal pagination, which is slower, but safer.
 
-    @status_to_exception(CacheError)
-    def scan_cursor_get_page(self, cursor: int):
-        return scan_cursor_get_page(self._conn, cursor)
+        :param page_size: (optional) page size. Default size is 1 (slowest
+         and safest),
+        :param partitions: (optional) number of partitions to query
+         (negative to query entire cache),
+        :param local: (optional) pass True if this query should be executed
+         on local node only. Defaults to False,
+        :return: generator with key-value pairs.
+        """
+        result = scan(self._conn, self._cache_id, page_size, partitions, local)
+        if result.status != 0:
+            raise CacheError(result.message)
+
+        cursor = result.value['cursor']
+        for k, v in result.value['data'].items():
+            yield k, v
+
+        while result.value['more']:
+            result = scan_cursor_get_page(self._conn, cursor)
+            if result.status != 0:
+                raise CacheError(result.message)
+
+            for k, v in result.value['data'].items():
+                yield k, v

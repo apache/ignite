@@ -16,6 +16,8 @@
 from collections import OrderedDict
 from decimal import Decimal
 
+import pytest
+
 from pyignite.datatypes import (
     BinaryObject, BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
@@ -101,3 +103,37 @@ def test_get_binary_type(conn):
     binary_type_info = conn.get_binary_type('TestBinaryType')
     assert len(binary_type_info['binary_fields']) == 5
     assert len(binary_type_info['schema']) == 3
+
+
+@pytest.mark.parametrize('page_size', range(1, 17, 5))
+def test_cache_scan(conn, page_size):
+    test_data = {
+        1: 'This is a test',
+        2: 'One more test',
+        3: 'Foo',
+        4: 'Buzz',
+        5: 'Bar',
+        6: 'Lorem ipsum',
+        7: 'dolor sit amet',
+        8: 'consectetur adipiscing elit',
+        9: 'Nullam aliquet',
+        10: 'nisl at ante',
+        11: 'suscipit',
+        12: 'ut cursus',
+        13: 'metus interdum',
+        14: 'Nulla tincidunt',
+        15: 'sollicitudin iaculis',
+    }
+
+    cache = conn.create_cache('my_oop_cache')
+    cache.put_all(test_data)
+
+    gen = cache.scan(page_size=page_size)
+    received_data = []
+    for k, v in gen:
+        assert k in test_data.keys()
+        assert v in test_data.values()
+        received_data.append((k, v))
+    assert len(received_data) == len(test_data)
+
+    cache.destroy()
