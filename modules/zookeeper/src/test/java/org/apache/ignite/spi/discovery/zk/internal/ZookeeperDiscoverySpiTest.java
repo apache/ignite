@@ -2397,49 +2397,41 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLargeUserAttribute3() throws Exception {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        Set<Integer> idxs = ThreadLocalRandom.current()
+            .ints(0, 10)
+            .distinct()
+            .limit(3)
+            .boxed()
+            .collect(Collectors.toSet());
 
-        int maxAttrMemory = 450; // MB
-
-        int attrSize = 0;
-
-        int nodes = 0;
-
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < 10; i++) {
             info("Iteration: " + i);
 
-            if (rnd.nextBoolean())
-                attrSize += initLargeAttribute();
+            if (idxs.contains(i))
+                initLargeAttribute();
             else
                 userAttrs = null;
-
-            if (attrSize * ((nodes + 1) << 1) > maxAttrMemory)
-                break;
 
             clientMode(i > 5);
 
             startGrid(i);
-
-            nodes++;
         }
 
-        waitForTopology(nodes);
+        waitForTopology(10);
     }
 
     /**
-     * @return approximate attribute size in MB.
+     *
      */
-    private int initLargeAttribute() {
+    private void initLargeAttribute() {
         userAttrs = new HashMap<>();
 
-        int[] attr = new int[1024 * 1024 + ThreadLocalRandom.current().nextInt(1024)];
+        int[] attr = new int[1024 * 1024 + ThreadLocalRandom.current().nextInt(1024 * 512)];
 
         for (int i = 0; i < attr.length; i++)
             attr[i] = i;
 
         userAttrs.put("testAttr", attr);
-
-        return (attr.length * 4) / (1 << 20);
     }
 
     /**
