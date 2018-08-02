@@ -15,11 +15,11 @@
 
 import socket
 import ssl
-from typing import Union
+from typing import Iterable, Union
 
 from pyignite.constants import *
 from pyignite.exceptions import (
-    BinaryTypeError, ParameterError, SocketError, SocketWriteError,
+    BinaryTypeError, ParameterError, SocketError, SocketWriteError, SQLError,
 )
 from pyignite.utils import status_to_exception
 from .handshake import HandshakeRequest, read_response
@@ -274,6 +274,86 @@ class Connection:
         from pyignite.api.cache import Cache
 
         return Cache(self, settings, with_get=True)
+
+    def sql(
+        self, query_str: str, page_size: int=1, query_args: Iterable=None,
+        schema: Union[int, str]='PUBLIC',
+        statement_type: int=0, distributed_joins: bool=False,
+        local: bool=False, replicated_only: bool=False,
+        enforce_join_order: bool=False, collocated: bool=False,
+        lazy: bool=False, include_field_names: bool=False,
+        max_rows: int=-1, timeout: int=0,
+    ):
+        """
+        Runs an SQL query and returns its result.
+
+        :param query_str: SQL query string,
+        :param page_size: cursor page size,
+        :param query_args: (optional) query arguments. List of values or
+         (value, type hint) tuples,
+        :param schema: (optional) schema for the query. Defaults to `PUBLIC`,
+        :param statement_type: (optional) statement type. Can be:
+
+         * StatementType.ALL − any type (default),
+         * StatementType.SELECT − select,
+         * StatementType.UPDATE − update.
+
+        :param distributed_joins: (optional) distributed joins. Defaults
+         to False,
+        :param local: (optional) pass True if this query should be executed
+         on local node only. Defaults to False,
+        :param replicated_only: (optional) whether query contains only
+         replicated tables or not. Defaults to False,
+        :param enforce_join_order: (optional) enforce join order. Defaults
+         to False,
+        :param collocated: (optional) whether your data is co-located or not.
+         Defaults to False,
+        :param lazy: (optional) lazy query execution. Defaults to False,
+        :param include_field_names: (optional) include field names in result.
+         Defaults to False,
+        :param max_rows: (optional) query-wide maximum of rows. Defaults to -1
+         (all rows),
+        :param timeout: (optional) non-negative timeout value in ms.
+         Zero disables timeout (default),
+        :return: generator with result rows as a lists. If
+         `include_field_names` was set, the first row will hold field names.
+        """
+        from pyignite.api.sql import sql_fields, sql_fields_cursor_get_page
+
+        def generate_result(value):
+            cursor = value['cursor']
+            more = value['more']
+
+            if include_field_names:
+                yield value['fields']
+                field_count = len(value['fields'])
+            else:
+                field_count = value['field_count']
+            for line in value['data']:
+                yield line
+
+            while more:
+                inner_result = sql_fields_cursor_get_page(
+                    self, cursor, field_count
+                )
+                if inner_result.status != 0:
+                    raise SQLError(result.message)
+                more = inner_result.value['more']
+                for line in inner_result.value['data']:
+                    yield line
+
+        schema = self.get_or_create_cache(schema)
+        result = sql_fields(
+            self, schema.cache_id, query_str,
+            page_size, query_args, schema.name,
+            statement_type, distributed_joins, local, replicated_only,
+            enforce_join_order, collocated, lazy, include_field_names,
+            max_rows, timeout,
+        )
+        if result.status != 0:
+            raise SQLError(result.message)
+
+        return generate_result(result.value)
 
     def close(self):
         """

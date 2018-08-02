@@ -110,6 +110,9 @@ class Cache:
 
     @property
     def name(self) -> str:
+        if self._name is None:
+            self._name = self.settings[prop_codes.PROP_NAME]
+
         return self._name
 
     @property

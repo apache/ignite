@@ -40,3 +40,7 @@ class BinaryTypeError(CacheError):
 
 class CacheCreationError(CacheError):
     pass
+
+
+class SQLError(CacheError):
+    pass
