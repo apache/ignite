@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -954,6 +955,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         /** */
         private volatile UUID routineId;
 
+        /** */
+        private volatile JCacheQueryLocalListener locLsnr;
+
         /**
          * @param cfg Listener configuration.
          * @param onStart {@code True} if executed on cache start.
@@ -989,7 +993,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             final byte types0 = types;
 
-            final CacheEntryUpdatedListener locLsnr = new JCacheQueryLocalListener(
+            locLsnr = new JCacheQueryLocalListener(
                 locLsnrImpl,
                 log);
 
@@ -1063,13 +1067,15 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cctx.kernalContext().continuous().stopRoutine(routineId0).get();
 
             cctx.config().removeCacheEntryListenerConfiguration(cfg);
+
+            U.closeQuiet(locLsnr);
         }
     }
 
     /**
      *
      */
-    static class JCacheQueryLocalListener<K, V> implements CacheEntryUpdatedListener<K, V> {
+    static class JCacheQueryLocalListener<K, V> implements CacheEntryUpdatedListener<K, V>, Closeable {
         /** */
         final CacheEntryListener<K, V> impl;
 
@@ -1153,6 +1159,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
          */
         protected boolean async() {
             return U.hasAnnotation(impl, IgniteAsyncCallback.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            if (impl instanceof Closeable)
+                U.closeQuiet((Closeable)impl);
         }
     }
 
