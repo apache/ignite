@@ -23,11 +23,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -35,28 +33,31 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * MinMaxScalerTrainer and NormalizationTrainer are used in this example due to different values distribution in columns and rows.
+ * Let's add two categorial features "sex", "embarked" to predict more precisely.
+ *
+ * To encode categorial features the StringEncoderTrainer will be used.
  */
-public class Step_5_Scaling {
+public class Step_3_Categorial_with_One_Hot_Encoder {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_5_Scaling.class.getSimpleName(), () -> {
+                Step_3_Categorial_with_One_Hot_Encoder.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                        = (k, v) -> new Object[]{v[0], v[3], v[5], v[6], v[10]
+                    }; // "pclass", "sibsp", "parch", "sex", "embarked"
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
-                        .withEncoderType(EncoderType.STRING_ENCODER)
+                    IgniteBiFunction<Integer, Object[], Vector> oneHotEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                        .withEncoderType(EncoderType.ONE_HOT_ENCODER)
+                        .encodeFeature(0)
                         .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here
+                        .encodeFeature(4)
                         .fit(ignite,
                             dataCache,
                             featureExtractor
@@ -65,24 +66,8 @@ public class Step_5_Scaling {
                     IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
-                            strEncoderPreprocessor
+                            oneHotEncoderPreprocessor
                         );
-
-
-                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
-                        .fit(
-                        ignite,
-                        dataCache,
-                        imputingPreprocessor
-                    );
-
-                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                        .withP(1)
-                        .fit(
-                        ignite,
-                        dataCache,
-                        minMaxScalerPreprocessor
-                    );
 
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
@@ -90,14 +75,14 @@ public class Step_5_Scaling {
                     DecisionTreeNode mdl = trainer.fit(
                         ignite,
                         dataCache,
-                        normalizationPreprocessor,
+                        imputingPreprocessor,
                         lbExtractor
                     );
 
                     double accuracy = Evaluator.evaluate(
                         dataCache,
                         mdl,
-                        normalizationPreprocessor,
+                        imputingPreprocessor,
                         lbExtractor,
                         new Accuracy<>()
                     );
@@ -111,6 +96,7 @@ public class Step_5_Scaling {
             });
 
             igniteThread.start();
+
             igniteThread.join();
         }
     }
