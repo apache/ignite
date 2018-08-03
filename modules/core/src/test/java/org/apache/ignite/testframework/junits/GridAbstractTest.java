@@ -1327,6 +1327,8 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, String springCfgPath) throws Exception {
         IgniteConfiguration cfg = loadConfiguration(springCfgPath);
 
+        cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
+
         cfg.setGridLogger(getTestResources().getLogger());
 
         return startGrid(igniteInstanceName, cfg);
