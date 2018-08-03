@@ -17,15 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
+import javax.management.InvalidAttributeValueException;
+import javax.management.ListenerNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.NotCompliantMBeanException;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
+import javax.management.ObjectInstance;
+import javax.management.ObjectName;
+import javax.management.OperationsException;
+import javax.management.QueryExp;
+import javax.management.ReflectionException;
+import javax.management.loading.ClassLoaderRepository;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -59,6 +83,9 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
     /** */
     private static final int PARTITION_COUNT = 16;
+
+    /** Failure MBean server. */
+    private static FailureMBeanServer mbSrv;
 
     /** Coordinator node index. */
     private int crdIdx = 0;
@@ -292,6 +319,20 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     }
 
     /**
+     * Tests cache start that throws an Ignite checked exception on initiator node.
+     */
+    public void testThrowsIgniteCheckedExceptionOnInitiator() {
+        final int unluckyNode = 1;
+        final int unluckyCfg = 1;
+        final int numOfCaches = 3;
+        final int initiator = 1;
+
+        testDynamicCacheStart(
+            createCacheConfigsWithFailureMbServer(unluckyNode, unluckyCfg, numOfCaches),
+            initiator);
+    }
+
+    /**
      * Tests cache start with broken cache store that throws an exception on non-initiator node.
      */
     public void testBrokenCacheStoreOnNonInitiator() {
@@ -304,6 +345,20 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
                 failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
+            initiator);
+    }
+
+    /**
+     * Tests cache start that throws an Ignite checked exception on non-initiator node.
+     */
+    public void testThrowsIgniteCheckedExceptionOnNonInitiator() {
+        final int unluckyNode = 1;
+        final int unluckyCfg = 1;
+        final int numOfCaches = 3;
+        final int initiator = 2;
+
+        testDynamicCacheStart(
+            createCacheConfigsWithFailureMbServer(unluckyNode, unluckyCfg, numOfCaches),
             initiator);
     }
 
@@ -324,6 +379,21 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     }
 
     /**
+     *  Tests cache start that throws an Ignite checked exception on coordinator node
+     *  that doesn't initiator node.
+     */
+    public void testThrowsIgniteCheckedExceptionOnCoordinatorDiffInitiator() {
+        final int unluckyNode = crdIdx;
+        final int unluckyCfg = 1;
+        final int numOfCaches = 3;
+        final int initiator = (crdIdx + 1) % gridCount();
+
+        testDynamicCacheStart(
+            createCacheConfigsWithFailureMbServer(unluckyNode, unluckyCfg, numOfCaches),
+            initiator);
+    }
+
+    /**
      *  Tests cache start with broken cache store that throws an exception on coordinator node.
      */
     public void testBrokenCacheStoreFunOnCoordinator() {
@@ -336,6 +406,20 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         testDynamicCacheStart(
             createCacheConfigsWithBrokenCacheStore(
                 failOnAllNodes, unluckyNode, unluckyCfg, numOfCaches, false),
+            initiator);
+    }
+
+    /**
+     *  Tests cache start that throws an Ignite checked exception on coordinator node.
+     */
+    public void testThrowsIgniteCheckedExceptionOnCoordinator() {
+        final int unluckyNode = crdIdx;
+        final int unluckyCfg = 1;
+        final int numOfCaches = 3;
+        final int initiator = crdIdx;
+
+        testDynamicCacheStart(
+            createCacheConfigsWithFailureMbServer(unluckyNode, unluckyCfg, numOfCaches),
             initiator);
     }
 
@@ -381,9 +465,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         // Correct the cache configuration. Default constructor creates a good affinity function.
         cfg.setAffinity(new BrokenAffinityFunction());
 
-        IgniteCache<Integer, Value> cache = grid(0).getOrCreateCache(createCacheConfiguration(EXISTING_CACHE_NAME));
-
-        checkCacheOperations(cache);
+        checkCacheOperations(grid(0).getOrCreateCache(cfg));
     }
 
     /**
@@ -534,6 +616,30 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration res = super.getConfiguration(igniteInstanceName);
+
+        if (mbSrv == null)
+            mbSrv = new FailureMBeanServer(res.getMBeanServer());
+
+        res.setMBeanServer(mbSrv);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        mbSrv.clear();
+
+        for (String cacheName : grid(0).cacheNames()) {
+            if (!(EXISTING_CACHE_NAME.equals(cacheName) || DEFAULT_CACHE_NAME.equals(cacheName)))
+                grid(0).cache(cacheName).destroy();
+        }
+    }
+
     /**
      * Creates new cache configuration with the given name.
      *
@@ -626,6 +732,42 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             cfgs.add(cfg);
         }
+
+        return cfgs;
+    }
+
+    /**
+     * Create list of cache configurations.
+     *
+     * @param unluckyNode Node, where exception is raised.
+     * @param unluckyCfg Unlucky cache configuration number.
+     * @param cacheNum Number of caches.
+     *
+     * @return List of cache configurations.
+     */
+    private List<CacheConfiguration> createCacheConfigsWithFailureMbServer(
+        int unluckyNode,
+        int unluckyCfg,
+        int cacheNum
+    ) {
+        assert unluckyCfg >= 0 && unluckyCfg < cacheNum;
+
+        List<CacheConfiguration> cfgs = new ArrayList<>();
+
+        for (int i = 0; i < cacheNum; ++i) {
+            CacheConfiguration cfg = new CacheConfiguration();
+
+            String cacheName = DYNAMIC_CACHE_NAME + "-" + i;
+
+            cfg.setName(cacheName);
+
+            if (i == unluckyCfg)
+                mbSrv.cache(cacheName);
+
+            cfgs.add(cfg);
+        }
+
+        mbSrv.node(getTestIgniteInstanceName(unluckyNode));
 
         return cfgs;
     }
@@ -770,6 +912,251 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
                     + ignite.cluster().localNode().id() + "]");
             else
                 return null;
+        }
+    }
+
+    /** Failure MBean server. */
+    private class FailureMBeanServer implements MBeanServer {
+        /** */
+        private final MBeanServer origin;
+
+        /** Set of caches that must be failure. */
+        private final Set<String> caches = new HashSet<>();
+
+        /** Set of nodes that must be failure. */
+        private final Set<String> nodes = new HashSet<>();
+
+        /** */
+        private FailureMBeanServer(MBeanServer origin) {
+            this.origin = origin;
+        }
+
+        /** Add cache name to failure set. */
+        void cache(String cache) {
+            caches.add('\"' + cache + '\"');
+        }
+
+        /** Add node name to failure set. */
+        void node(String node) {
+            nodes.add(node);
+        }
+
+        /** Clear failure set of caches and set of nodes. */
+        void clear() {
+            caches.clear();
+            nodes.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectInstance registerMBean(Object obj, ObjectName name)
+            throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException {
+            String node = name.getKeyProperty("igniteInstanceName");
+
+            if (nodes.contains(node) && caches.contains(name.getKeyProperty("group")))
+                throw new MBeanRegistrationException(new Exception("Simulate exception [node=" + node + ']'));
+
+            return origin.registerMBean(obj, name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectInstance createMBean(String clsName, ObjectName name)
+            throws ReflectionException, InstanceAlreadyExistsException, MBeanException, NotCompliantMBeanException {
+            return origin.createMBean(clsName, name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectInstance createMBean(String clsName, ObjectName name, ObjectName ldrName)
+            throws ReflectionException, InstanceAlreadyExistsException,
+            MBeanException, NotCompliantMBeanException, InstanceNotFoundException {
+            return origin.createMBean(clsName, name, ldrName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectInstance createMBean(String clsName, ObjectName name, Object[] params,
+            String[] signature) throws ReflectionException, InstanceAlreadyExistsException,
+            MBeanException, NotCompliantMBeanException {
+            return origin.createMBean(clsName, name, params, signature);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectInstance createMBean(String clsName, ObjectName name, ObjectName ldrName,
+            Object[] params, String[] signature) throws ReflectionException, InstanceAlreadyExistsException,
+            MBeanException, NotCompliantMBeanException, InstanceNotFoundException {
+            return origin.createMBean(clsName, name, ldrName, params, signature);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unregisterMBean(ObjectName name) throws InstanceNotFoundException, MBeanRegistrationException {
+            origin.unregisterMBean(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectInstance getObjectInstance(ObjectName name) throws InstanceNotFoundException {
+            return origin.getObjectInstance(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<ObjectInstance> queryMBeans(ObjectName name, QueryExp qry) {
+            return origin.queryMBeans(name, qry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<ObjectName> queryNames(ObjectName name, QueryExp qry) {
+            return origin.queryNames(name, qry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRegistered(ObjectName name) {
+            return origin.isRegistered(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer getMBeanCount() {
+            return origin.getMBeanCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getAttribute(ObjectName name, String attribute)
+            throws MBeanException, AttributeNotFoundException, InstanceNotFoundException, ReflectionException {
+            return origin.getAttribute(name, attribute);
+        }
+
+        /** {@inheritDoc} */
+        @Override public AttributeList getAttributes(ObjectName name,
+            String[] attrs) throws InstanceNotFoundException, ReflectionException {
+            return origin.getAttributes(name, attrs);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setAttribute(ObjectName name,
+            Attribute attribute) throws InstanceNotFoundException, AttributeNotFoundException,
+            InvalidAttributeValueException, MBeanException, ReflectionException {
+            origin.setAttribute(name, attribute);
+        }
+
+        /** {@inheritDoc} */
+        @Override public AttributeList setAttributes(ObjectName name,
+            AttributeList attrs) throws InstanceNotFoundException, ReflectionException {
+            return origin.setAttributes(name, attrs);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(ObjectName name, String operationName, Object[] params,
+            String[] signature) throws InstanceNotFoundException, MBeanException, ReflectionException {
+            return origin.invoke(name, operationName, params, signature);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getDefaultDomain() {
+            return origin.getDefaultDomain();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getDomains() {
+            return origin.getDomains();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addNotificationListener(ObjectName name, NotificationListener lsnr,
+            NotificationFilter filter, Object handback) throws InstanceNotFoundException {
+            origin.addNotificationListener(name, lsnr, filter, handback);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addNotificationListener(ObjectName name, ObjectName lsnr,
+            NotificationFilter filter, Object handback) throws InstanceNotFoundException {
+            origin.addNotificationListener(name, lsnr, filter, handback);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ObjectName name,
+            ObjectName lsnr) throws InstanceNotFoundException, ListenerNotFoundException {
+            origin.removeNotificationListener(name, lsnr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ObjectName name, ObjectName lsnr,
+            NotificationFilter filter, Object handback) throws InstanceNotFoundException, ListenerNotFoundException {
+            origin.removeNotificationListener(name, lsnr, filter, handback);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ObjectName name,
+            NotificationListener lsnr) throws InstanceNotFoundException, ListenerNotFoundException {
+            origin.removeNotificationListener(name, lsnr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNotificationListener(ObjectName name, NotificationListener lsnr,
+            NotificationFilter filter, Object handback) throws InstanceNotFoundException, ListenerNotFoundException {
+            origin.removeNotificationListener(name, lsnr, filter, handback);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MBeanInfo getMBeanInfo(
+            ObjectName name) throws InstanceNotFoundException, IntrospectionException, ReflectionException {
+            return origin.getMBeanInfo(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInstanceOf(ObjectName name, String clsName) throws InstanceNotFoundException {
+            return origin.isInstanceOf(name, clsName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object instantiate(String clsName) throws ReflectionException, MBeanException {
+            return origin.instantiate(clsName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object instantiate(String clsName,
+            ObjectName ldrName) throws ReflectionException, MBeanException, InstanceNotFoundException {
+            return origin.instantiate(clsName, ldrName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object instantiate(String clsName, Object[] params,
+            String[] signature) throws ReflectionException, MBeanException {
+            return origin.instantiate(clsName, params, signature);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object instantiate(String clsName, ObjectName ldrName, Object[] params,
+            String[] signature) throws ReflectionException, MBeanException, InstanceNotFoundException {
+            return origin.instantiate(clsName, ldrName, params, signature);
+        }
+
+        /** {@inheritDoc} */
+        @Override @Deprecated public ObjectInputStream deserialize(ObjectName name, byte[] data)
+            throws OperationsException {
+            return origin.deserialize(name, data);
+        }
+
+        /** {@inheritDoc} */
+        @Override @Deprecated public ObjectInputStream deserialize(String clsName, byte[] data)
+            throws OperationsException, ReflectionException {
+            return origin.deserialize(clsName, data);
+        }
+
+        /** {@inheritDoc} */
+        @Override @Deprecated public ObjectInputStream deserialize(String clsName, ObjectName ldrName, byte[] data)
+            throws OperationsException, ReflectionException {
+            return origin.deserialize(clsName, ldrName, data);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClassLoader getClassLoaderFor(ObjectName mbeanName) throws InstanceNotFoundException {
+            return origin.getClassLoaderFor(mbeanName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClassLoader getClassLoader(ObjectName ldrName) throws InstanceNotFoundException {
+            return origin.getClassLoader(ldrName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClassLoaderRepository getClassLoaderRepository() {
+            return origin.getClassLoaderRepository();
         }
     }
 }

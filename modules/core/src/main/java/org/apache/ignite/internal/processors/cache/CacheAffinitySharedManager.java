@@ -880,12 +880,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                    "[cacheName=" + req.cacheName() + ']', e);
-
-                cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
-
-                cctx.cache().completeCacheStartFuture(req, false, e);
+                if (cctx.localNode().isClient()) {
+                    U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                        "[cacheName=" + req.cacheName() + ']', e);
+                    cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
+                    cctx.cache().completeCacheStartFuture(req, false, e);
+                }
+                else
+                    throw e;
             }
         }
 
