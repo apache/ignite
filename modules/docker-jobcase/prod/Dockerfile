@@ -89,6 +89,9 @@ ENV JVM_METASPACE_SIZE 1g
 ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044"
 ENV JVM_DEBUG_PORT 1044
 
+# other things to pass to JVM without needing to restate default values.
+ENV JVM_ADDITIONAL_OPTS ""
+
 # Ignite common JVM settings.   Run.sh will concatenate the above settings.
 ENV JVM_OPTS="-server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC"
 
