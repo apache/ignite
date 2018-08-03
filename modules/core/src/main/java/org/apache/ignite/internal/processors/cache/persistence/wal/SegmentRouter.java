@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
+package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
 
@@ -21,6 +20,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDe
  * Class for manage of segment location.
  */
 public class SegmentRouter {
+    /** */
     private static final String ZIP_SUFFIX = ".zip";
     /** */
     private File walWorkDir;
@@ -34,16 +34,18 @@ public class SegmentRouter {
     /** */
     private DataStorageConfiguration dsCfg;
 
-    protected final FileIOFactory ioFactory;
-
+    /**
+     * @param walWorkDir WAL work directory.
+     * @param walArchiveDir WAL archive directory.
+     * @param segmentAware Holder of actual information of latest manipulation on WAL segments.
+     * @param dsCfg Data storage configuration.
+     */
     public SegmentRouter(File walWorkDir, File walArchiveDir,
-        SegmentAware segmentAware, DataStorageConfiguration dsCfg,
-        FileIOFactory ioFactory) {
+        SegmentAware segmentAware, DataStorageConfiguration dsCfg) {
         this.walWorkDir = walWorkDir;
         this.walArchiveDir = walArchiveDir;
         this.segmentAware = segmentAware;
         this.dsCfg = dsCfg;
-        this.ioFactory = ioFactory;
     }
 
     /**

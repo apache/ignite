@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
+package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import java.util.NavigableMap;
 import java.util.TreeMap;

@@ -93,9 +93,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentAware;
-import org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentRouter;
+import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -281,6 +284,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private volatile FileIOFactory ioFactory;
 
+    /** Factory to provide I/O interfaces for read primitives with files */
+    private final FileInputFactory fileInputFactory;
+
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
 
@@ -362,6 +368,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
         ioFactory = new RandomAccessFileIOFactory();
+        fileInputFactory = new SimpleFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
         failureProcessor = ctx.failure();
@@ -445,7 +452,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
 
-            segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg, ioFactory);
+            segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
             walDisableContext = cctx.walState().walDisableContext();
 
@@ -1160,7 +1167,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, new SimpleFileInputFactory() , absIdx).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, fileInputFactory, absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVer;
@@ -1570,6 +1577,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     // Stop the thread and report to starter.
                     cleanErr = e;
 
+                    segmentAware.forceInterrupt();
+
                     notifyAll();
                 }
 
@@ -1646,6 +1655,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         throw cleanErr;
 
                     return nextIdx;
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    if (cleanErr != null)
+                        throw cleanErr;
+
+                    throw e;
                 }
                 catch (InterruptedException e) {
                     interrupted.set(true);
@@ -1759,9 +1774,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private class FileCompressor extends Thread {
         /** Current thread stopping advice. */
         private volatile boolean stopped;
-
-        private final FileInputFactory FILE_INPUT_FACTORY = new SimpleFileInputFactory();
-
         /**
          *
          */
@@ -1891,7 +1903,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                segmentSerializerVer = readSegmentHeader(fileIO, FILE_INPUT_FACTORY, nextSegment).getSerializerVersion();
+                segmentSerializerVer = readSegmentHeader(fileIO, fileInputFactory, nextSegment).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -2737,6 +2749,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Nullable
         private FileWALPointer end;
 
+        /** Manager of segment location. */
         SegmentRouter segmentRouter;
 
         /**
@@ -2749,8 +2762,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param archiver File Archiver.
          * @param decompressor Decompressor.
          * @param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
-         * @param segmentAware
-         * @param segmentRouter
+         * @param segmentAware Segment aware.
+         * @param segmentRouter Segment router.
          */
         private RecordsIterator(
             GridCacheSharedContext cctx,

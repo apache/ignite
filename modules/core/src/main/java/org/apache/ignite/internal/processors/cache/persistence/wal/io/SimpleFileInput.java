@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.jetbrains.annotations.NotNull;
 
 /**

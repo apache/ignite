@@ -40,9 +40,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SimpleFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
@@ -65,6 +65,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Factory to provide I/O interfaces for read primitives with files. */
+    private static final FileInputFactory FILE_INPUT_FACTORY = new SimpleFileInputFactory();
     /**
      * File descriptors remained to scan.
      * <code>null</code> value means directory scan mode
@@ -78,7 +81,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
 
-    private static final FileInputFactory fileInputFactory  = new SimpleFileInputFactory();
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
@@ -105,7 +107,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
             initialReadBufferSize,
-            fileInputFactory
+            FILE_INPUT_FACTORY
         );
 
         this.keepBinary = keepBinary;
@@ -180,7 +182,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             try {
                 FileIO fileIO = fd.isCompressed() ? new UnzipFileIO(fd.file()) : ioFactory.create(fd.file());
 
-                readSegmentHeader(fileIO, fileInputFactory, curWalSegmIdx);
+                readSegmentHeader(fileIO, FILE_INPUT_FACTORY, curWalSegmIdx);
 
                 break;
             }

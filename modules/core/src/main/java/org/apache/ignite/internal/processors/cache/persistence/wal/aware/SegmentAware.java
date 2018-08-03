@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
+package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentArchivedStorage.buildArchivedStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentCompressStorage.buildCompressStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.segment.SegmentCurrentStateStorage.buildCurrentStateStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCompressStorage.buildCompressStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCurrentStateStorage.buildCurrentStateStorage;
 
 /**
  * Holder of actual information of latest manipulation on WAL segments.
@@ -221,5 +221,16 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrentStateStorage.interrupt();
+    }
+
+    /**
+     * Interrupt waiting on related objects.
+     */
+    public void forceInterrupt() {
+        segmentArchivedStorage.interrupt();
+
+        segmentCompressStorage.interrupt();
+
+        segmentCurrentStateStorage.forceInterrupt();
     }
 }

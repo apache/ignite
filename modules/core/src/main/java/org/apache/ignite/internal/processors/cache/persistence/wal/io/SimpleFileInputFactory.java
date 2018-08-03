@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 
 /**
  * Simple implementation of {@link FileInputFactory}.

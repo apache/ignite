@@ -7,11 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.jetbrains.annotations.NotNull;

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
+package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import java.util.ArrayList;
 import java.util.List;

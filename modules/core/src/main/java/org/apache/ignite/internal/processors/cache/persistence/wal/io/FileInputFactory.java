@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 
 /**
- * Factory for {@link FileInput}.
+ * Factory to provide I/O interfaces for read primitives with files.
  */
 public interface FileInputFactory {
     /**
@@ -21,7 +22,7 @@ public interface FileInputFactory {
      * @param fileIO FileIO of segment for reading.
      * @param buf ByteBuffer wrapper for dynamically expand buffer size.
      * @return Instance of {@link FileInput}.
-     * @throws IOException
+     * @throws IOException If have some trouble with I/O.
      */
     FileInput createFileInput(long segmentId, FileIO fileIO, ByteBufferExpander buf) throws IOException;
 }

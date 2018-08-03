@@ -27,6 +27,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
@@ -71,7 +73,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         File archiveDir,
         CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
-        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleFileInputFactory() );
+        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleFileInputFactory());
 
         curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;

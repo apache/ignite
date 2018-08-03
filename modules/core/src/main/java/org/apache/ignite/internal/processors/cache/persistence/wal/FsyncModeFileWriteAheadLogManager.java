@@ -88,6 +88,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
@@ -235,6 +238,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Factory to provide I/O interfaces for read/write operations with files */
     private volatile FileIOFactory ioFactory;
 
+    /** Factory to provide I/O interfaces for read primitives with files */
+    private final FileInputFactory fileInputFactory;
+
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FsyncModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
         AtomicReferenceFieldUpdater.newUpdater(FsyncModeFileWriteAheadLogManager.class, FileWriteHandle.class, "currentHnd");
@@ -317,6 +323,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
         ioFactory = dsCfg.getFileIOFactory();
+        fileInputFactory = new SimpleFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
 
@@ -1092,7 +1099,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, new SimpleFileInputFactory(), absIdx).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, fileInputFactory, absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
@@ -1733,7 +1740,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends Thread {
-        private final FileInputFactory FILE_INPUT_FACTORY = new SimpleFileInputFactory();
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1909,7 +1915,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                segmentSerializerVer = readSegmentHeader(fileIO, FILE_INPUT_FACTORY  , nextSegment).getSerializerVersion();
+                segmentSerializerVer = readSegmentHeader(fileIO, fileInputFactory, nextSegment).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {

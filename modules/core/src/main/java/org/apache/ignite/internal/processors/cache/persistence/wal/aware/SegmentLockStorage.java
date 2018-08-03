@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.segment;
+package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import java.util.HashMap;
 import java.util.Map;

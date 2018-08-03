@@ -30,6 +30,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -85,6 +87,7 @@ public abstract class AbstractWalRecordsIterator
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
 
+    /** Factory to provide I/O interfaces for read primitives with files. */
     private final FileInputFactory fileInputFactory;
 
     /**
@@ -93,7 +96,7 @@ public abstract class AbstractWalRecordsIterator
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param initialReadBufferSize buffer for reading records size.
-     * @param fileInputFactory
+     * @param fileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
@@ -308,7 +311,6 @@ public abstract class AbstractWalRecordsIterator
                 return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
-                log.error("io exception " , ignore);
                 try {
                     fileIO.close();
                 }
