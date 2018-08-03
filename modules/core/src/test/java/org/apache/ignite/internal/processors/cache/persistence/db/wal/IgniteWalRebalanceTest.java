@@ -416,6 +416,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cache.put(k, new IndexedObject(k - 1));
         }
 
+        forceCheckpoint();
+
         stopAllGrids();
 
         // Rewrite data to trigger further rebalance.
@@ -427,6 +429,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
 
         final int groupId = supplierNode.cachex(CACHE_NAME).context().groupId();
 
