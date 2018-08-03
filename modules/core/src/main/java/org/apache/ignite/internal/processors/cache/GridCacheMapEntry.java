@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -1110,9 +1111,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert tx.local() && updateCntr == null || !tx.local() && updateCntr != null && updateCntr > 0;
 
-            if (tx.local())
+            if (tx.local()) {
                 updateCntr = nextMvccPartitionCounter();
 
+                // TODO check condition
+                if (res.resultType() == ResultType.PREV_NULL)
+                    ((IgniteTxLocalEx)tx).accumulateSizeDelta(cctx.cacheId(), partition(), 1);
+
+            }
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                         cctx.cacheId(),
@@ -1201,8 +1207,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert tx.local() && updateCntr == null || !tx.local() && updateCntr != null && updateCntr > 0;
 
-            if (tx.local())
+            if (tx.local()) {
                 updateCntr = nextMvccPartitionCounter();
+
+                // TODO check condition
+                if (res.resultType() == ResultType.PREV_NOT_NULL)
+                    ((IgniteTxLocalEx)tx).accumulateSizeDelta(cctx.cacheId(), partition(), -1);
+            }
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, null, 0, updateCntr);

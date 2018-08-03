@@ -25,7 +25,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -56,8 +58,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -160,7 +164,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     private GridLongList mvccWaitTxs;
 
     /** Update counters map */
-    private Map<Integer, Map<Integer, Long>> updCntrs;
+    private ConcurrentMap<Integer, ConcurrentMap<Integer, Long>> updCntrs;
+
+    /** Size changes for caches and partitions made by current transaction */
+    private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
 
     /** */
     private volatile boolean qryEnlisted;
@@ -922,6 +929,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 updateLocalPartitionCounters();
 
+                updateLocalPartitionSizes();
+
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
             }
@@ -1552,13 +1561,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
-    /**
-     * @return Map of affected partitions: cacheId -> partId.
-     */
-    public Map<Integer, Set<Integer>> partsMap() {
-        return null;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),
@@ -1649,7 +1651,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Map<Integer, GridDhtPartitionsUpdateCountersMap> res = new HashMap<>();
 
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, ? extends Map<Integer, Long>> entry : updCntrs.entrySet()) {
             Map<Integer, Long> partsCntrs = entry.getValue();
 
             assert !F.isEmpty(partsCntrs);
@@ -1683,12 +1685,32 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (updCntrs == null)
             updCntrs = new ConcurrentHashMap<>();
 
-        Map<Integer, Long> partUpdCntrs = updCntrs.get(cacheId);
+        ConcurrentMap<Integer, Long> partUpdCntrs = updCntrs.get(cacheId);
 
         if (partUpdCntrs == null)
             updCntrs.put(cacheId, partUpdCntrs = new ConcurrentHashMap<>());
 
         partUpdCntrs.put(part, 0L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void accumulateSizeDelta(int cacheId, int part, long delta) {
+        ConcurrentMap<Integer, AtomicLong> partDeltas = sizeDeltas.get(cacheId);
+        if (partDeltas == null) {
+            ConcurrentMap<Integer, AtomicLong> partDeltas0 =
+                sizeDeltas.putIfAbsent(cacheId, partDeltas = new ConcurrentHashMap<>());
+            if (partDeltas0 != null)
+                partDeltas = partDeltas0;
+        }
+
+        AtomicLong accDelta = partDeltas.get(part);
+        if (accDelta == null) {
+            AtomicLong accDelta0 = partDeltas.putIfAbsent(part, accDelta = new AtomicLong());
+            if (accDelta0 != null)
+                accDelta = accDelta0;
+        }
+
+        accDelta.addAndGet(delta);
     }
 
     /**
@@ -1699,7 +1721,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (F.isEmpty(updCntrs))
             return;
 
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, ? extends Map<Integer, Long>> entry : updCntrs.entrySet()) {
             Map<Integer, Long> partsCntrs = entry.getValue();
 
             assert !F.isEmpty(partsCntrs);
@@ -1718,6 +1740,42 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 Long prev = partsCntrs.put(e.getKey(), cntr);
 
                 assert prev == 0L : prev;
+            }
+        }
+    }
+
+    private void updateLocalPartitionSizes() {
+        if (F.isEmpty(sizeDeltas))
+            return;
+
+        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+            Integer cacheId = entry.getKey();
+            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+
+            assert !F.isEmpty(partDeltas);
+
+            GridDhtPartitionTopology topology = cctx.cacheContext(cacheId).topology();
+
+            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
+                Integer p = e.getKey();
+                long delta = e.getValue().get();
+
+                GridDhtLocalPartition dhtPart = topology.localPartition(p);
+
+                assert dhtPart != null;
+
+                // TODO optimize and cleanup
+                IgniteCacheOffheapManagerImpl.CacheDataStoreImpl ds = (IgniteCacheOffheapManagerImpl.CacheDataStoreImpl)dhtPart.dataStore();
+                if (delta > 0) {
+                    for (int i = 0; i < delta; i++) {
+                        ds.incrementSize(cacheId);
+                    }
+                }
+                else {
+                    for (int i = 0; i < -delta; i++) {
+                        ds.decrementSize(cacheId);
+                    }
+                }
             }
         }
     }

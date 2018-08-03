@@ -115,6 +115,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
@@ -1387,7 +1388,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      *
      */
-    protected class CacheDataStoreImpl implements CacheDataStore {
+    // TODO change visibility back
+    public class CacheDataStoreImpl implements CacheDataStore {
         /** */
         private final int partId;
 
@@ -1449,7 +1451,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /**
          * @param cacheId Cache ID.
          */
-        void incrementSize(int cacheId) {
+        // TODO change visibility back
+        public void incrementSize(int cacheId) {
             storageSize.incrementAndGet();
 
             if (grp.sharedGroup()) {
@@ -1469,7 +1472,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /**
          * @param cacheId Cache ID.
          */
-        void decrementSize(int cacheId) {
+        // TODO change visibility back
+        public void decrementSize(int cacheId) {
             storageSize.decrementAndGet();
 
             if (grp.sharedGroup()) {
@@ -1927,8 +1931,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 boolean old = dataTree.putx(updateRow);
 
                 assert !old;
-
-                incrementSize(cctx.cacheId());
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
