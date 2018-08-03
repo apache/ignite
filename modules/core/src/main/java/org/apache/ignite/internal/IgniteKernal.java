@@ -4230,7 +4230,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
             registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
             registerExecutorMBean("GridIgfsExecutor", igfsExecSvc);
-            registerExecutorMBean("GridDataStreamExecutor", dataStreamExecSvc);
             registerExecutorMBean("GridAffinityExecutor", affExecSvc);
             registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
             registerExecutorMBean("GridQueryExecutor", qryExecSvc);
@@ -4249,6 +4248,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     new StripedExecutorMXBeanAdapter(stripedExecSvc),
                     StripedExecutorMXBean.class);
             }
+            
+            if (dataStreamExecSvc != null) {
+               // striped executor uses a custom adapter
+               registerMBean("Thread Pools",
+                   "GridDataStreamExecutor",
+                   new StripedExecutorMXBeanAdapter(dataStreamExecSvc),
+                   StripedExecutorMXBean.class);
+           }
+
 
             if (customExecSvcs != null) {
                 for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet())
