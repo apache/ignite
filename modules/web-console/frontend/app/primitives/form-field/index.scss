@@ -203,6 +203,7 @@
     &__control {
         overflow: visible;
         display: flex;
+        flex-direction: row;
         width: 100%;
 
         & > input::placeholder,
@@ -266,6 +267,27 @@
             &:after {
                 right: 36px;
             }
+        }
+    }
+
+    &__control-group {
+        input {
+            min-width: 0;
+            margin-right: -1px;
+
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+
+            &:focus {
+                z-index: 1;
+            }
+        }
+
+        input + * {
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+            flex: 0 0 auto;
+            width: 60px !important;
         }
     }
 
