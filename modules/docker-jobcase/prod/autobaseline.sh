@@ -44,7 +44,7 @@ then
             X=`sed -n '/Other/q;p' /tmp/baseline | grep "ConsistentID=${IGNITE_CONSISTENT_ID}"` 
             if [ $? -ne 0 ]; then
                 VERSION=`grep "Current topology version" /tmp/baseline | grep -oP '\d+'`
-                $IGNITE_HOME/bin/control.sh --baseline version $VERSION
+                $IGNITE_HOME/bin/control.sh --baseline version $VERSION --force
             fi
         fi
     fi
