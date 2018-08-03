@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnIncorrectParamsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
