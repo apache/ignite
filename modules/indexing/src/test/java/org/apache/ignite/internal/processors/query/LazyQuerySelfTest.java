@@ -94,6 +94,40 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDbg() throws Exception {
+        Ignite srv1 = startGrid(1);
+        Ignite srv2 = startGrid(2);
+
+        srv1.createCache(cacheConfiguration(2));
+
+        populateBaseQueryData(srv1);
+
+        // Test full iteration.
+        ArrayList rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor = execute(srv2, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
+
+        for (List<?> row : cursor)
+            rows.add(row);
+
+        assertBaseQueryResults(rows);
+
+        assertNoWorkers();
+
+
+        cursor = execute(srv2, query(195).setPageSize(PAGE_SIZE_SMALL));
+
+        rows.clear();
+
+        for (List<?> row : cursor)
+            rows.add(row);
+
+        System.out.println("+++ short res: " + rows.size());
+    }
+
+    /**
      * Check local query execution.
      *
      * @param parallelism Query parallelism.
@@ -278,7 +312,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @return Query.
      */
     private static SqlFieldsQuery query(long arg) {
-        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= ?").setArgs(arg);
+        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= " + arg);
     }
 
     /**
@@ -337,7 +371,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
                 return MapQueryLazyWorker.activeCount() == 0;
             }
-        }, 1000L);
+        }, 1000L) : "Workers count=" + MapQueryLazyWorker.activeCount();
     }
 
     /**

@@ -150,5 +150,4 @@ class MapNodeResults {
         for (GridQueryCancel upd: updCancels.values())
             upd.cancel();
     }
-
 }

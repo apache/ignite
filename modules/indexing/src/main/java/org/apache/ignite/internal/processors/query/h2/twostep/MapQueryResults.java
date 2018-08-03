@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Mapper query results.
  */
 class MapQueryResults {
-    /** H@ indexing. */
+    /** H2 indexing. */
     private final IgniteH2Indexing h2;
 
     /** */
@@ -46,7 +46,7 @@ class MapQueryResults {
     private final GridCacheContext<?, ?> cctx;
 
     /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    private MapQueryLazyWorker lazyWorker;
 
     /** */
     private volatile boolean cancelled;
@@ -100,12 +100,20 @@ class MapQueryResults {
     }
 
     /**
+     * @param lazyWorker Lazy worker.
+     */
+    void lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
+    }
+
+    /**
      * Add result.
      *
      * @param qry Query result index.
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
+     * @param params Query params.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
         MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);

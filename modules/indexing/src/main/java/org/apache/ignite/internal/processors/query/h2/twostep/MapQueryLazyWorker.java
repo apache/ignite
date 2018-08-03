@@ -76,6 +76,8 @@ public class MapQueryLazyWorker extends GridWorker {
 
         ACTIVE_CNT.increment();
 
+
+        log.info("+++ BEGIN LAZY WORKER: " + key);
         try {
             while (!isCancelled()) {
                 Runnable task = tasks.take();
@@ -102,6 +104,8 @@ public class MapQueryLazyWorker extends GridWorker {
             ACTIVE_CNT.decrement();
 
             exec.unregisterLazyWorker(this);
+
+            log.info("+++ END LAZY WORKER: " + key);
         }
     }
 
