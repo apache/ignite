@@ -688,32 +688,34 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
-                                    LT.warn(log(), "Waiting for topology map update [" +
-                                        "igniteInstanceName=" + g.name() +
-                                        ", cache=" + cfg.getName() +
-                                        ", cacheId=" + dht.context().cacheId() +
-                                        ", topVer=" + top.readyTopologyVersion() +
-                                        ", p=" + p +
-                                        ", affNodesCnt=" + affNodesCnt +
-                                        ", ownersCnt=" + ownerNodesCnt +
-                                        ", affNodes=" + F.nodeIds(affNodes) +
-                                        ", owners=" + F.nodeIds(owners) +
-                                        ", topFut=" + topFut +
-                                        ", locNode=" + g.cluster().localNode() + ']');
+                                    if (i % 50 == 0)
+                                        LT.warn(log(), "Waiting for topology map update [" +
+                                            "igniteInstanceName=" + g.name() +
+                                            ", cache=" + cfg.getName() +
+                                            ", cacheId=" + dht.context().cacheId() +
+                                            ", topVer=" + top.readyTopologyVersion() +
+                                            ", p=" + p +
+                                            ", affNodesCnt=" + affNodesCnt +
+                                            ", ownersCnt=" + ownerNodesCnt +
+                                            ", affNodes=" + F.nodeIds(affNodes) +
+                                            ", owners=" + F.nodeIds(owners) +
+                                            ", topFut=" + topFut +
+                                            ", locNode=" + g.cluster().localNode() + ']');
                                 }
                                 else
                                     match = true;
                             }
                             else {
-                                LT.warn(log(), "Waiting for topology map update [" +
-                                    "igniteInstanceName=" + g.name() +
-                                    ", cache=" + cfg.getName() +
-                                    ", cacheId=" + dht.context().cacheId() +
-                                    ", topVer=" + top.readyTopologyVersion() +
-                                    ", started=" + dht.context().started() +
-                                    ", p=" + p +
-                                    ", readVer=" + readyVer +
-                                    ", locNode=" + g.cluster().localNode() + ']');
+                                if (i % 50 == 0)
+                                    LT.warn(log(), "Waiting for topology map update [" +
+                                        "igniteInstanceName=" + g.name() +
+                                        ", cache=" + cfg.getName() +
+                                        ", cacheId=" + dht.context().cacheId() +
+                                        ", topVer=" + top.readyTopologyVersion() +
+                                        ", started=" + dht.context().started() +
+                                        ", p=" + p +
+                                        ", readVer=" + readyVer +
+                                        ", locNode=" + g.cluster().localNode() + ']');
                             }
 
                             if (!match) {
@@ -995,81 +997,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 return fut.isDone();
             }
         }, 5_000));
-    }
-
-    /**
-     * @param id Node id.
-     * @param major Major ver.
-     * @param minor Minor ver.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, int major, int minor) throws IgniteCheckedException {
-        waitForRebalancing(grid(id), new AffinityTopologyVersion(major, minor));
-    }
-
-    /**
-     * @param id Node id.
-     * @param major Major ver.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, int major) throws IgniteCheckedException {
-        waitForRebalancing(grid(id), new AffinityTopologyVersion(major));
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing() throws IgniteCheckedException {
-        for (Ignite ignite : G.allGrids())
-            waitForRebalancing((IgniteEx)ignite, null);
-    }
-
-    /**
-     * @param ignite Node.
-     * @param top Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(IgniteEx ignite, AffinityTopologyVersion top) throws IgniteCheckedException {
-        if (ignite.configuration().isClientMode())
-            return;
-
-        boolean finished = false;
-
-        long stopTime = System.currentTimeMillis() + 60_000;
-
-        while (!finished && (System.currentTimeMillis() < stopTime)) {
-            finished = true;
-
-            if (top == null)
-                top = ignite.context().discovery().topologyVersionEx();
-
-            for (GridCacheAdapter c : ignite.context().cache().internalCaches()) {
-                GridDhtPartitionDemander.RebalanceFuture fut =
-                    (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
-
-                if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
-                    finished = false;
-
-                    log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
-                        ", expVer=" + top + ']');
-
-                    U.sleep(100);
-
-                    break;
-                }
-                else if (!fut.get()) {
-                    finished = false;
-
-                    log.warning("Rebalancing finished with missed partitions.");
-
-                    U.sleep(100);
-
-                    break;
-                }
-            }
-        }
-
-        assertTrue(finished);
     }
 
     /**
@@ -1712,6 +1639,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));

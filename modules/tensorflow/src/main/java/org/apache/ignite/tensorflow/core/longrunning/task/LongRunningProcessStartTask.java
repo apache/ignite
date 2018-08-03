@@ -17,13 +17,13 @@
 
 package org.apache.ignite.tensorflow.core.longrunning.task;
 
-import org.apache.ignite.tensorflow.core.longrunning.LongRunningProcess;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.apache.ignite.tensorflow.core.longrunning.LongRunningProcess;
 import org.apache.ignite.tensorflow.core.util.CustomizableThreadFactory;
 
 /**
@@ -78,7 +78,7 @@ public class LongRunningProcessStartTask extends LongRunningProcessTask<List<UUI
      */
     private Future<?> runTask(Runnable task) {
         return Executors
-            .newSingleThreadExecutor(new CustomizableThreadFactory("LONG_RUNNING_PROCESS_TASK", true))
+            .newSingleThreadExecutor(new CustomizableThreadFactory("tf-long-running", true))
             .submit(task);
     }
 
