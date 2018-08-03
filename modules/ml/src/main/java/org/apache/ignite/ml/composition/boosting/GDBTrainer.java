@@ -165,7 +165,7 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
