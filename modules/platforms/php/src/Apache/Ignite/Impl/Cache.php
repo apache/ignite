@@ -20,6 +20,8 @@ namespace Apache\Ignite\Impl;
 
 use Apache\Ignite\CacheInterface;
 use Apache\Ignite\CacheEntry;
+use Apache\Ignite\Query\Query;
+use Apache\Ignite\Query\CursorInterface;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
@@ -31,7 +33,7 @@ use Apache\Ignite\Impl\Binary\BinaryReader;
 class Cache implements CacheInterface
 {
     private $name;
-    private $cacheId;
+    private $id;
     private $keyType;
     private $valueType;
     private $socket;
@@ -39,25 +41,27 @@ class Cache implements CacheInterface
     public function __construct(string $name, ClientFailoverSocket $socket)
     {
         $this->name = $name;
-        $this->cacheId = Cache::calculateId($this->name);
+        $this->id = Cache::calculateId($this->name);
         $this->socket = $socket;
         $this->keyType = null;
         $this->valueType = null;
     }
     
-    public static function calculateId($name)
+    public static function calculateId(string $name)
     {
         return BinaryUtils::hashCode($name);
     }
     
     public function setKeyType($type): CacheInterface
     {
+        BinaryUtils::checkObjectType($type, 'type');
         $this->keyType = $type;
         return $this;
     }
 
     public function setValueType($type): CacheInterface
     {
+        BinaryUtils::checkObjectType($type, 'type');
         $this->valueType = $type;
         return $this;
     }
@@ -234,9 +238,24 @@ class Cache implements CacheInterface
         return $result;
     }
     
+    public function query(Query $query): CursorInterface
+    {
+        $value = null;
+        $this->socket->send(
+            $query->getOperation(),
+            function (MessageBuffer $payload) use ($query) {
+                $this->writeCacheInfo($payload);
+                $query->write($payload);
+            },
+            function (MessageBuffer $payload) use ($query, &$value) {
+                $value = $query->getCursor($this->socket, $payload, $this->keyType, $this->valueType);
+            });
+        return $value;
+    }
+    
     private function writeCacheInfo(MessageBuffer $payload): void
     {
-        $payload->writeInteger($this->cacheId);
+        $payload->writeInteger($this->id);
         $payload->writeByte(0);
     }
     

@@ -18,6 +18,8 @@
 
 namespace Apache\Ignite\Impl\Utils;
 
+use Apache\Ignite\Impl\Binary\MessageBuffer;
+
 /** Utility class for logging errors and debug messages. */
 class Logger
 {
@@ -36,14 +38,25 @@ class Logger
     public static function logDebug($data, ...$args): void
     {
         if (Logger::$debug) {
-            echo(sprintf("$data\n", $args));
+            echo(sprintf($data, ...$args) . PHP_EOL);
         }
     }
     
     public static function logError($data, ...$args): void
     {
         if (Logger::$debug) {
-            echo(sprintf("ERROR: $data\n", ...$args));
+            echo(sprintf("ERROR: $data", ...$args) . PHP_EOL);
+        }
+    }
+    
+    public static function logBuffer(MessageBuffer $buffer, int $startPos = 0, int $length = -1): void
+    {
+        if (Logger::$debug) {
+            if ($length < 0) {
+                $length = $buffer->getLength();
+            }
+            $message = $buffer->getSlice($startPos, $length);
+            Logger::logDebug(json_encode(array_map('ord', str_split($message))));
         }
     }
 }

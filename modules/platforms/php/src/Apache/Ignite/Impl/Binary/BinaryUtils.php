@@ -24,12 +24,17 @@ use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\CollectionObjectType;
+use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\BinaryObject;
+use Apache\Ignite\Impl\Utils\ArgumentChecker;
 
 class BinaryUtils
 {
+    const FLOAT_EPSILON = 0.00001;
+    
     public static function getSize(int $typeCode): int
     {
         return TypeInfo::getTypeInfo($typeCode)->getSize();
@@ -81,6 +86,10 @@ class BinaryUtils
             return new CollectionObjectType(CollectionObjectType::HASH_SET);
         } elseif ($object instanceof Map) {
             return new MapObjectType();
+        } elseif ($object instanceof BinaryObject) {
+            return ObjectType::BINARY_OBJECT;
+        } elseif (is_object($object)) {
+            return new ComplexObjectType();
         }
         BinaryUtils::unsupportedType(gettype($object));
     }
@@ -152,16 +161,56 @@ class BinaryUtils
         return $info ? $info->getName() : 'type code ' . $typeCode;
     }
     
-    public static function hashCode($str)
+    public static function checkObjectType($type, string $argName): void
+    {
+        if ($type === null || $type instanceof ObjectType) {
+            return;
+        }
+        ArgumentChecker::hasValueFrom($type, $argName, false, TypeInfo::getPrimitiveTypes());
+    }
+    
+    public static function floatEquals(float $val1, float $val2): bool
+    {
+        return abs($val1 - $val2) < BinaryUtils::FLOAT_EPSILON;
+    }
+    
+    public static function hashCode(?string $str): int
     {
         $hash = 0;
         $length = strlen($str);
         if ($str && $length > 0) {
             for ($i = 0; $i < $length; $i++) {
                 $hash = (($hash << 5) - $hash) + ord($str[$i]);
+                $hash &= 0xFFFFFFFF; // Convert to 32bit integer
             }
         }
-        return $hash;
+        return BinaryUtils::intval32($hash);
+    }
+    
+    public static function hashCodeLowerCase(?string $str): int
+    {
+        return BinaryUtils::hashCode($str ? strtolower($str) : $str);
+    }
+
+    public static function contentHashCode(MessageBuffer $buffer, int $startPos, int $endPos): int
+    {
+        $hash = 1;
+        $length = $endPos - $startPos + 1;
+        $content = $buffer->getSlice($startPos, $length);
+        for ($i = 0; $i < $length; $i++) {
+            $hash = 31 * $hash + ord($content[$i]);
+            $hash &= 0xFFFFFFFF; // Convert to 32bit integer
+        }
+        return BinaryUtils::intval32($hash);
+    }
+    
+    public static function intval32(int $value): int
+    {
+        $value = ($value & 0xFFFFFFFF);
+        if ($value & 0x80000000) {
+            $value = -((~$value & 0xFFFFFFFF) + 1);
+        }
+        return $value;
     }
     
     public static function internalError(string $message = null): void
@@ -172,5 +221,14 @@ class BinaryUtils
     public static function unsupportedType($type): void
     {
         throw new ClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
+    }
+    
+    public static function serializationError(bool $serialize, string $message = null): void
+    {
+        $msg = $serialize ? 'Complex object can not be serialized' : 'Complex object can not be deserialized';
+        if ($message) {
+            $msg = $msg . ': ' . $message;
+        }
+        throw new ClientException($msg);
     }
 }

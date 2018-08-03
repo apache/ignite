@@ -21,9 +21,11 @@ namespace Apache\Ignite\Impl\Binary;
 use Ds\Map;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
+use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\BinaryObject;
 
 class BinaryWriter
 {
@@ -94,6 +96,12 @@ class BinaryWriter
             case ObjectType::MAP:
                 BinaryWriter::writeMap($buffer, $object, $objectType);
                 break;
+            case ObjectType::BINARY_OBJECT:
+                BinaryWriter::writeBinaryObject($buffer, $object, $objectType);
+                break;
+            case ObjectType::COMPLEX_OBJECT:
+                BinaryWriter::writeComplexObject($buffer, $object, $objectType);
+                break;
             default:
                 BinaryUtils::unsupportedType($objectType);
         }
@@ -127,20 +135,25 @@ class BinaryWriter
     
     private static function writeMap(MessageBuffer $buffer, $map, MapObjectType $mapType): void
     {
-        if ($map instanceof Map) {
-            $buffer->writeInteger($map->count());
-            $buffer->writeByte($mapType->getSubType());
-            foreach ($map->pairs() as $pair) {
-                BinaryWriter::writeObject($buffer, $pair->key, $mapType->getKeyType());
-                BinaryWriter::writeObject($buffer, $pair->value, $mapType->getValueType());
-            }
-        } else {
-            $buffer->writeInteger(count($map));
-            $buffer->writeByte($mapType->getSubType());
-            foreach ($map as $key => $value) {
-                BinaryWriter::writeObject($buffer, $key, $mapType->getKeyType());
-                BinaryWriter::writeObject($buffer, $value, $mapType->getValueType());
-            }
+        if (!($map instanceof Map)) {
+            $map = new Map($map);
         }
+        $buffer->writeInteger($map->count());
+        $buffer->writeByte($mapType->getSubType());
+        foreach ($map->pairs() as $pair) {
+            BinaryWriter::writeObject($buffer, $pair->key, $mapType->getKeyType());
+            BinaryWriter::writeObject($buffer, $pair->value, $mapType->getValueType());
+        }
+    }
+
+    private static function writeBinaryObject(MessageBuffer $buffer, BinaryObject $binaryObject): void
+    {
+        $buffer->setPosition($buffer->getPosition() - 1);
+        $binaryObject->write($buffer);
+    }
+
+    private static function writeComplexObject(MessageBuffer $buffer, object $object, ?ComplexObjectType $objectType): void
+    {
+        BinaryWriter::writeBinaryObject($buffer, BinaryObject::fromObject($object, $objectType));
     }
 }

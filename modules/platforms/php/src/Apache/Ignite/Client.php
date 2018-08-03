@@ -24,6 +24,7 @@ use Apache\Ignite\Impl\Utils\ArgumentChecker;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\BinaryWriter;
+use Apache\Ignite\Impl\Binary\BinaryTypeStorage;
 use Apache\Ignite\Impl\Cache;
 
 /**
@@ -41,6 +42,7 @@ class Client
     public function __construct()
     {
         $this->socket = new ClientFailoverSocket();
+        BinaryTypeStorage::createEntity($this->socket);
     }
     
     /**

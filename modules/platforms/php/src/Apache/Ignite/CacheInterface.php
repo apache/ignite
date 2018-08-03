@@ -18,6 +18,9 @@
 
 namespace Apache\Ignite;
 
+use Apache\Ignite\Query\Query;
+use Apache\Ignite\Query\CursorInterface;
+
 /**
  * Interface representing and providing access to Ignite cache.
  *
@@ -358,4 +361,14 @@ interface CacheInterface
 
     /* Methods to operate with the cache using SQL and Scan Queries */
 
+    /**
+     * Starts an SQL or Scan query operation.
+     * 
+     * @param Query $query query to be executed.
+     * 
+     * @return CursorInterface cursor to obtain the results of the query operation:
+     *   - SqlFieldsCursorInterface in case of SqlFieldsQuery query
+     *   - CursorInterface in case of other types of query
+     */
+    public function query(Query $query): CursorInterface;
 }

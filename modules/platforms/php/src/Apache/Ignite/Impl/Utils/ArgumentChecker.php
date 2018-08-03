@@ -45,8 +45,7 @@ class ArgumentChecker
             foreach ($arg as $a) {
                 ArgumentChecker::hasType($a, $argName, false, ...$types);
             }
-        }
-        else {
+        } else {
             foreach ($types as $type) {
                 if ($arg instanceof $type) {
                     return;
@@ -62,11 +61,17 @@ class ArgumentChecker
             foreach ($arg as $a) {
                 ArgumentChecker::hasValueFrom($a, $argName, false, $values);
             }
-        }
-        else {
+        } else {
             if (!in_array($arg, $values)) {
                 ArgumentChecker::illegalArgument(sprintf('"%s" argument has incorrect value', $argName));
             }
+        }
+    }
+    
+    public static function invalidArgument($arg, string $argName, string $typeName): void
+    {
+        if ($arg !== null) {
+            ArgumentChecker::illegalArgument(sprintf('"%s" argument is invalid for %s', $argName, $typeName));
         }
     }
     

@@ -50,7 +50,7 @@ class Request
         return $this->isHandshake;
     }
     
-    public function getMessage(): string
+    public function getMessage(): MessageBuffer
     {
         $message = new MessageBuffer();
         // Skip message length
@@ -69,7 +69,7 @@ class Request
         // Message length
         $message->setPosition(0);
         $message->writeInteger($message->getLength() - $messageStartPos);
-        return $message->getBuffer();
+        return $message;
     }
     
     public function getPayloadReader(): ?callable

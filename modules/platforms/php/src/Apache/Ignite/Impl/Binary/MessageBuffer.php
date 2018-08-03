@@ -53,16 +53,26 @@ class MessageBuffer
     
     public function getBuffer(): string
     {
-        return substr($this->buffer, 0, $this->getLength());
+        return $this->getSlice(0, $this->getLength());
     }
     
-    public function setPosition($position): void
+    public function getSlice(int $startPos, int $length): string
+    {
+        return substr($this->buffer, $startPos, $length);
+    }
+    
+    public function getPosition(): int
+    {
+        return $this->position;
+    }
+    
+    public function setPosition(int $position): void
     {
         $this->ensureCapacity($position);
         $this->position = $position;
     }
     
-    public function append($buffer): void
+    public function append(string &$buffer): void
     {
         $this->buffer .= $buffer;
         $this->length += strlen($buffer);
@@ -83,7 +93,7 @@ class MessageBuffer
         $this->writeNumber($value, ObjectType::INTEGER);
     }
 
-    public function writeLong(int $value): void
+    public function writeLong(float $value): void
     {
         $this->writeNumber($value, ObjectType::LONG);
     }
@@ -127,7 +137,7 @@ class MessageBuffer
         }
         // TODO: check pack errors
         $this->convertEndianness($strValue, $type);
-        $this->writeBuffer($strValue);
+        $this->writeStr($strValue);
     }
 
     public function writeBoolean(bool $value): void
@@ -145,8 +155,13 @@ class MessageBuffer
         $length = strlen($value);
         $this->writeInteger($length);
         if ($length > 0) {
-            $this->writeBuffer($value);
+            $this->writeStr($value);
         }
+    }
+    
+    public function writeBuffer(MessageBuffer $buffer, int $startPos, int $length): void
+    {
+        $this->writeStr($buffer->buffer, $startPos, $length);
     }
     
     public function readByte(): int
@@ -164,7 +179,7 @@ class MessageBuffer
         return $this->readNumber(ObjectType::INTEGER);
     }
 
-    public function readLong()
+    public function readLong(): float
     {
         return $this->readNumber(ObjectType::LONG);
     }
@@ -240,12 +255,14 @@ class MessageBuffer
         }
     }
     
-    private function writeBuffer(string $buffer): void
+    private function writeStr(string &$buffer, int $startPos = 0, int $length = -1): void
     {
-        $length = strlen($buffer);
+        if ($length < 0) {
+            $length = strlen($buffer);
+        }
         $this->ensureCapacity($length);
         for ($i = 0; $i < $length; $i++) {
-            $this->buffer[$this->position + $i] = $buffer[$i];
+            $this->buffer[$this->position + $i] = $buffer[$startPos + $i];
         }
         if ($this->position + $length > $this->length) {
             $this->length = $this->position + $length;

@@ -111,15 +111,16 @@ class ClientSocket
     {
         $buffer = $request->getMessage();
         $this->logMessage($request->getId(), true, $buffer);
-        while (($length = strlen($buffer)) > 0) {
-            $written = fwrite($this->socket, $buffer);
+        $data = $buffer->getBuffer();
+        while (($length = strlen($data)) > 0) {
+            $written = fwrite($this->socket, $data);
             if ($length === $written) {
                 break;
             }
             if ($written === false || $written === 0) {
                 throw new ConnectionException('Error while writing data to the server');
             }
-            $buffer = substr($buffer, $written);
+            $data = substr($data, $written);
         }
         $this->processResponse($request);
     }
@@ -149,7 +150,7 @@ class ClientSocket
         } else {
             // Request id
             $requestId = $buffer->readLong();
-            if ($requestId !== $request->getId()) {
+            if (!BinaryUtils::floatEquals($requestId, $request->getId())) {
                 BinaryUtils::internalError('Invalid response id: ' . $requestId);
             }
             // Status code
@@ -165,7 +166,7 @@ class ClientSocket
                 }
             }
         }
-        $this->logMessage($request->getId(), false, $buffer->getBuffer());
+        $this->logMessage($request->getId(), false, $buffer);
     }
     
     private function processHandshake(MessageBuffer $buffer): void
@@ -190,11 +191,11 @@ class ClientSocket
         }
     }
     
-    private function logMessage(int $requestId, bool $isRequest, string $message): void
+    private function logMessage(int $requestId, bool $isRequest, MessageBuffer $buffer): void
     {
         if (Logger::isDebug()) {
             Logger::logDebug(($isRequest ? 'Request: ' : 'Response: ') . $requestId);
-            Logger::logDebug(json_encode(array_map('ord', str_split($message))));
+            Logger::logBuffer($buffer);
         }
     }
 }

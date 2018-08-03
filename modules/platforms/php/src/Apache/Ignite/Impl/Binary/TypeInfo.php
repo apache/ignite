@@ -28,8 +28,9 @@ class TypeInfo
     private $elementTypeCode;
     
     private static $info;
+    private static $primitiveTypes;
     
-    static function init(): void
+    public static function init(): void
     {
         TypeInfo::$info = array(
             ObjectType::BYTE => new TypeInfo('byte', 1),
@@ -59,11 +60,49 @@ class TypeInfo
             ObjectType::TIME_ARRAY => new TypeInfo('date', 8, true, ObjectType::TIME),
             ObjectType::NULL => new TypeInfo('null', 0, true),
         );
+        
+        TypeInfo::$primitiveTypes = [
+            ObjectType::BYTE,
+            ObjectType::SHORT,
+            ObjectType::INTEGER,
+            ObjectType::LONG,
+            ObjectType::FLOAT,
+            ObjectType::DOUBLE,
+            ObjectType::CHAR,
+            ObjectType::BOOLEAN,
+            ObjectType::STRING,
+            ObjectType::UUID,
+            ObjectType::DATE,
+            ObjectType::BYTE_ARRAY,
+            ObjectType::SHORT_ARRAY,
+            ObjectType::INTEGER_ARRAY,
+            ObjectType::LONG_ARRAY,
+            ObjectType::FLOAT_ARRAY,
+            ObjectType::DOUBLE_ARRAY,
+            ObjectType::CHAR_ARRAY,
+            ObjectType::BOOLEAN_ARRAY,
+            ObjectType::STRING_ARRAY,
+            ObjectType::UUID_ARRAY,
+            ObjectType::DATE_ARRAY,
+            ObjectType::ENUM,
+            ObjectType::ENUM_ARRAY,
+            ObjectType::DECIMAL,
+            ObjectType::DECIMAL_ARRAY,
+            ObjectType::TIMESTAMP,
+            ObjectType::TIMESTAMP_ARRAY,
+            ObjectType::TIME,
+            ObjectType::TIME_ARRAY
+        ];
     }
     
-    static function getTypeInfo(int $typeCode): TypeInfo
+    public static function getTypeInfo(int $typeCode): TypeInfo
     {
         return TypeInfo::$info[$typeCode];
+    }
+    
+    public static function getPrimitiveTypes(): array
+    {
+        return TypeInfo::$primitiveTypes;
     }
     
     private function __construct(string $name, int $size, bool $nullable = false, int $elementTypeCode = 0)

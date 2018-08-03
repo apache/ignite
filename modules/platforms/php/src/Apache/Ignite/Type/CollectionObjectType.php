@@ -89,8 +89,19 @@ class CollectionObjectType extends ObjectType
      */
     public function __construct(int $subType, $elementType = null)
     {
-        // TODO: check args
         parent::__construct(ObjectType::COLLECTION);
+        ArgumentChecker::hasValueFrom(
+            $subType, 'subType', false, 
+            [
+                CollectionObjectType::USER_SET,
+                CollectionObjectType::USER_COL,
+                CollectionObjectType::ARRAY_LIST,
+                CollectionObjectType::LINKED_LIST,
+                CollectionObjectType::HASH_SET,
+                CollectionObjectType::LINKED_HASH_SET,
+                CollectionObjectType::SINGLETON_LIST
+            ]);
+        BinaryUtils::checkObjectType($elementType, 'elementType');
         $this->subType = $subType;
         $this->elementType = $elementType;
     }

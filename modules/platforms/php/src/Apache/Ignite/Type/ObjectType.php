@@ -116,7 +116,7 @@ namespace Apache\Ignite\Type;
  * | BYTE                         | integer                               |
  * | SHORT                        | integer                               |
  * | INTEGER                      | integer                               |
- * | LONG                         | integer/float                         |
+ * | LONG                         | float                                 |
  * | FLOAT                        | float                                 |
  * | DOUBLE                       | float                                 |
  * | DECIMAL                      | ???                                   |
@@ -132,7 +132,7 @@ namespace Apache\Ignite\Type;
  * | BYTE_ARRAY                   | array of integer                      |
  * | SHORT_ARRAY                  | array of integer                      |
  * | INTEGER_ARRAY                | array of integer                      |
- * | LONG_ARRAY                   | array of integer/float                |
+ * | LONG_ARRAY                   | array of float                        |
  * | FLOAT_ARRAY                  | array of float                        |
  * | DOUBLE_ARRAY                 | array of float                        |
  * | DECIMAL_ARRAY                | ???                                   |

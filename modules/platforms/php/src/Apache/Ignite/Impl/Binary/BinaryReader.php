@@ -21,9 +21,11 @@ namespace Apache\Ignite\Impl\Binary;
 use Ds\Map;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
+use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\BinaryObject;
 
 class BinaryReader
 {
@@ -75,8 +77,12 @@ class BinaryReader
                 return BinaryReader::readArray($buffer, $objectTypeCode, $expectedType);
             case ObjectType::MAP:
                 return BinaryReader::readMap($buffer, $expectedType);
+            case ObjectType::BINARY_OBJECT:
+                return BinaryReader::readBinaryObject($buffer, $expectedType);
             case ObjectType::NULL:
                 return null;
+            case ObjectType::COMPLEX_OBJECT:
+                return BinaryReader::readComplexObject($buffer, $expectedType);
             default:
                 BinaryUtils::unsupportedType($objectTypeCode);
         }
@@ -126,5 +132,25 @@ class BinaryReader
             $result->put($key, $value);
         }
         return $result;
+    }
+    
+    private static function readBinaryObject(MessageBuffer $buffer, ?ComplexObjectType $expectedType): object
+    {
+        $size = $buffer->readInteger();
+        $startPos = $buffer->getPosition();
+        $buffer->setPosition($startPos + $size);
+        $offset = $buffer->readInteger();
+        $endPos = $buffer->getPosition();
+        $buffer->setPosition($startPos + $offset);
+        $result = BinaryReader::readObject($buffer, $expectedType);
+        $buffer->setPosition($endPos);
+        return $result;
+    }
+
+    private static function readComplexObject(MessageBuffer $buffer, ?ComplexObjectType $expectedType): object
+    {
+        $buffer->setPosition($buffer->getPosition() - 1);
+        $binaryObject = BinaryObject::fromBuffer($buffer);
+        return $expectedType ? $binaryObject->toObject($expectedType) : $binaryObject;
     }
 }

@@ -240,7 +240,7 @@ class TestingHelper
     private static function logDebug($message): void
     {
         if (TestConfig::$debug) {
-            echo($message . "\n");
+            echo($message . PHP_EOL);
         }
     }
 }

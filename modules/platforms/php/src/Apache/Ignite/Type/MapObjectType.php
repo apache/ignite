@@ -18,6 +18,9 @@
 
 namespace Apache\Ignite\Type;
 
+use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Impl\Binary\BinaryUtils;
+
 /** 
  * Class representing a map type of Ignite object.
  * 
@@ -71,8 +74,11 @@ class MapObjectType extends ObjectType
      */
     public function __construct(int $subType = MapObjectType::HASH_MAP, $keyType = null, $valueType = null)
     {
-        // TODO: check args
         parent::__construct(ObjectType::MAP);
+        ArgumentChecker::hasValueFrom(
+            $subType, 'subType', false, [MapObjectType::HASH_MAP, MapObjectType::LINKED_HASH_MAP]);
+        BinaryUtils::checkObjectType($keyType, 'keyType');
+        BinaryUtils::checkObjectType($valueType, 'valueType');
         $this->subType = $subType;
         $this->keyType = $keyType;
         $this->valueType = $valueType;
