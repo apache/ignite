@@ -13,14 +13,14 @@ then
     sleep $IGNITE_AUTO_BASELINE_DELAY
     
     $IGNITE_HOME/bin/control.sh --baseline > /tmp/baseline
-    if [ $? == 0 ]
+    if [ $? -eq 0 ]
     then     
 
         X=`egrep "Cluster state.* active" /tmp/baseline`
-        if [ "$?" != 0 ]
+        if [ $? -ne 0 ]
         then 
             X=`egrep "inactive" /tmp/baseline`
-            if [ "$?" = 0 ]
+            if [ "$?" -eq 0 ]
             then
             
                 # cluster is not active
@@ -29,7 +29,7 @@ then
                 
                 # if there 
                 X=`grep "Baseline nodes not found." /tmp/baseline` 
-                if [ "$?" = 0 ] 
+                if [ "$?" -eq 0 ] 
                 then             
                     $IGNITE_HOME/bin/control.sh --activate
                 fi      
@@ -42,7 +42,7 @@ then
             
             
             X=`sed -n '/Other/q;p' /tmp/baseline | grep "ConsistentID=${IGNITE_CONSISTENT_ID}"` 
-            if [ "$?" != 0 ]; then
+            if [ $? -ne 0 ]; then
                 VERSION=`grep "Current topology version" /tmp/baseline | grep -oP '\d+'`
                 $IGNITE_HOME/bin/control.sh --baseline version $VERSION
             fi

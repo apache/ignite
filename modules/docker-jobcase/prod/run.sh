@@ -53,7 +53,7 @@ fi
 
 if [ ! -z "${JVM_HEAP_SIZE}" ]; then
     export JVM_OPTS="$JVM_OPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
-fi  
+fi
 
 QUIET=""
 
@@ -64,14 +64,12 @@ fi
 # If IGNITE_AUTO_BASELINE_DELAY is specifed, spawn a separate background task to force activate 
 # the cluster if the current node is not part of the baseline after the delay.   The delay
 # needs to be shorter than the health check startup time.
-if [ ! -z "$IGNITE_CONSISTENT_ID" ]  && [ "$IGNITE_AUTO_BASELINE_DELAY" -ne 0 ]
+if [ ! -z "$IGNITE_CONSISTENT_ID" ]  && [ "$IGNITE_AUTO_BASELINE_DELAY" -ne 0 ]; then
     $IGNITE_HOME/autobaseline.sh $IGNITE_CONSISTENT_ID $IGNITE_AUTO_BASELINE_DELAY &
-FI
+fi
 
 if [ -z $CONFIG_URI ]; then
   $IGNITE_HOME/bin/ignite.sh $QUIET
 else
   $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
 fi
-
-
