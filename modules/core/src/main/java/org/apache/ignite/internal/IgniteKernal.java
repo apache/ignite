@@ -2161,6 +2161,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 try {
                     if (gw.tryWriteLock(10))
                         break;
+
+                    Thread.sleep(1000);
                 }
                 catch (InterruptedException ignored) {
                     // Preserve interrupt status & ignore.
