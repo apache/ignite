@@ -194,6 +194,10 @@
             font-style: normal;
             color: $gray-light;
         }
+
+        svg {
+            flex: 0 0 auto;
+        }
     }
 
     &__control {
@@ -513,7 +517,17 @@
                 border: none;
                 box-shadow: none;
 
+                background: linear-gradient(to right, rgb(0, 103, 185), transparent) 0px 25px / 0px, 
+                            linear-gradient(to right, rgb(0, 103, 185) 70%, transparent 0%) 0% 0% / 8px 1px repeat-x,
+                            0% 0% / 0px, 0% 0% / 4px;
+                background-size: 0, 8px 1px, 0, 0;
                 background-position: 1px 25px;
+
+                padding-left: 0px;
+                padding-right: 0px;
+                margin-left: 10px;
+                margin-right: 10px;
+
                 &:hover, &:focus {
                     text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
                 }
