@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+grid-item-selected {
+    display: inline-flex;
+    align-items: center;
 
-import './style.scss';
-import component from './component';
-
-export default angular
-    .module('ignite-console.grid-item-selected', [])
-    .component('gridItemSelected', component);
+    font-size: 14px;
+}
