@@ -23,10 +23,6 @@ from pyignite.constants import *
 from pyignite.api import cache_create, cache_get_names, cache_destroy
 
 
-IGNITE_DEFAULT_HOST = 'localhost'
-IGNITE_DEFAULT_PORT = 10800
-
-
 class CertReqsParser(argparse.Action):
     conv_map = {
         'NONE': ssl.CERT_NONE,

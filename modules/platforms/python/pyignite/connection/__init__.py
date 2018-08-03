@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import socket
-import ssl
 from typing import Iterable, Union
 
 from pyignite.constants import *
@@ -23,6 +22,7 @@ from pyignite.exceptions import (
 )
 from pyignite.utils import status_to_exception
 from .handshake import HandshakeRequest, read_response
+from .ssl import wrap
 
 
 __all__ = ['Connection', 'PrefetchConnection']
@@ -35,6 +35,7 @@ class Connection:
     https://docs.python.org/3/howto/sockets.html
     """
 
+    nodes = None
     socket = None
     host = None
     port = None
@@ -96,33 +97,11 @@ class Connection:
         self.init_kwargs = kwargs
 
     read_response = read_response
+    _wrap = wrap
 
-    def _wrap(self, _socket):
-        """ Wrap socket in SSL wrapper. """
-        if self.init_kwargs.get('use_ssl', None):
-            _socket = ssl.wrap_socket(
-                _socket,
-                ssl_version=self.init_kwargs.get(
-                    'ssl_version', SSL_DEFAULT_VERSION
-                ),
-                ciphers=self.init_kwargs.get(
-                    'ssl_ciphers', SSL_DEFAULT_CIPHERS
-                ),
-                cert_reqs=self.init_kwargs.get(
-                    'ssl_cert_reqs', ssl.CERT_NONE
-                ),
-                keyfile=self.init_kwargs.get('ssl_keyfile', None),
-                certfile=self.init_kwargs.get('ssl_certfile', None),
-                ca_certs=self.init_kwargs.get('ssl_ca_certfile', None),
-            )
-        return _socket
-
-    def connect(self, host: str, port: int):
+    def _connect(self, host: str, port: int):
         """
-        Connect to the server.
-
-        :param host: Ignite server host,
-        :param port: Ignite server port.
+        Actually connect socket.
         """
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(self.timeout)
@@ -136,8 +115,8 @@ class Connection:
             self.close()
             raise SocketError(
                 (
-                    'Ignite protocol version mismatch: requested {}.{}.{}, '
-                    'received {}.{}.{}.'
+                    'Ignite protocol version mismatch: '
+                    'requested {}.{}.{}, received {}.{}.{}.'
                 ).format(
                     PROTOCOL_VERSION_MAJOR,
                     PROTOCOL_VERSION_MINOR,
@@ -149,6 +128,40 @@ class Connection:
             )
         self.host, self.port = host, port
 
+    def connect(self, *args):
+        """
+        Connect to the server. Pass either `host` and `port` or `nodes`. The
+        latter argument can be a generator (see `RoundRobin` class).
+
+        :param host: Ignite server host,
+        :param port: Ignite server port,
+        :param nodes: iterable of tuples (host, port).
+        """
+        if len(args) == 0:
+            nodes = [
+                (IGNITE_DEFAULT_HOST, IGNITE_DEFAULT_PORT),
+            ]
+        elif len(args) == 1:
+            nodes = args
+        elif len(args) == 2:
+            nodes = [args]
+        else:
+            raise ConnectionError('Connection parameters mismatch.')
+        self.nodes = iter(nodes)
+        self._connect(*next(self.nodes))
+
+    def reconnect(self):
+        """
+        Restore connection to the server.
+        """
+        try:
+            self._connect(*next(self.nodes))
+        except (TypeError, StopIteration):
+            raise ConnectionError(
+                'Can not reconnect. Please provide connection parameters '
+                'via `conn.connect(host, port)` or `conn.connect(nodes)`.'
+            )
+
     def clone(self) -> object:
         """
         Clones this connection in its current state.
@@ -156,8 +169,9 @@ class Connection:
         :return: `Connection` object.
         """
         clone = Connection(**self.init_kwargs)
+        clone.nodes = self.nodes
         if self.port and self.host:
-            clone.connect(self.host, self.port)
+            clone._connect(self.host, self.port)
         return clone
 
     def make_buffered(self, buffer: bytes) -> object:
@@ -169,8 +183,9 @@ class Connection:
         :return: `BufferedConnection` object.
         """
         conn = BufferedConnection(buffer, **self.init_kwargs)
+        conn.nodes = self.nodes
         if self.port and self.host:
-            conn.connect(self.host, self.port)
+            conn._connect(self.host, self.port)
         return conn
 
     def send(self, data: bytes, flags=None):
@@ -377,7 +392,7 @@ class BufferedConnection(Connection):
         self.init_kwargs = kwargs
         self.pos = 0
 
-    def connect(self, host: str, port: int):
+    def _connect(self, host: str, port: int):
         self.host, self.port = host, port
 
     def close(self):
