@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions.preprocessing;
-
-import org.apache.ignite.IgniteException;
-
 /**
- * Indicates an unknown String value for StringEncoder.
+ * <!-- Package description. -->
+ * Contains one hot encoding preprocessor.
  */
-public class UnknownStringValue extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param unknownStr String value that caused this exception.
-     */
-    public UnknownStringValue(String unknownStr) {
-        super("This String value is unknown for StringEncoder: " + unknownStr);
-    }
-}
+package org.apache.ignite.ml.preprocessing.encoding.onehotencoder;
