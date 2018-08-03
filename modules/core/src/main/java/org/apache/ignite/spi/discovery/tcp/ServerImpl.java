@@ -6901,8 +6901,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             "and will be dropped from cluster, " +
                             "because no metrics update messages received in interval: " +
                             "TcpDiscoverySpi.clientFailureDetectionTimeout() ms. " +
-                            "It maybe causpi.clientFailureDetectionTimeout() ms. \" +\n" +
-                            "                            \"It maybe caused by network problems or long GC pause on client node, try to increase this " +
+                            "It may be caused by network problems or long GC pause on client node, try to increase this " +
                             "parameter. " +
                             "[nodeId=" + clientNodeId +
                             ", clientFailureDetectionTimeout=" + spi.clientFailureDetectionTimeout() +
