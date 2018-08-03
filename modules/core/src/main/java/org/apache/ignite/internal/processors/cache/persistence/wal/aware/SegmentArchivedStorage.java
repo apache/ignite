@@ -76,7 +76,7 @@ class SegmentArchivedStorage extends SegmentObservable {
      * @throws IgniteInterruptedCheckedException if interrupted.
      */
     synchronized void awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
-        while (lastArchivedAbsoluteIndex() < awaitIdx) {
+        while (lastArchivedAbsoluteIndex() < awaitIdx && !interrupted) {
             try {
                 wait(2000);
             }
@@ -84,6 +84,8 @@ class SegmentArchivedStorage extends SegmentObservable {
                 throw new IgniteInterruptedCheckedException(e);
             }
         }
+
+        checkInterrupted();
     }
 
     /**

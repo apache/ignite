@@ -97,6 +97,8 @@ public class SegmentCompressStorage {
             throw new IgniteInterruptedCheckedException(e);
         }
 
+        checkInterrupted();
+
         return segmentToCompress;
     }
 
