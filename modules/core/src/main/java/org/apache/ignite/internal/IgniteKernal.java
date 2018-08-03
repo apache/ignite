@@ -201,6 +201,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.mxbean.IgniteStripedThreadPoolExecutorMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
@@ -4275,9 +4276,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerExecutorMBean("GridClassLoadingExecutor", p2pExecSvc);
             registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
             registerExecutorMBean("GridIgfsExecutor", igfsExecSvc);
-            registerExecutorMBean("GridDataStreamExecutor", dataStreamExecSvc);
             registerExecutorMBean("GridAffinityExecutor", affExecSvc);
-            registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
             registerExecutorMBean("GridQueryExecutor", qryExecSvc);
             registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
 
@@ -4293,6 +4292,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "StripedExecutor",
                     new StripedExecutorMXBeanAdapter(stripedExecSvc),
                     StripedExecutorMXBean.class);
+            }
+            
+            if (dataStreamExecSvc != null) {
+               // striped executor uses a custom adapter
+               registerMBean("Thread Pools",
+                   "GridDataStreamExecutor",
+                   new StripedExecutorMXBeanAdapter(dataStreamExecSvc),
+                   StripedExecutorMXBean.class);
+            }
+            
+            if (callbackExecSvc != null) {
+               // striped executor uses a custom adapter
+               registerMBean("Thread Pools",
+                   "GridCallbackExecutor",
+                   new IgniteStripedThreadPoolExecutorMXBeanAdapter(callbackExecSvc),
+                   IgniteStripedThreadPoolExecutorMXBean.class);
             }
 
             if (customExecSvcs != null) {
